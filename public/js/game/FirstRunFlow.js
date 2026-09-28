@@ -60,6 +60,40 @@ export class ResolvedPokemon {
 
 /** Small deterministic, production-content-only first encounter resolver. It is not PokéRogue's complete pool/rarity algorithm. */
 export class EncounterResolver {
+  /** Select only the upstream biome-pool member. Random draws must come from the caller's real RNG source. */
+  selectPoolMember({ biome, timeOfDay, boss = false, tierRoll = null, memberIndex = null, forcedTier = null, species, sourceRef }) {
+    requireUpstream(biome, 'Biome');
+    const tierOrder = ['common', 'uncommon', 'rare', 'super_rare', 'ultra_rare', 'boss', 'boss_rare', 'boss_super_rare', 'boss_ultra_rare'];
+    if (!['dawn', 'day', 'dusk', 'night'].includes(timeOfDay)) throw new Error(`Unsupported upstream encounter time-of-day: ${timeOfDay}`);
+    if (!sourceRef || sourceRef.sourcePath !== 'src/field/arena.ts' || sourceRef.sourceType !== 'UPSTREAM') throw new Error('Pinned upstream Arena.randomSpecies provenance is required');
+    const rollMax = boss ? 64 : 512;
+    let tier;
+    if (forcedTier !== null) {
+      tier = String(forcedTier).toLowerCase();
+      if (!tierOrder.includes(tier)) throw new Error(`Invalid forced upstream biome pool tier: ${forcedTier}`);
+    } else {
+      if (!Number.isSafeInteger(tierRoll) || tierRoll < 0 || tierRoll >= rollMax) throw new Error(`Upstream ${boss ? 'boss' : 'non-boss'} tier roll must be an integer in [0, ${rollMax})`);
+      if (boss) tier = tierRoll >= 20 ? 'boss' : tierRoll >= 6 ? 'boss_rare' : tierRoll >= 1 ? 'boss_super_rare' : 'boss_ultra_rare';
+      else tier = tierRoll >= 156 ? 'common' : tierRoll >= 32 ? 'uncommon' : tierRoll >= 6 ? 'rare' : tierRoll >= 1 ? 'super_rare' : 'ultra_rare';
+    }
+    const requestedTier = tier;
+    const poolFor = selectedTier => [...(biome.encounterPools?.[selectedTier]?.all || []), ...(biome.encounterPools?.[selectedTier]?.[timeOfDay] || [])];
+    let pool = poolFor(tier);
+    while (!pool.length && tierOrder.indexOf(tier) > 0) {
+      tier = tierOrder[tierOrder.indexOf(tier) - 1];
+      pool = poolFor(tier);
+    }
+    if (!pool.length) throw new Error(`UNSUPPORTED_UPSTREAM_FALLBACK: biome ${biome.id} has no pool members at ${timeOfDay}; Arena.randomSpecies falls back to the global catchable species catalog`);
+    let index = null;
+    if (pool.length > 1) {
+      if (!Number.isSafeInteger(memberIndex) || memberIndex < 0 || memberIndex >= pool.length) throw new Error(`Upstream member draw must be an integer in [0, ${pool.length})`);
+      index = memberIndex;
+    }
+    const speciesId = pool[index ?? 0];
+    if (!(species || []).some(item => item.id === speciesId)) throw new Error(`Biome pool references ${speciesId}, which is missing from the supplied canonical species snapshot`);
+    return Object.freeze({ speciesId, biomeId: biome.id, timeOfDay, isBossPool: Boolean(boss), requestedTier, selectedTier: tier, poolIndex: index, poolSize: pool.length, selectionStage: 'UPSTREAM_POOL_MEMBER_ONLY', source: { ...sourceRef } });
+  }
+
   resolve({ mode, wave, biome, mapNode, seed, species }) {
     if (!mode || !wave || !biome || !mapNode || !Number.isSafeInteger(seed)) throw new Error('Encounter resolution requires mode, wave, biome, map node, and integer seed');
     if (mode.supports('wildEncounters') === false) throw new Error(`GameMode ${mode.id} does not support wild encounters`);

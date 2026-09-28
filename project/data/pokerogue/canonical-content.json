@@ -476717,6 +476717,19 @@
       "sourcePath": "src/battle.ts",
       "sourceSymbol": "Battle.getLevelForWave/randSeedGaussForLevel"
     },
+    "upstreamEncounterSelection": {
+      "coverage": "POOL_TIER_AND_MEMBER_SELECTION_RULES_ONLY; downstream legendary reroll/species substitution/RNG seeding are not ported",
+      "poolTierEnum": {
+        "sourceHash": "71838d8bbf74d762b0db0dd618a42c787832a07eee3d89b3f99b568e994ae90c",
+        "sourcePath": "src/enums/biome-pool-tier.ts",
+        "sourceSymbol": "BiomePoolTier"
+      },
+      "repository": "https://github.com/pagefaultgames/pokerogue",
+      "revision": "8555c08c823b856cbec4eb99ca84ea52a955836d",
+      "sourceHash": "042ca21383b34ac124c6d133bba42e5e56cccaaf23199b340799161498090ae3",
+      "sourcePath": "src/field/arena.ts",
+      "sourceSymbol": "Arena.randomSpecies/generateBossBiomeTier/generateNonBossBiomeTier/updatePoolsForTimeOfDay/getTimeOfDay"
+    },
     "upstreamStartingBiome": {
       "id": "plains",
       "sourceHash": "b49dda87104cd7dac84b4134a64a57cb51531db4147ceea109058276435e16da",
@@ -477047,6 +477060,12 @@
         "sourcePath": "src/enums/biome-id.ts"
       },
       {
+        "hash": "71838d8bbf74d762b0db0dd618a42c787832a07eee3d89b3f99b568e994ae90c",
+        "repository": "pokerogue",
+        "revision": "8555c08c823b856cbec4eb99ca84ea52a955836d",
+        "sourcePath": "src/enums/biome-pool-tier.ts"
+      },
+      {
         "hash": "9ab3ac57198934f8a208292f29ca37eee6ca118cea338f350110fa05b21f8d47",
         "repository": "pokerogue",
         "revision": "8555c08c823b856cbec4eb99ca84ea52a955836d",
@@ -477069,6 +477088,12 @@
         "repository": "pokerogue",
         "revision": "8555c08c823b856cbec4eb99ca84ea52a955836d",
         "sourcePath": "src/enums/species-id.ts"
+      },
+      {
+        "hash": "042ca21383b34ac124c6d133bba42e5e56cccaaf23199b340799161498090ae3",
+        "repository": "pokerogue",
+        "revision": "8555c08c823b856cbec4eb99ca84ea52a955836d",
+        "sourcePath": "src/field/arena.ts"
       },
       {
         "hash": "ce2903ab6315c8b9a59fa5d34c13b920aed5b0e3abfb6cdc8e72206b9a2dcac8",

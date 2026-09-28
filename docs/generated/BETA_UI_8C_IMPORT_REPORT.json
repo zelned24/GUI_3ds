@@ -14,7 +14,7 @@
     "routes": 66,
     "species": 1084
   },
-  "contentHash": "d682fcb47f7a279b02eb2f74f767001940ad596da0568a7ab66c4bae495e4f77",
+  "contentHash": "f2bf26d4b2fcdc385ff69fb4ad979a926041e2c435b98adc45a7408444f4ec37",
   "deterministicReimport": true,
   "provenance": [
     {
@@ -318,6 +318,12 @@
       "sourcePath": "src/enums/biome-id.ts"
     },
     {
+      "hash": "71838d8bbf74d762b0db0dd618a42c787832a07eee3d89b3f99b568e994ae90c",
+      "repository": "pokerogue",
+      "revision": "8555c08c823b856cbec4eb99ca84ea52a955836d",
+      "sourcePath": "src/enums/biome-pool-tier.ts"
+    },
+    {
       "hash": "9ab3ac57198934f8a208292f29ca37eee6ca118cea338f350110fa05b21f8d47",
       "repository": "pokerogue",
       "revision": "8555c08c823b856cbec4eb99ca84ea52a955836d",
@@ -340,6 +346,12 @@
       "repository": "pokerogue",
       "revision": "8555c08c823b856cbec4eb99ca84ea52a955836d",
       "sourcePath": "src/enums/species-id.ts"
+    },
+    {
+      "hash": "042ca21383b34ac124c6d133bba42e5e56cccaaf23199b340799161498090ae3",
+      "repository": "pokerogue",
+      "revision": "8555c08c823b856cbec4eb99ca84ea52a955836d",
+      "sourcePath": "src/field/arena.ts"
     },
     {
       "hash": "ce2903ab6315c8b9a59fa5d34c13b920aed5b0e3abfb6cdc8e72206b9a2dcac8",

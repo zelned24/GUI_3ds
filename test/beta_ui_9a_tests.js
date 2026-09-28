@@ -2,7 +2,7 @@ import assert from 'assert';
 import { readFile } from 'node:fs/promises';
 import { PokerogueImporter } from '../public/js/data/PokerogueImporter.js';
 import { PokerogueRepository } from '../public/js/data/PokerogueRepository.js';
-import { FirstRunFlow } from '../public/js/game/FirstRunFlow.js';
+import { EncounterResolver, FirstRunFlow } from '../public/js/game/FirstRunFlow.js';
 import { CanonicalContent, RuntimeContent } from '../public/js/data/CanonicalDataContract.js';
 import { DataManager } from '../public/js/data/DataManager.js';
 
@@ -13,6 +13,26 @@ export function registerBetaUI9ATests(test) {
     const repeatedImport = await importer.importPlayableCanonicalContent(undefined, { generations: [1] });
     assert.strictEqual(repeatedImport.importReport.contentHash, imported.importReport.contentHash, 'same pins/import/normalization produce the same canonical hash');
     assert.strictEqual(imported.canonicalContent.extensions.biomePoolReferenceAudit.status, 'PARTIAL_SPECIES_SNAPSHOT_UNVERIFIED', 'filtered generation imports declare cross-reference limits');
+    const plains = imported.canonicalContent.collections.biomes.find(biome => biome.id === 'plains');
+    const poolSpecies = [...new Set(Object.values(plains.encounterPools).flatMap(tier => Object.values(tier).flat()))].map(id => ({ id }));
+    const poolResolver = new EncounterResolver();
+    const ruleSource = imported.canonicalContent.extensions.upstreamEncounterSelection;
+    assert.strictEqual(ruleSource.sourcePath, 'src/field/arena.ts');
+    assert.ok(imported.sourceSnapshot.sources.some(source => source.sourcePath === 'src/enums/biome-pool-tier.ts'));
+    const commonPick = poolResolver.selectPoolMember({ biome: plains, timeOfDay: 'day', tierRoll: 156, memberIndex: 0, species: poolSpecies, sourceRef: { ...ruleSource, sourceType: 'UPSTREAM' } });
+    assert.deepStrictEqual([commonPick.requestedTier, commonPick.selectedTier, commonPick.speciesId, commonPick.poolSize], ['common', 'common', 'zigzagoon', 6]);
+    const uncommonPick = poolResolver.selectPoolMember({ biome: plains, timeOfDay: 'day', tierRoll: 155, memberIndex: 0, species: poolSpecies, sourceRef: { ...ruleSource, sourceType: 'UPSTREAM' } });
+    assert.strictEqual(uncommonPick.requestedTier, 'uncommon', 'non-boss tier boundary 155 maps to Uncommon per upstream Arena');
+    assert.strictEqual(uncommonPick.speciesId, plains.encounterPools.uncommon.all[0]);
+    const bossPick = poolResolver.selectPoolMember({ biome: plains, timeOfDay: 'day', boss: true, tierRoll: 20, memberIndex: 0, species: poolSpecies, sourceRef: { ...ruleSource, sourceType: 'UPSTREAM' } });
+    assert.strictEqual(bossPick.requestedTier, 'boss', 'boss tier boundary 20 maps to Boss per upstream Arena');
+    for (const [tierRoll, expectedTier] of [[511, 'common'], [155, 'uncommon'], [31, 'rare'], [5, 'super_rare'], [0, 'ultra_rare']]) {
+      assert.strictEqual(poolResolver.selectPoolMember({ biome: plains, timeOfDay: 'day', tierRoll, memberIndex: 0, species: poolSpecies, sourceRef: { ...ruleSource, sourceType: 'UPSTREAM' } }).requestedTier, expectedTier);
+    }
+    for (const [tierRoll, expectedTier] of [[63, 'boss'], [19, 'boss_rare'], [5, 'boss_super_rare'], [0, 'boss_ultra_rare']]) {
+      assert.strictEqual(poolResolver.selectPoolMember({ biome: plains, timeOfDay: 'day', boss: true, tierRoll, memberIndex: 0, species: poolSpecies, sourceRef: { ...ruleSource, sourceType: 'UPSTREAM' } }).requestedTier, expectedTier);
+    }
+    assert.throws(() => poolResolver.selectPoolMember({ biome: plains, timeOfDay: 'day', tierRoll: 156, species: poolSpecies, sourceRef: { ...ruleSource, sourceType: 'UPSTREAM' } }), /member draw must be an integer/);
     const manager = new DataManager();
     const production = manager.loadCanonicalProductionSnapshot(imported.canonicalContent, imported.importReport);
     assert.strictEqual(manager.isFallback, false);
@@ -67,6 +87,6 @@ export function registerBetaUI9ATests(test) {
     assert.match(header, /\{1, 1, 3, true, "bulbasaur", "Bulbasaur"/);
     assert.ok(header.includes('"en:pokemon:bulbasaur", "Bulbasaur"'), 'native runtime resolves names from imported locale records');
     assert.ok(header.includes('kStartingBiomeId[] = "plains"'));
-    assert.ok(header.includes('{"plains", "common", "dawn", "sentret"'), 'native encounter pool rows preserve real Plains species membership');
+    assert.ok(header.includes('{"plains", "common", "dawn", 0, "sentret"'), 'native encounter pool rows preserve real Plains membership order and provenance');
   });
 }
