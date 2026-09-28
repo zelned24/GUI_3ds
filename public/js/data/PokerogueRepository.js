@@ -59,6 +59,10 @@ export class PokerogueRepository {
     return this.getFile('pokerogue', path);
   }
 
+  async loadAllSpeciesGenerations() {
+    return Promise.all(Array.from({ length: 9 }, (_, index) => this.loadSpeciesGeneration(index + 1)));
+  }
+
   /**
    * Loads the upstream moves TypeScript file.
    */
@@ -73,16 +77,39 @@ export class PokerogueRepository {
     return this.getFile('pokerogue', 'src/data/abilities/init-abilities.ts');
   }
 
+  async loadModifierTypesFile() {
+    return this.getFile('pokerogue', 'src/modifier/modifier-type.ts');
+  }
+
+  async loadModifierDataFile() {
+    return this.getFile('pokerogue', 'src/system/modifier-data.ts');
+  }
+
+  async loadModifierPoolFile() {
+    return this.getFile('pokerogue', 'src/modifier/init-modifier-pools.ts');
+  }
+
+  async loadGameModesFile() {
+    return this.getFile('pokerogue', 'src/game-mode.ts');
+  }
+
+  async loadBiomeInitializer() {
+    return this.getFile('pokerogue', 'src/init/init-biomes.ts');
+  }
+
   /**
    * Loads upstream enum source files.
-   * @param {'species'|'move'|'ability'|'type'} enumType 
+   * @param {'species'|'move'|'ability'|'type'|'gameMode'|'form'} enumType
    */
   async loadEnumFile(enumType) {
     const enumMap = {
       species: 'src/enums/species-id.ts',
       move: 'src/enums/move-id.ts',
       ability: 'src/enums/ability-id.ts',
-      type: 'src/enums/pokemon-type.ts'
+      type: 'src/enums/pokemon-type.ts',
+      gameMode: 'src/enums/game-modes.ts',
+      biome: 'src/enums/biome-id.ts',
+      form: 'src/enums/species-form-key.ts'
     };
     const path = enumMap[enumType];
     if (!path) {
@@ -100,6 +127,15 @@ export class PokerogueRepository {
     const cleanLocale = localeCode === 'es' ? 'es-ES' : (localeCode === 'en' ? 'en' : localeCode);
     const path = `${cleanLocale}/${namespace}.json`;
     return this.getFile('pokerogue-locales', path);
+  }
+
+  async loadLocales(localeCodes = ['en'], namespaces = ['game-mode', 'pokemon', 'pokemon-form', 'move', 'ability', 'modifier']) {
+    const requests = [];
+    for (const locale of [...localeCodes].sort()) {
+      for (const namespace of [...namespaces].sort()) requests.push({ locale, namespace });
+    }
+    const values = await Promise.all(requests.map(async request => ({ ...request, content: await this.loadLocaleFile(request.locale, request.namespace) })));
+    return values;
   }
 
   /**

@@ -58,6 +58,10 @@ export class SceneLibrary {
     return this._scenes.delete(sceneId);
   }
 
+  static deleteScene(sceneId) {
+    return this.removeScene(sceneId);
+  }
+
   static clearScenes() {
     this._scenes.clear();
   }
@@ -186,6 +190,10 @@ export class SceneLibrary {
     const instanced = this.duplicateScene(tempId, newId || `${templateName.toLowerCase()}_${globalRNG.nextId('scene')}`, newName || `${templateName} Scene`);
     this.removeScene(tempId);
     return instanced;
+  }
+
+  static instantiateTemplate(templateName, newId = null, newName = null) {
+    return this.createFromTemplate(templateName, newId, newName);
   }
 
   // --- Cycle Detection for Nested Compositions ---
@@ -417,5 +425,75 @@ export class SceneLibrary {
       ],
       tracks: []
     });
+
+    // 6. HUDOverlay (BETA-UI-8)
+    this.registerTemplate('HUDOverlay', {
+      schemaVersion: 4,
+      id: 'template_hud_overlay',
+      name: 'HUD Overlay',
+      durationFrames: 60,
+      fps: 60,
+      top: { width: 400, height: 240, backgroundColor: '#0b0f19' },
+      bottom: { width: 320, height: 240, backgroundColor: '#111827' },
+      components: [
+        {
+          id: 'hud_top_bar',
+          type: 'RogueBox',
+          screen: 'top',
+          x: 0, y: 0, width: 400, height: 32,
+          properties: { backgroundColor: '#1f2937' }
+        },
+        {
+          id: 'hud_player_info',
+          type: 'PixelText',
+          screen: 'top',
+          x: 12, y: 8, width: 180, height: 16,
+          properties: { text: 'PLAYER 1', fontSize: 10, color: '#10b981' }
+        },
+        {
+          id: 'hud_action_grid',
+          type: 'RogueBox',
+          screen: 'bottom',
+          x: 16, y: 16, width: 288, height: 208,
+          properties: { backgroundColor: '#182030' }
+        }
+      ],
+      tracks: []
+    });
+
+    // 7. Notification (BETA-UI-8)
+    this.registerTemplate('Notification', {
+      schemaVersion: 4,
+      id: 'template_notification',
+      name: 'Notification',
+      durationFrames: 45,
+      fps: 60,
+      top: { width: 400, height: 240, backgroundColor: '#090d16' },
+      bottom: { width: 320, height: 240, backgroundColor: '#0f172a' },
+      components: [
+        {
+          id: 'notif_banner',
+          type: 'RogueBox',
+          screen: 'top',
+          x: 20, y: 20, width: 360, height: 48,
+          properties: { backgroundColor: '#312e81' }
+        },
+        {
+          id: 'notif_text',
+          type: 'PixelText',
+          screen: 'top',
+          x: 36, y: 34, width: 328, height: 20,
+          properties: { text: 'New item added to bag!', fontSize: 11, color: '#e0e7ff' }
+        }
+      ],
+      tracks: []
+    });
+
+    // Aliases for flexible lookup
+    if (this._templates.has('DialogScene')) this.registerTemplate('Dialog', this._templates.get('DialogScene'));
+    if (this._templates.has('Menu')) this.registerTemplate('MenuScene', this._templates.get('Menu'));
+    if (this._templates.has('TitleCard')) this.registerTemplate('Title Card', this._templates.get('TitleCard'));
+    if (this._templates.has('PokemonEntrance')) this.registerTemplate('Pokemon Entrance', this._templates.get('PokemonEntrance'));
+    if (this._templates.has('HUDOverlay')) this.registerTemplate('HUD Overlay', this._templates.get('HUDOverlay'));
   }
 }

@@ -21,7 +21,14 @@ export class BattleScreen extends BaseScreen {
     this.isActionLocked = false;
   }
 
-  async enter() {
+  async enter(payload = {}) {
+    this.resolvedGameData = payload.resolvedGameData;
+    if (this.resolvedGameData) {
+      this.presentationOnly = true;
+      this._renderResolvedPresentation();
+      return;
+    }
+    this.presentationOnly = false;
     // 1. Create real BattleState from WaveManager
     const state = this.appShell.waveManager.createBattleStateForCurrentWave();
     this.engine = new BattleEngine(state);
@@ -29,6 +36,13 @@ export class BattleScreen extends BaseScreen {
 
     this._bindEngineEvents();
     this._render();
+  }
+
+  _renderResolvedPresentation() {
+    if (!this.topEl || !this.bottomEl) return;
+    const context = this.resolvedGameData.presentation;
+    this.topEl.innerHTML = `<div class="screen-view battle-top-view"><div class="battle-top-hud"><span class="battle-wave-pill">WAVE ${context.wave}</span><span class="battle-turn-pill">${context.biome.name}</span></div><div class="battler-row enemy-row"><div class="battler-status-plate"><div class="plate-name">${context.enemyPokemon.name} <span class="plate-lvl">Lv.${context.enemyPokemon.level}</span></div><div class="hp-subtext">${context.enemyPokemon.hp.current} / ${context.enemyPokemon.hp.maximum} HP · ${context.enemyPokemon.status || '—'} · ${context.enemyPokemon.assetStatus}</div></div></div><div class="battler-row player-row"><div class="battler-status-plate"><div class="plate-name">${context.playerPokemon.name} <span class="plate-lvl">Lv.${context.playerPokemon.level}</span></div><div class="hp-subtext">${context.playerPokemon.hp.current} / ${context.playerPokemon.hp.maximum} HP · ${context.playerPokemon.status || '—'}</div></div></div></div>`;
+    this.bottomEl.innerHTML = `<div class="screen-view battle-bottom-view"><div class="battle-dialogue-box"><div class="dialogue-text">${context.modeId} · ${context.mapNode.id} · $${context.money}</div></div><div class="moves-grid" id="moves_container">${context.commandMenu.map((id, index) => `<button class="game-move-btn" data-command="${id}" data-idx="${index}">${id.toUpperCase()}</button>`).join('')}</div><small>Presentation is bound to canonical run data; BattleEngine remains a prototype bridge.</small></div>`;
   }
 
   _bindEngineEvents() {
@@ -263,6 +277,7 @@ export class BattleScreen extends BaseScreen {
   }
 
   handleInput(gameInput) {
+    if (this.presentationOnly) return false;
     if (this.isActionLocked) return false;
 
     // Numerical move shortcuts 1-4

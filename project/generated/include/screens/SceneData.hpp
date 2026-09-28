@@ -38,7 +38,44 @@ enum class NodeType : uint8_t {
     Panel = 3,
     Button = 4,
     Group = 5,
-    Composition = 6
+    Composition = 6,
+    Shape = 7
+};
+
+enum class EffectType : uint8_t {
+    None = 0,
+    Opacity = 1,
+    Tint = 2,
+    Brightness = 3,
+    ColorOverlay = 4,
+    Fade = 5
+};
+
+struct SceneEffectData {
+    EffectType type;
+    bool enabled;
+    float opacity;
+    float intensity;
+    float factor;
+    uint32_t color;
+    uint8_t blendMode;
+};
+
+struct SceneShapeData {
+    uint8_t shapeType; // 0=Rect, 1=RoundedRect, 2=Line
+    uint32_t fillColor;
+    uint32_t strokeColor;
+    float strokeWidth;
+    float cornerRadius;
+};
+
+struct SceneTextData {
+    const char* text;
+    const char* font;
+    uint16_t fontSize;
+    uint8_t textAlign;
+    uint32_t color;
+    uint16_t lineHeight;
 };
 
 struct SceneKeyframe {
@@ -134,6 +171,10 @@ struct SceneNodeData {
     // BETA-UI-7: Production UX & Composition
     bool locked;
     SceneCompositionData composition;
+    // BETA-UI-8: Effects, Shape, Text
+    SceneEffectData effect;
+    SceneShapeData shape;
+    SceneTextData textData;
 };
 
 struct SceneDefinition {

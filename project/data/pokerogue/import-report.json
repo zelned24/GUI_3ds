@@ -1,0 +1,2310 @@
+{
+  "assetReferences": {
+    "pendingMetadataVerification": 1081,
+    "verified": 3
+  },
+  "catalogCounts": {
+    "abilities": 320,
+    "biomes": 35,
+    "forms": 609,
+    "items": 35,
+    "locales": 2704,
+    "modes": 5,
+    "moves": 708,
+    "routes": 66,
+    "species": 1084
+  },
+  "contentHash": "2d32a7b03cf1cdcc8655d50181ec01be3aaa363dbf077ecf47e8465c3b756072",
+  "deterministicReimport": true,
+  "provenance": [
+    {
+      "hash": "b49dda87104cd7dac84b4134a64a57cb51531db4147ceea109058276435e16da",
+      "repository": "pokerogue",
+      "revision": "8555c08c823b856cbec4eb99ca84ea52a955836d",
+      "sourcePath": "src/battle-scene.ts"
+    },
+    {
+      "hash": "2025107ab97d1fba0d01867912cb46eda52961aa66705d159f1546c8ff5078db",
+      "repository": "pokerogue",
+      "revision": "8555c08c823b856cbec4eb99ca84ea52a955836d",
+      "sourcePath": "src/battle.ts"
+    },
+    {
+      "hash": "040ccf2ca2e00a2111ef0acf54878ec67c45d98c831e35dda3e0bac52f1ee8e6",
+      "repository": "pokerogue",
+      "revision": "8555c08c823b856cbec4eb99ca84ea52a955836d",
+      "sourcePath": "src/data/abilities/init-abilities.ts"
+    },
+    {
+      "hash": "7c42ebb90ea76307fa95205054954799741748f4ab79a52e709a9882794fa4f4",
+      "repository": "pokerogue",
+      "revision": "8555c08c823b856cbec4eb99ca84ea52a955836d",
+      "sourcePath": "src/data/balance/biomes/abyss.ts"
+    },
+    {
+      "hash": "9386d65a79723cc71e0c815e4049f4e2e47e7e9779f7cb17a6f04c02de9244f9",
+      "repository": "pokerogue",
+      "revision": "8555c08c823b856cbec4eb99ca84ea52a955836d",
+      "sourcePath": "src/data/balance/biomes/badlands.ts"
+    },
+    {
+      "hash": "7e4b0a95954b303922b577d5e25ca3966d85231f86c1998650d8e7a5d258a26d",
+      "repository": "pokerogue",
+      "revision": "8555c08c823b856cbec4eb99ca84ea52a955836d",
+      "sourcePath": "src/data/balance/biomes/beach.ts"
+    },
+    {
+      "hash": "539e332042599bbca8946017e75803d0fd20a78e140f12968f2528830f06ab37",
+      "repository": "pokerogue",
+      "revision": "8555c08c823b856cbec4eb99ca84ea52a955836d",
+      "sourcePath": "src/data/balance/biomes/cave.ts"
+    },
+    {
+      "hash": "20e0b155034c9f8354543816d3d251279e9b2bd01c8c469da7b94a5b4f491bc6",
+      "repository": "pokerogue",
+      "revision": "8555c08c823b856cbec4eb99ca84ea52a955836d",
+      "sourcePath": "src/data/balance/biomes/construction-site.ts"
+    },
+    {
+      "hash": "e248fdcf5418cb3701667a5ea4a17ae838e539dea32e2d308e6264146268ba10",
+      "repository": "pokerogue",
+      "revision": "8555c08c823b856cbec4eb99ca84ea52a955836d",
+      "sourcePath": "src/data/balance/biomes/desert.ts"
+    },
+    {
+      "hash": "30e86ca99fcc3bd707d51b8b625569925e85c571a53a2b264c1e9c9ab2cab654",
+      "repository": "pokerogue",
+      "revision": "8555c08c823b856cbec4eb99ca84ea52a955836d",
+      "sourcePath": "src/data/balance/biomes/dojo.ts"
+    },
+    {
+      "hash": "c2220f2fbefa4fc0c01cb72a1352fa68d0376ff2528536b0bbdaa14635e5f978",
+      "repository": "pokerogue",
+      "revision": "8555c08c823b856cbec4eb99ca84ea52a955836d",
+      "sourcePath": "src/data/balance/biomes/end.ts"
+    },
+    {
+      "hash": "87fa3e35e1932abb745e803b23c5b3d2b8018866286855a08c374b611fb37449",
+      "repository": "pokerogue",
+      "revision": "8555c08c823b856cbec4eb99ca84ea52a955836d",
+      "sourcePath": "src/data/balance/biomes/factory.ts"
+    },
+    {
+      "hash": "98517c719e78ec22d130c41aa64f95800c6e03c212445156a032c1541413bca1",
+      "repository": "pokerogue",
+      "revision": "8555c08c823b856cbec4eb99ca84ea52a955836d",
+      "sourcePath": "src/data/balance/biomes/fairy-cave.ts"
+    },
+    {
+      "hash": "c3e2f3d1fe7e231f47d5a245daf31b74dd5549a79350aeaae3c973b6507c6ad5",
+      "repository": "pokerogue",
+      "revision": "8555c08c823b856cbec4eb99ca84ea52a955836d",
+      "sourcePath": "src/data/balance/biomes/forest.ts"
+    },
+    {
+      "hash": "aa3d30647b617712f55018baedd340f58a6bcf46180a15ad156520ca09e20d97",
+      "repository": "pokerogue",
+      "revision": "8555c08c823b856cbec4eb99ca84ea52a955836d",
+      "sourcePath": "src/data/balance/biomes/grass.ts"
+    },
+    {
+      "hash": "600b86ac851a0261f342e2256ed4f51cd326077a64ddcd14f0e9e5f4cf18617f",
+      "repository": "pokerogue",
+      "revision": "8555c08c823b856cbec4eb99ca84ea52a955836d",
+      "sourcePath": "src/data/balance/biomes/graveyard.ts"
+    },
+    {
+      "hash": "24acccc2c3f347b8a1b577cb1905051a0132cb333747c65358507b4323194b76",
+      "repository": "pokerogue",
+      "revision": "8555c08c823b856cbec4eb99ca84ea52a955836d",
+      "sourcePath": "src/data/balance/biomes/ice-cave.ts"
+    },
+    {
+      "hash": "f788b946dd3d17e371026dfa3f30afbad3ba9a643734686a6109c48b985deb20",
+      "repository": "pokerogue",
+      "revision": "8555c08c823b856cbec4eb99ca84ea52a955836d",
+      "sourcePath": "src/data/balance/biomes/island.ts"
+    },
+    {
+      "hash": "d9e61f25f4b1c078243744375ead9aed7d68eeb9369ed9f90d7bdfa1af7829b9",
+      "repository": "pokerogue",
+      "revision": "8555c08c823b856cbec4eb99ca84ea52a955836d",
+      "sourcePath": "src/data/balance/biomes/jungle.ts"
+    },
+    {
+      "hash": "e83dd6e9edde13a4994ab414bd4f95093b7f6a86fa2b08d9509e208b874cbd2b",
+      "repository": "pokerogue",
+      "revision": "8555c08c823b856cbec4eb99ca84ea52a955836d",
+      "sourcePath": "src/data/balance/biomes/laboratory.ts"
+    },
+    {
+      "hash": "3b661f0377b68659d1f16ed82ba478b4b1484090307779c0b11d858823f5e8e7",
+      "repository": "pokerogue",
+      "revision": "8555c08c823b856cbec4eb99ca84ea52a955836d",
+      "sourcePath": "src/data/balance/biomes/lake.ts"
+    },
+    {
+      "hash": "4302e0c027d5ecb195c73d2d1399c9bcb31767bddc2f879dc1640416c39a2666",
+      "repository": "pokerogue",
+      "revision": "8555c08c823b856cbec4eb99ca84ea52a955836d",
+      "sourcePath": "src/data/balance/biomes/meadow.ts"
+    },
+    {
+      "hash": "525ebcdd883e9c7cf8ff0212471681a671c729bfe098379af6e4e3f4b0831f5f",
+      "repository": "pokerogue",
+      "revision": "8555c08c823b856cbec4eb99ca84ea52a955836d",
+      "sourcePath": "src/data/balance/biomes/metropolis.ts"
+    },
+    {
+      "hash": "6c9fbd749249c9793a65aed9c9a91e66b00ca636efc1bc88215b5d5bb4d57201",
+      "repository": "pokerogue",
+      "revision": "8555c08c823b856cbec4eb99ca84ea52a955836d",
+      "sourcePath": "src/data/balance/biomes/mountain.ts"
+    },
+    {
+      "hash": "ec017a84742eec81581bfdf97ddff2df760bb52a6cd80a4009e5751eff1f0761",
+      "repository": "pokerogue",
+      "revision": "8555c08c823b856cbec4eb99ca84ea52a955836d",
+      "sourcePath": "src/data/balance/biomes/plains.ts"
+    },
+    {
+      "hash": "761d5873d48c48f056ab0eca5496ee83036f6560137aaec9c63f3a13122e087c",
+      "repository": "pokerogue",
+      "revision": "8555c08c823b856cbec4eb99ca84ea52a955836d",
+      "sourcePath": "src/data/balance/biomes/power-plant.ts"
+    },
+    {
+      "hash": "879c385eee2a24ff6bd2b93dfac17eb10557d723028b6202b91b84f23800ad69",
+      "repository": "pokerogue",
+      "revision": "8555c08c823b856cbec4eb99ca84ea52a955836d",
+      "sourcePath": "src/data/balance/biomes/ruins.ts"
+    },
+    {
+      "hash": "755b68b32dc43838b63e7cca577cd58add3d18fbd246aef5f60ed6efa35d104b",
+      "repository": "pokerogue",
+      "revision": "8555c08c823b856cbec4eb99ca84ea52a955836d",
+      "sourcePath": "src/data/balance/biomes/sea.ts"
+    },
+    {
+      "hash": "a657b9ec83f802d64e9499eeed9f76a9278c5881e52dc8fb12483979949f2abe",
+      "repository": "pokerogue",
+      "revision": "8555c08c823b856cbec4eb99ca84ea52a955836d",
+      "sourcePath": "src/data/balance/biomes/seabed.ts"
+    },
+    {
+      "hash": "8688d9c7c4bda37d2f40e0ef79f317b50c30289582809484ddc00983342e9d44",
+      "repository": "pokerogue",
+      "revision": "8555c08c823b856cbec4eb99ca84ea52a955836d",
+      "sourcePath": "src/data/balance/biomes/slum.ts"
+    },
+    {
+      "hash": "06cf93e6de0ebb10ce7daabaddcd38131c371652e3be5c849ad8ad6acaa7b8f3",
+      "repository": "pokerogue",
+      "revision": "8555c08c823b856cbec4eb99ca84ea52a955836d",
+      "sourcePath": "src/data/balance/biomes/snowy-forest.ts"
+    },
+    {
+      "hash": "342694c789c03cd135e30f8ce85e5a558157c6e0824ef1d24cd1dbe879a7b284",
+      "repository": "pokerogue",
+      "revision": "8555c08c823b856cbec4eb99ca84ea52a955836d",
+      "sourcePath": "src/data/balance/biomes/space.ts"
+    },
+    {
+      "hash": "1eeecb6663e5d0a736e4a5d9acd65a53a41d217241b5f066dd4bb5bfe4d6601e",
+      "repository": "pokerogue",
+      "revision": "8555c08c823b856cbec4eb99ca84ea52a955836d",
+      "sourcePath": "src/data/balance/biomes/swamp.ts"
+    },
+    {
+      "hash": "cc7137e51b277938e54f1ac15826b06a3684d3fb5d11be72ab94c0a188a02bd7",
+      "repository": "pokerogue",
+      "revision": "8555c08c823b856cbec4eb99ca84ea52a955836d",
+      "sourcePath": "src/data/balance/biomes/tall-grass.ts"
+    },
+    {
+      "hash": "ad3fecd3636dd1ac872ee7dae3d31416a164e4cf8f1a50e655e70b8b97d9eaed",
+      "repository": "pokerogue",
+      "revision": "8555c08c823b856cbec4eb99ca84ea52a955836d",
+      "sourcePath": "src/data/balance/biomes/temple.ts"
+    },
+    {
+      "hash": "2ad9355788e7a31986788b6b372ac3b8f0934906566356fced3683eef416a1fd",
+      "repository": "pokerogue",
+      "revision": "8555c08c823b856cbec4eb99ca84ea52a955836d",
+      "sourcePath": "src/data/balance/biomes/town.ts"
+    },
+    {
+      "hash": "e00d7fb46c87732f776d177e8d45f363a69bb043a93351a8a76da5974abee771",
+      "repository": "pokerogue",
+      "revision": "8555c08c823b856cbec4eb99ca84ea52a955836d",
+      "sourcePath": "src/data/balance/biomes/volcano.ts"
+    },
+    {
+      "hash": "eb2805709ae20c68aadd988b41667e447881afef280c7f196dd5bfa69ddb6b33",
+      "repository": "pokerogue",
+      "revision": "8555c08c823b856cbec4eb99ca84ea52a955836d",
+      "sourcePath": "src/data/balance/biomes/wasteland.ts"
+    },
+    {
+      "hash": "c0b5edc7b1eeb528e5d4b91dadf7e3536f760f2ea4a281a775c42adf3f7520e5",
+      "repository": "pokerogue",
+      "revision": "8555c08c823b856cbec4eb99ca84ea52a955836d",
+      "sourcePath": "src/data/balance/species/generation-01.ts"
+    },
+    {
+      "hash": "ee177e8329b5381804e474cdd02f60db1bd2d2a58ef6cfa97ce7666c74e2f406",
+      "repository": "pokerogue",
+      "revision": "8555c08c823b856cbec4eb99ca84ea52a955836d",
+      "sourcePath": "src/data/balance/species/generation-02.ts"
+    },
+    {
+      "hash": "c622d1fb7d39490fbbd29c9a599eecd6321ab5051f579723c8b54d74faae2ec6",
+      "repository": "pokerogue",
+      "revision": "8555c08c823b856cbec4eb99ca84ea52a955836d",
+      "sourcePath": "src/data/balance/species/generation-03.ts"
+    },
+    {
+      "hash": "28842b3c4f8d705939aae7b9cf0d5a01035e64a16c66ac58d0279c1115be35f8",
+      "repository": "pokerogue",
+      "revision": "8555c08c823b856cbec4eb99ca84ea52a955836d",
+      "sourcePath": "src/data/balance/species/generation-04.ts"
+    },
+    {
+      "hash": "39d9399736c5dce3256013e487fc128a36810b1b8e9f368db35b758ca40b074c",
+      "repository": "pokerogue",
+      "revision": "8555c08c823b856cbec4eb99ca84ea52a955836d",
+      "sourcePath": "src/data/balance/species/generation-05.ts"
+    },
+    {
+      "hash": "20775a70e01beb42c30564408dfad3fa824ec04b5e93a29872b5a85a4d175ff8",
+      "repository": "pokerogue",
+      "revision": "8555c08c823b856cbec4eb99ca84ea52a955836d",
+      "sourcePath": "src/data/balance/species/generation-06.ts"
+    },
+    {
+      "hash": "20c2cc14ba5c7d5242d19cd52540d1923edf4646f1bbcd61c50f4a2b6a75885b",
+      "repository": "pokerogue",
+      "revision": "8555c08c823b856cbec4eb99ca84ea52a955836d",
+      "sourcePath": "src/data/balance/species/generation-07.ts"
+    },
+    {
+      "hash": "f73cbe9224968516899b8b76d1d46100b8e48c7298b76a9afe922a3e7416fb97",
+      "repository": "pokerogue",
+      "revision": "8555c08c823b856cbec4eb99ca84ea52a955836d",
+      "sourcePath": "src/data/balance/species/generation-08.ts"
+    },
+    {
+      "hash": "586299b1523e3d926b9a9dff270929076b5471cfa3924c8f518e087ee4ccb096",
+      "repository": "pokerogue",
+      "revision": "8555c08c823b856cbec4eb99ca84ea52a955836d",
+      "sourcePath": "src/data/balance/species/generation-09.ts"
+    },
+    {
+      "hash": "012df47701de494d4140e97cd4804b25cc7472fcf61805aa71aaa21fe7b59475",
+      "repository": "pokerogue",
+      "revision": "8555c08c823b856cbec4eb99ca84ea52a955836d",
+      "sourcePath": "src/data/moves/move.ts"
+    },
+    {
+      "hash": "5f530f1ff38339a649082afdd434bdd6c7a2ad8618b7901a248b86a273bcd183",
+      "repository": "pokerogue",
+      "revision": "8555c08c823b856cbec4eb99ca84ea52a955836d",
+      "sourcePath": "src/enums/ability-id.ts"
+    },
+    {
+      "hash": "b57120b172a7ed05bb6c8fe63457e004da6c47ef57fd3dee198f4ef71c2eb95f",
+      "repository": "pokerogue",
+      "revision": "8555c08c823b856cbec4eb99ca84ea52a955836d",
+      "sourcePath": "src/enums/biome-id.ts"
+    },
+    {
+      "hash": "9ab3ac57198934f8a208292f29ca37eee6ca118cea338f350110fa05b21f8d47",
+      "repository": "pokerogue",
+      "revision": "8555c08c823b856cbec4eb99ca84ea52a955836d",
+      "sourcePath": "src/enums/game-modes.ts"
+    },
+    {
+      "hash": "9f9bc270271d959fb05299c6fd206ff82f5c2a171994fe6dfaced94e96c09a4b",
+      "repository": "pokerogue",
+      "revision": "8555c08c823b856cbec4eb99ca84ea52a955836d",
+      "sourcePath": "src/enums/move-id.ts"
+    },
+    {
+      "hash": "11fe8a098b329b18422a9728f70ed160bedfc1f9a1ccbc8757bef825f7f0fd60",
+      "repository": "pokerogue",
+      "revision": "8555c08c823b856cbec4eb99ca84ea52a955836d",
+      "sourcePath": "src/enums/pokemon-type.ts"
+    },
+    {
+      "hash": "9daa85c28382f967eb700f52cf3bed1b90aaa6b222ff85fa9206fc5a85724790",
+      "repository": "pokerogue",
+      "revision": "8555c08c823b856cbec4eb99ca84ea52a955836d",
+      "sourcePath": "src/enums/species-id.ts"
+    },
+    {
+      "hash": "ce2903ab6315c8b9a59fa5d34c13b920aed5b0e3abfb6cdc8e72206b9a2dcac8",
+      "repository": "pokerogue",
+      "revision": "8555c08c823b856cbec4eb99ca84ea52a955836d",
+      "sourcePath": "src/game-mode.ts"
+    },
+    {
+      "hash": "595875dfa584ecdfc02de6dd994c8154656dda7f2805d1855c3af81f04364c12",
+      "repository": "pokerogue",
+      "revision": "8555c08c823b856cbec4eb99ca84ea52a955836d",
+      "sourcePath": "src/init/init-biomes.ts"
+    },
+    {
+      "hash": "2d2bcbf71adec1fc80fc6a097e47118f5c9da87a22cbef4723141bbb17fd7968",
+      "repository": "pokerogue",
+      "revision": "8555c08c823b856cbec4eb99ca84ea52a955836d",
+      "sourcePath": "src/modifier/modifier-type.ts"
+    },
+    {
+      "hash": "9ed9108891548f2903c4e25db1ded74ec9f7c08828e5c38c816fcc0d3d9fa887",
+      "repository": "pokerogue-assets",
+      "revision": "056a1f408f26a3be4fef243f7462cb43608c7928",
+      "sourcePath": "images/pokemon/1.json"
+    },
+    {
+      "hash": "9975f3aaa34403498091f67d507a471bc9ec4558c50b6d2572d3357ec0db6bbe",
+      "repository": "pokerogue-assets",
+      "revision": "056a1f408f26a3be4fef243f7462cb43608c7928",
+      "sourcePath": "images/pokemon/25.json"
+    },
+    {
+      "hash": "1c30e0bbff1a6d8ce189411fd05e620693c33fc82d6fadd5b6476c909093162b",
+      "repository": "pokerogue-assets",
+      "revision": "056a1f408f26a3be4fef243f7462cb43608c7928",
+      "sourcePath": "images/pokemon/6.json"
+    },
+    {
+      "hash": "5270d0a554765c2c27eafa2323104d6e6d15f380fa5eb4d66e2d57c33b627d06",
+      "repository": "pokerogue-locales",
+      "revision": "23aea1cb0da5a0b15b836f3c243791591cc42303",
+      "sourcePath": "en/ability.json"
+    },
+    {
+      "hash": "a54567b94c4a92630273d3c8d07dea192658a9700367d6dbb926ccc807cf2b13",
+      "repository": "pokerogue-locales",
+      "revision": "23aea1cb0da5a0b15b836f3c243791591cc42303",
+      "sourcePath": "en/biomes.json"
+    },
+    {
+      "hash": "12adb58c76b114f1655a314dca99a708f0f4c7f9c659cc283fc3fff20ce85ea7",
+      "repository": "pokerogue-locales",
+      "revision": "23aea1cb0da5a0b15b836f3c243791591cc42303",
+      "sourcePath": "en/game-mode.json"
+    },
+    {
+      "hash": "0359e84164848b7bbf3908311a99be7d9b0f779c12807ac993cd9f62b177689a",
+      "repository": "pokerogue-locales",
+      "revision": "23aea1cb0da5a0b15b836f3c243791591cc42303",
+      "sourcePath": "en/modifier.json"
+    },
+    {
+      "hash": "138747ae65d18b8c302a65e806ec62ddcf56da33d9bea77f242d43f2c8ec2279",
+      "repository": "pokerogue-locales",
+      "revision": "23aea1cb0da5a0b15b836f3c243791591cc42303",
+      "sourcePath": "en/move.json"
+    },
+    {
+      "hash": "81801989d5fb1d136b85d5840959e94733991b99a9cc66d43214c8f40c09d115",
+      "repository": "pokerogue-locales",
+      "revision": "23aea1cb0da5a0b15b836f3c243791591cc42303",
+      "sourcePath": "en/pokemon-form.json"
+    },
+    {
+      "hash": "238b5b925fcbaeae69fe507e5598630304565597e8ec8c0f9cf15a3341b7fcd5",
+      "repository": "pokerogue-locales",
+      "revision": "23aea1cb0da5a0b15b836f3c243791591cc42303",
+      "sourcePath": "en/pokemon.json"
+    }
+  ],
+  "schemaVersion": "1.0.0",
+  "skippedRecords": [
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "g_max_wildfire",
+      "reason": "Upstream constructor symbol has no pinned MoveId enum entry; raw source remains represented in report."
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "g_max_befuddle",
+      "reason": "Upstream constructor symbol has no pinned MoveId enum entry; raw source remains represented in report."
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "g_max_volt_crash",
+      "reason": "Upstream constructor symbol has no pinned MoveId enum entry; raw source remains represented in report."
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "g_max_gold_rush",
+      "reason": "Upstream constructor symbol has no pinned MoveId enum entry; raw source remains represented in report."
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "g_max_chi_strike",
+      "reason": "Upstream constructor symbol has no pinned MoveId enum entry; raw source remains represented in report."
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "g_max_terror",
+      "reason": "Upstream constructor symbol has no pinned MoveId enum entry; raw source remains represented in report."
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "g_max_resonance",
+      "reason": "Upstream constructor symbol has no pinned MoveId enum entry; raw source remains represented in report."
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "g_max_cuddle",
+      "reason": "Upstream constructor symbol has no pinned MoveId enum entry; raw source remains represented in report."
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "g_max_replenish",
+      "reason": "Upstream constructor symbol has no pinned MoveId enum entry; raw source remains represented in report."
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "g_max_malodor",
+      "reason": "Upstream constructor symbol has no pinned MoveId enum entry; raw source remains represented in report."
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "g_max_stonesurge",
+      "reason": "Upstream constructor symbol has no pinned MoveId enum entry; raw source remains represented in report."
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "g_max_wind_rage",
+      "reason": "Upstream constructor symbol has no pinned MoveId enum entry; raw source remains represented in report."
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "g_max_stun_shock",
+      "reason": "Upstream constructor symbol has no pinned MoveId enum entry; raw source remains represented in report."
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "g_max_finale",
+      "reason": "Upstream constructor symbol has no pinned MoveId enum entry; raw source remains represented in report."
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "g_max_depletion",
+      "reason": "Upstream constructor symbol has no pinned MoveId enum entry; raw source remains represented in report."
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "g_max_gravitas",
+      "reason": "Upstream constructor symbol has no pinned MoveId enum entry; raw source remains represented in report."
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "g_max_volcalith",
+      "reason": "Upstream constructor symbol has no pinned MoveId enum entry; raw source remains represented in report."
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "g_max_sandblast",
+      "reason": "Upstream constructor symbol has no pinned MoveId enum entry; raw source remains represented in report."
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "g_max_snooze",
+      "reason": "Upstream constructor symbol has no pinned MoveId enum entry; raw source remains represented in report."
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "g_max_tartness",
+      "reason": "Upstream constructor symbol has no pinned MoveId enum entry; raw source remains represented in report."
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "g_max_sweetness",
+      "reason": "Upstream constructor symbol has no pinned MoveId enum entry; raw source remains represented in report."
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "g_max_smite",
+      "reason": "Upstream constructor symbol has no pinned MoveId enum entry; raw source remains represented in report."
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "g_max_steelsurge",
+      "reason": "Upstream constructor symbol has no pinned MoveId enum entry; raw source remains represented in report."
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "g_max_meltdown",
+      "reason": "Upstream constructor symbol has no pinned MoveId enum entry; raw source remains represented in report."
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "g_max_foam_burst",
+      "reason": "Upstream constructor symbol has no pinned MoveId enum entry; raw source remains represented in report."
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "g_max_centiferno",
+      "reason": "Upstream constructor symbol has no pinned MoveId enum entry; raw source remains represented in report."
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "g_max_vine_lash",
+      "reason": "Upstream constructor symbol has no pinned MoveId enum entry; raw source remains represented in report."
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "g_max_cannonade",
+      "reason": "Upstream constructor symbol has no pinned MoveId enum entry; raw source remains represented in report."
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "g_max_drum_solo",
+      "reason": "Upstream constructor symbol has no pinned MoveId enum entry; raw source remains represented in report."
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "g_max_fireball",
+      "reason": "Upstream constructor symbol has no pinned MoveId enum entry; raw source remains represented in report."
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "g_max_hydrosnipe",
+      "reason": "Upstream constructor symbol has no pinned MoveId enum entry; raw source remains represented in report."
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "g_max_one_blow",
+      "reason": "Upstream constructor symbol has no pinned MoveId enum entry; raw source remains represented in report."
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "g_max_rapid_flow",
+      "reason": "Upstream constructor symbol has no pinned MoveId enum entry; raw source remains represented in report."
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "NONE",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 0
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "RAZOR_WIND",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 13
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "SWORDS_DANCE",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 14
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "WHIRLWIND",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 18
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "FLY",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 19
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "ROAR",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 46
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "MIST",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 54
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "GROWTH",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 74
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "SOLAR_BEAM",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 76
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "DIG",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 91
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "MEDITATE",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 96
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "AGILITY",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 97
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "TELEPORT",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 100
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "MIMIC",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 102
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "DOUBLE_TEAM",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 104
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "RECOVER",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 105
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "HARDEN",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 106
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "MINIMIZE",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 107
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "WITHDRAW",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 110
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "DEFENSE_CURL",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 111
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "BARRIER",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 112
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "LIGHT_SCREEN",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 113
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "HAZE",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 114
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "REFLECT",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 115
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "FOCUS_ENERGY",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 116
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "METRONOME",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 118
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "MIRROR_MOVE",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 119
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "SKULL_BASH",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 130
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "AMNESIA",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 133
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "SOFT_BOILED",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 135
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "SKY_ATTACK",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 143
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "TRANSFORM",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 144
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "SPLASH",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 150
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "ACID_ARMOR",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 151
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "REST",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 156
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "SHARPEN",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 159
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "CONVERSION",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 160
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "SUBSTITUTE",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 164
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "SKETCH",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 166
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "SPIDER_WEB",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 169
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "MIND_READER",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 170
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "CURSE",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 174
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "CONVERSION_2",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 176
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "PROTECT",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 182
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "BELLY_DRUM",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 187
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "SPIKES",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 191
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "FORESIGHT",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 193
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "DESTINY_BOND",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 194
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "PERISH_SONG",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 195
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "DETECT",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 197
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "LOCK_ON",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 199
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "SANDSTORM",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 201
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "ENDURE",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 203
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "MILK_DRINK",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 208
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "MEAN_LOOK",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 212
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "SLEEP_TALK",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 214
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "HEAL_BELL",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 215
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "SAFEGUARD",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 219
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "PAIN_SPLIT",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 220
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "BATON_PASS",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 226
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "MORNING_SUN",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 234
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "SYNTHESIS",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 235
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "MOONLIGHT",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 236
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "RAIN_DANCE",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 240
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "SUNNY_DAY",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 241
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "PSYCH_UP",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 244
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "STOCKPILE",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 254
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "SWALLOW",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 256
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "HAIL",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 258
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "FOLLOW_ME",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 266
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "NATURE_POWER",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 267
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "CHARGE",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 268
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "HELPING_HAND",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 270
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "ROLE_PLAY",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 272
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "WISH",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 273
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "ASSIST",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 274
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "INGRAIN",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 275
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "MAGIC_COAT",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 277
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "RECYCLE",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 278
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "YAWN",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 281
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "SKILL_SWAP",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 285
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "REFRESH",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 287
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "GRUDGE",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 288
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "SNATCH",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 289
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "DIVE",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 291
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "CAMOUFLAGE",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 293
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "TAIL_GLOW",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 294
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "MUD_SPORT",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 300
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "SLACK_OFF",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 303
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "AROMATHERAPY",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 312
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "ODOR_SLEUTH",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 316
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "COSMIC_POWER",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 322
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "IRON_DEFENSE",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 334
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "BLOCK",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 335
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "HOWL",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 336
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "BULK_UP",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 339
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "BOUNCE",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 340
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "WATER_SPORT",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 346
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "CALM_MIND",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 347
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "DRAGON_DANCE",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 349
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "ROOST",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 355
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "GRAVITY",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 356
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "MIRACLE_EYE",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 357
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "HEALING_WISH",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 361
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "TAILWIND",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 366
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "ACUPRESSURE",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 367
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "POWER_TRICK",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 379
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "LUCKY_CHANT",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 381
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "ME_FIRST",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 382
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "COPYCAT",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 383
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "POWER_SWAP",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 384
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "GUARD_SWAP",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 385
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "TOXIC_SPIKES",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 390
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "HEART_SWAP",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 391
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "AQUA_RING",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 392
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "MAGNET_RISE",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 393
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "ROCK_POLISH",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 397
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "NASTY_PLOT",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 417
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "DEFOG",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 432
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "TRICK_ROOM",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 433
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "STEALTH_ROCK",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 446
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "DEFEND_ORDER",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 455
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "HEAL_ORDER",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 456
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "LUNAR_DANCE",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 461
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "SHADOW_FORCE",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 467
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "HONE_CLAWS",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 468
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "WIDE_GUARD",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 469
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "GUARD_SPLIT",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 470
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "POWER_SPLIT",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 471
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "WONDER_ROOM",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 472
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "AUTOTOMIZE",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 475
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "RAGE_POWDER",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 476
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "TELEKINESIS",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 477
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "MAGIC_ROOM",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 478
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "QUIVER_DANCE",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 483
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "COIL",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 489
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "AFTER_YOU",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 495
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "QUICK_GUARD",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 501
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "ALLY_SWITCH",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 502
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "SHELL_SMASH",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 504
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "HEAL_PULSE",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 505
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "SKY_DROP",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 507
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "SHIFT_GEAR",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 508
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "REFLECT_TYPE",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 513
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "BESTOW",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 516
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "WORK_UP",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 526
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "COTTON_GUARD",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 538
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "FREEZE_SHOCK",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 553
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "ICE_BURN",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 554
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "MAT_BLOCK",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 561
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "ROTOTILLER",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 563
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "STICKY_WEB",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 564
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "PHANTOM_FORCE",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 566
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "ION_DELUGE",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 569
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "TOPSY_TURVY",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 576
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "CRAFTY_SHIELD",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 578
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "FLOWER_SHIELD",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 579
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "GRASSY_TERRAIN",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 580
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "MISTY_TERRAIN",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 581
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "ELECTRIFY",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 582
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "FAIRY_LOCK",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 587
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "KINGS_SHIELD",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 588
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "PLAY_NICE",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 589
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "CONFIDE",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 590
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "SPIKY_SHIELD",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 596
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "AROMATIC_MIST",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 597
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "GEOMANCY",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 601
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "MAGNETIC_FLUX",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 602
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "HAPPY_HOUR",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 603
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "ELECTRIC_TERRAIN",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 604
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "CELEBRATE",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 606
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "HOLD_HANDS",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 607
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "SHORE_UP",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 659
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "BANEFUL_BUNKER",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 661
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "FLORAL_HEALING",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 666
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "SOLAR_BLADE",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 669
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "SPOTLIGHT",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 671
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "LASER_FOCUS",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 673
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "GEAR_UP",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 674
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "PSYCHIC_TERRAIN",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 678
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "SPEED_SWAP",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 683
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "PURIFY",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 685
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "INSTRUCT",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 689
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "AURORA_VEIL",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 694
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "EXTREME_EVOBOOST",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 702
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "TEARFUL_LOOK",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 715
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "MAX_GUARD",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 743
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "STUFF_CHEEKS",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 747
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "NO_RETREAT",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 748
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "TEATIME",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 752
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "CLANGOROUS_SOUL",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 775
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "DECORATE",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 777
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "LIFE_DEW",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 791
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "OBSTRUCT",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 792
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "METEOR_BEAM",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 800
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "COACHING",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 811
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "JUNGLE_HEALING",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 816
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "POWER_SHIFT",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 829
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "VICTORY_DANCE",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 837
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "SHELTER",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 842
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "LUNAR_BLESSING",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 849
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "TAKE_HEART",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 850
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "SILK_TRAP",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 852
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "SPICY_EXTRACT",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 858
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "REVIVAL_BLESSING",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 863
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "FILLET_AWAY",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 868
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "SHED_TAIL",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 880
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "CHILLY_RECEPTION",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 881
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "TIDY_UP",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 882
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "SNOWSCAPE",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 883
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "ELECTRO_SHOT",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 905
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "BURNING_BULWARK",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 908
+    },
+    {
+      "classification": "NOT_YET_SUPPORTED_BY_GUI_3DS",
+      "domain": "move",
+      "id": "DRAGON_CHEER",
+      "reason": "No supported declarative constructor shape was found; enum identity remains preserved.",
+      "upstreamId": 913
+    }
+  ],
+  "sourceRevisions": {
+    "assets": "056a1f408f26a3be4fef243f7462cb43608c7928",
+    "locales": "23aea1cb0da5a0b15b836f3c243791591cc42303",
+    "pokerogue": "8555c08c823b856cbec4eb99ca84ea52a955836d"
+  },
+  "unknownFields": {
+    "abilityAttributeSemantics": "preserved raw; not interpreted",
+    "modifierEffectSemantics": "preserved raw; not interpreted",
+    "observedSourceFieldNames": [
+      "Custom",
+      "DEEP_SEA_SCALE",
+      "DEEP_SEA_TOOTH",
+      "LIGHT_BALL",
+      "METAL_POWDER",
+      "NB",
+      "N_LUNARIZER",
+      "N_SOLARIZER",
+      "PARALYSIS",
+      "QUICK_POWDER",
+      "THICK_CLUB",
+      "TODO",
+      "Type",
+      "ULTRANECROZIUM_Z",
+      "_move",
+      "_party",
+      "_pokemon",
+      "ability1",
+      "ability2",
+      "abilityHidden",
+      "abilityTriggers",
+      "accuracyAmount",
+      "amount",
+      "amped",
+      "aqua",
+      "args",
+      "attack",
+      "baseAtk",
+      "baseDef",
+      "baseExp",
+      "baseFriendship",
+      "baseHp",
+      "baseSpatk",
+      "baseSpd",
+      "baseSpdef",
+      "baseTotal",
+      "battleCount",
+      "berryType",
+      "biome",
+      "black",
+      "blaze",
+      "boostPercent",
+      "canChangeForm",
+      "catchRate",
+      "category",
+      "chancePercent",
+      "combat",
+      "condition",
+      "conditions",
+      "cosplay",
+      "count",
+      "crowned",
+      "defense",
+      "descriptionKey",
+      "dusk",
+      "effect",
+      "eggTier",
+      "evoDelay",
+      "evoFormKey",
+      "evolutionItem",
+      "evolutions",
+      "fan",
+      "female",
+      "flag",
+      "formChangeItem",
+      "formChanges",
+      "formIndex",
+      "formKey",
+      "formLevelMoves",
+      "formName",
+      "formSpriteKey",
+      "formTms",
+      "forms",
+      "frost",
+      "genTypeFunc",
+      "gender",
+      "genderDiffs",
+      "generation",
+      "growthRate",
+      "healStatus",
+      "heat",
+      "height",
+      "https",
+      "ice",
+      "iconImage",
+      "id",
+      "isRareFormChangeItem",
+      "isStarterSelectable",
+      "isUnobtainable",
+      "item",
+      "itemKey",
+      "items",
+      "key",
+      "keys",
+      "land",
+      "legendary",
+      "length",
+      "level",
+      "levelMoves",
+      "localeKey",
+      "lowkey",
+      "male",
+      "malePercent",
+      "maxBattles",
+      "midday",
+      "midnight",
+      "modifierCount",
+      "modifierType",
+      "moneyAmount",
+      "moneyMultiplier",
+      "moneyMultiplierDescriptorKey",
+      "move",
+      "moveId",
+      "moveName",
+      "moveSelectFilter",
+      "moveType",
+      "mow",
+      "multiplier",
+      "mythical",
+      "nameKey",
+      "nature",
+      "natureName",
+      "newModifierFunc",
+      "normal",
+      "partner",
+      "party",
+      "passives",
+      "pkmnType",
+      "plant",
+      "playerFaints",
+      "pokeballAmount",
+      "pokeballName",
+      "pokeballType",
+      "pokemon",
+      "pokemonName",
+      "pokemonNameWithAffix",
+      "preFormKey",
+      "quantityKey",
+      "quiet",
+      "randStat",
+      "rare",
+      "restorePercent",
+      "restorePoints",
+      "returnOriginalTypesIfStellar",
+      "sandy",
+      "selectFilter",
+      "shadow",
+      "sky",
+      "species",
+      "speciesCaught",
+      "speciesId",
+      "speed",
+      "stages",
+      "starter",
+      "starterCost",
+      "stat",
+      "statModifier",
+      "statName",
+      "stats",
+      "statusEffect",
+      "subLegendary",
+      "teraType",
+      "tier",
+      "time",
+      "tms",
+      "trash",
+      "trigger",
+      "type1",
+      "type2",
+      "types",
+      "ultra",
+      "unbound",
+      "value",
+      "values",
+      "voucherType",
+      "voucherTypeName",
+      "wash",
+      "weather",
+      "weight",
+      "weights",
+      "white",
+      "with"
+    ],
+    "preservedRawRecordCount": 2756
+  },
+  "warnings": []
+}

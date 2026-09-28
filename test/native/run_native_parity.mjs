@@ -27,6 +27,34 @@ const nodeA = ComponentRegistry.create('Image', {
 });
 scene.addNode(nodeA);
 
+const nodeText = ComponentRegistry.create('Text', {
+  id: 'text_parity',
+  name: 'Text Parity',
+  screen: 'top',
+  x: 20,
+  y: 20,
+  width: 200,
+  height: 30,
+  properties: { text: 'Parity Test', fontSize: 14 }
+});
+scene.addNode(nodeText);
+
+const nodeShape = ComponentRegistry.create('Shape', {
+  id: 'shape_parity',
+  name: 'Shape Parity',
+  screen: 'bottom',
+  x: 10,
+  y: 10,
+  width: 150,
+  height: 80,
+  properties: { shapeType: 'RoundedRectangle', cornerRadius: 5 }
+});
+nodeShape.addEffect({
+  type: 'Tint',
+  parameters: { color: '#ff0000', intensity: 0.5 }
+});
+scene.addNode(nodeShape);
+
 const trackX = new AnimationTrack({ targetNodeId: 'node_parity', propertyPath: 'transform.x' });
 trackX.addKeyframe(0, 0, 'linear');
 trackX.addKeyframe(60, 300, 'linear');

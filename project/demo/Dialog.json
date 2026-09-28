@@ -1,0 +1,95 @@
+{
+  "schemaVersion": 5,
+  "id": "Dialog",
+  "name": "Dialog Narrative Demo",
+  "fps": 60,
+  "durationFrames": 60,
+  "currentFrame": 0,
+  "top": {
+    "width": 400,
+    "height": 240,
+    "backgroundColor": "#10121a"
+  },
+  "bottom": {
+    "width": 320,
+    "height": 240,
+    "backgroundColor": "#181b24"
+  },
+  "nodes": [
+    {
+      "id": "dlg_speaker_name",
+      "name": "Speaker Name",
+      "type": "Text",
+      "screen": "top",
+      "x": 24,
+      "y": 140,
+      "width": 352,
+      "height": 20,
+      "visible": true,
+      "locked": false,
+      "zIndex": 2,
+      "properties": {
+        "text": "Captain Surge",
+        "fontSize": 12,
+        "align": "left",
+        "color": "#fbbf24"
+      }
+    },
+    {
+      "id": "dlg_body_text",
+      "name": "Body Text",
+      "type": "Text",
+      "screen": "top",
+      "x": 24,
+      "y": 170,
+      "width": 352,
+      "height": 50,
+      "visible": true,
+      "locked": false,
+      "zIndex": 2,
+      "properties": {
+        "text": "Electric Pokémon are full of energy! Ready to test your voltage?",
+        "fontSize": 11,
+        "align": "left",
+        "color": "#ffffff"
+      }
+    },
+    {
+      "id": "dlg_response_box",
+      "name": "Response Panel",
+      "type": "RogueBox",
+      "screen": "bottom",
+      "x": 10,
+      "y": 30,
+      "width": 300,
+      "height": 180,
+      "visible": true,
+      "locked": true,
+      "zIndex": 1,
+      "properties": {
+        "backgroundColor": "#1e2433"
+      }
+    },
+    {
+      "id": "dlg_accept_btn",
+      "name": "Accept Button",
+      "type": "TouchButton",
+      "screen": "bottom",
+      "parent": "dlg_response_box",
+      "x": 60,
+      "y": 90,
+      "width": 200,
+      "height": 44,
+      "visible": true,
+      "locked": false,
+      "zIndex": 2,
+      "properties": {
+        "label": "ACCEPT CHALLENGE",
+        "backgroundColor": "#0284c7"
+      }
+    }
+  ],
+  "tracks": [],
+  "markers": [],
+  "audioCues": []
+}

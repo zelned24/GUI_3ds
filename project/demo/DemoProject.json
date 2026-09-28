@@ -1,0 +1,1159 @@
+{
+  "schemaVersion": 1,
+  "name": "DemoProject",
+  "activeSceneId": "Title",
+  "settings": {
+    "defaultScreen": "top",
+    "targetFps": 60,
+    "exportProfile": "development",
+    "snapToPixel": true
+  },
+  "templates": [
+    {
+      "id": "tmpl_title",
+      "name": "Title Card Template",
+      "version": 1
+    },
+    {
+      "id": "tmpl_dialog",
+      "name": "Dialog Template",
+      "version": 1
+    },
+    {
+      "id": "tmpl_menu",
+      "name": "Menu Template",
+      "version": 1
+    },
+    {
+      "id": "tmpl_entrance",
+      "name": "Pokemon Entrance Template",
+      "version": 1
+    },
+    {
+      "id": "tmpl_hud",
+      "name": "HUD Overlay Template",
+      "version": 1
+    },
+    {
+      "id": "tmpl_notif",
+      "name": "Notification Template",
+      "version": 1
+    }
+  ],
+  "assets": [
+    {
+      "id": "bg_arena_plains",
+      "type": "image",
+      "path": "romfs:/textures/bg_arena_plains.t3x"
+    },
+    {
+      "id": "charizard_front",
+      "type": "image",
+      "path": "romfs:/textures/charizard_front.t3x"
+    },
+    {
+      "id": "sfx_select",
+      "type": "audio",
+      "path": "romfs:/audio/sfx_select.raw"
+    },
+    {
+      "id": "sfx_pikachu_cry",
+      "type": "audio",
+      "path": "romfs:/audio/sfx_pikachu_cry.raw"
+    }
+  ],
+  "scenes": [
+    {
+      "schemaVersion": 5,
+      "id": "Title",
+      "name": "Title Screen Demo",
+      "fps": 60,
+      "durationFrames": 90,
+      "currentFrame": 0,
+      "top": {
+        "width": 400,
+        "height": 240,
+        "backgroundColor": "#020617"
+      },
+      "bottom": {
+        "width": 320,
+        "height": 240,
+        "backgroundColor": "#0f172a"
+      },
+      "nodes": [
+        {
+          "id": "title_logo",
+          "name": "Game Logo Text",
+          "type": "Text",
+          "screen": "top",
+          "x": 20,
+          "y": 70,
+          "width": 360,
+          "height": 48,
+          "visible": true,
+          "locked": true,
+          "zIndex": 1,
+          "properties": {
+            "text": "3DS UI PRODUCTION STUDIO",
+            "font": "standard",
+            "fontSize": 18,
+            "align": "center",
+            "color": "#facc15"
+          },
+          "effects": [
+            {
+              "id": "eff_glow",
+              "type": "Brightness",
+              "enabled": true,
+              "parameters": {
+                "factor": 1.2
+              }
+            }
+          ]
+        },
+        {
+          "id": "title_sub",
+          "name": "Subtitle",
+          "type": "Text",
+          "screen": "top",
+          "x": 20,
+          "y": 120,
+          "width": 360,
+          "height": 24,
+          "visible": true,
+          "locked": false,
+          "zIndex": 2,
+          "properties": {
+            "text": "Citro2D Native Engine Pipeline",
+            "font": "standard",
+            "fontSize": 12,
+            "align": "center",
+            "color": "#94a3b8"
+          }
+        },
+        {
+          "id": "touch_prompt",
+          "name": "Touch Start Button",
+          "type": "TouchButton",
+          "screen": "bottom",
+          "x": 40,
+          "y": 95,
+          "width": 240,
+          "height": 50,
+          "visible": true,
+          "locked": false,
+          "zIndex": 1,
+          "properties": {
+            "label": "TOUCH TO START",
+            "backgroundColor": "#3b82f6"
+          }
+        }
+      ],
+      "tracks": [
+        {
+          "id": "trk_logo_fade",
+          "targetNodeId": "title_logo",
+          "propertyPath": "opacity",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0,
+              "interpolation": "linear"
+            },
+            {
+              "frame": 30,
+              "value": 1,
+              "interpolation": "easeInOut"
+            }
+          ]
+        }
+      ],
+      "markers": [
+        {
+          "id": "m_title_in",
+          "frame": 30,
+          "name": "TitleRevealed",
+          "type": "Event"
+        }
+      ],
+      "audioCues": [
+        {
+          "id": "cue_title",
+          "frame": 0,
+          "asset": "sfx_pikachu_cry",
+          "volume": 0.8,
+          "channel": 0
+        }
+      ]
+    },
+    {
+      "schemaVersion": 5,
+      "id": "Menu",
+      "name": "Main Menu Demo",
+      "fps": 60,
+      "durationFrames": 60,
+      "currentFrame": 0,
+      "top": {
+        "width": 400,
+        "height": 240,
+        "backgroundColor": "#0f172a"
+      },
+      "bottom": {
+        "width": 320,
+        "height": 240,
+        "backgroundColor": "#1e293b"
+      },
+      "nodes": [
+        {
+          "id": "menu_header_box",
+          "name": "Header Box",
+          "type": "Shape",
+          "screen": "top",
+          "x": 20,
+          "y": 20,
+          "width": 360,
+          "height": 40,
+          "visible": true,
+          "locked": true,
+          "zIndex": 1,
+          "properties": {
+            "shapeType": "RoundedRectangle",
+            "fillColor": "#1e293b",
+            "strokeColor": "#38bdf8",
+            "strokeWidth": 2,
+            "cornerRadius": 8
+          }
+        },
+        {
+          "id": "menu_header_text",
+          "name": "Header Text",
+          "type": "Text",
+          "screen": "top",
+          "x": 30,
+          "y": 30,
+          "width": 340,
+          "height": 20,
+          "visible": true,
+          "locked": false,
+          "zIndex": 2,
+          "properties": {
+            "text": "CHOOSE DESTINATION",
+            "fontSize": 14,
+            "align": "center",
+            "color": "#38bdf8"
+          }
+        },
+        {
+          "id": "btn_campaign",
+          "name": "Campaign Button",
+          "type": "TouchButton",
+          "screen": "bottom",
+          "x": 40,
+          "y": 25,
+          "width": 240,
+          "height": 42,
+          "visible": true,
+          "locked": false,
+          "zIndex": 1,
+          "properties": {
+            "label": "CAMPAIGN MODE",
+            "backgroundColor": "#0284c7"
+          }
+        },
+        {
+          "id": "btn_settings",
+          "name": "Settings Button",
+          "type": "TouchButton",
+          "screen": "bottom",
+          "x": 40,
+          "y": 80,
+          "width": 240,
+          "height": 42,
+          "visible": true,
+          "locked": false,
+          "zIndex": 2,
+          "properties": {
+            "label": "OPTIONS & AUDIO",
+            "backgroundColor": "#334155"
+          }
+        }
+      ],
+      "tracks": [],
+      "markers": [],
+      "audioCues": []
+    },
+    {
+      "schemaVersion": 5,
+      "id": "Dialog",
+      "name": "Dialog Narrative Demo",
+      "fps": 60,
+      "durationFrames": 60,
+      "currentFrame": 0,
+      "top": {
+        "width": 400,
+        "height": 240,
+        "backgroundColor": "#10121a"
+      },
+      "bottom": {
+        "width": 320,
+        "height": 240,
+        "backgroundColor": "#181b24"
+      },
+      "nodes": [
+        {
+          "id": "dlg_speaker_name",
+          "name": "Speaker Name",
+          "type": "Text",
+          "screen": "top",
+          "x": 24,
+          "y": 140,
+          "width": 352,
+          "height": 20,
+          "visible": true,
+          "locked": false,
+          "zIndex": 2,
+          "properties": {
+            "text": "Captain Surge",
+            "fontSize": 12,
+            "align": "left",
+            "color": "#fbbf24"
+          }
+        },
+        {
+          "id": "dlg_body_text",
+          "name": "Body Text",
+          "type": "Text",
+          "screen": "top",
+          "x": 24,
+          "y": 170,
+          "width": 352,
+          "height": 50,
+          "visible": true,
+          "locked": false,
+          "zIndex": 2,
+          "properties": {
+            "text": "Electric Pokémon are full of energy! Ready to test your voltage?",
+            "fontSize": 11,
+            "align": "left",
+            "color": "#ffffff"
+          }
+        },
+        {
+          "id": "dlg_response_box",
+          "name": "Response Panel",
+          "type": "RogueBox",
+          "screen": "bottom",
+          "x": 10,
+          "y": 30,
+          "width": 300,
+          "height": 180,
+          "visible": true,
+          "locked": true,
+          "zIndex": 1,
+          "properties": {
+            "backgroundColor": "#1e2433"
+          }
+        },
+        {
+          "id": "dlg_accept_btn",
+          "name": "Accept Button",
+          "type": "TouchButton",
+          "screen": "bottom",
+          "parent": "dlg_response_box",
+          "x": 60,
+          "y": 90,
+          "width": 200,
+          "height": 44,
+          "visible": true,
+          "locked": false,
+          "zIndex": 2,
+          "properties": {
+            "label": "ACCEPT CHALLENGE",
+            "backgroundColor": "#0284c7"
+          }
+        }
+      ],
+      "tracks": [],
+      "markers": [],
+      "audioCues": []
+    },
+    {
+      "schemaVersion": 5,
+      "id": "PokemonEntrance",
+      "name": "Pokemon Entrance Demo",
+      "fps": 60,
+      "durationFrames": 60,
+      "currentFrame": 0,
+      "top": {
+        "width": 400,
+        "height": 240,
+        "backgroundColor": "#12141c"
+      },
+      "bottom": {
+        "width": 320,
+        "height": 240,
+        "backgroundColor": "#1a1824"
+      },
+      "nodes": [
+        {
+          "id": "ent_bg",
+          "name": "Arena BG",
+          "type": "Image",
+          "screen": "top",
+          "x": 0,
+          "y": 0,
+          "width": 400,
+          "height": 240,
+          "visible": true,
+          "locked": true,
+          "zIndex": 1,
+          "properties": {
+            "asset": "bg_arena_plains",
+            "fit": "stretch"
+          }
+        },
+        {
+          "id": "ent_pikachu",
+          "name": "Pikachu Entrance Sprite",
+          "type": "PokemonSprite",
+          "screen": "top",
+          "x": 150,
+          "y": 50,
+          "width": 100,
+          "height": 100,
+          "visible": true,
+          "locked": false,
+          "zIndex": 2,
+          "properties": {
+            "species": "Pikachu",
+            "nationalDexId": 25,
+            "facing": "front"
+          }
+        },
+        {
+          "id": "ent_name_label",
+          "name": "Pikachu Label",
+          "type": "Text",
+          "screen": "top",
+          "x": 120,
+          "y": 170,
+          "width": 160,
+          "height": 24,
+          "visible": true,
+          "locked": false,
+          "zIndex": 3,
+          "properties": {
+            "text": "PIKACHU Lv. 25",
+            "fontSize": 12,
+            "align": "center",
+            "color": "#facc15"
+          }
+        },
+        {
+          "id": "ent_status_box",
+          "name": "Touch Info Box",
+          "type": "RogueBox",
+          "screen": "bottom",
+          "x": 10,
+          "y": 30,
+          "width": 300,
+          "height": 180,
+          "visible": true,
+          "locked": false,
+          "zIndex": 1,
+          "properties": {
+            "backgroundColor": "#1f2937"
+          }
+        }
+      ],
+      "tracks": [
+        {
+          "id": "trk_ent_y",
+          "targetNodeId": "ent_pikachu",
+          "propertyPath": "y",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": -100,
+              "interpolation": "easeOut"
+            },
+            {
+              "frame": 30,
+              "value": 50,
+              "interpolation": "linear"
+            }
+          ]
+        }
+      ],
+      "markers": [
+        {
+          "id": "m_land",
+          "frame": 30,
+          "name": "PikachuLanded",
+          "type": "Event"
+        }
+      ],
+      "audioCues": [
+        {
+          "id": "cue_cry",
+          "frame": 30,
+          "asset": "sfx_pikachu_cry",
+          "volume": 1,
+          "channel": 0
+        }
+      ]
+    },
+    {
+      "schemaVersion": 5,
+      "id": "DualScreen",
+      "name": "Dual Screen Workflow Demo",
+      "fps": 60,
+      "durationFrames": 90,
+      "currentFrame": 0,
+      "top": {
+        "width": 400,
+        "height": 240,
+        "backgroundColor": "#090d16"
+      },
+      "bottom": {
+        "width": 320,
+        "height": 240,
+        "backgroundColor": "#111827"
+      },
+      "nodes": [
+        {
+          "id": "top_bg",
+          "name": "Top Arena BG",
+          "type": "Image",
+          "screen": "top",
+          "x": 0,
+          "y": 0,
+          "width": 400,
+          "height": 240,
+          "visible": true,
+          "locked": true,
+          "zIndex": 1,
+          "properties": {
+            "asset": "bg_arena_plains",
+            "fit": "stretch"
+          },
+          "effects": [
+            {
+              "id": "top_bg_fade",
+              "type": "Fade",
+              "enabled": true,
+              "parameters": {
+                "progress": 0
+              }
+            }
+          ]
+        },
+        {
+          "id": "top_header_panel",
+          "name": "Top Header Panel",
+          "type": "Shape",
+          "screen": "top",
+          "x": 10,
+          "y": 10,
+          "width": 380,
+          "height": 36,
+          "visible": true,
+          "locked": false,
+          "zIndex": 2,
+          "properties": {
+            "shapeType": "RoundedRectangle",
+            "fillColor": "#0f172ae6",
+            "strokeColor": "#38bdf8",
+            "strokeWidth": 1.5,
+            "cornerRadius": 6
+          }
+        },
+        {
+          "id": "top_title_text",
+          "name": "Top Title Text",
+          "type": "Text",
+          "screen": "top",
+          "x": 20,
+          "y": 18,
+          "width": 360,
+          "height": 20,
+          "visible": true,
+          "locked": false,
+          "zIndex": 3,
+          "properties": {
+            "text": "TOP SCREEN - 400x240 VIEWPORT",
+            "font": "standard",
+            "fontSize": 14,
+            "align": "center",
+            "color": "#e0f2fe"
+          }
+        },
+        {
+          "id": "bottom_panel",
+          "name": "Bottom Touch Panel",
+          "type": "Shape",
+          "screen": "bottom",
+          "x": 10,
+          "y": 10,
+          "width": 300,
+          "height": 220,
+          "visible": true,
+          "locked": false,
+          "zIndex": 1,
+          "properties": {
+            "shapeType": "RoundedRectangle",
+            "fillColor": "#1e293b",
+            "strokeColor": "#64748b",
+            "strokeWidth": 2,
+            "cornerRadius": 8
+          }
+        },
+        {
+          "id": "bottom_label",
+          "name": "Bottom Label Text",
+          "type": "Text",
+          "screen": "bottom",
+          "x": 20,
+          "y": 24,
+          "width": 280,
+          "height": 20,
+          "visible": true,
+          "locked": false,
+          "zIndex": 2,
+          "properties": {
+            "text": "BOTTOM SCREEN - 320x240 TOUCH",
+            "font": "standard",
+            "fontSize": 12,
+            "align": "center",
+            "color": "#38bdf8"
+          }
+        },
+        {
+          "id": "bottom_touch_btn",
+          "name": "Bottom Touch Button",
+          "type": "Shape",
+          "screen": "bottom",
+          "x": 60,
+          "y": 80,
+          "width": 200,
+          "height": 50,
+          "visible": true,
+          "locked": false,
+          "zIndex": 3,
+          "properties": {
+            "shapeType": "RoundedRectangle",
+            "fillColor": "#2563eb",
+            "strokeColor": "#93c5fd",
+            "strokeWidth": 1.5,
+            "cornerRadius": 6
+          },
+          "effects": [
+            {
+              "id": "btn_tint",
+              "type": "Tint",
+              "enabled": true,
+              "parameters": {
+                "color": "#60a5fa",
+                "intensity": 0.2
+              }
+            }
+          ]
+        },
+        {
+          "id": "btn_label",
+          "name": "Button Label",
+          "type": "Text",
+          "screen": "bottom",
+          "x": 60,
+          "y": 95,
+          "width": 200,
+          "height": 20,
+          "visible": true,
+          "locked": false,
+          "zIndex": 4,
+          "properties": {
+            "text": "TAP TO ENGAGE",
+            "font": "standard",
+            "fontSize": 14,
+            "align": "center",
+            "color": "#ffffff"
+          }
+        }
+      ],
+      "tracks": [
+        {
+          "id": "trk_btn_opacity",
+          "nodeId": "bottom_touch_btn",
+          "property": "opacity",
+          "interpolation": "linear",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0.5
+            },
+            {
+              "frame": 45,
+              "value": 1
+            },
+            {
+              "frame": 90,
+              "value": 0.5
+            }
+          ]
+        },
+        {
+          "id": "trk_fade_prog",
+          "nodeId": "top_bg",
+          "property": "effects.0.parameters.progress",
+          "interpolation": "linear",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0
+            },
+            {
+              "frame": 45,
+              "value": 0.3
+            },
+            {
+              "frame": 90,
+              "value": 0
+            }
+          ]
+        }
+      ],
+      "markers": [
+        {
+          "id": "m_start",
+          "frame": 0,
+          "label": "Start",
+          "color": "#38bdf8"
+        },
+        {
+          "id": "m_pulse",
+          "frame": 45,
+          "label": "Pulse",
+          "color": "#facc15"
+        }
+      ],
+      "audioCues": [
+        {
+          "id": "snd_cue",
+          "frame": 0,
+          "asset": "sfx_select",
+          "assetId": "sfx_select",
+          "volume": 0.8
+        }
+      ]
+    },
+    {
+      "schemaVersion": 5,
+      "id": "ProfessionalComposition",
+      "name": "Professional Composition Studio Demo",
+      "fps": 60,
+      "durationFrames": 90,
+      "currentFrame": 0,
+      "top": {
+        "width": 400,
+        "height": 240,
+        "backgroundColor": "#0b0f19"
+      },
+      "bottom": {
+        "width": 320,
+        "height": 240,
+        "backgroundColor": "#131b2e"
+      },
+      "guides": [
+        {
+          "id": "g_center_x",
+          "orientation": "v",
+          "position": 200,
+          "screen": "top"
+        },
+        {
+          "id": "g_center_y",
+          "orientation": "h",
+          "position": 120,
+          "screen": "top"
+        },
+        {
+          "id": "g_safe_margin",
+          "orientation": "h",
+          "position": 24,
+          "screen": "all"
+        }
+      ],
+      "safeAreas": [
+        {
+          "screen": "top",
+          "x": 16,
+          "y": 16,
+          "width": 368,
+          "height": 208,
+          "preset": "title_safe"
+        },
+        {
+          "screen": "bottom",
+          "x": 16,
+          "y": 16,
+          "width": 288,
+          "height": 208,
+          "preset": "title_safe"
+        }
+      ],
+      "nodes": [
+        {
+          "id": "bg_panel",
+          "name": "Background Frame",
+          "type": "Shape",
+          "screen": "top",
+          "x": 0,
+          "y": 0,
+          "width": 400,
+          "height": 240,
+          "visible": true,
+          "locked": true,
+          "zIndex": 1,
+          "properties": {
+            "shapeType": "Rectangle",
+            "fillColor": "#0f172a",
+            "strokeColor": "#1e293b",
+            "strokeWidth": 1,
+            "cornerRadius": 0
+          }
+        },
+        {
+          "id": "hud_comp_node",
+          "name": "HUD Composition Layer",
+          "type": "Composition",
+          "screen": "top",
+          "x": 20,
+          "y": 20,
+          "width": 360,
+          "height": 200,
+          "visible": true,
+          "locked": false,
+          "zIndex": 2,
+          "properties": {
+            "sceneId": "comp_hud_header",
+            "compositionId": "comp_hud_header"
+          },
+          "effects": [
+            {
+              "id": "hud_color_overlay",
+              "type": "ColorOverlay",
+              "enabled": true,
+              "parameters": {
+                "color": "#38bdf8",
+                "opacity": 0.1
+              }
+            }
+          ]
+        },
+        {
+          "id": "studio_label",
+          "name": "Studio Title Label",
+          "type": "Text",
+          "screen": "top",
+          "x": 30,
+          "y": 30,
+          "width": 340,
+          "height": 28,
+          "visible": true,
+          "locked": false,
+          "zIndex": 3,
+          "properties": {
+            "text": "PROFESSIONAL COMPOSITION",
+            "font": "standard",
+            "fontSize": 16,
+            "align": "left",
+            "color": "#f8fafc"
+          }
+        },
+        {
+          "id": "separator_line",
+          "name": "Separator Line",
+          "type": "Shape",
+          "screen": "top",
+          "x": 30,
+          "y": 62,
+          "width": 340,
+          "height": 2,
+          "visible": true,
+          "locked": false,
+          "zIndex": 4,
+          "properties": {
+            "shapeType": "Line",
+            "fillColor": "#38bdf8",
+            "strokeColor": "#38bdf8",
+            "strokeWidth": 2,
+            "cornerRadius": 0
+          }
+        }
+      ],
+      "compositions": [
+        {
+          "id": "comp_hud_header",
+          "name": "HUD Header Composition",
+          "width": 360,
+          "height": 200,
+          "nodes": [
+            {
+              "id": "sub_panel",
+              "name": "Sub Panel Container",
+              "type": "Shape",
+              "screen": "top",
+              "x": 0,
+              "y": 0,
+              "width": 360,
+              "height": 200,
+              "visible": true,
+              "locked": false,
+              "zIndex": 1,
+              "properties": {
+                "shapeType": "RoundedRectangle",
+                "fillColor": "#1e293b80",
+                "strokeColor": "#475569",
+                "strokeWidth": 1,
+                "cornerRadius": 8
+              }
+            },
+            {
+              "id": "sub_text",
+              "name": "Subtext Content",
+              "type": "Text",
+              "screen": "top",
+              "x": 10,
+              "y": 60,
+              "width": 340,
+              "height": 20,
+              "visible": true,
+              "locked": false,
+              "zIndex": 2,
+              "properties": {
+                "text": "Nested composition rendering with depth 1",
+                "font": "standard",
+                "fontSize": 12,
+                "align": "left",
+                "color": "#94a3b8"
+              }
+            }
+          ]
+        }
+      ],
+      "tracks": [
+        {
+          "id": "trk_comp_opacity",
+          "nodeId": "hud_comp_node",
+          "property": "opacity",
+          "interpolation": "linear",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0
+            },
+            {
+              "frame": 30,
+              "value": 1
+            },
+            {
+              "frame": 90,
+              "value": 1
+            }
+          ]
+        }
+      ],
+      "markers": [
+        {
+          "id": "m_in",
+          "frame": 0,
+          "label": "Intro",
+          "color": "#38bdf8"
+        },
+        {
+          "id": "m_settle",
+          "frame": 30,
+          "label": "Settled",
+          "color": "#22c55e"
+        }
+      ]
+    },
+    {
+      "schemaVersion": 5,
+      "id": "AdvancedAnimation",
+      "name": "Advanced Animation Demo",
+      "fps": 60,
+      "durationFrames": 90,
+      "currentFrame": 0,
+      "top": {
+        "width": 400,
+        "height": 240,
+        "backgroundColor": "#030712"
+      },
+      "bottom": {
+        "width": 320,
+        "height": 240,
+        "backgroundColor": "#111827"
+      },
+      "nodes": [
+        {
+          "id": "anim_card",
+          "name": "Animated Card Shape",
+          "type": "Shape",
+          "screen": "top",
+          "x": 100,
+          "y": 50,
+          "width": 200,
+          "height": 120,
+          "visible": true,
+          "locked": false,
+          "zIndex": 1,
+          "properties": {
+            "shapeType": "RoundedRectangle",
+            "fillColor": "#1f2937",
+            "strokeColor": "#f59e0b",
+            "strokeWidth": 2,
+            "cornerRadius": 10
+          },
+          "effects": [
+            {
+              "id": "card_tint",
+              "type": "Tint",
+              "enabled": true,
+              "parameters": {
+                "color": "#fbbf24",
+                "intensity": 0
+              }
+            }
+          ]
+        },
+        {
+          "id": "anim_title",
+          "name": "Animated Text",
+          "type": "Text",
+          "screen": "top",
+          "x": 100,
+          "y": 95,
+          "width": 200,
+          "height": 30,
+          "visible": true,
+          "locked": false,
+          "zIndex": 2,
+          "properties": {
+            "text": "KEYFRAME CURVES",
+            "font": "standard",
+            "fontSize": 14,
+            "align": "center",
+            "color": "#fef3c7"
+          }
+        }
+      ],
+      "tracks": [
+        {
+          "id": "trk_card_x",
+          "nodeId": "anim_card",
+          "property": "x",
+          "interpolation": "bezier",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 20,
+              "handleIn": {
+                "frame": -10,
+                "value": 0
+              },
+              "handleOut": {
+                "frame": 15,
+                "value": 0
+              }
+            },
+            {
+              "frame": 45,
+              "value": 150,
+              "handleIn": {
+                "frame": -15,
+                "value": 0
+              },
+              "handleOut": {
+                "frame": 15,
+                "value": 0
+              }
+            },
+            {
+              "frame": 90,
+              "value": 100,
+              "handleIn": {
+                "frame": -15,
+                "value": 0
+              },
+              "handleOut": {
+                "frame": 10,
+                "value": 0
+              }
+            }
+          ]
+        },
+        {
+          "id": "trk_card_tint",
+          "nodeId": "anim_card",
+          "property": "effects.0.parameters.intensity",
+          "interpolation": "linear",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0
+            },
+            {
+              "frame": 45,
+              "value": 0.8
+            },
+            {
+              "frame": 90,
+              "value": 0.1
+            }
+          ]
+        },
+        {
+          "id": "trk_title_scale",
+          "nodeId": "anim_title",
+          "property": "scale.x",
+          "interpolation": "linear",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0.8
+            },
+            {
+              "frame": 45,
+              "value": 1.2
+            },
+            {
+              "frame": 90,
+              "value": 1
+            }
+          ]
+        }
+      ],
+      "clips": [
+        {
+          "id": "clip_intro_bounce",
+          "name": "Intro Bounce Clip",
+          "startFrame": 0,
+          "durationFrames": 45,
+          "trackIds": [
+            "trk_card_x",
+            "trk_card_tint"
+          ]
+        }
+      ],
+      "markers": [
+        {
+          "id": "m_peak",
+          "frame": 45,
+          "label": "Apex",
+          "color": "#f59e0b"
+        }
+      ]
+    }
+  ]
+}

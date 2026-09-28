@@ -241,9 +241,35 @@ export class TimelineEvaluator {
       return;
     }
 
+    // Effects path handling (BETA-UI-8)
+    if (path.startsWith('effects.') || path.startsWith('effects[')) {
+      if (!Array.isArray(targetState.effects)) {
+        targetState.effects = [];
+      }
+      const match = path.match(/effects(?:\[(\d+)\]|\.(\d+))(?:\.parameters)?\.([a-zA-Z0-9_]+)/);
+      if (match) {
+        const index = parseInt(match[1] !== undefined ? match[1] : match[2], 10);
+        const paramName = match[3];
+        while (targetState.effects.length <= index) {
+          targetState.effects.push({ parameters: {} });
+        }
+        if (!targetState.effects[index].parameters) {
+          targetState.effects[index].parameters = {};
+        }
+        targetState.effects[index].parameters[paramName] = value;
+        return;
+      }
+    }
+
     if (path.startsWith('properties.')) {
       const prop = path.replace('properties.', '');
       targetState.properties[prop] = value;
+      return;
+    }
+
+    // Direct color / typography / vector shape properties
+    if (['color', 'textColor', 'fillColor', 'strokeColor', 'fontSize', 'strokeWidth', 'cornerRadius'].includes(path)) {
+      targetState.properties[path] = value;
       return;
     }
 

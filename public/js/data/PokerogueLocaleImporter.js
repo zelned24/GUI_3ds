@@ -116,6 +116,18 @@ export class PokerogueLocaleImporter {
     return this.packages.get(`${normLocale}:${namespace}`) || null;
   }
 
+  /** Resolves display data by canonical entity ID without introducing UI-owned strings. */
+  resolveCanonical(entries, canonicalId, localeCode, namespace) {
+    const normLocale = PokerogueLocaleImporter.normalizeLocaleCode(localeCode);
+    const compact = value => String(value).toLowerCase().replace(/[^a-z0-9]/g, '');
+    const match = (entries || []).find(entry => entry.namespace === namespace && entry.locale === normLocale && compact(entry.canonicalId || entry.id) === compact(canonicalId));
+    if (!match) return null;
+    const value = match.value;
+    if (typeof value === 'string') return value;
+    if (value && typeof value === 'object') return value.name || value.description || value.effect || value;
+    return value ?? null;
+  }
+
   /**
    * Retrieves localized text for an entity.
    * Handles both plain strings (pokemon.json) and structured objects (move.json -> { name, effect }).

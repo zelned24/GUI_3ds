@@ -94,6 +94,7 @@ void Renderer2D::fini() {
 
 void Renderer2D::beginFrame() {
     if (!m_initialized || m_frameActive) return;
+    if (m_textBuf) C2D_TextBufClear(m_textBuf);
     C3D_FrameBegin(C3D_FRAME_SYNCDRAW);
     m_frameActive = true;
 }

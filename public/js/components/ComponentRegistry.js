@@ -7,6 +7,8 @@ import { ImageNode } from './ImageNode.js';
 import { PokemonSpriteNode } from './PokemonSpriteNode.js';
 import { GroupNode } from './GroupNode.js';
 import { CompositionNode } from './CompositionNode.js';
+import { TextNode } from './TextNode.js';
+import { ShapeNode } from './ShapeNode.js';
 
 /**
  * ComponentRegistry - Registry for instantiating and describing 3DS UI components & nodes.
@@ -117,6 +119,51 @@ ComponentRegistry.register('Composition', CompositionNode, {
   description: 'Reusable nested scene composition instance with local timeline'
 });
 ComponentRegistry.register('CompositionNode', CompositionNode);
+
+ComponentRegistry.register('Text', TextNode, {
+  name: 'Text',
+  category: 'Typography',
+  icon: '📝',
+  description: '2D Citro2D text element with font, align, and color'
+});
+ComponentRegistry.register('TextNode', TextNode);
+
+ComponentRegistry.register('Shape', ShapeNode, {
+  name: 'Shape',
+  category: 'Vector',
+  icon: '🔷',
+  description: '2D Citro2D vector shape primitive (Rectangle, RoundedRect, Line)'
+});
+ComponentRegistry.register('ShapeNode', ShapeNode);
+
+// Reusable UI Authoring Aliases
+ComponentRegistry.register('Panel', RogueBox, {
+  name: 'Panel',
+  category: 'UI Authoring',
+  icon: '🔲',
+  description: 'Visual UI panel frame with border styling'
+});
+
+ComponentRegistry.register('Button', TouchButton, {
+  name: 'Button',
+  category: 'UI Authoring',
+  icon: '🔘',
+  description: 'Interactive button with touch focus and label'
+});
+
+ComponentRegistry.register('Label', TextNode, {
+  name: 'Label',
+  category: 'UI Authoring',
+  icon: '🏷️',
+  description: 'Descriptive text label element'
+});
+
+ComponentRegistry.register('Dialog', RogueBox, {
+  name: 'Dialog',
+  category: 'UI Authoring',
+  icon: '💬',
+  description: 'Dialog box container for message presentations'
+});
 
 
 

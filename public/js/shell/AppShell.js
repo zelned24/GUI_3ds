@@ -14,6 +14,8 @@ import { BattleScreen } from '../screens/BattleScreen.js';
 import { BattleResultScreen } from '../screens/BattleResultScreen.js';
 import { RunSummaryScreen } from '../screens/RunSummaryScreen.js';
 import { OptionsScreen } from '../screens/OptionsScreen.js';
+import { dataManager } from '../data/DataManager.js';
+import { FirstRunFlow } from '../game/FirstRunFlow.js';
 
 export const AppStates = {
   BOOT: 'BOOT',
@@ -91,11 +93,33 @@ export class AppShell {
    * Optionally allows jumping to startWave for QA / Debug testing.
    */
   startNewRun(playerConfig = {}, startWave = 1) {
+    if (this.firstRunFlow) {
+      const modeId = playerConfig.modeId || this.firstRunFlow.modes.list().find(mode => mode.capabilities.classicRules === true)?.id;
+      if (!modeId) throw new Error('No canonical GameMode is available for a new run');
+      const resolved = this.firstRunFlow.start({ modeId, starterId: playerConfig.speciesId, seed: playerConfig.seed ?? 1 });
+      this.resolvedGameData = resolved;
+      this.transitionTo(AppStates.WAVE_INTRO, { resolvedGameData: resolved, waveDefinition: resolved.wave, runState: resolved.run });
+      return resolved;
+    }
     this.waveManager.resetRun(playerConfig, startWave);
     this.transitionTo(AppStates.WAVE_INTRO, {
       waveDefinition: this.waveManager.getCurrentWaveDefinition(),
       runState: this.waveManager.getRunState()
     });
+  }
+
+  async beginNewGame() {
+    if (!this.firstRunFlow) {
+      const snapshotUrl = new URL('../../../project/data/pokerogue/canonical-content.json', import.meta.url);
+      const reportUrl = new URL('../../../project/data/pokerogue/import-report.json', import.meta.url);
+      const [snapshotResponse, reportResponse] = await Promise.all([fetch(snapshotUrl), fetch(reportUrl)]);
+      if (!snapshotResponse.ok) throw new Error(`Packaged pinned content snapshot unavailable (${snapshotResponse.status})`);
+      if (!reportResponse.ok) throw new Error(`Packaged content import report unavailable (${reportResponse.status})`);
+      const [snapshot, report] = await Promise.all([snapshotResponse.json(), reportResponse.json()]);
+      const imported = dataManager.loadCanonicalProductionSnapshot(snapshot, report);
+      this.firstRunFlow = new FirstRunFlow({ runtimeContent: imported.runtimeContent, localeEntries: imported.locales, locale: dataManager.getLocale(), assetReferences: imported.canonicalContent.collections.assetReferences });
+    }
+    return this.transitionTo(AppStates.SETUP);
   }
 
   /**

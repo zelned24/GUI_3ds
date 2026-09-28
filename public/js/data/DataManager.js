@@ -1,5 +1,6 @@
 import { PokerogueAdapter } from './PokerogueAdapter.js';
 import { PokerogueLocaleImporter } from './PokerogueLocaleImporter.js';
+import { CanonicalContent, RuntimeContent } from './CanonicalDataContract.js';
 
 /**
  * DataManager - Central database and query engine for all game content
@@ -59,6 +60,15 @@ export class DataManager {
    */
   getEnum(enumName) {
     return this.enums.get(enumName) || null;
+  }
+
+  getCanonicalEnum(enumName) {
+    return this.canonicalEnums?.get(enumName) || null;
+  }
+
+  getCanonicalCollection(name) {
+    const collection = this.canonicalContent?.collections?.[name];
+    return Array.isArray(collection) ? collection : [];
   }
 
   /**
@@ -133,6 +143,13 @@ export class DataManager {
    * @returns {string|null}
    */
   getLocalizedText(namespace, id, field = 'name', locale = this.currentLocale) {
+    if (this.localeImporter && this.canonicalLocales) {
+      const value = this.localeImporter.resolveCanonical(this.canonicalLocales, id, locale, namespace);
+      if (value !== null && value !== undefined) {
+        if (typeof value === 'object') return value[field] || value.name || null;
+        return value;
+      }
+    }
     const normLocale = PokerogueLocaleImporter.normalizeLocaleCode(locale);
     const key = `${normLocale}:${namespace}`;
     const pkg = this.locales.get(key);
@@ -201,7 +218,16 @@ export class DataManager {
    */
   async importUpstream(importer) {
     if (!importer) throw new Error('PokerogueImporter instance required');
+    if (typeof importer.importCanonicalContent === 'function') return this.importCanonicalProduction(importer);
     const result = await importer.importVerticalSlice();
+    if (result.sourceType !== 'UPSTREAM' || result.canonicalContent?.sourceSnapshot?.sourceType !== 'UPSTREAM') {
+      throw new Error('Production import rejected: source is not verified UPSTREAM content. TEST_FIXTURE and fallback data cannot be promoted.');
+    }
+    const contractErrors = result.canonicalContent?.validate?.() || ['CanonicalContent contract missing'];
+    if (contractErrors.length) throw new Error(`Production import rejected: ${contractErrors.join('; ')}`);
+    const untrustedEntities = [...(result.species || []), ...(result.moves || []), ...(result.abilities || [])]
+      .filter(entity => entity.source?.sourceType !== 'UPSTREAM');
+    if (untrustedEntities.length) throw new Error(`Production import rejected: ${untrustedEntities.length} entities lack UPSTREAM provenance.`);
     this.loadDataset(result);
     this.manifest = result.manifest;
     this.isFallback = false;
@@ -211,6 +237,67 @@ export class DataManager {
       abilitiesCount: result.abilities.length,
       manifest: this.manifest
     });
+    return result;
+  }
+
+  /** Loads only a verified canonical production snapshot; fixture datasets cannot enter this route. */
+  async importCanonicalProduction(importer, repository = importer?.repository) {
+    if (!importer || typeof importer.importCanonicalContent !== 'function') throw new Error('PokerogueImporter with importCanonicalContent is required');
+    const result = await importer.importCanonicalContent(repository);
+    return this.acceptCanonicalProduction(result, importer);
+  }
+
+  async importPlayableProduction(importer, repository = importer?.repository) {
+    if (!importer || typeof importer.importPlayableCanonicalContent !== 'function') throw new Error('PokerogueImporter with importPlayableCanonicalContent is required');
+    const result = await importer.importPlayableCanonicalContent(repository);
+    return this.acceptCanonicalProduction(result, importer);
+  }
+
+  /** Loads the checked-in pinned production snapshot shipped with the app; gameplay never downloads upstream sources. */
+  loadCanonicalProductionSnapshot(snapshot, importReport) {
+    const canonicalContent = snapshot instanceof CanonicalContent ? snapshot : new CanonicalContent(snapshot);
+    if (canonicalContent.hash() !== importReport?.contentHash) throw new Error('Packaged production snapshot hash does not match its import report');
+    const result = {
+      sourceType: canonicalContent.sourceSnapshot.sourceType,
+      sourceSnapshot: canonicalContent.sourceSnapshot,
+      canonicalContent,
+      runtimeContent: new RuntimeContent({ canonicalContent }),
+      gameModes: canonicalContent.collections.gameModes || [],
+      species: canonicalContent.collections.species || [],
+      forms: canonicalContent.collections.forms || [],
+      moves: canonicalContent.collections.moves || [],
+      abilities: canonicalContent.collections.abilities || [],
+      items: canonicalContent.collections.items || [],
+      locales: canonicalContent.collections.locales || [],
+      enums: {},
+      importReport
+    };
+    return this.acceptCanonicalProduction(result, null);
+  }
+
+  acceptCanonicalProduction(result, importer) {
+    if (result.sourceType !== 'UPSTREAM' || result.canonicalContent?.sourceSnapshot?.sourceType !== 'UPSTREAM') throw new Error('Production content rejected: source must be pinned UPSTREAM content. TEST_FIXTURE cannot be promoted.');
+    const errors = result.canonicalContent.validate();
+    if (errors.length) throw new Error(`Production canonical content rejected: ${errors.join('; ')}`);
+    const all = Object.values(result.canonicalContent.collections).flatMap(value => Array.isArray(value) ? value : []);
+    const untrusted = all.filter(entity => {
+      const source = entity.provenance || entity.source || entity;
+      return source.sourceType && source.sourceType !== 'UPSTREAM';
+    });
+    if (untrusted.length) throw new Error(`Production content rejected: ${untrusted.length} entities are not UPSTREAM.`);
+    // Keep the existing prototype battle bridge isolated; canonical production data
+    // is exposed only through CanonicalContent/RuntimeContent and never merged into it.
+    const enumNames = { species: 'SpeciesId', move: 'MoveId', ability: 'AbilityId', type: 'PokemonType', gameMode: 'GameModes' };
+    this.canonicalEnums = new Map(Object.entries(result.enums || {}).map(([name, catalog]) => [enumNames[name] || name, catalog]));
+    this.localeImporter = importer?.localeImporter || new PokerogueLocaleImporter();
+    this.canonicalLocales = result.locales;
+    this.canonicalContent = result.canonicalContent;
+    this.runtimeContent = result.runtimeContent;
+    this.importReport = result.importReport;
+    this.manifest = result.manifest;
+    this.runtimeBridgeIsFixture = true;
+    this.isFallback = false;
+    this._notify('canonicalContentImported', { hash: result.importReport.contentHash, counts: result.importReport.catalogCounts });
     return result;
   }
 

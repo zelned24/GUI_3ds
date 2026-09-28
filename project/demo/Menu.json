@@ -1,0 +1,96 @@
+{
+  "schemaVersion": 5,
+  "id": "Menu",
+  "name": "Main Menu Demo",
+  "fps": 60,
+  "durationFrames": 60,
+  "currentFrame": 0,
+  "top": {
+    "width": 400,
+    "height": 240,
+    "backgroundColor": "#0f172a"
+  },
+  "bottom": {
+    "width": 320,
+    "height": 240,
+    "backgroundColor": "#1e293b"
+  },
+  "nodes": [
+    {
+      "id": "menu_header_box",
+      "name": "Header Box",
+      "type": "Shape",
+      "screen": "top",
+      "x": 20,
+      "y": 20,
+      "width": 360,
+      "height": 40,
+      "visible": true,
+      "locked": true,
+      "zIndex": 1,
+      "properties": {
+        "shapeType": "RoundedRectangle",
+        "fillColor": "#1e293b",
+        "strokeColor": "#38bdf8",
+        "strokeWidth": 2,
+        "cornerRadius": 8
+      }
+    },
+    {
+      "id": "menu_header_text",
+      "name": "Header Text",
+      "type": "Text",
+      "screen": "top",
+      "x": 30,
+      "y": 30,
+      "width": 340,
+      "height": 20,
+      "visible": true,
+      "locked": false,
+      "zIndex": 2,
+      "properties": {
+        "text": "CHOOSE DESTINATION",
+        "fontSize": 14,
+        "align": "center",
+        "color": "#38bdf8"
+      }
+    },
+    {
+      "id": "btn_campaign",
+      "name": "Campaign Button",
+      "type": "TouchButton",
+      "screen": "bottom",
+      "x": 40,
+      "y": 25,
+      "width": 240,
+      "height": 42,
+      "visible": true,
+      "locked": false,
+      "zIndex": 1,
+      "properties": {
+        "label": "CAMPAIGN MODE",
+        "backgroundColor": "#0284c7"
+      }
+    },
+    {
+      "id": "btn_settings",
+      "name": "Settings Button",
+      "type": "TouchButton",
+      "screen": "bottom",
+      "x": 40,
+      "y": 80,
+      "width": 240,
+      "height": 42,
+      "visible": true,
+      "locked": false,
+      "zIndex": 2,
+      "properties": {
+        "label": "OPTIONS & AUDIO",
+        "backgroundColor": "#334155"
+      }
+    }
+  ],
+  "tracks": [],
+  "markers": [],
+  "audioCues": []
+}

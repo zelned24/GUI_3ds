@@ -1,0 +1,107 @@
+{
+  "schemaVersion": 5,
+  "id": "PokemonEntrance",
+  "name": "Pokemon Entrance Demo",
+  "fps": 60,
+  "durationFrames": 60,
+  "currentFrame": 0,
+  "top": {
+    "width": 400,
+    "height": 240,
+    "backgroundColor": "#12141c"
+  },
+  "bottom": {
+    "width": 320,
+    "height": 240,
+    "backgroundColor": "#1a1824"
+  },
+  "nodes": [
+    {
+      "id": "ent_bg",
+      "name": "Arena BG",
+      "type": "Image",
+      "screen": "top",
+      "x": 0,
+      "y": 0,
+      "width": 400,
+      "height": 240,
+      "visible": true,
+      "locked": true,
+      "zIndex": 1,
+      "properties": {
+        "asset": "bg_arena_plains",
+        "fit": "stretch"
+      }
+    },
+    {
+      "id": "ent_pikachu",
+      "name": "Pikachu Entrance Sprite",
+      "type": "PokemonSprite",
+      "screen": "top",
+      "x": 150,
+      "y": 50,
+      "width": 100,
+      "height": 100,
+      "visible": true,
+      "locked": false,
+      "zIndex": 2,
+      "properties": {
+        "species": "Pikachu",
+        "nationalDexId": 25,
+        "facing": "front"
+      }
+    },
+    {
+      "id": "ent_name_label",
+      "name": "Pikachu Label",
+      "type": "Text",
+      "screen": "top",
+      "x": 120,
+      "y": 170,
+      "width": 160,
+      "height": 24,
+      "visible": true,
+      "locked": false,
+      "zIndex": 3,
+      "properties": {
+        "text": "PIKACHU Lv. 25",
+        "fontSize": 12,
+        "align": "center",
+        "color": "#facc15"
+      }
+    },
+    {
+      "id": "ent_status_box",
+      "name": "Touch Info Box",
+      "type": "RogueBox",
+      "screen": "bottom",
+      "x": 10,
+      "y": 30,
+      "width": 300,
+      "height": 180,
+      "visible": true,
+      "locked": false,
+      "zIndex": 1,
+      "properties": {
+        "backgroundColor": "#1f2937"
+      }
+    }
+  ],
+  "tracks": [
+    {
+      "id": "trk_ent_y",
+      "targetNodeId": "ent_pikachu",
+      "propertyPath": "y",
+      "keyframes": [
+        { "frame": 0, "value": -100, "interpolation": "easeOut" },
+        { "frame": 30, "value": 50, "interpolation": "linear" }
+      ]
+    }
+  ],
+  "markers": [
+    { "id": "m_land", "frame": 30, "name": "PikachuLanded", "type": "Event" }
+  ],
+  "audioCues": [
+    { "id": "cue_cry", "frame": 30, "asset": "sfx_pikachu_cry", "volume": 1.0, "channel": 0 }
+  ]
+}

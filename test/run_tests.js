@@ -64,6 +64,22 @@ import { SceneLibrary } from '../public/js/core/SceneLibrary.js';
 import { SpatialUtils } from '../public/js/editor/SpatialUtils.js';
 import { CompositionNode } from '../public/js/components/CompositionNode.js';
 import { CanvasRenderer } from '../public/js/editor/CanvasRenderer.js';
+import { Effect, EffectStack, BlendModes } from '../public/js/core/EffectModel.js';
+import { TextNode } from '../public/js/components/TextNode.js';
+import { ShapeNode, ShapeTypes } from '../public/js/components/ShapeNode.js';
+import { ProjectDocument, RecentProjectsManager } from '../public/js/core/ProjectDocument.js';
+import { PresetManager } from '../public/js/core/PresetManager.js';
+import { DependencyGraph } from '../public/js/core/DependencyGraph.js';
+import { GlobalSearch } from '../public/js/editor/GlobalSearch.js';
+import { CommandPalette } from '../public/js/editor/CommandPalette.js';
+import { KeyboardShortcuts } from '../public/js/editor/KeyboardShortcuts.js';
+import { CompositionNavigator } from '../public/js/editor/CompositionNavigator.js';
+import { SceneTabs } from '../public/js/editor/SceneTabs.js';
+import { ProjectValidator } from '../public/js/generator/ProjectValidator.js';
+import { ExportReport } from '../public/js/generator/ExportReport.js';
+import { BatchExporter } from '../public/js/generator/BatchExporter.js';
+import { BuildOutputPanel } from '../public/js/editor/BuildOutputPanel.js';
+import { registerBetaUI8Tests } from './beta_ui_8_tests.js';
 
 
 const __filename = fileURLToPath(import.meta.url);
@@ -4967,6 +4983,8 @@ test('BETA-UI-7.28: CI regression', () => {
   assert.doesNotThrow(() => SceneValidator.assertValid(JSON.parse(fs.readFileSync(advPath, 'utf8'))));
   assert.doesNotThrow(() => SceneValidator.assertValid(JSON.parse(fs.readFileSync(profPath, 'utf8'))));
 });
+
+registerBetaUI8Tests(test);
 
 let blocked = 0;
 let failed = 0;

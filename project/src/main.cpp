@@ -1,41 +1,40 @@
-#include "screens/PikachuEntranceScene.hpp"
-#include "screens/SceneAssets.hpp"
-#include "screens/AssetManifest.hpp"
+#include "game/FirstRunRuntime.hpp"
 #include "gfx/renderer2d.hpp"
-#if !defined(__wasm__)
-#include "runtime/RuntimeAssetManager.hpp"
 #include "runtime/ScenePlayer.hpp"
-#endif
-#include "core/input_manager.hpp"
+#include <3ds.h>
 
 int main() {
+    gfxInitDefault();
     Renderer2D renderer;
-    if (!renderer.init()) return 1;
+    if (!renderer.init()) {
+        gfxExit();
+        return 1;
+    }
 
-    InputManager input;
-
-    // 1. Generated 3DS Screen
-    PikachuEntranceScene scene;
-    scene.enter();
-    scene.handleInput(input);
-    scene.update(1.0f / 60.0f);
-    scene.drawTop(renderer);
-    scene.drawBottom(renderer);
-    scene.exit();
-
-#if !defined(__wasm__)
-    // 2. Production ScenePlayer playback controller
-    Citro2D::ScenePlayer player(Citro2D::g_SceneDefinition);
+    Pokerogue3DS::FirstRunRuntime game(0x3D5C0DEu);
+    Citro2D::ScenePlayer player(game.scene());
     player.enter();
-    player.play();
-    player.update(1.0f / 60.0f);
-    player.renderTop(renderer);
-    player.renderBottom(renderer);
-    player.pause();
-    player.seek(15);
-    player.exit();
-#endif
+    player.setLoop(true);
 
+    while (aptMainLoop()) {
+        hidScanInput();
+        const uint32_t pressed = hidKeysDown();
+        bool changed = false;
+        if (pressed & KEY_LEFT) changed = game.cycleStarter(-1);
+        else if (pressed & KEY_RIGHT) changed = game.cycleStarter(1);
+        if (changed) player.load(game.scene());
+
+        renderer.beginFrame();
+        renderer.beginTop();
+        player.renderTop(renderer);
+        renderer.beginBottom();
+        player.renderBottom(renderer);
+        renderer.endFrame();
+        gspWaitForVBlank();
+    }
+
+    player.exit();
     renderer.fini();
+    gfxExit();
     return 0;
 }

@@ -1,0 +1,102 @@
+{
+  "schemaVersion": 5,
+  "id": "Title",
+  "name": "Title Screen Demo",
+  "fps": 60,
+  "durationFrames": 90,
+  "currentFrame": 0,
+  "top": {
+    "width": 400,
+    "height": 240,
+    "backgroundColor": "#020617"
+  },
+  "bottom": {
+    "width": 320,
+    "height": 240,
+    "backgroundColor": "#0f172a"
+  },
+  "nodes": [
+    {
+      "id": "title_logo",
+      "name": "Game Logo Text",
+      "type": "Text",
+      "screen": "top",
+      "x": 20,
+      "y": 70,
+      "width": 360,
+      "height": 48,
+      "visible": true,
+      "locked": true,
+      "zIndex": 1,
+      "properties": {
+        "text": "3DS UI PRODUCTION STUDIO",
+        "font": "standard",
+        "fontSize": 18,
+        "align": "center",
+        "color": "#facc15"
+      },
+      "effects": [
+        {
+          "id": "eff_glow",
+          "type": "Brightness",
+          "enabled": true,
+          "parameters": { "factor": 1.2 }
+        }
+      ]
+    },
+    {
+      "id": "title_sub",
+      "name": "Subtitle",
+      "type": "Text",
+      "screen": "top",
+      "x": 20,
+      "y": 120,
+      "width": 360,
+      "height": 24,
+      "visible": true,
+      "locked": false,
+      "zIndex": 2,
+      "properties": {
+        "text": "Citro2D Native Engine Pipeline",
+        "font": "standard",
+        "fontSize": 12,
+        "align": "center",
+        "color": "#94a3b8"
+      }
+    },
+    {
+      "id": "touch_prompt",
+      "name": "Touch Start Button",
+      "type": "TouchButton",
+      "screen": "bottom",
+      "x": 40,
+      "y": 95,
+      "width": 240,
+      "height": 50,
+      "visible": true,
+      "locked": false,
+      "zIndex": 1,
+      "properties": {
+        "label": "TOUCH TO START",
+        "backgroundColor": "#3b82f6"
+      }
+    }
+  ],
+  "tracks": [
+    {
+      "id": "trk_logo_fade",
+      "targetNodeId": "title_logo",
+      "propertyPath": "opacity",
+      "keyframes": [
+        { "frame": 0, "value": 0.0, "interpolation": "linear" },
+        { "frame": 30, "value": 1.0, "interpolation": "easeInOut" }
+      ]
+    }
+  ],
+  "markers": [
+    { "id": "m_title_in", "frame": 30, "name": "TitleRevealed", "type": "Event" }
+  ],
+  "audioCues": [
+    { "id": "cue_title", "frame": 0, "asset": "sfx_pikachu_cry", "volume": 0.8, "channel": 0 }
+  ]
+}

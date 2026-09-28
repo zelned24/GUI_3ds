@@ -1,0 +1,115 @@
+{
+  "schemaVersion": 5,
+  "id": "AdvancedAnimation",
+  "name": "Advanced Animation Demo",
+  "fps": 60,
+  "durationFrames": 90,
+  "currentFrame": 0,
+  "top": {
+    "width": 400,
+    "height": 240,
+    "backgroundColor": "#030712"
+  },
+  "bottom": {
+    "width": 320,
+    "height": 240,
+    "backgroundColor": "#111827"
+  },
+  "nodes": [
+    {
+      "id": "anim_card",
+      "name": "Animated Card Shape",
+      "type": "Shape",
+      "screen": "top",
+      "x": 100,
+      "y": 50,
+      "width": 200,
+      "height": 120,
+      "visible": true,
+      "locked": false,
+      "zIndex": 1,
+      "properties": {
+        "shapeType": "RoundedRectangle",
+        "fillColor": "#1f2937",
+        "strokeColor": "#f59e0b",
+        "strokeWidth": 2,
+        "cornerRadius": 10
+      },
+      "effects": [
+        {
+          "id": "card_tint",
+          "type": "Tint",
+          "enabled": true,
+          "parameters": { "color": "#fbbf24", "intensity": 0.0 }
+        }
+      ]
+    },
+    {
+      "id": "anim_title",
+      "name": "Animated Text",
+      "type": "Text",
+      "screen": "top",
+      "x": 100,
+      "y": 95,
+      "width": 200,
+      "height": 30,
+      "visible": true,
+      "locked": false,
+      "zIndex": 2,
+      "properties": {
+        "text": "KEYFRAME CURVES",
+        "font": "standard",
+        "fontSize": 14,
+        "align": "center",
+        "color": "#fef3c7"
+      }
+    }
+  ],
+  "tracks": [
+    {
+      "id": "trk_card_x",
+      "nodeId": "anim_card",
+      "property": "x",
+      "interpolation": "bezier",
+      "keyframes": [
+        { "frame": 0, "value": 20, "handleIn": { "frame": -10, "value": 0 }, "handleOut": { "frame": 15, "value": 0 } },
+        { "frame": 45, "value": 150, "handleIn": { "frame": -15, "value": 0 }, "handleOut": { "frame": 15, "value": 0 } },
+        { "frame": 90, "value": 100, "handleIn": { "frame": -15, "value": 0 }, "handleOut": { "frame": 10, "value": 0 } }
+      ]
+    },
+    {
+      "id": "trk_card_tint",
+      "nodeId": "anim_card",
+      "property": "effects.0.parameters.intensity",
+      "interpolation": "linear",
+      "keyframes": [
+        { "frame": 0, "value": 0.0 },
+        { "frame": 45, "value": 0.8 },
+        { "frame": 90, "value": 0.1 }
+      ]
+    },
+    {
+      "id": "trk_title_scale",
+      "nodeId": "anim_title",
+      "property": "scale.x",
+      "interpolation": "linear",
+      "keyframes": [
+        { "frame": 0, "value": 0.8 },
+        { "frame": 45, "value": 1.2 },
+        { "frame": 90, "value": 1.0 }
+      ]
+    }
+  ],
+  "clips": [
+    {
+      "id": "clip_intro_bounce",
+      "name": "Intro Bounce Clip",
+      "startFrame": 0,
+      "durationFrames": 45,
+      "trackIds": ["trk_card_x", "trk_card_tint"]
+    }
+  ],
+  "markers": [
+    { "id": "m_peak", "frame": 45, "label": "Apex", "color": "#f59e0b" }
+  ]
+}

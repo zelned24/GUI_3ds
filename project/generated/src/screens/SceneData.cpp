@@ -44,7 +44,10 @@ static const SceneNodeData s_nodes[] = {
         "bg_arena_plains", false, false,
         0xFFFFFFFF, nullptr,
         false,
-        { nullptr, 0, 0, 0, 1.0f, false }
+        { nullptr, 0, 0, 0, 1.0f, false },
+        { EffectType::None, false, 1.0f, 0.0f, 1.0f, 4294967295, 0 },
+        { 0, 0xFFDB9834, 0xFFB98029, 0.0f, 0.0f },
+        { nullptr, "standard", 12, 0, 0xFFFFFFFF, 14 }
     },
     {
         0x0020114C, "pikachu_sprite", NodeType::PokemonSprite, ScreenTarget::Top, -1,
@@ -54,7 +57,10 @@ static const SceneNodeData s_nodes[] = {
         "pokemon_sprite_25_front", false, false,
         0xFFFFFFFF, nullptr,
         false,
-        { nullptr, 0, 0, 0, 1.0f, false }
+        { nullptr, 0, 0, 0, 1.0f, false },
+        { EffectType::None, false, 1.0f, 0.0f, 1.0f, 4294967295, 0 },
+        { 0, 0xFFDB9834, 0xFFB98029, 0.0f, 0.0f },
+        { nullptr, "standard", 12, 0, 0xFFFFFFFF, 14 }
     },
     {
         0x01CE1A28, "title_banner", NodeType::Text, ScreenTarget::Top, -1,
@@ -64,7 +70,10 @@ static const SceneNodeData s_nodes[] = {
         nullptr, false, false,
         0xFFFFFFFF, "WILD PIKACHU APPEARED!",
         false,
-        { nullptr, 0, 0, 0, 1.0f, false }
+        { nullptr, 0, 0, 0, 1.0f, false },
+        { EffectType::None, false, 1.0f, 0.0f, 1.0f, 4294967295, 0 },
+        { 0, 0xFFDB9834, 0xFFB98029, 0.0f, 0.0f },
+        { "WILD PIKACHU APPEARED!", "standard", 16, 1, 0xFF05CBFF, 14 }
     },
 };
 

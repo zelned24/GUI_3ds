@@ -65,7 +65,7 @@ export class TitleScreen extends BaseScreen {
 
   _bindEvents() {
     this.bottomEl.querySelector('#btn_menu_start')?.addEventListener('click', () => {
-      this.appShell.transitionTo(AppStates.SETUP);
+      this._beginNewGame();
     });
 
     this.bottomEl.querySelector('#btn_menu_options')?.addEventListener('click', () => {
@@ -77,9 +77,25 @@ export class TitleScreen extends BaseScreen {
     });
   }
 
+  async _beginNewGame() {
+    const button = this.bottomEl?.querySelector('#btn_menu_start');
+    if (button) button.disabled = true;
+    try {
+      await this.appShell.beginNewGame();
+    } catch (error) {
+      const message = document.createElement('p');
+      message.className = 'content-import-error';
+      message.setAttribute('role', 'alert');
+      message.textContent = `PokéRogue content could not be loaded: ${error.message}`;
+      this.bottomEl?.querySelector('.menu-box')?.append(message);
+    } finally {
+      if (button) button.disabled = false;
+    }
+  }
+
   handleInput(gameInput) {
     if (gameInput.action === 'CONFIRM') {
-      this.appShell.transitionTo(AppStates.SETUP);
+      this._beginNewGame();
       return true;
     }
     return false;

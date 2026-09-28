@@ -1,4 +1,5 @@
 import { Transform } from './Transform.js';
+import { Effect, EffectStack } from './EffectModel.js';
 import { globalRNG } from './DeterministicRNG.js';
 
 /**
@@ -40,9 +41,31 @@ export class UINode {
     this.zIndex = Math.round(data.zIndex ?? 1);
     this.metadata = { ...(data.metadata || {}) };
 
+    // Effects stack (BETA-UI-8)
+    this.effects = data.effects instanceof EffectStack
+      ? data.effects
+      : new EffectStack(data.effects || []);
+
     // Properties initialized with component defaults and overrides
     const defaultProps = this.getDefaultProperties();
     this.properties = { ...defaultProps, ...(data.properties || {}) };
+  }
+
+  // --- Effects Management (BETA-UI-8) ---
+  addEffect(effect) {
+    return this.effects.add(effect);
+  }
+
+  removeEffect(idOrIndex) {
+    return this.effects.remove(idOrIndex);
+  }
+
+  getEffect(idOrIndex) {
+    return this.effects.get(idOrIndex);
+  }
+
+  getEffects() {
+    return this.effects.getAll();
   }
 
   // --- Convenience Backward-Compatibility Accessors ---
@@ -228,6 +251,7 @@ export class UINode {
       enabled: Boolean(this.enabled),
       locked: Boolean(this.locked),
       zIndex: Math.round(this.zIndex),
+      effects: this.effects ? this.effects.toJSON() : [],
       properties: { ...this.properties },
       metadata: { ...this.metadata }
     };

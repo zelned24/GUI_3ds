@@ -94,7 +94,19 @@ export class PokerogueManifest {
    * Computes SHA-256 for a given text content.
    */
   static computeHash(content) {
-    return sha256Sync(typeof content === 'string' ? content : JSON.stringify(content));
+    return sha256Sync(typeof content === 'string' ? content : PokerogueManifest.stableStringify(content));
+  }
+
+  static stableStringify(value, space = 0) {
+    const normalize = input => {
+      if (Array.isArray(input)) return input.map(normalize);
+      if (!input || typeof input !== 'object') return input;
+      return Object.keys(input).sort().reduce((out, key) => {
+        if (key !== 'importedAt' && key !== 'importTimestamp' && key !== 'timestamp') out[key] = normalize(input[key]);
+        return out;
+      }, {});
+    };
+    return JSON.stringify(normalize(value), null, space);
   }
 
   /**
@@ -136,19 +148,6 @@ export class PokerogueManifest {
    * - Excludes volatile runtime timestamps.
    */
   getDeterministicExport() {
-    function sortObject(obj) {
-      if (obj === null || typeof obj !== 'object' || Array.isArray(obj)) {
-        return obj;
-      }
-      const sorted = {};
-      const keys = Object.keys(obj).sort();
-      for (const k of keys) {
-        if (k === 'importedAt' || k === 'timestamp') continue; // Exclude volatile fields
-        sorted[k] = sortObject(obj[k]);
-      }
-      return sorted;
-    }
-
     const payload = {
       schemaVersion: this.schemaVersion,
       target: this.target,
@@ -156,6 +155,6 @@ export class PokerogueManifest {
       entities: this.entities
     };
 
-    return JSON.stringify(sortObject(payload), null, 2);
+    return PokerogueManifest.stableStringify(payload, 2);
   }
 }

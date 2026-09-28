@@ -49,6 +49,15 @@ struct RuntimeMetrics {
     uint32_t sequencerSegments;
     // BETA-UI-7: Composition metrics
     uint32_t nestedCompositions;
+    // BETA-UI-8: Effects, vector/text nodes & memory instrumentation
+    uint32_t effectEvaluations;
+    uint32_t textNodes;
+    uint32_t shapeNodes;
+    uint32_t nestedCompositionDepth;
+    uint32_t assetMemoryBytes;
+    uint32_t sceneMemoryBytes;
+    uint32_t runtimeCacheBytes;
+    uint32_t effectMemoryBytes;
 };
 
 class RuntimeAssetManager {

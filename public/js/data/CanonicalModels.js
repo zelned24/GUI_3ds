@@ -5,11 +5,17 @@
 
 export class SourceMetadata {
   constructor(data = {}) {
-    this.source = data?.source || 'pokerogue';
-    this.sourcePath = data?.sourcePath || 'src/data';
-    this.sourceRevision = data?.sourceRevision || 'main';
+    this.sourceType = data?.sourceType || (String(data?.source || '').startsWith('TEST_FIXTURE') ? 'TEST_FIXTURE' : 'UNVERIFIED');
+    this.source = data?.source || (this.sourceType === 'UPSTREAM' ? 'pokerogue' : this.sourceType);
+    this.sourceRepository = data?.sourceRepository || data?.repository || (this.sourceType === 'UPSTREAM' ? 'https://github.com/pagefaultgames/pokerogue' : '');
+    this.sourcePath = data?.sourcePath || '';
+    this.sourceRevision = data?.sourceRevision || data?.revision || '';
     this.importedAt = data?.importedAt || 'CANONICAL_IMPORT';
     this.license = data?.license || 'AGPL-v3.0-only';
+    this.contentVersion = data?.contentVersion || '1.0.0';
+    this.schemaVersion = data?.schemaVersion || '1.0.0';
+    this.sourceHash = data?.sourceHash || data?.hash || null;
+    this.sourceSymbol = data?.sourceSymbol || null;
   }
 }
 
@@ -93,6 +99,8 @@ export class SpeciesDefinition {
     this.sprite = this.sprites;
     this.source = new SourceMetadata(data.metadata || data.source);
     this.metadata = this.source;
+    this.extensions = data.extensions || {};
+    if (data.raw) this.extensions.upstreamRawRecord = data.raw;
     this.schemaVersion = 1;
   }
 
@@ -132,9 +140,11 @@ export class MoveDefinition {
       sound: Boolean(data.flags?.sound),
       bullet: Boolean(data.flags?.bullet)
     };
-    this.secondaryEffects = Array.isArray(data.secondaryEffects) ? [...data.secondaryEffects] : [];
+    this.secondaryEffects = data.secondaryEffects === null ? null : (Array.isArray(data.secondaryEffects) ? [...data.secondaryEffects] : []);
     this.source = new SourceMetadata(data.metadata || data.source);
     this.metadata = this.source;
+    this.extensions = data.extensions || {};
+    if (data.raw) this.extensions.upstreamRawRecord = data.raw;
     this.schemaVersion = 1;
   }
 
@@ -170,6 +180,8 @@ export class AbilityDefinition {
     this.effects = Array.isArray(data.effects) ? [...data.effects] : [];
     this.source = new SourceMetadata(data.metadata || data.source);
     this.metadata = this.source;
+    this.extensions = data.extensions || {};
+    if (data.raw) this.extensions.upstreamRawRecord = data.raw;
     this.schemaVersion = 1;
   }
 
@@ -193,9 +205,9 @@ export class ItemDefinition {
       es: data.names?.es || data.names?.['es-ES'] || data.name || this.id,
       ...data.names
     };
-    this.category = data.category || 'GENERAL';
-    this.tier = data.tier || 'COMMON';
-    this.price = Number(data.price ?? 100);
+    this.category = data.category ?? null;
+    this.tier = data.tier ?? null;
+    this.price = data.price === undefined || data.price === null ? null : Number(data.price);
     this.description = data.description || '';
     this.descriptions = {
       en: data.descriptions?.en || data.description || '',
@@ -204,6 +216,8 @@ export class ItemDefinition {
     };
     this.source = new SourceMetadata(data.metadata || data.source);
     this.metadata = this.source;
+    this.extensions = data.extensions || {};
+    if (data.raw) this.extensions.upstreamRawRecord = data.raw;
     this.schemaVersion = 1;
   }
 

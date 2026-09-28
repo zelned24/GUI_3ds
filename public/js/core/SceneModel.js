@@ -109,6 +109,8 @@ export class SceneModel {
 
     // Guides (Spatial guidelines)
     this.guides = Array.isArray(data.guides) ? [...data.guides] : [];
+    this.safeAreas = Array.isArray(data.safeAreas) ? [...data.safeAreas] : [];
+    this.compositions = Array.isArray(data.compositions) ? [...data.compositions] : [];
 
     // Metadata
     this.metadata = {
@@ -250,6 +252,10 @@ export class SceneModel {
    */
   getNode(nodeId) {
     return this.nodes.find(n => n.id === nodeId) || null;
+  }
+
+  getNodeById(nodeId) {
+    return this.getNode(nodeId);
   }
 
   /**
@@ -740,7 +746,23 @@ export class SceneModel {
     return migrated;
   }
 
+  static migrateV4ToV5(data) {
+    if (!data) return data;
+    const v4 = this.migrateV3ToV4(data);
+    const migrated = { ...v4 };
+    migrated.schemaVersion = 5;
+    const nodes = migrated.nodes || migrated.components || [];
+    for (const n of nodes) {
+      if (!Array.isArray(n.effects)) n.effects = [];
+    }
+    return migrated;
+  }
+
   static migrateToLatest(data) {
+    if (!data) return data;
+    if (data.schemaVersion === 4) {
+      return this.migrateV4ToV5(data);
+    }
     return this.migrateV3ToV4(data);
   }
 
@@ -774,6 +796,8 @@ export class SceneModel {
       markers: [...this.markers],
       audioCues: [...this.audioCues],
       guides: [...this.guides],
+      safeAreas: [...this.safeAreas],
+      compositions: [...this.compositions],
       metadata: { ...this.metadata }
     };
   }

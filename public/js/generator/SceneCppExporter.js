@@ -48,8 +48,11 @@ export class SceneCppExporter {
     'PokemonSpriteNode': 1,
     'PixelText': 2,
     'Text': 2,
+    'TextNode': 2,
+    'Label': 2,
     'RogueBox': 3,
     'Panel': 3,
+    'Dialog': 3,
     'HealthBar': 3,
     'TouchButton': 4,
     'MoveButton': 4,
@@ -57,7 +60,9 @@ export class SceneCppExporter {
     'Group': 5,
     'GroupNode': 5,
     'Composition': 6,
-    'CompositionNode': 6
+    'CompositionNode': 6,
+    'Shape': 7,
+    'ShapeNode': 7
   };
 
   /**
@@ -381,7 +386,33 @@ export class SceneCppExporter {
         tintColor: this.hexColorToCitro2D(tint),
         text,
         locked: Boolean(n.locked),
-        composition: compData
+        composition: compData,
+        effect: n.effects && (typeof n.effects.getAll === 'function' ? n.effects.getAll()[0] : n.effects[0])
+          ? {
+              type: (typeof n.effects.getAll === 'function' ? n.effects.getAll()[0] : n.effects[0]).type || 'None',
+              enabled: (typeof n.effects.getAll === 'function' ? n.effects.getAll()[0] : n.effects[0]).enabled !== false,
+              opacity: Number((typeof n.effects.getAll === 'function' ? n.effects.getAll()[0] : n.effects[0]).parameters?.opacity ?? 1.0),
+              intensity: Number((typeof n.effects.getAll === 'function' ? n.effects.getAll()[0] : n.effects[0]).parameters?.intensity ?? 0.0),
+              factor: Number((typeof n.effects.getAll === 'function' ? n.effects.getAll()[0] : n.effects[0]).parameters?.factor ?? 1.0),
+              color: this.hexColorToCitro2D((typeof n.effects.getAll === 'function' ? n.effects.getAll()[0] : n.effects[0]).parameters?.color || '#ffffff'),
+              blendMode: (typeof n.effects.getAll === 'function' ? n.effects.getAll()[0] : n.effects[0]).parameters?.blendMode === 'add' ? 1 : ((typeof n.effects.getAll === 'function' ? n.effects.getAll()[0] : n.effects[0]).parameters?.blendMode === 'multiply' ? 2 : ((typeof n.effects.getAll === 'function' ? n.effects.getAll()[0] : n.effects[0]).parameters?.blendMode === 'screen' ? 3 : 0))
+            }
+          : { type: 'None', enabled: false, opacity: 1.0, intensity: 0.0, factor: 1.0, color: 0xFFFFFFFF, blendMode: 0 },
+        shape: {
+          shapeType: (n.shapeType || n.properties?.shapeType) === 'Line' ? 2 : ((n.shapeType || n.properties?.shapeType) === 'RoundedRectangle' ? 1 : 0),
+          fillColor: this.hexColorToCitro2D(n.fillColor || n.properties?.fillColor || '#3498db'),
+          strokeColor: this.hexColorToCitro2D(n.strokeColor || n.properties?.strokeColor || '#2980b9'),
+          strokeWidth: Number(n.strokeWidth || n.properties?.strokeWidth || 0),
+          cornerRadius: Number(n.cornerRadius || n.properties?.cornerRadius || 0)
+        },
+        textData: {
+          text,
+          font: n.font || n.properties?.font || 'standard',
+          fontSize: Number(n.fontSize || n.properties?.fontSize || 12),
+          textAlign: (n.align || n.properties?.align) === 'center' ? 1 : ((n.align || n.properties?.align) === 'right' ? 2 : 0),
+          color: this.hexColorToCitro2D(n.color || n.properties?.color || '#ffffff'),
+          lineHeight: Number(n.lineHeight || n.properties?.lineHeight || 14)
+        }
       };
     });
 
@@ -599,7 +630,44 @@ enum class NodeType : uint8_t {
     Panel = 3,
     Button = 4,
     Group = 5,
-    Composition = 6
+    Composition = 6,
+    Shape = 7
+};
+
+enum class EffectType : uint8_t {
+    None = 0,
+    Opacity = 1,
+    Tint = 2,
+    Brightness = 3,
+    ColorOverlay = 4,
+    Fade = 5
+};
+
+struct SceneEffectData {
+    EffectType type;
+    bool enabled;
+    float opacity;
+    float intensity;
+    float factor;
+    uint32_t color;
+    uint8_t blendMode;
+};
+
+struct SceneShapeData {
+    uint8_t shapeType; // 0=Rect, 1=RoundedRect, 2=Line
+    uint32_t fillColor;
+    uint32_t strokeColor;
+    float strokeWidth;
+    float cornerRadius;
+};
+
+struct SceneTextData {
+    const char* text;
+    const char* font;
+    uint16_t fontSize;
+    uint8_t textAlign;
+    uint32_t color;
+    uint16_t lineHeight;
 };
 
 struct SceneKeyframe {
@@ -695,6 +763,10 @@ struct SceneNodeData {
     // BETA-UI-7: Production UX & Composition
     bool locked;
     SceneCompositionData composition;
+    // BETA-UI-8: Effects, Shape, Text
+    SceneEffectData effect;
+    SceneShapeData shape;
+    SceneTextData textData;
 };
 
 struct SceneDefinition {
@@ -787,7 +859,7 @@ extern const SceneDefinition g_SceneDefinition;
       for (const node of model.nodes) {
         const hexHash = `0x${node.idHash.toString(16).toUpperCase().padStart(8, '0')}`;
         const screenEnum = node.screen === 'bottom' ? 'ScreenTarget::Bottom' : (node.screen === 'global' ? 'ScreenTarget::Global' : 'ScreenTarget::Top');
-        const typeNames = ['Image', 'PokemonSprite', 'Text', 'Panel', 'Button', 'Group', 'Composition'];
+        const typeNames = ['Image', 'PokemonSprite', 'Text', 'Panel', 'Button', 'Group', 'Composition', 'Shape'];
         const typeEnum = `NodeType::${typeNames[node.typeCode] || 'Image'}`;
         const assetStr = node.asset ? `"${this.escapeCppString(node.asset)}"` : 'nullptr';
         const textStr = node.text ? `"${this.escapeCppString(node.text)}"` : 'nullptr';
@@ -801,10 +873,22 @@ extern const SceneDefinition g_SceneDefinition;
         lines.push(`        ${node.tintColor}, ${textStr},`);
         lines.push(`        ${node.locked ? 'true' : 'false'},`);
         if (node.composition && node.composition.sceneId) {
-          lines.push(`        { "${this.escapeCppString(node.composition.sceneId)}", ${node.composition.startFrame}, ${node.composition.durationFrames}, ${node.composition.localFrameOffset}, ${this.formatFloat(node.composition.playbackRate)}, ${node.composition.loop ? 'true' : 'false'} }`);
+          lines.push(`        { "${this.escapeCppString(node.composition.sceneId)}", ${node.composition.startFrame}, ${node.composition.durationFrames}, ${node.composition.localFrameOffset}, ${this.formatFloat(node.composition.playbackRate)}, ${node.composition.loop ? 'true' : 'false'} },`);
         } else {
-          lines.push('        { nullptr, 0, 0, 0, 1.0f, false }');
+          lines.push('        { nullptr, 0, 0, 0, 1.0f, false },');
         }
+
+        // BETA-UI-8: Effect, Shape, TextData
+        const eff = node.effect || { type: 'None', enabled: false, opacity: 1.0, intensity: 0.0, factor: 1.0, color: 0xFFFFFFFF, blendMode: 0 };
+        const effType = `EffectType::${eff.type || 'None'}`;
+        lines.push(`        { ${effType}, ${eff.enabled ? 'true' : 'false'}, ${this.formatFloat(eff.opacity)}, ${this.formatFloat(eff.intensity)}, ${this.formatFloat(eff.factor)}, ${eff.color}, ${eff.blendMode} },`);
+
+        const shp = node.shape || { shapeType: 0, fillColor: 0, strokeColor: 0, strokeWidth: 0, cornerRadius: 0 };
+        lines.push(`        { ${shp.shapeType}, ${shp.fillColor}, ${shp.strokeColor}, ${this.formatFloat(shp.strokeWidth)}, ${this.formatFloat(shp.cornerRadius)} },`);
+
+        const txt = node.textData || { text: '', font: 'standard', fontSize: 12, textAlign: 0, color: 0xFFFFFFFF, lineHeight: 14 };
+        const txtFont = txt.font ? `"${this.escapeCppString(txt.font)}"` : 'nullptr';
+        lines.push(`        { ${textStr}, ${txtFont}, ${txt.fontSize}, ${txt.textAlign}, ${txt.color}, ${txt.lineHeight} }`);
         lines.push('    },');
       }
       lines.push('};');
@@ -1792,6 +1876,23 @@ Screen* createScene() {
       }
       return last.value;
     };
+
+    if (Array.isArray(exportModel.nodes)) {
+      for (const node of exportModel.nodes) {
+        evaluatedMap.set(node.id, {
+          transform: {
+            x: Number(node.x ?? 0),
+            y: Number(node.y ?? 0),
+            scaleX: Number(node.scaleX ?? 1.0),
+            scaleY: Number(node.scaleY ?? 1.0),
+            rotation: Number(node.rotation ?? 0.0),
+            opacity: Number(node.opacity ?? 1.0)
+          },
+          visible: node.visible !== false,
+          opacity: Number(node.opacity ?? 1.0)
+        });
+      }
+    }
 
     const applyValue = (targetNodeId, propertyId, evaluatedVal) => {
       if (!evaluatedMap.has(targetNodeId)) {

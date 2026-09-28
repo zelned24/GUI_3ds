@@ -1,0 +1,204 @@
+{
+  "schemaVersion": 5,
+  "id": "DualScreen",
+  "name": "Dual Screen Workflow Demo",
+  "fps": 60,
+  "durationFrames": 90,
+  "currentFrame": 0,
+  "top": {
+    "width": 400,
+    "height": 240,
+    "backgroundColor": "#090d16"
+  },
+  "bottom": {
+    "width": 320,
+    "height": 240,
+    "backgroundColor": "#111827"
+  },
+  "nodes": [
+    {
+      "id": "top_bg",
+      "name": "Top Arena BG",
+      "type": "Image",
+      "screen": "top",
+      "x": 0,
+      "y": 0,
+      "width": 400,
+      "height": 240,
+      "visible": true,
+      "locked": true,
+      "zIndex": 1,
+      "properties": {
+        "asset": "bg_arena_plains",
+        "fit": "stretch"
+      },
+      "effects": [
+        {
+          "id": "top_bg_fade",
+          "type": "Fade",
+          "enabled": true,
+          "parameters": { "progress": 0.0 }
+        }
+      ]
+    },
+    {
+      "id": "top_header_panel",
+      "name": "Top Header Panel",
+      "type": "Shape",
+      "screen": "top",
+      "x": 10,
+      "y": 10,
+      "width": 380,
+      "height": 36,
+      "visible": true,
+      "locked": false,
+      "zIndex": 2,
+      "properties": {
+        "shapeType": "RoundedRectangle",
+        "fillColor": "#0f172ae6",
+        "strokeColor": "#38bdf8",
+        "strokeWidth": 1.5,
+        "cornerRadius": 6
+      }
+    },
+    {
+      "id": "top_title_text",
+      "name": "Top Title Text",
+      "type": "Text",
+      "screen": "top",
+      "x": 20,
+      "y": 18,
+      "width": 360,
+      "height": 20,
+      "visible": true,
+      "locked": false,
+      "zIndex": 3,
+      "properties": {
+        "text": "TOP SCREEN - 400x240 VIEWPORT",
+        "font": "standard",
+        "fontSize": 14,
+        "align": "center",
+        "color": "#e0f2fe"
+      }
+    },
+    {
+      "id": "bottom_panel",
+      "name": "Bottom Touch Panel",
+      "type": "Shape",
+      "screen": "bottom",
+      "x": 10,
+      "y": 10,
+      "width": 300,
+      "height": 220,
+      "visible": true,
+      "locked": false,
+      "zIndex": 1,
+      "properties": {
+        "shapeType": "RoundedRectangle",
+        "fillColor": "#1e293b",
+        "strokeColor": "#64748b",
+        "strokeWidth": 2,
+        "cornerRadius": 8
+      }
+    },
+    {
+      "id": "bottom_label",
+      "name": "Bottom Label Text",
+      "type": "Text",
+      "screen": "bottom",
+      "x": 20,
+      "y": 24,
+      "width": 280,
+      "height": 20,
+      "visible": true,
+      "locked": false,
+      "zIndex": 2,
+      "properties": {
+        "text": "BOTTOM SCREEN - 320x240 TOUCH",
+        "font": "standard",
+        "fontSize": 12,
+        "align": "center",
+        "color": "#38bdf8"
+      }
+    },
+    {
+      "id": "bottom_touch_btn",
+      "name": "Bottom Touch Button",
+      "type": "Shape",
+      "screen": "bottom",
+      "x": 60,
+      "y": 80,
+      "width": 200,
+      "height": 50,
+      "visible": true,
+      "locked": false,
+      "zIndex": 3,
+      "properties": {
+        "shapeType": "RoundedRectangle",
+        "fillColor": "#2563eb",
+        "strokeColor": "#93c5fd",
+        "strokeWidth": 1.5,
+        "cornerRadius": 6
+      },
+      "effects": [
+        {
+          "id": "btn_tint",
+          "type": "Tint",
+          "enabled": true,
+          "parameters": { "color": "#60a5fa", "intensity": 0.2 }
+        }
+      ]
+    },
+    {
+      "id": "btn_label",
+      "name": "Button Label",
+      "type": "Text",
+      "screen": "bottom",
+      "x": 60,
+      "y": 95,
+      "width": 200,
+      "height": 20,
+      "visible": true,
+      "locked": false,
+      "zIndex": 4,
+      "properties": {
+        "text": "TAP TO ENGAGE",
+        "font": "standard",
+        "fontSize": 14,
+        "align": "center",
+        "color": "#ffffff"
+      }
+    }
+  ],
+  "tracks": [
+    {
+      "id": "trk_btn_opacity",
+      "nodeId": "bottom_touch_btn",
+      "property": "opacity",
+      "interpolation": "linear",
+      "keyframes": [
+        { "frame": 0, "value": 0.5 },
+        { "frame": 45, "value": 1.0 },
+        { "frame": 90, "value": 0.5 }
+      ]
+    },
+    {
+      "id": "trk_fade_prog",
+      "nodeId": "top_bg",
+      "property": "effects.0.parameters.progress",
+      "interpolation": "linear",
+      "keyframes": [
+        { "frame": 0, "value": 0.0 },
+        { "frame": 45, "value": 0.3 },
+        { "frame": 90, "value": 0.0 }
+      ]
+    }
+  ],
+  "markers": [
+    { "id": "m_start", "frame": 0, "label": "Start", "color": "#38bdf8" },
+    { "id": "m_pulse", "frame": 45, "label": "Pulse", "color": "#facc15" }
+  ],
+  "audioCues": [
+    { "id": "snd_cue", "frame": 0, "asset": "sfx_select", "assetId": "sfx_select", "volume": 0.8 }
+  ]
+}

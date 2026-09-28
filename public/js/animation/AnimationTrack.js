@@ -18,15 +18,20 @@ export class AnimationTrack {
    * @param {Array<Object|Keyframe>} [data.keyframes=[]]
    */
   constructor(data = {}) {
-    if (!data.targetNodeId || !data.propertyPath) {
+    const targetNodeId = data.targetNodeId || data.nodeId;
+    const propertyPath = data.propertyPath || data.property;
+
+    if (!targetNodeId || !propertyPath) {
       throw new Error('AnimationTrack must specify targetNodeId and propertyPath');
     }
 
-    this.id = data.id || `track_${data.targetNodeId}_${data.propertyPath.replace(/\./g, '_')}`;
-    this.targetNodeId = data.targetNodeId;
-    this.propertyPath = data.propertyPath;
-    this.displayName = data.displayName || this._generateDisplayName(data.propertyPath);
-    this.valueType = data.valueType || this._inferValueType(data.propertyPath);
+    this.id = data.id || `track_${targetNodeId}_${String(propertyPath).replace(/\./g, '_')}`;
+    this.targetNodeId = targetNodeId;
+    this.nodeId = targetNodeId;
+    this.propertyPath = propertyPath;
+    this.property = propertyPath;
+    this.displayName = data.displayName || this._generateDisplayName(propertyPath);
+    this.valueType = data.valueType || this._inferValueType(propertyPath);
     this.muted = Boolean(data.muted);
     this.solo = Boolean(data.solo);
 

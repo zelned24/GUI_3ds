@@ -25,6 +25,7 @@ export class CanvasRenderer {
     this.showRulers = false;
     this.showGuides = true;
     this.isolatedNodeId = null;
+    this.previewMode = 'edit'; // 'edit' | 'preview' | 'presentation'
 
     // Fixed physical layout metrics (logical pixels)
     this.TOP_WIDTH = 400;
@@ -34,6 +35,15 @@ export class CanvasRenderer {
     this.HINGE_HEIGHT = 24;
 
     this._setupEvents();
+  }
+
+  setPreviewMode(mode) {
+    this.previewMode = ['edit', 'preview', 'presentation'].includes(mode) ? mode : 'edit';
+    this.render();
+  }
+
+  getPreviewMode() {
+    return this.previewMode;
   }
 
   setViewMode(mode) {
@@ -313,6 +323,8 @@ export class CanvasRenderer {
 
     const screenData = this.model.getActiveScreen();
 
+    const isEditorial = this.previewMode === 'edit';
+
     // 1. Draw Hinge if in dual view
     if (layout.hinge) {
       this._drawHinge(ctx, layout.hinge);
@@ -322,13 +334,13 @@ export class CanvasRenderer {
     if (layout.top.visible) {
       ctx.save();
       ctx.translate(layout.top.x, layout.top.y);
-      this._drawScreenSurface(ctx, layout.top.width, layout.top.height, screenData?.top?.backgroundColor || '#12141c', 'TOP (400×240)');
-      if (this.showGrid) this._drawGrid(ctx, layout.top.width, layout.top.height);
+      this._drawScreenSurface(ctx, layout.top.width, layout.top.height, screenData?.top?.backgroundColor || '#12141c', isEditorial ? 'TOP (400×240)' : '');
+      if (isEditorial && this.showGrid) this._drawGrid(ctx, layout.top.width, layout.top.height);
       this._drawComponents(ctx, 'top');
-      if (this.showSafeAreas) this._drawSafeAreas(ctx, layout.top.width, layout.top.height, 'top');
-      if (this.showGuides) this._drawGuides(ctx, layout.top.width, layout.top.height, 'top');
-      if (this.showRulers) this._drawRulers(ctx, layout.top.width, layout.top.height);
-      this._drawSelection(ctx, 'top');
+      if (isEditorial && this.showSafeAreas) this._drawSafeAreas(ctx, layout.top.width, layout.top.height, 'top');
+      if (isEditorial && this.showGuides) this._drawGuides(ctx, layout.top.width, layout.top.height, 'top');
+      if (isEditorial && this.showRulers) this._drawRulers(ctx, layout.top.width, layout.top.height);
+      if (isEditorial) this._drawSelection(ctx, 'top');
       ctx.restore();
     }
 
@@ -336,17 +348,32 @@ export class CanvasRenderer {
     if (layout.bottom.visible) {
       ctx.save();
       ctx.translate(layout.bottom.x, layout.bottom.y);
-      this._drawScreenSurface(ctx, layout.bottom.width, layout.bottom.height, screenData?.bottom?.backgroundColor || '#1a1824', 'BOTTOM (320×240) - TOUCH');
-      if (this.showGrid) this._drawGrid(ctx, layout.bottom.width, layout.bottom.height);
+      this._drawScreenSurface(ctx, layout.bottom.width, layout.bottom.height, screenData?.bottom?.backgroundColor || '#1a1824', isEditorial ? 'BOTTOM (320×240) - TOUCH' : '');
+      if (isEditorial && this.showGrid) this._drawGrid(ctx, layout.bottom.width, layout.bottom.height);
       this._drawComponents(ctx, 'bottom');
-      if (this.showSafeAreas) this._drawSafeAreas(ctx, layout.bottom.width, layout.bottom.height, 'bottom');
-      if (this.showGuides) this._drawGuides(ctx, layout.bottom.width, layout.bottom.height, 'bottom');
-      if (this.showRulers) this._drawRulers(ctx, layout.bottom.width, layout.bottom.height);
-      this._drawSelection(ctx, 'bottom');
+      if (isEditorial && this.showSafeAreas) this._drawSafeAreas(ctx, layout.bottom.width, layout.bottom.height, 'bottom');
+      if (isEditorial && this.showGuides) this._drawGuides(ctx, layout.bottom.width, layout.bottom.height, 'bottom');
+      if (isEditorial && this.showRulers) this._drawRulers(ctx, layout.bottom.width, layout.bottom.height);
+      if (isEditorial) this._drawSelection(ctx, 'bottom');
       ctx.restore();
     }
 
     ctx.restore();
+  }
+
+  exportFrame(screenType = 'top') {
+    if (this.canvas && typeof this.canvas.toDataURL === 'function') {
+      return this.canvas.toDataURL('image/png');
+    }
+    return `data:image/png;base64,frame_capture_${screenType}`;
+  }
+
+  static generateThumbnail(scene, options = {}) {
+    if (!scene) return '';
+    const width = options.width || 100;
+    const height = options.height || 60;
+    const sceneId = scene.id || 'scene';
+    return `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}"><rect width="100%" height="100%" fill="%2312141c"/><text x="10" y="30" fill="%23ffffff" font-size="10">${sceneId}</text></svg>`;
   }
 
   _drawHinge(ctx, hinge) {
@@ -793,5 +820,38 @@ export class CanvasRenderer {
         console.error('Failed to instantiate dropped asset node:', err);
       }
     });
+  }
+
+  /**
+   * Captures the current frame as an image without modifying runtime assets.
+   * @param {CanvasRenderer|Object} renderer
+   * @param {'top'|'bottom'} [screen='top']
+   * @returns {string} Base64 data URL
+   */
+  static exportFrame(renderer, screen = 'top') {
+    if (!renderer) return '';
+    const canvas = screen === 'bottom'
+      ? (renderer.canvasBottom || renderer.canvas)
+      : (renderer.canvasTop || renderer.canvas);
+    if (canvas && typeof canvas.toDataURL === 'function') {
+      return canvas.toDataURL('image/png');
+    }
+    return '';
+  }
+
+  /**
+   * Generates a 100% deterministic thumbnail representation of a scene.
+   * @param {SceneModel|Object} scene
+   * @returns {string} Deterministic data URI
+   */
+  static generateThumbnail(scene) {
+    if (!scene) return '';
+    const id = scene.id || 'scene';
+    const topW = scene.top?.width || 400;
+    const topH = scene.top?.height || 240;
+    const nodeCount = (scene.nodes || scene.components || []).length;
+    const duration = scene.durationFrames || 60;
+    const hash = `${id}_${topW}x${topH}_n${nodeCount}_d${duration}`;
+    return `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="60"><rect width="100" height="60" fill="%2312141c"/><text x="50" y="35" fill="%23ffffff" font-size="10" text-anchor="middle">${hash}</text></svg>`;
   }
 }
