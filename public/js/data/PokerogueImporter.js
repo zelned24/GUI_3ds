@@ -36,6 +36,84 @@ function extractBalancedLiteral(source, openingIndex) {
   return null;
 }
 
+function splitTopLevelArguments(source) {
+  const parts = [];
+  let start = 0, parens = 0, braces = 0, brackets = 0, quote = null, escaped = false;
+  for (let index = 0; index < source.length; index++) {
+    const char = source[index];
+    if (quote) {
+      if (escaped) escaped = false;
+      else if (char === '\\') escaped = true;
+      else if (char === quote) quote = null;
+      continue;
+    }
+    if (char === '"' || char === "'" || char === '`') { quote = char; continue; }
+    if (char === '(') parens++;
+    else if (char === ')') parens--;
+    else if (char === '{') braces++;
+    else if (char === '}') braces--;
+    else if (char === '[') brackets++;
+    else if (char === ']') brackets--;
+    else if (char === ',' && parens === 0 && braces === 0 && brackets === 0) {
+      parts.push(source.slice(start, index).trim()); start = index + 1;
+    }
+  }
+  if (source.slice(start).trim()) parts.push(source.slice(start).trim());
+  return parts;
+}
+
+function readConstructorCall(source, openingIndex) {
+  let depth = 0, quote = null, escaped = false;
+  for (let index = openingIndex; index < source.length; index++) {
+    const char = source[index];
+    if (quote) {
+      if (escaped) escaped = false;
+      else if (char === '\\') escaped = true;
+      else if (char === quote) quote = null;
+      continue;
+    }
+    if (char === '"' || char === "'" || char === '`') { quote = char; continue; }
+    if (char === '(') depth++;
+    else if (char === ')' && --depth === 0) {
+      return { argsText: source.slice(openingIndex + 1, index), closeIndex: index };
+    }
+  }
+  return null;
+}
+
+function readChainedExpression(source, closeIndex) {
+  let parens = 0, braces = 0, brackets = 0, quote = null, escaped = false, lineComment = false, blockComment = false;
+  for (let index = closeIndex + 1; index < source.length; index++) {
+    const char = source[index], next = source[index + 1];
+    if (lineComment) { if (char === '\n') lineComment = false; continue; }
+    if (blockComment) { if (char === '*' && next === '/') { blockComment = false; index++; } continue; }
+    if (quote) {
+      if (escaped) escaped = false;
+      else if (char === '\\') escaped = true;
+      else if (char === quote) quote = null;
+      continue;
+    }
+    if (char === '/' && next === '/') { lineComment = true; index++; continue; }
+    if (char === '/' && next === '*') { blockComment = true; index++; continue; }
+    if (char === '"' || char === "'" || char === '`') { quote = char; continue; }
+    if (char === '(') parens++;
+    else if (char === ')') parens--;
+    else if (char === '{') braces++;
+    else if (char === '}') braces--;
+    else if (char === '[') brackets++;
+    else if (char === ']') brackets--;
+    else if (char === ',' && parens === 0 && braces === 0 && brackets === 0) return source.slice(closeIndex + 1, index);
+    else if (char === ';' && parens === 0 && braces === 0 && brackets === 0) return source.slice(closeIndex + 1, index);
+  }
+  return source.slice(closeIndex + 1);
+}
+
+function enumArgument(value, prefixes = []) {
+  let result = String(value || '').trim();
+  for (const prefix of prefixes) result = result.replace(new RegExp(`^${prefix}\\.`), '');
+  return result;
+}
+
 function toTitle(s) {
   if (!s) return '';
   const str = String(s).trim();
@@ -356,9 +434,8 @@ export class PokerogueImporter {
       move.source.sourceHash = sourceHash(moveFile);
       move.source.sourceSymbol = `MoveId.${move.id.toUpperCase()}`;
       move.secondaryEffects = null;
-      move.target = null;
       move.flags = { contact: null, protectable: null, sound: null, bullet: null };
-      move.extensions = { ...move.extensions, upstreamEffectMetadata: move.extensions?.upstreamRawRecord || null, runtimeBehavior: 'NOT_IMPORTED' };
+      move.extensions = { ...move.extensions, runtimeBehavior: 'NOT_IMPORTED' };
     }
     for (const ability of abilities) {
       const numericId = enumCatalogs.ability.getId(ability.id.toUpperCase());
@@ -1012,21 +1089,55 @@ export class PokerogueImporter {
       ? new Set(targetIds.map(t => t.toUpperCase()))
       : null;
 
-    // Pattern 1: Constructor syntax used upstream
-    // new AttackMove(MoveId.THUNDERBOLT, PokemonType.ELECTRIC, MoveCategory.SPECIAL, 90, 100, 15, 10, 0, 1)
-    const ctorRegex = /new\s+(?:AttackMove|Move|StatusMove)\s*\(\s*(?:MoveId\.|Moves\.)?([A-Za-z0-9_]+)\s*,\s*(?:PokemonType\.|Type\.)?([A-Za-z0-9_]+)\s*,\s*(?:MoveCategory\.)?([A-Za-z0-9_]+)\s*,\s*(-?\d+)\s*,\s*(-?\d+)\s*,\s*(-?\d+)(?:\s*,\s*(\d+))?(?:\s*,\s*(-?\d+))?/g;
+    // Constructor signatures differ upstream: AttackMove, StatusMove and
+    // SelfStatusMove do not share positional fields. Parse the call before mapping.
+    const ctorRegex = /new\s+(AttackMove|StatusMove|SelfStatusMove|ChargingAttackMove|ChargingSelfStatusMove|Move)\s*\(/g;
     let match;
 
     while ((match = ctorRegex.exec(tsContent)) !== null) {
-      const moveKey = match[1].toUpperCase();
+      const call = readConstructorCall(tsContent, ctorRegex.lastIndex - 1);
+      if (!call) throw new Error(`Invalid import: unclosed move constructor at offset ${match.index}`);
+      ctorRegex.lastIndex = call.closeIndex + 1;
+      const args = splitTopLevelArguments(call.argsText);
+      const constructor = match[1];
+      const moveKey = enumArgument(args[0], ['MoveId', 'Moves']).toUpperCase();
+      if (!/^[A-Z0-9_]+$/.test(moveKey)) throw new Error(`Invalid import: unsupported move ID expression in ${constructor}: ${args[0] || '<missing>'}`);
+      // Upstream's NONE entry is a non-playable sentinel and uses a constructor
+      // shape outside the move-definition contract; it is not canonical content.
+      if (moveKey === 'NONE') continue;
       if (targetSet && !targetSet.has(moveKey)) continue;
       if (moveList.some(m => m.id === moveKey.toLowerCase())) continue;
-
-      const power = Number(match[4]);
-      const accuracy = Number(match[5]);
-      const pp = Number(match[6]);
-      const chance = match[7] ? Number(match[7]) : 0;
-      const priority = match[8] ? Number(match[8]) : 0;
+      const numberAt = index => {
+        const token = args[index];
+        if (!/^-?\d+$/.test(token || '')) throw new Error(`Invalid import: ${constructor} ${moveKey} argument ${index + 1} must be an integer, received ${token || '<missing>'}`);
+        return Number(token);
+      };
+      const type = enumArgument(args[1], ['PokemonType', 'Type']).toUpperCase();
+      let category, power, accuracy, pp, chance, priority, generation, target;
+      if (constructor.includes('AttackMove')) {
+        category = enumArgument(args[2], ['MoveCategory']).toUpperCase();
+        power = numberAt(3); accuracy = numberAt(4); pp = numberAt(5);
+        chance = numberAt(6); priority = numberAt(7); generation = numberAt(8);
+        target = 'NEAR_OTHER';
+      } else if (constructor.includes('SelfStatusMove')) {
+        category = 'STATUS'; power = -1;
+        accuracy = numberAt(2); pp = numberAt(3); chance = numberAt(4);
+        priority = numberAt(5); generation = numberAt(6); target = 'USER';
+      } else if (constructor === 'StatusMove') {
+        category = 'STATUS'; power = -1;
+        accuracy = numberAt(2); pp = numberAt(3); chance = numberAt(4);
+        priority = numberAt(5); generation = numberAt(6); target = 'NEAR_OTHER';
+      } else {
+        category = enumArgument(args[2], ['MoveCategory']).toUpperCase();
+        target = enumArgument(args[3], ['MoveTarget']).toUpperCase();
+        power = numberAt(4); accuracy = numberAt(5); pp = numberAt(6);
+        chance = numberAt(7); priority = numberAt(8); generation = numberAt(9);
+      }
+      if (!['PHYSICAL', 'SPECIAL', 'STATUS'].includes(category)) throw new Error(`Invalid import: ${moveKey} has unsupported category ${category}`);
+      const chained = readChainedExpression(tsContent, call.closeIndex);
+      const explicitTarget = chained.match(/\.target\s*\(\s*MoveTarget\.([A-Z0-9_]+)\s*\)/);
+      if (explicitTarget) target = explicitTarget[1];
+      const rawExpression = tsContent.slice(match.index, call.closeIndex + 1) + chained;
 
       const secondaryEffects = !this.productionCanonicalImport && chance > 0 && moveKey.includes('THUNDER')
         ? [{ chance, status: 'PARALYSIS' }]
@@ -1057,17 +1168,19 @@ export class PokerogueImporter {
         names: { en: enName, es: esName },
         description: enDesc,
         descriptions: { en: enDesc, es: esDesc },
-        type: toTitle(match[2]),
-        category: toTitle(match[3]),
+        type,
+        category: toTitle(category),
         power,
         accuracy,
         pp,
         priority,
-        flags: { contact: !this.productionCanonicalImport && match[3].toUpperCase() === 'PHYSICAL', protectable: !this.productionCanonicalImport },
+        target,
+        flags: { contact: !this.productionCanonicalImport && category === 'PHYSICAL', protectable: !this.productionCanonicalImport },
         secondaryEffects,
         source: provenance,
         metadata: { ...provenance, hash: fileHash },
-        raw: { format: 'typescript-source', value: match[0] }
+        extensions: { upstreamMoveClass: constructor, upstreamChance: chance, upstreamGeneration: generation, upstreamEffectMetadata: { format: 'typescript-source', value: rawExpression } },
+        raw: { format: 'typescript-source', value: rawExpression }
       });
 
       this.manifest.recordEntity('Move', move.id, {

@@ -558,6 +558,34 @@ test('FASE 9.1: PokerogueImporter imports real upstream data with full provenanc
   assert.strictEqual(st.trigger, 'ON_DAMAGE_RECEIVED');
 });
 
+test('Pinned move constructors normalize distinct signatures and preserve upstream metadata', () => {
+  const importer = new PokerogueImporter(null);
+  importer.sourceType = 'UPSTREAM';
+  importer.productionCanonicalImport = true;
+  const source = `
+    new AttackMove(MoveId.TACKLE, PokemonType.NORMAL, MoveCategory.PHYSICAL, 40, 100, 35, -1, 0, 1),
+    new SelfStatusMove(MoveId.NONE, PokemonType.NORMAL, MoveCategory.STATUS, -1, -1, 0, 1),
+    new StatusMove(MoveId.GROWL, PokemonType.NORMAL, 100, 40, -1, 0, 1).attr(StatStageChangeAttr, [Stat.ATK], -1) // target, not a constructor argument
+      .target(MoveTarget.ALL_NEAR_ENEMIES),
+    new AttackMove(MoveId.EMBER, PokemonType.FIRE, MoveCategory.SPECIAL, 40, 100, 25, 10, 0, 1),
+    new AttackMove(MoveId.QUICK_ATTACK, PokemonType.NORMAL, MoveCategory.PHYSICAL, 40, 100, 30, -1, 1, 1),
+    new AttackMove(MoveId.THUNDER_SHOCK, PokemonType.ELECTRIC, MoveCategory.SPECIAL, 40, 100, 30, 10, 0, 1),
+    new SelfStatusMove(MoveId.GROWTH, PokemonType.NORMAL, -1, 20, -1, 0, 1),
+    new AttackMove(MoveId.VINE_WHIP, PokemonType.GRASS, MoveCategory.PHYSICAL, 45, 100, 25, -1, 0, 1)
+  `;
+  const moves = new Map(importer.parseMoves(source).map(move => [move.id, move]));
+  const tackle = moves.get('tackle');
+  assert.deepStrictEqual([tackle.category, tackle.power, tackle.accuracy, tackle.pp, tackle.priority, tackle.target], ['Physical', 40, 100, 35, 0, 'NEAR_OTHER']);
+  const growl = moves.get('growl');
+  assert.deepStrictEqual([growl.category, growl.power, growl.accuracy, growl.pp, growl.priority, growl.target], ['Status', -1, 100, 40, 0, 'ALL_NEAR_ENEMIES']);
+  assert.ok(growl.extensions.upstreamEffectMetadata.value.includes('.attr(StatStageChangeAttr'));
+  assert.strictEqual(moves.get('ember').extensions.upstreamChance, 10);
+  assert.deepStrictEqual([moves.get('quick_attack').priority, moves.get('quick_attack').extensions.upstreamChance], [1, -1]);
+  assert.strictEqual(moves.get('thunder_shock').priority, 0);
+  assert.deepStrictEqual([moves.get('growth').power, moves.get('growth').target], [-1, 'USER']);
+  assert.strictEqual(moves.get('vine_whip').target, 'NEAR_OTHER');
+});
+
 test('FASE 9.2: PokemonSpriteResolver resolves real assets answering the 5 core questions without invented paths', () => {
   const resolver = new PokemonSpriteResolver();
   const pikaAsset = resolver.resolvePokemonSprite(25);
@@ -5019,5 +5047,3 @@ async function runAllTests() {
 }
 
 await runAllTests();
-
-

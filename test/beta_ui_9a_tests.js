@@ -90,7 +90,11 @@ export function registerBetaUI9ATests(test) {
     for (const domain of ['kSpecies', 'kForms', 'kMoves', 'kAbilities', 'kItems', 'kLocales', 'kModes', 'kBiomes', 'kBiomeEncounterPools', 'kBiomeTrainerPools', 'kRoutes']) {
       assert.ok(header.includes(`${domain}[] = {`), `native ROM bundle contains ${domain}`);
     }
-    assert.match(header, /\{1, 1, 3, true, 318, -1, -1, -1, "MEDIUM_SLOW", "bulbasaur", "Bulbasaur"/);
+    assert.match(header, /\{1, 1, 3, true, 318, 45, 49, 49, 65, 65, 45, 65, 0, 34, 0, 0, 17, -1, -1, -1, "MEDIUM_SLOW", "bulbasaur", "Bulbasaur"/);
+    assert.match(header, /\{33, 0, 40, 100, 35, 0, -1, 1, "tackle", "Tackle", "NORMAL", "NEAR_OTHER"/);
+    assert.match(header, /\{1, 1, 33\},\r?\n\s*\{1, 1, 45\}/, 'native learnset uses canonical MoveId references in upstream level order');
+    assert.ok(header.includes('findMoveById(uint16_t id)'), 'C++ runtime exposes a compact move lookup');
+    assert.ok(header.includes('levelMovesFor(const Species& species)'), 'species records expose a bounded range into shared learnset storage');
     assert.ok(header.includes('"en:pokemon:bulbasaur", "Bulbasaur"'), 'native runtime resolves names from imported locale records');
     assert.ok(header.includes('kStartingBiomeId[] = "town"'));
     assert.ok(header.includes('{"plains", "common", "dawn", 0, "sentret"'), 'native encounter pool rows preserve real Plains membership order and provenance');
