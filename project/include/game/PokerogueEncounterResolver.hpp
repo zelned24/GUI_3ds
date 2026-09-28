@@ -19,6 +19,47 @@ struct PokeroguePoolResolution {
 
 class PokerogueEncounterResolver {
 public:
+    // Ports the pinned determineEnemySpecies level heuristic for wild
+    // encounters. The caller owns the upstream RNG scope and call ordering.
+    static const char* resolveWildSpeciesForLevel(const char* speciesId,
+        uint16_t level, bool allowEvolving, PokerogueRngAdapter& rng) {
+        if (!speciesId) return nullptr;
+        char prevo[64][48]{};
+        uint16_t prevoThreshold[64]{};
+        uint16_t count = 0;
+        collectPrevolutions(speciesId, prevo, prevoThreshold, count, 0);
+        for (int32_t i = static_cast<int32_t>(count) - 1; i >= 0; --i) {
+            if (level < prevoThreshold[i]) {
+                const auto* required = findSpecies(prevo[i]);
+                return required ? required->id : nullptr;
+            }
+        }
+        if (!allowEvolving) return speciesId;
+
+        const PokerogueContent::SpeciesEvolution* eligible[32]{};
+        uint16_t eligibleCount = 0;
+        for (std::size_t i = 0; i < PokerogueContent::kSpeciesEvolutionCount; ++i) {
+            const auto& edge = PokerogueContent::kSpeciesEvolutions[i];
+            if (!same(edge.sourceSpeciesId, speciesId)) continue;
+            const uint16_t threshold = edge.wildThreshold < 0 ? 0 : static_cast<uint16_t>(edge.wildThreshold);
+            const uint16_t required = threshold > edge.level ? threshold : edge.level;
+            if (level < edge.level || level < required) continue;
+            if (eligibleCount >= 32) return nullptr;
+            eligible[eligibleCount++] = &edge;
+        }
+        if (!eligibleCount) return speciesId;
+        const auto* selected = eligible[rng.pickIndex(eligibleCount)];
+        const uint16_t choice = selected->wildThreshold < 0
+            ? selected->level
+            : (static_cast<uint16_t>(selected->wildThreshold) > selected->level
+                ? static_cast<uint16_t>(selected->wildThreshold) : selected->level);
+        const uint16_t randomMax = static_cast<uint16_t>(choice * 1.2 + 0.5);
+        const int32_t randomLevel = rng.randSeedIntRange(choice, randomMax);
+        return randomLevel <= level
+            ? resolveWildSpeciesForLevel(selected->targetSpeciesId, level, true, rng)
+            : speciesId;
+    }
+
     // Ports the pinned Arena non-boss tier thresholds, empty-tier downgrade,
     // ALL-then-time pool composition and randSeedItem member draw. Callers own
     // stream setup and preceding upstream draws (wave-1 double check).
@@ -81,6 +122,30 @@ public:
     }
 
 private:
+    static void collectPrevolutions(const char* speciesId, char prevo[][48],
+        uint16_t thresholds[], uint16_t& count, uint8_t depth) {
+        if (depth >= 32 || count >= 64) return;
+        for (std::size_t i = 0; i < PokerogueContent::kSpeciesEvolutionCount; ++i) {
+            const auto& edge = PokerogueContent::kSpeciesEvolutions[i];
+            if (!same(edge.targetSpeciesId, speciesId)) continue;
+            bool duplicate = false;
+            for (uint16_t j = 0; j < count; ++j) duplicate |= same(prevo[j], edge.sourceSpeciesId);
+            if (duplicate) continue;
+            uint16_t threshold = edge.wildThreshold < 0 ? edge.level : static_cast<uint16_t>(edge.wildThreshold);
+            if (edge.level == 1) threshold = edge.wildThreshold < 0 ? 1 : static_cast<uint16_t>(edge.wildThreshold);
+            else if (edge.wildThreshold < 0 || edge.level < threshold) threshold = edge.level;
+            copyId(prevo[count], edge.sourceSpeciesId);
+            thresholds[count++] = threshold;
+            collectPrevolutions(edge.sourceSpeciesId, prevo, thresholds, count, depth + 1);
+        }
+    }
+
+    static void copyId(char destination[48], const char* source) {
+        std::size_t i = 0;
+        while (source && source[i] && i < 47) { destination[i] = source[i]; ++i; }
+        destination[i] = '\0';
+    }
+
     static const PokerogueContent::Species* findSpecies(const char* speciesId) {
         if (!speciesId) return nullptr;
         for (std::size_t i = 0; i < PokerogueContent::kSpeciesCount; ++i) {

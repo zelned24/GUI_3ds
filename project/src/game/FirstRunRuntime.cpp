@@ -108,10 +108,13 @@ void FirstRunRuntime::resolve() {
     const auto pool = PokerogueEncounterResolver::resolveNonBoss(
         "town", time, m_run.wave, waveRng);
     if (!pool.valid || !pool.speciesId) return;
+    const char* resolvedSpeciesId = PokerogueEncounterResolver::resolveWildSpeciesForLevel(
+        pool.speciesId, level, true, waveRng);
+    if (!resolvedSpeciesId) return;
 
     std::size_t enemyIndex = PokerogueContent::kSpeciesCount;
     for (std::size_t i = 0; i < PokerogueContent::kSpeciesCount; ++i) {
-        if (std::string(PokerogueContent::kSpecies[i].id) == pool.speciesId) {
+        if (std::string(PokerogueContent::kSpecies[i].id) == resolvedSpeciesId) {
             enemyIndex = i;
             break;
         }
@@ -132,7 +135,7 @@ void FirstRunRuntime::buildScene() {
     m_text[2] = std::string("Biome: ") + m_context.biomeName;
     m_text[3] = std::string("Starter: ") + starterName();
     if (m_encounterResolved) {
-        std::snprintf(line, sizeof(line), "Pool candidate: %s Lv. %u", m_context.enemy.localizedName,
+        std::snprintf(line, sizeof(line), "Encounter: %s Lv. %u", m_context.enemy.localizedName,
                       static_cast<unsigned>(m_context.enemy.level));
     } else {
         std::snprintf(line, sizeof(line), "Wave 1 encounter: UNSUPPORTED");
@@ -140,7 +143,7 @@ void FirstRunRuntime::buildScene() {
     m_text[4] = line;
     m_text[5] = "LEFT/RIGHT: choose upstream starter";
     m_text[6] = m_encounterResolved
-        ? (m_doubleBattle ? "Double battle needs second enemy slot" : "Evolution substitution pending")
+        ? (m_doubleBattle ? "Double battle needs second enemy slot" : "Wild evolution rules applied")
         : "Encounter inputs unsupported - no fallback used";
     m_text[7] = std::string("Pinned data: ") + PokerogueContent::kPokerogueRevision;
 

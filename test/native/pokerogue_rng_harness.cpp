@@ -4,6 +4,7 @@
 namespace {
 const uint16_t kSeed[] = {'p','o','k','e','r','o','g','u','e','-','r','n','g','-','v','1'};
 const uint16_t kRerollSeed[] = {'r','e','r','o','l','l','-','1','4','6'};
+const uint16_t kEvolutionSeed[] = {'e','v','o','-','1'};
 struct Wave1Trace {
     uint8_t cycleOffset;
     uint8_t timeOfDay;
@@ -155,6 +156,16 @@ uint32_t harness_wave1_member_index() { return makeWave1Trace().pool.memberIndex
 uint32_t harness_wave1_pool_size() { return makeWave1Trace().pool.poolSize; }
 uint32_t harness_wave1_legend_rerolls() { return makeWave1Trace().pool.legendRerolls; }
 const char* harness_wave1_species_id() { return makeWave1Trace().pool.speciesId; }
+const char* harness_wave1_resolved_species_id(uint32_t level) {
+    uint8_t offset = 0;
+    Pokerogue3DS::PokerogueWaveClock::deriveCycleOffset(kSeed, 16, offset);
+    const auto time = Pokerogue3DS::PokerogueWaveClock::timeOfDay(1, offset);
+    Pokerogue3DS::PokerogueRngAdapter rng;
+    Pokerogue3DS::PokerogueSeedOffsetScope scope(rng, kSeed, 16, 1);
+    (void)rng.randSeedInt(8);
+    const auto pool = Pokerogue3DS::PokerogueEncounterResolver::resolveNonBoss("town", time, 1, rng);
+    return pool.valid ? Pokerogue3DS::PokerogueEncounterResolver::resolveWildSpeciesForLevel(pool.speciesId, level, true, rng) : nullptr;
+}
 double harness_wave1_next_fraction_after_tier() {
     Pokerogue3DS::PokerogueRngAdapter rng;
     Pokerogue3DS::PokerogueSeedOffsetScope wave(rng, kSeed,
@@ -186,4 +197,13 @@ uint32_t harness_wave11_non_boss_level() {
 }
 uint32_t harness_legend_reroll_count() { return makeLegendRerollTrace().legendRerolls; }
 const char* harness_legend_reroll_species_id() { return makeLegendRerollTrace().speciesId; }
+const char* harness_forced_prevolution_species() {
+    auto rng = makeSeeded();
+    return Pokerogue3DS::PokerogueEncounterResolver::resolveWildSpeciesForLevel("venusaur", 17, false, rng);
+}
+const char* harness_level_evolution_species() {
+    Pokerogue3DS::PokerogueRngAdapter rng;
+    rng.sow(kEvolutionSeed, sizeof(kEvolutionSeed) / sizeof(kEvolutionSeed[0]));
+    return Pokerogue3DS::PokerogueEncounterResolver::resolveWildSpeciesForLevel("bulbasaur", 18, true, rng);
+}
 }

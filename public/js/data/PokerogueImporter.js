@@ -1,4 +1,4 @@
-import { SpeciesDefinition, MoveDefinition, AbilityDefinition, ItemDefinition, SourceMetadata } from './CanonicalModels.js';
+import { SpeciesDefinition, SpeciesEvolutionDefinition, MoveDefinition, AbilityDefinition, ItemDefinition, SourceMetadata } from './CanonicalModels.js';
 import { PokerogueManifest } from './PokerogueManifest.js';
 import { POKEROGUE_REPOSITORIES } from './PokerogueSource.js';
 import { PokerogueEnumParser } from './PokerogueEnumParser.js';
@@ -7,6 +7,34 @@ import { CanonicalContent, CanonicalSourceType, Provenance, SourceSnapshot } fro
 import { getOfflineImporterFixtureSources } from '../../../test/fixtures/offlineImporterSources.js';
 import { GameModeDefinition } from '../game/GameMode.js';
 import { BiomeDefinition, RouteDefinition } from '../game/ProgressionContent.js';
+
+function extractBalancedLiteral(source, openingIndex) {
+  const opening = source[openingIndex];
+  const closing = opening === '[' ? ']' : opening === '{' ? '}' : null;
+  if (!closing) return null;
+  let depth = 0;
+  let quote = null;
+  let lineComment = false;
+  let blockComment = false;
+  let escaped = false;
+  for (let index = openingIndex; index < source.length; index++) {
+    const char = source[index], next = source[index + 1];
+    if (lineComment) { if (char === '\n') lineComment = false; continue; }
+    if (blockComment) { if (char === '*' && next === '/') { blockComment = false; index++; } continue; }
+    if (quote) {
+      if (escaped) escaped = false;
+      else if (char === '\\') escaped = true;
+      else if (char === quote) quote = null;
+      continue;
+    }
+    if (char === '/' && next === '/') { lineComment = true; index++; continue; }
+    if (char === '/' && next === '*') { blockComment = true; index++; continue; }
+    if (char === '"' || char === "'" || char === '`') { quote = char; continue; }
+    if (char === opening) depth++;
+    else if (char === closing && --depth === 0) return source.slice(openingIndex, index + 1);
+  }
+  return null;
+}
 
 function toTitle(s) {
   if (!s) return '';
@@ -379,8 +407,26 @@ export class PokerogueImporter {
     const duplicateIds = records => { const ids = records.map(item => item.id); return ids.filter((id, index) => ids.indexOf(id) !== index); };
     for (const [label, records] of Object.entries({ species, forms, moves, abilities, items, gameModes })) { const duplicates = duplicateIds(records); if (duplicates.length) throw new Error(`Invalid import: duplicate ${label} IDs ${[...new Set(duplicates)].join(', ')}`); }
     const speciesIds = new Set(species.map(item => item.id));
+    const speciesById = new Map(species.map(item => [item.id, item]));
     const abilityIds = new Set(abilities.map(item => item.id));
     for (const form of forms) if (!speciesIds.has(form.speciesId)) throw new Error(`Invalid cross-reference: form ${form.id} refers to missing species ${form.speciesId}`);
+    for (const item of species) for (const evolution of item.evolutions) {
+      if (!evolution.targetSpeciesId) {
+        throw new Error(`Invalid cross-reference: species ${item.id} evolution target ${evolution.targetSpeciesId || '(unparsed)'} is absent from the pinned catalog`);
+      }
+      if (evolution.level == null) throw new Error(`Invalid import: species ${item.id} evolution to ${evolution.targetSpeciesId} has no supported numeric level`);
+      const targetSpecies = speciesById.get(evolution.targetSpeciesId);
+      if (!targetSpecies && generations.length === 9) {
+        throw new Error(`Invalid cross-reference: species ${item.id} evolution target ${evolution.targetSpeciesId} is absent from the full pinned catalog`);
+      }
+      evolution.extensions = {
+        ...evolution.extensions,
+        targetReferenceStatus: targetSpecies ? 'RESOLVED' : 'NOT_INCLUDED_IN_FILTERED_SNAPSHOT'
+      };
+      if (targetSpecies && evolution.targetSpeciesEnumId != null && evolution.targetSpeciesEnumId !== targetSpecies.speciesId) {
+        throw new Error(`Invalid cross-reference: species ${item.id} evolution enum ID disagrees with canonical target ${evolution.targetSpeciesId}`);
+      }
+    }
     for (const item of species) for (const ability of Object.values(item.abilities)) {
       if (!ability || String(ability).toUpperCase() === 'NONE') continue;
       const id = String(ability).toLowerCase().replace(/\s+/g, '_');
@@ -716,6 +762,51 @@ export class PokerogueImporter {
         return match ? match[1].toLowerCase() === 'true' : null;
       };
       const growthRateMatch = block.match(/growthRate\s*:\s*GrowthRate\.([A-Z_]+)/);
+      const evolutions = [];
+      const evolutionArrayMatch = /\bevolutions\s*:\s*\[/.exec(block);
+      const unsupportedEvolutionDeclarations = [];
+      if (evolutionArrayMatch) {
+        const arrayOpen = block.indexOf('[', evolutionArrayMatch.index);
+        const evolutionArray = extractBalancedLiteral(block, arrayOpen);
+        if (!evolutionArray) throw new Error(`Invalid import: unclosed evolutions array for ${speciesKey}`);
+        const evolutionCtor = /new\s+SpeciesEvolution\s*\(\s*\{/g;
+        let evolutionMatch;
+        while ((evolutionMatch = evolutionCtor.exec(evolutionArray))) {
+          const objectOpen = evolutionArray.indexOf('{', evolutionMatch.index);
+          const rawEvolution = extractBalancedLiteral(evolutionArray, objectOpen);
+          if (!rawEvolution) throw new Error(`Invalid import: unclosed SpeciesEvolution record for ${speciesKey}`);
+          const targetMatch = rawEvolution.match(/\bspeciesId\s*:\s*(?:SpeciesId\.)?([A-Za-z0-9_]+)/);
+          const levelMatch = rawEvolution.match(/\blevel\s*:\s*(\d+)/);
+          const itemMatch = rawEvolution.match(/\bitem\s*:\s*(?:EvolutionItem\.)?([A-Za-z0-9_]+)/);
+          const delayMatch = rawEvolution.match(/\bevoDelay\s*:\s*\[\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\]/);
+          const conditionMatch = rawEvolution.match(/\bcondition\s*:\s*([\s\S]*?)(?=,\s*(?:evoDelay|item)\s*:|\s*}$)/);
+          const targetSymbol = targetMatch?.[1]?.toUpperCase() ?? null;
+          const targetSpeciesEnumId = targetSymbol ? this.speciesEnumCatalog?.getId(targetSymbol) : undefined;
+          const edgeIndex = evolutions.length;
+          evolutions.push(new SpeciesEvolutionDefinition({
+            targetSpeciesId: targetSymbol?.toLowerCase() ?? null,
+            targetSpeciesEnumId,
+            level: levelMatch ? Number(levelMatch[1]) : null,
+            evoLevelThreshold: delayMatch ? { strong: Number(delayMatch[1]), normal: Number(delayMatch[2]), wild: Number(delayMatch[3]) } : null,
+            item: itemMatch?.[1] ?? null,
+            condition: conditionMatch?.[1]?.trim() ?? null,
+            source: {
+              source: 'pokerogue', sourceType: this.sourceType,
+              sourceRepository: this.sourceType === CanonicalSourceType.UPSTREAM ? repoInfo.url : 'local:test/fixtures/fallbackVerticalSlice.js',
+              sourceRevision: this.sourceType === CanonicalSourceType.UPSTREAM ? repoInfo.revision : 'offline-fixture-v1',
+              sourcePath: this.sourceType === CanonicalSourceType.UPSTREAM ? sourcePath : 'test/fixtures/fallbackVerticalSlice.js',
+              sourceHash: fileHash,
+              sourceSymbol: `generationSpeciesData[SpeciesId.${speciesKey}].evolutions[${edgeIndex}]`
+            },
+            extensions: { upstreamRawRecord: { format: 'typescript-source-fragment', value: rawEvolution } }
+          }));
+          evolutionCtor.lastIndex = objectOpen + rawEvolution.length;
+        }
+        const declaredEvolutionCount = [...evolutionArray.matchAll(/new\s+SpeciesEvolution\s*\(/g)].length;
+        if (declaredEvolutionCount !== evolutions.length) {
+          unsupportedEvolutionDeclarations.push({ declaredCount: declaredEvolutionCount, parsedCount: evolutions.length, raw: evolutionArray });
+        }
+      }
 
       if (bHp && bAtk && bDef) {
         baseStats.hp = Number(bHp[1]);
@@ -864,6 +955,7 @@ export class PokerogueImporter {
         baseTotal: baseTotalMatch ? Number(baseTotalMatch[1]) : null,
         rarity: { legendary: rarityField('legendary'), subLegendary: rarityField('subLegendary'), mythical: rarityField('mythical') },
         growthRate: growthRateMatch?.[1] ?? null,
+        evolutions,
         abilities: {
           primary: ab1Match && ab1Match[1].toUpperCase() !== 'NONE' ? toTitle(ab1Match[1]) : 'None',
           secondary: ab2Match && ab2Match[1].toUpperCase() !== 'NONE' ? toTitle(ab2Match[1]) : null,
@@ -881,7 +973,11 @@ export class PokerogueImporter {
           hash: fileHash
         },
         raw: { format: 'typescript-source', value: block },
-        extensions: { upstreamRawRecord: { format: 'typescript-source-fragment', value: block }, category: block.match(/category\s*:\s*["']([^"']+)/)?.[1] || null }
+        extensions: {
+          upstreamRawRecord: { format: 'typescript-source-fragment', value: block },
+          category: block.match(/category\s*:\s*["']([^"']+)/)?.[1] || null,
+          ...(evolutionArrayMatch ? { upstreamEvolutionDeclarations: { status: unsupportedEvolutionDeclarations.length ? 'PARTIAL_PARSE' : 'PARSED', unsupported: unsupportedEvolutionDeclarations } } : { upstreamEvolutionDeclarations: { status: 'NOT_DECLARED' } })
+        }
       });
 
       this.manifest.recordEntity('Species', species.id, {

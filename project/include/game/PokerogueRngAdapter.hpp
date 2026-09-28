@@ -68,6 +68,10 @@ public:
         return range <= 1 ? min : integerInRange(min, min + range - 1);
     }
 
+    int32_t randSeedIntRange(int32_t min, int32_t max) {
+        return max <= min ? min : randSeedInt(max - min + 1, min);
+    }
+
     // Phaser RND.pick(array) delegates to integerInRange. PokéRogue's
     // randSeedItem short-circuits singletons before reaching Phaser.
     int32_t pickIndex(uint32_t count) {

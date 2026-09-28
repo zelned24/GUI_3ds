@@ -80,8 +80,13 @@ export function registerBetaUI8Tests(test) {
     assert.strictEqual(dataset.sourceType, CanonicalSourceType.TEST_FIXTURE);
     assert.ok(dataset.species[0].extensions.upstreamRawRecord.value.includes('speciesId: 25'));
     assert.ok(dataset.species[0].source.sourcePath.startsWith('test/fixtures/'));
-    const parsed = new PokerogueImporter().parseSpeciesFromGeneration(`const generationOneSpeciesData = { [SpeciesId.TESTMON]: { speciesId: 999, name: 'Testmon', type1: Type.NORMAL, baseStats: [1, 2, 3, 4, 5, 6], futureUpstreamField: { retained: true } } };`, ['TESTMON']);
+    const parsed = new PokerogueImporter().parseSpeciesFromGeneration(`const generationOneSpeciesData = { [SpeciesId.TESTMON]: { speciesId: 999, name: 'Testmon', type1: Type.NORMAL, baseStats: [1, 2, 3, 4, 5, 6], evolutions: [new SpeciesEvolution({ speciesId: SpeciesId.TESTEVOLVE, level: 16, condition: { key: EvoCondKey.FRIENDSHIP, value: 120 }, evoDelay: [18, 20, 22] })], futureUpstreamField: { retained: true } } };`, ['TESTMON']);
     assert.ok(parsed[0].extensions.upstreamRawRecord.value.includes('futureUpstreamField'));
+    assert.equal(parsed[0].evolutions[0].targetSpeciesId, 'testevolve');
+    assert.equal(parsed[0].evolutions[0].level, 16);
+    assert.deepEqual(parsed[0].evolutions[0].evoLevelThreshold, { strong: 18, normal: 20, wild: 22 });
+    assert.match(parsed[0].evolutions[0].condition, /FRIENDSHIP/);
+    assert.match(parsed[0].evolutions[0].extensions.upstreamRawRecord.value, /evoDelay/);
   });
 
   test('BETA-UI-8B: pinned PokéRogue modes import into canonical policy registry', async () => {
@@ -1074,6 +1079,12 @@ export function registerBetaUI8Tests(test) {
     assert.strictEqual(result.canonicalContent.collections.assetReferences.filter(asset => asset.verified).length, 3);
     assert.ok(result.species.some(species => species.id === 'bulbasaur' && species.speciesId === 1));
     assert.ok(result.species.some(species => species.id === 'pikachu' && species.speciesId === 25));
+    const bulbasaur = result.species.find(species => species.id === 'bulbasaur');
+    assert.equal(bulbasaur.evolutions[0].targetSpeciesId, 'ivysaur');
+    assert.equal(bulbasaur.evolutions[0].level, 16);
+    assert.equal(bulbasaur.evolutions[0].source.sourcePath, 'src/data/balance/species/generation-01.ts');
+    const golbat = result.species.find(species => species.id === 'golbat');
+    assert.ok(golbat.evolutions.some(edge => edge.targetSpeciesId === 'crobat' && edge.evoLevelThreshold.wild === 54));
     assert.ok(result.forms.every(form => result.species.some(species => species.id === form.speciesId)));
     assert.ok(result.abilities.every(ability => ability.extensions.runtimeBehavior === 'NOT_IMPORTED'));
     assert.ok(result.canonicalContent.hash() === result.importReport.contentHash);

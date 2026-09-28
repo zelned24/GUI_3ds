@@ -50,6 +50,42 @@ function shiftedSeed(seed, offset) {
   return value;
 }
 
+function resolveWildSpeciesReference(canonical, speciesId, level, rng, allowEvolving = true, forcePrevo = true) {
+  const species = canonical.collections.species;
+  const evolutionEdges = species.flatMap(record => (record.evolutions || []).map(edge => ({ sourceSpeciesId: record.id, ...edge })));
+  if (forcePrevo) {
+    const prevolutions = [];
+    const collect = (targetId, depth = 0) => {
+      if (depth >= 32) return;
+      for (const edge of evolutionEdges.filter(candidate => candidate.targetSpeciesId === targetId)) {
+        if (prevolutions.some(existing => existing.sourceSpeciesId === edge.sourceSpeciesId)) continue;
+        const threshold = edge.evoLevelThreshold?.wild ?? edge.level;
+        const required = edge.level === 1 ? threshold : Math.min(edge.level, threshold);
+        prevolutions.push({ sourceSpeciesId: edge.sourceSpeciesId, required });
+        collect(edge.sourceSpeciesId, depth + 1);
+      }
+    };
+    collect(speciesId);
+    for (let i = prevolutions.length - 1; i >= 0; i--) {
+      if (level < prevolutions[i].required) return prevolutions[i].sourceSpeciesId;
+    }
+  }
+  if (!allowEvolving) return speciesId;
+  const eligible = evolutionEdges.filter(edge => edge.sourceSpeciesId === speciesId).map(edge => ({
+    edge,
+    threshold: Math.max(edge.level, edge.evoLevelThreshold?.wild ?? 0),
+  })).filter(item => level >= item.edge.level && level >= item.threshold);
+  if (!eligible.length) return speciesId;
+  const selected = eligible.length === 1 ? eligible[0] : eligible[rng.int(eligible.length)];
+  const randomMax = Math.floor(selected.threshold * 1.2 + 0.5);
+  const randomLevel = randomMax <= selected.threshold
+    ? selected.threshold
+    : selected.threshold + rng.int(randomMax - selected.threshold + 1);
+  return randomLevel <= level
+    ? resolveWildSpeciesReference(canonical, selected.edge.targetSpeciesId, level, rng, true, false)
+    : speciesId;
+}
+
 export function registerBetaUI9CRngTests(test) {
   test('BETA-UI-9C: Old 3DS Phaser RNG adapter matches pinned Phaser 3.90.0 golden vectors', async () => {
     const clang = resolveClang();
@@ -73,6 +109,11 @@ export function registerBetaUI9CRngTests(test) {
     const { instance } = await WebAssembly.instantiate(fs.readFileSync(wasmPath));
     const api = instance.exports;
     const close = (actual, expected, label) => assert.ok(Math.abs(actual - expected) <= 1e-15, `${label}: ${actual} != ${expected}`);
+    const readString = pointer => {
+      const bytes = new Uint8Array(api.memory.buffer);
+      let end = pointer; while (bytes[end]) end++;
+      return new TextDecoder().decode(bytes.subarray(pointer, end));
+    };
 
     // Golden values were generated from Phaser v3.90.0 RandomDataGenerator.js
     // sow/rnd/frac/integerInRange/pick semantics, using seeds that exercise
@@ -155,8 +196,30 @@ export function registerBetaUI9CRngTests(test) {
     assert.equal(api.harness_wave1_member_index(), memberIndex, 'Arena member choice consumes the next draw if needed');
     assert.equal(api.harness_wave1_legend_rerolls(), 0, 'Town wave-1 pool candidate needs no LegendLike/BST reroll');
     assert.equal(actualSpecies, pool[memberIndex], 'native candidate matches pinned source pool order and Phaser draws');
+    const encounterRng = phaserReference(shiftedSeed(rootSeed, 1));
+    encounterRng.int(8); encounterRng.int(512);
+    if (pool.length > 1) encounterRng.int(pool.length);
+    const expectedResolvedSpecies = resolveWildSpeciesReference(canonical, actualSpecies, expectedLevel, encounterRng);
+    assert.equal(readString(api.harness_wave1_resolved_species_id(expectedLevel)), expectedResolvedSpecies,
+      'Arena.randomSpecies applies the pinned getWildSpeciesForLevel substitution after pool selection');
     assert.equal(api.harness_wave1_non_boss_level(), expectedLevel, 'Battle.getLevelForWave uses the battle-scoped seed and randSeedGaussForLevel draw count');
     assert.equal(api.harness_wave11_non_boss_level(), expectedWave11Level, 'fractional randSeedGaussForLevel deviation consumes the pinned loop draw count');
+
+    assert.equal(readString(api.harness_forced_prevolution_species()), 'ivysaur',
+      'getRequiredPrevo forces Ivysaur for a level-17 Venusaur without an RNG draw');
+    const evolutionRng = phaserReference('evo-1');
+    const bulbasaur = canonical.collections.species.find(species => species.id === 'bulbasaur');
+    const eligibleEvolutions = bulbasaur.evolutions.filter(edge => {
+      const required = Math.max(edge.level, edge.evoLevelThreshold?.wild ?? 0);
+      return 18 >= edge.level && 18 >= required;
+    });
+    const chosenEvolution = eligibleEvolutions[evolutionRng.int(eligibleEvolutions.length)];
+    const evolutionThreshold = Math.max(chosenEvolution.level, chosenEvolution.evoLevelThreshold?.wild ?? 0);
+    const evolutionMax = Math.floor(evolutionThreshold * 1.2 + 0.5);
+    const randomEvolutionLevel = evolutionThreshold + evolutionRng.int(evolutionMax - evolutionThreshold + 1);
+    const expectedEvolution = randomEvolutionLevel <= 18 ? chosenEvolution.targetSpeciesId : 'bulbasaur';
+    assert.equal(readString(api.harness_level_evolution_species()), expectedEvolution,
+      'wild-level evolution selection follows pinned randSeedItem and randSeedIntRange decisions');
 
     // A second pinned real biome/seed deliberately selects Latios first;
     // Arena.checkLegendBST must consume a fresh tier/member draw and reroll.

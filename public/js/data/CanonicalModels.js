@@ -26,6 +26,23 @@ function toTitleCase(str) {
   return s.split(/[\s_]+/).map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
 }
 
+export class SpeciesEvolutionDefinition {
+  constructor(data = {}) {
+    this.targetSpeciesId = data.targetSpeciesId || null;
+    this.targetSpeciesEnumId = data.targetSpeciesEnumId == null ? null : Number(data.targetSpeciesEnumId);
+    this.level = data.level == null ? null : Number(data.level);
+    this.evoLevelThreshold = {
+      strong: data.evoLevelThreshold?.strong == null ? null : Number(data.evoLevelThreshold.strong),
+      normal: data.evoLevelThreshold?.normal == null ? null : Number(data.evoLevelThreshold.normal),
+      wild: data.evoLevelThreshold?.wild == null ? null : Number(data.evoLevelThreshold.wild)
+    };
+    this.item = data.item ?? null;
+    this.condition = data.condition ?? null;
+    this.source = data.source ? new SourceMetadata(data.source) : null;
+    this.extensions = data.extensions || {};
+  }
+}
+
 
 export class SpeciesDefinition {
   constructor(data = {}) {
@@ -60,6 +77,9 @@ export class SpeciesDefinition {
       mythical: data.rarity?.mythical ?? null
     };
     this.growthRate = data.growthRate ?? null;
+    this.evolutions = Array.isArray(data.evolutions)
+      ? data.evolutions.map(evolution => new SpeciesEvolutionDefinition(evolution))
+      : [];
     const ab1 = data.abilities?.primary || data.abilities?.ability1 || data.ability1 || 'NONE';
     const ab2 = data.abilities?.secondary || data.abilities?.ability2 || data.ability2 || null;
     const abh = data.abilities?.hidden || data.abilityHidden || null;
