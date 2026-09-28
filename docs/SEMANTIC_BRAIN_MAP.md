@@ -46,6 +46,8 @@ The `build native C++ first-run content screen` profile follows the pinned canon
 
 The **“add canonical battle data to native runtime”** profile follows pinned species and move declarations through the normalizers into compact C++ tables. It includes base stats, canonical ability IDs, level-up learnset ranges, move scalar fields, source provenance, the generator's cross-reference validation and its compile-time Bulbasaur/Tackle vectors. Raw upstream effect expressions stay in canonical JSON; this table does not claim move-effect or battle execution support yet.
 
+The **“initialize native Pokémon battle state”** profile follows the generated canonical species/move tables into `PokemonBattleState`. The initializer implements only the pinned base stat formula from explicit instance inputs and validates cross-references without consuming RNG or inventing defaults. Its result is explicitly `base formula only`; upstream instance generation, form-specific stats, EVs/modifiers and battle actions remain unsupported. The profile includes its C++/WASM regression harness and pinned `Pokemon.calculateStats` source.
+
 ## Graph model
 
 Layers are PRODUCT → DOMAIN → PRESENTATION → RUNTIME → SOURCE → TEST, with documentation cross-links. A node identifies a semantic fragment (contract/class, method group, test group, fixture, source symbol, or documentation responsibility) by stable ID, type, source location, responsibility, status and tags. An edge is a typed relation such as `IMPORTS`, `CALLS`, `PRODUCES`, `CONSUMES`, `SERIALIZES`, `VALIDATES`, `TESTS`, `MAPS_TO`, `ORIGINATES_FROM`, `DEPENDS_ON` or `RUNTIME_USED_BY`.

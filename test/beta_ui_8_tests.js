@@ -39,6 +39,7 @@ import { selectRelevantSubgraph, serializeSemanticBrainMap } from '../scripts/se
 import { progressionFixtureProvenance } from './fixtures/progressionContracts.js';
 import { registerBetaUI9ATests } from './beta_ui_9a_tests.js';
 import { registerBetaUI9CRngTests } from './beta_ui_9c_rng_tests.js';
+import { registerBetaUI9DTests } from './beta_ui_9d_tests.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -161,6 +162,13 @@ export function registerBetaUI8Tests(test) {
     assert.ok(biomeContext.contextBudget.secondary.includes('test.beta-ui-8c'));
     assert.ok(biomeContext.contextBudget.reference.includes('source.pokerogue-biome-links'));
     assert.ok(!biomeContext.nodes.some(node => ['presentation.canvas-renderer', 'presentation.timeline', 'runtime.scene-player'].includes(node.id)));
+
+    const battleStateContext = selectRelevantSubgraph(graph, { query: 'initialize native Pokémon battle state', depth: 0 });
+    assert.ok(battleStateContext.contextBudget.primary.includes('domain.pokemon-battle-state'));
+    assert.ok(battleStateContext.contextBudget.primary.includes('runtime.pokemon-battle-state'));
+    assert.ok(battleStateContext.contextBudget.reference.includes('source.pokerogue-pokemon-instance-rules'));
+    assert.ok(battleStateContext.contextBudget.secondary.includes('test.beta-ui-9d'));
+    assert.ok(!battleStateContext.nodes.some(node => ['presentation.canvas-renderer', 'presentation.timeline', 'runtime.scene-player'].includes(node.id)));
   });
 
   test('BETA-UI-8C: pinned biome import becomes canonical biome and route graph', async () => {
@@ -1102,5 +1110,6 @@ export function registerBetaUI8Tests(test) {
 
   registerBetaUI9ATests(test);
   registerBetaUI9CRngTests(test);
+  registerBetaUI9DTests(test);
 
 }
