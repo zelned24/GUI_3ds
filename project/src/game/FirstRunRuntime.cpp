@@ -86,7 +86,8 @@ void FirstRunRuntime::resolve() {
     m_run.starterDex = starter.dex;
     m_run.encounterDex = enemy.dex;
     m_context.modeName = locale("gameMode:classic", "Classic");
-    m_context.biomeName = locale("biomes:plains", "Plains");
+    const std::string biomeLocaleId = std::string("biomes:") + PokerogueContent::kStartingBiomeId;
+    m_context.biomeName = locale(biomeLocaleId.c_str(), "Town");
     const std::string starterLocaleId = std::string("pokemon:") + starter.id;
     const std::string enemyLocaleId = std::string("pokemon:") + enemy.id;
     m_context.player = {starter.dex, 5, starter.id, locale(starterLocaleId.c_str(), starter.name), starter.firstFormId, starter.assetSourcePath};

@@ -14,15 +14,9 @@
     "routes": 66,
     "species": 1084
   },
-  "contentHash": "f2bf26d4b2fcdc385ff69fb4ad979a926041e2c435b98adc45a7408444f4ec37",
+  "contentHash": "10f14ba630244dd15615141ff6fd4792465976568dbb084fc5b111dfb2011c7b",
   "deterministicReimport": true,
   "provenance": [
-    {
-      "hash": "b49dda87104cd7dac84b4134a64a57cb51531db4147ceea109058276435e16da",
-      "repository": "pokerogue",
-      "revision": "8555c08c823b856cbec4eb99ca84ea52a955836d",
-      "sourcePath": "src/battle-scene.ts"
-    },
     {
       "hash": "2025107ab97d1fba0d01867912cb46eda52961aa66705d159f1546c8ff5078db",
       "repository": "pokerogue",

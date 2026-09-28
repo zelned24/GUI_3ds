@@ -476731,10 +476731,10 @@
       "sourceSymbol": "Arena.randomSpecies/generateBossBiomeTier/generateNonBossBiomeTier/updatePoolsForTimeOfDay/getTimeOfDay"
     },
     "upstreamStartingBiome": {
-      "id": "plains",
-      "sourceHash": "b49dda87104cd7dac84b4134a64a57cb51531db4147ceea109058276435e16da",
-      "sourcePath": "src/battle-scene.ts",
-      "sourceSymbol": "BattleScene.launchBattle:PLAINS"
+      "id": "town",
+      "sourceHash": "ce2903ab6315c8b9a59fa5d34c13b920aed5b0e3abfb6cdc8e72206b9a2dcac8",
+      "sourcePath": "src/game-mode.ts",
+      "sourceSymbol": "GameMode.getStartingBiome:default:TOWN"
     }
   },
   "provenance": {
@@ -476759,12 +476759,6 @@
     "revision": "8555c08c823b856cbec4eb99ca84ea52a955836d",
     "sourceType": "UPSTREAM",
     "sources": [
-      {
-        "hash": "b49dda87104cd7dac84b4134a64a57cb51531db4147ceea109058276435e16da",
-        "repository": "pokerogue",
-        "revision": "8555c08c823b856cbec4eb99ca84ea52a955836d",
-        "sourcePath": "src/battle-scene.ts"
-      },
       {
         "hash": "2025107ab97d1fba0d01867912cb46eda52961aa66705d159f1546c8ff5078db",
         "repository": "pokerogue",

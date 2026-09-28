@@ -86,7 +86,7 @@ export function registerBetaUI9ATests(test) {
     }
     assert.match(header, /\{1, 1, 3, true, "bulbasaur", "Bulbasaur"/);
     assert.ok(header.includes('"en:pokemon:bulbasaur", "Bulbasaur"'), 'native runtime resolves names from imported locale records');
-    assert.ok(header.includes('kStartingBiomeId[] = "plains"'));
+    assert.ok(header.includes('kStartingBiomeId[] = "town"'));
     assert.ok(header.includes('{"plains", "common", "dawn", 0, "sentret"'), 'native encounter pool rows preserve real Plains membership order and provenance');
   });
 }

@@ -3,7 +3,7 @@
 #include <cstddef>
 #include <cstdint>
 namespace PokerogueContent {
-inline constexpr char kContentHash[] = "f2bf26d4b2fcdc385ff69fb4ad979a926041e2c435b98adc45a7408444f4ec37";
+inline constexpr char kContentHash[] = "10f14ba630244dd15615141ff6fd4792465976568dbb084fc5b111dfb2011c7b";
 inline constexpr char kPokerogueRevision[] = "8555c08c823b856cbec4eb99ca84ea52a955836d";
 inline constexpr char kAssetsRevision[] = "056a1f408f26a3be4fef243f7462cb43608c7928";
 inline constexpr char kLocalesRevision[] = "23aea1cb0da5a0b15b836f3c243791591cc42303";
@@ -7244,5 +7244,5 @@ inline constexpr std::size_t kBiomeEncounterPoolCount = sizeof(kBiomeEncounterPo
 inline constexpr std::size_t kBiomeTrainerPoolCount = sizeof(kBiomeTrainerPools) / sizeof(kBiomeTrainerPools[0]);
 inline constexpr std::size_t kRouteCount = sizeof(kRoutes) / sizeof(kRoutes[0]);
 inline constexpr std::size_t kLocaleCount = sizeof(kLocales) / sizeof(kLocales[0]);
-inline constexpr char kStartingBiomeId[] = "plains";
+inline constexpr char kStartingBiomeId[] = "town";
 }

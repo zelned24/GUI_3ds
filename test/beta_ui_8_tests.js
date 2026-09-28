@@ -38,6 +38,7 @@ import { BiomeDefinition, MapDefinition, MapEdge, MapNode, ProgressionContentReg
 import { selectRelevantSubgraph, serializeSemanticBrainMap } from '../scripts/semantic_brain_map_query.mjs';
 import { progressionFixtureProvenance } from './fixtures/progressionContracts.js';
 import { registerBetaUI9ATests } from './beta_ui_9a_tests.js';
+import { registerBetaUI9CRngTests } from './beta_ui_9c_rng_tests.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -751,13 +752,15 @@ export function registerBetaUI8Tests(test) {
 
     const invalidProj = new ProjectDocument({
       name: 'InvalidProj',
-      activeSceneId: 'non_existent_scene',
       scenes: [
         new SceneModel({
           id: 'BadScene'
         })
       ]
     });
+    // ProjectDocument repairs invalid selections during construction; model a
+    // corrupted persisted document after construction so export validation is tested.
+    invalidProj.activeSceneId = 'non_existent_scene';
 
     assert.throws(() => ProjectValidator.assertCanExport(invalidProj), /EXPORT BLOCKED/);
   });
@@ -1013,6 +1016,8 @@ export function registerBetaUI8Tests(test) {
     const jsX = jsNode.transform.x !== undefined ? jsNode.transform.x : shape.x;
     const jsY = jsNode.transform.y !== undefined ? jsNode.transform.y : shape.y;
 
+    const cppNode = cppEvaluations.get('shape_box');
+    assert.ok(cppNode);
     assert.ok(Math.abs(jsX - cppNode.transform.x) < 0.001);
     assert.ok(Math.abs(jsY - cppNode.transform.y) < 0.001);
   });
@@ -1085,5 +1090,6 @@ export function registerBetaUI8Tests(test) {
   });
 
   registerBetaUI9ATests(test);
+  registerBetaUI9CRngTests(test);
 
 }

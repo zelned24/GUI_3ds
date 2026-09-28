@@ -602,7 +602,7 @@ export class PokerogueImporter {
   async importPlayableCanonicalContent(repository = this.repository, options = {}) {
     const content = await this.importCanonicalContent(repository, options);
     const progression = await this.importCanonicalProgression(repository);
-    const startPath = 'src/battle-scene.ts';
+    const startPath = 'src/game-mode.ts';
     const battlePath = 'src/battle.ts';
     const arenaPath = 'src/field/arena.ts';
     const poolTierEnumPath = 'src/enums/biome-pool-tier.ts';
@@ -610,8 +610,8 @@ export class PokerogueImporter {
       repository.getFile('pokerogue', startPath), repository.getFile('pokerogue', battlePath),
       repository.getFile('pokerogue', arenaPath), repository.getFile('pokerogue', poolTierEnumPath)
     ]);
-    const startMatch = startSource.match(/activeOverrides\.STARTING_BIOME_OVERRIDE\s*\|\|\s*BiomeId\.([A-Z0-9_]+)/);
-    if (!startMatch) throw new Error(`Pinned upstream starting biome expression was not recognized in ${startPath}`);
+    const startMatch = startSource.match(/getStartingBiome\(\)[\s\S]*?switch\s*\(this\.modeId\)[\s\S]*?default:\s*return\s+BiomeId\.([A-Z0-9_]+)/);
+    if (!startMatch) throw new Error(`Pinned upstream GameMode.getStartingBiome default was not recognized in ${startPath}`);
     const startingBiomeId = startMatch[1].toLowerCase();
     const sourceSnapshot = content.canonicalContent.sourceSnapshot;
     const speciesIds = new Set(content.species.map(species => species.id));
@@ -640,7 +640,7 @@ export class PokerogueImporter {
       sourceSnapshot,
       provenance: content.canonicalContent.provenance,
       collections: { ...content.canonicalContent.collections, biomes: progression.biomes, routes: progression.routes, locales: localeEntries },
-      extensions: { ...content.canonicalContent.extensions, importedProgression: { source: 'src/init/init-biomes.ts', waveCatalog: 'NOT_DECLARED_UPSTREAM' }, biomePoolReferenceAudit: missingPoolSpecies.length ? { status: 'PARTIAL_SPECIES_SNAPSHOT_UNVERIFIED', unverifiedReferenceCount: missingPoolSpecies.length, sample: missingPoolSpecies.slice(0, 12) } : { status: 'COMPLETE_AND_VALIDATED', referenceCount: progression.biomes.reduce((count, biome) => count + Object.values(biome.encounterPools || {}).reduce((tierCount, times) => tierCount + Object.values(times || {}).reduce((timeCount, ids) => timeCount + ids.length, 0), 0), 0) }, upstreamStartingBiome: { id: startingBiomeId, sourcePath: startPath, sourceSymbol: `BattleScene.launchBattle:${startMatch[1]}`, sourceHash: PokerogueManifest.computeHash(startSource) }, upstreamEncounterLevel: { sourcePath: battlePath, sourceSymbol: 'Battle.getLevelForWave/randSeedGaussForLevel', sourceHash: PokerogueManifest.computeHash(battleSource) }, upstreamEncounterSelection: { repository: POKEROGUE_REPOSITORIES.pokerogue.url, revision: POKEROGUE_REPOSITORIES.pokerogue.revision, sourcePath: arenaPath, sourceSymbol: 'Arena.randomSpecies/generateBossBiomeTier/generateNonBossBiomeTier/updatePoolsForTimeOfDay/getTimeOfDay', sourceHash: PokerogueManifest.computeHash(arenaSource), poolTierEnum: { sourcePath: poolTierEnumPath, sourceSymbol: 'BiomePoolTier', sourceHash: PokerogueManifest.computeHash(poolTierEnumSource) }, coverage: 'POOL_TIER_AND_MEMBER_SELECTION_RULES_ONLY; downstream legendary reroll/species substitution/RNG seeding are not ported' } }
+      extensions: { ...content.canonicalContent.extensions, importedProgression: { source: 'src/init/init-biomes.ts', waveCatalog: 'NOT_DECLARED_UPSTREAM' }, biomePoolReferenceAudit: missingPoolSpecies.length ? { status: 'PARTIAL_SPECIES_SNAPSHOT_UNVERIFIED', unverifiedReferenceCount: missingPoolSpecies.length, sample: missingPoolSpecies.slice(0, 12) } : { status: 'COMPLETE_AND_VALIDATED', referenceCount: progression.biomes.reduce((count, biome) => count + Object.values(biome.encounterPools || {}).reduce((tierCount, times) => tierCount + Object.values(times || {}).reduce((timeCount, ids) => timeCount + ids.length, 0), 0), 0) }, upstreamStartingBiome: { id: startingBiomeId, sourcePath: startPath, sourceSymbol: `GameMode.getStartingBiome:default:${startMatch[1]}`, sourceHash: PokerogueManifest.computeHash(startSource) }, upstreamEncounterLevel: { sourcePath: battlePath, sourceSymbol: 'Battle.getLevelForWave/randSeedGaussForLevel', sourceHash: PokerogueManifest.computeHash(battleSource) }, upstreamEncounterSelection: { repository: POKEROGUE_REPOSITORIES.pokerogue.url, revision: POKEROGUE_REPOSITORIES.pokerogue.revision, sourcePath: arenaPath, sourceSymbol: 'Arena.randomSpecies/generateBossBiomeTier/generateNonBossBiomeTier/updatePoolsForTimeOfDay/getTimeOfDay', sourceHash: PokerogueManifest.computeHash(arenaSource), poolTierEnum: { sourcePath: poolTierEnumPath, sourceSymbol: 'BiomePoolTier', sourceHash: PokerogueManifest.computeHash(poolTierEnumSource) }, coverage: 'POOL_TIER_AND_MEMBER_SELECTION_RULES_ONLY; downstream legendary reroll/species substitution/RNG seeding are not ported' } }
     });
     const errors = canonicalContent.validate();
     if (errors.length) throw new Error(`Playable canonical production content rejected: ${errors.join('; ')}`);
