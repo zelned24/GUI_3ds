@@ -1,7 +1,29 @@
 #include "game/PokerogueRngAdapter.hpp"
+#include "game/PokerogueEncounterResolver.hpp"
 
 namespace {
 const uint16_t kSeed[] = {'p','o','k','e','r','o','g','u','e','-','r','n','g','-','v','1'};
+struct Wave1Trace {
+    uint8_t cycleOffset;
+    uint8_t timeOfDay;
+    uint8_t doubleRoll;
+    uint8_t doubleBattle;
+    Pokerogue3DS::PokeroguePoolResolution pool;
+};
+Wave1Trace makeWave1Trace() {
+    Wave1Trace trace{};
+    Pokerogue3DS::PokerogueWaveClock::deriveCycleOffset(
+        kSeed, sizeof(kSeed) / sizeof(kSeed[0]), trace.cycleOffset);
+    const auto time = Pokerogue3DS::PokerogueWaveClock::timeOfDay(1, trace.cycleOffset);
+    trace.timeOfDay = static_cast<uint8_t>(time);
+    Pokerogue3DS::PokerogueRngAdapter rng;
+    Pokerogue3DS::PokerogueSeedOffsetScope wave(rng, kSeed,
+        sizeof(kSeed) / sizeof(kSeed[0]), 1);
+    trace.doubleRoll = static_cast<uint8_t>(rng.randSeedInt(8));
+    trace.doubleBattle = trace.doubleRoll == 0;
+    trace.pool = Pokerogue3DS::PokerogueEncounterResolver::resolveNonBoss("town", time, rng);
+    return trace;
+}
 Pokerogue3DS::PokerogueRngAdapter makeSeeded() {
     Pokerogue3DS::PokerogueRngAdapter rng;
     rng.sow(kSeed, sizeof(kSeed) / sizeof(kSeed[0]));
@@ -110,5 +132,37 @@ int32_t harness_pokerogue_time_of_day_boundaries() {
         && PokerogueWaveClock::timeOfDay(1, 34) == PokerogueTimeOfDay::Dawn // cycle 35
         && PokerogueWaveClock::timeOfDay(1, 38) == PokerogueTimeOfDay::Dawn // cycle 39
         && PokerogueWaveClock::timeOfDay(1, 39) == PokerogueTimeOfDay::Day; // wraps to 0
+}
+
+uint32_t harness_wave1_cycle_offset() { return makeWave1Trace().cycleOffset; }
+uint32_t harness_wave1_time_of_day() { return makeWave1Trace().timeOfDay; }
+uint32_t harness_wave1_double_roll() { return makeWave1Trace().doubleRoll; }
+uint32_t harness_wave1_double_battle() { return makeWave1Trace().doubleBattle; }
+uint32_t harness_wave1_tier_roll() { return makeWave1Trace().pool.tierRoll; }
+uint32_t harness_wave1_member_index() { return makeWave1Trace().pool.memberIndex; }
+uint32_t harness_wave1_pool_size() { return makeWave1Trace().pool.poolSize; }
+const char* harness_wave1_species_id() { return makeWave1Trace().pool.speciesId; }
+double harness_wave1_next_fraction_after_tier() {
+    Pokerogue3DS::PokerogueRngAdapter rng;
+    Pokerogue3DS::PokerogueSeedOffsetScope wave(rng, kSeed,
+        sizeof(kSeed) / sizeof(kSeed[0]), 1);
+    (void)rng.randSeedInt(8);
+    (void)rng.randSeedInt(512);
+    return rng.frac();
+}
+double harness_wave1_state_s0_after_tier() { Pokerogue3DS::PokerogueRngAdapter rng; Pokerogue3DS::PokerogueSeedOffsetScope scope(rng,kSeed,16,1); (void)rng.randSeedInt(8); (void)rng.randSeedInt(512); return rng.state().s0; }
+double harness_wave1_state_s1_after_tier() { Pokerogue3DS::PokerogueRngAdapter rng; Pokerogue3DS::PokerogueSeedOffsetScope scope(rng,kSeed,16,1); (void)rng.randSeedInt(8); (void)rng.randSeedInt(512); return rng.state().s1; }
+double harness_wave1_state_s2_after_tier() { Pokerogue3DS::PokerogueRngAdapter rng; Pokerogue3DS::PokerogueSeedOffsetScope scope(rng,kSeed,16,1); (void)rng.randSeedInt(8); (void)rng.randSeedInt(512); return rng.state().s2; }
+double harness_wave1_state_c_after_tier() { Pokerogue3DS::PokerogueRngAdapter rng; Pokerogue3DS::PokerogueSeedOffsetScope scope(rng,kSeed,16,1); (void)rng.randSeedInt(8); (void)rng.randSeedInt(512); return rng.state().carry; }
+double harness_wave1_state_s0_after_double() { Pokerogue3DS::PokerogueRngAdapter rng; Pokerogue3DS::PokerogueSeedOffsetScope scope(rng,kSeed,16,1); (void)rng.randSeedInt(8); return rng.state().s0; }
+double harness_wave1_state_s1_after_double() { Pokerogue3DS::PokerogueRngAdapter rng; Pokerogue3DS::PokerogueSeedOffsetScope scope(rng,kSeed,16,1); (void)rng.randSeedInt(8); return rng.state().s1; }
+double harness_wave1_state_s2_after_double() { Pokerogue3DS::PokerogueRngAdapter rng; Pokerogue3DS::PokerogueSeedOffsetScope scope(rng,kSeed,16,1); (void)rng.randSeedInt(8); return rng.state().s2; }
+double harness_wave1_state_c_after_double() { Pokerogue3DS::PokerogueRngAdapter rng; Pokerogue3DS::PokerogueSeedOffsetScope scope(rng,kSeed,16,1); (void)rng.randSeedInt(8); return rng.state().carry; }
+double harness_wave1_first_fraction() { Pokerogue3DS::PokerogueRngAdapter rng; Pokerogue3DS::PokerogueSeedOffsetScope scope(rng,kSeed,16,1); return rng.frac(); }
+uint32_t harness_wave1_non_boss_level() {
+    Pokerogue3DS::PokerogueRngAdapter rng;
+    Pokerogue3DS::PokerogueSeedOffsetScope scope(rng, kSeed, 16, 8);
+    for (uint8_t i = 0; i < 16; ++i) (void)rng.randSeedInt(62);
+    return Pokerogue3DS::PokerogueEncounterResolver::nonBossLevelForWave(1, rng);
 }
 }

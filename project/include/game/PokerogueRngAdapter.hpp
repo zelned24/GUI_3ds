@@ -44,8 +44,12 @@ public:
     }
 
     double frac() {
-        return rnd() + static_cast<int32_t>(rnd() * 2097152.0)
-            * 1.1102230246251565e-16;
+        // Phaser evaluates these draws in source order. Keep the stateful calls
+        // in separate statements; operand evaluation order for `+` is not a
+        // sequencing contract in C++.
+        const double first = rnd();
+        const int32_t secondBits = static_cast<int32_t>(rnd() * 2097152.0);
+        return first + secondBits * 1.1102230246251565e-16;
     }
 
     double realInRange(double min, double max) {
@@ -78,21 +82,32 @@ private:
     double m_n;
     PokerogueRngState m_state;
 
+    static uint32_t toUint32(double value) {
+        // JavaScript's >>> 0 truncates toward zero and wraps modulo 2^32.
+        // A direct floating-to-uint32_t cast is undefined when value is out
+        // of range, which occurs in Phaser's hash multiplication step.
+        const bool negative = value < 0.0;
+        const double magnitude = negative ? -value : value;
+        const uint64_t truncated = static_cast<uint64_t>(magnitude);
+        const uint32_t low = static_cast<uint32_t>(truncated & 0xffffffffULL);
+        return negative ? static_cast<uint32_t>(0U - low) : low;
+    }
+
     double hashCodeUnit(uint16_t code) {
         m_n += code;
         double h = 0.02519603282416938 * m_n;
-        m_n = static_cast<uint32_t>(h); // JS >>> 0
+        m_n = toUint32(h); // JS >>> 0
         h -= m_n;
         h *= m_n;
-        m_n = static_cast<uint32_t>(h);
+        m_n = toUint32(h);
         h -= m_n;
         m_n += h * 4294967296.0;
-        return static_cast<uint32_t>(m_n) * 2.3283064365386963e-10;
+        return toUint32(m_n) * 2.3283064365386963e-10;
     }
 
     double hash(const uint16_t* value, size_t length) {
         for (size_t i = 0; i < length; ++i) hashCodeUnit(value[i]);
-        return static_cast<uint32_t>(m_n) * 2.3283064365386963e-10;
+        return toUint32(m_n) * 2.3283064365386963e-10;
     }
 
     void subtractSeed(double& value, const uint16_t* seed, size_t length) {

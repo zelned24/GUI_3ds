@@ -1,8 +1,8 @@
 #pragma once
 
 #include "screens/SceneData.hpp"
-#include <array>
 #include <cstdint>
+#include <array>
 #include <string>
 
 namespace Pokerogue3DS {
@@ -54,6 +54,10 @@ private:
     std::array<Citro2D::SceneNodeData, 8> m_nodes{};
     std::array<std::string, 8> m_text{};
     std::size_t m_starterIndex = 0;
+    std::array<uint16_t, 10> m_seedCodeUnits{};
+    std::size_t m_seedLength = 0;
+    bool m_encounterResolved = false;
+    bool m_doubleBattle = false;
 };
 
 } // namespace Pokerogue3DS

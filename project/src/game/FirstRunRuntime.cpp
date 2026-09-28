@@ -1,17 +1,11 @@
 #include "game/FirstRunRuntime.hpp"
+#include "game/PokerogueEncounterResolver.hpp"
 #include "content/PokerogueRuntimeContent.hpp"
 #include <algorithm>
 #include <cstdio>
 
 namespace Pokerogue3DS {
 namespace {
-uint32_t nextRandom(uint32_t value) {
-    value ^= value << 13;
-    value ^= value >> 17;
-    value ^= value << 5;
-    return value ? value : 0x6D2B79F5u;
-}
-
 Citro2D::SceneNodeData textNode(const char* id, Citro2D::ScreenTarget screen,
                                 float x, float y, int16_t z) {
     Citro2D::SceneNodeData node{};
@@ -36,6 +30,12 @@ Citro2D::SceneNodeData textNode(const char* id, Citro2D::ScreenTarget screen,
 
 FirstRunRuntime::FirstRunRuntime(uint32_t seed) {
     m_run = {seed ? seed : 1u, 1, "classic", PokerogueContent::kStartingBiomeId, 0, 0};
+    char seedText[11];
+    std::snprintf(seedText, sizeof(seedText), "%u", static_cast<unsigned>(m_run.seed));
+    while (seedText[m_seedLength] && m_seedLength < m_seedCodeUnits.size()) {
+        m_seedCodeUnits[m_seedLength] = static_cast<uint8_t>(seedText[m_seedLength]);
+        ++m_seedLength;
+    }
     for (std::size_t i = 0; i < PokerogueContent::kSpeciesCount; ++i) {
         if (PokerogueContent::kSpecies[i].starterEligible) {
             m_starterIndex = i;
@@ -77,21 +77,49 @@ const char* FirstRunRuntime::locale(const char* canonicalId, const char* fallbac
 
 void FirstRunRuntime::resolve() {
     const auto& starter = PokerogueContent::kSpecies[m_starterIndex];
-    uint32_t random = nextRandom(m_run.seed ^ 0x9E3779B9u);
-    std::size_t enemyIndex = random % PokerogueContent::kSpeciesCount;
-    if (PokerogueContent::kSpecies[enemyIndex].dex == starter.dex) {
-        enemyIndex = (enemyIndex + 1) % PokerogueContent::kSpeciesCount;
-    }
-    const auto& enemy = PokerogueContent::kSpecies[enemyIndex];
     m_run.starterDex = starter.dex;
-    m_run.encounterDex = enemy.dex;
     m_context.modeName = locale("gameMode:classic", "Classic");
     const std::string biomeLocaleId = std::string("biomes:") + PokerogueContent::kStartingBiomeId;
     m_context.biomeName = locale(biomeLocaleId.c_str(), "Town");
     const std::string starterLocaleId = std::string("pokemon:") + starter.id;
-    const std::string enemyLocaleId = std::string("pokemon:") + enemy.id;
     m_context.player = {starter.dex, 5, starter.id, locale(starterLocaleId.c_str(), starter.name), starter.firstFormId, starter.assetSourcePath};
-    m_context.enemy = {enemy.dex, 3, enemy.id, locale(enemyLocaleId.c_str(), enemy.name), enemy.firstFormId, enemy.assetSourcePath};
+
+    uint8_t cycleOffset = 0;
+    if (!PokerogueWaveClock::deriveCycleOffset(m_seedCodeUnits.data(), m_seedLength, cycleOffset)) return;
+    const auto time = PokerogueWaveClock::timeOfDay(m_run.wave, cycleOffset);
+
+    // BattleScene.resetSeed(1) establishes a fresh wave stream. Classic's
+    // wave-1 checkIsDouble consumes its first draw before Arena.randomSpecies.
+    PokerogueRngAdapter waveRng;
+    PokerogueSeedOffsetScope waveScope(waveRng, m_seedCodeUnits.data(), m_seedLength, m_run.wave);
+    if (!waveScope.valid()) return;
+    m_doubleBattle = waveRng.randSeedInt(8) == 0; // Classic default chance, zero party luck.
+    const auto pool = PokerogueEncounterResolver::resolveNonBoss("town", time, waveRng);
+    if (!pool.valid || !pool.speciesId) return;
+
+    std::size_t enemyIndex = PokerogueContent::kSpeciesCount;
+    for (std::size_t i = 0; i < PokerogueContent::kSpeciesCount; ++i) {
+        if (std::string(PokerogueContent::kSpecies[i].id) == pool.speciesId) {
+            enemyIndex = i;
+            break;
+        }
+    }
+    if (enemyIndex == PokerogueContent::kSpeciesCount) return;
+    const auto& enemy = PokerogueContent::kSpecies[enemyIndex];
+
+    // Battle constructor runs in a separate waveIndex<<3 seed scope. Its
+    // battleSeed initializer consumes 16 draws before getLevelForWave().
+    PokerogueRngAdapter levelRng;
+    PokerogueSeedOffsetScope levelScope(levelRng, m_seedCodeUnits.data(), m_seedLength,
+                                         static_cast<uint32_t>(m_run.wave) << 3);
+    if (!levelScope.valid()) return;
+    for (uint8_t i = 0; i < 16; ++i) (void)levelRng.randSeedInt(62);
+    const uint16_t level = PokerogueEncounterResolver::nonBossLevelForWave(m_run.wave, levelRng);
+
+    m_run.encounterDex = enemy.dex;
+    const std::string enemyLocaleId = std::string("pokemon:") + enemy.id;
+    m_context.enemy = {enemy.dex, level, enemy.id, locale(enemyLocaleId.c_str(), enemy.name), enemy.firstFormId, enemy.assetSourcePath};
+    m_encounterResolved = true;
 }
 
 void FirstRunRuntime::buildScene() {
@@ -100,11 +128,17 @@ void FirstRunRuntime::buildScene() {
     m_text[1] = std::string("Mode: ") + m_context.modeName;
     m_text[2] = std::string("Biome: ") + m_context.biomeName;
     m_text[3] = std::string("Starter: ") + starterName();
-    std::snprintf(line, sizeof(line), "Wave 1 encounter: %s Lv. %u", m_context.enemy.localizedName,
-                  static_cast<unsigned>(m_context.enemy.level));
+    if (m_encounterResolved) {
+        std::snprintf(line, sizeof(line), "Pool candidate: %s Lv. %u", m_context.enemy.localizedName,
+                      static_cast<unsigned>(m_context.enemy.level));
+    } else {
+        std::snprintf(line, sizeof(line), "Wave 1 encounter: UNSUPPORTED");
+    }
     m_text[4] = line;
     m_text[5] = "LEFT/RIGHT: choose upstream starter";
-    m_text[6] = "Encounter preview only - battle rules are not ported";
+    m_text[6] = m_encounterResolved
+        ? (m_doubleBattle ? "Double battle needs second enemy slot" : "Rarity/evolution rerolls pending")
+        : "Encounter inputs unsupported - no fallback used";
     m_text[7] = std::string("Pinned data: ") + PokerogueContent::kPokerogueRevision;
 
     static const char* ids[] = {"run-title", "mode", "biome", "starter", "encounter", "controls", "status", "source"};
