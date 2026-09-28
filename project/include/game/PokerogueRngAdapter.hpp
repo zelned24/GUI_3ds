@@ -14,6 +14,8 @@ struct PokerogueRngState {
     double s2;
 };
 
+enum class PokerogueTimeOfDay : uint8_t { Day, Dusk, Night, Dawn };
+
 class PokerogueRngAdapter {
 public:
     static constexpr size_t kMaxSeedCodeUnits = 64;
@@ -106,6 +108,29 @@ private:
         m_state.s1 = m_state.s2;
         m_state.s2 = t - m_state.carry;
         return m_state.s2;
+    }
+};
+
+// Classic biome pool clock from Arena.getTimeOfDay(). Upstream derives one
+// stable five-wave cycle offset from a fresh root-seed Phaser stream.
+class PokerogueWaveClock {
+public:
+    static bool deriveCycleOffset(const uint16_t* rootSeed, size_t seedLength,
+                                  uint8_t& offset) {
+        if (seedLength > PokerogueRngAdapter::kMaxSeedCodeUnits
+            || (seedLength && !rootSeed)) return false;
+        PokerogueRngAdapter rng;
+        rng.sow(rootSeed, seedLength);
+        offset = static_cast<uint8_t>(rng.randSeedInt(8) * 5);
+        return true;
+    }
+
+    static PokerogueTimeOfDay timeOfDay(uint32_t waveIndex, uint8_t cycleOffset) {
+        const uint32_t cycle = (waveIndex + cycleOffset) % 40;
+        if (cycle < 15) return PokerogueTimeOfDay::Day;
+        if (cycle < 20) return PokerogueTimeOfDay::Dusk;
+        if (cycle < 35) return PokerogueTimeOfDay::Night;
+        return PokerogueTimeOfDay::Dawn;
     }
 };
 

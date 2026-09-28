@@ -13,6 +13,8 @@
 
 `project/include/game/PokerogueRngAdapter.hpp` implements the Phaser Alea state, seed hashing over UTF-16 code units, two-step `frac()`, range/pick semantics, serializable `c/s0/s1/s2` state, PokéRogue-style `shiftCharCodes`, and a scoped seed-offset save/sow/restore boundary. Singleton picks and ranges of size 1 do not consume random draws; empty pool selection is rejected.
 
+`PokerogueWaveClock` also ports the Classic cycle clock: derive `waveCycleOffset = randSeedInt(8) * 5` from a fresh root-seed stream, then map `(waveIndex + offset) % 40` to day `[0,15)`, dusk `[15,20)`, night `[20,35)`, dawn `[35,40)`. Golden coverage checks the pinned vector's offset 25 and every transition/wrap boundary.
+
 Golden seed `pokerogue-rng-v1` has these checked outputs:
 
 | Case | Expected |

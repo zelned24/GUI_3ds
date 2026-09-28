@@ -92,4 +92,23 @@ int32_t harness_pokerogue_shift_wraps_utf16() {
     return Pokerogue3DS::PokerogueRngAdapter::shiftCharCodes(input, 1, 1, output, 1)
         && output[0] == 0;
 }
+
+int32_t harness_pokerogue_wave_cycle_offset() {
+    uint8_t offset = 0;
+    return Pokerogue3DS::PokerogueWaveClock::deriveCycleOffset(
+        kSeed, sizeof(kSeed) / sizeof(kSeed[0]), offset) && offset == 25;
+}
+
+int32_t harness_pokerogue_time_of_day_boundaries() {
+    using Pokerogue3DS::PokerogueTimeOfDay;
+    using Pokerogue3DS::PokerogueWaveClock;
+    return PokerogueWaveClock::timeOfDay(1, 13) == PokerogueTimeOfDay::Day  // cycle 14
+        && PokerogueWaveClock::timeOfDay(1, 14) == PokerogueTimeOfDay::Dusk // cycle 15
+        && PokerogueWaveClock::timeOfDay(1, 18) == PokerogueTimeOfDay::Dusk // cycle 19
+        && PokerogueWaveClock::timeOfDay(1, 19) == PokerogueTimeOfDay::Night // cycle 20
+        && PokerogueWaveClock::timeOfDay(1, 33) == PokerogueTimeOfDay::Night // cycle 34
+        && PokerogueWaveClock::timeOfDay(1, 34) == PokerogueTimeOfDay::Dawn // cycle 35
+        && PokerogueWaveClock::timeOfDay(1, 38) == PokerogueTimeOfDay::Dawn // cycle 39
+        && PokerogueWaveClock::timeOfDay(1, 39) == PokerogueTimeOfDay::Day; // wraps to 0
+}
 }

@@ -55,5 +55,7 @@ export function registerBetaUI9CRngTests(test) {
     assert.equal(api.harness_pokerogue_rng_state_roundtrip(), 1, 'serializable Phaser RNG state restores the next draw');
     assert.equal(api.harness_pokerogue_rng_offset_restores_state(), 1, 'seed-offset scope restores caller RNG state');
     assert.equal(api.harness_pokerogue_shift_wraps_utf16(), 1, 'shiftCharCodes follows UTF-16 modulo semantics');
+    assert.equal(api.harness_pokerogue_wave_cycle_offset(), 1, 'Classic wave cycle uses root randSeedInt(8) multiplied by five');
+    assert.equal(api.harness_pokerogue_time_of_day_boundaries(), 1, 'Arena.getTimeOfDay boundaries and 40-wave wrap match upstream');
   });
 }
