@@ -44,6 +44,6 @@ This is an RNG adapter, **not encounter parity**. It is not yet called by `Encou
 ## Next
 
 1. Startup trace completed: `TitlePhase.end()` selects Classic, `GameMode.getStartingBiome()` returns Town, then `SelectStarterPhase` establishes wave 1 and `Arena.init()` prepares the pool before `EncounterPhase`.
-2. Port wave-cycle offset, current turn-free encounter stream calls, level seed offset, double check, time-of-day and Classic wave-1 pool resolution in upstream order.
-3. Import required species rarity/BST/evolution data or fail the relevant result explicitly; do not treat absent fields as negatives.
+2. Port wave-cycle offset and time-of-day are implemented; still port the double check, level seed offset, tier/member draws and Classic wave-1 pool resolution in upstream order.
+3. Canonical import now types explicit `baseTotal`, growth rate and tri-state `legendary/subLegendary/mythical`; absent rarity stays unknown and generated C++ uses `-1`. Evolution edges, rarity rerolls and level-driven species substitution remain unported and must fail/mark unsupported where required.
 4. Replace the JS and Old 3DS catalog preview only when the same fixed-seed golden trace matches upstream at every decision point.

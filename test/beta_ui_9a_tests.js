@@ -12,6 +12,12 @@ export function registerBetaUI9ATests(test) {
     const imported = await importer.importPlayableCanonicalContent(undefined, { generations: [1] });
     const repeatedImport = await importer.importPlayableCanonicalContent(undefined, { generations: [1] });
     assert.strictEqual(repeatedImport.importReport.contentHash, imported.importReport.contentHash, 'same pins/import/normalization produce the same canonical hash');
+    const pikachu = imported.species.find(species => species.id === 'pikachu');
+    assert.strictEqual(pikachu.baseTotal, 320, 'explicit upstream baseTotal is normalized as canonical data');
+    assert.strictEqual(pikachu.growthRate, 'MEDIUM_FAST', 'growth-rate identifier is normalized without a gameplay port');
+    assert.deepStrictEqual(pikachu.rarity, { legendary: null, subLegendary: null, mythical: null }, 'absent upstream rarity fields remain distinguishable from explicit false');
+    const legendary = imported.species.find(species => species.rarity.legendary === true);
+    assert.ok(legendary, 'explicit upstream legendary classification is retained');
     assert.strictEqual(imported.canonicalContent.extensions.biomePoolReferenceAudit.status, 'PARTIAL_SPECIES_SNAPSHOT_UNVERIFIED', 'filtered generation imports declare cross-reference limits');
     const plains = imported.canonicalContent.collections.biomes.find(biome => biome.id === 'plains');
     const poolSpecies = [...new Set(Object.values(plains.encounterPools).flatMap(tier => Object.values(tier).flat()))].map(id => ({ id }));
@@ -84,7 +90,7 @@ export function registerBetaUI9ATests(test) {
     for (const domain of ['kSpecies', 'kForms', 'kMoves', 'kAbilities', 'kItems', 'kLocales', 'kModes', 'kBiomes', 'kBiomeEncounterPools', 'kBiomeTrainerPools', 'kRoutes']) {
       assert.ok(header.includes(`${domain}[] = {`), `native ROM bundle contains ${domain}`);
     }
-    assert.match(header, /\{1, 1, 3, true, "bulbasaur", "Bulbasaur"/);
+    assert.match(header, /\{1, 1, 3, true, 318, -1, -1, -1, "MEDIUM_SLOW", "bulbasaur", "Bulbasaur"/);
     assert.ok(header.includes('"en:pokemon:bulbasaur", "Bulbasaur"'), 'native runtime resolves names from imported locale records');
     assert.ok(header.includes('kStartingBiomeId[] = "town"'));
     assert.ok(header.includes('{"plains", "common", "dawn", 0, "sentret"'), 'native encounter pool rows preserve real Plains membership order and provenance');

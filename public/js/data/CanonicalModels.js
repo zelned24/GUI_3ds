@@ -53,6 +53,13 @@ export class SpeciesDefinition {
       spdef: Number(data.baseStats?.spdef ?? 40),
       spd: Number(data.baseStats?.spd ?? 40)
     };
+    this.baseTotal = data.baseTotal == null ? null : Number(data.baseTotal);
+    this.rarity = {
+      legendary: data.rarity?.legendary ?? null,
+      subLegendary: data.rarity?.subLegendary ?? null,
+      mythical: data.rarity?.mythical ?? null
+    };
+    this.growthRate = data.growthRate ?? null;
     const ab1 = data.abilities?.primary || data.abilities?.ability1 || data.ability1 || 'NONE';
     const ab2 = data.abilities?.secondary || data.abilities?.ability2 || data.ability2 || null;
     const abh = data.abilities?.hidden || data.abilityHidden || null;

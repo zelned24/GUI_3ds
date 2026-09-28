@@ -710,6 +710,12 @@ export class PokerogueImporter {
       const bSpatk = block.match(/baseSpatk\s*:\s*(\d+)/i);
       const bSpdef = block.match(/baseSpdef\s*:\s*(\d+)/i);
       const bSpd = block.match(/baseSpd\s*:\s*(\d+)/i);
+      const baseTotalMatch = block.match(/baseTotal\s*:\s*(\d+)/i);
+      const rarityField = field => {
+        const match = block.match(new RegExp(`\\b${field}\\s*:\\s*(true|false)`, 'i'));
+        return match ? match[1].toLowerCase() === 'true' : null;
+      };
+      const growthRateMatch = block.match(/growthRate\s*:\s*GrowthRate\.([A-Z_]+)/);
 
       if (bHp && bAtk && bDef) {
         baseStats.hp = Number(bHp[1]);
@@ -855,6 +861,9 @@ export class PokerogueImporter {
         type1,
         type2,
         baseStats,
+        baseTotal: baseTotalMatch ? Number(baseTotalMatch[1]) : null,
+        rarity: { legendary: rarityField('legendary'), subLegendary: rarityField('subLegendary'), mythical: rarityField('mythical') },
+        growthRate: growthRateMatch?.[1] ?? null,
         abilities: {
           primary: ab1Match && ab1Match[1].toUpperCase() !== 'NONE' ? toTitle(ab1Match[1]) : 'None',
           secondary: ab2Match && ab2Match[1].toUpperCase() !== 'NONE' ? toTitle(ab2Match[1]) : null,
@@ -872,7 +881,7 @@ export class PokerogueImporter {
           hash: fileHash
         },
         raw: { format: 'typescript-source', value: block },
-        extensions: { upstreamRawRecord: { format: 'typescript-source-fragment', value: block }, growthRate: block.match(/growthRate\s*:\s*GrowthRate\.([A-Z_]+)/)?.[1] || null, category: block.match(/category\s*:\s*["']([^"']+)/)?.[1] || null }
+        extensions: { upstreamRawRecord: { format: 'typescript-source-fragment', value: block }, category: block.match(/category\s*:\s*["']([^"']+)/)?.[1] || null }
       });
 
       this.manifest.recordEntity('Species', species.id, {
