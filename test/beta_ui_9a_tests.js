@@ -12,6 +12,7 @@ export function registerBetaUI9ATests(test) {
     const imported = await importer.importPlayableCanonicalContent(undefined, { generations: [1] });
     const repeatedImport = await importer.importPlayableCanonicalContent(undefined, { generations: [1] });
     assert.strictEqual(repeatedImport.importReport.contentHash, imported.importReport.contentHash, 'same pins/import/normalization produce the same canonical hash');
+    assert.strictEqual(imported.canonicalContent.extensions.biomePoolReferenceAudit.status, 'PARTIAL_SPECIES_SNAPSHOT_UNVERIFIED', 'filtered generation imports declare cross-reference limits');
     const manager = new DataManager();
     const production = manager.loadCanonicalProductionSnapshot(imported.canonicalContent, imported.importReport);
     assert.strictEqual(manager.isFallback, false);
@@ -60,11 +61,12 @@ export function registerBetaUI9ATests(test) {
     const report = JSON.parse(reportText);
     assert.ok(header.includes(`kContentHash[] = "${report.contentHash}"`));
     assert.ok(header.includes(`kPokerogueRevision[] = "${report.sourceRevisions.pokerogue}"`));
-    for (const domain of ['kSpecies', 'kForms', 'kMoves', 'kAbilities', 'kItems', 'kLocales', 'kModes', 'kBiomes', 'kRoutes']) {
+    for (const domain of ['kSpecies', 'kForms', 'kMoves', 'kAbilities', 'kItems', 'kLocales', 'kModes', 'kBiomes', 'kBiomeEncounterPools', 'kBiomeTrainerPools', 'kRoutes']) {
       assert.ok(header.includes(`${domain}[] = {`), `native ROM bundle contains ${domain}`);
     }
     assert.match(header, /\{1, 1, 3, true, "bulbasaur", "Bulbasaur"/);
     assert.ok(header.includes('"en:pokemon:bulbasaur", "Bulbasaur"'), 'native runtime resolves names from imported locale records');
     assert.ok(header.includes('kStartingBiomeId[] = "plains"'));
+    assert.ok(header.includes('{"plains", "common", "dawn", "sentret"'), 'native encounter pool rows preserve real Plains species membership');
   });
 }

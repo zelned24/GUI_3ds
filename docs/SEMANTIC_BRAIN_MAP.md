@@ -55,3 +55,5 @@ The graph is hybrid: code dependencies connect to product/domain docs, tests, fi
 Keep JSON UTF-8, two-space formatted, and stable: sort nodes by `id`, edges by `from/type/to`, and violations by `id`. Update relevant nodes/edges/profile/violations in the same change that changes architecture. Include symbol or line-fragment metadata for code nodes when practical. Use paths and symbol references only; never embed whole source files, generated assets, timestamps, or machine-specific locations.
 
 Validate graph/query changes through the BETA-UI-8 test group. The query script has no LLM, network, embedding, or repository-crawl dependency; its cost is bounded by the selected semantic subgraph, rather than reading the full repository.
+
+For the **import upstream biome encounter pools** task, the focused profile traces `plainsBiome.pokemonPool` and `plainsBiome.trainerPool` at the pinned upstream source through `PokerogueImporter.parseBiomes`, `BiomeDefinition`, `CanonicalContent`, and the real import integration test. The profile deliberately does not imply that the first-run resolver already applies upstream tier/wave weighting or PRNG behavior.

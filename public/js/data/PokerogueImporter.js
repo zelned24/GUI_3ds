@@ -424,6 +424,8 @@ export class PokerogueImporter {
       const open = source.indexOf('{', biomeMatch.index);
       const close = this._findBalancedSourceDelimiter(source, open, '{', '}');
       const record = source.slice(open + 1, close);
+      const pokemonPools = this._parseBiomeSymbolPools(source, 'pokemonPool', 'TimeOfDay');
+      const trainerPools = this._parseBiomeSymbolPools(source, 'trainerPool', null);
       const idMatch = record.match(/biomeId\s*:\s*BiomeId\.([A-Z][A-Z0-9_]*)/);
       if (!idMatch || !upstreamIds.has(idMatch[1])) throw new Error(`Unresolved biomeId in ${sourcePath}`);
       const upstreamSymbol = idMatch[1];
@@ -468,6 +470,8 @@ export class PokerogueImporter {
         id, upstreamId: upstreamIds.get(upstreamSymbol),
         localizedName: { namespace: 'biomes', key: localeKey },
         visualTemplate: null, background: null, music: bgm,
+        encounterPools: pokemonPools,
+        trainerPools,
         routes: routeIds,
         metadata: { upstreamBiomeId: upstreamIds.get(upstreamSymbol), sourceBiomeSymbol: symbol },
         provenance: new Provenance({ ...provenance, sourceSymbol: symbol }),
@@ -480,6 +484,48 @@ export class PokerogueImporter {
       }));
     }
     return { biomes: definitions, routes };
+  }
+
+  /** Preserve upstream biome pool membership by its declared tier/time keys; this does not execute selection rules. */
+  _parseBiomeSymbolPools(source, declaration, nestedEnum) {
+    const match = source.match(new RegExp(`const\\s+${declaration}\\s*:[^=]+?=\\s*\\{`));
+    if (!match) throw new Error(`Upstream biome ${declaration} declaration was not found`);
+    const open = source.indexOf('{', match.index);
+    const close = this._findBalancedSourceDelimiter(source, open, '{', '}');
+    const body = source.slice(open + 1, close);
+    const tiers = new Map();
+    const tierPattern = nestedEnum
+      ? /\[BiomePoolTier\.([A-Z][A-Z0-9_]*)\]\s*:\s*\{/g
+      : /\[BiomePoolTier\.([A-Z][A-Z0-9_]*)\]\s*:\s*\[/g;
+    let tierMatch;
+    while ((tierMatch = tierPattern.exec(body)) !== null) {
+      const openChar = nestedEnum ? '{' : '[';
+      const closeChar = nestedEnum ? '}' : ']';
+      const tierOpen = nestedEnum
+        ? body.indexOf(openChar, tierMatch.index)
+        : body.indexOf(openChar, body.indexOf(':', tierMatch.index) + 1);
+      const tierClose = this._findBalancedSourceDelimiter(body, tierOpen, openChar, closeChar);
+      const tierBody = body.slice(tierOpen + 1, tierClose);
+      if (nestedEnum) {
+        const times = {};
+        const timePattern = /\[TimeOfDay\.([A-Z][A-Z0-9_]*)\]\s*:\s*\[/g;
+        let timeMatch;
+        while ((timeMatch = timePattern.exec(tierBody)) !== null) {
+          const arrayOpen = tierBody.indexOf('[', tierBody.indexOf(':', timeMatch.index) + 1);
+          const arrayClose = this._findBalancedSourceDelimiter(tierBody, arrayOpen, '[', ']');
+          const values = [...tierBody.slice(arrayOpen + 1, arrayClose).matchAll(/SpeciesId\.([A-Z][A-Z0-9_]*)/g)].map(item => item[1].toLowerCase());
+          times[timeMatch[1].toLowerCase()] = values;
+          timePattern.lastIndex = arrayClose + 1;
+        }
+        tiers.set(tierMatch[1].toLowerCase(), times);
+      } else {
+        const values = [...tierBody.matchAll(/TrainerType\.([A-Z][A-Z0-9_]*)/g)].map(item => item[1].toLowerCase());
+        tiers.set(tierMatch[1].toLowerCase(), values);
+      }
+      tierPattern.lastIndex = tierClose + 1;
+    }
+    if (!tiers.size) throw new Error(`Upstream biome ${declaration} has no recognized tiers`);
+    return Object.fromEntries([...tiers.entries()].sort(([left], [right]) => left.localeCompare(right)));
   }
 
   _findBalancedSourceDelimiter(source, openIndex, openChar, closeChar) {
@@ -564,6 +610,18 @@ export class PokerogueImporter {
     if (!startMatch) throw new Error(`Pinned upstream starting biome expression was not recognized in ${startPath}`);
     const startingBiomeId = startMatch[1].toLowerCase();
     const sourceSnapshot = content.canonicalContent.sourceSnapshot;
+    const speciesIds = new Set(content.species.map(species => species.id));
+    const missingPoolSpecies = [];
+    for (const biome of progression.biomes) {
+      for (const [tier, times] of Object.entries(biome.encounterPools || {})) {
+        for (const [time, ids] of Object.entries(times || {})) {
+          for (const speciesId of ids) if (!speciesIds.has(speciesId)) missingPoolSpecies.push(`${biome.id}.${tier}.${time}:${speciesId}`);
+        }
+      }
+    }
+    const importedGenerations = new Set(options.generations ?? [1, 2, 3, 4, 5, 6, 7, 8, 9]);
+    const completeSpeciesSnapshot = [1, 2, 3, 4, 5, 6, 7, 8, 9].every(generation => importedGenerations.has(generation));
+    if (missingPoolSpecies.length && completeSpeciesSnapshot) throw new Error(`Biome encounter pools reference species absent from complete canonical content: ${missingPoolSpecies.slice(0, 12).join(', ')}${missingPoolSpecies.length > 12 ? ` (+${missingPoolSpecies.length - 12} more)` : ''}`);
     const sources = new Map(sourceSnapshot.sources.map(source => [`${source.repository}:${source.revision}:${source.sourcePath}`, source]));
     for (const source of progression.sourceSnapshot.sources) sources.set(`${source.repository}:${source.revision}:${source.sourcePath}`, source);
     sources.set(`pokerogue:${sourceSnapshot.revision}:${startPath}`, { repository: 'pokerogue', revision: sourceSnapshot.revision, sourcePath: startPath, hash: PokerogueManifest.computeHash(startSource) });
@@ -576,7 +634,7 @@ export class PokerogueImporter {
       sourceSnapshot,
       provenance: content.canonicalContent.provenance,
       collections: { ...content.canonicalContent.collections, biomes: progression.biomes, routes: progression.routes, locales: localeEntries },
-      extensions: { ...content.canonicalContent.extensions, importedProgression: { source: 'src/init/init-biomes.ts', waveCatalog: 'NOT_DECLARED_UPSTREAM' }, upstreamStartingBiome: { id: startingBiomeId, sourcePath: startPath, sourceSymbol: `BattleScene.launchBattle:${startMatch[1]}`, sourceHash: PokerogueManifest.computeHash(startSource) }, upstreamEncounterLevel: { sourcePath: battlePath, sourceSymbol: 'Battle.getLevelForWave/randSeedGaussForLevel', sourceHash: PokerogueManifest.computeHash(battleSource) } }
+      extensions: { ...content.canonicalContent.extensions, importedProgression: { source: 'src/init/init-biomes.ts', waveCatalog: 'NOT_DECLARED_UPSTREAM' }, biomePoolReferenceAudit: missingPoolSpecies.length ? { status: 'PARTIAL_SPECIES_SNAPSHOT_UNVERIFIED', unverifiedReferenceCount: missingPoolSpecies.length, sample: missingPoolSpecies.slice(0, 12) } : { status: 'COMPLETE_AND_VALIDATED', referenceCount: progression.biomes.reduce((count, biome) => count + Object.values(biome.encounterPools || {}).reduce((tierCount, times) => tierCount + Object.values(times || {}).reduce((timeCount, ids) => timeCount + ids.length, 0), 0), 0) }, upstreamStartingBiome: { id: startingBiomeId, sourcePath: startPath, sourceSymbol: `BattleScene.launchBattle:${startMatch[1]}`, sourceHash: PokerogueManifest.computeHash(startSource) }, upstreamEncounterLevel: { sourcePath: battlePath, sourceSymbol: 'Battle.getLevelForWave/randSeedGaussForLevel', sourceHash: PokerogueManifest.computeHash(battleSource) } }
     });
     const errors = canonicalContent.validate();
     if (errors.length) throw new Error(`Playable canonical production content rejected: ${errors.join('; ')}`);

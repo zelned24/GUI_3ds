@@ -26361,7 +26361,115 @@
       {
         "background": null,
         "contentVersion": "1.0.0",
-        "encounterPools": null,
+        "encounterPools": {
+          "boss": {
+            "all": [
+              "gengar",
+              "crobat",
+              "houndoom",
+              "sableye",
+              "froslass",
+              "zoroark",
+              "grimmsnarl"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "boss_rare": {
+            "all": [
+              "umbreon",
+              "spiritomb",
+              "hydreigon",
+              "dragapult"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "boss_super_rare": {
+            "all": [
+              "darkrai",
+              "galar_moltres"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "boss_ultra_rare": {
+            "all": [
+              "palkia",
+              "yveltal"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "common": {
+            "all": [
+              "zubat",
+              "paras",
+              "misdreavus",
+              "sableye",
+              "woobat",
+              "impidimp"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "rare": {
+            "all": [
+              "absol",
+              "spiritomb",
+              "froslass",
+              "zorua"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "super_rare": {
+            "all": [
+              "umbreon",
+              "deino",
+              "dreepy"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "ultra_rare": {
+            "all": [
+              "darkrai",
+              "galar_moltres"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "uncommon": {
+            "all": [
+              "gastly",
+              "dunsparce",
+              "houndour",
+              "mawile",
+              "whismur"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          }
+        },
         "extensions": {
           "upstreamEnumRef": {
             "repository": "https://github.com/pagefaultgames/pokerogue",
@@ -26413,14 +26521,151 @@
           "route.abyss.wasteland.3"
         ],
         "schemaVersion": "1.0.0",
-        "trainerPools": null,
+        "trainerPools": {
+          "boss": [
+            "marnie"
+          ],
+          "boss_rare": [],
+          "boss_super_rare": [],
+          "boss_ultra_rare": [],
+          "common": [
+            "veteran"
+          ],
+          "rare": [],
+          "super_rare": [],
+          "ultra_rare": [],
+          "uncommon": [
+            "ace_trainer"
+          ]
+        },
         "transitions": null,
         "visualTemplate": null
       },
       {
         "background": null,
         "contentVersion": "1.0.0",
-        "encounterPools": null,
+        "encounterPools": {
+          "boss": {
+            "all": [
+              "dugtrio",
+              "golem",
+              "rhyperior",
+              "gliscor",
+              "excadrill",
+              "mudsdale",
+              "copperajah"
+            ],
+            "dawn": [
+              "donphan",
+              "centiskorch",
+              "scovillain"
+            ],
+            "day": [
+              "donphan",
+              "centiskorch",
+              "scovillain"
+            ],
+            "dusk": [],
+            "night": [
+              "marowak"
+            ]
+          },
+          "boss_rare": {
+            "all": [
+              "steelix",
+              "sinistcha"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "boss_super_rare": {
+            "all": [
+              "landorus",
+              "okidogi"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "boss_ultra_rare": {
+            "all": [
+              "groudon"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "common": {
+            "all": [
+              "diglett",
+              "geodude",
+              "rhyhorn",
+              "drilbur",
+              "mudbray"
+            ],
+            "dawn": [
+              "phanpy"
+            ],
+            "day": [
+              "phanpy"
+            ],
+            "dusk": [],
+            "night": [
+              "cubone"
+            ]
+          },
+          "rare": {
+            "all": [
+              "onix",
+              "gligar",
+              "klawf",
+              "poltchageist"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "super_rare": {
+            "all": [],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "ultra_rare": {
+            "all": [
+              "landorus",
+              "okidogi"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "uncommon": {
+            "all": [
+              "sandshrew",
+              "numel",
+              "roggenrola",
+              "cufant"
+            ],
+            "dawn": [
+              "sizzlipede",
+              "capsakid"
+            ],
+            "day": [
+              "sizzlipede",
+              "capsakid"
+            ],
+            "dusk": [],
+            "night": []
+          }
+        },
         "extensions": {
           "upstreamEnumRef": {
             "repository": "https://github.com/pagefaultgames/pokerogue",
@@ -26471,14 +26716,149 @@
           "route.badlands.mountain.2"
         ],
         "schemaVersion": "1.0.0",
-        "trainerPools": null,
+        "trainerPools": {
+          "boss": [
+            "clay",
+            "grant"
+          ],
+          "boss_rare": [],
+          "boss_super_rare": [],
+          "boss_ultra_rare": [],
+          "common": [
+            "backpacker",
+            "hiker"
+          ],
+          "rare": [],
+          "super_rare": [],
+          "ultra_rare": [],
+          "uncommon": [
+            "ace_trainer",
+            "dragon_tamer"
+          ]
+        },
         "transitions": null,
         "visualTemplate": null
       },
       {
         "background": null,
         "contentVersion": "1.0.0",
-        "encounterPools": null,
+        "encounterPools": {
+          "boss": {
+            "all": [
+              "kingler",
+              "crawdaunt",
+              "wormadam",
+              "crustle",
+              "barbaracle",
+              "clawitzer",
+              "toxapex",
+              "palossand"
+            ],
+            "dawn": [
+              "starmie"
+            ],
+            "day": [
+              "starmie"
+            ],
+            "dusk": [
+              "cloyster"
+            ],
+            "night": [
+              "cloyster"
+            ]
+          },
+          "boss_rare": {
+            "all": [
+              "carracosta",
+              "quaquaval"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "boss_super_rare": {
+            "all": [
+              "cresselia",
+              "keldeo",
+              "tapu_fini"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "boss_ultra_rare": {
+            "all": [],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "common": {
+            "all": [
+              "krabby",
+              "corphish",
+              "dwebble",
+              "binacle",
+              "mareanie",
+              "wiglett"
+            ],
+            "dawn": [
+              "staryu"
+            ],
+            "day": [
+              "staryu"
+            ],
+            "dusk": [
+              "shellder"
+            ],
+            "night": [
+              "shellder"
+            ]
+          },
+          "rare": {
+            "all": [
+              "quaxly",
+              "tatsugiri"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "super_rare": {
+            "all": [
+              "tirtouga"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "ultra_rare": {
+            "all": [
+              "cresselia",
+              "keldeo",
+              "tapu_fini"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "uncommon": {
+            "all": [
+              "burmy",
+              "clauncher",
+              "sandygast"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          }
+        },
         "extensions": {
           "upstreamEnumRef": {
             "repository": "https://github.com/pagefaultgames/pokerogue",
@@ -26529,14 +26909,149 @@
           "route.beach.island.2"
         ],
         "schemaVersion": "1.0.0",
-        "trainerPools": null,
+        "trainerPools": {
+          "boss": [
+            "misty",
+            "kofu"
+          ],
+          "boss_rare": [],
+          "boss_super_rare": [],
+          "boss_ultra_rare": [],
+          "common": [
+            "fisherman",
+            "sailor",
+            "swimmer"
+          ],
+          "rare": [
+            "black_belt"
+          ],
+          "super_rare": [],
+          "ultra_rare": [],
+          "uncommon": [
+            "ace_trainer",
+            "breeder"
+          ]
+        },
         "transitions": null,
         "visualTemplate": null
       },
       {
         "background": null,
         "contentVersion": "1.0.0",
-        "encounterPools": null,
+        "encounterPools": {
+          "boss": {
+            "all": [
+              "parasect",
+              "onix",
+              "crobat",
+              "ursaring",
+              "exploud",
+              "probopass",
+              "gigalith",
+              "swoobat",
+              "diggersby",
+              "noivern",
+              "golisopod"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "boss_rare": {
+            "all": [
+              "shuckle",
+              "ferrothorn",
+              "garganacl",
+              "glimmora"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [
+              "lycanroc"
+            ],
+            "night": []
+          },
+          "boss_super_rare": {
+            "all": [
+              "uxie"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "boss_ultra_rare": {
+            "all": [
+              "terapagos"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "common": {
+            "all": [
+              "zubat",
+              "paras",
+              "teddiursa",
+              "whismur",
+              "roggenrola",
+              "woobat",
+              "bunnelby"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "rare": {
+            "all": [
+              "onix",
+              "ferroseed",
+              "carbink",
+              "nacli",
+              "glimmet"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "super_rare": {
+            "all": [
+              "shuckle"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "ultra_rare": {
+            "all": [
+              "uxie"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "uncommon": {
+            "all": [
+              "geodude",
+              "makuhita",
+              "nosepass",
+              "noibat",
+              "wimpod"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [
+              "rockruff"
+            ],
+            "night": []
+          }
+        },
         "extensions": {
           "upstreamEnumRef": {
             "repository": "https://github.com/pagefaultgames/pokerogue",
@@ -26588,14 +27103,137 @@
           "route.cave.laboratory.3"
         ],
         "schemaVersion": "1.0.0",
-        "trainerPools": null,
+        "trainerPools": {
+          "boss": [
+            "brock",
+            "roxanne",
+            "roark"
+          ],
+          "boss_rare": [],
+          "boss_super_rare": [],
+          "boss_ultra_rare": [],
+          "common": [
+            "backpacker",
+            "hiker"
+          ],
+          "rare": [],
+          "super_rare": [],
+          "ultra_rare": [],
+          "uncommon": [
+            "ace_trainer",
+            "black_belt",
+            "collector",
+            "ruin_maniac"
+          ]
+        },
         "transitions": null,
         "visualTemplate": null
       },
       {
         "background": null,
         "contentVersion": "1.0.0",
-        "encounterPools": null,
+        "encounterPools": {
+          "boss": {
+            "all": [
+              "machamp",
+              "magnezone",
+              "probopass",
+              "conkeldurr",
+              "alola_golem"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "boss_rare": {
+            "all": [
+              "perrserker",
+              "archaludon"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "boss_super_rare": {
+            "all": [
+              "cobalion",
+              "stakataka"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "boss_ultra_rare": {
+            "all": [],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "common": {
+            "all": [
+              "diglett",
+              "machop",
+              "grimer",
+              "phanpy",
+              "makuhita",
+              "nosepass",
+              "timburr"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "rare": {
+            "all": [
+              "onix",
+              "tyrogue",
+              "galar_meowth"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "super_rare": {
+            "all": [
+              "ditto",
+              "duraludon"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "ultra_rare": {
+            "all": [
+              "cobalion",
+              "stakataka"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "uncommon": {
+            "all": [
+              "magnemite",
+              "koffing",
+              "rhyhorn",
+              "drilbur",
+              "scraggy",
+              "alola_geodude"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          }
+        },
         "extensions": {
           "upstreamEnumRef": {
             "repository": "https://github.com/pagefaultgames/pokerogue",
@@ -26646,14 +27284,174 @@
           "route.construction_site.dojo.2"
         ],
         "schemaVersion": "1.0.0",
-        "trainerPools": null,
+        "trainerPools": {
+          "boss": [
+            "lt_surge",
+            "chuck",
+            "wattson"
+          ],
+          "boss_rare": [],
+          "boss_super_rare": [],
+          "boss_ultra_rare": [],
+          "common": [
+            "officer",
+            "worker"
+          ],
+          "rare": [],
+          "super_rare": [],
+          "ultra_rare": [],
+          "uncommon": []
+        },
         "transitions": null,
         "visualTemplate": null
       },
       {
         "background": null,
         "contentVersion": "1.0.0",
-        "encounterPools": null,
+        "encounterPools": {
+          "boss": {
+            "all": [
+              "sandslash",
+              "hippowdon",
+              "drapion",
+              "krookodile",
+              "darmanitan",
+              "sandaconda",
+              "brambleghast"
+            ],
+            "dawn": [
+              "maractus",
+              "heliolisk",
+              "flygon"
+            ],
+            "day": [
+              "maractus",
+              "heliolisk",
+              "flygon"
+            ],
+            "dusk": [
+              "gliscor",
+              "cacturne",
+              "cofagrigus"
+            ],
+            "night": [
+              "gliscor",
+              "cacturne",
+              "cofagrigus"
+            ]
+          },
+          "boss_rare": {
+            "all": [
+              "dodrio",
+              "cradily",
+              "armaldo",
+              "garchomp",
+              "sigilyph",
+              "stonjourner"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "boss_super_rare": {
+            "all": [
+              "regirock",
+              "tapu_bulu",
+              "pheromosa"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "boss_ultra_rare": {
+            "all": [],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "common": {
+            "all": [
+              "sandshrew",
+              "skorupi",
+              "silicobra",
+              "bramblin",
+              "rellor"
+            ],
+            "dawn": [
+              "trapinch",
+              "helioptile"
+            ],
+            "day": [
+              "trapinch",
+              "helioptile"
+            ],
+            "dusk": [
+              "cacnea"
+            ],
+            "night": [
+              "cacnea"
+            ]
+          },
+          "rare": {
+            "all": [
+              "doduo",
+              "darumaka",
+              "sigilyph",
+              "stonjourner"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "super_rare": {
+            "all": [
+              "lileep",
+              "anorith",
+              "gible"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "ultra_rare": {
+            "all": [
+              "regirock",
+              "tapu_bulu",
+              "pheromosa"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "uncommon": {
+            "all": [
+              "numel",
+              "hippopotas",
+              "sandile",
+              "orthworm"
+            ],
+            "dawn": [
+              "maractus"
+            ],
+            "day": [
+              "maractus"
+            ],
+            "dusk": [
+              "gligar",
+              "yamask"
+            ],
+            "night": [
+              "gligar",
+              "yamask"
+            ]
+          }
+        },
         "extensions": {
           "upstreamEnumRef": {
             "repository": "https://github.com/pagefaultgames/pokerogue",
@@ -26704,14 +27502,146 @@
           "route.desert.construction_site.2"
         ],
         "schemaVersion": "1.0.0",
-        "trainerPools": null,
+        "trainerPools": {
+          "boss": [
+            "gordie"
+          ],
+          "boss_rare": [],
+          "boss_super_rare": [],
+          "boss_ultra_rare": [],
+          "common": [
+            "backpacker",
+            "scientist"
+          ],
+          "rare": [],
+          "super_rare": [],
+          "ultra_rare": [],
+          "uncommon": [
+            "ruin_maniac"
+          ]
+        },
         "transitions": null,
         "visualTemplate": null
       },
       {
         "background": null,
         "contentVersion": "1.0.0",
-        "encounterPools": null,
+        "encounterPools": {
+          "boss": {
+            "all": [
+              "hitmonlee",
+              "hitmonchan",
+              "hariyama",
+              "medicham",
+              "lucario",
+              "toxicroak",
+              "throh",
+              "sawk",
+              "scrafty",
+              "mienshao",
+              "bewear",
+              "grapploct",
+              "annihilape"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "boss_rare": {
+            "all": [
+              "hitmontop",
+              "gallade",
+              "pangoro",
+              "sirfetchd",
+              "hisui_decidueye"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "boss_super_rare": {
+            "all": [
+              "terrakion",
+              "kubfu",
+              "galar_zapdos"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "boss_ultra_rare": {
+            "all": [
+              "zamazenta"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "common": {
+            "all": [
+              "mankey",
+              "makuhita",
+              "meditite",
+              "stufful",
+              "clobbopus"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "rare": {
+            "all": [
+              "hitmonlee",
+              "hitmonchan",
+              "lucario",
+              "throh",
+              "sawk",
+              "pancham"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "super_rare": {
+            "all": [
+              "hitmontop",
+              "gallade",
+              "galar_farfetchd"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "ultra_rare": {
+            "all": [
+              "terrakion",
+              "kubfu",
+              "galar_zapdos"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "uncommon": {
+            "all": [
+              "croagunk",
+              "scraggy",
+              "mienfoo"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          }
+        },
         "extensions": {
           "upstreamEnumRef": {
             "repository": "https://github.com/pagefaultgames/pokerogue",
@@ -26763,14 +27693,120 @@
           "route.dojo.temple.3"
         ],
         "schemaVersion": "1.0.0",
-        "trainerPools": null,
+        "trainerPools": {
+          "boss": [
+            "brawly",
+            "maylene",
+            "korrina",
+            "bea"
+          ],
+          "boss_rare": [],
+          "boss_super_rare": [],
+          "boss_ultra_rare": [],
+          "common": [
+            "black_belt"
+          ],
+          "rare": [],
+          "super_rare": [],
+          "ultra_rare": [],
+          "uncommon": []
+        },
         "transitions": null,
         "visualTemplate": null
       },
       {
         "background": null,
         "contentVersion": "1.0.0",
-        "encounterPools": null,
+        "encounterPools": {
+          "boss": {
+            "all": [
+              "eternatus"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "boss_rare": {
+            "all": [],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "boss_super_rare": {
+            "all": [],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "boss_ultra_rare": {
+            "all": [],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "common": {
+            "all": [
+              "great_tusk",
+              "scream_tail",
+              "brute_bonnet",
+              "flutter_mane",
+              "slither_wing",
+              "sandy_shocks",
+              "iron_treads",
+              "iron_bundle",
+              "iron_hands",
+              "iron_jugulis",
+              "iron_moth",
+              "iron_thorns"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "rare": {
+            "all": [
+              "walking_wake",
+              "iron_leaves",
+              "gouging_fire",
+              "raging_bolt",
+              "iron_boulder",
+              "iron_crown"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "super_rare": {
+            "all": [],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "ultra_rare": {
+            "all": [],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "uncommon": {
+            "all": [
+              "roaring_moon",
+              "iron_valiant"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          }
+        },
         "extensions": {
           "upstreamEnumRef": {
             "repository": "https://github.com/pagefaultgames/pokerogue",
@@ -26818,14 +27854,117 @@
         },
         "routes": [],
         "schemaVersion": "1.0.0",
-        "trainerPools": null,
+        "trainerPools": {
+          "boss": [],
+          "boss_rare": [],
+          "boss_super_rare": [],
+          "boss_ultra_rare": [],
+          "common": [],
+          "rare": [],
+          "super_rare": [],
+          "ultra_rare": [],
+          "uncommon": []
+        },
         "transitions": null,
         "visualTemplate": null
       },
       {
         "background": null,
         "contentVersion": "1.0.0",
-        "encounterPools": null,
+        "encounterPools": {
+          "boss": {
+            "all": [
+              "bronzong",
+              "electivire",
+              "magmortar",
+              "klinklang",
+              "klefki"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "boss_rare": {
+            "all": [
+              "metagross"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "boss_super_rare": {
+            "all": [
+              "genesect",
+              "magearna"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "boss_ultra_rare": {
+            "all": [],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "common": {
+            "all": [
+              "machop",
+              "voltorb",
+              "bronzor",
+              "timburr",
+              "klink"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "rare": {
+            "all": [
+              "porygon"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "super_rare": {
+            "all": [
+              "beldum"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "ultra_rare": {
+            "all": [
+              "genesect",
+              "magearna"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "uncommon": {
+            "all": [
+              "magnemite",
+              "elekid",
+              "magby",
+              "klefki"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          }
+        },
         "extensions": {
           "upstreamEnumRef": {
             "repository": "https://github.com/pagefaultgames/pokerogue",
@@ -26876,14 +28015,137 @@
           "route.factory.laboratory.2"
         ],
         "schemaVersion": "1.0.0",
-        "trainerPools": null,
+        "trainerPools": {
+          "boss": [
+            "jasmine",
+            "byron"
+          ],
+          "boss_rare": [],
+          "boss_super_rare": [],
+          "boss_ultra_rare": [],
+          "common": [
+            "worker"
+          ],
+          "rare": [],
+          "super_rare": [],
+          "ultra_rare": [],
+          "uncommon": []
+        },
         "transitions": null,
         "visualTemplate": null
       },
       {
         "background": null,
         "contentVersion": "1.0.0",
-        "encounterPools": null,
+        "encounterPools": {
+          "boss": {
+            "all": [
+              "wigglytuff",
+              "mawile",
+              "togekiss",
+              "audino",
+              "aromatisse",
+              "slurpuff",
+              "carbink",
+              "ribombee",
+              "shiinotic",
+              "comfey",
+              "hatterene",
+              "alcremie"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "boss_rare": {
+            "all": [
+              "delphox",
+              "grimmsnarl"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "boss_super_rare": {
+            "all": [
+              "diancie",
+              "eternal_floette"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "boss_ultra_rare": {
+            "all": [
+              "xerneas"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "common": {
+            "all": [
+              "jigglypuff",
+              "marill",
+              "spritzee",
+              "swirlix",
+              "cutiefly",
+              "morelull",
+              "milcery",
+              "mawile"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "rare": {
+            "all": [
+              "audino",
+              "fennekin",
+              "impidimp"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "super_rare": {
+            "all": [],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "ultra_rare": {
+            "all": [
+              "diancie",
+              "eternal_floette"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "uncommon": {
+            "all": [
+              "clefairy",
+              "togetic",
+              "ralts",
+              "carbink",
+              "comfey",
+              "hatenna"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          }
+        },
         "extensions": {
           "upstreamEnumRef": {
             "repository": "https://github.com/pagefaultgames/pokerogue",
@@ -26934,14 +28196,238 @@
           "route.fairy_cave.space.2"
         ],
         "schemaVersion": "1.0.0",
-        "trainerPools": null,
+        "trainerPools": {
+          "boss": [
+            "valerie",
+            "opal",
+            "bede"
+          ],
+          "boss_rare": [],
+          "boss_super_rare": [],
+          "boss_ultra_rare": [],
+          "common": [
+            "beauty",
+            "fairy_tale_girl"
+          ],
+          "rare": [
+            "mysterious_sisters"
+          ],
+          "super_rare": [],
+          "ultra_rare": [],
+          "uncommon": [
+            "ace_trainer",
+            "breeder"
+          ]
+        },
         "transitions": null,
         "visualTemplate": null
       },
       {
         "background": null,
         "contentVersion": "1.0.0",
-        "encounterPools": null,
+        "encounterPools": {
+          "boss": {
+            "all": [
+              "wormadam",
+              "simisage",
+              "spidops",
+              "lokix",
+              "grafaiai"
+            ],
+            "dawn": [
+              "victreebel",
+              "mothim",
+              "vespiquen",
+              "lilligant",
+              "sawsbuck"
+            ],
+            "day": [
+              "victreebel",
+              "beautifly",
+              "mothim",
+              "vespiquen",
+              "lilligant",
+              "sawsbuck"
+            ],
+            "dusk": [
+              "ariados",
+              "forretress",
+              "shiftry",
+              "breloom",
+              "scolipede",
+              "orbeetle"
+            ],
+            "night": [
+              "venomoth",
+              "noctowl",
+              "ariados",
+              "forretress",
+              "dustox",
+              "shiftry",
+              "breloom",
+              "scolipede",
+              "orbeetle"
+            ]
+          },
+          "boss_rare": {
+            "all": [
+              "heracross",
+              "sceptile",
+              "escavalier",
+              "accelgor",
+              "durant",
+              "chesnaught",
+              "decidueye",
+              "toedscruel"
+            ],
+            "dawn": [
+              "stantler"
+            ],
+            "day": [
+              "stantler"
+            ],
+            "dusk": [],
+            "night": [
+              "lycanroc",
+              "bloodmoon_ursaluna"
+            ]
+          },
+          "boss_super_rare": {
+            "all": [
+              "kartana",
+              "wo_chien"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "boss_ultra_rare": {
+            "all": [
+              "calyrex"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "common": {
+            "all": [
+              "tarountula",
+              "nymble",
+              "shroodle"
+            ],
+            "dawn": [
+              "butterfree",
+              "bellsprout",
+              "combee",
+              "petilil",
+              "deerling",
+              "vivillon"
+            ],
+            "day": [
+              "butterfree",
+              "bellsprout",
+              "beautifly",
+              "combee",
+              "petilil",
+              "deerling",
+              "vivillon"
+            ],
+            "dusk": [
+              "beedrill",
+              "spinarak",
+              "pineco",
+              "seedot",
+              "shroomish",
+              "venipede"
+            ],
+            "night": [
+              "beedrill",
+              "venonat",
+              "spinarak",
+              "pineco",
+              "dustox",
+              "seedot",
+              "shroomish",
+              "venipede"
+            ]
+          },
+          "rare": {
+            "all": [
+              "heracross",
+              "treecko",
+              "tropius",
+              "karrablast",
+              "shelmet",
+              "chespin",
+              "rowlet",
+              "squawkabilly",
+              "toedscool"
+            ],
+            "dawn": [
+              "exeggcute",
+              "stantler"
+            ],
+            "day": [
+              "exeggcute",
+              "stantler"
+            ],
+            "dusk": [
+              "scyther"
+            ],
+            "night": [
+              "scyther"
+            ]
+          },
+          "super_rare": {
+            "all": [
+              "durant"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": [
+              "bloodmoon_ursaluna"
+            ]
+          },
+          "ultra_rare": {
+            "all": [
+              "kartana",
+              "wo_chien"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "uncommon": {
+            "all": [
+              "ekans",
+              "teddiursa",
+              "burmy",
+              "pansage"
+            ],
+            "dawn": [
+              "roselia",
+              "mothim",
+              "sewaddle"
+            ],
+            "day": [
+              "roselia",
+              "mothim",
+              "sewaddle"
+            ],
+            "dusk": [
+              "dottler"
+            ],
+            "night": [
+              "hoothoot",
+              "rockruff",
+              "dottler"
+            ]
+          }
+        },
         "extensions": {
           "upstreamEnumRef": {
             "repository": "https://github.com/pagefaultgames/pokerogue",
@@ -26992,14 +28478,160 @@
           "route.forest.meadow.2"
         ],
         "schemaVersion": "1.0.0",
-        "trainerPools": null,
+        "trainerPools": {
+          "boss": [
+            "bugsy",
+            "burgh",
+            "katy"
+          ],
+          "boss_rare": [],
+          "boss_super_rare": [],
+          "boss_ultra_rare": [],
+          "common": [
+            "bug_catcher",
+            "ranger"
+          ],
+          "rare": [],
+          "super_rare": [],
+          "ultra_rare": [],
+          "uncommon": [
+            "aroma_lady"
+          ]
+        },
         "transitions": null,
         "visualTemplate": null
       },
       {
         "background": null,
         "contentVersion": "1.0.0",
-        "encounterPools": null,
+        "encounterPools": {
+          "boss": {
+            "all": [
+              "miltank",
+              "scolipede",
+              "whimsicott",
+              "lilligant"
+            ],
+            "dawn": [
+              "jumpluff",
+              "vespiquen"
+            ],
+            "day": [
+              "jumpluff",
+              "vespiquen"
+            ],
+            "dusk": [
+              "noivern"
+            ],
+            "night": [
+              "noivern"
+            ]
+          },
+          "boss_rare": {
+            "all": [
+              "venusaur",
+              "arcanine",
+              "sudowoodo",
+              "torterra"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "boss_super_rare": {
+            "all": [
+              "virizion"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "boss_ultra_rare": {
+            "all": [],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "common": {
+            "all": [
+              "shroomish",
+              "venipede",
+              "cottonee",
+              "petilil"
+            ],
+            "dawn": [
+              "hoppip",
+              "silcoon"
+            ],
+            "day": [
+              "hoppip",
+              "silcoon"
+            ],
+            "dusk": [
+              "cascoon"
+            ],
+            "night": [
+              "cascoon"
+            ]
+          },
+          "rare": {
+            "all": [
+              "bulbasaur",
+              "growlithe",
+              "turtwig",
+              "bonsly"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [
+              "noibat"
+            ],
+            "night": [
+              "noibat"
+            ]
+          },
+          "super_rare": {
+            "all": [],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "ultra_rare": {
+            "all": [
+              "virizion"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "uncommon": {
+            "all": [
+              "lickitung",
+              "miltank",
+              "cherubi",
+              "foongus"
+            ],
+            "dawn": [
+              "sunkern",
+              "combee"
+            ],
+            "day": [
+              "sunkern",
+              "combee"
+            ],
+            "dusk": [
+              "seedot"
+            ],
+            "night": [
+              "seedot"
+            ]
+          }
+        },
         "extensions": {
           "upstreamEnumRef": {
             "repository": "https://github.com/pagefaultgames/pokerogue",
@@ -27049,14 +28681,150 @@
           "route.grass.tall_grass.1"
         ],
         "schemaVersion": "1.0.0",
-        "trainerPools": null,
+        "trainerPools": {
+          "boss": [
+            "erika"
+          ],
+          "boss_rare": [],
+          "boss_super_rare": [],
+          "boss_ultra_rare": [],
+          "common": [
+            "aroma_lady",
+            "breeder",
+            "camper",
+            "school_kid"
+          ],
+          "rare": [
+            "black_belt"
+          ],
+          "super_rare": [],
+          "ultra_rare": [],
+          "uncommon": [
+            "ace_trainer",
+            "pokefan"
+          ]
+        },
         "transitions": null,
         "visualTemplate": null
       },
       {
         "background": null,
         "contentVersion": "1.0.0",
-        "encounterPools": null,
+        "encounterPools": {
+          "boss": {
+            "all": [
+              "gengar",
+              "banette",
+              "drifblim",
+              "mismagius",
+              "dusknoir",
+              "chandelure",
+              "trevenant",
+              "gourgeist",
+              "mimikyu",
+              "polteageist",
+              "houndstone"
+            ],
+            "dawn": [
+              "marowak"
+            ],
+            "day": [
+              "marowak"
+            ],
+            "dusk": [
+              "marowak"
+            ],
+            "night": []
+          },
+          "boss_rare": {
+            "all": [
+              "skeledirge",
+              "ceruledge",
+              "hisui_typhlosion"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "boss_super_rare": {
+            "all": [
+              "marshadow",
+              "spectrier"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "boss_ultra_rare": {
+            "all": [
+              "giratina"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "common": {
+            "all": [
+              "gastly",
+              "shuppet",
+              "duskull",
+              "drifloon",
+              "litwick",
+              "phantump",
+              "pumpkaboo",
+              "greavard"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "rare": {
+            "all": [
+              "misdreavus",
+              "mimikyu",
+              "fuecoco",
+              "ceruledge"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "super_rare": {
+            "all": [
+              "spiritomb"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "ultra_rare": {
+            "all": [
+              "marshadow",
+              "spectrier"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "uncommon": {
+            "all": [
+              "cubone",
+              "yamask",
+              "sinistea"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          }
+        },
         "extensions": {
           "upstreamEnumRef": {
             "repository": "https://github.com/pagefaultgames/pokerogue",
@@ -27106,14 +28874,146 @@
           "route.graveyard.abyss.1"
         ],
         "schemaVersion": "1.0.0",
-        "trainerPools": null,
+        "trainerPools": {
+          "boss": [
+            "morty",
+            "allister",
+            "ryme"
+          ],
+          "boss_rare": [],
+          "boss_super_rare": [],
+          "boss_ultra_rare": [],
+          "common": [
+            "psychic"
+          ],
+          "rare": [
+            "mysterious_sisters"
+          ],
+          "super_rare": [],
+          "ultra_rare": [],
+          "uncommon": [
+            "hex_maniac"
+          ]
+        },
         "transitions": null,
         "visualTemplate": null
       },
       {
         "background": null,
         "contentVersion": "1.0.0",
-        "encounterPools": null,
+        "encounterPools": {
+          "boss": {
+            "all": [
+              "dewgong",
+              "glalie",
+              "walrein",
+              "weavile",
+              "mamoswine",
+              "froslass",
+              "vanilluxe",
+              "beartic",
+              "cryogonal",
+              "avalugg",
+              "crabominable",
+              "cetitan"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "boss_rare": {
+            "all": [
+              "jynx",
+              "lapras",
+              "glaceon",
+              "aurorus"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "boss_super_rare": {
+            "all": [
+              "articuno",
+              "regice"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "boss_ultra_rare": {
+            "all": [
+              "kyurem"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "common": {
+            "all": [
+              "seel",
+              "swinub",
+              "snorunt",
+              "vanillite",
+              "cubchoo",
+              "bergmite",
+              "crabrawler",
+              "snom"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "rare": {
+            "all": [
+              "lapras",
+              "delibird",
+              "cryogonal"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "super_rare": {
+            "all": [
+              "amaura"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "ultra_rare": {
+            "all": [
+              "articuno",
+              "regice"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "uncommon": {
+            "all": [
+              "slowking",
+              "sneasel",
+              "smoochum",
+              "spheal",
+              "eiscue",
+              "cetoddle"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          }
+        },
         "extensions": {
           "upstreamEnumRef": {
             "repository": "https://github.com/pagefaultgames/pokerogue",
@@ -27163,14 +29063,148 @@
           "route.ice_cave.snowy_forest.1"
         ],
         "schemaVersion": "1.0.0",
-        "trainerPools": null,
+        "trainerPools": {
+          "boss": [
+            "pryce",
+            "brycen",
+            "wulfric",
+            "grusha"
+          ],
+          "boss_rare": [],
+          "boss_super_rare": [],
+          "boss_ultra_rare": [],
+          "common": [
+            "snow_worker"
+          ],
+          "rare": [],
+          "super_rare": [],
+          "ultra_rare": [],
+          "uncommon": [
+            "snow_ace_trainer"
+          ]
+        },
         "transitions": null,
         "visualTemplate": null
       },
       {
         "background": null,
         "contentVersion": "1.0.0",
-        "encounterPools": null,
+        "encounterPools": {
+          "boss": {
+            "all": [
+              "oricorio",
+              "bruxish",
+              "alola_sandslash",
+              "alola_ninetales",
+              "alola_dugtrio",
+              "alola_golem",
+              "alola_muk"
+            ],
+            "dawn": [
+              "alola_raichu",
+              "alola_exeggutor"
+            ],
+            "day": [
+              "alola_raichu",
+              "alola_exeggutor"
+            ],
+            "dusk": [
+              "alola_raticate",
+              "alola_persian",
+              "alola_marowak"
+            ],
+            "night": [
+              "alola_raticate",
+              "alola_persian",
+              "alola_marowak"
+            ]
+          },
+          "boss_rare": {
+            "all": [],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "boss_super_rare": {
+            "all": [
+              "blacephalon"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "boss_ultra_rare": {
+            "all": [],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "common": {
+            "all": [
+              "oricorio",
+              "alola_sandshrew",
+              "alola_vulpix",
+              "alola_diglett",
+              "alola_geodude",
+              "alola_grimer"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [
+              "alola_rattata",
+              "alola_meowth"
+            ],
+            "night": [
+              "alola_rattata",
+              "alola_meowth"
+            ]
+          },
+          "rare": {
+            "all": [],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "super_rare": {
+            "all": [],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "ultra_rare": {
+            "all": [
+              "blacephalon"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "uncommon": {
+            "all": [
+              "bruxish"
+            ],
+            "dawn": [
+              "alola_raichu",
+              "alola_exeggutor"
+            ],
+            "day": [
+              "alola_raichu",
+              "alola_exeggutor"
+            ],
+            "dusk": [
+              "alola_marowak"
+            ],
+            "night": [
+              "alola_marowak"
+            ]
+          }
+        },
         "extensions": {
           "upstreamEnumRef": {
             "repository": "https://github.com/pagefaultgames/pokerogue",
@@ -27220,14 +29254,222 @@
           "route.island.sea.1"
         ],
         "schemaVersion": "1.0.0",
-        "trainerPools": null,
+        "trainerPools": {
+          "boss": [
+            "nessa"
+          ],
+          "boss_rare": [],
+          "boss_super_rare": [],
+          "boss_ultra_rare": [],
+          "common": [
+            "rich_kid"
+          ],
+          "rare": [
+            "young_couple"
+          ],
+          "super_rare": [],
+          "ultra_rare": [],
+          "uncommon": [
+            "rich"
+          ]
+        },
         "transitions": null,
         "visualTemplate": null
       },
       {
         "background": null,
         "contentVersion": "1.0.0",
-        "encounterPools": null,
+        "encounterPools": {
+          "boss": {
+            "all": [
+              "seviper",
+              "ambipom",
+              "carnivine",
+              "yanmega",
+              "galvantula",
+              "pyroar",
+              "toucannon",
+              "lurantis",
+              "falinks"
+            ],
+            "dawn": [
+              "exeggutor",
+              "tropius",
+              "cherrim",
+              "leavanny",
+              "komala"
+            ],
+            "day": [
+              "exeggutor",
+              "tropius",
+              "cherrim",
+              "leavanny",
+              "komala"
+            ],
+            "dusk": [
+              "breloom",
+              "tangrowth",
+              "amoonguss",
+              "pangoro"
+            ],
+            "night": [
+              "breloom",
+              "tangrowth",
+              "amoonguss",
+              "pangoro"
+            ]
+          },
+          "boss_rare": {
+            "all": [
+              "kangaskhan",
+              "scizor",
+              "slaking",
+              "leafeon",
+              "serperior",
+              "rillaboom",
+              "kleavor"
+            ],
+            "dawn": [
+              "amoonguss",
+              "galar_rapidash"
+            ],
+            "day": [
+              "amoonguss",
+              "galar_rapidash"
+            ],
+            "dusk": [],
+            "night": []
+          },
+          "boss_super_rare": {
+            "all": [
+              "tapu_lele",
+              "buzzwole",
+              "zarude",
+              "munkidori"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "boss_ultra_rare": {
+            "all": [],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "common": {
+            "all": [
+              "aipom",
+              "blitzle",
+              "pikipek"
+            ],
+            "dawn": [
+              "vespiquen",
+              "cherubi",
+              "sewaddle"
+            ],
+            "day": [
+              "vespiquen",
+              "cherubi",
+              "sewaddle"
+            ],
+            "dusk": [
+              "spinarak",
+              "shroomish",
+              "purrloin",
+              "foongus"
+            ],
+            "night": [
+              "spinarak",
+              "shroomish",
+              "purrloin",
+              "foongus"
+            ]
+          },
+          "rare": {
+            "all": [
+              "scyther",
+              "yanma",
+              "slakoth",
+              "seviper",
+              "carnivine",
+              "snivy",
+              "grookey"
+            ],
+            "dawn": [
+              "foongus",
+              "passimian",
+              "galar_ponyta"
+            ],
+            "day": [
+              "foongus",
+              "passimian",
+              "galar_ponyta"
+            ],
+            "dusk": [
+              "oranguru"
+            ],
+            "night": [
+              "oranguru"
+            ]
+          },
+          "super_rare": {
+            "all": [
+              "kangaskhan",
+              "chatot",
+              "kleavor"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "ultra_rare": {
+            "all": [
+              "tapu_lele",
+              "buzzwole",
+              "zarude",
+              "munkidori"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "uncommon": {
+            "all": [
+              "pansage",
+              "pansear",
+              "panpour",
+              "joltik",
+              "litleo",
+              "fomantis",
+              "falinks"
+            ],
+            "dawn": [
+              "exeggcute",
+              "tropius",
+              "combee",
+              "komala"
+            ],
+            "day": [
+              "exeggcute",
+              "tropius",
+              "combee",
+              "komala"
+            ],
+            "dusk": [
+              "tangela",
+              "pancham"
+            ],
+            "night": [
+              "tangela",
+              "pancham"
+            ]
+          }
+        },
         "extensions": {
           "upstreamEnumRef": {
             "repository": "https://github.com/pagefaultgames/pokerogue",
@@ -27277,14 +29519,125 @@
           "route.jungle.temple.1"
         ],
         "schemaVersion": "1.0.0",
-        "trainerPools": null,
+        "trainerPools": {
+          "boss": [
+            "ramos"
+          ],
+          "boss_rare": [],
+          "boss_super_rare": [],
+          "boss_ultra_rare": [],
+          "common": [
+            "backpacker",
+            "ranger"
+          ],
+          "rare": [],
+          "super_rare": [],
+          "ultra_rare": [],
+          "uncommon": []
+        },
         "transitions": null,
         "visualTemplate": null
       },
       {
         "background": null,
         "contentVersion": "1.0.0",
-        "encounterPools": null,
+        "encounterPools": {
+          "boss": {
+            "all": [
+              "muk",
+              "electrode",
+              "bronzong",
+              "magnezone",
+              "reuniclus",
+              "klinklang"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "boss_rare": {
+            "all": [
+              "porygon_z",
+              "rotom"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "boss_super_rare": {
+            "all": [
+              "zygarde",
+              "type_null"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "boss_ultra_rare": {
+            "all": [
+              "mewtwo",
+              "miraidon"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "common": {
+            "all": [
+              "grimer",
+              "voltorb",
+              "bronzor",
+              "munna",
+              "klink"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "rare": {
+            "all": [
+              "ditto",
+              "porygon",
+              "rotom"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "super_rare": {
+            "all": [],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "ultra_rare": {
+            "all": [
+              "type_null"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "uncommon": {
+            "all": [
+              "magnemite",
+              "solosis",
+              "klefki"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          }
+        },
         "extensions": {
           "upstreamEnumRef": {
             "repository": "https://github.com/pagefaultgames/pokerogue",
@@ -27335,14 +29688,158 @@
           "route.laboratory.island.2"
         ],
         "schemaVersion": "1.0.0",
-        "trainerPools": null,
+        "trainerPools": {
+          "boss": [
+            "giovanni"
+          ],
+          "boss_rare": [],
+          "boss_super_rare": [],
+          "boss_ultra_rare": [],
+          "common": [
+            "scientist"
+          ],
+          "rare": [],
+          "super_rare": [],
+          "ultra_rare": [],
+          "uncommon": []
+        },
         "transitions": null,
         "visualTemplate": null
       },
       {
         "background": null,
         "contentVersion": "1.0.0",
-        "encounterPools": null,
+        "encounterPools": {
+          "boss": {
+            "all": [
+              "golduck",
+              "slowbro",
+              "seaking",
+              "masquerain",
+              "wishiwashi",
+              "drednaw"
+            ],
+            "dawn": [
+              "swanna",
+              "araquanid"
+            ],
+            "day": [
+              "swanna",
+              "araquanid"
+            ],
+            "dusk": [
+              "azumarill"
+            ],
+            "night": [
+              "azumarill"
+            ]
+          },
+          "boss_rare": {
+            "all": [
+              "blastoise",
+              "gyarados",
+              "vaporeon",
+              "slowking",
+              "samurott",
+              "greninja",
+              "inteleon",
+              "battle_bond_greninja"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "boss_super_rare": {
+            "all": [
+              "suicune",
+              "mesprit"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "boss_ultra_rare": {
+            "all": [],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "common": {
+            "all": [
+              "psyduck",
+              "goldeen",
+              "wooper",
+              "surskit",
+              "chewtle"
+            ],
+            "dawn": [
+              "lotad",
+              "ducklett"
+            ],
+            "day": [
+              "lotad",
+              "ducklett"
+            ],
+            "dusk": [
+              "marill"
+            ],
+            "night": [
+              "marill"
+            ]
+          },
+          "rare": {
+            "all": [
+              "squirtle",
+              "oshawott",
+              "froakie",
+              "sobble",
+              "flamigo"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "super_rare": {
+            "all": [
+              "vaporeon",
+              "slowking",
+              "battle_bond_greninja"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "ultra_rare": {
+            "all": [
+              "suicune",
+              "mesprit"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "uncommon": {
+            "all": [
+              "slowpoke",
+              "magikarp",
+              "wishiwashi"
+            ],
+            "dawn": [
+              "dewpider"
+            ],
+            "day": [
+              "dewpider"
+            ],
+            "dusk": [],
+            "night": []
+          }
+        },
         "extensions": {
           "upstreamEnumRef": {
             "repository": "https://github.com/pagefaultgames/pokerogue",
@@ -27394,14 +29891,196 @@
           "route.lake.construction_site.3"
         ],
         "schemaVersion": "1.0.0",
-        "trainerPools": null,
+        "trainerPools": {
+          "boss": [
+            "crasher_wake"
+          ],
+          "boss_rare": [],
+          "boss_super_rare": [],
+          "boss_ultra_rare": [],
+          "common": [
+            "breeder",
+            "fisherman",
+            "parasol_lady"
+          ],
+          "rare": [
+            "black_belt"
+          ],
+          "super_rare": [],
+          "ultra_rare": [],
+          "uncommon": [
+            "ace_trainer",
+            "young_couple"
+          ]
+        },
         "transitions": null,
         "visualTemplate": null
       },
       {
         "background": null,
         "contentVersion": "1.0.0",
-        "encounterPools": null,
+        "encounterPools": {
+          "boss": {
+            "all": [
+              "tauros",
+              "miltank",
+              "gardevoir",
+              "purugly",
+              "zebstrika",
+              "florges",
+              "ribombee",
+              "dubwool"
+            ],
+            "dawn": [
+              "ledian",
+              "granbull",
+              "delcatty",
+              "roserade",
+              "cinccino",
+              "bouffalant",
+              "arboliva"
+            ],
+            "day": [
+              "ledian",
+              "granbull",
+              "delcatty",
+              "roserade",
+              "cinccino",
+              "bouffalant",
+              "arboliva"
+            ],
+            "dusk": [],
+            "night": []
+          },
+          "boss_rare": {
+            "all": [
+              "blissey",
+              "sylveon",
+              "flapple",
+              "appletun",
+              "meowscarada",
+              "hydrapple"
+            ],
+            "dawn": [
+              "hisui_lilligant"
+            ],
+            "day": [
+              "hisui_lilligant"
+            ],
+            "dusk": [],
+            "night": []
+          },
+          "boss_super_rare": {
+            "all": [
+              "shaymin",
+              "meloetta",
+              "enamorus"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "boss_ultra_rare": {
+            "all": [],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "common": {
+            "all": [
+              "blitzle",
+              "flabebe",
+              "cutiefly",
+              "gossifleur",
+              "wooloo"
+            ],
+            "dawn": [
+              "ledyba",
+              "roselia",
+              "cottonee",
+              "minccino"
+            ],
+            "day": [
+              "ledyba",
+              "roselia",
+              "cottonee",
+              "minccino"
+            ],
+            "dusk": [],
+            "night": []
+          },
+          "rare": {
+            "all": [
+              "tauros",
+              "eevee",
+              "miltank",
+              "spinda",
+              "applin",
+              "sprigatito"
+            ],
+            "dawn": [
+              "volbeat",
+              "illumise"
+            ],
+            "day": [],
+            "dusk": [
+              "volbeat",
+              "illumise"
+            ],
+            "night": [
+              "volbeat",
+              "illumise"
+            ]
+          },
+          "super_rare": {
+            "all": [
+              "chansey",
+              "sylveon"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "ultra_rare": {
+            "all": [
+              "shaymin",
+              "meloetta",
+              "enamorus"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "uncommon": {
+            "all": [
+              "jigglypuff",
+              "mareep",
+              "ralts",
+              "glameow",
+              "oricorio"
+            ],
+            "dawn": [
+              "ponyta",
+              "snubbull",
+              "skitty",
+              "bouffalant",
+              "smoliv"
+            ],
+            "day": [
+              "ponyta",
+              "snubbull",
+              "skitty",
+              "bouffalant",
+              "smoliv"
+            ],
+            "dusk": [],
+            "night": []
+          }
+        },
         "extensions": {
           "upstreamEnumRef": {
             "repository": "https://github.com/pagefaultgames/pokerogue",
@@ -27452,14 +30131,163 @@
           "route.meadow.fairy_cave.2"
         ],
         "schemaVersion": "1.0.0",
-        "trainerPools": null,
+        "trainerPools": {
+          "boss": [
+            "lenora",
+            "milo"
+          ],
+          "boss_rare": [],
+          "boss_super_rare": [],
+          "boss_ultra_rare": [],
+          "common": [
+            "aroma_lady",
+            "beauty",
+            "musician",
+            "parasol_lady"
+          ],
+          "rare": [],
+          "super_rare": [],
+          "ultra_rare": [],
+          "uncommon": [
+            "ace_trainer",
+            "baker",
+            "breeder",
+            "fairy_tale_girl",
+            "pokefan"
+          ]
+        },
         "transitions": null,
         "visualTemplate": null
       },
       {
         "background": null,
         "contentVersion": "1.0.0",
-        "encounterPools": null,
+        "encounterPools": {
+          "boss": {
+            "all": [
+              "castform",
+              "stoutland",
+              "furfrou",
+              "dachsbun"
+            ],
+            "dawn": [
+              "boltund"
+            ],
+            "day": [
+              "boltund"
+            ],
+            "dusk": [
+              "meowstic"
+            ],
+            "night": [
+              "meowstic"
+            ]
+          },
+          "boss_rare": {
+            "all": [
+              "revavroom"
+            ],
+            "dawn": [
+              "maushold"
+            ],
+            "day": [
+              "maushold"
+            ],
+            "dusk": [],
+            "night": []
+          },
+          "boss_super_rare": {
+            "all": [],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "boss_ultra_rare": {
+            "all": [],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "common": {
+            "all": [
+              "rattata",
+              "zigzagoon",
+              "patrat",
+              "lillipup"
+            ],
+            "dawn": [
+              "yamper"
+            ],
+            "day": [
+              "yamper"
+            ],
+            "dusk": [
+              "houndour"
+            ],
+            "night": [
+              "houndour"
+            ]
+          },
+          "rare": {
+            "all": [
+              "smeargle",
+              "castform",
+              "varoom"
+            ],
+            "dawn": [
+              "tandemaus"
+            ],
+            "day": [
+              "tandemaus"
+            ],
+            "dusk": [
+              "morpeko"
+            ],
+            "night": [
+              "morpeko"
+            ]
+          },
+          "super_rare": {
+            "all": [
+              "ditto",
+              "eevee"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "ultra_rare": {
+            "all": [],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "uncommon": {
+            "all": [
+              "pikachu",
+              "glameow",
+              "furfrou",
+              "fidough",
+              "squawkabilly"
+            ],
+            "dawn": [
+              "indeedee"
+            ],
+            "day": [
+              "indeedee"
+            ],
+            "dusk": [
+              "espurr"
+            ],
+            "night": [
+              "espurr"
+            ]
+          }
+        },
         "extensions": {
           "upstreamEnumRef": {
             "repository": "https://github.com/pagefaultgames/pokerogue",
@@ -27509,14 +30337,218 @@
           "route.metropolis.slum.1"
         ],
         "schemaVersion": "1.0.0",
-        "trainerPools": null,
+        "trainerPools": {
+          "boss": [
+            "whitney",
+            "norman",
+            "iono",
+            "larry"
+          ],
+          "boss_rare": [],
+          "boss_super_rare": [],
+          "boss_ultra_rare": [],
+          "common": [
+            "beauty",
+            "clerk",
+            "cyclist",
+            "officer",
+            "waiter"
+          ],
+          "rare": [
+            "artist",
+            "rich_kid"
+          ],
+          "super_rare": [],
+          "ultra_rare": [],
+          "uncommon": [
+            "breeder",
+            "depot_agent",
+            "guitarist"
+          ]
+        },
         "transitions": null,
         "visualTemplate": null
       },
       {
         "background": null,
         "contentVersion": "1.0.0",
-        "encounterPools": null,
+        "encounterPools": {
+          "boss": {
+            "all": [
+              "pidgeot",
+              "fearow",
+              "skarmory",
+              "aggron",
+              "gogoat"
+            ],
+            "dawn": [
+              "swellow",
+              "altaria",
+              "staraptor",
+              "unfezant",
+              "braviary",
+              "talonflame",
+              "corviknight",
+              "espathra"
+            ],
+            "day": [
+              "swellow",
+              "altaria",
+              "staraptor",
+              "unfezant",
+              "braviary",
+              "talonflame",
+              "corviknight",
+              "espathra"
+            ],
+            "dusk": [
+              "mandibuzz"
+            ],
+            "night": [
+              "mandibuzz"
+            ]
+          },
+          "boss_rare": {
+            "all": [
+              "blaziken",
+              "rampardos",
+              "bastiodon",
+              "hawlucha",
+              "garganacl"
+            ],
+            "dawn": [
+              "hisui_braviary"
+            ],
+            "day": [
+              "hisui_braviary"
+            ],
+            "dusk": [],
+            "night": []
+          },
+          "boss_super_rare": {
+            "all": [
+              "tornadus",
+              "ting_lu",
+              "ogerpon"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "boss_ultra_rare": {
+            "all": [
+              "ho_oh"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "common": {
+            "all": [
+              "pidgey",
+              "spearow",
+              "skiddo"
+            ],
+            "dawn": [
+              "taillow",
+              "swablu",
+              "starly",
+              "pidove",
+              "fletchling"
+            ],
+            "day": [
+              "taillow",
+              "swablu",
+              "starly",
+              "pidove",
+              "fletchling"
+            ],
+            "dusk": [
+              "rhyhorn",
+              "aron",
+              "roggenrola"
+            ],
+            "night": [
+              "rhyhorn",
+              "aron",
+              "roggenrola"
+            ]
+          },
+          "rare": {
+            "all": [
+              "skarmory",
+              "torchic",
+              "spoink",
+              "hawlucha",
+              "nacli"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": [
+              "murkrow"
+            ]
+          },
+          "super_rare": {
+            "all": [
+              "larvitar",
+              "cranidos",
+              "shieldon",
+              "gible",
+              "archeops",
+              "axew"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "ultra_rare": {
+            "all": [
+              "tornadus",
+              "ting_lu",
+              "ogerpon"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "uncommon": {
+            "all": [
+              "machop",
+              "geodude",
+              "natu",
+              "slugma"
+            ],
+            "dawn": [
+              "rhyhorn",
+              "aron",
+              "roggenrola",
+              "rufflet",
+              "rookidee",
+              "flittle",
+              "bombirdier"
+            ],
+            "day": [
+              "rhyhorn",
+              "aron",
+              "roggenrola",
+              "rufflet",
+              "rookidee",
+              "flittle",
+              "bombirdier"
+            ],
+            "dusk": [
+              "vullaby"
+            ],
+            "night": [
+              "vullaby"
+            ]
+          }
+        },
         "extensions": {
           "upstreamEnumRef": {
             "repository": "https://github.com/pagefaultgames/pokerogue",
@@ -27568,14 +30600,205 @@
           "route.mountain.space.3"
         ],
         "schemaVersion": "1.0.0",
-        "trainerPools": null,
+        "trainerPools": {
+          "boss": [
+            "falkner",
+            "winona",
+            "skyla"
+          ],
+          "boss_rare": [],
+          "boss_super_rare": [],
+          "boss_ultra_rare": [],
+          "common": [
+            "backpacker",
+            "bird_keeper",
+            "black_belt",
+            "camper",
+            "hiker"
+          ],
+          "rare": [],
+          "super_rare": [],
+          "ultra_rare": [],
+          "uncommon": [
+            "ace_trainer",
+            "pilot"
+          ]
+        },
         "transitions": null,
         "visualTemplate": null
       },
       {
         "background": null,
         "contentVersion": "1.0.0",
-        "encounterPools": null,
+        "encounterPools": {
+          "boss": {
+            "all": [
+              "linoone",
+              "bibarel",
+              "lopunny",
+              "oinkologne"
+            ],
+            "dawn": [
+              "dodrio",
+              "furret",
+              "gumshoos",
+              "greedent"
+            ],
+            "day": [
+              "dodrio",
+              "furret",
+              "gumshoos",
+              "greedent"
+            ],
+            "dusk": [
+              "persian",
+              "mightyena"
+            ],
+            "night": [
+              "persian",
+              "mightyena"
+            ]
+          },
+          "boss_rare": {
+            "all": [
+              "farfetchd",
+              "snorlax",
+              "lickilicky",
+              "dudunsparce"
+            ],
+            "dawn": [
+              "pawmot",
+              "paldea_tauros"
+            ],
+            "day": [
+              "lycanroc",
+              "pawmot",
+              "paldea_tauros"
+            ],
+            "dusk": [],
+            "night": []
+          },
+          "boss_super_rare": {
+            "all": [
+              "latias",
+              "latios"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "boss_ultra_rare": {
+            "all": [],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "common": {
+            "all": [
+              "zigzagoon",
+              "bidoof",
+              "lechonk"
+            ],
+            "dawn": [
+              "sentret",
+              "yungoos",
+              "skwovet"
+            ],
+            "day": [
+              "sentret",
+              "yungoos",
+              "skwovet"
+            ],
+            "dusk": [
+              "zubat",
+              "meowth",
+              "poochyena"
+            ],
+            "night": [
+              "zubat",
+              "meowth",
+              "poochyena"
+            ]
+          },
+          "rare": {
+            "all": [
+              "abra",
+              "lickitung",
+              "buneary",
+              "rookidee"
+            ],
+            "dawn": [
+              "paldea_tauros"
+            ],
+            "day": [
+              "paldea_tauros"
+            ],
+            "dusk": [
+              "shinx"
+            ],
+            "night": [
+              "shinx"
+            ]
+          },
+          "super_rare": {
+            "all": [
+              "farfetchd",
+              "chansey",
+              "eevee",
+              "snorlax",
+              "dunsparce"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "ultra_rare": {
+            "all": [
+              "ditto",
+              "latias",
+              "latios"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "uncommon": {
+            "all": [
+              "pidgey",
+              "spearow",
+              "pikachu",
+              "fletchling"
+            ],
+            "dawn": [
+              "doduo",
+              "poochyena",
+              "starly",
+              "pidove",
+              "rockruff",
+              "pawmi"
+            ],
+            "day": [
+              "doduo",
+              "poochyena",
+              "starly",
+              "pidove",
+              "rockruff",
+              "pawmi"
+            ],
+            "dusk": [
+              "mankey",
+              "nickit"
+            ],
+            "night": [
+              "mankey",
+              "nickit"
+            ]
+          }
+        },
         "extensions": {
           "upstreamEnumRef": {
             "repository": "https://github.com/pagefaultgames/pokerogue",
@@ -27627,14 +30850,153 @@
           "route.plains.lake.3"
         ],
         "schemaVersion": "1.0.0",
-        "trainerPools": null,
+        "trainerPools": {
+          "boss": [
+            "cilan",
+            "chili",
+            "cress",
+            "cheren"
+          ],
+          "boss_rare": [],
+          "boss_super_rare": [],
+          "boss_ultra_rare": [],
+          "common": [
+            "breeder",
+            "twins"
+          ],
+          "rare": [
+            "black_belt"
+          ],
+          "super_rare": [],
+          "ultra_rare": [],
+          "uncommon": [
+            "ace_trainer",
+            "cyclist"
+          ]
+        },
         "transitions": null,
         "visualTemplate": null
       },
       {
         "background": null,
         "contentVersion": "1.0.0",
-        "encounterPools": null,
+        "encounterPools": {
+          "boss": {
+            "all": [
+              "raichu",
+              "manectric",
+              "luxray",
+              "magnezone",
+              "electivire",
+              "dedenne",
+              "vikavolt",
+              "togedemaru",
+              "pawmot",
+              "bellibolt"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "boss_rare": {
+            "all": [
+              "jolteon",
+              "ampharos",
+              "hisui_electrode"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "boss_super_rare": {
+            "all": [
+              "zapdos",
+              "thundurus",
+              "xurkitree",
+              "zeraora",
+              "regieleki"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "boss_ultra_rare": {
+            "all": [
+              "zekrom"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "common": {
+            "all": [
+              "pikachu",
+              "voltorb",
+              "electrike",
+              "shinx",
+              "dedenne",
+              "grubbin",
+              "pawmi",
+              "tadbulb"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "rare": {
+            "all": [
+              "mareep",
+              "rotom"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "super_rare": {
+            "all": [
+              "jolteon",
+              "hisui_voltorb"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "ultra_rare": {
+            "all": [
+              "zapdos",
+              "thundurus",
+              "xurkitree",
+              "zeraora",
+              "regieleki"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "uncommon": {
+            "all": [
+              "magnemite",
+              "electabuzz",
+              "plusle",
+              "minun",
+              "pachirisu",
+              "emolga",
+              "togedemaru"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          }
+        },
         "extensions": {
           "upstreamEnumRef": {
             "repository": "https://github.com/pagefaultgames/pokerogue",
@@ -27684,14 +31046,147 @@
           "route.power_plant.factory.1"
         ],
         "schemaVersion": "1.0.0",
-        "trainerPools": null,
+        "trainerPools": {
+          "boss": [
+            "volkner",
+            "elesa",
+            "clemont"
+          ],
+          "boss_rare": [],
+          "boss_super_rare": [],
+          "boss_ultra_rare": [],
+          "common": [
+            "guitarist",
+            "worker"
+          ],
+          "rare": [],
+          "super_rare": [],
+          "ultra_rare": [],
+          "uncommon": []
+        },
         "transitions": null,
         "visualTemplate": null
       },
       {
         "background": null,
         "contentVersion": "1.0.0",
-        "encounterPools": null,
+        "encounterPools": {
+          "boss": {
+            "all": [
+              "alakazam",
+              "hypno",
+              "xatu",
+              "grumpig",
+              "claydol",
+              "sigilyph",
+              "gothitelle",
+              "beheeyem",
+              "tinkaton"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "boss_rare": {
+            "all": [
+              "mr_mime",
+              "wobbuffet",
+              "archeops"
+            ],
+            "dawn": [],
+            "day": [
+              "espeon"
+            ],
+            "dusk": [
+              "runerigus"
+            ],
+            "night": [
+              "runerigus"
+            ]
+          },
+          "boss_super_rare": {
+            "all": [
+              "registeel",
+              "fezandipiti"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "boss_ultra_rare": {
+            "all": [
+              "koraidon"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "common": {
+            "all": [
+              "drowzee",
+              "natu",
+              "unown",
+              "spoink",
+              "baltoy",
+              "elgyem"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "rare": {
+            "all": [
+              "mr_mime",
+              "wobbuffet",
+              "gothita",
+              "stonjourner"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "super_rare": {
+            "all": [
+              "archen"
+            ],
+            "dawn": [],
+            "day": [
+              "espeon"
+            ],
+            "dusk": [
+              "galar_yamask"
+            ],
+            "night": [
+              "galar_yamask"
+            ]
+          },
+          "ultra_rare": {
+            "all": [
+              "registeel",
+              "fezandipiti"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "uncommon": {
+            "all": [
+              "abra",
+              "sigilyph",
+              "tinkatink"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          }
+        },
         "extensions": {
           "upstreamEnumRef": {
             "repository": "https://github.com/pagefaultgames/pokerogue",
@@ -27742,14 +31237,170 @@
           "route.ruins.forest.2"
         ],
         "schemaVersion": "1.0.0",
-        "trainerPools": null,
+        "trainerPools": {
+          "boss": [
+            "sabrina",
+            "tate",
+            "liza",
+            "tulip"
+          ],
+          "boss_rare": [],
+          "boss_super_rare": [],
+          "boss_ultra_rare": [],
+          "common": [
+            "psychic",
+            "ruin_maniac",
+            "scientist"
+          ],
+          "rare": [],
+          "super_rare": [],
+          "ultra_rare": [],
+          "uncommon": [
+            "ace_trainer",
+            "black_belt",
+            "collector",
+            "hex_maniac"
+          ]
+        },
         "transitions": null,
         "visualTemplate": null
       },
       {
         "background": null,
         "contentVersion": "1.0.0",
-        "encounterPools": null,
+        "encounterPools": {
+          "boss": {
+            "all": [
+              "lanturn",
+              "qwilfish",
+              "corsola",
+              "octillery",
+              "mantine",
+              "wailord",
+              "huntail",
+              "gorebyss",
+              "luvdisc",
+              "jellicent",
+              "alomomola",
+              "dragalge",
+              "barraskewda",
+              "dondozo"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "boss_rare": {
+            "all": [
+              "omastar",
+              "kabutops",
+              "milotic",
+              "relicanth",
+              "eelektross",
+              "pyukumuku",
+              "dhelmise",
+              "cursola",
+              "arctovish",
+              "basculegion",
+              "overqwil"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "boss_super_rare": {
+            "all": [
+              "nihilego"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "boss_ultra_rare": {
+            "all": [
+              "kyogre"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "common": {
+            "all": [
+              "chinchou",
+              "remoraid",
+              "clamperl",
+              "basculin",
+              "frillish",
+              "arrokuda",
+              "veluza"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "rare": {
+            "all": [
+              "qwilfish",
+              "corsola",
+              "octillery",
+              "feebas",
+              "hisui_basculin",
+              "mantyke",
+              "alomomola",
+              "tynamo",
+              "dhelmise"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "super_rare": {
+            "all": [
+              "omanyte",
+              "kabuto",
+              "relicanth",
+              "pyukumuku",
+              "galar_corsola",
+              "arctovish",
+              "hisui_qwilfish"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "ultra_rare": {
+            "all": [
+              "nihilego"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "uncommon": {
+            "all": [
+              "tentacool",
+              "shellder",
+              "wailmer",
+              "luvdisc",
+              "shellos",
+              "skrelp",
+              "pincurchin",
+              "dondozo"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          }
+        },
         "extensions": {
           "upstreamEnumRef": {
             "repository": "https://github.com/pagefaultgames/pokerogue",
@@ -27800,14 +31451,166 @@
           "route.seabed.volcano.2"
         ],
         "schemaVersion": "1.0.0",
-        "trainerPools": null,
+        "trainerPools": {
+          "boss": [
+            "juan"
+          ],
+          "boss_rare": [],
+          "boss_super_rare": [],
+          "boss_ultra_rare": [],
+          "common": [
+            "scuba_diver"
+          ],
+          "rare": [],
+          "super_rare": [],
+          "ultra_rare": [],
+          "uncommon": []
+        },
         "transitions": null,
         "visualTemplate": null
       },
       {
         "background": null,
         "contentVersion": "1.0.0",
-        "encounterPools": null,
+        "encounterPools": {
+          "boss": {
+            "all": [
+              "tentacruel",
+              "floatzel",
+              "simipour",
+              "kilowattrel"
+            ],
+            "dawn": [
+              "pelipper",
+              "cramorant",
+              "palafin"
+            ],
+            "day": [
+              "pelipper",
+              "cramorant",
+              "palafin"
+            ],
+            "dusk": [
+              "sharpedo",
+              "malamar"
+            ],
+            "night": [
+              "sharpedo",
+              "lumineon",
+              "malamar"
+            ]
+          },
+          "boss_rare": {
+            "all": [
+              "gyarados",
+              "kingdra",
+              "empoleon",
+              "primarina"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "boss_super_rare": {
+            "all": [],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "boss_ultra_rare": {
+            "all": [
+              "lugia"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "common": {
+            "all": [
+              "tentacool",
+              "wailmer"
+            ],
+            "dawn": [
+              "slowpoke",
+              "wingull",
+              "cramorant",
+              "finizen"
+            ],
+            "day": [
+              "slowpoke",
+              "wingull",
+              "cramorant",
+              "finizen"
+            ],
+            "dusk": [
+              "finneon",
+              "inkay"
+            ],
+            "night": [
+              "finneon",
+              "inkay"
+            ]
+          },
+          "rare": {
+            "all": [
+              "lapras",
+              "piplup",
+              "popplio"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "super_rare": {
+            "all": [
+              "kingdra",
+              "tirtouga"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "ultra_rare": {
+            "all": [],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "uncommon": {
+            "all": [
+              "poliwag",
+              "horsea",
+              "goldeen",
+              "magikarp",
+              "buizel",
+              "panpour",
+              "wattrel"
+            ],
+            "dawn": [
+              "staryu"
+            ],
+            "day": [
+              "staryu"
+            ],
+            "dusk": [
+              "slowpoke",
+              "shellder",
+              "carvanha"
+            ],
+            "night": [
+              "slowpoke",
+              "shellder",
+              "chinchou",
+              "carvanha"
+            ]
+          }
+        },
         "extensions": {
           "upstreamEnumRef": {
             "repository": "https://github.com/pagefaultgames/pokerogue",
@@ -27858,14 +31661,141 @@
           "route.sea.ice_cave.2"
         ],
         "schemaVersion": "1.0.0",
-        "trainerPools": null,
+        "trainerPools": {
+          "boss": [
+            "marlon"
+          ],
+          "boss_rare": [],
+          "boss_super_rare": [],
+          "boss_ultra_rare": [],
+          "common": [
+            "sailor",
+            "swimmer"
+          ],
+          "rare": [],
+          "super_rare": [],
+          "ultra_rare": [],
+          "uncommon": [
+            "scuba_diver"
+          ]
+        },
         "transitions": null,
         "visualTemplate": null
       },
       {
         "background": null,
         "contentVersion": "1.0.0",
-        "encounterPools": null,
+        "encounterPools": {
+          "boss": {
+            "all": [
+              "muk",
+              "weezing",
+              "skuntank",
+              "scrafty",
+              "garbodor",
+              "pangoro",
+              "alola_raticate",
+              "obstagoon"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "boss_rare": {
+            "all": [
+              "weavile",
+              "toxtricity",
+              "revavroom",
+              "galar_weezing"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "boss_super_rare": {
+            "all": [
+              "guzzlord"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "boss_ultra_rare": {
+            "all": [],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "common": {
+            "all": [
+              "rattata",
+              "grimer",
+              "drowzee",
+              "koffing",
+              "murkrow",
+              "glameow",
+              "scraggy",
+              "trubbish"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [
+              "shuppet"
+            ],
+            "night": [
+              "shuppet"
+            ]
+          },
+          "rare": {
+            "all": [
+              "sneasel",
+              "gothita",
+              "pawniard",
+              "toxel",
+              "squawkabilly",
+              "varoom"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "super_rare": {
+            "all": [],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "ultra_rare": {
+            "all": [
+              "guzzlord"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "uncommon": {
+            "all": [
+              "houndour",
+              "wormadam",
+              "stunky",
+              "pancham",
+              "maschiff",
+              "alola_rattata",
+              "galar_zigzagoon"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          }
+        },
         "extensions": {
           "upstreamEnumRef": {
             "repository": "https://github.com/pagefaultgames/pokerogue",
@@ -27916,14 +31846,183 @@
           "route.slum.swamp.2"
         ],
         "schemaVersion": "1.0.0",
-        "trainerPools": null,
+        "trainerPools": {
+          "boss": [
+            "piers"
+          ],
+          "boss_rare": [],
+          "boss_super_rare": [],
+          "boss_ultra_rare": [],
+          "common": [
+            "biker",
+            "officer",
+            "roughneck"
+          ],
+          "rare": [],
+          "super_rare": [],
+          "ultra_rare": [],
+          "uncommon": [
+            "baker",
+            "hooligans"
+          ]
+        },
         "transitions": null,
         "visualTemplate": null
       },
       {
         "background": null,
         "contentVersion": "1.0.0",
-        "encounterPools": null,
+        "encounterPools": {
+          "boss": {
+            "all": [
+              "abomasnow",
+              "mamoswine",
+              "wyrdeer",
+              "ursaluna"
+            ],
+            "dawn": [
+              "glalie",
+              "beartic"
+            ],
+            "day": [
+              "glalie",
+              "beartic"
+            ],
+            "dusk": [
+              "weavile",
+              "froslass"
+            ],
+            "night": [
+              "weavile",
+              "froslass"
+            ]
+          },
+          "boss_rare": {
+            "all": [
+              "mr_rime",
+              "arctozolt",
+              "alola_sandslash",
+              "alola_ninetales"
+            ],
+            "dawn": [
+              "sneasler",
+              "galar_darmanitan"
+            ],
+            "day": [
+              "sneasler",
+              "galar_darmanitan"
+            ],
+            "dusk": [
+              "hisui_zoroark"
+            ],
+            "night": [
+              "hisui_zoroark"
+            ]
+          },
+          "boss_super_rare": {
+            "all": [
+              "glastrier",
+              "chien_pao",
+              "galar_articuno"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "boss_ultra_rare": {
+            "all": [
+              "zacian"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "common": {
+            "all": [
+              "sentret",
+              "swinub",
+              "snover",
+              "snom"
+            ],
+            "dawn": [
+              "glalie",
+              "cubchoo"
+            ],
+            "day": [
+              "glalie",
+              "cubchoo"
+            ],
+            "dusk": [
+              "sneasel",
+              "froslass"
+            ],
+            "night": [
+              "sneasel",
+              "froslass"
+            ]
+          },
+          "rare": {
+            "all": [
+              "delibird",
+              "cryogonal",
+              "avalugg",
+              "alola_sandshrew",
+              "alola_vulpix"
+            ],
+            "dawn": [
+              "galar_darumaka"
+            ],
+            "day": [
+              "galar_darumaka"
+            ],
+            "dusk": [],
+            "night": []
+          },
+          "super_rare": {
+            "all": [
+              "galar_mr_mime",
+              "arctozolt",
+              "hisui_avalugg"
+            ],
+            "dawn": [
+              "hisui_sneasel"
+            ],
+            "day": [
+              "hisui_sneasel"
+            ],
+            "dusk": [
+              "hisui_zorua"
+            ],
+            "night": [
+              "hisui_zorua"
+            ]
+          },
+          "ultra_rare": {
+            "all": [
+              "glastrier",
+              "chien_pao",
+              "galar_articuno"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "uncommon": {
+            "all": [
+              "teddiursa",
+              "stantler",
+              "skiddo",
+              "eiscue"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          }
+        },
         "extensions": {
           "upstreamEnumRef": {
             "repository": "https://github.com/pagefaultgames/pokerogue",
@@ -27975,14 +32074,145 @@
           "route.snowy_forest.lake.3"
         ],
         "schemaVersion": "1.0.0",
-        "trainerPools": null,
+        "trainerPools": {
+          "boss": [
+            "candice",
+            "melony"
+          ],
+          "boss_rare": [],
+          "boss_super_rare": [],
+          "boss_ultra_rare": [],
+          "common": [
+            "snow_worker"
+          ],
+          "rare": [
+            "young_couple"
+          ],
+          "super_rare": [],
+          "ultra_rare": [],
+          "uncommon": [
+            "snow_ace_trainer"
+          ]
+        },
         "transitions": null,
         "visualTemplate": null
       },
       {
         "background": null,
         "contentVersion": "1.0.0",
-        "encounterPools": null,
+        "encounterPools": {
+          "boss": {
+            "all": [
+              "clefable",
+              "bronzong",
+              "musharna",
+              "reuniclus",
+              "minior"
+            ],
+            "dawn": [],
+            "day": [
+              "solrock"
+            ],
+            "dusk": [],
+            "night": [
+              "lunatone"
+            ]
+          },
+          "boss_rare": {
+            "all": [
+              "metagross",
+              "porygon_z"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "boss_super_rare": {
+            "all": [
+              "celesteela"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "boss_ultra_rare": {
+            "all": [
+              "rayquaza",
+              "necrozma"
+            ],
+            "dawn": [],
+            "day": [
+              "solgaleo"
+            ],
+            "dusk": [],
+            "night": [
+              "lunala"
+            ]
+          },
+          "common": {
+            "all": [
+              "cleffa",
+              "bronzor",
+              "munna",
+              "minior"
+            ],
+            "dawn": [
+              "solrock"
+            ],
+            "day": [
+              "solrock"
+            ],
+            "dusk": [
+              "lunatone"
+            ],
+            "night": [
+              "lunatone"
+            ]
+          },
+          "rare": {
+            "all": [
+              "staryu",
+              "sigilyph",
+              "solosis"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "super_rare": {
+            "all": [
+              "porygon",
+              "beldum"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "ultra_rare": {
+            "all": [
+              "cosmog",
+              "celesteela"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "uncommon": {
+            "all": [
+              "baltoy",
+              "elgyem"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          }
+        },
         "extensions": {
           "upstreamEnumRef": {
             "repository": "https://github.com/pagefaultgames/pokerogue",
@@ -28032,14 +32262,172 @@
           "route.space.ruins.1"
         ],
         "schemaVersion": "1.0.0",
-        "trainerPools": null,
+        "trainerPools": {
+          "boss": [
+            "olympia"
+          ],
+          "boss_rare": [],
+          "boss_super_rare": [],
+          "boss_ultra_rare": [],
+          "common": [],
+          "rare": [],
+          "super_rare": [],
+          "ultra_rare": [],
+          "uncommon": []
+        },
         "transitions": null,
         "visualTemplate": null
       },
       {
         "background": null,
         "contentVersion": "1.0.0",
-        "encounterPools": null,
+        "encounterPools": {
+          "boss": {
+            "all": [
+              "poliwrath",
+              "swalot",
+              "whiscash",
+              "gastrodon",
+              "seismitoad",
+              "stunfisk",
+              "toxapex"
+            ],
+            "dawn": [
+              "quagsire",
+              "ludicolo"
+            ],
+            "day": [
+              "quagsire",
+              "ludicolo"
+            ],
+            "dusk": [
+              "arbok",
+              "clodsire"
+            ],
+            "night": [
+              "arbok",
+              "clodsire"
+            ]
+          },
+          "boss_rare": {
+            "all": [
+              "feraligatr",
+              "politoed",
+              "swampert",
+              "galar_stunfisk"
+            ],
+            "dawn": [
+              "galar_slowbro",
+              "galar_slowking",
+              "hisui_goodra"
+            ],
+            "day": [
+              "galar_slowbro",
+              "galar_slowking",
+              "hisui_goodra"
+            ],
+            "dusk": [],
+            "night": []
+          },
+          "boss_super_rare": {
+            "all": [
+              "azelf",
+              "poipole"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "boss_ultra_rare": {
+            "all": [],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "common": {
+            "all": [
+              "poliwag",
+              "gulpin",
+              "shellos",
+              "tympole"
+            ],
+            "dawn": [
+              "wooper",
+              "lotad"
+            ],
+            "day": [
+              "wooper",
+              "lotad"
+            ],
+            "dusk": [
+              "ekans",
+              "paldea_wooper"
+            ],
+            "night": [
+              "ekans",
+              "paldea_wooper"
+            ]
+          },
+          "rare": {
+            "all": [
+              "totodile",
+              "mudkip"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "super_rare": {
+            "all": [
+              "politoed",
+              "galar_stunfisk"
+            ],
+            "dawn": [
+              "galar_slowpoke",
+              "hisui_sliggoo"
+            ],
+            "day": [
+              "galar_slowpoke",
+              "hisui_sliggoo"
+            ],
+            "dusk": [],
+            "night": []
+          },
+          "ultra_rare": {
+            "all": [
+              "azelf",
+              "poipole"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "uncommon": {
+            "all": [
+              "psyduck",
+              "barboach",
+              "skorupi",
+              "stunfisk",
+              "mareanie"
+            ],
+            "dawn": [
+              "ekans"
+            ],
+            "day": [
+              "ekans"
+            ],
+            "dusk": [
+              "croagunk"
+            ],
+            "night": [
+              "croagunk"
+            ]
+          }
+        },
         "extensions": {
           "upstreamEnumRef": {
             "repository": "https://github.com/pagefaultgames/pokerogue",
@@ -28090,14 +32478,174 @@
           "route.swamp.tall_grass.2"
         ],
         "schemaVersion": "1.0.0",
-        "trainerPools": null,
+        "trainerPools": {
+          "boss": [
+            "janine",
+            "roxie"
+          ],
+          "boss_rare": [],
+          "boss_super_rare": [],
+          "boss_ultra_rare": [],
+          "common": [
+            "parasol_lady"
+          ],
+          "rare": [
+            "black_belt"
+          ],
+          "super_rare": [],
+          "ultra_rare": [],
+          "uncommon": [
+            "ace_trainer"
+          ]
+        },
         "transitions": null,
         "visualTemplate": null
       },
       {
         "background": null,
         "contentVersion": "1.0.0",
-        "encounterPools": null,
+        "encounterPools": {
+          "boss": {
+            "all": [
+              "ninjask",
+              "zangoose",
+              "seviper",
+              "kecleon",
+              "lurantis",
+              "lokix"
+            ],
+            "dawn": [
+              "nidoqueen",
+              "nidoking",
+              "tsareena"
+            ],
+            "day": [
+              "nidoqueen",
+              "nidoking",
+              "tsareena"
+            ],
+            "dusk": [
+              "vileplume",
+              "ariados",
+              "kricketune"
+            ],
+            "night": [
+              "vileplume",
+              "ariados",
+              "kricketune"
+            ]
+          },
+          "boss_rare": {
+            "all": [
+              "scyther",
+              "pinsir",
+              "meganium",
+              "farigiraf",
+              "kingambit"
+            ],
+            "dawn": [
+              "bellossom"
+            ],
+            "day": [
+              "bellossom"
+            ],
+            "dusk": [],
+            "night": []
+          },
+          "boss_super_rare": {
+            "all": [
+              "raikou",
+              "entei"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "boss_ultra_rare": {
+            "all": [],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "common": {
+            "all": [
+              "paras",
+              "fomantis",
+              "nymble",
+              "scatterbug"
+            ],
+            "dawn": [
+              "nidoran_f",
+              "nidoran_m",
+              "bounsweet"
+            ],
+            "day": [
+              "nidoran_f",
+              "nidoran_m",
+              "bounsweet"
+            ],
+            "dusk": [
+              "oddish",
+              "spinarak",
+              "kricketot"
+            ],
+            "night": [
+              "oddish",
+              "spinarak",
+              "kricketot"
+            ]
+          },
+          "rare": {
+            "all": [
+              "pinsir",
+              "chikorita",
+              "girafarig",
+              "kecleon",
+              "tropius",
+              "audino",
+              "pawniard"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "super_rare": {
+            "all": [
+              "scyther",
+              "shedinja"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "ultra_rare": {
+            "all": [
+              "raikou",
+              "entei"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "uncommon": {
+            "all": [
+              "vulpix",
+              "venonat",
+              "nincada",
+              "zangoose",
+              "seviper"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          }
+        },
         "extensions": {
           "upstreamEnumRef": {
             "repository": "https://github.com/pagefaultgames/pokerogue",
@@ -28148,14 +32696,129 @@
           "route.tall_grass.cave.2"
         ],
         "schemaVersion": "1.0.0",
-        "trainerPools": null,
+        "trainerPools": {
+          "boss": [
+            "gardenia",
+            "viola",
+            "brassius"
+          ],
+          "boss_rare": [],
+          "boss_super_rare": [],
+          "boss_ultra_rare": [],
+          "common": [
+            "bird_keeper",
+            "bug_catcher"
+          ],
+          "rare": [],
+          "super_rare": [],
+          "ultra_rare": [],
+          "uncommon": [
+            "ace_trainer",
+            "breeder",
+            "ranger"
+          ]
+        },
         "transitions": null,
         "visualTemplate": null
       },
       {
         "background": null,
         "contentVersion": "1.0.0",
-        "encounterPools": null,
+        "encounterPools": {
+          "boss": {
+            "all": [
+              "chimecho",
+              "cofagrigus",
+              "golurk",
+              "aegislash"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "boss_rare": {
+            "all": [
+              "gholdengo"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "boss_super_rare": {
+            "all": [
+              "hoopa",
+              "tapu_koko"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "boss_ultra_rare": {
+            "all": [
+              "regigigas"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "common": {
+            "all": [
+              "gastly",
+              "natu",
+              "duskull",
+              "yamask",
+              "golett",
+              "honedge"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "rare": {
+            "all": [
+              "gimmighoul"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "super_rare": {
+            "all": [],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "ultra_rare": {
+            "all": [
+              "hoopa",
+              "tapu_koko"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "uncommon": {
+            "all": [
+              "cubone",
+              "baltoy",
+              "chingling",
+              "skorupi",
+              "litwick"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          }
+        },
         "extensions": {
           "upstreamEnumRef": {
             "repository": "https://github.com/pagefaultgames/pokerogue",
@@ -28207,14 +32870,211 @@
           "route.temple.ruins.3"
         ],
         "schemaVersion": "1.0.0",
-        "trainerPools": null,
+        "trainerPools": {
+          "boss": [
+            "fantina"
+          ],
+          "boss_rare": [],
+          "boss_super_rare": [],
+          "boss_ultra_rare": [],
+          "common": [
+            "ruin_maniac"
+          ],
+          "rare": [],
+          "super_rare": [],
+          "ultra_rare": [],
+          "uncommon": [
+            "ace_trainer"
+          ]
+        },
         "transitions": null,
         "visualTemplate": null
       },
       {
         "background": null,
         "contentVersion": "1.0.0",
-        "encounterPools": null,
+        "encounterPools": {
+          "boss": {
+            "all": [],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "boss_rare": {
+            "all": [],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "boss_super_rare": {
+            "all": [],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "boss_ultra_rare": {
+            "all": [],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "common": {
+            "all": [
+              "pidgey",
+              "rattata",
+              "spearow",
+              "zigzagoon",
+              "wurmple",
+              "taillow",
+              "bidoof",
+              "patrat",
+              "lillipup",
+              "fletchling",
+              "wooloo",
+              "lechonk"
+            ],
+            "dawn": [
+              "caterpie",
+              "sentret",
+              "ledyba",
+              "hoppip",
+              "sunkern",
+              "silcoon",
+              "starly",
+              "pidove",
+              "cottonee",
+              "scatterbug",
+              "yungoos",
+              "skwovet"
+            ],
+            "day": [
+              "caterpie",
+              "sentret",
+              "ledyba",
+              "hoppip",
+              "sunkern",
+              "silcoon",
+              "starly",
+              "pidove",
+              "cottonee",
+              "scatterbug",
+              "yungoos",
+              "skwovet"
+            ],
+            "dusk": [
+              "weedle",
+              "hoothoot",
+              "spinarak",
+              "poochyena",
+              "cascoon",
+              "purrloin",
+              "blipbug"
+            ],
+            "night": [
+              "weedle",
+              "hoothoot",
+              "spinarak",
+              "poochyena",
+              "cascoon",
+              "purrloin",
+              "blipbug"
+            ]
+          },
+          "rare": {
+            "all": [
+              "abra",
+              "cleffa",
+              "igglybuff",
+              "surskit",
+              "happiny",
+              "rookidee",
+              "tandemaus"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "super_rare": {
+            "all": [
+              "eevee",
+              "pichu",
+              "togepi",
+              "ralts",
+              "nincada",
+              "riolu"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "ultra_rare": {
+            "all": [
+              "ditto",
+              "munchlax",
+              "zorua"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "uncommon": {
+            "all": [
+              "seedot",
+              "whismur",
+              "venipede",
+              "fidough"
+            ],
+            "dawn": [
+              "nidoran_f",
+              "nidoran_m",
+              "bellsprout",
+              "poochyena",
+              "lotad",
+              "skitty",
+              "combee",
+              "cherubi",
+              "minccino",
+              "pawmi"
+            ],
+            "day": [
+              "nidoran_f",
+              "nidoran_m",
+              "bellsprout",
+              "poochyena",
+              "lotad",
+              "skitty",
+              "combee",
+              "cherubi",
+              "minccino",
+              "pawmi"
+            ],
+            "dusk": [
+              "ekans",
+              "oddish",
+              "paras",
+              "venonat",
+              "meowth",
+              "shroomish",
+              "kricketot"
+            ],
+            "night": [
+              "ekans",
+              "oddish",
+              "paras",
+              "venonat",
+              "meowth",
+              "shroomish",
+              "kricketot"
+            ]
+          }
+        },
         "extensions": {
           "upstreamEnumRef": {
             "repository": "https://github.com/pagefaultgames/pokerogue",
@@ -28264,14 +33124,160 @@
           "route.town.plains.1"
         ],
         "schemaVersion": "1.0.0",
-        "trainerPools": null,
+        "trainerPools": {
+          "boss": [],
+          "boss_rare": [],
+          "boss_super_rare": [],
+          "boss_ultra_rare": [],
+          "common": [
+            "youngster"
+          ],
+          "rare": [],
+          "super_rare": [],
+          "ultra_rare": [],
+          "uncommon": []
+        },
         "transitions": null,
         "visualTemplate": null
       },
       {
         "background": null,
         "contentVersion": "1.0.0",
-        "encounterPools": null,
+        "encounterPools": {
+          "boss": {
+            "all": [
+              "ninetales",
+              "arcanine",
+              "rapidash",
+              "magcargo",
+              "camerupt",
+              "torkoal",
+              "magmortar",
+              "simisear",
+              "heatmor",
+              "salazzle",
+              "turtonator",
+              "coalossal",
+              "alola_dugtrio"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "boss_rare": {
+            "all": [
+              "charizard",
+              "flareon",
+              "typhlosion",
+              "infernape",
+              "emboar",
+              "volcarona",
+              "delphox",
+              "incineroar",
+              "cinderace",
+              "armarouge",
+              "hisui_arcanine"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "boss_super_rare": {
+            "all": [
+              "moltres",
+              "heatran",
+              "volcanion",
+              "chi_yu"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "boss_ultra_rare": {
+            "all": [
+              "reshiram"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "common": {
+            "all": [
+              "vulpix",
+              "growlithe",
+              "ponyta",
+              "slugma",
+              "poochyena",
+              "numel",
+              "spoink",
+              "swablu",
+              "rolycoly"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "rare": {
+            "all": [
+              "charmander",
+              "cyndaquil",
+              "chimchar",
+              "tepig",
+              "fennekin",
+              "litten",
+              "scorbunny",
+              "charcadet"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "super_rare": {
+            "all": [
+              "flareon",
+              "larvesta",
+              "hisui_growlithe"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "ultra_rare": {
+            "all": [
+              "moltres",
+              "heatran",
+              "volcanion",
+              "chi_yu"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "uncommon": {
+            "all": [
+              "magmar",
+              "meditite",
+              "torkoal",
+              "pansear",
+              "heatmor",
+              "salandit",
+              "turtonator",
+              "alola_diglett"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          }
+        },
         "extensions": {
           "upstreamEnumRef": {
             "repository": "https://github.com/pagefaultgames/pokerogue",
@@ -28322,14 +33328,169 @@
           "route.volcano.ice_cave.2"
         ],
         "schemaVersion": "1.0.0",
-        "trainerPools": null,
+        "trainerPools": {
+          "boss": [
+            "blaine",
+            "flannery",
+            "kabu"
+          ],
+          "boss_rare": [],
+          "boss_super_rare": [],
+          "boss_ultra_rare": [],
+          "common": [
+            "firebreather",
+            "hiker"
+          ],
+          "rare": [
+            "breeder"
+          ],
+          "super_rare": [],
+          "ultra_rare": [],
+          "uncommon": [
+            "dragon_tamer"
+          ]
+        },
         "transitions": null,
         "visualTemplate": null
       },
       {
         "background": null,
         "contentVersion": "1.0.0",
-        "encounterPools": null,
+        "encounterPools": {
+          "boss": {
+            "all": [
+              "dragonite",
+              "flygon",
+              "garchomp",
+              "haxorus",
+              "drampa",
+              "baxcalibur"
+            ],
+            "dawn": [
+              "salamence",
+              "goodra",
+              "kommo_o"
+            ],
+            "day": [
+              "salamence",
+              "goodra",
+              "kommo_o"
+            ],
+            "dusk": [
+              "tyranitar",
+              "dragapult"
+            ],
+            "night": [
+              "tyranitar",
+              "dragapult"
+            ]
+          },
+          "boss_rare": {
+            "all": [
+              "aerodactyl",
+              "druddigon",
+              "tyrantrum",
+              "dracozolt",
+              "dracovish"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "boss_super_rare": {
+            "all": [
+              "regidrago"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "boss_ultra_rare": {
+            "all": [
+              "dialga"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "common": {
+            "all": [
+              "vibrava",
+              "gible",
+              "axew"
+            ],
+            "dawn": [
+              "bagon",
+              "goomy",
+              "jangmo_o"
+            ],
+            "day": [
+              "bagon",
+              "goodra",
+              "jangmo_o"
+            ],
+            "dusk": [
+              "larvitar"
+            ],
+            "night": [
+              "larvitar"
+            ]
+          },
+          "rare": {
+            "all": [
+              "dratini",
+              "frigibax"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [
+              "dreepy"
+            ],
+            "night": [
+              "dreepy"
+            ]
+          },
+          "super_rare": {
+            "all": [
+              "aerodactyl",
+              "druddigon",
+              "tyrunt",
+              "dracozolt",
+              "dracovish"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "ultra_rare": {
+            "all": [
+              "regidrago"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [],
+            "night": []
+          },
+          "uncommon": {
+            "all": [
+              "swablu",
+              "drampa",
+              "cyclizar"
+            ],
+            "dawn": [],
+            "day": [],
+            "dusk": [
+              "deino"
+            ],
+            "night": [
+              "deino"
+            ]
+          }
+        },
         "extensions": {
           "upstreamEnumRef": {
             "repository": "https://github.com/pagefaultgames/pokerogue",
@@ -28379,7 +33540,24 @@
           "route.wasteland.badlands.1"
         ],
         "schemaVersion": "1.0.0",
-        "trainerPools": null,
+        "trainerPools": {
+          "boss": [
+            "clair",
+            "drayden",
+            "raihan"
+          ],
+          "boss_rare": [],
+          "boss_super_rare": [],
+          "boss_ultra_rare": [],
+          "common": [
+            "dragon_tamer",
+            "veteran"
+          ],
+          "rare": [],
+          "super_rare": [],
+          "ultra_rare": [],
+          "uncommon": []
+        },
         "transitions": null,
         "visualTemplate": null
       }
@@ -471290,6 +476468,10 @@
   },
   "contentVersion": "1.0.0",
   "extensions": {
+    "biomePoolReferenceAudit": {
+      "referenceCount": 1749,
+      "status": "COMPLETE_AND_VALIDATED"
+    },
     "importedProgression": {
       "source": "src/init/init-biomes.ts",
       "waveCatalog": "NOT_DECLARED_UPSTREAM"

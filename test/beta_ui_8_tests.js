@@ -169,6 +169,12 @@ export function registerBetaUI8Tests(test) {
     assert.ok(imported.canonicalContent.sourceSnapshot.sources.some(source => source.repository === 'pokerogue-locales' && source.sourcePath === 'en/biomes.json'));
     assert.ok(imported.biomes.every(item => item.extensions.upstreamLocaleRef?.sha256 && item.extensions.upstreamEnumRef?.sha256));
     assert.ok(imported.biomes.some(item => item.extensions.upstreamRawRecord.value.includes('const pokemonPool')));
+    const plains = imported.biomes.find(item => item.id === 'plains');
+    assert.deepStrictEqual(plains.encounterPools.common.dawn, ['sentret', 'yungoos', 'skwovet']);
+    assert.deepStrictEqual(plains.encounterPools.common.all, ['zigzagoon', 'bidoof', 'lechonk']);
+    assert.deepStrictEqual(plains.trainerPools.common, ['breeder', 'twins']);
+    assert.strictEqual(plains.provenance.sourceSymbol, 'plainsBiome');
+    assert.ok(Object.values(plains.encounterPools).every(tier => ['dawn', 'day', 'dusk', 'night', 'all'].every(time => Array.isArray(tier[time]))));
     assert.ok(imported.routes.every(item => imported.biomes.some(biome => biome.id === item.from) && imported.biomes.some(biome => biome.id === item.to)));
     const registry = new ProgressionContentRegistry();
     assert.strictEqual(registry.loadCanonicalContent(imported.canonicalContent), imported.biomes.length + imported.routes.length);
