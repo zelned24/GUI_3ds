@@ -13,6 +13,7 @@ struct PokeroguePoolResolution {
     uint16_t poolSize;
     uint16_t memberIndex;
     uint16_t tierRoll;
+    uint8_t legendRerolls;
     bool valid;
 };
 
@@ -22,27 +23,43 @@ public:
     // ALL-then-time pool composition and randSeedItem member draw. Callers own
     // stream setup and preceding upstream draws (wave-1 double check).
     static PokeroguePoolResolution resolveNonBoss(const char* biomeId,
-        PokerogueTimeOfDay time, PokerogueRngAdapter& rng) {
+        PokerogueTimeOfDay time, uint32_t adjustedWave, PokerogueRngAdapter& rng) {
         static const char* const tiers[] = {
             "common", "uncommon", "rare", "super_rare", "ultra_rare"
         };
         const char* timeId = time == PokerogueTimeOfDay::Day ? "day"
             : time == PokerogueTimeOfDay::Dusk ? "dusk"
             : time == PokerogueTimeOfDay::Night ? "night" : "dawn";
-        const uint16_t roll = static_cast<uint16_t>(rng.randSeedInt(512));
-        uint8_t tierIndex = roll >= 156 ? 0 : roll >= 32 ? 1
-            : roll >= 6 ? 2 : roll >= 1 ? 3 : 4;
-        const uint8_t requested = tierIndex;
-        uint16_t count = 0;
-        for (;;) {
-            count = countMembers(biomeId, tiers[tierIndex], timeId);
-            if (count || tierIndex == 0) break;
-            --tierIndex;
+        for (uint8_t attempt = 0; attempt <= 10; ++attempt) {
+            const uint16_t roll = static_cast<uint16_t>(rng.randSeedInt(512));
+            uint8_t tierIndex = roll >= 156 ? 0 : roll >= 32 ? 1
+                : roll >= 6 ? 2 : roll >= 1 ? 3 : 4;
+            const uint8_t requested = tierIndex;
+            uint16_t count = 0;
+            for (;;) {
+                count = countMembers(biomeId, tiers[tierIndex], timeId);
+                if (count || tierIndex == 0) break;
+                --tierIndex;
+            }
+            if (!count) return {nullptr, tiers[requested], tiers[tierIndex], 0, 0, roll, attempt, false};
+            const uint16_t selected = static_cast<uint16_t>(rng.pickIndex(count));
+            const char* speciesId = memberAt(biomeId, tiers[tierIndex], timeId, selected);
+            const auto* species = findSpecies(speciesId);
+            if (!species || !species->baseTotal) {
+                return {speciesId, tiers[requested], tiers[tierIndex], count, selected, roll, attempt, false};
+            }
+            // Pinned PokemonSpecies constructor defaults omitted rarity flags
+            // to false. The canonical record still preserves their null/raw
+            // origin, while runtime follows that explicit upstream default.
+            const bool legendLike = species->legendary == 1 || species->subLegendary == 1
+                || species->mythical == 1;
+            const bool incompatible = legendLike
+                && (species->baseTotal >= 660 ? adjustedWave < 80 : adjustedWave < 55);
+            if (incompatible && attempt < 10) continue;
+            return {speciesId, tiers[requested], tiers[tierIndex], count, selected,
+                    roll, attempt, speciesId != nullptr};
         }
-        if (!count) return {nullptr, tiers[requested], tiers[tierIndex], 0, 0, roll, false};
-        const uint16_t selected = static_cast<uint16_t>(rng.pickIndex(count));
-        const char* species = memberAt(biomeId, tiers[tierIndex], timeId, selected);
-        return {species, tiers[requested], tiers[tierIndex], count, selected, roll, species != nullptr};
+        return {nullptr, "unsupported", "unsupported", 0, 0, 0, 10, false};
     }
 
     // Battle.getLevelForWave non-boss branch for Classic difficulty waves.
@@ -64,6 +81,14 @@ public:
     }
 
 private:
+    static const PokerogueContent::Species* findSpecies(const char* speciesId) {
+        if (!speciesId) return nullptr;
+        for (std::size_t i = 0; i < PokerogueContent::kSpeciesCount; ++i) {
+            if (same(PokerogueContent::kSpecies[i].id, speciesId)) return &PokerogueContent::kSpecies[i];
+        }
+        return nullptr;
+    }
+
     static bool same(const char* left, const char* right) {
         if (!left || !right) return left == right;
         while (*left && *right && *left == *right) { ++left; ++right; }

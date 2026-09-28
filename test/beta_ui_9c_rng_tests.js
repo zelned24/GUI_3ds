@@ -125,6 +125,12 @@ export function registerBetaUI9CRngTests(test) {
     let levelRandomSum = 0;
     for (let i = 0; i < 10; i++) levelRandomSum += levelRng.frac();
     const expectedLevel = Math.max(Math.round(1 + 1 / 2 + (1 / 25) ** 2 + Math.abs(levelRandomSum / 10)), 1);
+    const fractionalDeviationRng = phaserReference(shiftedSeed(rootSeed, 88));
+    for (let i = 0; i < 16; i++) fractionalDeviationRng.int(62);
+    const fractionalDeviation = 10 / 11;
+    let fractionalDeviationSum = 0;
+    for (let i = fractionalDeviation; i > 0; i--) fractionalDeviationSum += fractionalDeviationRng.frac();
+    const expectedWave11Level = Math.max(Math.round(1 + 11 / 2 + (11 / 25) ** 2 + Math.abs(fractionalDeviationSum / fractionalDeviation)), 1);
     const memory = new Uint8Array(api.memory.buffer);
     const ptr = api.harness_wave1_species_id();
     let end = ptr; while (memory[end]) end++;
@@ -147,7 +153,50 @@ export function registerBetaUI9CRngTests(test) {
     close(api.harness_wave1_next_fraction_after_tier(), nextMemberFraction, 'member draw starts at next matching Phaser fraction');
     assert.equal(api.harness_wave1_pool_size(), pool.length, 'candidate pool is real Town ALL entries followed by time entries');
     assert.equal(api.harness_wave1_member_index(), memberIndex, 'Arena member choice consumes the next draw if needed');
+    assert.equal(api.harness_wave1_legend_rerolls(), 0, 'Town wave-1 pool candidate needs no LegendLike/BST reroll');
     assert.equal(actualSpecies, pool[memberIndex], 'native candidate matches pinned source pool order and Phaser draws');
     assert.equal(api.harness_wave1_non_boss_level(), expectedLevel, 'Battle.getLevelForWave uses the battle-scoped seed and randSeedGaussForLevel draw count');
+    assert.equal(api.harness_wave11_non_boss_level(), expectedWave11Level, 'fractional randSeedGaussForLevel deviation consumes the pinned loop draw count');
+
+    // A second pinned real biome/seed deliberately selects Latios first;
+    // Arena.checkLegendBST must consume a fresh tier/member draw and reroll.
+    const rerollSeed = 'reroll-146';
+    const rerollRoot = phaserReference(rerollSeed);
+    const rerollOffset = rerollRoot.int(8) * 5;
+    const rerollCycle = (1 + rerollOffset) % 40;
+    const rerollTime = rerollCycle < 15 ? 'day' : rerollCycle < 20 ? 'dusk' : rerollCycle < 35 ? 'night' : 'dawn';
+    const rerollRng = phaserReference(shiftedSeed(rerollSeed, 1));
+    rerollRng.int(8);
+    const plains = canonical.collections.biomes.find(entry => entry.id === 'plains');
+    const speciesById = new Map(canonical.collections.species.map(species => [species.id, species]));
+    let expectedRerolls = 0;
+    let expectedFinalSpecies = null;
+    for (let attempt = 0; attempt <= 10; attempt++) {
+      const roll = rerollRng.int(512);
+      let index = roll >= 156 ? 0 : roll >= 32 ? 1 : roll >= 6 ? 2 : roll >= 1 ? 3 : 4;
+      let rerollPool;
+      do {
+        const tierPools = plains.encounterPools[tiers[index]] || {};
+        rerollPool = [...(tierPools.all || []), ...(tierPools[rerollTime] || [])];
+        if (rerollPool.length || index === 0) break;
+        index--;
+      } while (index >= 0);
+      assert.ok(rerollPool.length, 'pinned Plains pool is non-empty after tier downgrade');
+      const id = rerollPool.length > 1 ? rerollPool[rerollRng.int(rerollPool.length)] : rerollPool[0];
+      const species = speciesById.get(id);
+      assert.ok(species, `canonical species exists for Plains pool member ${id}`);
+      const legendLike = species.rarity.legendary === true || species.rarity.subLegendary === true || species.rarity.mythical === true;
+      const incompatible = legendLike && (species.baseTotal >= 660 ? 1 < 80 : 1 < 55);
+      if (incompatible && attempt < 10) { expectedRerolls++; continue; }
+      expectedFinalSpecies = id;
+      break;
+    }
+    const rerollMemory = new Uint8Array(api.memory.buffer);
+    const rerollPtr = api.harness_legend_reroll_species_id();
+    let rerollEnd = rerollPtr; while (rerollMemory[rerollEnd]) rerollEnd++;
+    assert.equal(expectedRerolls, 1, 'independent source trace exercises exactly one high-BST LegendLike retry');
+    assert.equal(expectedFinalSpecies, 'zubat', 'pinned retry trace resolves to the next real Plains pool member');
+    assert.equal(api.harness_legend_reroll_count(), expectedRerolls, 'native Arena resolver retries high-BST legendary candidates');
+    assert.equal(new TextDecoder().decode(rerollMemory.subarray(rerollPtr, rerollEnd)), expectedFinalSpecies);
   });
 }

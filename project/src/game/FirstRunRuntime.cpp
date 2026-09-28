@@ -94,7 +94,19 @@ void FirstRunRuntime::resolve() {
     PokerogueSeedOffsetScope waveScope(waveRng, m_seedCodeUnits.data(), m_seedLength, m_run.wave);
     if (!waveScope.valid()) return;
     m_doubleBattle = waveRng.randSeedInt(8) == 0; // Classic default chance, zero party luck.
-    const auto pool = PokerogueEncounterResolver::resolveNonBoss("town", time, waveRng);
+    // Battle constructor runs in a separate waveIndex<<3 seed scope. Its
+    // battleSeed initializer consumes 16 draws before getLevelForWave().
+    PokerogueRngAdapter levelRng;
+    PokerogueSeedOffsetScope levelScope(levelRng, m_seedCodeUnits.data(), m_seedLength,
+                                         static_cast<uint32_t>(m_run.wave) << 3);
+    if (!levelScope.valid()) return;
+    for (uint8_t i = 0; i < 16; ++i) (void)levelRng.randSeedInt(62);
+    const uint16_t level = PokerogueEncounterResolver::nonBossLevelForWave(m_run.wave, levelRng);
+
+    // Arena.randomSpecies evaluates the level before selecting the pool and
+    // uses it for the post-selection LegendLike/BST gate.
+    const auto pool = PokerogueEncounterResolver::resolveNonBoss(
+        "town", time, m_run.wave, waveRng);
     if (!pool.valid || !pool.speciesId) return;
 
     std::size_t enemyIndex = PokerogueContent::kSpeciesCount;
@@ -106,15 +118,6 @@ void FirstRunRuntime::resolve() {
     }
     if (enemyIndex == PokerogueContent::kSpeciesCount) return;
     const auto& enemy = PokerogueContent::kSpecies[enemyIndex];
-
-    // Battle constructor runs in a separate waveIndex<<3 seed scope. Its
-    // battleSeed initializer consumes 16 draws before getLevelForWave().
-    PokerogueRngAdapter levelRng;
-    PokerogueSeedOffsetScope levelScope(levelRng, m_seedCodeUnits.data(), m_seedLength,
-                                         static_cast<uint32_t>(m_run.wave) << 3);
-    if (!levelScope.valid()) return;
-    for (uint8_t i = 0; i < 16; ++i) (void)levelRng.randSeedInt(62);
-    const uint16_t level = PokerogueEncounterResolver::nonBossLevelForWave(m_run.wave, levelRng);
 
     m_run.encounterDex = enemy.dex;
     const std::string enemyLocaleId = std::string("pokemon:") + enemy.id;
@@ -137,7 +140,7 @@ void FirstRunRuntime::buildScene() {
     m_text[4] = line;
     m_text[5] = "LEFT/RIGHT: choose upstream starter";
     m_text[6] = m_encounterResolved
-        ? (m_doubleBattle ? "Double battle needs second enemy slot" : "Rarity/evolution rerolls pending")
+        ? (m_doubleBattle ? "Double battle needs second enemy slot" : "Evolution substitution pending")
         : "Encounter inputs unsupported - no fallback used";
     m_text[7] = std::string("Pinned data: ") + PokerogueContent::kPokerogueRevision;
 

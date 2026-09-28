@@ -3,6 +3,7 @@
 
 namespace {
 const uint16_t kSeed[] = {'p','o','k','e','r','o','g','u','e','-','r','n','g','-','v','1'};
+const uint16_t kRerollSeed[] = {'r','e','r','o','l','l','-','1','4','6'};
 struct Wave1Trace {
     uint8_t cycleOffset;
     uint8_t timeOfDay;
@@ -21,8 +22,19 @@ Wave1Trace makeWave1Trace() {
         sizeof(kSeed) / sizeof(kSeed[0]), 1);
     trace.doubleRoll = static_cast<uint8_t>(rng.randSeedInt(8));
     trace.doubleBattle = trace.doubleRoll == 0;
-    trace.pool = Pokerogue3DS::PokerogueEncounterResolver::resolveNonBoss("town", time, rng);
+    trace.pool = Pokerogue3DS::PokerogueEncounterResolver::resolveNonBoss("town", time, 1, rng);
     return trace;
+}
+Pokerogue3DS::PokeroguePoolResolution makeLegendRerollTrace() {
+    uint8_t offset = 0;
+    Pokerogue3DS::PokerogueWaveClock::deriveCycleOffset(
+        kRerollSeed, sizeof(kRerollSeed) / sizeof(kRerollSeed[0]), offset);
+    const auto time = Pokerogue3DS::PokerogueWaveClock::timeOfDay(1, offset);
+    Pokerogue3DS::PokerogueRngAdapter rng;
+    Pokerogue3DS::PokerogueSeedOffsetScope wave(rng, kRerollSeed,
+        sizeof(kRerollSeed) / sizeof(kRerollSeed[0]), 1);
+    (void)rng.randSeedInt(8);
+    return Pokerogue3DS::PokerogueEncounterResolver::resolveNonBoss("plains", time, 1, rng);
 }
 Pokerogue3DS::PokerogueRngAdapter makeSeeded() {
     Pokerogue3DS::PokerogueRngAdapter rng;
@@ -141,6 +153,7 @@ uint32_t harness_wave1_double_battle() { return makeWave1Trace().doubleBattle; }
 uint32_t harness_wave1_tier_roll() { return makeWave1Trace().pool.tierRoll; }
 uint32_t harness_wave1_member_index() { return makeWave1Trace().pool.memberIndex; }
 uint32_t harness_wave1_pool_size() { return makeWave1Trace().pool.poolSize; }
+uint32_t harness_wave1_legend_rerolls() { return makeWave1Trace().pool.legendRerolls; }
 const char* harness_wave1_species_id() { return makeWave1Trace().pool.speciesId; }
 double harness_wave1_next_fraction_after_tier() {
     Pokerogue3DS::PokerogueRngAdapter rng;
@@ -165,4 +178,12 @@ uint32_t harness_wave1_non_boss_level() {
     for (uint8_t i = 0; i < 16; ++i) (void)rng.randSeedInt(62);
     return Pokerogue3DS::PokerogueEncounterResolver::nonBossLevelForWave(1, rng);
 }
+uint32_t harness_wave11_non_boss_level() {
+    Pokerogue3DS::PokerogueRngAdapter rng;
+    Pokerogue3DS::PokerogueSeedOffsetScope scope(rng, kSeed, 16, 88);
+    for (uint8_t i = 0; i < 16; ++i) (void)rng.randSeedInt(62);
+    return Pokerogue3DS::PokerogueEncounterResolver::nonBossLevelForWave(11, rng);
+}
+uint32_t harness_legend_reroll_count() { return makeLegendRerollTrace().legendRerolls; }
+const char* harness_legend_reroll_species_id() { return makeLegendRerollTrace().speciesId; }
 }
