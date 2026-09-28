@@ -76,6 +76,11 @@ const char* FirstRunRuntime::locale(const char* canonicalId, const char* fallbac
 }
 
 void FirstRunRuntime::resolve() {
+    m_encounterResolved = false;
+    m_doubleBattle = false;
+    m_secondEncounterResolved = false;
+    m_context.enemy = {};
+    m_context.secondEnemy = {};
     const auto& starter = PokerogueContent::kSpecies[m_starterIndex];
     m_run.starterDex = starter.dex;
     m_context.modeName = locale("gameMode:classic", "Classic");
@@ -102,6 +107,8 @@ void FirstRunRuntime::resolve() {
     if (!levelScope.valid()) return;
     for (uint8_t i = 0; i < 16; ++i) (void)levelRng.randSeedInt(62);
     const uint16_t level = PokerogueEncounterResolver::nonBossLevelForWave(m_run.wave, levelRng);
+    const uint16_t secondLevel = m_doubleBattle
+        ? PokerogueEncounterResolver::nonBossLevelForWave(m_run.wave, levelRng) : 0;
 
     // Arena.randomSpecies evaluates the level before selecting the pool and
     // uses it for the post-selection LegendLike/BST gate.
@@ -125,6 +132,27 @@ void FirstRunRuntime::resolve() {
     m_run.encounterDex = enemy.dex;
     const std::string enemyLocaleId = std::string("pokemon:") + enemy.id;
     m_context.enemy = {enemy.dex, level, enemy.id, locale(enemyLocaleId.c_str(), enemy.name), enemy.firstFormId, enemy.assetSourcePath};
+    if (m_doubleBattle) {
+        const auto secondPool = PokerogueEncounterResolver::resolveNonBoss(
+            "town", time, m_run.wave, waveRng);
+        if (!secondPool.valid || !secondPool.speciesId) return;
+        const char* secondSpeciesId = PokerogueEncounterResolver::resolveWildSpeciesForLevel(
+            secondPool.speciesId, secondLevel, true, waveRng);
+        if (!secondSpeciesId) return;
+        std::size_t secondIndex = PokerogueContent::kSpeciesCount;
+        for (std::size_t i = 0; i < PokerogueContent::kSpeciesCount; ++i) {
+            if (std::string(PokerogueContent::kSpecies[i].id) == secondSpeciesId) {
+                secondIndex = i;
+                break;
+            }
+        }
+        if (secondIndex == PokerogueContent::kSpeciesCount) return;
+        const auto& second = PokerogueContent::kSpecies[secondIndex];
+        const std::string secondLocaleId = std::string("pokemon:") + second.id;
+        m_context.secondEnemy = {second.dex, secondLevel, second.id,
+            locale(secondLocaleId.c_str(), second.name), second.firstFormId, second.assetSourcePath};
+        m_secondEncounterResolved = true;
+    }
     m_encounterResolved = true;
 }
 
@@ -142,9 +170,16 @@ void FirstRunRuntime::buildScene() {
     }
     m_text[4] = line;
     m_text[5] = "LEFT/RIGHT: choose upstream starter";
-    m_text[6] = m_encounterResolved
-        ? (m_doubleBattle ? "Double battle needs second enemy slot" : "Wild evolution rules applied")
-        : "Encounter inputs unsupported - no fallback used";
+    if (m_doubleBattle && m_secondEncounterResolved) {
+        std::snprintf(line, sizeof(line), "2nd: %s Lv. %u", m_context.secondEnemy.localizedName,
+                      static_cast<unsigned>(m_context.secondEnemy.level));
+        m_text[6] = line;
+    } else {
+        m_text[6] = m_doubleBattle && m_encounterResolved
+            ? "Second slot unsupported - no fallback"
+            : m_encounterResolved ? "Wild evolution rules applied"
+                                  : "Encounter inputs unsupported - no fallback used";
+    }
     m_text[7] = std::string("Pinned data: ") + PokerogueContent::kPokerogueRevision;
 
     static const char* ids[] = {"run-title", "mode", "biome", "starter", "encounter", "controls", "status", "source"};

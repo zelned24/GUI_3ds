@@ -5,6 +5,7 @@ namespace {
 const uint16_t kSeed[] = {'p','o','k','e','r','o','g','u','e','-','r','n','g','-','v','1'};
 const uint16_t kRerollSeed[] = {'r','e','r','o','l','l','-','1','4','6'};
 const uint16_t kEvolutionSeed[] = {'e','v','o','-','1'};
+const uint16_t kDoubleSeed[] = {'d','o','u','b','l','e','-','0'};
 struct Wave1Trace {
     uint8_t cycleOffset;
     uint8_t timeOfDay;
@@ -41,6 +42,33 @@ Pokerogue3DS::PokerogueRngAdapter makeSeeded() {
     Pokerogue3DS::PokerogueRngAdapter rng;
     rng.sow(kSeed, sizeof(kSeed) / sizeof(kSeed[0]));
     return rng;
+}
+struct Wave1DoubleTrace {
+    uint8_t doubleRoll;
+    uint16_t firstLevel;
+    uint16_t secondLevel;
+    const char* firstSpecies;
+    const char* secondSpecies;
+};
+Wave1DoubleTrace makeWave1DoubleTrace() {
+    Wave1DoubleTrace trace{};
+    uint8_t offset = 0;
+    Pokerogue3DS::PokerogueWaveClock::deriveCycleOffset(kDoubleSeed, 8, offset);
+    const auto time = Pokerogue3DS::PokerogueWaveClock::timeOfDay(1, offset);
+    Pokerogue3DS::PokerogueRngAdapter levelRng;
+    Pokerogue3DS::PokerogueSeedOffsetScope levelScope(levelRng, kDoubleSeed, 8, 8);
+    for (uint8_t i = 0; i < 16; ++i) (void)levelRng.randSeedInt(62);
+    trace.firstLevel = Pokerogue3DS::PokerogueEncounterResolver::nonBossLevelForWave(1, levelRng);
+    trace.secondLevel = Pokerogue3DS::PokerogueEncounterResolver::nonBossLevelForWave(1, levelRng);
+
+    Pokerogue3DS::PokerogueRngAdapter encounterRng;
+    Pokerogue3DS::PokerogueSeedOffsetScope encounterScope(encounterRng, kDoubleSeed, 8, 1);
+    trace.doubleRoll = static_cast<uint8_t>(encounterRng.randSeedInt(8));
+    const auto firstPool = Pokerogue3DS::PokerogueEncounterResolver::resolveNonBoss("town", time, 1, encounterRng);
+    trace.firstSpecies = firstPool.valid ? Pokerogue3DS::PokerogueEncounterResolver::resolveWildSpeciesForLevel(firstPool.speciesId, trace.firstLevel, true, encounterRng) : nullptr;
+    const auto secondPool = Pokerogue3DS::PokerogueEncounterResolver::resolveNonBoss("town", time, 1, encounterRng);
+    trace.secondSpecies = secondPool.valid ? Pokerogue3DS::PokerogueEncounterResolver::resolveWildSpeciesForLevel(secondPool.speciesId, trace.secondLevel, true, encounterRng) : nullptr;
+    return trace;
 }
 }
 
@@ -206,4 +234,9 @@ const char* harness_level_evolution_species() {
     rng.sow(kEvolutionSeed, sizeof(kEvolutionSeed) / sizeof(kEvolutionSeed[0]));
     return Pokerogue3DS::PokerogueEncounterResolver::resolveWildSpeciesForLevel("bulbasaur", 18, true, rng);
 }
+uint32_t harness_test_double_wave1_roll() { return makeWave1DoubleTrace().doubleRoll; }
+uint32_t harness_wave1_double_first_level() { return makeWave1DoubleTrace().firstLevel; }
+uint32_t harness_wave1_double_second_level() { return makeWave1DoubleTrace().secondLevel; }
+const char* harness_wave1_double_first_species() { return makeWave1DoubleTrace().firstSpecies; }
+const char* harness_wave1_double_second_species() { return makeWave1DoubleTrace().secondSpecies; }
 }

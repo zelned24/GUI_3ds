@@ -4,7 +4,7 @@
 
 - **Current:** the native C++ first-run path uses pinned Phaser RNG, Classic wave clock, Town pool selection, non-boss level generation, LegendLike/BST rerolls and wild species evolution/pre-evolution substitution. It presents a resolved species/level candidate; actual battle execution remains incomplete.
 - **Target:** reproduce the pinned Phaser 3.90.0 random stream and PokéRogue's seed-offset mechanics in a small C++ boundary suitable for the 3DS runtime.
-- **Gap:** double-battle second slot, trainer/boss selection and battle execution are not yet integrated. Startup trace confirms Classic begins at Town (unless `STARTING_BIOME_OVERRIDE` is active); Plains in `BattleScene.launchBattle()` is only a provisional background.
+- **Gap:** trainer/boss selection and battle execution are not yet integrated. Startup trace confirms Classic begins at Town (unless `STARTING_BIOME_OVERRIDE` is active); Plains in `BattleScene.launchBattle()` is only a provisional background.
 - **Sources:** PokéRogue `8555c08c823b856cbec4eb99ca84ea52a955836d`; Phaser `v3.90.0`.
 - **Risk:** C++ output could appear deterministic while disagreeing with upstream due to UTF-16 seed shifts, two-draw `frac()`, range boundaries, singleton short-circuiting or stream restoration.
 - **Proof:** fixed values derived from Phaser's pinned `sow/hash/rnd/frac/integerInRange/pick/state` source are checked against the actual C++ adapter compiled to WebAssembly; the same header is syntax-checked with devkitARM.
@@ -37,13 +37,12 @@ Additional C++ assertions cover state restoration, singleton/range no-draw behav
 
 ## Explicit limits
 
-This is still **not full encounter parity**. C++ resolves a real biome-pool species, applies the pinned rarity/BST retry and wild evolution/pre-evolution substitution; 488 canonical evolution edges are embedded in the runtime content table. Tests compare forced-prevolution and level-evolution cases to the pinned semantics. Double-battle second-slot resolution, trainer/boss selection and executable battle creation remain incomplete.
+This is still **not full encounter parity**. C++ resolves a real biome-pool species, applies the pinned rarity/BST retry and wild evolution/pre-evolution substitution; 488 canonical evolution edges are embedded in the runtime content table. Tests compare forced-prevolution and level-evolution cases to the pinned semantics. Wave-1 doubles now resolve both sequential enemy slots and levels with independent pinned comparison. Trainer/boss selection and executable battle creation remain incomplete.
 
 `npm ci` restored the exact locked dev dependency and removed the earlier `clang-wasm` environment block. The two existing assertions are reported as baseline failures, not bypassed.
 
 ## Next
 
 1. Startup trace completed: `TitlePhase.end()` selects Classic, `GameMode.getStartingBiome()` returns Town, then `SelectStarterPhase` establishes wave 1 and `Arena.init()` prepares the pool before `EncounterPhase`.
-2. Add double-battle second-slot resolution with pinned RNG ordering and tests.
-3. Port real trainer/boss species and trainer pool selection for Classic.
-4. Connect the resolved encounter to a battle state/phase implementation. Do not label the current pool candidate as a resolved battle encounter.
+2. Port real trainer/boss species and trainer pool selection for Classic.
+3. Connect the resolved encounter to a battle state/phase implementation. Do not label the current pool candidate as a resolved battle encounter.

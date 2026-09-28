@@ -86,6 +86,37 @@ function resolveWildSpeciesReference(canonical, speciesId, level, rng, allowEvol
     : speciesId;
 }
 
+function resolveArenaWildReference(canonical, biome, time, adjustedWave, rng, level) {
+  const tiers = ['common', 'uncommon', 'rare', 'super_rare', 'ultra_rare'];
+  for (let attempt = 0; attempt <= 10; attempt++) {
+    const roll = rng.int(512);
+    let tierIndex = roll >= 156 ? 0 : roll >= 32 ? 1 : roll >= 6 ? 2 : roll >= 1 ? 3 : 4;
+    let pool = [];
+    while (tierIndex >= 0) {
+      const tier = biome.encounterPools[tiers[tierIndex]] || {};
+      pool = [...(tier.all || []), ...(tier[time] || [])];
+      if (pool.length || tierIndex === 0) break;
+      tierIndex--;
+    }
+    if (!pool.length) throw new Error(`Empty pinned encounter pool for ${biome.id}`);
+    const speciesId = pool.length === 1 ? pool[0] : pool[rng.int(pool.length)];
+    const species = canonical.collections.species.find(record => record.id === speciesId);
+    const legendLike = species.rarity?.legendary === true || species.rarity?.subLegendary === true || species.rarity?.mythical === true;
+    const incompatible = legendLike && (species.baseTotal >= 660 ? adjustedWave < 80 : adjustedWave < 55);
+    if (incompatible && attempt < 10) continue;
+    return resolveWildSpeciesReference(canonical, speciesId, level, rng);
+  }
+  throw new Error('Arena.randomSpecies exceeded pinned retry bound');
+}
+
+function nonBossLevelReference(wave, rng) {
+  const baseLevel = 1 + wave / 2 + (wave / 25) ** 2;
+  const deviation = 10 / wave;
+  let sum = 0;
+  for (let i = deviation; i > 0; i--) sum += rng.frac();
+  return Math.max(Math.round(baseLevel + Math.abs(sum / deviation)), 1);
+}
+
 export function registerBetaUI9CRngTests(test) {
   test('BETA-UI-9C: Old 3DS Phaser RNG adapter matches pinned Phaser 3.90.0 golden vectors', async () => {
     const clang = resolveClang();
@@ -220,6 +251,26 @@ export function registerBetaUI9CRngTests(test) {
     const expectedEvolution = randomEvolutionLevel <= 18 ? chosenEvolution.targetSpeciesId : 'bulbasaur';
     assert.equal(readString(api.harness_level_evolution_species()), expectedEvolution,
       'wild-level evolution selection follows pinned randSeedItem and randSeedIntRange decisions');
+
+    const doubleSeed = 'double-0';
+    const doubleWaveRng = phaserReference(shiftedSeed(doubleSeed, 1));
+    const doubleBattleRoll = doubleWaveRng.int(8);
+    assert.equal(doubleBattleRoll, 0, 'fixed vector exercises Classic double battle');
+    const doubleLevelRng = phaserReference(shiftedSeed(doubleSeed, 8));
+    for (let i = 0; i < 16; i++) doubleLevelRng.int(62);
+    const expectedFirstLevel = nonBossLevelReference(1, doubleLevelRng);
+    const expectedSecondLevel = nonBossLevelReference(1, doubleLevelRng);
+    const doubleCycleOffset = phaserReference(doubleSeed).int(8) * 5;
+    const doubleCycle = (1 + doubleCycleOffset) % 40;
+    const doubleTime = doubleCycle < 15 ? 'day' : doubleCycle < 20 ? 'dusk' : doubleCycle < 35 ? 'night' : 'dawn';
+    const townBiome = canonical.collections.biomes.find(entry => entry.id === 'town');
+    const firstDoubleSpecies = resolveArenaWildReference(canonical, townBiome, doubleTime, 1, doubleWaveRng, expectedFirstLevel);
+    const secondDoubleSpecies = resolveArenaWildReference(canonical, townBiome, doubleTime, 1, doubleWaveRng, expectedSecondLevel);
+    assert.equal(api.harness_test_double_wave1_roll(), doubleBattleRoll);
+    assert.equal(api.harness_wave1_double_first_level(), expectedFirstLevel, 'double battle first level consumes first level Gaussian samples');
+    assert.equal(api.harness_wave1_double_second_level(), expectedSecondLevel, 'Battle constructor generates the second level from subsequent samples');
+    assert.equal(readString(api.harness_wave1_double_first_species()), firstDoubleSpecies, 'first double slot resolves first from wave encounter stream');
+    assert.equal(readString(api.harness_wave1_double_second_species()), secondDoubleSpecies, 'second double slot follows first slot RNG consumption');
 
     // A second pinned real biome/seed deliberately selects Latios first;
     // Arena.checkLegendBST must consume a fresh tier/member draw and reroll.

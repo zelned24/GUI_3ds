@@ -30,6 +30,7 @@ struct PresentationContext {
     const char* biomeName;
     ResolvedPokemon player;
     ResolvedPokemon enemy;
+    ResolvedPokemon secondEnemy;
 };
 
 // Native content-driven first-run adapter. It owns the text storage referenced by
@@ -58,6 +59,7 @@ private:
     std::size_t m_seedLength = 0;
     bool m_encounterResolved = false;
     bool m_doubleBattle = false;
+    bool m_secondEncounterResolved = false;
 };
 
 } // namespace Pokerogue3DS
