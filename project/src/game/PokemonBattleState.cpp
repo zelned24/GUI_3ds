@@ -193,12 +193,63 @@ PokemonTypeEffectivenessResult calculatePokemonTypeEffectiveness(
     const char* type2 = form ? form->type2 : species->type2;
     double first = 1.0;
     double second = 1.0;
+    const bool hasSecondType = type2 && *type2 && !sameText(type2, "NONE");
     if (!oneTypeEffectiveness(move->type, type1, first) ||
-        (type2 && *type2 && !oneTypeEffectiveness(move->type, type2, second))) {
+        (hasSecondType && !oneTypeEffectiveness(move->type, type2, second))) {
         return PokemonTypeEffectivenessResult::InvalidType;
     }
     outputMultiplier = first * second;
     return PokemonTypeEffectivenessResult::Ok;
+}
+
+PokemonDamageCoreResult calculatePokemonDamageCore(
+    const PokemonBattleState& attacker,
+    const PokemonBattleState& defender,
+    uint16_t moveId,
+    bool moveIsTypeless,
+    uint32_t& outputDamage) {
+    const auto* move = PokerogueContent::findMoveById(moveId);
+    if (!move) return PokemonDamageCoreResult::MissingMove;
+    if (move->category == PokerogueContent::MoveStatus || move->power <= 0) {
+        return PokemonDamageCoreResult::NonDamagingMove;
+    }
+    const auto* attackerSpecies = PokerogueContent::findSpeciesByDex(attacker.speciesDex);
+    const auto* defenderSpecies = PokerogueContent::findSpeciesByDex(defender.speciesDex);
+    if (!attackerSpecies || !defenderSpecies) return PokemonDamageCoreResult::MissingSpecies;
+    const auto* attackerForm = attacker.formId ? PokerogueContent::findFormById(attacker.formId) : nullptr;
+    if (attacker.formId && !attackerForm) return PokemonDamageCoreResult::InvalidType;
+
+    double baseDamage = 0.0;
+    if (calculatePokemonBaseDamage(attacker, defender, moveId, baseDamage) != PokemonBaseDamageResult::Ok) {
+        return PokemonDamageCoreResult::InvalidStats;
+    }
+    double typeMultiplier = 1.0;
+    if (calculatePokemonTypeEffectiveness(moveId, defender, typeMultiplier) != PokemonTypeEffectivenessResult::Ok) {
+        return PokemonDamageCoreResult::InvalidType;
+    }
+    if (typeMultiplier == 0.0) {
+        outputDamage = 0;
+        return PokemonDamageCoreResult::Ok;
+    }
+
+    double stabMultiplier = 1.0;
+    if (!moveIsTypeless && !sameText(move->type, "STELLAR")) {
+        const char* attackerType1 = attackerForm ? attackerForm->type1 : attackerSpecies->type1;
+        const char* attackerType2 = attackerForm ? attackerForm->type2 : attackerSpecies->type2;
+        if (sameText(move->type, attackerType1) ||
+            (attackerType2 && *attackerType2 && !sameText(attackerType2, "NONE") &&
+                sameText(move->type, attackerType2))) {
+            stabMultiplier = 1.5;
+        }
+    }
+
+    // Mirrors the pinned deterministic/simulated core: critical=1, random=1,
+    // weather/field/status/ability/item modifiers=1; toDmgValue floors with min 1.
+    const double adjusted = baseDamage * stabMultiplier * typeMultiplier;
+    if (adjusted > 4294967295.0) return PokemonDamageCoreResult::InvalidStats;
+    const uint32_t rounded = static_cast<uint32_t>(adjusted);
+    outputDamage = rounded ? rounded : 1;
+    return PokemonDamageCoreResult::Ok;
 }
 
 PokemonAbilitySelectionResult selectPokemonAbilityIndex(

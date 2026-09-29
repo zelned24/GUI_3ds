@@ -47,6 +47,17 @@ extern "C" int runPokemonBattleStateChecks() {
     typeEffectiveness = -1.0;
     if (Pokerogue3DS::calculatePokemonTypeEffectiveness(65535, damageTarget, typeEffectiveness) !=
         Pokerogue3DS::PokemonTypeEffectivenessResult::MissingMove || typeEffectiveness != -1.0) return 38;
+    damageTarget.speciesDex = 7; // Squirtle: Vine Whip is super-effective.
+    damageTarget.stats[2] = 12;
+    uint32_t coreDamage = 0;
+    const auto coreResult = Pokerogue3DS::calculatePokemonDamageCore(state, damageTarget, 22, false, coreDamage);
+    if (coreResult != Pokerogue3DS::PokemonDamageCoreResult::Ok) return 39;
+    if (coreDamage != 14) return 42;
+    if (Pokerogue3DS::calculatePokemonDamageCore(state, damageTarget, 22, true, coreDamage) !=
+        Pokerogue3DS::PokemonDamageCoreResult::Ok || coreDamage != 9) return 40;
+    damageTarget.speciesDex = 92;
+    if (Pokerogue3DS::calculatePokemonDamageCore(state, damageTarget, 33, false, coreDamage) !=
+        Pokerogue3DS::PokemonDamageCoreResult::Ok || coreDamage != 0) return 41;
 
     input.speciesDex = 6;
     input.formId = "charizard:mega_x";

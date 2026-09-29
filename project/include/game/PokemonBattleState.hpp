@@ -75,6 +75,16 @@ PokemonTypeEffectivenessResult calculatePokemonTypeEffectiveness(
     const PokemonBattleState& defender,
     double& outputMultiplier);
 
+enum class PokemonDamageCoreResult : uint8_t {
+    Ok = 0, MissingMove, MissingSpecies, NonDamagingMove, InvalidStats, InvalidType
+};
+PokemonDamageCoreResult calculatePokemonDamageCore(
+    const PokemonBattleState& attacker,
+    const PokemonBattleState& defender,
+    uint16_t moveId,
+    bool moveIsTypeless,
+    uint32_t& outputDamage);
+
 enum class PokemonAbilitySelectionResult : uint8_t { Ok = 0, MissingSpecies, InvalidHiddenRate };
 PokemonAbilitySelectionResult selectPokemonAbilityIndex(
     uint16_t speciesDex,
