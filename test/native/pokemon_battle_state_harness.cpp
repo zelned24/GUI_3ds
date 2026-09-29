@@ -388,5 +388,100 @@ extern "C" int runPokemonBattleStateChecks() {
         if (actorBattleState.ivs[i] != actorIdentity.ivs[i] ||
             actorBattleState.stats[i] != explicitNatureState.stats[i]) return 73;
     }
+
+    const auto dexFor = [](const char* id) -> uint16_t {
+        for (const auto& species : PokerogueContent::kSpecies) {
+            const char* a = species.id;
+            const char* b = id;
+            while (*a && *b && *a == *b) { ++a; ++b; }
+            if (*a == *b) return species.dex;
+        }
+        return 0;
+    };
+    const auto formAt = [](const char* speciesId, std::size_t ordinal) -> const char* {
+        for (const auto& form : PokerogueContent::kForms) {
+            const char* a = form.speciesId;
+            const char* b = speciesId;
+            while (*a && *b && *a == *b) { ++a; ++b; }
+            if (*a == *b) {
+                if (!ordinal) return form.id;
+                --ordinal;
+            }
+        }
+        return nullptr;
+    };
+    const uint16_t formSeed[] = {'f', 'o', 'r', 'm'};
+    PokerogueRngAdapter formRng;
+    formRng.sow(formSeed, sizeof(formSeed) / sizeof(formSeed[0]));
+    Pokerogue3DS::PokemonActorIdentity formActor{};
+    Pokerogue3DS::PokemonFormSelectionContext formContext{};
+    formActor.gender = PokemonGender::Female;
+    if (Pokerogue3DS::selectPokemonActorForm(dexFor("meowstic"), formContext, formRng, formActor) !=
+        Pokerogue3DS::PokemonFormSelectionResult::Ok ||
+        formActor.formId != formAt("meowstic", 1)) return 81;
+    formActor.gender = PokemonGender::Male;
+    if (Pokerogue3DS::selectPokemonActorForm(dexFor("meowstic"), formContext, formRng, formActor) !=
+        Pokerogue3DS::PokemonFormSelectionResult::Ok ||
+        formActor.formId != formAt("meowstic", 0)) return 82;
+
+    PokerogueRngAdapter formExpectedRng;
+    formExpectedRng.sow(formSeed, sizeof(formSeed) / sizeof(formSeed[0]));
+    const auto expectedUnownIndex = formExpectedRng.randSeedInt(28);
+    if (Pokerogue3DS::selectPokemonActorForm(dexFor("unown"), formContext, formRng, formActor) !=
+        Pokerogue3DS::PokemonFormSelectionResult::Ok) return 83;
+    if (formActor.formId != formAt("unown", static_cast<std::size_t>(expectedUnownIndex))) return 84;
+    const auto actualFormRngState = formRng.state();
+    const auto expectedFormRngState = formExpectedRng.state();
+    if (actualFormRngState.carry != expectedFormRngState.carry || actualFormRngState.s0 != expectedFormRngState.s0 ||
+        actualFormRngState.s1 != expectedFormRngState.s1 || actualFormRngState.s2 != expectedFormRngState.s2) return 85;
+
+    formContext = {};
+    formContext.biomeId = "beach";
+    if (Pokerogue3DS::selectPokemonActorForm(dexFor("wormadam"), formContext, formRng, formActor) !=
+        Pokerogue3DS::PokemonFormSelectionResult::Ok ||
+        formActor.formId != formAt("wormadam", 1)) return 86;
+    formContext.trainerBattle = true;
+    formContext.trainerSpecialtyType = "STEEL";
+    if (Pokerogue3DS::selectPokemonActorForm(dexFor("wormadam"), formContext, formRng, formActor) !=
+        Pokerogue3DS::PokemonFormSelectionResult::Ok ||
+        formActor.formId != formAt("wormadam", 2)) return 87;
+    formContext = {};
+    formContext.timeOfDay = "DUSK";
+    if (Pokerogue3DS::selectPokemonActorForm(dexFor("lycanroc"), formContext, formRng, formActor) !=
+        Pokerogue3DS::PokemonFormSelectionResult::Ok ||
+        formActor.formId != formAt("lycanroc", 2)) return 88;
+    formContext = {};
+    formContext.hasMysteryEncounters = true;
+    if (Pokerogue3DS::selectPokemonActorForm(dexFor("gimmighoul"), formContext, formRng, formActor) !=
+        Pokerogue3DS::PokemonFormSelectionResult::Ok ||
+        formActor.formId != formAt("gimmighoul", 1)) return 89;
+    formContext = {};
+    formContext.trainerBattle = true;
+    formContext.trainerSpecialtyType = "WATER";
+    if (Pokerogue3DS::selectPokemonActorForm(dexFor("rotom"), formContext, formRng, formActor) !=
+        Pokerogue3DS::PokemonFormSelectionResult::Ok ||
+        formActor.formId != formAt("rotom", 2)) return 90;
+    formContext = {};
+    if (Pokerogue3DS::selectPokemonActorForm(dexFor("toxtricity"), formContext, formRng, formActor) !=
+        Pokerogue3DS::PokemonFormSelectionResult::Ok ||
+        formActor.formId != formAt("toxtricity", 0)) return 91;
+    formContext.nature = Pokerogue3DS::PokemonNature::Timid;
+    if (Pokerogue3DS::selectPokemonActorForm(dexFor("toxtricity"), formContext, formRng, formActor) !=
+        Pokerogue3DS::PokemonFormSelectionResult::Ok ||
+        formActor.formId != formAt("toxtricity", 1)) return 92;
+    formContext = {};
+    formContext.trainerBattle = true;
+    formContext.waveIndex = 29;
+    if (Pokerogue3DS::selectPokemonActorForm(dexFor("pikachu"), formContext, formRng, formActor) !=
+        Pokerogue3DS::PokemonFormSelectionResult::Ok || formActor.formId != formAt("pikachu", 0)) return 93;
+    formActor.gender = PokemonGender::Female;
+    formActor.formId = formAt("meowstic", 1);
+    PokemonBattleInit selectedFormInput{};
+    selectedFormInput.speciesDex = dexFor("meowstic");
+    selectedFormInput.level = 10;
+    PokemonBattleState selectedFormState{};
+    if (Pokerogue3DS::initializePokemonBattleStateForActor(
+            selectedFormInput, formActor, selectedFormState) != PokemonBattleInitResult::Ok ||
+        selectedFormState.formId != formActor.formId) return 94;
     return 0;
 }

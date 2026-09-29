@@ -31,7 +31,32 @@ struct PokemonActorIdentity {
     uint8_t abilityIndex = 0;
     PokemonGender gender = PokemonGender::Unspecified;
     PokemonNature nature = PokemonNature::Unspecified;
+    const char* formId = nullptr;
 };
+
+struct PokemonFormSelectionContext {
+    const char* biomeId = nullptr;
+    const char* timeOfDay = nullptr;
+    const char* trainerSpecialtyType = nullptr;
+    PokemonNature nature = PokemonNature::Unspecified;
+    uint16_t waveIndex = 0;
+    bool trainerBattle = false;
+    bool hasMysteryEncounters = false;
+    bool eggPhase = false;
+    bool ignoreArena = false;
+};
+
+enum class PokemonFormSelectionResult : uint8_t {
+    Ok = 0, MissingSpecies, MissingForm
+};
+
+// Mirrors pinned BattleScene.getSpeciesFormIndex and stores the selected
+// imported form ID. Call after actor identity/gender and before shiny/nature.
+PokemonFormSelectionResult selectPokemonActorForm(
+    uint16_t speciesDex,
+    const PokemonFormSelectionContext& context,
+    PokerogueRngAdapter& rng,
+    PokemonActorIdentity& actor);
 
 // Call after upstream form and shiny steps, which precede nature generation.
 void generatePokemonActorNature(PokemonActorIdentity& actor, PokerogueRngAdapter& rng);

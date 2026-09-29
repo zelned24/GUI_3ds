@@ -131,6 +131,139 @@ void generatePokemonActorNature(PokemonActorIdentity& actor, PokerogueRngAdapter
     actor.nature = selectPokemonNature(rng);
 }
 
+PokemonFormSelectionResult selectPokemonActorForm(
+    uint16_t speciesDex,
+    const PokemonFormSelectionContext& context,
+    PokerogueRngAdapter& rng,
+    PokemonActorIdentity& actor) {
+    const auto* species = PokerogueContent::findSpeciesByDex(speciesDex);
+    if (!species) return PokemonFormSelectionResult::MissingSpecies;
+
+    std::size_t formCount = 0;
+    for (const auto& form : PokerogueContent::kForms) {
+        if (sameText(form.speciesId, species->id)) ++formCount;
+    }
+    if (!formCount) {
+        actor.formId = nullptr;
+        return PokemonFormSelectionResult::Ok;
+    }
+
+    const char* id = species->id;
+    int32_t index = 0;
+    bool selected = false;
+    const auto randomForms = [&]() {
+        index = rng.randSeedInt(static_cast<int32_t>(formCount));
+        selected = true;
+    };
+
+    // Trainer specialty forms run before the species' ordinary selection rule.
+    if (context.trainerBattle && !context.eggPhase && context.trainerSpecialtyType) {
+        if (sameText(id, "wormadam")) {
+            if (sameText(context.trainerSpecialtyType, "GROUND")) { index = 1; selected = true; }
+            else if (sameText(context.trainerSpecialtyType, "STEEL")) { index = 2; selected = true; }
+            else if (sameText(context.trainerSpecialtyType, "GRASS")) { index = 0; selected = true; }
+        } else if (sameText(id, "rotom")) {
+            if (sameText(context.trainerSpecialtyType, "FLYING")) { index = 4; selected = true; }
+            else if (sameText(context.trainerSpecialtyType, "GHOST")) { index = 0; selected = true; }
+            else if (sameText(context.trainerSpecialtyType, "FIRE")) { index = 1; selected = true; }
+            else if (sameText(context.trainerSpecialtyType, "WATER")) { index = 2; selected = true; }
+            else if (sameText(context.trainerSpecialtyType, "GRASS")) { index = 5; selected = true; }
+            else if (sameText(context.trainerSpecialtyType, "ICE")) { index = 3; selected = true; }
+        } else if (sameText(id, "oricorio")) {
+            if (sameText(context.trainerSpecialtyType, "GHOST")) { index = 3; selected = true; }
+            else if (sameText(context.trainerSpecialtyType, "FIRE")) { index = 0; selected = true; }
+            else if (sameText(context.trainerSpecialtyType, "ELECTRIC")) { index = 1; selected = true; }
+            else if (sameText(context.trainerSpecialtyType, "PSYCHIC")) { index = 2; selected = true; }
+        } else if (sameText(id, "paldea_tauros")) {
+            if (sameText(context.trainerSpecialtyType, "FIRE")) { index = 1; selected = true; }
+            else if (sameText(context.trainerSpecialtyType, "WATER")) { index = 2; selected = true; }
+        } else if (sameText(id, "silvally") || sameText(id, "arceus")) {
+            static const char* types[] = {"NORMAL", "FIGHTING", "FLYING", "POISON", "GROUND", "ROCK",
+                "BUG", "GHOST", "STEEL", "FIRE", "WATER", "GRASS", "ELECTRIC", "PSYCHIC", "ICE",
+                "DRAGON", "DARK", "FAIRY"};
+            for (std::size_t typeIndex = 0; typeIndex < sizeof(types) / sizeof(types[0]); ++typeIndex) {
+                if (sameText(context.trainerSpecialtyType, types[typeIndex])) {
+                    index = static_cast<int32_t>(typeIndex);
+                    selected = true;
+                    break;
+                }
+            }
+        }
+    }
+
+    if (!selected) {
+        if (sameText(id, "unown") || sameText(id, "shellos") || sameText(id, "gastrodon") ||
+            sameText(id, "rotom") || sameText(id, "basculin") || sameText(id, "deerling") ||
+            sameText(id, "sawsbuck") || sameText(id, "scatterbug") || sameText(id, "spewpa") ||
+            sameText(id, "vivillon") || sameText(id, "flabebe") || sameText(id, "floette") ||
+            sameText(id, "florges") || sameText(id, "furfrou") || sameText(id, "pumpkaboo") ||
+            sameText(id, "gourgeist") || sameText(id, "oricorio") || sameText(id, "zarude") ||
+            sameText(id, "squawkabilly") || sameText(id, "paldea_tauros")) {
+            randomForms();
+        } else if (sameText(id, "sinistea") || sameText(id, "polteageist") || sameText(id, "maushold") ||
+                   sameText(id, "dudunsparce") || sameText(id, "poltchageist") || sameText(id, "sinistcha")) {
+            index = rng.randSeedInt(16) ? 0 : 1; selected = true;
+        } else if (sameText(id, "pichu")) {
+            index = rng.randSeedInt(8) ? 0 : 1; selected = true;
+        } else if (sameText(id, "pikachu")) {
+            index = context.trainerBattle && context.waveIndex < 30 ? 0 : rng.randSeedInt(8);
+            selected = true;
+        } else if (sameText(id, "eevee")) {
+            index = context.trainerBattle && context.waveIndex < 30 && !context.eggPhase
+                ? 0 : rng.randSeedInt(2);
+            selected = true;
+        } else if (sameText(id, "magearna") || sameText(id, "urshifu")) {
+            index = rng.randSeedInt(2); selected = true;
+        } else if (sameText(id, "tatsugiri")) {
+            index = rng.randSeedInt(3); selected = true;
+        } else if (sameText(id, "zygarde")) {
+            index = rng.randSeedInt(4); selected = true;
+        } else if (sameText(id, "minior")) {
+            index = rng.randSeedInt(7); selected = true;
+        } else if (sameText(id, "alcremie")) {
+            index = rng.randSeedInt(9); selected = true;
+        } else if (sameText(id, "meowstic") || sameText(id, "indeedee") || sameText(id, "basculegion") ||
+                   sameText(id, "oinkologne")) {
+            index = actor.gender == PokemonGender::Female ? 1 : 0; selected = true;
+        } else if (sameText(id, "toxtricity")) {
+            static const uint8_t lowKeyNatures[] = {1, 5, 7, 10, 12, 15, 16, 17, 18, 20, 21, 23};
+            for (const uint8_t nature : lowKeyNatures) {
+                if (static_cast<uint8_t>(context.nature) == nature) { index = 1; break; }
+            }
+            selected = true;
+        } else if (sameText(id, "gimmighoul")) {
+            if (context.hasMysteryEncounters && !context.eggPhase) { index = 1; selected = true; }
+            else randomForms();
+        } else if (sameText(id, "burmy") || sameText(id, "wormadam")) {
+            if (context.ignoreArena) randomForms();
+            else if (sameText(context.biomeId, "beach")) { index = 1; selected = true; }
+            else if (sameText(context.biomeId, "slum")) { index = 2; selected = true; }
+            else { index = 0; selected = true; }
+        } else if (sameText(id, "lycanroc")) {
+            if (context.ignoreArena) randomForms();
+            else if (sameText(context.timeOfDay, "DUSK")) { index = 2; selected = true; }
+            else if (sameText(context.timeOfDay, "NIGHT")) { index = 1; selected = true; }
+            else { index = 0; selected = true; }
+        } else {
+            index = 0;
+            selected = true;
+        }
+    }
+
+    if (index < 0 || static_cast<std::size_t>(index) >= formCount) {
+        return PokemonFormSelectionResult::MissingForm;
+    }
+    std::size_t current = 0;
+    for (const auto& form : PokerogueContent::kForms) {
+        if (!sameText(form.speciesId, species->id)) continue;
+        if (current++ == static_cast<std::size_t>(index)) {
+            actor.formId = form.id;
+            return PokemonFormSelectionResult::Ok;
+        }
+    }
+    return PokemonFormSelectionResult::MissingForm;
+}
+
 PokemonActorIdentityResult generatePokemonActorIdentity(
     uint16_t speciesDex,
     uint16_t hiddenAbilityRate,
@@ -247,6 +380,7 @@ PokemonBattleInitResult initializePokemonBattleStateForActor(
     input.deriveIvsFromPokemonId = true;
     input.gender = identity.gender;
     if (identity.nature != PokemonNature::Unspecified) input.nature = identity.nature;
+    if (identity.formId) input.formId = identity.formId;
     input.abilityId = identity.abilityIndex == 2 ? abilityHidden
         : identity.abilityIndex == 1 ? ability2 : ability1;
     return initializePokemonBattleState(input, output);

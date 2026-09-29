@@ -169,6 +169,12 @@ export function registerBetaUI8Tests(test) {
     assert.ok(battleStateContext.contextBudget.reference.includes('source.pokerogue-pokemon-instance-rules'));
     assert.ok(battleStateContext.contextBudget.secondary.includes('test.beta-ui-9d'));
     assert.ok(!battleStateContext.nodes.some(node => ['presentation.canvas-renderer', 'presentation.timeline', 'runtime.scene-player'].includes(node.id)));
+
+    const formContext = selectRelevantSubgraph(graph, { query: 'select upstream Pokémon forms', depth: 0 });
+    assert.ok(formContext.contextBudget.primary.includes('runtime.pokemon-battle-state'));
+    assert.ok(formContext.contextBudget.reference.includes('source.pokerogue-form-selection-rules'));
+    assert.ok(formContext.contextBudget.secondary.includes('test.beta-ui-9d'));
+    assert.ok(!formContext.nodes.some(node => ['presentation.canvas-renderer', 'presentation.timeline', 'runtime.scene-player'].includes(node.id)));
   });
 
   test('BETA-UI-8C: pinned biome import becomes canonical biome and route graph', async () => {
