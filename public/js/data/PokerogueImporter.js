@@ -1144,6 +1144,9 @@ export class PokerogueImporter {
       const explicitTarget = chained.match(/\.target\s*\(\s*MoveTarget\.([A-Z0-9_]+)\s*\)/);
       if (explicitTarget) target = explicitTarget[1];
       const rawExpression = tsContent.slice(match.index, call.closeIndex + 1) + chained;
+      const isUnimplemented = /\.unimplemented\s*\(/.test(chained);
+      const upstreamAttributes = [...chained.matchAll(/\.attr\s*\(\s*(?:new\s+)?([A-Za-z_$][\w$]*)/g)]
+        .map(attribute => attribute[1]);
 
       const secondaryEffects = !this.productionCanonicalImport && chance > 0 && moveKey.includes('THUNDER')
         ? [{ chance, status: 'PARALYSIS' }]
@@ -1181,6 +1184,8 @@ export class PokerogueImporter {
         pp,
         priority,
         target,
+        isUnimplemented,
+        upstreamAttributes,
         flags: { contact: !this.productionCanonicalImport && category === 'PHYSICAL', protectable: !this.productionCanonicalImport },
         secondaryEffects,
         source: provenance,

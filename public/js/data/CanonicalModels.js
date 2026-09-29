@@ -163,6 +163,8 @@ export class MoveDefinition {
     this.maxPp = Number(data.maxPp ?? Math.floor(this.pp * 1.6));
     this.priority = Number(data.priority ?? 0);
     this.target = data.target || 'Selected';
+    this.isUnimplemented = Boolean(data.isUnimplemented);
+    this.upstreamAttributes = Array.isArray(data.upstreamAttributes) ? [...data.upstreamAttributes] : [];
     this.flags = {
       contact: Boolean(data.flags?.contact),
       protectable: Boolean(data.flags?.protectable ?? true),

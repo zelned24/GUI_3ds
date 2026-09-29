@@ -93,7 +93,11 @@ export function registerBetaUI9ATests(test) {
     assert.match(header, /\{1, 875, 1, 3, true, 318, 45, 49, 49, 65, 65, 45, 65, 65, 34, 0, 0, 17, -1, -1, -1, "MEDIUM_SLOW", "bulbasaur", "Bulbasaur"/);
     assert.ok(header.includes('findSpeciesByDex(6)->malePercentTenths == 875'), 'native content preserves the upstream numeric gender ratio');
     assert.ok(header.includes('findSpeciesByDex(81)->malePercentTenths == 65534'), 'native content preserves explicit genderless null');
-    assert.match(header, /\{33, 0, 40, 100, 35, 0, -1, 1, "tackle", "Tackle", "NORMAL", "NEAR_OTHER"/);
+    assert.match(header, /\{33, 0, 40, 100, 35, 0, -1, 1, 0, "tackle", "Tackle", "NORMAL", "NEAR_OTHER"/);
+    assert.match(header, /\{117, 0, -1, -1, 10, 1, -1, 1, MoveIsUnimplemented, "bide", "Bide"/);
+    assert.match(header, /\{262, 2, -1, 100, 10, 0, -1, 3, MoveHasSacrificialAttrOnHit, "memento", "Memento"/);
+    assert.ok(header.includes('uint8_t upstreamFlags'), 'native move metadata exposes upstream move-generation flags');
+    assert.ok(header.includes('int8_t level; uint16_t moveId;'), 'native learnset retains upstream signed sentinel levels');
     assert.match(header, /\{1, 1, 33\},\r?\n\s*\{1, 1, 45\}/, 'native learnset uses canonical MoveId references in upstream level order');
     assert.ok(header.includes('findMoveById(uint16_t id)'), 'C++ runtime exposes a compact move lookup');
     assert.ok(header.includes('levelMovesFor(const Species& species)'), 'species records expose a bounded range into shared learnset storage');
