@@ -823,6 +823,11 @@ export class PokerogueImporter {
       const numIdMatch = block.match(/(?:speciesId|\bid)\s*:\s*(?:SpeciesId\.)?(\d+|[A-Za-z0-9_]+)/i);
       const nameMatch = block.match(/(?:speciesName)\s*:\s*['"`]([^'"`]+)['"`]/i);
       const genMatch = block.match(/generation\s*:\s*(\d+)/i);
+      const malePercentDeclared = /\bmalePercent\s*:/i.test(block);
+      const malePercentMatch = block.match(/\bmalePercent\s*:\s*(null|\d+(?:\.\d+)?)/i);
+      if (malePercentDeclared && !malePercentMatch) throw new Error(`Invalid import: unsupported malePercent value for ${speciesKey}`);
+      const malePercent = malePercentMatch ? (malePercentMatch[1].toLowerCase() === 'null' ? null : Number(malePercentMatch[1])) : undefined;
+      if (typeof malePercent === 'number' && (malePercent < 0 || malePercent > 100)) throw new Error(`Invalid import: malePercent out of range for ${speciesKey}`);
       const type1Match = block.match(/type1\s*:\s*(?:PokemonType\.|Type\.)?([A-Za-z0-9_]+)/i);
       const type2Match = block.match(/type2\s*:\s*(?:PokemonType\.|Type\.)?([A-Za-z0-9_]+)/i);
 
@@ -1032,6 +1037,7 @@ export class PokerogueImporter {
         baseTotal: baseTotalMatch ? Number(baseTotalMatch[1]) : null,
         rarity: { legendary: rarityField('legendary'), subLegendary: rarityField('subLegendary'), mythical: rarityField('mythical') },
         growthRate: growthRateMatch?.[1] ?? null,
+        ...(malePercentMatch ? { malePercent } : {}),
         evolutions,
         abilities: {
           primary: ab1Match && ab1Match[1].toUpperCase() !== 'NONE' ? toTitle(ab1Match[1]) : 'None',

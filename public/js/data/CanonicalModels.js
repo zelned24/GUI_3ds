@@ -77,6 +77,7 @@ export class SpeciesDefinition {
       mythical: data.rarity?.mythical ?? null
     };
     this.growthRate = data.growthRate ?? null;
+    this.malePercent = data.malePercent;
     this.evolutions = Array.isArray(data.evolutions)
       ? data.evolutions.map(evolution => new SpeciesEvolutionDefinition(evolution))
       : [];

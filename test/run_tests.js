@@ -671,6 +671,7 @@ test('PokerogueImporter dynamically parses arbitrary TypeScript source without m
         speciesId: 1,
         name: 'Bulbasaur',
         generation: 1,
+        malePercent: 87.5,
         type1: Type.GRASS,
         type2: Type.POISON,
         baseStats: [45, 49, 49, 65, 65, 45],
@@ -695,12 +696,23 @@ test('PokerogueImporter dynamically parses arbitrary TypeScript source without m
   assert.strictEqual(bulba.id, 'bulbasaur');
   assert.strictEqual(bulba.name, 'Bulbasaur');
   assert.strictEqual(bulba.speciesId, 1);
+  assert.strictEqual(bulba.malePercent, 87.5);
   assert.strictEqual(bulba.type1, 'Grass');
   assert.strictEqual(bulba.type2, 'Poison');
   assert.strictEqual(bulba.baseStats.hp, 45);
   assert.strictEqual(bulba.baseStats.spatk, 65);
   assert.strictEqual(bulba.abilities.primary, 'Overgrow');
   assert.strictEqual(bulba.abilities.hidden, 'Chlorophyll');
+  const genderCases = importer.parseSpeciesFromGeneration(`
+    export const generationOneSpeciesData = {
+      [SpeciesId.NULLMON]: { speciesId: 9001, name: 'Nullmon', malePercent: null },
+      [SpeciesId.UNSPECIFIEDMON]: { speciesId: 9002, name: 'Unspecifiedmon' }
+    };
+  `);
+  assert.strictEqual(genderCases.find(species => species.speciesId === 9001).malePercent, null,
+    'explicit null preserves upstream genderless semantics');
+  assert.strictEqual(genderCases.find(species => species.speciesId === 9002).malePercent, undefined,
+    'an absent upstream gender field remains unknown instead of becoming genderless');
   assert.strictEqual(bulba.levelMoves.length, 3);
   assert.strictEqual(bulba.eggMoves[0], 'petal_dance');
 });
