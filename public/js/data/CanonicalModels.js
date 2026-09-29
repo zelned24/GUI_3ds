@@ -107,7 +107,8 @@ export class SpeciesDefinition {
         ...m,
         id: moveKey,
         move: moveKey,
-        level: m.level || 1,
+        // Preserve upstream sentinels: 0 = evolution move, -1 = move reminder.
+        level: m.level ?? 1,
         name: m.name || toTitleCase(moveKey.replace(/_/g, ' '))
       };
     });

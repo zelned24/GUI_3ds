@@ -682,7 +682,9 @@ test('PokerogueImporter dynamically parses arbitrary TypeScript source without m
         levelMoves: [
           [1, Moves.TACKLE],
           [3, Moves.GROWL],
-          [7, Moves.LEECH_SEED]
+          [7, Moves.LEECH_SEED],
+          [0, Moves.RAZOR_LEAF],
+          [-1, Moves.VINE_WHIP]
         ],
         eggMoves: [Moves.PETAL_DANCE]
       }
@@ -713,7 +715,9 @@ test('PokerogueImporter dynamically parses arbitrary TypeScript source without m
     'explicit null preserves upstream genderless semantics');
   assert.strictEqual(genderCases.find(species => species.speciesId === 9002).malePercent, undefined,
     'an absent upstream gender field remains unknown instead of becoming genderless');
-  assert.strictEqual(bulba.levelMoves.length, 3);
+  assert.strictEqual(bulba.levelMoves.length, 5);
+  assert.strictEqual(bulba.levelMoves[3].level, 0, 'evolution moves keep the upstream zero sentinel');
+  assert.strictEqual(bulba.levelMoves[4].level, -1, 'relearner moves keep the upstream negative sentinel');
   assert.strictEqual(bulba.eggMoves[0], 'petal_dance');
 });
 

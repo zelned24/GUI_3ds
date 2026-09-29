@@ -954,7 +954,7 @@ export class PokerogueImporter {
           }
         }
         const levelMovesContent = block.substring(arrStart + 1, arrEnd);
-        const mRegex = /\[\s*(\d+)\s*,\s*(?:MoveId\.|Moves\.)?([A-Za-z0-9_]+)\s*\]|\{\s*level\s*:\s*(\d+)\s*,\s*move\s*:\s*['"`]?([A-Za-z0-9_]+)['"`]?\s*\}/g;
+        const mRegex = /\[\s*(-?\d+)\s*,\s*(?:MoveId\.|Moves\.)?([A-Za-z0-9_]+)\s*\]|\{\s*level\s*:\s*(-?\d+)\s*,\s*move\s*:\s*['"`]?([A-Za-z0-9_]+)['"`]?\s*\}/g;
         let mEntry;
         while ((mEntry = mRegex.exec(levelMovesContent)) !== null) {
           const lvl = Number(mEntry[1] || mEntry[3]);
