@@ -82,6 +82,13 @@ extern "C" int runPokemonBattleStateChecks() {
     input.speciesDex = 0;
     if (Pokerogue3DS::initializePokemonBattleState(input, state) != PokemonBattleInitResult::MissingSpecies) return 12;
 
+    input.speciesDex = 81;
+    input.abilityId = 42;
+    input.gender = PokemonGender::Genderless;
+    input.moveCount = 0;
+    if (Pokerogue3DS::initializePokemonBattleState(input, state) != PokemonBattleInitResult::Ok ||
+        state.gender != PokemonGender::Genderless || state.speciesDex != 81) return 31;
+
     const uint16_t seed[] = {'a', 'b', 'i', 'l', 'i', 't', 'y'};
     Pokerogue3DS::PokerogueRngAdapter rng;
     rng.sow(seed, sizeof(seed) / sizeof(seed[0]));
