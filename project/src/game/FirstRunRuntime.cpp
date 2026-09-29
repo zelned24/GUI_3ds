@@ -1,5 +1,6 @@
 #include "game/FirstRunRuntime.hpp"
 #include "game/PokerogueEncounterResolver.hpp"
+#include "game/PokerogueRngAdapter.hpp"
 #include "content/PokerogueRuntimeContent.hpp"
 #include <algorithm>
 #include <cstdio>
@@ -129,9 +130,38 @@ void FirstRunRuntime::resolve() {
     if (enemyIndex == PokerogueContent::kSpeciesCount) return;
     const auto& enemy = PokerogueContent::kSpecies[enemyIndex];
 
+    const auto resolveEnemyActor = [&](const PokerogueContent::Species& species,
+                                       ResolvedPokemon& destination) -> bool {
+        PokemonFormSelectionContext formContext{};
+        formContext.biomeId = "town";
+        formContext.timeOfDay = time == PokerogueTimeOfDay::Day ? "DAY"
+            : time == PokerogueTimeOfDay::Dusk ? "DUSK"
+            : time == PokerogueTimeOfDay::Night ? "NIGHT" : "DAWN";
+        formContext.waveIndex = m_run.wave;
+        PokemonActorIdentity actor{};
+        if (generatePokemonActorIdentityAndForm(species.dex, 256, formContext, waveRng, actor) !=
+            PokemonActorIdentityResult::Ok) return false;
+
+        // Pinned Pokemon construction generates nature after form/shiny/variant.
+        // Shiny variant uses an executeWithSeedOffset scope (restored afterward).
+        generatePokemonActorNature(actor, waveRng);
+        const auto* form = PokerogueContent::findFormById(actor.formId);
+        const char* firstType = form ? form->type1 : species.type1;
+        const char* secondType = form ? form->type2 : species.type2;
+        const uint8_t typeCount = firstType && firstType[0]
+            ? (secondType && secondType[0] ? 2 : 1) : 0;
+        if (!typeCount) return false;
+        (void)waveRng.randSeedInt(typeCount); // Pokemon constructor selects its initial tera type.
+        destination.actor = actor;
+        destination.actorIdentityResolved = true;
+        destination.formId = actor.formId;
+        return true;
+    };
+
     m_run.encounterDex = enemy.dex;
     const std::string enemyLocaleId = std::string("pokemon:") + enemy.id;
     m_context.enemy = {enemy.dex, level, enemy.id, locale(enemyLocaleId.c_str(), enemy.name), enemy.firstFormId, enemy.assetSourcePath};
+    if (!resolveEnemyActor(enemy, m_context.enemy)) return;
     if (m_doubleBattle) {
         const auto secondPool = PokerogueEncounterResolver::resolveNonBoss(
             "town", time, m_run.wave, waveRng);
@@ -151,6 +181,7 @@ void FirstRunRuntime::resolve() {
         const std::string secondLocaleId = std::string("pokemon:") + second.id;
         m_context.secondEnemy = {second.dex, secondLevel, second.id,
             locale(secondLocaleId.c_str(), second.name), second.firstFormId, second.assetSourcePath};
+        if (!resolveEnemyActor(second, m_context.secondEnemy)) return;
         m_secondEncounterResolved = true;
     }
     m_encounterResolved = true;

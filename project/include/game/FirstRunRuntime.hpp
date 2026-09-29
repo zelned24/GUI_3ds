@@ -1,6 +1,7 @@
 #pragma once
 
 #include "screens/SceneData.hpp"
+#include "game/PokemonBattleState.hpp"
 #include <cstdint>
 #include <array>
 #include <string>
@@ -23,6 +24,8 @@ struct ResolvedPokemon {
     const char* localizedName;
     const char* formId;
     const char* assetSourcePath;
+    PokemonActorIdentity actor{};
+    bool actorIdentityResolved = false;
 };
 
 struct PresentationContext {
