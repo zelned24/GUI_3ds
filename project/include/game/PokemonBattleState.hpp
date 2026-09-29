@@ -35,6 +35,8 @@ struct PokemonBattleInit {
     uint16_t speciesDex = 0;
     const char* formId = nullptr; // Null selects the imported base form.
     uint16_t level = 0;
+    uint32_t pokemonId = 0;
+    bool deriveIvsFromPokemonId = false;
     uint8_t ivs[6]{}; // Upstream permanent-stat order: HP, ATK, DEF, SPATK, SPDEF, SPD.
     int8_t natureRaisedStat = -1;
     int8_t natureLoweredStat = -1;
@@ -48,13 +50,16 @@ struct PokemonBattleState {
     uint16_t speciesDex = 0;
     const char* formId = nullptr;
     uint16_t level = 0;
+    uint32_t pokemonId = 0;
     uint16_t abilityId = 0;
     PokemonGender gender = PokemonGender::Unspecified;
     uint16_t maxHp = 0;
     uint16_t hp = 0;
+    uint8_t ivs[6]{};
     uint16_t stats[6]{}; // Upstream permanent-stat order.
     uint8_t moveCount = 0;
     BattleMoveState moves[4]{};
+    bool ivsWereDerivedFromPokemonId = false;
     bool statsAreBaseFormulaOnly = true;
 };
 

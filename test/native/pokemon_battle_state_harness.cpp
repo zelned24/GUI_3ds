@@ -39,6 +39,23 @@ extern "C" int runPokemonBattleStateChecks() {
         state.moves[1].moveId != 45 || state.moves[1].pp != 40) return 3;
     if (state.gender != PokemonGender::Male) return 28;
     if (!state.statsAreBaseFormulaOnly) return 4;
+    for (uint8_t iv : state.ivs) if (iv != 0) return 60;
+
+    PokemonBattleInit actorIdInput = input;
+    actorIdInput.pokemonId = 0x12345678u;
+    actorIdInput.deriveIvsFromPokemonId = true;
+    PokemonBattleState actorIdState{};
+    if (Pokerogue3DS::initializePokemonBattleState(actorIdInput, actorIdState) != PokemonBattleInitResult::Ok ||
+        actorIdState.pokemonId != actorIdInput.pokemonId || !actorIdState.ivsWereDerivedFromPokemonId) return 61;
+    PokemonBattleInit equivalentExplicitInput = input;
+    Pokerogue3DS::derivePokemonIvsFromId(actorIdInput.pokemonId, equivalentExplicitInput.ivs);
+    PokemonBattleState equivalentExplicitState{};
+    if (Pokerogue3DS::initializePokemonBattleState(equivalentExplicitInput, equivalentExplicitState) !=
+        PokemonBattleInitResult::Ok) return 62;
+    for (uint8_t i = 0; i < 6; ++i) {
+        if (actorIdState.ivs[i] != equivalentExplicitState.ivs[i] ||
+            actorIdState.stats[i] != equivalentExplicitState.stats[i]) return 63;
+    }
 
     PokemonBattleState damageTarget = state;
     double baseDamage = -1.0;

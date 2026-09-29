@@ -98,6 +98,16 @@ bool oneTypeEffectiveness(const char* attack, const char* defend, double& multip
 }
 }
 
+void derivePokemonIvsFromId(uint32_t pokemonId, uint8_t outputIvs[6]) {
+    if (!outputIvs) return;
+    outputIvs[0] = static_cast<uint8_t>((pokemonId & 0x3E000000u) >> 25);
+    outputIvs[1] = static_cast<uint8_t>((pokemonId & 0x01F00000u) >> 20);
+    outputIvs[2] = static_cast<uint8_t>((pokemonId & 0x000F8000u) >> 15);
+    outputIvs[3] = static_cast<uint8_t>((pokemonId & 0x00007C00u) >> 10);
+    outputIvs[4] = static_cast<uint8_t>((pokemonId & 0x000003E0u) >> 5);
+    outputIvs[5] = static_cast<uint8_t>(pokemonId & 0x0000001Fu);
+}
+
 PokemonBattleInitResult initializePokemonBattleState(
     const PokemonBattleInit& input,
     PokemonBattleState& output) {
@@ -120,7 +130,10 @@ PokemonBattleInitResult initializePokemonBattleState(
             (input.gender != PokemonGender::Male && input.gender != PokemonGender::Female)))) {
         return PokemonBattleInitResult::InvalidGender;
     }
-    for (uint8_t iv : input.ivs) if (iv > 31) return PokemonBattleInitResult::InvalidIv;
+    uint8_t instanceIvs[6];
+    if (input.deriveIvsFromPokemonId) derivePokemonIvsFromId(input.pokemonId, instanceIvs);
+    else for (uint8_t i = 0; i < 6; ++i) instanceIvs[i] = input.ivs[i];
+    for (uint8_t iv : instanceIvs) if (iv > 31) return PokemonBattleInitResult::InvalidIv;
     const auto validNatureStat = [](int8_t stat) { return stat == -1 || (stat >= 1 && stat <= 5); };
     if (!validNatureStat(input.natureRaisedStat) || !validNatureStat(input.natureLoweredStat)) {
         return PokemonBattleInitResult::InvalidNatureStat;
@@ -132,13 +145,16 @@ PokemonBattleInitResult initializePokemonBattleState(
     next.speciesDex = input.speciesDex;
     next.formId = form ? form->id : nullptr;
     next.level = input.level;
+    next.pokemonId = input.pokemonId;
     next.abilityId = input.abilityId;
     next.gender = input.gender;
+    for (uint8_t i = 0; i < 6; ++i) next.ivs[i] = instanceIvs[i];
+    next.ivsWereDerivedFromPokemonId = input.deriveIvsFromPokemonId;
     const uint8_t baseStats[6] = {form ? form->hp : species->hp, form ? form->atk : species->atk,
         form ? form->def : species->def, form ? form->spatk : species->spatk,
         form ? form->spdef : species->spdef, form ? form->speed : species->speed};
     for (uint8_t index = 0; index < 6; ++index) {
-        next.stats[index] = calculatedStat(baseStats[index], input.ivs[index], input.level,
+        next.stats[index] = calculatedStat(baseStats[index], instanceIvs[index], input.level,
             index, input.natureRaisedStat, input.natureLoweredStat);
     }
     next.maxHp = next.stats[0];
@@ -152,16 +168,6 @@ PokemonBattleInitResult initializePokemonBattleState(
     }
     output = next;
     return PokemonBattleInitResult::Ok;
-}
-
-void derivePokemonIvsFromId(uint32_t pokemonId, uint8_t outputIvs[6]) {
-    if (!outputIvs) return;
-    outputIvs[0] = static_cast<uint8_t>((pokemonId & 0x3E000000u) >> 25);
-    outputIvs[1] = static_cast<uint8_t>((pokemonId & 0x01F00000u) >> 20);
-    outputIvs[2] = static_cast<uint8_t>((pokemonId & 0x000F8000u) >> 15);
-    outputIvs[3] = static_cast<uint8_t>((pokemonId & 0x00007C00u) >> 10);
-    outputIvs[4] = static_cast<uint8_t>((pokemonId & 0x000003E0u) >> 5);
-    outputIvs[5] = static_cast<uint8_t>(pokemonId & 0x0000001Fu);
 }
 
 PokemonBaseDamageResult calculatePokemonBaseDamage(
