@@ -108,6 +108,35 @@ void derivePokemonIvsFromId(uint32_t pokemonId, uint8_t outputIvs[6]) {
     outputIvs[5] = static_cast<uint8_t>(pokemonId & 0x0000001Fu);
 }
 
+PokemonActorIdentityResult generatePokemonActorIdentity(
+    uint16_t speciesDex,
+    uint16_t hiddenAbilityRate,
+    PokerogueRngAdapter& rng,
+    PokemonActorIdentity& output) {
+    const auto* species = PokerogueContent::findSpeciesByDex(speciesDex);
+    if (!species) return PokemonActorIdentityResult::MissingSpecies;
+    if (hiddenAbilityRate == 0) return PokemonActorIdentityResult::InvalidHiddenRate;
+
+    PokemonActorIdentity next{};
+    // Pokemon.generateAbilityIndex runs before assigning this.id.
+    const auto abilityResult = selectPokemonAbilityIndex(
+        speciesDex, hiddenAbilityRate, rng, next.abilityIndex);
+    if (abilityResult != PokemonAbilitySelectionResult::Ok) {
+        return PokemonActorIdentityResult::InvalidHiddenRate;
+    }
+    next.pokemonId = rng.randSeedUint32();
+    derivePokemonIvsFromId(next.pokemonId, next.ivs);
+    const auto genderResult = selectPokemonGender(speciesDex, rng, next.gender);
+    if (genderResult == PokemonGenderSelectionResult::MissingSpecies) {
+        return PokemonActorIdentityResult::MissingSpecies;
+    }
+    if (genderResult != PokemonGenderSelectionResult::Ok) {
+        return PokemonActorIdentityResult::InvalidGenderRatio;
+    }
+    output = next;
+    return PokemonActorIdentityResult::Ok;
+}
+
 PokemonBattleInitResult initializePokemonBattleState(
     const PokemonBattleInit& input,
     PokemonBattleState& output) {

@@ -72,6 +72,14 @@ public:
         return max <= min ? min : randSeedInt(max - min + 1, min);
     }
 
+    // Pokémon's constructor requests randSeedInt(2^32) for its stable actor
+    // identity. Keep the full unsigned domain instead of routing it through
+    // randSeedInt's signed 32-bit range.
+    uint32_t randSeedUint32() {
+        const double value = frac() * 4294967296.0;
+        return static_cast<uint32_t>(value);
+    }
+
     // Phaser RND.pick(array) delegates to integerInRange. PokéRogue's
     // randSeedItem short-circuits singletons before reaching Phaser.
     int32_t pickIndex(uint32_t count) {

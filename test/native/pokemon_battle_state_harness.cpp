@@ -301,5 +301,29 @@ extern "C" int runPokemonBattleStateChecks() {
     if (genderlessActualState.carry != genderlessExpectedState.carry ||
         genderlessActualState.s0 != genderlessExpectedState.s0 || genderlessActualState.s1 != genderlessExpectedState.s1 ||
         genderlessActualState.s2 != genderlessExpectedState.s2) return 27;
+
+    // Pinned Pokemon constructor draws abilityIndex before id, then derives
+    // IVs from that full-width ID and draws gender.
+    rng.sow(seed, sizeof(seed) / sizeof(seed[0]));
+    expected = rng;
+    const auto* charizard = PokerogueContent::findSpeciesByDex(6);
+    const uint8_t actorRegular = charizard->ability2 == charizard->ability1
+        ? 0 : static_cast<uint8_t>(expected.randSeedInt(2));
+    const bool actorHidden = expected.randSeedInt(256) == 0;
+    const uint32_t actorId = expected.randSeedUint32();
+    uint8_t actorExpectedIvs[6]{};
+    Pokerogue3DS::derivePokemonIvsFromId(actorId, actorExpectedIvs);
+    const double actorGenderRoll = expected.frac() * 100.0;
+    Pokerogue3DS::PokemonActorIdentity actorIdentity{};
+    if (Pokerogue3DS::generatePokemonActorIdentity(6, 256, rng, actorIdentity) !=
+        Pokerogue3DS::PokemonActorIdentityResult::Ok) return 64;
+    if (actorIdentity.pokemonId != actorId) return 68;
+    if (actorIdentity.abilityIndex != (actorHidden ? 2 : actorRegular)) return 69;
+    if (actorIdentity.gender != (actorGenderRoll <= 87.5 ? PokemonGender::Male : PokemonGender::Female)) return 70;
+    for (uint8_t i = 0; i < 6; ++i) if (actorIdentity.ivs[i] != actorExpectedIvs[i]) return 66;
+    const auto actorActualRng = rng.state();
+    const auto actorExpectedRng = expected.state();
+    if (actorActualRng.carry != actorExpectedRng.carry || actorActualRng.s0 != actorExpectedRng.s0 ||
+        actorActualRng.s1 != actorExpectedRng.s1 || actorActualRng.s2 != actorExpectedRng.s2) return 67;
     return 0;
 }

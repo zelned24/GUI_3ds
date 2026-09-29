@@ -9,6 +9,25 @@ class PokerogueRngAdapter;
 
 enum class PokemonGender : uint8_t { Unspecified = 0, Genderless, Male, Female };
 
+struct PokemonActorIdentity {
+    uint32_t pokemonId = 0;
+    uint8_t ivs[6]{};
+    uint8_t abilityIndex = 0;
+    PokemonGender gender = PokemonGender::Unspecified;
+};
+
+enum class PokemonActorIdentityResult : uint8_t {
+    Ok = 0, MissingSpecies, InvalidHiddenRate, InvalidGenderRatio
+};
+
+// Mirrors the pinned Pokemon constructor's pre-form identity draws:
+// ability index, 32-bit ID/IVs, then gender.
+PokemonActorIdentityResult generatePokemonActorIdentity(
+    uint16_t speciesDex,
+    uint16_t hiddenAbilityRate,
+    PokerogueRngAdapter& rng,
+    PokemonActorIdentity& output);
+
 enum class PokemonBattleInitResult : uint8_t {
     Ok = 0,
     MissingSpecies,
