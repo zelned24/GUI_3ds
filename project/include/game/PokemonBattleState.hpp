@@ -7,6 +7,8 @@ namespace Pokerogue3DS {
 
 class PokerogueRngAdapter;
 
+enum class PokemonGender : uint8_t { Unspecified = 0, Genderless, Male, Female };
+
 enum class PokemonBattleInitResult : uint8_t {
     Ok = 0,
     MissingSpecies,
@@ -15,6 +17,7 @@ enum class PokemonBattleInitResult : uint8_t {
     InvalidNatureStat,
     InvalidAbility,
     InvalidForm,
+    InvalidGender,
     InvalidMoveCount,
     MissingMove,
     InvalidMovePp,
@@ -36,6 +39,7 @@ struct PokemonBattleInit {
     int8_t natureRaisedStat = -1;
     int8_t natureLoweredStat = -1;
     uint16_t abilityId = 0;
+    PokemonGender gender = PokemonGender::Unspecified;
     uint8_t moveCount = 0;
     uint16_t moveIds[4]{};
 };
@@ -45,6 +49,7 @@ struct PokemonBattleState {
     const char* formId = nullptr;
     uint16_t level = 0;
     uint16_t abilityId = 0;
+    PokemonGender gender = PokemonGender::Unspecified;
     uint16_t maxHp = 0;
     uint16_t hp = 0;
     uint16_t stats[6]{}; // Upstream permanent-stat order.
@@ -64,7 +69,6 @@ PokemonAbilitySelectionResult selectPokemonAbilityIndex(
     PokerogueRngAdapter& rng,
     uint8_t& outputAbilityIndex);
 
-enum class PokemonGender : uint8_t { Genderless = 0, Male, Female };
 enum class PokemonGenderSelectionResult : uint8_t { Ok = 0, MissingSpecies, InvalidGenderRatio };
 PokemonGenderSelectionResult selectPokemonGender(
     uint16_t speciesDex,

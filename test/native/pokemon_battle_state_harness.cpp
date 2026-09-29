@@ -16,12 +16,14 @@ extern "C" int runPokemonBattleStateChecks() {
     input.moveCount = 2;
     input.moveIds[0] = 33;
     input.moveIds[1] = 45;
+    input.gender = PokemonGender::Male;
 
     PokemonBattleState state{};
     if (Pokerogue3DS::initializePokemonBattleState(input, state) != PokemonBattleInitResult::Ok) return 1;
     if (state.maxHp != 19 || state.hp != 19 || state.stats[1] != 9 || state.stats[2] != 9) return 2;
     if (state.moveCount != 2 || state.moves[0].moveId != 33 || state.moves[0].pp != 35 ||
         state.moves[1].moveId != 45 || state.moves[1].pp != 40) return 3;
+    if (state.gender != PokemonGender::Male) return 28;
     if (!state.statsAreBaseFormulaOnly) return 4;
 
     input.speciesDex = 6;
@@ -58,6 +60,10 @@ extern "C" int runPokemonBattleStateChecks() {
     if (state.stats[1] != 11 || state.stats[2] != 11) return 14;
 
     const PokemonBattleState preserved = state;
+    input.gender = PokemonGender::Unspecified;
+    if (Pokerogue3DS::initializePokemonBattleState(input, state) != PokemonBattleInitResult::InvalidGender) return 29;
+    if (state.gender != preserved.gender) return 30;
+    input.gender = PokemonGender::Male;
     input.ivs[0] = 32;
     if (Pokerogue3DS::initializePokemonBattleState(input, state) != PokemonBattleInitResult::InvalidIv) return 7;
     if (state.maxHp != preserved.maxHp || state.stats[1] != preserved.stats[1]) return 8;

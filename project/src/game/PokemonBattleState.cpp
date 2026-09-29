@@ -39,6 +39,12 @@ PokemonBattleInitResult initializePokemonBattleState(
         if (*speciesId != *formSpeciesId) return PokemonBattleInitResult::InvalidForm;
     }
     if (input.level == 0 || input.level > 100) return PokemonBattleInitResult::InvalidLevel;
+    const bool speciesIsGenderless = species->malePercentTenths == 65534;
+    if ((speciesIsGenderless && input.gender != PokemonGender::Genderless) ||
+        (!speciesIsGenderless && (species->malePercentTenths > 1000 ||
+            (input.gender != PokemonGender::Male && input.gender != PokemonGender::Female)))) {
+        return PokemonBattleInitResult::InvalidGender;
+    }
     for (uint8_t iv : input.ivs) if (iv > 31) return PokemonBattleInitResult::InvalidIv;
     const auto validNatureStat = [](int8_t stat) { return stat == -1 || (stat >= 1 && stat <= 5); };
     if (!validNatureStat(input.natureRaisedStat) || !validNatureStat(input.natureLoweredStat)) {
@@ -52,6 +58,7 @@ PokemonBattleInitResult initializePokemonBattleState(
     next.formId = form ? form->id : nullptr;
     next.level = input.level;
     next.abilityId = input.abilityId;
+    next.gender = input.gender;
     const uint8_t baseStats[6] = {form ? form->hp : species->hp, form ? form->atk : species->atk,
         form ? form->def : species->def, form ? form->spatk : species->spatk,
         form ? form->spdef : species->spdef, form ? form->speed : species->speed};
