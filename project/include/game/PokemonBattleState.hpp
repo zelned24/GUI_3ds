@@ -5,6 +5,8 @@
 
 namespace Pokerogue3DS {
 
+class PokerogueRngAdapter;
+
 enum class PokemonBattleInitResult : uint8_t {
     Ok = 0,
     MissingSpecies,
@@ -54,5 +56,12 @@ struct PokemonBattleState {
 PokemonBattleInitResult initializePokemonBattleState(
     const PokemonBattleInit& input,
     PokemonBattleState& output);
+
+enum class PokemonAbilitySelectionResult : uint8_t { Ok = 0, MissingSpecies, InvalidHiddenRate };
+PokemonAbilitySelectionResult selectPokemonAbilityIndex(
+    uint16_t speciesDex,
+    uint16_t hiddenAbilityRate,
+    PokerogueRngAdapter& rng,
+    uint8_t& outputAbilityIndex);
 
 } // namespace Pokerogue3DS

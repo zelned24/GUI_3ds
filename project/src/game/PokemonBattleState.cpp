@@ -1,4 +1,5 @@
 #include "game/PokemonBattleState.hpp"
+#include "game/PokerogueRngAdapter.hpp"
 
 namespace Pokerogue3DS {
 namespace {
@@ -69,6 +70,22 @@ PokemonBattleInitResult initializePokemonBattleState(
     }
     output = next;
     return PokemonBattleInitResult::Ok;
+}
+
+PokemonAbilitySelectionResult selectPokemonAbilityIndex(
+    uint16_t speciesDex,
+    uint16_t hiddenAbilityRate,
+    PokerogueRngAdapter& rng,
+    uint8_t& outputAbilityIndex) {
+    const auto* species = PokerogueContent::findSpeciesByDex(speciesDex);
+    if (!species) return PokemonAbilitySelectionResult::MissingSpecies;
+    if (hiddenAbilityRate == 0) return PokemonAbilitySelectionResult::InvalidHiddenRate;
+
+    const uint8_t regularAbilityIndex = species->ability2 == species->ability1
+        ? 0 : static_cast<uint8_t>(rng.randSeedInt(2));
+    const bool useHiddenAbility = species->abilityHidden != 0 && rng.randSeedInt(hiddenAbilityRate) == 0;
+    outputAbilityIndex = useHiddenAbility ? 2 : regularAbilityIndex;
+    return PokemonAbilitySelectionResult::Ok;
 }
 
 } // namespace Pokerogue3DS

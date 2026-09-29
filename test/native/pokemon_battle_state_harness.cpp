@@ -1,8 +1,10 @@
 #include "game/PokemonBattleState.hpp"
+#include "game/PokerogueRngAdapter.hpp"
 
 using Pokerogue3DS::PokemonBattleInit;
 using Pokerogue3DS::PokemonBattleInitResult;
 using Pokerogue3DS::PokemonBattleState;
+using Pokerogue3DS::PokemonAbilitySelectionResult;
 
 extern "C" int runPokemonBattleStateChecks() {
     PokemonBattleInit input{};
@@ -71,5 +73,31 @@ extern "C" int runPokemonBattleStateChecks() {
 
     input.speciesDex = 0;
     if (Pokerogue3DS::initializePokemonBattleState(input, state) != PokemonBattleInitResult::MissingSpecies) return 12;
+
+    const uint16_t seed[] = {'a', 'b', 'i', 'l', 'i', 't', 'y'};
+    Pokerogue3DS::PokerogueRngAdapter rng;
+    rng.sow(seed, sizeof(seed) / sizeof(seed[0]));
+    Pokerogue3DS::PokerogueRngAdapter expected = rng;
+    const uint8_t expectedRegular = static_cast<uint8_t>(expected.randSeedInt(2));
+    const bool expectedHidden = expected.randSeedInt(256) == 0;
+    uint8_t abilityIndex = 9;
+    if (Pokerogue3DS::selectPokemonAbilityIndex(16, 256, rng, abilityIndex) != PokemonAbilitySelectionResult::Ok) return 19;
+    const auto actualRngState = rng.state();
+    const auto expectedRngState = expected.state();
+    if (abilityIndex != (expectedHidden ? 2 : expectedRegular) ||
+        actualRngState.carry != expectedRngState.carry || actualRngState.s0 != expectedRngState.s0 ||
+        actualRngState.s1 != expectedRngState.s1 || actualRngState.s2 != expectedRngState.s2) return 20;
+
+    rng.sow(seed, sizeof(seed) / sizeof(seed[0]));
+    expected = rng;
+    const bool expectedSingleHidden = expected.randSeedInt(256) == 0;
+    if (Pokerogue3DS::selectPokemonAbilityIndex(1, 256, rng, abilityIndex) != PokemonAbilitySelectionResult::Ok) return 21;
+    const auto singleActualState = rng.state();
+    const auto singleExpectedState = expected.state();
+    if (abilityIndex != (expectedSingleHidden ? 2 : 0) || singleActualState.carry != singleExpectedState.carry ||
+        singleActualState.s0 != singleExpectedState.s0 || singleActualState.s1 != singleExpectedState.s1 ||
+        singleActualState.s2 != singleExpectedState.s2) return 22;
+    abilityIndex = 9;
+    if (Pokerogue3DS::selectPokemonAbilityIndex(1, 0, rng, abilityIndex) != PokemonAbilitySelectionResult::InvalidHiddenRate || abilityIndex != 9) return 23;
     return 0;
 }

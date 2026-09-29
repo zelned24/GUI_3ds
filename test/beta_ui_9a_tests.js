@@ -90,7 +90,7 @@ export function registerBetaUI9ATests(test) {
     for (const domain of ['kSpecies', 'kForms', 'kMoves', 'kAbilities', 'kItems', 'kLocales', 'kModes', 'kBiomes', 'kBiomeEncounterPools', 'kBiomeTrainerPools', 'kRoutes']) {
       assert.ok(header.includes(`${domain}[] = {`), `native ROM bundle contains ${domain}`);
     }
-    assert.match(header, /\{1, 875, 1, 3, true, 318, 45, 49, 49, 65, 65, 45, 65, 0, 34, 0, 0, 17, -1, -1, -1, "MEDIUM_SLOW", "bulbasaur", "Bulbasaur"/);
+    assert.match(header, /\{1, 875, 1, 3, true, 318, 45, 49, 49, 65, 65, 45, 65, 65, 34, 0, 0, 17, -1, -1, -1, "MEDIUM_SLOW", "bulbasaur", "Bulbasaur"/);
     assert.ok(header.includes('findSpeciesByDex(6)->malePercentTenths == 875'), 'native content preserves the upstream numeric gender ratio');
     assert.ok(header.includes('findSpeciesByDex(81)->malePercentTenths == 65534'), 'native content preserves explicit genderless null');
     assert.match(header, /\{33, 0, 40, 100, 35, 0, -1, 1, "tackle", "Tackle", "NORMAL", "NEAR_OTHER"/);
