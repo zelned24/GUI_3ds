@@ -323,6 +323,39 @@ PokemonMoveDamageResult resolveStandardPokemonMoveDamage(
     return PokemonMoveDamageResult::Ok;
 }
 
+PokemonMoveActionStatus useStandardPokemonMove(
+    PokemonBattleState& attacker,
+    PokemonBattleState& defender,
+    uint8_t moveSlot,
+    bool moveIsTypeless,
+    PokerogueRngAdapter& battleRng,
+    PokemonMoveActionResult& output) {
+    if (moveSlot >= attacker.moveCount || moveSlot >= 4 || attacker.moves[moveSlot].moveId == 0) {
+        return PokemonMoveActionStatus::InvalidMoveSlot;
+    }
+    if (attacker.moves[moveSlot].pp == 0) return PokemonMoveActionStatus::NoPp;
+    if (defender.hp == 0) return PokemonMoveActionStatus::TargetAlreadyFainted;
+
+    PokemonMoveActionResult next{};
+    next.damageResolutionStatus = resolveStandardPokemonMoveDamage(
+        attacker, defender, attacker.moves[moveSlot].moveId, moveIsTypeless, battleRng, next.damageRoll);
+    if (next.damageResolutionStatus != PokemonMoveDamageResult::Ok) {
+        return PokemonMoveActionStatus::DamageResolutionFailed;
+    }
+
+    // A successful move attempt consumes one PP whether it hits or misses.
+    --attacker.moves[moveSlot].pp;
+    if (next.damageRoll.hit && next.damageRoll.damage > 0) {
+        const uint16_t applied = static_cast<uint16_t>(next.damageRoll.damage < defender.hp
+            ? next.damageRoll.damage : defender.hp);
+        defender.hp = static_cast<uint16_t>(defender.hp - applied);
+        next.damageApplied = applied;
+        next.targetFainted = defender.hp == 0;
+    }
+    output = next;
+    return PokemonMoveActionStatus::Ok;
+}
+
 PokemonAbilitySelectionResult selectPokemonAbilityIndex(
     uint16_t speciesDex,
     uint16_t hiddenAbilityRate,

@@ -106,6 +106,23 @@ PokemonMoveDamageResult resolveStandardPokemonMoveDamage(
     PokerogueRngAdapter& battleRng,
     PokemonMoveDamageRoll& output);
 
+struct PokemonMoveActionResult {
+    PokemonMoveDamageRoll damageRoll{};
+    uint16_t damageApplied = 0;
+    bool targetFainted = false;
+    PokemonMoveDamageResult damageResolutionStatus = PokemonMoveDamageResult::Ok;
+};
+enum class PokemonMoveActionStatus : uint8_t {
+    Ok = 0, InvalidMoveSlot, NoPp, TargetAlreadyFainted, DamageResolutionFailed
+};
+PokemonMoveActionStatus useStandardPokemonMove(
+    PokemonBattleState& attacker,
+    PokemonBattleState& defender,
+    uint8_t moveSlot,
+    bool moveIsTypeless,
+    PokerogueRngAdapter& battleRng,
+    PokemonMoveActionResult& output);
+
 enum class PokemonAbilitySelectionResult : uint8_t { Ok = 0, MissingSpecies, InvalidHiddenRate };
 PokemonAbilitySelectionResult selectPokemonAbilityIndex(
     uint16_t speciesDex,

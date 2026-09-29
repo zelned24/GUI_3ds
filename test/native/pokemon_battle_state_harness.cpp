@@ -9,6 +9,8 @@ using Pokerogue3DS::PokemonGender;
 using Pokerogue3DS::PokemonGenderSelectionResult;
 using Pokerogue3DS::PokemonMoveDamageResult;
 using Pokerogue3DS::PokemonMoveDamageRoll;
+using Pokerogue3DS::PokemonMoveActionResult;
+using Pokerogue3DS::PokemonMoveActionStatus;
 using Pokerogue3DS::PokerogueRngAdapter;
 
 extern "C" int runPokemonBattleStateChecks() {
@@ -117,6 +119,51 @@ extern "C" int runPokemonBattleStateChecks() {
     const auto afterImmuneState = immuneRng.state();
     if (beforeImmuneState.carry != afterImmuneState.carry || beforeImmuneState.s0 != afterImmuneState.s0 ||
         beforeImmuneState.s1 != afterImmuneState.s1 || beforeImmuneState.s2 != afterImmuneState.s2) return 50;
+
+    PokemonBattleState moveActor = state;
+    PokemonBattleState oneHpTarget = state;
+    oneHpTarget.hp = 1;
+    PokerogueRngAdapter actionRng;
+    actionRng.sow(damageSeed, sizeof(damageSeed) / sizeof(damageSeed[0]));
+    PokerogueRngAdapter actionExpectedRng = actionRng;
+    PokemonMoveDamageRoll actionExpectedRoll{};
+    if (Pokerogue3DS::resolveStandardPokemonMoveDamage(moveActor, oneHpTarget, 33, false,
+        actionExpectedRng, actionExpectedRoll) != PokemonMoveDamageResult::Ok) return 51;
+    PokemonMoveActionResult actionResult{};
+    if (Pokerogue3DS::useStandardPokemonMove(moveActor, oneHpTarget, 0, false, actionRng,
+        actionResult) != PokemonMoveActionStatus::Ok || !actionResult.damageRoll.hit ||
+        actionResult.damageRoll.damage != actionExpectedRoll.damage || actionResult.damageApplied != 1 ||
+        !actionResult.targetFainted || oneHpTarget.hp != 0 || moveActor.moves[0].pp != 34) return 52;
+    const auto actualActionState = actionRng.state();
+    const auto expectedActionState = actionExpectedRng.state();
+    if (actualActionState.carry != expectedActionState.carry || actualActionState.s0 != expectedActionState.s0 ||
+        actualActionState.s1 != expectedActionState.s1 || actualActionState.s2 != expectedActionState.s2) return 53;
+
+    PokemonBattleState noPpActor = state;
+    noPpActor.moves[0].pp = 0;
+    PokemonBattleState unchangedTarget = state;
+    PokerogueRngAdapter noPpRng;
+    noPpRng.sow(damageSeed, sizeof(damageSeed) / sizeof(damageSeed[0]));
+    const auto beforeNoPpState = noPpRng.state();
+    actionResult = {};
+    actionResult.damageApplied = 123;
+    if (Pokerogue3DS::useStandardPokemonMove(noPpActor, unchangedTarget, 0, false, noPpRng,
+        actionResult) != PokemonMoveActionStatus::NoPp || actionResult.damageApplied != 123 ||
+        unchangedTarget.hp != state.hp || noPpActor.moves[0].pp != 0) return 54;
+    const auto afterNoPpState = noPpRng.state();
+    if (beforeNoPpState.carry != afterNoPpState.carry || beforeNoPpState.s0 != afterNoPpState.s0 ||
+        beforeNoPpState.s1 != afterNoPpState.s1 || beforeNoPpState.s2 != afterNoPpState.s2) return 55;
+
+    PokemonBattleState missActor = state;
+    missActor.moves[0] = {192, 1, 1}; // Zap Cannon: deliberately seeded to miss.
+    PokemonBattleState missTarget = state;
+    PokerogueRngAdapter actionMissRng;
+    actionMissRng.sow(&missSeed, 1);
+    actionResult = {};
+    if (Pokerogue3DS::useStandardPokemonMove(missActor, missTarget, 0, false, actionMissRng,
+        actionResult) != PokemonMoveActionStatus::Ok || actionResult.damageRoll.hit ||
+        actionResult.damageApplied != 0 || actionResult.targetFainted || missTarget.hp != state.hp ||
+        missActor.moves[0].pp != 0) return 56;
 
     input.speciesDex = 6;
     input.formId = "charizard:mega_x";
