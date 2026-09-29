@@ -90,6 +90,13 @@ PokemonBattleInitResult initializePokemonBattleState(
     const PokemonBattleInit& input,
     PokemonBattleState& output);
 
+// Transfers generated identity into a validated battle state; non-identity
+// inputs remain explicit until their pinned generators are ported.
+PokemonBattleInitResult initializePokemonBattleStateForActor(
+    const PokemonBattleInit& nonIdentityInput,
+    const PokemonActorIdentity& identity,
+    PokemonBattleState& output);
+
 enum class PokemonBaseDamageResult : uint8_t { Ok = 0, MissingMove, NonDamagingMove, InvalidStats };
 PokemonBaseDamageResult calculatePokemonBaseDamage(
     const PokemonBattleState& attacker,

@@ -325,5 +325,21 @@ extern "C" int runPokemonBattleStateChecks() {
     const auto actorExpectedRng = expected.state();
     if (actorActualRng.carry != actorExpectedRng.carry || actorActualRng.s0 != actorExpectedRng.s0 ||
         actorActualRng.s1 != actorExpectedRng.s1 || actorActualRng.s2 != actorExpectedRng.s2) return 67;
+
+    PokemonBattleInit actorBattleInput{};
+    actorBattleInput.speciesDex = 6;
+    actorBattleInput.level = 12;
+    actorBattleInput.moveCount = 1;
+    actorBattleInput.moveIds[0] = 33;
+    PokemonBattleState actorBattleState{};
+    if (Pokerogue3DS::initializePokemonBattleStateForActor(
+            actorBattleInput, actorIdentity, actorBattleState) != PokemonBattleInitResult::Ok) return 71;
+    if (actorBattleState.pokemonId != actorIdentity.pokemonId ||
+        actorBattleState.abilityId != charizard->ability1 || actorBattleState.gender != actorIdentity.gender ||
+        !actorBattleState.ivsWereDerivedFromPokemonId || actorBattleState.level != actorBattleInput.level ||
+        actorBattleState.moves[0].moveId != 33) return 72;
+    for (uint8_t i = 0; i < 6; ++i) {
+        if (actorBattleState.ivs[i] != actorIdentity.ivs[i]) return 73;
+    }
     return 0;
 }

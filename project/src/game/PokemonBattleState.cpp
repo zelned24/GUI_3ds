@@ -199,6 +199,30 @@ PokemonBattleInitResult initializePokemonBattleState(
     return PokemonBattleInitResult::Ok;
 }
 
+PokemonBattleInitResult initializePokemonBattleStateForActor(
+    const PokemonBattleInit& nonIdentityInput,
+    const PokemonActorIdentity& identity,
+    PokemonBattleState& output) {
+    const auto* species = PokerogueContent::findSpeciesByDex(nonIdentityInput.speciesDex);
+    if (!species) return PokemonBattleInitResult::MissingSpecies;
+    const auto* form = nonIdentityInput.formId
+        ? PokerogueContent::findFormById(nonIdentityInput.formId)
+        : (species->firstFormId[0] ? PokerogueContent::findFormById(species->firstFormId) : nullptr);
+    const uint16_t ability1 = form && form->ability1 ? form->ability1 : species->ability1;
+    const uint16_t ability2 = form && form->ability2 ? form->ability2 : ability1;
+    const uint16_t abilityHidden = form && form->abilityHidden
+        ? form->abilityHidden : species->abilityHidden;
+    if (identity.abilityIndex > 2) return PokemonBattleInitResult::InvalidAbility;
+
+    PokemonBattleInit input = nonIdentityInput;
+    input.pokemonId = identity.pokemonId;
+    input.deriveIvsFromPokemonId = true;
+    input.gender = identity.gender;
+    input.abilityId = identity.abilityIndex == 2 ? abilityHidden
+        : identity.abilityIndex == 1 ? ability2 : ability1;
+    return initializePokemonBattleState(input, output);
+}
+
 PokemonBaseDamageResult calculatePokemonBaseDamage(
     const PokemonBattleState& attacker,
     const PokemonBattleState& defender,
