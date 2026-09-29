@@ -127,6 +127,10 @@ PokemonNature selectPokemonNature(PokerogueRngAdapter& rng) {
     return static_cast<PokemonNature>(rng.randSeedInt(25));
 }
 
+void generatePokemonActorNature(PokemonActorIdentity& actor, PokerogueRngAdapter& rng) {
+    actor.nature = selectPokemonNature(rng);
+}
+
 PokemonActorIdentityResult generatePokemonActorIdentity(
     uint16_t speciesDex,
     uint16_t hiddenAbilityRate,
@@ -242,6 +246,7 @@ PokemonBattleInitResult initializePokemonBattleStateForActor(
     input.pokemonId = identity.pokemonId;
     input.deriveIvsFromPokemonId = true;
     input.gender = identity.gender;
+    if (identity.nature != PokemonNature::Unspecified) input.nature = identity.nature;
     input.abilityId = identity.abilityIndex == 2 ? abilityHidden
         : identity.abilityIndex == 1 ? ability2 : ability1;
     return initializePokemonBattleState(input, output);

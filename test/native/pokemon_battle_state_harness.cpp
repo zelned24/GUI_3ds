@@ -352,20 +352,41 @@ extern "C" int runPokemonBattleStateChecks() {
     if (actorActualRng.carry != actorExpectedRng.carry || actorActualRng.s0 != actorExpectedRng.s0 ||
         actorActualRng.s1 != actorExpectedRng.s1 || actorActualRng.s2 != actorExpectedRng.s2) return 67;
 
+    const auto expectedActorNature = static_cast<Pokerogue3DS::PokemonNature>(expected.randSeedInt(25));
+    Pokerogue3DS::generatePokemonActorNature(actorIdentity, rng);
+    if (actorIdentity.nature != expectedActorNature) return 78;
+    const auto actorNatureActualRng = rng.state();
+    const auto actorNatureExpectedRng = expected.state();
+    if (actorNatureActualRng.carry != actorNatureExpectedRng.carry ||
+        actorNatureActualRng.s0 != actorNatureExpectedRng.s0 ||
+        actorNatureActualRng.s1 != actorNatureExpectedRng.s1 ||
+        actorNatureActualRng.s2 != actorNatureExpectedRng.s2) return 79;
+
     PokemonBattleInit actorBattleInput{};
     actorBattleInput.speciesDex = 6;
     actorBattleInput.level = 12;
     actorBattleInput.moveCount = 1;
     actorBattleInput.moveIds[0] = 33;
+    actorBattleInput.nature = Pokerogue3DS::PokemonNature::Hardy;
     PokemonBattleState actorBattleState{};
     if (Pokerogue3DS::initializePokemonBattleStateForActor(
             actorBattleInput, actorIdentity, actorBattleState) != PokemonBattleInitResult::Ok) return 71;
-    if (actorBattleState.pokemonId != actorIdentity.pokemonId ||
+    if (actorBattleState.pokemonId != actorIdentity.pokemonId || actorBattleState.nature != actorIdentity.nature ||
         actorBattleState.abilityId != charizard->ability1 || actorBattleState.gender != actorIdentity.gender ||
         !actorBattleState.ivsWereDerivedFromPokemonId || actorBattleState.level != actorBattleInput.level ||
         actorBattleState.moves[0].moveId != 33) return 72;
+    PokemonBattleInit explicitNatureInput = actorBattleInput;
+    explicitNatureInput.pokemonId = actorIdentity.pokemonId;
+    explicitNatureInput.deriveIvsFromPokemonId = true;
+    explicitNatureInput.gender = actorIdentity.gender;
+    explicitNatureInput.abilityId = charizard->ability1;
+    explicitNatureInput.nature = actorIdentity.nature;
+    PokemonBattleState explicitNatureState{};
+    if (Pokerogue3DS::initializePokemonBattleState(explicitNatureInput, explicitNatureState) !=
+        PokemonBattleInitResult::Ok) return 80;
     for (uint8_t i = 0; i < 6; ++i) {
-        if (actorBattleState.ivs[i] != actorIdentity.ivs[i]) return 73;
+        if (actorBattleState.ivs[i] != actorIdentity.ivs[i] ||
+            actorBattleState.stats[i] != explicitNatureState.stats[i]) return 73;
     }
     return 0;
 }

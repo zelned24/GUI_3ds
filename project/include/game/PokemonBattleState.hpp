@@ -30,7 +30,11 @@ struct PokemonActorIdentity {
     uint8_t ivs[6]{};
     uint8_t abilityIndex = 0;
     PokemonGender gender = PokemonGender::Unspecified;
+    PokemonNature nature = PokemonNature::Unspecified;
 };
+
+// Call after upstream form and shiny steps, which precede nature generation.
+void generatePokemonActorNature(PokemonActorIdentity& actor, PokerogueRngAdapter& rng);
 
 enum class PokemonActorIdentityResult : uint8_t {
     Ok = 0, MissingSpecies, InvalidHiddenRate, InvalidGenderRatio
