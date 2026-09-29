@@ -55,8 +55,11 @@ inline PokemonLevelMovePoolResult buildPokemonLevelMovePool(
             if (duplicate) continue;
             if (!output || outputCount >= capacity)
                 return PokemonLevelMovePoolResult::InsufficientCapacity;
-            output[outputCount++] = {entry.moveId,
-                static_cast<uint16_t>(entry.level == 0 ? 60 : entry.level + 20), entry.level};
+            uint16_t weight = entry.level == 0 ? 60 : static_cast<uint16_t>(entry.level + 20);
+            // Upstream treats level-1 attacks at/above EVO_MOVE_BP_THRESHOLD
+            // like reminder moves, using RELEARN_MOVE_WEIGHT.
+            if (entry.level == 1 && move->power >= 70) weight = 50;
+            output[outputCount++] = {entry.moveId, weight, entry.level};
         }
         return PokemonLevelMovePoolResult::Ok;
     };

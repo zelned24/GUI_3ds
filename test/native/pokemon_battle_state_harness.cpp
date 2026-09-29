@@ -565,5 +565,12 @@ extern "C" int runPokemonBattleStateChecks() {
     if (Pokerogue3DS::buildPokemonLevelMovePool(
             dexFor("pikachu"), "charizard:base_0", 55, learnset, 128, learnsetCount) !=
             Pokerogue3DS::PokemonLevelMovePoolResult::InvalidForm || learnsetCount != 0) return 105;
+    if (Pokerogue3DS::buildPokemonLevelMovePool(
+            dexFor("charizard"), "charizard:base_0", 1, learnset, 128, learnsetCount) !=
+        Pokerogue3DS::PokemonLevelMovePoolResult::Ok) return 106;
+    bool dragonClawReminderWeight = false;
+    for (std::size_t i = 0; i < learnsetCount; ++i)
+        if (learnset[i].moveId == 337 && learnset[i].weight == 50) dragonClawReminderWeight = true;
+    if (!dragonClawReminderWeight) return 107;
     return 0;
 }

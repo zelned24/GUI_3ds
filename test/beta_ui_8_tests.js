@@ -175,6 +175,12 @@ export function registerBetaUI8Tests(test) {
     assert.ok(formContext.contextBudget.reference.includes('source.pokerogue-form-selection-rules'));
     assert.ok(formContext.contextBudget.secondary.includes('test.beta-ui-9d'));
     assert.ok(!formContext.nodes.some(node => ['presentation.canvas-renderer', 'presentation.timeline', 'runtime.scene-player'].includes(node.id)));
+
+    const movesetContext = selectRelevantSubgraph(graph, { query: 'generate wild moveset', depth: 1 });
+    assert.ok(movesetContext.contextBudget.primary.includes('runtime.pokemon-level-move-pool'));
+    assert.ok(movesetContext.contextBudget.reference.includes('source.pokerogue-ai-moveset-generation'));
+    assert.ok(movesetContext.contextBudget.secondary.includes('test.beta-ui-9d'));
+    assert.ok(!movesetContext.nodes.some(node => ['presentation.canvas-renderer', 'presentation.timeline', 'runtime.scene-player'].includes(node.id)));
   });
 
   test('BETA-UI-8C: pinned biome import becomes canonical biome and route graph', async () => {
