@@ -23,6 +23,32 @@ extern "C" int runPokemonBattleStateChecks() {
     const uint8_t expectedDerivedIvs[6] = {9, 3, 8, 21, 19, 24};
     for (uint8_t i = 0; i < 6; ++i) if (derivedIvs[i] != expectedDerivedIvs[i]) return 59;
 
+    const int8_t expectedRaised[25] = {
+        -1, 1, 1, 1, 1, 2, -1, 2, 2, 2, 5, 5, -1, 5, 5,
+        3, 3, 3, -1, 3, 4, 4, 4, 4, -1,
+    };
+    const int8_t expectedLowered[25] = {
+        -1, 2, 5, 3, 4, 1, -1, 5, 3, 4, 1, 2, -1, 3, 4,
+        1, 2, 5, -1, 4, 1, 2, 5, 3, -1,
+    };
+    for (uint8_t i = 0; i < 25; ++i) {
+        Pokerogue3DS::PokemonNatureModifiers nature{};
+        if (!Pokerogue3DS::getPokemonNatureModifiers(static_cast<Pokerogue3DS::PokemonNature>(i), nature) ||
+            nature.raisedStat != expectedRaised[i] || nature.loweredStat != expectedLowered[i]) return 74;
+    }
+    Pokerogue3DS::PokemonNatureModifiers invalidNature{};
+    if (Pokerogue3DS::getPokemonNatureModifiers(Pokerogue3DS::PokemonNature::Unspecified, invalidNature)) return 75;
+    const uint16_t natureSeed[] = {'n', 'a', 't', 'u', 'r', 'e'};
+    PokerogueRngAdapter natureRng;
+    natureRng.sow(natureSeed, sizeof(natureSeed) / sizeof(natureSeed[0]));
+    PokerogueRngAdapter natureExpectedRng = natureRng;
+    const auto expectedNature = static_cast<Pokerogue3DS::PokemonNature>(natureExpectedRng.randSeedInt(25));
+    if (Pokerogue3DS::selectPokemonNature(natureRng) != expectedNature) return 76;
+    const auto natureActualState = natureRng.state();
+    const auto natureExpectedState = natureExpectedRng.state();
+    if (natureActualState.carry != natureExpectedState.carry || natureActualState.s0 != natureExpectedState.s0 ||
+        natureActualState.s1 != natureExpectedState.s1 || natureActualState.s2 != natureExpectedState.s2) return 77;
+
     PokemonBattleInit input{};
     input.speciesDex = 1;
     input.level = 5;

@@ -8,6 +8,22 @@ namespace Pokerogue3DS {
 class PokerogueRngAdapter;
 
 enum class PokemonGender : uint8_t { Unspecified = 0, Genderless, Male, Female };
+enum class PokemonNature : uint8_t {
+    Hardy = 0, Lonely, Brave, Adamant, Naughty,
+    Bold, Docile, Relaxed, Impish, Lax,
+    Timid, Hasty, Serious, Jolly, Naive,
+    Modest, Mild, Quiet, Bashful, Rash,
+    Calm, Gentle, Sassy, Careful, Quirky,
+    Unspecified = 255,
+};
+
+struct PokemonNatureModifiers {
+    int8_t raisedStat = -1; // HP=0 is never modified; ATK..SPD are 1..5.
+    int8_t loweredStat = -1;
+};
+
+bool getPokemonNatureModifiers(PokemonNature nature, PokemonNatureModifiers& output);
+PokemonNature selectPokemonNature(PokerogueRngAdapter& rng);
 
 struct PokemonActorIdentity {
     uint32_t pokemonId = 0;
@@ -57,6 +73,7 @@ struct PokemonBattleInit {
     uint32_t pokemonId = 0;
     bool deriveIvsFromPokemonId = false;
     uint8_t ivs[6]{}; // Upstream permanent-stat order: HP, ATK, DEF, SPATK, SPDEF, SPD.
+    PokemonNature nature = PokemonNature::Unspecified;
     int8_t natureRaisedStat = -1;
     int8_t natureLoweredStat = -1;
     uint16_t abilityId = 0;
@@ -75,6 +92,7 @@ struct PokemonBattleState {
     uint16_t maxHp = 0;
     uint16_t hp = 0;
     uint8_t ivs[6]{};
+    PokemonNature nature = PokemonNature::Unspecified;
     uint16_t stats[6]{}; // Upstream permanent-stat order.
     uint8_t moveCount = 0;
     BattleMoveState moves[4]{};

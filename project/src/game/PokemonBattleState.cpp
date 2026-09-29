@@ -108,6 +108,25 @@ void derivePokemonIvsFromId(uint32_t pokemonId, uint8_t outputIvs[6]) {
     outputIvs[5] = static_cast<uint8_t>(pokemonId & 0x0000001Fu);
 }
 
+bool getPokemonNatureModifiers(PokemonNature nature, PokemonNatureModifiers& output) {
+    static const int8_t kRaised[25] = {
+        -1, 1, 1, 1, 1, 2, -1, 2, 2, 2, 5, 5, -1, 5, 5,
+        3, 3, 3, -1, 3, 4, 4, 4, 4, -1,
+    };
+    static const int8_t kLowered[25] = {
+        -1, 2, 5, 3, 4, 1, -1, 5, 3, 4, 1, 2, -1, 3, 4,
+        1, 2, 5, -1, 4, 1, 2, 5, 3, -1,
+    };
+    const auto index = static_cast<uint8_t>(nature);
+    if (index >= 25) return false;
+    output = {kRaised[index], kLowered[index]};
+    return true;
+}
+
+PokemonNature selectPokemonNature(PokerogueRngAdapter& rng) {
+    return static_cast<PokemonNature>(rng.randSeedInt(25));
+}
+
 PokemonActorIdentityResult generatePokemonActorIdentity(
     uint16_t speciesDex,
     uint16_t hiddenAbilityRate,
@@ -163,8 +182,12 @@ PokemonBattleInitResult initializePokemonBattleState(
     if (input.deriveIvsFromPokemonId) derivePokemonIvsFromId(input.pokemonId, instanceIvs);
     else for (uint8_t i = 0; i < 6; ++i) instanceIvs[i] = input.ivs[i];
     for (uint8_t iv : instanceIvs) if (iv > 31) return PokemonBattleInitResult::InvalidIv;
+    PokemonNatureModifiers natureModifiers{input.natureRaisedStat, input.natureLoweredStat};
+    if (input.nature != PokemonNature::Unspecified && !getPokemonNatureModifiers(input.nature, natureModifiers)) {
+        return PokemonBattleInitResult::InvalidNatureStat;
+    }
     const auto validNatureStat = [](int8_t stat) { return stat == -1 || (stat >= 1 && stat <= 5); };
-    if (!validNatureStat(input.natureRaisedStat) || !validNatureStat(input.natureLoweredStat)) {
+    if (!validNatureStat(natureModifiers.raisedStat) || !validNatureStat(natureModifiers.loweredStat)) {
         return PokemonBattleInitResult::InvalidNatureStat;
     }
     if (form ? !abilityBelongsToForm(*form, input.abilityId) : !abilityBelongsToSpecies(*species, input.abilityId)) return PokemonBattleInitResult::InvalidAbility;
@@ -175,6 +198,7 @@ PokemonBattleInitResult initializePokemonBattleState(
     next.formId = form ? form->id : nullptr;
     next.level = input.level;
     next.pokemonId = input.pokemonId;
+    next.nature = input.nature;
     next.abilityId = input.abilityId;
     next.gender = input.gender;
     for (uint8_t i = 0; i < 6; ++i) next.ivs[i] = instanceIvs[i];
@@ -184,7 +208,7 @@ PokemonBattleInitResult initializePokemonBattleState(
         form ? form->spdef : species->spdef, form ? form->speed : species->speed};
     for (uint8_t index = 0; index < 6; ++index) {
         next.stats[index] = calculatedStat(baseStats[index], instanceIvs[index], input.level,
-            index, input.natureRaisedStat, input.natureLoweredStat);
+            index, natureModifiers.raisedStat, natureModifiers.loweredStat);
     }
     next.maxHp = next.stats[0];
     next.hp = next.maxHp;
