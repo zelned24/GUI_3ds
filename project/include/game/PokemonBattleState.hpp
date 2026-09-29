@@ -58,6 +58,10 @@ struct PokemonBattleState {
     bool statsAreBaseFormulaOnly = true;
 };
 
+// Pinned Pokemon constructor derives six five-bit IVs from the actor's
+// 32-bit identity, in permanent-stat order.
+void derivePokemonIvsFromId(uint32_t pokemonId, uint8_t outputIvs[6]);
+
 PokemonBattleInitResult initializePokemonBattleState(
     const PokemonBattleInit& input,
     PokemonBattleState& output);

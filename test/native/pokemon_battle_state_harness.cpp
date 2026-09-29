@@ -14,6 +14,15 @@ using Pokerogue3DS::PokemonMoveActionStatus;
 using Pokerogue3DS::PokerogueRngAdapter;
 
 extern "C" int runPokemonBattleStateChecks() {
+    uint8_t derivedIvs[6]{};
+    Pokerogue3DS::derivePokemonIvsFromId(0xFFFFFFFFu, derivedIvs);
+    for (uint8_t iv : derivedIvs) if (iv != 31) return 57;
+    Pokerogue3DS::derivePokemonIvsFromId(0, derivedIvs);
+    for (uint8_t iv : derivedIvs) if (iv != 0) return 58;
+    Pokerogue3DS::derivePokemonIvsFromId(0x12345678u, derivedIvs);
+    const uint8_t expectedDerivedIvs[6] = {9, 3, 8, 21, 19, 24};
+    for (uint8_t i = 0; i < 6; ++i) if (derivedIvs[i] != expectedDerivedIvs[i]) return 59;
+
     PokemonBattleInit input{};
     input.speciesDex = 1;
     input.level = 5;

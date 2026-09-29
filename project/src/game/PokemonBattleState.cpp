@@ -154,6 +154,16 @@ PokemonBattleInitResult initializePokemonBattleState(
     return PokemonBattleInitResult::Ok;
 }
 
+void derivePokemonIvsFromId(uint32_t pokemonId, uint8_t outputIvs[6]) {
+    if (!outputIvs) return;
+    outputIvs[0] = static_cast<uint8_t>((pokemonId & 0x3E000000u) >> 25);
+    outputIvs[1] = static_cast<uint8_t>((pokemonId & 0x01F00000u) >> 20);
+    outputIvs[2] = static_cast<uint8_t>((pokemonId & 0x000F8000u) >> 15);
+    outputIvs[3] = static_cast<uint8_t>((pokemonId & 0x00007C00u) >> 10);
+    outputIvs[4] = static_cast<uint8_t>((pokemonId & 0x000003E0u) >> 5);
+    outputIvs[5] = static_cast<uint8_t>(pokemonId & 0x0000001Fu);
+}
+
 PokemonBaseDamageResult calculatePokemonBaseDamage(
     const PokemonBattleState& attacker,
     const PokemonBattleState& defender,
