@@ -483,5 +483,30 @@ extern "C" int runPokemonBattleStateChecks() {
     if (Pokerogue3DS::initializePokemonBattleStateForActor(
             selectedFormInput, formActor, selectedFormState) != PokemonBattleInitResult::Ok ||
         selectedFormState.formId != formActor.formId) return 94;
+
+    formContext = {};
+    PokerogueRngAdapter stagedActorRng;
+    stagedActorRng.sow(formSeed, sizeof(formSeed) / sizeof(formSeed[0]));
+    Pokerogue3DS::PokemonActorIdentity stagedActor{};
+    if (Pokerogue3DS::generatePokemonActorIdentity(
+            dexFor("unown"), 256, stagedActorRng, stagedActor) !=
+        Pokerogue3DS::PokemonActorIdentityResult::Ok ||
+        Pokerogue3DS::selectPokemonActorForm(
+            dexFor("unown"), formContext, stagedActorRng, stagedActor) !=
+        Pokerogue3DS::PokemonFormSelectionResult::Ok) return 95;
+    PokerogueRngAdapter combinedActorRng;
+    combinedActorRng.sow(formSeed, sizeof(formSeed) / sizeof(formSeed[0]));
+    Pokerogue3DS::PokemonActorIdentity combinedActor{};
+    if (Pokerogue3DS::generatePokemonActorIdentityAndForm(
+            dexFor("unown"), 256, formContext, combinedActorRng, combinedActor) !=
+        Pokerogue3DS::PokemonActorIdentityResult::Ok ||
+        combinedActor.pokemonId != stagedActor.pokemonId ||
+        combinedActor.abilityIndex != stagedActor.abilityIndex ||
+        combinedActor.gender != stagedActor.gender || combinedActor.formId != stagedActor.formId) return 96;
+    for (uint8_t i = 0; i < 6; ++i) if (combinedActor.ivs[i] != stagedActor.ivs[i]) return 97;
+    const auto combinedRngState = combinedActorRng.state();
+    const auto stagedRngState = stagedActorRng.state();
+    if (combinedRngState.carry != stagedRngState.carry || combinedRngState.s0 != stagedRngState.s0 ||
+        combinedRngState.s1 != stagedRngState.s1 || combinedRngState.s2 != stagedRngState.s2) return 98;
     return 0;
 }

@@ -293,6 +293,27 @@ PokemonActorIdentityResult generatePokemonActorIdentity(
     return PokemonActorIdentityResult::Ok;
 }
 
+PokemonActorIdentityResult generatePokemonActorIdentityAndForm(
+    uint16_t speciesDex,
+    uint16_t hiddenAbilityRate,
+    const PokemonFormSelectionContext& formContext,
+    PokerogueRngAdapter& rng,
+    PokemonActorIdentity& output) {
+    PokemonActorIdentity next{};
+    const auto identityResult = generatePokemonActorIdentity(
+        speciesDex, hiddenAbilityRate, rng, next);
+    if (identityResult != PokemonActorIdentityResult::Ok) return identityResult;
+    const auto formResult = selectPokemonActorForm(speciesDex, formContext, rng, next);
+    if (formResult == PokemonFormSelectionResult::MissingSpecies) {
+        return PokemonActorIdentityResult::MissingSpecies;
+    }
+    if (formResult != PokemonFormSelectionResult::Ok) {
+        return PokemonActorIdentityResult::MissingForm;
+    }
+    output = next;
+    return PokemonActorIdentityResult::Ok;
+}
+
 PokemonBattleInitResult initializePokemonBattleState(
     const PokemonBattleInit& input,
     PokemonBattleState& output) {

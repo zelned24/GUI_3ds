@@ -62,7 +62,7 @@ PokemonFormSelectionResult selectPokemonActorForm(
 void generatePokemonActorNature(PokemonActorIdentity& actor, PokerogueRngAdapter& rng);
 
 enum class PokemonActorIdentityResult : uint8_t {
-    Ok = 0, MissingSpecies, InvalidHiddenRate, InvalidGenderRatio
+    Ok = 0, MissingSpecies, InvalidHiddenRate, InvalidGenderRatio, MissingForm
 };
 
 // Mirrors the pinned Pokemon constructor's pre-form identity draws:
@@ -70,6 +70,15 @@ enum class PokemonActorIdentityResult : uint8_t {
 PokemonActorIdentityResult generatePokemonActorIdentity(
     uint16_t speciesDex,
     uint16_t hiddenAbilityRate,
+    PokerogueRngAdapter& rng,
+    PokemonActorIdentity& output);
+
+// Runs identity draws and pinned form selection in constructor order, publishing
+// the actor value only after both stages succeed. Shiny/variant and nature follow.
+PokemonActorIdentityResult generatePokemonActorIdentityAndForm(
+    uint16_t speciesDex,
+    uint16_t hiddenAbilityRate,
+    const PokemonFormSelectionContext& formContext,
     PokerogueRngAdapter& rng,
     PokemonActorIdentity& output);
 
