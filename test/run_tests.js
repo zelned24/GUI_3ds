@@ -688,6 +688,11 @@ test('PokerogueImporter dynamically parses arbitrary TypeScript source without m
           [0, Moves.RAZOR_LEAF],
           [-1, Moves.VINE_WHIP]
         ],
+        formLevelMoves: {
+          "BASE": [[5, MoveId.RAZOR_LEAF]],
+          [SpeciesFormKey.GIGANTAMAX]: [[20, MoveId.VINE_WHIP]],
+          partner: [[RELEARN_MOVE, MoveId.TACKLE]]
+        },
         eggMoves: [Moves.PETAL_DANCE]
       }
     };
@@ -720,6 +725,10 @@ test('PokerogueImporter dynamically parses arbitrary TypeScript source without m
   assert.strictEqual(bulba.levelMoves.length, 5);
   assert.strictEqual(bulba.levelMoves[3].level, 0, 'evolution moves keep the upstream zero sentinel');
   assert.strictEqual(bulba.levelMoves[4].level, -1, 'relearner moves keep the upstream negative sentinel');
+  assert.deepStrictEqual(bulba.extensions.upstreamFormLevelMoves.GIGANTAMAX, [
+    { level: 20, move: 'vine_whip', id: 'vine_whip' }
+  ], 'computed SpeciesFormKey maps retain their level-up moves by upstream form key');
+  assert.strictEqual(bulba.extensions.upstreamFormLevelMoves.PARTNER[0].level, -1, 'relearner constants retain their signed semantic value in form learnsets');
   assert.strictEqual(bulba.eggMoves[0], 'petal_dance');
 });
 

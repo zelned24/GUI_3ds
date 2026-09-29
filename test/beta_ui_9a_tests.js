@@ -15,6 +15,8 @@ export function registerBetaUI9ATests(test) {
     const pikachu = imported.species.find(species => species.id === 'pikachu');
     assert.strictEqual(pikachu.baseTotal, 320, 'explicit upstream baseTotal is normalized as canonical data');
     assert.strictEqual(pikachu.growthRate, 'MEDIUM_FAST', 'growth-rate identifier is normalized without a gameplay port');
+    const pikachuGigantamax = imported.canonicalContent.collections.forms.find(form => form.speciesId === 'pikachu' && form.formKey === 'GIGANTAMAX');
+    assert.ok(pikachuGigantamax.levelMoves.some(move => move.move === 'zippy_zap' && move.level === 20), 'pinned form-specific level moves reach the matching canonical form record');
     assert.deepStrictEqual(pikachu.rarity, { legendary: null, subLegendary: null, mythical: null }, 'absent upstream rarity fields remain distinguishable from explicit false');
     const legendary = imported.species.find(species => species.rarity.legendary === true);
     assert.ok(legendary, 'explicit upstream legendary classification is retained');
@@ -80,11 +82,13 @@ export function registerBetaUI9ATests(test) {
   });
 
   test('BETA-UI-9A: Old 3DS C++ bundle matches pinned import report and carries real catalogs', async () => {
-    const [header, reportText] = await Promise.all([
+    const [header, reportText, canonicalText] = await Promise.all([
       readFile('project/generated/include/content/PokerogueRuntimeContent.hpp', 'utf8'),
       readFile('project/data/pokerogue/import-report.json', 'utf8'),
+      readFile('project/data/pokerogue/canonical-content.json', 'utf8'),
     ]);
     const report = JSON.parse(reportText);
+    const canonical = JSON.parse(canonicalText);
     assert.ok(header.includes(`kContentHash[] = "${report.contentHash}"`));
     assert.ok(header.includes(`kPokerogueRevision[] = "${report.sourceRevisions.pokerogue}"`));
     for (const domain of ['kSpecies', 'kForms', 'kMoves', 'kAbilities', 'kItems', 'kLocales', 'kModes', 'kBiomes', 'kBiomeEncounterPools', 'kBiomeTrainerPools', 'kRoutes']) {
@@ -98,6 +102,20 @@ export function registerBetaUI9ATests(test) {
     assert.match(header, /\{262, 2, -1, 100, 10, 0, -1, 3, MoveHasSacrificialAttrOnHit, "memento", "Memento"/);
     assert.ok(header.includes('uint8_t upstreamFlags'), 'native move metadata exposes upstream move-generation flags');
     assert.ok(header.includes('int8_t level; uint16_t moveId;'), 'native learnset retains upstream signed sentinel levels');
+    assert.ok(header.includes('levelMovesFor(const Form& form)'), 'native runtime exposes form-specific learnset ranges');
+    const gigantamaxRow = header.split(/\r?\n/).find(line => line.includes('{"pikachu:gigantamax"'));
+    const gigantamaxRange = gigantamaxRow?.match(/, (\d+), (\d+), "ELECTRIC"/);
+    assert.ok(gigantamaxRange, 'native Pikachu Gigantamax form exposes a learnset range');
+    const formOffset = Number(gigantamaxRange[1]);
+    const formCount = Number(gigantamaxRange[2]);
+    const formLevelMoves = canonical.collections.forms.find(form => form.id === 'pikachu:gigantamax').levelMoves;
+    const canonicalMoveIds = new Map(canonical.collections.moves.map(move => [move.id, move.moveId]));
+    const nativeLearnsetRows = header.slice(header.indexOf('kSpeciesLevelMoves[] = {')).split(/\r?\n/)
+      .filter(line => /^\s*\{\d+, -?\d+, \d+\}/.test(line))
+      .map(line => line.match(/\{(\d+), (-?\d+), (\d+)\}/).slice(1).map(Number));
+    assert.deepStrictEqual(nativeLearnsetRows.slice(formOffset, formOffset + formCount).map(([, level, moveId]) => [level, moveId]),
+      formLevelMoves.map(move => [move.level, canonicalMoveIds.get(move.move)]),
+      'native form learnset range exactly preserves canonical form move order and levels');
     assert.match(header, /\{1, 1, 33\},\r?\n\s*\{1, 1, 45\}/, 'native learnset uses canonical MoveId references in upstream level order');
     assert.ok(header.includes('findMoveById(uint16_t id)'), 'C++ runtime exposes a compact move lookup');
     assert.ok(header.includes('levelMovesFor(const Species& species)'), 'species records expose a bounded range into shared learnset storage');

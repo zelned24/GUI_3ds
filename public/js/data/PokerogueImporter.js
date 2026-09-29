@@ -62,6 +62,45 @@ function splitTopLevelArguments(source) {
   return parts;
 }
 
+function parseLevelMoveArray(arrayLiteral, context) {
+  if (!arrayLiteral?.startsWith('[') || !arrayLiteral.endsWith(']')) throw new Error(`Invalid import: ${context} must be an array`);
+  const moves = [];
+  for (const rawEntry of splitTopLevelArguments(arrayLiteral.slice(1, -1))) {
+    const entry = rawEntry.replace(/\/\*[\s\S]*?\*\/|\/\/[^\n]*/g, '').trim();
+    if (!entry) continue;
+    const tuple = entry.match(/^\[\s*(-?\d+|EVOLVE_MOVE|RELEARN_MOVE)\s*,\s*(?:MoveId\.|Moves\.)?([A-Za-z0-9_]+)\s*\]$/);
+    if (!tuple) throw new Error(`Invalid import: unsupported ${context} tuple ${entry}`);
+    const level = tuple[1] === 'EVOLVE_MOVE' ? 0 : tuple[1] === 'RELEARN_MOVE' ? -1 : Number(tuple[1]);
+    moves.push({ level, move: tuple[2].toLowerCase(), id: tuple[2].toLowerCase() });
+  }
+  return moves;
+}
+
+function parseFormLevelMoves(source, context) {
+  const marker = /\bformLevelMoves\s*:\s*\{/g.exec(source);
+  if (!marker) return null;
+  const open = source.indexOf('{', marker.index);
+  const literal = extractBalancedLiteral(source, open);
+  if (!literal) throw new Error(`Invalid import: unclosed formLevelMoves object for ${context}`);
+  const result = {};
+  for (const rawEntry of splitTopLevelArguments(literal.slice(1, -1))) {
+    const entry = rawEntry.replace(/\/\*[\s\S]*?\*\/|\/\/[^\n]*/g, '').trim();
+    if (!entry) continue;
+    const colon = entry.indexOf(':');
+    if (colon < 0) throw new Error(`Invalid import: malformed formLevelMoves entry for ${context}: ${entry}`);
+    const rawKey = entry.slice(0, colon).trim();
+    const enumKey = rawKey.match(/^\[\s*SpeciesFormKey\.([A-Z0-9_]+)\s*\]$/);
+    const stringKey = rawKey.match(/^(?:"([^"]*)"|'([^']*)'|([A-Za-z0-9_-]+))$/);
+    if (!enumKey && !stringKey) throw new Error(`Invalid import: unsupported formLevelMoves key for ${context}: ${rawKey}`);
+    const key = enumKey?.[1] ?? (stringKey[1] ?? stringKey[2] ?? stringKey[3]).toUpperCase();
+    const arrayStart = entry.indexOf('[', colon + 1);
+    const arrayLiteral = extractBalancedLiteral(entry, arrayStart);
+    if (!arrayLiteral) throw new Error(`Invalid import: unsupported formLevelMoves value for ${context}.${key}`);
+    result[key] = parseLevelMoveArray(arrayLiteral, `${context}.formLevelMoves.${key}`);
+  }
+  return result;
+}
+
 function readConstructorCall(source, openingIndex) {
   let depth = 0, quote = null, escaped = false;
   for (let index = openingIndex; index < source.length; index++) {
@@ -411,8 +450,21 @@ export class PokerogueImporter {
               if (end < 0) throw new Error(`Invalid import: unclosed PokemonForm record for ${record.id}`);
               const rawForm = formText.slice(start, end + 1);
               const formName = rawForm.match(/formName\s*:\s*["']([^"']+)/)?.[1] || 'unnamed';
-              const formKey = rawForm.match(/formKey\s*:\s*(?:SpeciesFormKey\.)?([A-Z0-9_]+)/)?.[1] || 'BASE';
-              forms.push({ id: `${record.id}:${(formKey === 'BASE' ? `base_${formIndex}` : formKey.toLowerCase())}`, speciesId: record.id, formKey, name: formName, types: [...rawForm.matchAll(/type[12]\s*:\s*PokemonType\.([A-Z]+)/g)].map(match => match[1]), baseStats: Object.fromEntries(['Hp', 'Atk', 'Def', 'Spatk', 'Spdef', 'Spd'].map(stat => [stat.toLowerCase(), Number(rawForm.match(new RegExp(`base${stat}\\s*:\\s*(\\d+)`))?.[1] || 0)])), assetReference: { repository: repos['pokerogue-assets'].url, revision: repos['pokerogue-assets'].revision, speciesId: numericId, resolution: 'pending-source-manifest' }, provenance: { sourceRepository: game.url, sourceRevision: game.revision, sourcePath: path, sourceSymbol: `SpeciesId.${symbol}.forms`, sourceType: CanonicalSourceType.UPSTREAM, sourceHash: sourceHash(file) }, extensions: { upstreamRawRecord: { format: 'typescript-source-fragment', value: rawForm }, runtimeTransform: 'NOT_IMPORTED' } });
+              const formKeyMatch = rawForm.match(/formKey\s*:\s*(?:SpeciesFormKey\.([A-Z0-9_]+)|["']([^"']+)["']|([A-Za-z0-9_-]+))/);
+              const formKey = formKeyMatch?.[1] || formKeyMatch?.[2]?.toUpperCase() || formKeyMatch?.[3]?.toUpperCase() || 'BASE';
+              const levelMoves = record.extensions?.upstreamFormLevelMoves?.[formKey] ?? [];
+              forms.push({
+                id: `${record.id}:${(formKey === 'BASE' ? `base_${formIndex}` : formKey.toLowerCase())}`,
+                speciesId: record.id,
+                formKey,
+                name: formName,
+                types: [...rawForm.matchAll(/type[12]\s*:\s*PokemonType\.([A-Z]+)/g)].map(match => match[1]),
+                baseStats: Object.fromEntries(['Hp', 'Atk', 'Def', 'Spatk', 'Spdef', 'Spd'].map(stat => [stat.toLowerCase(), Number(rawForm.match(new RegExp(`base${stat}\\s*:\\s*(\\d+)`))?.[1] || 0)])),
+                levelMoves,
+                assetReference: { repository: repos['pokerogue-assets'].url, revision: repos['pokerogue-assets'].revision, speciesId: numericId, resolution: 'pending-source-manifest' },
+                provenance: { sourceRepository: game.url, sourceRevision: game.revision, sourcePath: path, sourceSymbol: `SpeciesId.${symbol}.forms`, sourceType: CanonicalSourceType.UPSTREAM, sourceHash: sourceHash(file) },
+                extensions: { upstreamRawRecord: { format: 'typescript-source-fragment', value: rawForm }, runtimeTransform: 'NOT_IMPORTED' }
+              });
               formIndex++;
               ctorRe.lastIndex = end + 1;
             }
@@ -954,14 +1006,16 @@ export class PokerogueImporter {
           }
         }
         const levelMovesContent = block.substring(arrStart + 1, arrEnd);
-        const mRegex = /\[\s*(-?\d+)\s*,\s*(?:MoveId\.|Moves\.)?([A-Za-z0-9_]+)\s*\]|\{\s*level\s*:\s*(-?\d+)\s*,\s*move\s*:\s*['"`]?([A-Za-z0-9_]+)['"`]?\s*\}/g;
+        const mRegex = /\[\s*(-?\d+|EVOLVE_MOVE|RELEARN_MOVE)\s*,\s*(?:MoveId\.|Moves\.)?([A-Za-z0-9_]+)\s*\]|\{\s*level\s*:\s*(-?\d+|EVOLVE_MOVE|RELEARN_MOVE)\s*,\s*move\s*:\s*['"`]?([A-Za-z0-9_]+)['"`]?\s*\}/g;
         let mEntry;
         while ((mEntry = mRegex.exec(levelMovesContent)) !== null) {
-          const lvl = Number(mEntry[1] || mEntry[3]);
+          const rawLevel = mEntry[1] || mEntry[3];
+          const lvl = rawLevel === 'EVOLVE_MOVE' ? 0 : rawLevel === 'RELEARN_MOVE' ? -1 : Number(rawLevel);
           const mvName = String(mEntry[2] || mEntry[4]).toLowerCase();
           moveset.push({ level: lvl, move: mvName, id: mvName });
         }
       }
+      const formLevelMoves = parseFormLevelMoves(block, speciesKey);
 
       // Balanced extraction for eggMoves
       const eggMoves = [];
@@ -1058,6 +1112,7 @@ export class PokerogueImporter {
         raw: { format: 'typescript-source', value: block },
         extensions: {
           upstreamRawRecord: { format: 'typescript-source-fragment', value: block },
+          ...(formLevelMoves ? { upstreamFormLevelMoves: formLevelMoves } : {}),
           category: block.match(/category\s*:\s*["']([^"']+)/)?.[1] || null,
           ...(evolutionArrayMatch ? { upstreamEvolutionDeclarations: { status: unsupportedEvolutionDeclarations.length ? 'PARTIAL_PARSE' : 'PARSED', unsupported: unsupportedEvolutionDeclarations } } : { upstreamEvolutionDeclarations: { status: 'NOT_DECLARED' } })
         }
