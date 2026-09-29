@@ -314,6 +314,38 @@ PokemonActorIdentityResult generatePokemonActorIdentityAndForm(
     return PokemonActorIdentityResult::Ok;
 }
 
+PokemonActorIdentityResult generatePokemonActorForWildEncounter(
+    uint16_t speciesDex,
+    uint16_t hiddenAbilityRate,
+    const PokemonFormSelectionContext& formContext,
+    PokerogueRngAdapter& rng,
+    PokemonActorIdentity& output) {
+    const auto* species = PokerogueContent::findSpeciesByDex(speciesDex);
+    if (!species) return PokemonActorIdentityResult::MissingSpecies;
+
+    PokemonActorIdentity next{};
+    const auto identityResult = generatePokemonActorIdentityAndForm(
+        speciesDex, hiddenAbilityRate, formContext, rng, next);
+    if (identityResult != PokemonActorIdentityResult::Ok) return identityResult;
+
+    const auto* form = next.formId ? PokerogueContent::findFormById(next.formId) : nullptr;
+    const char* primaryType = form ? form->type1 : species->type1;
+    const char* secondaryType = form ? form->type2 : species->type2;
+    if (!primaryType || !primaryType[0] || sameText(primaryType, "NONE")) {
+        return PokemonActorIdentityResult::InvalidTypes;
+    }
+    const uint8_t typeCount = secondaryType && secondaryType[0] && !sameText(secondaryType, "NONE")
+        ? 2 : 1;
+
+    // Pokemon's constructor generates nature before the initial tera type.
+    // Shiny variant generation is scoped to a derived seed and restores wave RNG.
+    generatePokemonActorNature(next, rng);
+    next.initialTeraTypeIndex = static_cast<uint8_t>(rng.randSeedInt(typeCount));
+    next.initialTeraTypeResolved = true;
+    output = next;
+    return PokemonActorIdentityResult::Ok;
+}
+
 PokemonBattleInitResult initializePokemonBattleState(
     const PokemonBattleInit& input,
     PokemonBattleState& output) {

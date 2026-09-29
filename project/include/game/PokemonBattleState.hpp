@@ -32,6 +32,8 @@ struct PokemonActorIdentity {
     PokemonGender gender = PokemonGender::Unspecified;
     PokemonNature nature = PokemonNature::Unspecified;
     const char* formId = nullptr;
+    uint8_t initialTeraTypeIndex = 0;
+    bool initialTeraTypeResolved = false;
 };
 
 struct PokemonFormSelectionContext {
@@ -62,7 +64,7 @@ PokemonFormSelectionResult selectPokemonActorForm(
 void generatePokemonActorNature(PokemonActorIdentity& actor, PokerogueRngAdapter& rng);
 
 enum class PokemonActorIdentityResult : uint8_t {
-    Ok = 0, MissingSpecies, InvalidHiddenRate, InvalidGenderRatio, MissingForm
+    Ok = 0, MissingSpecies, InvalidHiddenRate, InvalidGenderRatio, MissingForm, InvalidTypes
 };
 
 // Mirrors the pinned Pokemon constructor's pre-form identity draws:
@@ -76,6 +78,17 @@ PokemonActorIdentityResult generatePokemonActorIdentity(
 // Runs identity draws and pinned form selection in constructor order, publishing
 // the actor value only after both stages succeed. Shiny/variant and nature follow.
 PokemonActorIdentityResult generatePokemonActorIdentityAndForm(
+    uint16_t speciesDex,
+    uint16_t hiddenAbilityRate,
+    const PokemonFormSelectionContext& formContext,
+    PokerogueRngAdapter& rng,
+    PokemonActorIdentity& output);
+
+// Generates the constructor fields and RNG draws used for a new, non-fused
+// wild actor in a normal Classic encounter: identity/form, nature, then its
+// initial tera-type pick. The caller must account for any upstream modifiers
+// that can fuse/otherwise alter an actor before using this helper.
+PokemonActorIdentityResult generatePokemonActorForWildEncounter(
     uint16_t speciesDex,
     uint16_t hiddenAbilityRate,
     const PokemonFormSelectionContext& formContext,

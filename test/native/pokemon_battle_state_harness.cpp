@@ -4,6 +4,9 @@
 using Pokerogue3DS::PokemonBattleInit;
 using Pokerogue3DS::PokemonBattleInitResult;
 using Pokerogue3DS::PokemonBattleState;
+using Pokerogue3DS::PokemonActorIdentity;
+using Pokerogue3DS::PokemonFormSelectionContext;
+using Pokerogue3DS::PokemonNature;
 using Pokerogue3DS::PokemonAbilitySelectionResult;
 using Pokerogue3DS::PokemonGender;
 using Pokerogue3DS::PokemonGenderSelectionResult;
@@ -508,5 +511,36 @@ extern "C" int runPokemonBattleStateChecks() {
     const auto stagedRngState = stagedActorRng.state();
     if (combinedRngState.carry != stagedRngState.carry || combinedRngState.s0 != stagedRngState.s0 ||
         combinedRngState.s1 != stagedRngState.s1 || combinedRngState.s2 != stagedRngState.s2) return 98;
+
+    PokerogueRngAdapter wildActorRng;
+    wildActorRng.sow(formSeed, sizeof(formSeed) / sizeof(formSeed[0]));
+    PokerogueRngAdapter stagedWildRng;
+    stagedWildRng.sow(formSeed, sizeof(formSeed) / sizeof(formSeed[0]));
+    PokemonFormSelectionContext wildContext{};
+    wildContext.biomeId = "town";
+    wildContext.timeOfDay = "DAY";
+    wildContext.waveIndex = 1;
+    PokemonActorIdentity wildActor{};
+    if (Pokerogue3DS::generatePokemonActorForWildEncounter(
+            dexFor("charizard"), 256, wildContext, wildActorRng, wildActor) !=
+            Pokerogue3DS::PokemonActorIdentityResult::Ok ||
+        !wildActor.initialTeraTypeResolved || wildActor.nature == PokemonNature::Unspecified) return 99;
+    PokemonActorIdentity stagedWildActor{};
+    if (Pokerogue3DS::generatePokemonActorIdentityAndForm(
+            dexFor("charizard"), 256, wildContext, stagedWildRng, stagedWildActor) !=
+        Pokerogue3DS::PokemonActorIdentityResult::Ok) return 100;
+    Pokerogue3DS::generatePokemonActorNature(stagedWildActor, stagedWildRng);
+    const auto* selectedWildForm = PokerogueContent::findFormById(stagedWildActor.formId);
+    const char* wildSecondaryType = selectedWildForm ? selectedWildForm->type2 :
+        PokerogueContent::findSpeciesByDex(dexFor("charizard"))->type2;
+    const uint8_t wildTypeCount = wildSecondaryType && wildSecondaryType[0] ? 2 : 1;
+    const uint8_t expectedTeraIndex = static_cast<uint8_t>(stagedWildRng.randSeedInt(wildTypeCount));
+    const auto wildRngState = wildActorRng.state();
+    const auto stagedWildRngState = stagedWildRng.state();
+    if (wildActor.pokemonId != stagedWildActor.pokemonId ||
+        wildActor.formId != stagedWildActor.formId || wildActor.nature != stagedWildActor.nature ||
+        wildActor.initialTeraTypeIndex != expectedTeraIndex ||
+        wildRngState.carry != stagedWildRngState.carry || wildRngState.s0 != stagedWildRngState.s0 ||
+        wildRngState.s1 != stagedWildRngState.s1 || wildRngState.s2 != stagedWildRngState.s2) return 101;
     return 0;
 }
