@@ -12,6 +12,7 @@ enum class PokemonBattleInitResult : uint8_t {
     InvalidIv,
     InvalidNatureStat,
     InvalidAbility,
+    InvalidForm,
     InvalidMoveCount,
     MissingMove,
     InvalidMovePp,
@@ -27,6 +28,7 @@ struct BattleMoveState {
 // defaults until the pinned Pokemon generation sequence is integrated.
 struct PokemonBattleInit {
     uint16_t speciesDex = 0;
+    const char* formId = nullptr; // Null selects the imported base form.
     uint16_t level = 0;
     uint8_t ivs[6]{}; // Upstream permanent-stat order: HP, ATK, DEF, SPATK, SPDEF, SPD.
     int8_t natureRaisedStat = -1;
@@ -38,6 +40,7 @@ struct PokemonBattleInit {
 
 struct PokemonBattleState {
     uint16_t speciesDex = 0;
+    const char* formId = nullptr;
     uint16_t level = 0;
     uint16_t abilityId = 0;
     uint16_t maxHp = 0;

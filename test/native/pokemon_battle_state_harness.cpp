@@ -20,6 +20,28 @@ extern "C" int runPokemonBattleStateChecks() {
         state.moves[1].moveId != 45 || state.moves[1].pp != 40) return 3;
     if (!state.statsAreBaseFormulaOnly) return 4;
 
+    input.speciesDex = 6;
+    input.formId = "charizard:mega_x";
+    input.abilityId = 181; // Tough Claws, from Charizard Mega X upstream form data.
+    input.moveCount = 0;
+    input.ivs[0] = input.ivs[1] = input.ivs[2] = input.ivs[3] = input.ivs[4] = input.ivs[5] = 0;
+    input.natureRaisedStat = input.natureLoweredStat = -1;
+    if (Pokerogue3DS::initializePokemonBattleState(input, state) != PokemonBattleInitResult::Ok) return 15;
+    if (state.formId == nullptr || state.formId[0] != 'c' || state.stats[1] != 18) return 16;
+    input.formId = "venusaur:mega";
+    if (Pokerogue3DS::initializePokemonBattleState(input, state) != PokemonBattleInitResult::InvalidForm) return 17;
+    input.formId = "charizard:mega_x";
+    input.abilityId = 66;
+    if (Pokerogue3DS::initializePokemonBattleState(input, state) != PokemonBattleInitResult::InvalidAbility) return 18;
+
+    input.speciesDex = 1;
+    input.formId = nullptr;
+    input.abilityId = 65;
+    input.moveCount = 2;
+    input.moveIds[0] = 33;
+    input.moveIds[1] = 45;
+    input.ivs[0] = input.ivs[1] = input.ivs[2] = input.ivs[3] = input.ivs[4] = input.ivs[5] = 0;
+
     input.ivs[0] = input.ivs[1] = input.ivs[2] = input.ivs[3] = input.ivs[4] = input.ivs[5] = 31;
     input.natureRaisedStat = 1;
     input.natureLoweredStat = 2;
