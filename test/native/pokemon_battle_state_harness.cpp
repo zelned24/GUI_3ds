@@ -7,6 +7,9 @@ using Pokerogue3DS::PokemonBattleState;
 using Pokerogue3DS::PokemonAbilitySelectionResult;
 using Pokerogue3DS::PokemonGender;
 using Pokerogue3DS::PokemonGenderSelectionResult;
+using Pokerogue3DS::PokemonMoveDamageResult;
+using Pokerogue3DS::PokemonMoveDamageRoll;
+using Pokerogue3DS::PokerogueRngAdapter;
 
 extern "C" int runPokemonBattleStateChecks() {
     PokemonBattleInit input{};
@@ -58,6 +61,62 @@ extern "C" int runPokemonBattleStateChecks() {
     damageTarget.speciesDex = 92;
     if (Pokerogue3DS::calculatePokemonDamageCore(state, damageTarget, 33, false, coreDamage) !=
         Pokerogue3DS::PokemonDamageCoreResult::Ok || coreDamage != 0) return 41;
+
+    const uint16_t damageSeed[] = {'m', 'o', 'v', 'e'};
+    Pokerogue3DS::PokerogueRngAdapter damageRng;
+    damageRng.sow(damageSeed, sizeof(damageSeed) / sizeof(damageSeed[0]));
+    Pokerogue3DS::PokerogueRngAdapter damageExpectedRng = damageRng;
+    const uint8_t accuracyRoll = static_cast<uint8_t>(damageExpectedRng.randSeedInt(100));
+    const uint8_t criticalRoll = static_cast<uint8_t>(damageExpectedRng.randSeedInt(24));
+    const uint8_t randomPercent = static_cast<uint8_t>(damageExpectedRng.randSeedIntRange(85, 100));
+    const double expectedRawDamage = 5.2 * (criticalRoll == 0 ? 1.5 : 1.0) *
+        (static_cast<double>(randomPercent) / 100.0);
+    const uint32_t expectedDamage = expectedRawDamage < 1.0 ? 1 : static_cast<uint32_t>(expectedRawDamage);
+    PokemonBattleState sameSpeciesTarget = state;
+    PokemonMoveDamageRoll damageRoll{};
+    if (Pokerogue3DS::resolveStandardPokemonMoveDamage(state, sameSpeciesTarget, 33, false,
+        damageRng, damageRoll) != PokemonMoveDamageResult::Ok) return 43;
+    if (!damageRoll.hit || damageRoll.accuracyRoll != accuracyRoll || !damageRoll.accuracyWasRolled ||
+        damageRoll.criticalRoll != criticalRoll || damageRoll.critical != (criticalRoll == 0) ||
+        damageRoll.randomDamagePercent != randomPercent || damageRoll.damage != expectedDamage) return 44;
+    const auto actualDamageRngState = damageRng.state();
+    const auto expectedDamageRngState = damageExpectedRng.state();
+    if (actualDamageRngState.carry != expectedDamageRngState.carry || actualDamageRngState.s0 != expectedDamageRngState.s0 ||
+        actualDamageRngState.s1 != expectedDamageRngState.s1 || actualDamageRngState.s2 != expectedDamageRngState.s2) return 45;
+
+    PokerogueRngAdapter missRng;
+    PokerogueRngAdapter missExpectedRng;
+    uint16_t missSeed = 0;
+    bool foundMissSeed = false;
+    for (uint16_t candidate = 1; candidate < 256 && !foundMissSeed; ++candidate) {
+        missRng.sow(&candidate, 1);
+        missExpectedRng = missRng;
+        if (missExpectedRng.randSeedInt(100) >= 50) { missSeed = candidate; foundMissSeed = true; }
+    }
+    if (!foundMissSeed) return 46;
+    missRng.sow(&missSeed, 1);
+    missExpectedRng = missRng;
+    const uint8_t expectedMissRoll = static_cast<uint8_t>(missExpectedRng.randSeedInt(100));
+    damageTarget = state;
+    damageRoll = {};
+    if (Pokerogue3DS::resolveStandardPokemonMoveDamage(state, damageTarget, 192, false,
+        missRng, damageRoll) != PokemonMoveDamageResult::Ok || damageRoll.hit ||
+        !damageRoll.accuracyWasRolled || damageRoll.accuracyRoll != expectedMissRoll || damageRoll.damage != 0) return 47;
+    const auto actualMissState = missRng.state();
+    const auto expectedMissState = missExpectedRng.state();
+    if (actualMissState.carry != expectedMissState.carry || actualMissState.s0 != expectedMissState.s0 ||
+        actualMissState.s1 != expectedMissState.s1 || actualMissState.s2 != expectedMissState.s2) return 48;
+
+    PokerogueRngAdapter immuneRng;
+    immuneRng.sow(damageSeed, sizeof(damageSeed) / sizeof(damageSeed[0]));
+    const auto beforeImmuneState = immuneRng.state();
+    damageTarget.speciesDex = 92;
+    damageRoll = {};
+    if (Pokerogue3DS::resolveStandardPokemonMoveDamage(state, damageTarget, 33, false,
+        immuneRng, damageRoll) != PokemonMoveDamageResult::Ok || damageRoll.hit || damageRoll.damage != 0) return 49;
+    const auto afterImmuneState = immuneRng.state();
+    if (beforeImmuneState.carry != afterImmuneState.carry || beforeImmuneState.s0 != afterImmuneState.s0 ||
+        beforeImmuneState.s1 != afterImmuneState.s1 || beforeImmuneState.s2 != afterImmuneState.s2) return 50;
 
     input.speciesDex = 6;
     input.formId = "charizard:mega_x";

@@ -85,6 +85,27 @@ PokemonDamageCoreResult calculatePokemonDamageCore(
     bool moveIsTypeless,
     uint32_t& outputDamage);
 
+struct PokemonMoveDamageRoll {
+    bool hit = false;
+    bool critical = false;
+    bool accuracyWasRolled = false;
+    uint8_t accuracyRoll = 0;
+    uint8_t criticalRoll = 0;
+    uint8_t randomDamagePercent = 0;
+    double typeEffectiveness = 1.0;
+    uint32_t damage = 0;
+};
+enum class PokemonMoveDamageResult : uint8_t {
+    Ok = 0, MissingMove, MissingSpecies, NonDamagingMove, InvalidAccuracy, InvalidStats, InvalidType
+};
+PokemonMoveDamageResult resolveStandardPokemonMoveDamage(
+    const PokemonBattleState& attacker,
+    const PokemonBattleState& defender,
+    uint16_t moveId,
+    bool moveIsTypeless,
+    PokerogueRngAdapter& battleRng,
+    PokemonMoveDamageRoll& output);
+
 enum class PokemonAbilitySelectionResult : uint8_t { Ok = 0, MissingSpecies, InvalidHiddenRate };
 PokemonAbilitySelectionResult selectPokemonAbilityIndex(
     uint16_t speciesDex,

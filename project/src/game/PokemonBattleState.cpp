@@ -252,6 +252,77 @@ PokemonDamageCoreResult calculatePokemonDamageCore(
     return PokemonDamageCoreResult::Ok;
 }
 
+PokemonMoveDamageResult resolveStandardPokemonMoveDamage(
+    const PokemonBattleState& attacker,
+    const PokemonBattleState& defender,
+    uint16_t moveId,
+    bool moveIsTypeless,
+    PokerogueRngAdapter& battleRng,
+    PokemonMoveDamageRoll& output) {
+    const auto* move = PokerogueContent::findMoveById(moveId);
+    if (!move) return PokemonMoveDamageResult::MissingMove;
+    if (move->category == PokerogueContent::MoveStatus || move->power <= 0) {
+        return PokemonMoveDamageResult::NonDamagingMove;
+    }
+    if (move->accuracy < -1 || move->accuracy > 100) return PokemonMoveDamageResult::InvalidAccuracy;
+    const auto* attackerSpecies = PokerogueContent::findSpeciesByDex(attacker.speciesDex);
+    const auto* defenderSpecies = PokerogueContent::findSpeciesByDex(defender.speciesDex);
+    if (!attackerSpecies || !defenderSpecies) return PokemonMoveDamageResult::MissingSpecies;
+    const auto* attackerForm = attacker.formId ? PokerogueContent::findFormById(attacker.formId) : nullptr;
+    if (attacker.formId && !attackerForm) return PokemonMoveDamageResult::InvalidType;
+
+    PokemonMoveDamageRoll next{};
+    if (calculatePokemonTypeEffectiveness(moveId, defender, next.typeEffectiveness) !=
+        PokemonTypeEffectivenessResult::Ok) return PokemonMoveDamageResult::InvalidType;
+    // Upstream checks type immunity before accuracy, critical and damage RNG.
+    if (next.typeEffectiveness == 0.0) {
+        output = next;
+        return PokemonMoveDamageResult::Ok;
+    }
+
+    double baseDamage = 0.0;
+    if (calculatePokemonBaseDamage(attacker, defender, moveId, baseDamage) != PokemonBaseDamageResult::Ok) {
+        return PokemonMoveDamageResult::InvalidStats;
+    }
+
+    if (move->accuracy >= 0) {
+        next.accuracyWasRolled = true;
+        next.accuracyRoll = static_cast<uint8_t>(battleRng.randSeedInt(100));
+        if (next.accuracyRoll >= move->accuracy) {
+            output = next;
+            return PokemonMoveDamageResult::Ok;
+        }
+    }
+    next.hit = true;
+
+    // Baseline hitCheck -> getCriticalHitResult -> damage RNG ordering:
+    // stage 0 is 1/24; the random damage factor is inclusive [85, 100].
+    next.criticalRoll = static_cast<uint8_t>(battleRng.randSeedInt(24));
+    next.critical = next.criticalRoll == 0;
+    next.randomDamagePercent = static_cast<uint8_t>(battleRng.randSeedIntRange(85, 100));
+
+    double stabMultiplier = 1.0;
+    if (!moveIsTypeless && !sameText(move->type, "STELLAR")) {
+        const char* attackerType1 = attackerForm ? attackerForm->type1 : attackerSpecies->type1;
+        const char* attackerType2 = attackerForm ? attackerForm->type2 : attackerSpecies->type2;
+        if (sameText(move->type, attackerType1) ||
+            (attackerType2 && *attackerType2 && !sameText(attackerType2, "NONE") &&
+                sameText(move->type, attackerType2))) {
+            stabMultiplier = 1.5;
+        }
+    }
+
+    const double criticalMultiplier = next.critical ? 1.5 : 1.0;
+    const double damage = baseDamage * criticalMultiplier
+        * (static_cast<double>(next.randomDamagePercent) / 100.0)
+        * stabMultiplier * next.typeEffectiveness;
+    if (damage > 4294967295.0) return PokemonMoveDamageResult::InvalidStats;
+    const uint32_t rounded = static_cast<uint32_t>(damage);
+    next.damage = rounded ? rounded : 1;
+    output = next;
+    return PokemonMoveDamageResult::Ok;
+}
+
 PokemonAbilitySelectionResult selectPokemonAbilityIndex(
     uint16_t speciesDex,
     uint16_t hiddenAbilityRate,
