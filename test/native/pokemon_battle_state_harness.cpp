@@ -26,6 +26,16 @@ extern "C" int runPokemonBattleStateChecks() {
     if (state.gender != PokemonGender::Male) return 28;
     if (!state.statsAreBaseFormulaOnly) return 4;
 
+    PokemonBattleState damageTarget = state;
+    double baseDamage = -1.0;
+    if (Pokerogue3DS::calculatePokemonBaseDamage(state, damageTarget, 33, baseDamage) !=
+        Pokerogue3DS::PokemonBaseDamageResult::Ok || baseDamage < 5.199999999 || baseDamage > 5.200000001) return 32;
+    baseDamage = -1.0;
+    if (Pokerogue3DS::calculatePokemonBaseDamage(state, damageTarget, 45, baseDamage) !=
+        Pokerogue3DS::PokemonBaseDamageResult::NonDamagingMove || baseDamage != -1.0) return 33;
+    if (Pokerogue3DS::calculatePokemonBaseDamage(state, damageTarget, 65535, baseDamage) !=
+        Pokerogue3DS::PokemonBaseDamageResult::MissingMove || baseDamage != -1.0) return 34;
+
     input.speciesDex = 6;
     input.formId = "charizard:mega_x";
     input.abilityId = 181; // Tough Claws, from Charizard Mega X upstream form data.

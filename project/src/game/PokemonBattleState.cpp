@@ -79,6 +79,30 @@ PokemonBattleInitResult initializePokemonBattleState(
     return PokemonBattleInitResult::Ok;
 }
 
+PokemonBaseDamageResult calculatePokemonBaseDamage(
+    const PokemonBattleState& attacker,
+    const PokemonBattleState& defender,
+    uint16_t moveId,
+    double& outputBaseDamage) {
+    const auto* move = PokerogueContent::findMoveById(moveId);
+    if (!move) return PokemonBaseDamageResult::MissingMove;
+    if (move->category == PokerogueContent::MoveStatus || move->power <= 0) {
+        return PokemonBaseDamageResult::NonDamagingMove;
+    }
+
+    const bool physical = move->category == PokerogueContent::MovePhysical;
+    const uint16_t attack = attacker.stats[physical ? 1 : 3];
+    const uint16_t defense = defender.stats[physical ? 2 : 4];
+    if (attacker.level == 0 || defense == 0 || attack == 0) return PokemonBaseDamageResult::InvalidStats;
+
+    // Pinned Pokemon.getBaseDamage formula before modifiers (STAB, type,
+    // weather, random factor, abilities, items and move attributes).
+    const double levelMultiplier = (2.0 * attacker.level) / 5.0 + 2.0;
+    const double baseDamage = (levelMultiplier * move->power * attack) / defense / 50.0 + 2.0;
+    outputBaseDamage = baseDamage;
+    return PokemonBaseDamageResult::Ok;
+}
+
 PokemonAbilitySelectionResult selectPokemonAbilityIndex(
     uint16_t speciesDex,
     uint16_t hiddenAbilityRate,

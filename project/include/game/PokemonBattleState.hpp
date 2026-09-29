@@ -62,6 +62,13 @@ PokemonBattleInitResult initializePokemonBattleState(
     const PokemonBattleInit& input,
     PokemonBattleState& output);
 
+enum class PokemonBaseDamageResult : uint8_t { Ok = 0, MissingMove, NonDamagingMove, InvalidStats };
+PokemonBaseDamageResult calculatePokemonBaseDamage(
+    const PokemonBattleState& attacker,
+    const PokemonBattleState& defender,
+    uint16_t moveId,
+    double& outputBaseDamage);
+
 enum class PokemonAbilitySelectionResult : uint8_t { Ok = 0, MissingSpecies, InvalidHiddenRate };
 PokemonAbilitySelectionResult selectPokemonAbilityIndex(
     uint16_t speciesDex,
