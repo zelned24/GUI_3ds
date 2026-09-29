@@ -12,6 +12,8 @@ Move definitions now also normalize `isUnimplemented` and attribute class names 
 
 Form learnsets from upstream `formLevelMoves` now travel through species parsing, canonical form records, and per-form ranges in the native learnset table. For example, the pinned Pikachu Gigantamax record carries Zippy Zap (Lv. 20), Floaty Fall (Lv. 30), Splishy Splash (Lv. 40), Pika Papow (Lv. 50), and Wild Charge (Lv. 55). `levelMovesFor(const Form&)` exposes that range without embedding species-specific rules in the runtime.
 
+The native `buildPokemonLevelMovePool()` now combines a species' imported level-up records with its selected form records, applies the current-level gate, removes duplicate/unimplemented/SacrificialAttrOnHit moves, and assigns the pinned base weights (`level + 20`, or 60 for EVOLVE_MOVE). WASM regression coverage checks Pikachu Gigantamax at levels 20 and 55 and rejects a form belonging to another species. This is only the candidate-pool stage: it does not yet merge prevolution/evolution sources or port AI power weighting, forced signatures, STAB choice, weighted slot draws, or post-selection filtering.
+
 This is an actor-construction slice. It does not create a battle-ready starter or enemy `PokemonBattleState`, does not select moves, and does not implement a turn or advance a Classic run.
 
 ## Evidence
@@ -28,7 +30,7 @@ This is an actor-construction slice. It does not create a battle-ready starter o
 ## Remaining gaps
 
 - Player starter actor creation and move generation.
-- Enemy move generation from the pinned `src/ai/ai-moveset-gen.ts` generator; required before resolving second slots in doubles.
+- Full enemy/player moveset generation from pinned `src/ai/ai-moveset-gen.ts`; the native candidate-pool stage is only partial and remains required before resolving second slots in doubles.
 - The moveset generator consumes generated evolution/relearner move sources and move-effect attributes; carrying signed learnset markers alone does not implement that selection or its RNG draws.
 - The move record flags expose two move-generation filters only; other `MoveAttr` semantics remain preserved as raw upstream metadata and are not interpreted by the native runtime.
 - Form-specific and prevolution learnset merging is not yet implemented in native code; the current work imports the source records and exposes compact ranges only.

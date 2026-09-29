@@ -35,7 +35,7 @@ export function registerBetaUI9DTests(test) {
       const module = new WebAssembly.Module(fs.readFileSync(out));
       const instance = new WebAssembly.Instance(module);
       assert.strictEqual(instance.exports.runPokemonBattleStateChecks(), 0,
-        'pinned canonical Bulbasaur/Tackle/Growl stats, PP, validation, and failure atomicity match the native contract');
+        'pinned canonical battle state and real Pikachu Gigantamax level-move candidates match the native contract');
     } finally {
       if (fs.existsSync(out)) fs.rmSync(out);
     }

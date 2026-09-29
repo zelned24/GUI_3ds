@@ -1,4 +1,5 @@
 #include "game/PokemonBattleState.hpp"
+#include "game/PokemonLevelMovePool.hpp"
 #include "game/PokerogueRngAdapter.hpp"
 
 using Pokerogue3DS::PokemonBattleInit;
@@ -542,5 +543,27 @@ extern "C" int runPokemonBattleStateChecks() {
         wildActor.initialTeraTypeIndex != expectedTeraIndex ||
         wildRngState.carry != stagedWildRngState.carry || wildRngState.s0 != stagedWildRngState.s0 ||
         wildRngState.s1 != stagedWildRngState.s1 || wildRngState.s2 != stagedWildRngState.s2) return 101;
+
+    // Real pinned species and form learnsets feed a bounded native candidate
+    // pool; test both the level gate and form-specific imported move records.
+    Pokerogue3DS::PokemonLevelMoveCandidate learnset[128]{};
+    std::size_t learnsetCount = 0;
+    if (Pokerogue3DS::buildPokemonLevelMovePool(
+            dexFor("pikachu"), "pikachu:gigantamax", 55, learnset, 128, learnsetCount) !=
+            Pokerogue3DS::PokemonLevelMovePoolResult::Ok || learnsetCount < 5) return 102;
+    bool hasGigantamaxLastMove = false;
+    bool hasFutureLevelMove = false;
+    for (std::size_t i = 0; i < learnsetCount; ++i) {
+        if (learnset[i].moveId == 528 && learnset[i].sourceLevel == 55) hasGigantamaxLastMove = true;
+    }
+    if (Pokerogue3DS::buildPokemonLevelMovePool(
+            dexFor("pikachu"), "pikachu:gigantamax", 20, learnset, 128, learnsetCount) !=
+            Pokerogue3DS::PokemonLevelMovePoolResult::Ok) return 103;
+    for (std::size_t i = 0; i < learnsetCount; ++i)
+        if (learnset[i].sourceLevel > 20) hasFutureLevelMove = true;
+    if (hasFutureLevelMove || !hasGigantamaxLastMove) return 104;
+    if (Pokerogue3DS::buildPokemonLevelMovePool(
+            dexFor("pikachu"), "charizard:base_0", 55, learnset, 128, learnsetCount) !=
+            Pokerogue3DS::PokemonLevelMovePoolResult::InvalidForm || learnsetCount != 0) return 105;
     return 0;
 }
