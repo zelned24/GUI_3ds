@@ -64,4 +64,11 @@ PokemonAbilitySelectionResult selectPokemonAbilityIndex(
     PokerogueRngAdapter& rng,
     uint8_t& outputAbilityIndex);
 
+enum class PokemonGender : uint8_t { Genderless = 0, Male, Female };
+enum class PokemonGenderSelectionResult : uint8_t { Ok = 0, MissingSpecies, InvalidGenderRatio };
+PokemonGenderSelectionResult selectPokemonGender(
+    uint16_t speciesDex,
+    PokerogueRngAdapter& rng,
+    PokemonGender& outputGender);
+
 } // namespace Pokerogue3DS

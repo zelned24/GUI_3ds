@@ -88,4 +88,26 @@ PokemonAbilitySelectionResult selectPokemonAbilityIndex(
     return PokemonAbilitySelectionResult::Ok;
 }
 
+PokemonGenderSelectionResult selectPokemonGender(
+    uint16_t speciesDex,
+    PokerogueRngAdapter& rng,
+    PokemonGender& outputGender) {
+    const auto* species = PokerogueContent::findSpeciesByDex(speciesDex);
+    if (!species) return PokemonGenderSelectionResult::MissingSpecies;
+
+    // 65534 is the canonical encoding for upstream's null gender ratio;
+    // 65535 means the importer had no value and must not become a fake gender.
+    if (species->malePercentTenths == 65534) {
+        outputGender = PokemonGender::Genderless;
+        return PokemonGenderSelectionResult::Ok;
+    }
+    if (species->malePercentTenths > 1000) return PokemonGenderSelectionResult::InvalidGenderRatio;
+
+    // Upstream consumes randSeedFloat for every non-null ratio, including 0/100.
+    const double rollPercent = rng.frac() * 100.0;
+    outputGender = rollPercent <= (static_cast<double>(species->malePercentTenths) / 10.0)
+        ? PokemonGender::Male : PokemonGender::Female;
+    return PokemonGenderSelectionResult::Ok;
+}
+
 } // namespace Pokerogue3DS

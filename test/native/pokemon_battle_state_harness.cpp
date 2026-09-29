@@ -5,6 +5,8 @@ using Pokerogue3DS::PokemonBattleInit;
 using Pokerogue3DS::PokemonBattleInitResult;
 using Pokerogue3DS::PokemonBattleState;
 using Pokerogue3DS::PokemonAbilitySelectionResult;
+using Pokerogue3DS::PokemonGender;
+using Pokerogue3DS::PokemonGenderSelectionResult;
 
 extern "C" int runPokemonBattleStateChecks() {
     PokemonBattleInit input{};
@@ -99,5 +101,27 @@ extern "C" int runPokemonBattleStateChecks() {
         singleActualState.s2 != singleExpectedState.s2) return 22;
     abilityIndex = 9;
     if (Pokerogue3DS::selectPokemonAbilityIndex(1, 0, rng, abilityIndex) != PokemonAbilitySelectionResult::InvalidHiddenRate || abilityIndex != 9) return 23;
+
+    // Numeric ratios consume exactly one upstream randSeedFloat; genderless consumes none.
+    rng.sow(seed, sizeof(seed) / sizeof(seed[0]));
+    expected = rng;
+    const double genderRoll = expected.frac() * 100.0;
+    PokemonGender gender = PokemonGender::Genderless;
+    if (Pokerogue3DS::selectPokemonGender(6, rng, gender) != PokemonGenderSelectionResult::Ok) return 24;
+    const auto genderActualState = rng.state();
+    const auto genderExpectedState = expected.state();
+    if (gender != (genderRoll <= 87.5 ? PokemonGender::Male : PokemonGender::Female) ||
+        genderActualState.carry != genderExpectedState.carry || genderActualState.s0 != genderExpectedState.s0 ||
+        genderActualState.s1 != genderExpectedState.s1 || genderActualState.s2 != genderExpectedState.s2) return 25;
+
+    rng.sow(seed, sizeof(seed) / sizeof(seed[0]));
+    expected = rng;
+    if (Pokerogue3DS::selectPokemonGender(81, rng, gender) != PokemonGenderSelectionResult::Ok ||
+        gender != PokemonGender::Genderless) return 26;
+    const auto genderlessActualState = rng.state();
+    const auto genderlessExpectedState = expected.state();
+    if (genderlessActualState.carry != genderlessExpectedState.carry ||
+        genderlessActualState.s0 != genderlessExpectedState.s0 || genderlessActualState.s1 != genderlessExpectedState.s1 ||
+        genderlessActualState.s2 != genderlessExpectedState.s2) return 27;
     return 0;
 }
