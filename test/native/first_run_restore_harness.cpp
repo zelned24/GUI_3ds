@@ -3,6 +3,8 @@
 #include <cstring>
 #include "game/PokemonExperience.hpp"
 #include "game/PokemonWeatherPhase.hpp"
+#include "game/PokerogueClassicWaveSchedule.hpp"
+#include "game/PokerogueEncounterResolver.hpp"
 
 // Standalone host regression for atomic checkpoint application. This requires
 // the standard C++ library; it is not the freestanding WASM parity harness.
@@ -297,6 +299,293 @@ static int checkBiomeTransitionProgression() {
     return 86;
 }
 
+static int checkDoubleBattleTargetingAndMechanics() {
+    using namespace Pokerogue3DS;
+    for (uint32_t seed = 1; seed <= 256; ++seed) {
+        FirstRunRuntime game(seed);
+        if (!game.doubleBattle()) continue;
+        const auto& pres = game.presentation();
+        if (!pres.enemy.actorIdentityResolved || !pres.secondEnemy.actorIdentityResolved) return 100;
+        if (game.selectedTarget() != 0) return 101;
+        if (!game.cycleTarget(1) || game.selectedTarget() != 1) return 102;
+        if (!game.cycleTarget(1) || game.selectedTarget() != 0) return 103;
+        if (!game.cycleTarget(-1) || game.selectedTarget() != 1) return 104;
+        if (!game.cycleTarget(-1) || game.selectedTarget() != 0) return 105;
+
+        if (!game.doubleBattleSupported()) continue;
+        const uint8_t initialHp0 = pres.enemy.battleState.hp;
+        const uint8_t initialHp1 = pres.secondEnemy.battleState.hp;
+        const uint8_t playerHp = pres.player.battleState.hp;
+        if (!initialHp0 || !initialHp1 || !playerHp) return 106;
+
+        const auto& scene = game.scene();
+        if (!scene.nodeCount || !scene.nodes[4].text || !std::strchr(scene.nodes[4].text, '>')) return 107;
+
+        if (!game.advanceBattleTurn()) return 108;
+        return 0;
+    }
+    return 109;
+}
+
+static int checkWave200FinalBossAndGameClear() {
+    using namespace Pokerogue3DS;
+    if (classifyClassicWave(200) != ClassicWaveKind::FinalBoss) return 110;
+    ClassicVictoryPlan plan{};
+    if (!planClassicVictory(200, plan)) return 111;
+    if (!plan.contains(ClassicVictoryStep::GameClear) || plan.nextWave != 0) return 112;
+
+    PokerogueRngAdapter rng;
+    uint16_t seed[PokerogueRngAdapter::kMaxSeedCodeUnits] = {'t', 'e', 's', 't'};
+    rng.sow(seed, 4);
+    if (PokerogueEncounterResolver::bossLevelForWave(200, rng) != 200) return 113;
+
+    return 0;
+}
+
+static int checkExtendedWaveAndBiomeSaveValidation() {
+    using namespace Pokerogue3DS;
+    NativeRunSave save{};
+    save.saveVersion = kNativeSaveVersion;
+    save.runtimeVersion = kNativeSaveRuntimeVersion;
+    save.stage = NativeSaveStage::BattleActive;
+    save.seed = 12345;
+    save.starterDex = 1;
+    save.playerLevel = 5;
+    const auto* starter = PokerogueContent::findSpeciesByDex(1);
+    if (!starter || pokemonTotalExperienceForLevel(starter->growthRate, 5, save.playerExperience) != PokemonExperienceResult::Ok) return 120;
+    std::memcpy(save.contentHash, PokerogueContent::kContentHash, 64);
+    std::strcpy(save.modeId, "classic");
+    std::strcpy(save.biomeId, "plains");
+    save.wave = 1;
+    save.encounterDex = 16;
+    save.playerHp = 20;
+    save.enemyHp = 20;
+    save.battleTurn = 1;
+    save.playerMoveCount = 1;
+    save.playerMoveIds[0] = 33;
+    save.playerPp[0] = 35;
+    save.enemyMoveCount = 1;
+    save.enemyMoveIds[0] = 33;
+    save.enemyPp[0] = 35;
+
+    if (validateNativeRunSave(save, PokerogueContent::kContentHash) != NativeSaveResult::Ok) return 121;
+
+    save.wave = 50;
+    save.playerLevel = classicExperienceLevelCap(50);
+    pokemonTotalExperienceForLevel(starter->growthRate, save.playerLevel, save.playerExperience);
+    std::strcpy(save.biomeId, "forest");
+    if (validateNativeRunSave(save, PokerogueContent::kContentHash) != NativeSaveResult::Ok) return 122;
+
+    save.wave = 200;
+    save.playerLevel = 100;
+    pokemonTotalExperienceForLevel(starter->growthRate, save.playerLevel, save.playerExperience);
+    std::strcpy(save.biomeId, "end");
+    if (validateNativeRunSave(save, PokerogueContent::kContentHash) != NativeSaveResult::Ok) return 123;
+
+    save.wave = 201;
+    if (validateNativeRunSave(save, PokerogueContent::kContentHash) == NativeSaveResult::Ok) return 124;
+
+    save.wave = 100;
+    std::strcpy(save.biomeId, "nonexistent_biome_123");
+    if (validateNativeRunSave(save, PokerogueContent::kContentHash) == NativeSaveResult::Ok) return 125;
+
+    return 0;
+}
+
+static int checkPokeballCaptureMechanics() {
+    using namespace Pokerogue3DS;
+    if (getPokeballCatchMultiplier(PokeballType::Pokeball) != 1.0) return 130;
+    if (getPokeballCatchMultiplier(PokeballType::GreatBall) != 1.5) return 131;
+    if (getPokeballCatchMultiplier(PokeballType::UltraBall) != 2.0) return 132;
+    if (getPokeballCatchMultiplier(PokeballType::RogueBall) != 3.0) return 133;
+    if (getPokeballCatchMultiplier(PokeballType::MasterBall) != -1.0) return 134;
+
+    if (speciesCatchRate(1) != 45) return 135;   // Bulbasaur
+    if (speciesCatchRate(16) != 255) return 136; // Pidgey
+    if (speciesCatchRate(150) != 3) return 137;  // Mewtwo
+
+    // Direct executeCaptureAttempt blockers:
+    PokemonBattleState targetState{};
+    targetState.speciesDex = 16;
+    targetState.hp = 20;
+    targetState.maxHp = 20;
+
+    PokerogueRngAdapter rng;
+    uint16_t seed[PokerogueRngAdapter::kMaxSeedCodeUnits] = {'c', 'a', 'p', 't'};
+    rng.sow(seed, 4);
+
+    PokemonCaptureEvent outEvent{};
+    // Trainer battle blocker
+    if (executeCaptureAttempt(targetState, PokeballType::Pokeball, true, false, false, false, rng, outEvent) ||
+        outEvent.blocker != CaptureBlocker::TrainerBattle) return 138;
+
+    // Double battle multiple foes blocker
+    if (executeCaptureAttempt(targetState, PokeballType::Pokeball, false, true, false, false, rng, outEvent) ||
+        outEvent.blocker != CaptureBlocker::MultipleEnemies) return 139;
+
+    // Target fainted blocker
+    PokemonBattleState faintedState = targetState;
+    faintedState.hp = 0;
+    if (executeCaptureAttempt(faintedState, PokeballType::Pokeball, false, false, false, false, rng, outEvent) ||
+        outEvent.blocker != CaptureBlocker::TargetFainted) return 140;
+
+    // Wave 200 final boss blocker
+    if (executeCaptureAttempt(targetState, PokeballType::Pokeball, false, false, false, true, rng, outEvent) ||
+        outEvent.blocker != CaptureBlocker::FinalBossUncatchable) return 141;
+
+    // Boss shield blocker
+    if (executeCaptureAttempt(targetState, PokeballType::Pokeball, false, false, true, false, rng, outEvent) ||
+        outEvent.blocker != CaptureBlocker::BossShieldActive) return 142;
+
+    // Master ball guaranteed catch
+    if (!executeCaptureAttempt(targetState, PokeballType::MasterBall, false, false, false, false, rng, outEvent) ||
+        !outEvent.caught || outEvent.shakeCount != 3) return 143;
+
+    // Runtime-level tests:
+    FirstRunRuntime game(1);
+    if (game.pokeballCount(PokeballType::Pokeball) != 5) return 144;
+    if (game.pokeballCount(PokeballType::GreatBall) != 0) return 145;
+    if (game.pokeballCount(PokeballType::MasterBall) != 0) return 146;
+
+    // Capture blocked in trainer battle (wave 5)
+    NativeRunSave trainerSave{};
+    game.captureNativeRunSave(trainerSave);
+    trainerSave.wave = 5;
+    trainerSave.stage = NativeSaveStage::BattleActive;
+    if (game.restoreNativeRunSave(trainerSave)) {
+        if (game.throwPokeball(PokeballType::Pokeball)) return 147;
+        if (game.pokeballCount(PokeballType::Pokeball) != 5) return 148;
+    }
+
+    // Capture blocked against Wave 200 final boss
+    FirstRunRuntime bossGame(1);
+    NativeRunSave bossSave{};
+    bossGame.captureNativeRunSave(bossSave);
+    bossSave.wave = 200;
+    bossSave.playerLevel = 100;
+    bossSave.stage = NativeSaveStage::BattleActive;
+    std::strcpy(bossSave.biomeId, "end");
+    if (bossGame.restoreNativeRunSave(bossSave)) {
+        if (bossGame.throwPokeball(PokeballType::Pokeball)) return 149;
+    }
+
+    // Wild catch test with standard Poké Ball on weakened wild mon:
+    FirstRunRuntime wildGame(1);
+    NativeRunSave wildSave{};
+    wildGame.captureNativeRunSave(wildSave);
+    wildSave.wave = 1;
+    wildSave.stage = NativeSaveStage::BattleActive;
+    wildSave.encounterDex = wildGame.presentation().enemy.dex;
+    wildSave.enemyHp = 1;
+    if (!wildGame.restoreNativeRunSave(wildSave)) return 150;
+    const uint8_t initialPartyCount = wildGame.playerPartyCount();
+    if (initialPartyCount != 1) return 151;
+    if (!wildGame.throwPokeball(PokeballType::Pokeball)) return 152;
+    if (wildGame.pokeballCount(PokeballType::Pokeball) != 4) return 153;
+    if (!wildGame.battleFinished() || !wildGame.playerWon()) return 154;
+    if (wildGame.playerPartyCount() != 2) return 155;
+    if (wildGame.playerPartyMember(1)->dex != wildSave.encounterDex) return 156;
+
+    return 0;
+}
+
+static int checkPlayerPartyManagementAndSwitching() {
+    using namespace Pokerogue3DS;
+    FirstRunRuntime game(1);
+    if (game.playerPartyCount() != 1) return 160;
+    if (game.activePlayerPartyIndex() != 0) return 161;
+    if (game.playerPartyMember(0) == nullptr) return 162;
+    if (game.playerPartyMember(1) != nullptr) return 163;
+    if (game.playerPartyDefeated()) return 164;
+
+    // Invalid switch attempts:
+    if (game.switchPlayerPokemon(0)) return 165; // Already active
+    if (game.switchPlayerPokemon(1)) return 166; // Index out of bounds
+
+    // Setup wild capture to grow party to 2:
+    NativeRunSave wildSave{};
+    game.captureNativeRunSave(wildSave);
+    wildSave.wave = 1;
+    wildSave.stage = NativeSaveStage::BattleActive;
+    wildSave.encounterDex = game.presentation().enemy.dex;
+    wildSave.enemyHp = 1;
+    if (!game.restoreNativeRunSave(wildSave)) return 167;
+    if (!game.throwPokeball(PokeballType::Pokeball)) return 168;
+    if (game.playerPartyCount() != 2) return 169;
+    const uint16_t caughtDex = game.playerPartyMember(1)->dex;
+    if (caughtDex != wildSave.encounterDex) return 170;
+
+    // Advance turn & skip reward into wave 2:
+    if (!game.advanceBattleTurn()) return 171;
+    if (!game.skipVictoryReward()) return 172;
+    if (game.run().wave != 2) return 173;
+    if (game.playerPartyCount() != 2) return 174;
+    if (game.activePlayerPartyIndex() != 0) return 175;
+
+    // Switch to reserve member (index 1):
+    if (!game.switchPlayerPokemon(1)) return 176;
+    if (game.activePlayerPartyIndex() != 1) return 177;
+    if (game.presentation().player.dex != caughtDex) return 178;
+
+    // Switch back to starter (index 0):
+    if (!game.switchPlayerPokemon(0)) return 179;
+    if (game.activePlayerPartyIndex() != 0) return 180;
+
+    return 0;
+}
+
+static int checkLevelUpMoveLearningAndEvolution() {
+    using namespace Pokerogue3DS;
+
+    // 1. Check evolution queries
+    const auto* evo1 = checkSpeciesLevelEvolution("bulbasaur", 15, 16);
+    if (!evo1 || std::strcmp(evo1->targetSpeciesId, "ivysaur") != 0) return 190;
+
+    const auto* evoNone = checkSpeciesLevelEvolution("bulbasaur", 14, 15);
+    if (evoNone != nullptr) return 191;
+
+    const auto* evo2 = checkSpeciesLevelEvolution("ivysaur", 31, 32);
+    if (!evo2 || std::strcmp(evo2->targetSpeciesId, "venusaur") != 0) return 192;
+
+    const auto* evoBug = checkSpeciesLevelEvolution("caterpie", 6, 7);
+    if (!evoBug || std::strcmp(evoBug->targetSpeciesId, "metapod") != 0) return 193;
+
+    // 2. Check applySpeciesEvolution
+    PokemonBattleInit bulbaInit{};
+    bulbaInit.speciesDex = 1;
+    bulbaInit.level = 16;
+    bulbaInit.moveCount = 1;
+    bulbaInit.moveIds[0] = 33; // Tackle
+    for (uint8_t i = 0; i < 6; ++i) bulbaInit.ivs[i] = 15;
+    PokemonBattleState bulbaState{};
+    if (initializePokemonBattleState(bulbaInit, bulbaState) != PokemonBattleInitResult::Ok) return 194;
+
+    const uint16_t bulbaHp = bulbaState.hp;
+    const uint16_t bulbaMaxHp = bulbaState.maxHp;
+    EvolutionResult evoRes{};
+    std::string evoFb;
+    if (!applySpeciesEvolution(1, "ivysaur", bulbaState, evoRes, &evoFb)) return 195;
+    if (!evoRes.evolved || evoRes.newDex != 2 || std::strcmp(evoRes.newSpeciesId, "ivysaur") != 0) return 196;
+    if (bulbaState.speciesDex != 2) return 197;
+    // Ivysaur has higher base stats and max HP than Bulbasaur
+    if (bulbaState.maxHp <= bulbaMaxHp || bulbaState.hp <= bulbaHp) return 198;
+
+    // 3. Check learnNewLevelMoves
+    // Bulbasaur learns Vine Whip (id 22) or Leech Seed at early levels
+    PokemonBattleState learnState = bulbaState;
+    learnState.speciesDex = 1; // Bulbasaur
+    learnState.moveCount = 1;
+    learnState.moves[0].moveId = 33; // Tackle
+    uint16_t moveIds[4] = { 33, 0, 0, 0 };
+    uint8_t moveCount = 1;
+    std::string learnFb;
+    const uint8_t learned = learnNewLevelMoves(1, 1, 10, learnState, moveIds, moveCount, &learnFb);
+    if (learned == 0 || learnState.moveCount <= 1) return 199;
+    if (learnState.moves[1].pp == 0) return 200;
+
+    return 0;
+}
+
 int main() {
     using namespace Pokerogue3DS;
     for (uint32_t seed = 1; seed <= 64; ++seed) {
@@ -381,7 +670,19 @@ int main() {
         if (trainerCheck) return trainerCheck;
         const int rewardCheck = checkModifierRewardGenerationAndClaim();
         if (rewardCheck) return rewardCheck;
-        return checkBiomeTransitionProgression();
+        const int biomeCheck = checkBiomeTransitionProgression();
+        if (biomeCheck) return biomeCheck;
+        const int doubleCheck = checkDoubleBattleTargetingAndMechanics();
+        if (doubleCheck) return doubleCheck;
+        const int bossCheck = checkWave200FinalBossAndGameClear();
+        if (bossCheck) return bossCheck;
+        const int captureCheck = checkPokeballCaptureMechanics();
+        if (captureCheck) return captureCheck;
+        const int partyCheck = checkPlayerPartyManagementAndSwitching();
+        if (partyCheck) return partyCheck;
+        const int evoCheck = checkLevelUpMoveLearningAndEvolution();
+        if (evoCheck) return evoCheck;
+        return checkExtendedWaveAndBiomeSaveValidation();
     }
     return 7; // No supported canonical encounter found: do not silently skip.
 }

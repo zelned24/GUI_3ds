@@ -253,7 +253,8 @@ JSValue QuickJSBridge::cycleStarterBinding(JSContext* ctx, JSValueConst, int arg
     if (!number(ctx, argv[0], direction) || (direction != -1 && direction != 1))
         return JS_ThrowRangeError(ctx, "Starter direction must be -1 or +1");
     if (b->m_pendingAction != -999) return JS_FALSE;
-    if (b->m_game->runStarted() && !(b->m_game->battleFinished() && !b->m_game->playerWon())) return JS_FALSE;
+    if (b->m_game->runStarted() && !(b->m_game->battleFinished() && !b->m_game->playerWon()) &&
+        !(b->m_game->doubleBattle() && !b->m_game->battleFinished())) return JS_FALSE;
     b->m_pendingAction = direction < 0 ? 202 : 203; return JS_TRUE;
 }
 JSValue QuickJSBridge::getPresentationInfo(JSContext* ctx, JSValueConst, int, JSValueConst*) {
@@ -283,14 +284,33 @@ JSValue QuickJSBridge::getPresentationInfo(JSContext* ctx, JSValueConst, int, JS
         !set("trainerName", JS_NewString(ctx, view.trainerName ? view.trainerName : "")) ||
         !set("trainerPartyCount", JS_NewUint32(ctx, view.trainerPartyCount)) ||
         !set("doubleBattle", JS_NewBool(ctx, b->m_game->doubleBattle())) ||
+        !set("selectedTarget", JS_NewUint32(ctx, b->m_game->selectedTarget())) ||
         !set("weatherType", JS_NewUint32(ctx, weather)) ||
         !set("weatherName", JS_NewString(ctx, weather < 10 ? weatherNames[weather] : "UNSUPPORTED")) ||
         !set("secondEnemyDex", JS_NewUint32(ctx, b->m_game->doubleBattle() ? view.secondEnemy.dex : 0)) ||
         !set("activeTrainerMember", JS_NewUint32(ctx, view.activeTrainerPartyIndex)) ||
         !set("biomeId", JS_NewString(ctx, b->m_game->run().biomeId ? b->m_game->run().biomeId : "")) ||
-        !set("biomeName", JS_NewString(ctx, view.biomeName ? view.biomeName : ""))) {
+        !set("biomeName", JS_NewString(ctx, view.biomeName ? view.biomeName : "")) ||
+        !set("playerPartyCount", JS_NewUint32(ctx, b->m_game->playerPartyCount())) ||
+        !set("activePlayerPartyIndex", JS_NewUint32(ctx, b->m_game->activePlayerPartyIndex()))) {
         JS_FreeValue(ctx, info); return JS_EXCEPTION;
     }
+    JSValue playerParty = JS_NewArray(ctx);
+    if (JS_IsException(playerParty)) { JS_FreeValue(ctx, info); return JS_EXCEPTION; }
+    for (unsigned i = 0; i < view.playerPartyCount && i < 6; ++i) {
+        if (JS_SetPropertyUint32(ctx, playerParty, i, JS_NewUint32(ctx, view.playerParty[i].dex)) < 0) {
+            JS_FreeValue(ctx, playerParty); JS_FreeValue(ctx, info); return JS_EXCEPTION;
+        }
+    }
+    if (!set("playerParty", playerParty)) { JS_FreeValue(ctx, info); return JS_EXCEPTION; }
+    JSValue pokeballs = JS_NewArray(ctx);
+    if (JS_IsException(pokeballs)) { JS_FreeValue(ctx, info); return JS_EXCEPTION; }
+    for (unsigned i = 0; i < 6; ++i) {
+        if (JS_SetPropertyUint32(ctx, pokeballs, i, JS_NewUint32(ctx, b->m_game->pokeballCount(static_cast<PokeballType>(i)))) < 0) {
+            JS_FreeValue(ctx, pokeballs); JS_FreeValue(ctx, info); return JS_EXCEPTION;
+        }
+    }
+    if (!set("pokeballs", pokeballs)) { JS_FreeValue(ctx, info); return JS_EXCEPTION; }
     JSValue party = JS_NewArray(ctx);
     if (JS_IsException(party)) { JS_FreeValue(ctx, info); return JS_EXCEPTION; }
     for (unsigned i = 0; i < view.trainerPartyCount && i < 6; ++i) {
@@ -342,6 +362,9 @@ bool QuickJSBridge::processPendingAction() {
         std::snprintf(m_actionFeedback, sizeof(m_actionFeedback), "%s", ok ? "New run ready" : "Restart failed: invalid starter/RNG");
     } else if (action == 202 || action == 203) {
         if (!m_game->runStarted()) m_game->cycleStarter(action == 202 ? -1 : 1);
+        else if (m_game->doubleBattle() && !m_game->battleFinished()) {
+            m_game->cycleTarget(action == 202 ? -1 : 1);
+        }
         else if (m_game->battleFinished() && !m_game->playerWon()) {
             size_t index = 0;
             for (; index < PokerogueContent::kSpeciesCount; ++index)
@@ -392,6 +415,10 @@ bool QuickJSBridge::processPendingAction() {
         }
         // Also advances the engine's post-victory EXP/replacement phase; at most once.
         m_game->advanceBattleTurn();
+    } else if (action == 210) {
+        m_game->throwPokeball(PokeballType::Pokeball);
+    } else if (action >= 211 && action <= 215) {
+        m_game->switchPlayerPokemon(static_cast<uint8_t>(action - 211));
     }
     return true;
 }

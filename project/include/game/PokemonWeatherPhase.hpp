@@ -25,29 +25,40 @@ struct PokemonWeatherPhaseEvent {
     PokemonWeatherDamageEvent player;
     PokemonWeatherDamageEvent enemy;
 };
-// Fresh single actors only: caller establishes absence of passives, weather tags,
-// changing types and switch-out state. Canonical unsupported hooks fail explicitly.
-inline bool applyPokemonSingleWeatherPhase(PokemonBattleState& player,
-    PokemonBattleState& enemy, const PokemonArenaWeatherState& arena,
-    bool upcomingInterlude, PokemonWeatherPhaseEvent& output) {
-    PokemonWeatherPhaseEvent event{};
+inline bool applyPokemonMultiWeatherPhase(PokemonBattleState& player,
+    PokemonBattleState& enemy, PokemonBattleState* secondEnemy,
+    const PokemonArenaWeatherState& arena, bool upcomingInterlude,
+    PokemonWeatherPhaseEvent& output) {
+    output = {};
     if (upcomingInterlude || arena.type == PokemonEffectiveWeather::None) {
-        output = event;
         return true;
     }
     if (!pokemonWeatherLifecycleSupported(player.abilityId) ||
         !pokemonWeatherLifecycleSupported(enemy.abilityId)) return false;
-    const PokemonWeatherAbilityComponent components[] = {
+    if (secondEnemy && !pokemonWeatherLifecycleSupported(secondEnemy->abilityId)) return false;
+
+    PokemonWeatherAbilityComponent components[3] = {
         {player.abilityId, player.hp != 0, false},
-        {enemy.abilityId, enemy.hp != 0, false}
+        {enemy.abilityId, enemy.hp != 0, false},
+        {0, false, false}
     };
+    uint8_t componentCount = 2;
+    if (secondEnemy) {
+        components[2] = {secondEnemy->abilityId, secondEnemy->hp != 0, false};
+        componentCount = 3;
+    }
     PokemonWeatherResolutionPolicy suppression{};
     PokemonMoveWeatherContext context{};
-    if (!composePokemonWeatherResolutionPolicy(components, 2, suppression) ||
+    if (!composePokemonWeatherResolutionPolicy(components, componentCount, suppression) ||
         !resolvePokemonMoveWeatherContext(arena, suppression, context)) return false;
+
     auto nextPlayer = player;
     auto nextEnemy = enemy;
+    PokemonBattleState nextSecondEnemy{};
+    if (secondEnemy) nextSecondEnemy = *secondEnemy;
+
     const auto apply = [&](PokemonBattleState& actor, PokemonWeatherDamageEvent& result) {
+        if (!actor.hp) return true;
         const auto* species = PokerogueContent::findSpeciesByDex(actor.speciesDex);
         const auto* form = actor.formId ? PokerogueContent::findFormById(actor.formId) : nullptr;
         if (!species || (actor.formId && !form)) return false;
@@ -59,10 +70,21 @@ inline bool applyPokemonSingleWeatherPhase(PokemonBattleState& player,
         if (!pokemonAbilityBlocksWeatherDamage(actor.abilityId, arena.type, policy.abilityBlocksDamage)) return false;
         return applyPokemonWeatherResidualDamage(actor, arena, policy, result);
     };
-    if (!apply(nextPlayer, event.player) || !apply(nextEnemy, event.enemy)) return false;
+
+    if (!apply(nextPlayer, output.player) || !apply(nextEnemy, output.enemy)) return false;
+    PokemonWeatherDamageEvent dummy{};
+    if (secondEnemy && !apply(nextSecondEnemy, dummy)) return false;
     player = nextPlayer;
     enemy = nextEnemy;
-    output = event;
+    if (secondEnemy) *secondEnemy = nextSecondEnemy;
     return true;
+}
+
+// Fresh single actors only: caller establishes absence of passives, weather tags,
+// changing types and switch-out state. Canonical unsupported hooks fail explicitly.
+inline bool applyPokemonSingleWeatherPhase(PokemonBattleState& player,
+    PokemonBattleState& enemy, const PokemonArenaWeatherState& arena,
+    bool upcomingInterlude, PokemonWeatherPhaseEvent& output) {
+    return applyPokemonMultiWeatherPhase(player, enemy, nullptr, arena, upcomingInterlude, output);
 }
 } // namespace Pokerogue3DS

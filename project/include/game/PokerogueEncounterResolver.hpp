@@ -257,6 +257,58 @@ public:
         return static_cast<uint16_t>(level ? level : 1);
     }
 
+    // Ports Arena.randomSpecies boss branch and generateBossBiomeTier (roll 0-63).
+    static PokeroguePoolResolution resolveBoss(const char* biomeId,
+        PokerogueTimeOfDay time, uint32_t adjustedWave, PokerogueRngAdapter& rng) {
+        static const char* const bossTiers[] = {
+            "boss", "boss_rare", "boss_super_rare", "boss_ultra_rare"
+        };
+        const char* timeId = time == PokerogueTimeOfDay::Day ? "day"
+            : time == PokerogueTimeOfDay::Dusk ? "dusk"
+            : time == PokerogueTimeOfDay::Night ? "night" : "dawn";
+        for (uint8_t attempt = 0; attempt <= 10; ++attempt) {
+            const uint16_t roll = static_cast<uint16_t>(rng.randSeedInt(64));
+            uint8_t tierIndex = roll >= 20 ? 0 : roll >= 6 ? 1 : roll >= 1 ? 2 : 3;
+            const uint8_t requested = tierIndex;
+            uint16_t count = 0;
+            for (;;) {
+                count = countMembers(biomeId, bossTiers[tierIndex], timeId);
+                if (count || tierIndex == 0) break;
+                --tierIndex;
+            }
+            if (!count) {
+                // If boss pool has no members for this biome/time, fallback to non-boss pool
+                return resolveNonBoss(biomeId, time, adjustedWave, rng);
+            }
+            const uint16_t selected = static_cast<uint16_t>(rng.pickIndex(count));
+            const char* speciesId = memberAt(biomeId, bossTiers[tierIndex], timeId, selected);
+            const auto* species = findSpecies(speciesId);
+            if (!species || !species->baseTotal) {
+                return {speciesId, bossTiers[requested], bossTiers[tierIndex], count, selected, roll, attempt, false};
+            }
+            const bool legendLike = species->legendary == 1 || species->subLegendary == 1
+                || species->mythical == 1;
+            const bool incompatible = legendLike
+                && (species->baseTotal >= 660 ? adjustedWave < 80 : adjustedWave < 55);
+            if (incompatible && attempt < 10) continue;
+            return {speciesId, bossTiers[requested], bossTiers[tierIndex], count, selected,
+                    roll, attempt, speciesId != nullptr};
+        }
+        return {nullptr, "unsupported", "unsupported", 0, 0, 0, 10, false};
+    }
+
+    // Battle.getLevelForWave boss branch for Classic difficulty waves.
+    static uint16_t bossLevelForWave(uint32_t waveIndex, PokerogueRngAdapter& rng) {
+        if (!waveIndex) return 1;
+        if (waveIndex == 200) return 200;
+        const double baseLevel = 1.0 + static_cast<double>(waveIndex) / 2.0
+            + (static_cast<double>(waveIndex) / 25.0) * (static_cast<double>(waveIndex) / 25.0);
+        const double ret = std::floor(baseLevel * 1.2);
+        const double levelOffset = std::round(rng.realInRange(-1.0, 1.0) * std::floor(static_cast<double>(waveIndex) / 10.0));
+        const double finalLevel = ret + levelOffset;
+        return static_cast<uint16_t>(finalLevel >= 1.0 ? finalLevel : 1.0);
+    }
+
 private:
     static uint16_t trainerEvolutionThreshold(const PokerogueContent::SpeciesEvolution& edge,
         uint8_t evolutionThresholdKindId) {

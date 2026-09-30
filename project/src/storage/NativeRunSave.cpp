@@ -243,13 +243,12 @@ NativeSaveResult validateNativeRunSave(const NativeRunSave& save, const char* ex
         return NativeSaveResult::InvalidRecord;
     if (!isHash(save.contentHash) || !isHash(expectedContentHash)) return NativeSaveResult::InvalidFormat;
     if (!equal(save.contentHash, expectedContentHash)) return NativeSaveResult::ContentMismatch;
-    // Only the initial one-Pokemon, reward-skipping biome segment can be
-    // replayed without a serialized party, modifier and biome history.
-    if (!save.seed || !save.wave || save.wave > 9
+    // Classic progression validation across waves and registered biomes.
+    if (!save.seed || !save.wave || save.wave > PokerogueContent::kClassicFinalWave
         || !isId(save.modeId, sizeof(save.modeId))
         || !isId(save.biomeId, sizeof(save.biomeId)) || !equal(save.modeId, "classic"))
         return NativeSaveResult::InvalidRecord;
-    if (!equal(save.biomeId, PokerogueContent::kStartingBiomeId))
+    if (!PokerogueContent::findBiomeById(save.biomeId))
         return NativeSaveResult::InvalidRecord;
     const auto* starter = freshStarter(save.starterDex);
     if (!starter) return NativeSaveResult::InvalidRecord;

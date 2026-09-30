@@ -56,9 +56,9 @@
 ### 4.1. Flujo de inicio y equipo
 
 1. Completar boot/title/new game/continue/setup y selección de starters con catálogo real, presupuesto/reglas upstream, formas, habilidades y desbloqueos del perfil.
-2. Sustituir el estado de un solo starter por equipo completo y reservas con identidad, HP, PP, status, EXP, formas, objetos y pasivas persistentes.
+2. Sustituir el estado de un solo starter por equipo completo y reservas con identidad, HP, PP, status, EXP, formas, objetos y pasivas persistentes (P9: `playerParty[6]`, `playerPartyCount` y `activePlayerPartyIndex` integrados en `PresentationContext` y `FirstRunRuntime`; `switchPlayerPokemon` permite relevo interactivo activo/reserva con contraataque enemigo; `advancePlayerAfterDefeat` releva automáticamente al primer suplente vivo y `playerPartyDefeated` previene fin prematuro de run; persistencia y sincronización continua a través de waves).
 3. Resolver shiny/variantes, género/naturaleza/IVs, movimientos iniciales, herencia relevante y personalización conforme al perfil upstream.
-4. Integrar aprendizaje/reemplazo de movimientos, evolución y selección de forma al subir de nivel. La ganancia básica de EXP existente no completa estos flujos.
+4. Integrar aprendizaje/reemplazo de movimientos, evolución y selección de forma al subir de nivel (P10: `PokemonEvolutionPhase.hpp` con `checkSpeciesLevelEvolution` sobre `kSpeciesEvolutions`, `learnNewLevelMoves` sobre `kSpeciesLevelMoves` en huecos < 4 con asignación de PP, y `applySpeciesEvolution` con recálculo de base stats, preservación de HP/PP e identidad visible).
 
 ### 4.2. Waves, biomas y mapa
 
@@ -67,8 +67,8 @@
 3. Completar encuentros salvajes, dobles, jefes, entrenadores aleatorios/fijos, rivales y encuentros especiales/mystery del snapshot.
 4. Completar niveles, rarezas, variantes, escalado, composición de grupos, movimientos y modificadores de encuentros para toda la progresión.
 5. Conectar recuperación/interludios/transiciones especiales y entrada a End según reglas canónicas.
-6. Eliminar límites actuales de guardado a waves 1–9/bioma inicial solo después de migrar el estado y la restauración correspondientes.
-7. Completar waves 1–200, segmentos de jefes y combate final de Classic con victoria/derrota auténticas.
+6. Eliminar límites actuales de guardado a waves 1–9/bioma inicial solo después de migrar el estado y la restauración correspondientes (P7: `validateNativeRunSave` extendido a wave 200 y validación de todos los biomas visitables canónicos).
+7. Completar waves 1–200, segmentos de jefes y combate final de Classic con victoria/derrota auténticas (P5: `resolveBoss` con tiradas canónicas de rareza 0-63 y descensos, `bossLevelForWave` escalado a nivel 200, encuentro final con Eternatus dex 890 y `ClassicVictoryStep::GameClear`).
 8. Demostrar continuidad encounter → battle → result → reward → next wave → next biome; contratos aislados no bastan.
 
 ## 5. Dominio de combate C++
@@ -80,7 +80,7 @@
 3. Completar orden multi-actor, prioridad por habilidad/objeto, empates, cambios y acciones forzadas con RNG upstream.
 4. Mantener eventos tipados y UI → command → engine → event → binding; separar fases/resolvers/effects.
 5. Integrar política de ignorar habilidades, habilidad suprimida/cambiada, pasivas, objetivos aliados y visibilidad de habilidades en simulaciones de IA.
-6. Completar dobles y resolución multiobjetivo; el bucle jugable actual continúa limitado a un oponente.
+6. Completar dobles y resolución multiobjetivo; el bucle jugable actual continúa limitado a un oponente (P4: `doubleBattleSupported()`, alternancia de objetivo con L/R o acciones QuickJS 202/203, orden Fisher-Yates por velocidades efectivas/prioridad, ataques multitarget individuales y de área `ALL_NEAR_ENEMIES`/`ALL_ENEMIES`/`ALL_OTHERS`, y fase de clima multi-actor).
 7. Auditar transacciones: fallos no deben dejar HP/PP/campo/RNG parcialmente aplicados; cerrar guardados únicamente en estados coherentes.
 
 ### 5.2. Movimientos y daño
@@ -107,7 +107,7 @@
 ### 6.1. Equipos y decisiones
 
 1. El catálogo/equipos y partes de la IA existen; el combate de entrenador queda desbloqueado en `FirstRunRuntime` mediante `trainerBattleSupported()`, turnos interactivos, SMART move AI y switching hacia relevos hasta la derrota del equipo.
-2. Completar todos los generadores de equipo, plantillas/callbacks, firmas, variantes, roles, dificultad, objetos y habilidades del snapshot.
+2. Completar todos los generadores de equipo, plantillas/callbacks, firmas, variantes, roles, dificultad, objetos y habilidades del snapshot (P6: desacoplada inicialización de plantillas de combate fijo del flag de variante binaria de género, admitiendo entrenadores fijos como Rivales 1 a 6).
 3. Completar puntuación de matchup con inmunidades/absorciones, habilidades, illusion, movimientos utilizables, campo y visibilidad upstream.
 4. Completar valoración de atributos de movimientos, condiciones, objetivos múltiples y todos los modos de decisión de IA.
 5. Completar cambio voluntario con queue/trap/hazards/efectos de entrada y selección tras faint; preservar HP/PP/status/EXP por miembro.
@@ -120,7 +120,7 @@
 ### 7.1. Acciones y economía
 
 1. Completar inventario, clases/instancias/modificadores, acumulación, duración, límites, objetivos y elegibilidad canónicos.
-2. Completar Poké Balls y cálculo de captura, bloqueo en encuentros no capturables, incorporación al equipo/reserva y desbloqueos.
+2. Completar Poké Balls y cálculo de captura, bloqueo en encuentros no capturables, incorporación al equipo/reserva y desbloqueos (P8: `PokemonCapturePhase.hpp` con 1026+ especies canónicas y multiplicadores de bolas; fórmula Gen 6/upstream de modifiedCatchRate, shakeProbability y 3 sacudidas deterministas con RNG; bloqueos canónicos por entrenador, dobles con 2 vivos, fainted, escudo y wave 200 FinalBoss; inventario de 5 Poké Balls iniciales recargable por modificadores; `throwPokeball` incorpora capturas a la party < 6 o resuelve contraataques enemigos).
 3. Completar uso de curas, revivir, recuperación de PP, berries, held items, transferencia y retirada.
 4. Completar dinero, compra, costes, rerolls, tiers/pools/pesos de recompensa y restricciones por equipo/run.
 5. Conectar selección de recompensa real (`generateVictoryRewards` genera 3 opciones de `ModifierPool` mediante `rollPlayerModifierReward` y `InitialClassicRewardWeights`, con navegación interactiva UP/DOWN, reclamación con efectos de HP/PP y salto con B).

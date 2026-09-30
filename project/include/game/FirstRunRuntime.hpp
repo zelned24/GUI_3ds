@@ -2,6 +2,8 @@
 
 #include "screens/SceneData.hpp"
 #include "game/PokemonBattleState.hpp"
+#include "game/PokemonCapturePhase.hpp"
+#include "game/PokemonEvolutionPhase.hpp"
 #include "game/PokerogueBattleRng.hpp"
 #include "game/PokerogueTurnOrder.hpp"
 #include "game/PokerogueClassicVictoryPlan.hpp"
@@ -69,6 +71,9 @@ struct PresentationContext {
     ResolvedPokemon player;
     ResolvedPokemon enemy;
     ResolvedPokemon secondEnemy;
+    ResolvedPokemon playerParty[6]{};
+    uint8_t playerPartyCount = 1;
+    uint8_t activePlayerPartyIndex = 0;
 };
 
 // Native content-driven first-run adapter. It owns the text storage referenced by
@@ -82,6 +87,7 @@ public:
     bool restoreNativeRunSave(const NativeRunSave& save);
     bool battleInputSupported() const;
     bool trainerBattleSupported() const;
+    bool doubleBattleSupported() const;
     bool rewardsPending() const { return m_rewardsPending; }
     uint8_t rewardChoiceCount() const { return m_rewardChoiceCount; }
     uint8_t selectedRewardChoice() const { return m_selectedRewardChoice; }
@@ -94,6 +100,8 @@ public:
     bool advanceBattleTurn();
     bool skipVictoryReward();
     uint8_t selectedBattleMove() const { return m_selectedBattleMove; }
+    uint8_t selectedTarget() const { return m_selectedTarget; }
+    bool cycleTarget(int direction);
     const std::string& battleFeedback() const { return m_battleFeedback; }
     const PokemonArenaWeatherState& arenaWeather() const { return m_arenaWeather; }
     bool doubleBattle() const { return m_doubleBattle; }
@@ -109,6 +117,20 @@ public:
     PokerogueBattleRng& battleRng() { return m_battleRng; }
     const char* starterName() const;
 
+    uint8_t playerPartyCount() const { return m_context.playerPartyCount; }
+    uint8_t activePlayerPartyIndex() const { return m_context.activePlayerPartyIndex; }
+    const ResolvedPokemon* playerPartyMember(uint8_t index) const {
+        return index < m_context.playerPartyCount ? &m_context.playerParty[index] : nullptr;
+    }
+    bool switchPlayerPokemon(uint8_t targetIndex);
+    bool advancePlayerAfterDefeat();
+    bool playerPartyDefeated() const;
+    uint16_t pokeballCount(PokeballType type) const {
+        const auto idx = static_cast<uint8_t>(type);
+        return idx < 6 ? m_pokeballs[idx] : 0;
+    }
+    bool throwPokeball(PokeballType type = PokeballType::Pokeball);
+
 private:
     bool enemyPartyDefeated() const;
     bool weatherBattleSupported() const;
@@ -119,9 +141,14 @@ private:
     bool generateVictoryRewards();
     bool finishBattleTurn();
     bool executeActiveBattleMove(bool enemyActs, uint8_t moveSlot, PokerogueRngAdapter& rng);
+    bool executeActiveBattleMove(uint8_t userIndex, uint8_t targetIndex, uint8_t moveSlot, PokerogueRngAdapter& rng);
     void refreshTrainerBaselineMatchups();
     bool resolveActiveMoveWeather(bool enemyAttacks, PokemonMoveWeatherContext& output) const;
+    bool resolveActiveMoveWeather(const PokemonBattleState& user, const PokemonBattleState& opponent,
+                                  PokemonMoveWeatherContext& output) const;
     bool resolveActiveMoveCritical(bool enemyAttacks, PokemonCriticalPolicy& output) const;
+    bool resolveActiveMoveCritical(const PokemonBattleState& user, const PokemonBattleState& opponent,
+                                   PokemonCriticalPolicy& output) const;
     void buildScene();
     static const char* locale(const char* canonicalId, const char* fallback);
 
@@ -144,6 +171,7 @@ private:
     bool m_trainerBattle = false;
     bool m_secondEncounterResolved = false;
     uint8_t m_selectedBattleMove = 0;
+    uint8_t m_selectedTarget = 0;
     uint32_t m_turn = 1;
     uint32_t m_enemySwitchCounter = 0;
     uint32_t m_playerExperience = 0;
@@ -158,6 +186,7 @@ private:
     bool m_runStarted = false;
     bool m_checkpointAvailable = true;
     std::string m_battleFeedback;
+    std::array<uint16_t, 6> m_pokeballs{ 5, 0, 0, 0, 0, 0 };
 };
 
 } // namespace Pokerogue3DS

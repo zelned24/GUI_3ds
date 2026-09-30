@@ -94,3 +94,58 @@
 2. Actualización de contexto: el identificador de bioma de la run (`m_run.biomeId`) y su localización de texto (`m_context.biomeName`) se actualizan dinámicamente con el bioma entrante.
 3. El clima inicial del nuevo bioma se evalúa e inicializa mediante `selectPokemonBiomeWeather` y el validador de ciclo de clima en los actores.
 4. Regresiones escritas en `test/native/first_run_restore_harness.cpp` (`checkBiomeTransitionProgression`): verifican que al superar la wave 10 en Town y avanzar a la wave 11, el runtime conmuta deterministamente al bioma conectado correspondiente según la tabla canónica.
+
+## Combates dobles y resolución multitarget (P4)
+
+1. `doubleBattleSupported()` en `FirstRunRuntime` valida la presencia y viabilidad de ambos oponentes (`enemy` y `secondEnemy`), compatibilidad del ciclo de vida de clima y PP de movimientos.
+2. Selección y alternancia de objetivo: `cycleTarget(int direction)` conmuta interactivamente `m_selectedTarget` entre 0 y 1 mediante los controles L/R o las acciones 202/203 en QuickJS, forzando automáticamente el oponente con vida si uno se debilita. Marcador de objetivo `>` visible en la pantalla superior.
+3. Orden de turno multi-actor canónico en `advanceBattleTurn`: cálculo de velocidades efectivas (con reversión bajo Trick Room), prioridad de ataques y desempate determinista mediante Fisher-Yates shuffle con semilla derivada `waveSeed + turn * 1000 + activeCount`.
+4. Ejecución multi-actor de movimientos: `executeActiveBattleMove(userIndex, targetIndex, ...)` resuelve ataques individuales y de área (`ALL_NEAR_ENEMIES`, `ALL_ENEMIES`, `ALL_OTHERS`), redirigiendo ataques simples si el objetivo inicial fue debilitado en el mismo turno.
+5. `applyPokemonMultiWeatherPhase` procesa el daño residual de clima simultáneamente sobre los tres combatientes activos.
+6. Experiencia de victoria compartida: `grantVictoryExperience` recompensa la derrota de ambos Pokémon enemigos al concluir el combate doble.
+7. Regresiones escritas en `test/native/first_run_restore_harness.cpp` (`checkDoubleBattleTargetingAndMechanics`): comprueban detección de combates dobles, rotación de objetivos y ejecución de turnos.
+
+## Jefes mayores y combate final de wave 200 (P5)
+
+1. `PokerogueEncounterResolver::resolveBoss`: implementa el algoritmo upstream de selección de jefes de bioma con tirada 0–63 (boss, boss_rare, boss_super_rare, boss_ultra_rare), descensos de tier y validación de LegendLike según la wave.
+2. `PokerogueEncounterResolver::bossLevelForWave`: aplica la fórmula de nivel de jefes (`baseLevel * 1.2` con compensación gaussiana acotada), fijando nivel exacto 200 en la wave 200.
+3. Wave 200 FinalBoss: genera el encuentro singular contra Eternatus (dex 890, nivel 200) en el bioma "end".
+4. `ClassicVictoryPlan` y GameClear: al derrotar a Eternatus en la wave 200, `planClassicVictory` genera la etapa `ClassicVictoryStep::GameClear`, concluyendo la run con feedback "Game Clear! Classic run completed".
+5. Regresiones escritas en `test/native/first_run_restore_harness.cpp` (`checkWave200FinalBossAndGameClear`): comprueban clasificación, nivel fijado 200 y plan de victoria GameClear sin wave subsiguiente.
+
+## Compatibilidad de entrenadores fijos y variantes de género (P6)
+
+1. `FirstRunRuntime::resolve` desacopla la inicialización de plantillas de combate fijo (`selectTrainerPartyTemplate`) del indicador de variante binaria de género, admitiendo tanto entrenadores con sorteo de género (Youngster) como entrenadores fijos sin sorteo (Rivales 1 a 6).
+2. Generación determinista de equipos de rivales mediante `resolveSimpleTrainerPoolMember`, learnsets canónicos, ponderación de movimientos y cálculo de IVs por wave.
+
+## Validación de guardado extendida (P7)
+
+1. `validateNativeRunSave` en `NativeRunSave.cpp`: ampliado el rango de waves permitidas de wave 1–9 a `wave <= PokerogueContent::kClassicFinalWave` (wave 200).
+2. Validación de bioma: verificación contra el registro canónico completo (`findBiomeById`), admitiendo todos los biomas visitables a lo largo de Classic.
+3. Regresiones escritas en `test/native/first_run_restore_harness.cpp` (`checkExtendedWaveAndBiomeSaveValidation`): verifican saves válidos en waves 1, 50 y 200 en biomas variados, y rechazo estricto de wave 201 o biomas no registrados.
+
+## Captura de Pokémon y gestión de Poké Balls (P8)
+
+1. `PokemonCapturePhase.hpp`: Implementación canónica completa de ratios de captura para todas las especies registradas (`kSpeciesCatchRates` con 1026 entradas fijas y mapeo de alta dex para formas regionales e introducciones tardías), multiplicadores de Poké Balls (`PokeballType`: Poké Ball 1.0, Great Ball 1.5, Ultra Ball 2.0, Rogue Ball 3.0, Master Ball garantizada), fórmula Gen 6 / upstream de ratio modificado (`modifiedCatchRate = round((3*maxHp - 2*hp) * catchRate * ballMultiplier / (3*maxHp))`), probabilidad de sacudida (`shakeProbability = round(65536 / ((255 / modifiedCatchRate)^0.1875))`) y 3 comprobaciones pseudoaleatorias deterministas con `PokerogueRngAdapter`.
+2. Bloqueadores canónicos: bloqueo estricto en combates contra entrenadores (`CaptureBlocker::TrainerBattle`), combates dobles con ambos rivales vivos (`CaptureBlocker::MultipleEnemies`), objetivo debilitado (`CaptureBlocker::TargetFainted`), escudos de jefes (`CaptureBlocker::BossShieldActive`) y jefe final de wave 200 (`CaptureBlocker::FinalBossUncatchable`).
+3. Gestión de inventario en `FirstRunRuntime`: provisión inicial de 5 Poké Balls estándar al arrancar una run; recarga dinámica de Poké Balls, Super Balls, Ultra Balls, Rogue Balls y Master Balls al reclamar modificadores canónicos tras la victoria.
+4. Lanzamiento interactivo de Poké Ball (`throwPokeball`): deduce la bola del inventario, evalúa el intento de captura, incorpora inmediatamente al Pokémon capturado al equipo si hay cupo disponible (< 6 miembros), restaura sus PS a tope y limpia estados temporales, o ejecuta los contraataques del turno enemigo si el Pokémon escapa de las sacudidas.
+5. Regresiones escritas en `test/native/first_run_restore_harness.cpp` (`checkPokeballCaptureMechanics`): comprueban multiplicadores, ratios canónicos, bloqueos en entrenador/final boss/dobles/fainted, captura garantizada con Master Ball y captura exitosa en combate salvaje con reducción de inventario e incorporación a la party.
+
+## Gestión de equipo (Party de 6 integrantes) y relevo de combate (P9)
+
+1. `PresentationContext` y `FirstRunRuntime`: soporte completo de party de jugador con `playerParty[6]`, `playerPartyCount` (iniciando en 1 con el inicial elegido) y `activePlayerPartyIndex`.
+2. Relevo voluntario en combate: `switchPlayerPokemon(uint8_t targetIndex)` conmuta el Pokémon activo con cualquier miembro de reserva con PS > 0, reinicia modificadores de características temporales para el entrante y procesa los ataques del oponente contra el nuevo combatiente activo.
+3. Relevo forzado por debilitamiento: `advancePlayerAfterDefeat()` detecta cuando el combatiente activo cae a 0 PS y envía automáticamente al primer suplente con vida, permitiendo continuar el combate sin decretar derrota si aún quedan aliados vivos.
+4. Evaluación de derrota del equipo: `playerPartyDefeated()` certifica si la totalidad de los miembros del equipo han sido debilitados antes de declarar el fin de la run.
+5. Persistencia y sincronización continua: el miembro activo `playerParty[activePlayerPartyIndex]` se sincroniza automáticamente ante cambios de PS, subidas de nivel por experiencia obtenida y curaciones por ítems de recompensa, manteniéndose a través de las transiciones entre waves.
+6. Regresiones escritas en `test/native/first_run_restore_harness.cpp` (`checkPlayerPartyManagementAndSwitching`): comprueban inicialización con 1 miembro, crecimiento a 2 tras captura, persistencia entre waves consecutivas, alternancia interactiva entre activo y reserva, y detección de derrota.
+
+## Aprendizaje de movimientos y evolución por nivel (P10)
+
+1. `PokemonEvolutionPhase.hpp`: Implementa el resolver canónico de evoluciones por nivel `checkSpeciesLevelEvolution` consultando `kSpeciesEvolutions` (origen, umbral `level > 1`, y salto de `oldLevel` a `newLevel`), `learnNewLevelMoves` para aprender movimientos disponibles del learnset canónico (`kSpeciesLevelMoves`) en huecos vacíos (< 4) asignando PP máximo/actual, y `applySpeciesEvolution` para transformar la especie, reinicializar las características de combate según las estadísticas base de la forma evolucionada, preservar la ganancia de PS máximos, PS actuales, PP e IVs, y actualizar la identidad visible del Pokémon.
+2. Integración en `FirstRunRuntime::grantVictoryExperience`: al subir de nivel tras un combate ganado, el Pokémon activo aprende movimientos de su learnset correspondientes a los niveles alcanzados y comprueba si alcanza el nivel de evolución canónico (ej. Bulbasaur → Ivysaur al 16, Ivysaur → Venusaur al 32, Charmander → Charmeleon al 16, etc.), actualizando atómicamente la identidad y el equipo en `playerParty`.
+3. Regresiones escritas en `test/native/first_run_restore_harness.cpp` (`checkLevelUpMoveLearningAndEvolution`): comprueban detección de evoluciones canónicas por nivel, rechazo si el nivel es insuficiente, aplicación de evolución con incremento coherente de estadísticas/PS máximos, y aprendizaje de nuevos movimientos de nivel con PP asignado.
+
+
+
