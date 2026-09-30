@@ -33,6 +33,13 @@ function hpBar(current, max) {
   const filled = Math.max(0, Math.min(12, Math.round(current / max * 12)));
   return '[' + '#'.repeat(filled) + '-'.repeat(12 - filled) + ']';
 }
+// Presentation palette only; canonical biome IDs drive selection, never encounter rules.
+function biomeColor(id) {
+  const palette = [0xFF2D1B4E, 0xFF30502A, 0xFF60432C, 0xFF4B5962];
+  let hash = 0;
+  for (let i = 0; i < id.length; ++i) hash = ((hash * 31) + id.charCodeAt(i)) >>> 0;
+  return palette[hash % palette.length];
+}
 let previousJson = '', state = {};
 globalThis._3ds_tick = function(input) {
   const json = _3ds_getBattleState();
@@ -69,10 +76,10 @@ globalThis._3ds_tick = function(input) {
     return;
   }
   _3ds_beginTop();
-  _3ds_clear(0xFF2D1B4E);
+  _3ds_clear(biomeColor(presentation.biomeId || ''));
   if (state.enemyDex) _3ds_drawPokemon(state.enemyDex, false, 230, 42, 1.2);
   if (state.playerDex) _3ds_drawPokemon(state.playerDex, true, 30, 100, 1.2);
-  _3ds_drawText('Wave ' + (state.wave || 0), 10, 8, 0.55, WHITE);
+  _3ds_drawText('Wave ' + (state.wave || 0) + ' - ' + (presentation.biomeName || presentation.biomeId || ''), 10, 8, 0.48, WHITE);
   _3ds_drawText('Classic ' + hpBar(state.wave, state.finalWave) + ' ' + (state.wave || 0) + '/' + (state.finalWave || 0), 10, 28, 0.38, WHITE);
   _3ds_drawText('Enemy #' + (state.enemyDex || 0), 222, 12, 0.48, WHITE);
   _3ds_drawText(hpBar(state.enemyHp, state.enemyMaxHp), 222, 29, 0.48, GREEN);
