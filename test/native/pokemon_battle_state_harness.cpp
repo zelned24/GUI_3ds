@@ -175,6 +175,18 @@ extern "C" int runPokemonBattleStateChecks() {
     if (!Pokerogue3DS::buildBaselineTrainerMatchupInput(matchupActor, matchupOpponent,
             9, 10, false, resolvedMatchup) || resolvedMatchup.usableAttackCount != 0 ||
         resolvedMatchup.outspeeds || resolvedMatchup.active) return 197;
+    PokemonBattleState replacementParty[3] = {state, state, state};
+    replacementParty[0].hp = 0;
+    replacementParty[1].hp = 0;
+    uint8_t replacementIndex = 99;
+    PokerogueRngAdapter replacementRng;
+    replacementRng.sow(trainerAiSeed, sizeof(trainerAiSeed) / sizeof(trainerAiSeed[0]));
+    if (!Pokerogue3DS::selectBaselineTrainerReplacement(replacementParty, 3, 0,
+            matchupOpponent, replacementRng, replacementIndex) || replacementIndex != 2)
+        return 202;
+    replacementParty[2].hp = 0;
+    if (Pokerogue3DS::selectBaselineTrainerReplacement(replacementParty, 3, 0,
+            matchupOpponent, replacementRng, replacementIndex)) return 203;
     PokemonBattleInit actorIdInput = input;
     actorIdInput.pokemonId = 0x12345678u;
     actorIdInput.deriveIvsFromPokemonId = true;

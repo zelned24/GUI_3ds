@@ -221,4 +221,32 @@ inline bool selectTrainerSummonIndex(const double* scores, const uint8_t* indexe
     return true;
 }
 
+// Single-opponent replacement selection after fainting. The caller resolves
+// field/ability effects and scopes RNG before invoking this baseline bridge.
+// Fainted members and the current slot are excluded before matchup scoring.
+inline bool selectBaselineTrainerReplacement(
+    const PokemonBattleState* party, uint8_t count, uint8_t activeIndex,
+    const PokemonBattleState& opponent, PokerogueRngAdapter& scopedRng,
+    uint8_t& output) {
+    if (!party || !count || count > 6 || activeIndex >= count ||
+        !opponent.hp) return false;
+    const auto* opponentSpecies = PokerogueContent::findSpeciesByDex(opponent.speciesDex);
+    if (!opponentSpecies || opponentSpecies->legendary < 0) return false;
+    double scores[6]{};
+    uint8_t indexes[6]{};
+    uint8_t eligible = 0;
+    for (uint8_t member = 0; member < count; ++member) {
+        if (member == activeIndex || !party[member].hp) continue;
+        PokemonTrainerMatchupInput input{};
+        double score = 0;
+        if (!buildBaselineTrainerMatchupInput(party[member], opponent,
+                party[member].stats[5], opponent.stats[5], false, input) ||
+            !calculateTrainerMatchupScore(input, score)) return false;
+        scores[eligible] = opponentSpecies->legendary ? score / 2.0 : score;
+        indexes[eligible++] = member;
+    }
+    if (!eligible) return false;
+    return selectTrainerSummonIndex(scores, indexes, eligible, scopedRng, output);
+}
+
 } // namespace Pokerogue3DS
