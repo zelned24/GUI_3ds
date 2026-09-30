@@ -743,6 +743,15 @@ extern "C" int runPokemonBattleStateChecks() {
     weatherAccuracy = 17;
     if (Pokerogue3DS::pokemonWeatherMoveAccuracy(87, nullptr, weatherAccuracy) ||
         weatherAccuracy != 17) return 328;
+    weatherContext.effectiveWeather = PokemonEffectiveWeather::Sunny;
+    if (!Pokerogue3DS::pokemonMoveWeatherMultiplier(876, weatherContext, weatherMultiplier) ||
+        weatherMultiplier != 1.5) return 329;
+    weatherContext.effectiveWeather = PokemonEffectiveWeather::HarshSun;
+    if (!Pokerogue3DS::pokemonMoveWeatherMultiplier(876, weatherContext, weatherMultiplier) ||
+        weatherMultiplier != 0.5) return 330;
+    weatherContext.effectiveWeather = PokemonEffectiveWeather::None;
+    if (!Pokerogue3DS::pokemonMoveWeatherMultiplier(876, weatherContext, weatherMultiplier) ||
+        weatherMultiplier != 1.0) return 331;
     PokemonBattleInit actorIdInput = input;
     actorIdInput.pokemonId = 0x12345678u;
     actorIdInput.deriveIvsFromPokemonId = true;

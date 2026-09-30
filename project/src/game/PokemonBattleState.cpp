@@ -763,10 +763,21 @@ bool pokemonMoveWeatherMultiplier(uint16_t moveId,
     const auto* move = PokerogueContent::findMoveById(moveId);
     if (!move || !context.resolved ||
         static_cast<uint8_t>(context.effectiveWeather) > 9) return false;
-    // OverrideWeatherMultiplierAttr and variable move types need their
-    // canonical effect resolver; never substitute a plain type calculation.
+    // Variable move types require their own resolver. Canonical weather
+    // overrides precede the ordinary Fire/Water weather multiplier.
     if (move->upstreamFlags & PokerogueContent::MoveHasVariableMovegenType) return false;
-    if (PokerogueContent::moveHasAttribute(*move, "OverrideWeatherMultiplierAttr")) return false;
+    if (PokerogueContent::moveHasAttribute(*move, "OverrideWeatherMultiplierAttr")) {
+        bool represented = false;
+        for (const auto& profile : PokerogueContent::kMoveWeatherOverrides) {
+            if (profile.moveId != moveId) continue;
+            represented = true;
+            if (profile.weatherId == static_cast<uint8_t>(context.effectiveWeather)) {
+                outputMultiplier = 1.5;
+                return true;
+            }
+        }
+        if (!represented) return false;
+    }
     double multiplier = 1.0;
     const auto weather = context.effectiveWeather;
     if (weather == PokemonEffectiveWeather::Sunny || weather == PokemonEffectiveWeather::HarshSun) {

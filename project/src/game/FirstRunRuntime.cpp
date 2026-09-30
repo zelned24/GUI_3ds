@@ -336,11 +336,13 @@ namespace {
 bool supportsBaselineBattleMove(uint16_t moveId) {
     const auto* move = PokerogueContent::findMoveById(moveId);
     // This first resolver only executes plain, single-target damaging moves.
-    // Any declared attribute or upstream behavior flag needs its own port.
+    // Only plain damage and the migrated weather-multiplier attribute are
+    // eligible; other declared attributes/flags still need their own port.
     return move && move->category != PokerogueContent::MoveStatus && move->power > 0 &&
         move->type && move->target && std::strcmp(move->target, "NEAR_OTHER") == 0 &&
-        move->upstreamFlags == 0 && move->attributeCount == 0 &&
-        std::strcmp(move->type, "Fire") != 0;
+        move->upstreamFlags == 0 &&
+        (move->attributeCount == 0 || (move->attributeCount == 1 &&
+            PokerogueContent::moveHasAttribute(*move, "OverrideWeatherMultiplierAttr")));
 }
 
 double baselineEnemyMoveScore(const PokemonBattleState& user,

@@ -774,5 +774,18 @@ const weatherDamageAbilityRows = collections.abilities.flatMap(ability => {
 });
 const weatherDamageHeader = resolvedWeatherHeader.replace('struct MoveAttribute {',
   `struct WeatherDamageAbilityProfile { uint16_t abilityId; bool blocksIndirectDamage; uint16_t weatherMask; const char* sourcePath; const char* sourceSymbol; const char* sourceHash; };\ninline constexpr WeatherDamageAbilityProfile kWeatherDamageAbilityProfiles[] = {\n${weatherDamageAbilityRows.join(',\n')}\n};\nstruct MoveAttribute {`);
-await fs.writeFile(outputPath, weatherDamageHeader, 'utf8');
-console.log(JSON.stringify({ output: path.relative(root, outputPath), bytes: Buffer.byteLength(weatherDamageHeader), hash: report.contentHash }));
+const moveWeatherOverrideRows = collections.moves.flatMap(move => {
+  const raw = move.extensions?.upstreamEffectMetadata?.value ?? '';
+  const declarations = [...raw.matchAll(/\.attr\s*\(\s*OverrideWeatherMultiplierAttr\b/g)];
+  const matches = [...raw.matchAll(/\.attr\s*\(\s*OverrideWeatherMultiplierAttr\s*,\s*WeatherType\.([A-Z_]+)\s*\)/g)];
+  if (declarations.length !== matches.length) throw new Error(`Unsupported move weather override: ${move.id}`);
+  return matches.map(match => {
+    const weatherId = weatherNames.indexOf(match[1]);
+    if (weatherId < 0) throw new Error(`Unknown move weather override: ${match[1]}`);
+    return `    {${move.moveId}, ${weatherId}, "${field(move.provenance?.sourcePath ?? move.source?.sourcePath ?? '')}", "${field(move.provenance?.sourceSymbol ?? move.source?.sourceSymbol ?? '')}"}`;
+  });
+});
+const moveWeatherHeader = weatherDamageHeader.replace('struct MoveAttribute {',
+  `struct MoveWeatherOverride { uint16_t moveId; uint8_t weatherId; const char* sourcePath; const char* sourceSymbol; };\ninline constexpr MoveWeatherOverride kMoveWeatherOverrides[] = {\n${moveWeatherOverrideRows.join(',\n')}\n};\nstruct MoveAttribute {`);
+await fs.writeFile(outputPath, moveWeatherHeader, 'utf8');
+console.log(JSON.stringify({ output: path.relative(root, outputPath), bytes: Buffer.byteLength(moveWeatherHeader), hash: report.contentHash }));
