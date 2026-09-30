@@ -108,6 +108,7 @@ enum class PokemonBattleInitResult : uint8_t {
     InvalidMoveCount,
     MissingMove,
     InvalidMovePp,
+    InvalidStatRange, // Current storage cannot represent this stat; never wrap it.
 };
 
 struct BattleMoveState {

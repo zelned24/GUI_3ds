@@ -813,7 +813,7 @@ bool FirstRunRuntime::grantVictoryExperience() {
     if (applyPokemonExperience(starter->growthRate, m_context.player.level,
                                m_playerExperience, awardedExperience,
                                classicExperienceLevelCap(m_run.wave), progress)
-        != PokemonExperienceResult::Ok || progress.level > 100) return false;
+        != PokemonExperienceResult::Ok) return false;
 
     const uint16_t oldLevel = m_context.player.level;
     PokemonBattleState next = m_context.player.battleState;

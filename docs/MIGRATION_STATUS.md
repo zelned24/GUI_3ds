@@ -166,3 +166,10 @@
 3. Elegibilidad tras subir de nivel admite Pokémon que ya superaron el mínimo, siguiendo Pokemon.getEvolution/validate; no exige cruzar exactamente el umbral.
 4. Inicialización de la especie evolucionada usa forma de destino y slot de habilidad correspondiente; conserva HP/PP/stages. Referencias de presentación/form/assets actualizadas.
 5. Pendientes: elección/cancelación de evolución, condiciones/items/formas, reemplazo cuando hay cuatro movimientos, identidad de habilidad ambigua y soporte de niveles superiores a 100 en el estado de batalla/EXP/save. No se declara P10 completo.
+
+## Niveles tardíos de Classic
+
+1. Eliminado el techo local de 100 en inicialización de BattleState y concesión de EXP. BattleScene.getMaxExpLevel pinned permite cap 200 en wave 200; la fórmula de Pokemon.calculateStats es la misma por encima de 100.
+2. Cálculos de stats usan uint32_t antes de publicar uint16_t. Stats fuera del rango de almacenamiento fallan con InvalidStatRange, sin overflow silencioso. No es una limitación de catálogo ni un cap de gameplay de 100.
+3. Regresiones 460–463: actor real nivel 200, HP según fórmula, EXP 199→200 y rechazo atómico de stats demasiado grandes. Pendientes de ejecución.
+4. La progresión/save completa sigue pendiente; aceptar nivel 200 no demuestra combate final, fases Eternamax ni Classic completo.

@@ -28,6 +28,32 @@ using Pokerogue3DS::PokemonMoveActionStatus;
 using Pokerogue3DS::PokerogueRngAdapter;
 
 extern "C" int runPokemonBattleStateChecks() {
+    // Classic late-game cap exceeds 100; the source stat formula remains unchanged.
+    const auto* highLevelSpecies = PokerogueContent::findSpeciesByDex(1);
+    if (!highLevelSpecies || Pokerogue3DS::classicExperienceLevelCap(200) != 200) return 460;
+    PokemonBattleInit highLevelInput{};
+    highLevelInput.speciesDex = highLevelSpecies->dex;
+    highLevelInput.abilityId = highLevelSpecies->ability1;
+    highLevelInput.gender = PokemonGender::Male;
+    highLevelInput.level = 200;
+    PokemonBattleState highLevelActor{};
+    if (Pokerogue3DS::initializePokemonBattleState(highLevelInput, highLevelActor) != PokemonBattleInitResult::Ok ||
+        highLevelActor.level != 200 || highLevelActor.maxHp != 4u * highLevelSpecies->hp + 210u)
+        return 461;
+    uint32_t exp199 = 0, exp200 = 0;
+    Pokerogue3DS::PokemonExperienceProgress highProgress{};
+    if (Pokerogue3DS::pokemonTotalExperienceForLevel(highLevelSpecies->growthRate, 199, exp199) !=
+            Pokerogue3DS::PokemonExperienceResult::Ok ||
+        Pokerogue3DS::pokemonTotalExperienceForLevel(highLevelSpecies->growthRate, 200, exp200) !=
+            Pokerogue3DS::PokemonExperienceResult::Ok ||
+        Pokerogue3DS::applyPokemonExperience(highLevelSpecies->growthRate, 199, exp199,
+            exp200 - exp199, 200, highProgress) != Pokerogue3DS::PokemonExperienceResult::Ok ||
+        highProgress.level != 200 || highProgress.totalExperience != exp200) return 462;
+    highLevelInput.level = 65535;
+    const uint16_t previousHp = highLevelActor.hp;
+    if (Pokerogue3DS::initializePokemonBattleState(highLevelInput, highLevelActor) !=
+            PokemonBattleInitResult::InvalidStatRange || highLevelActor.hp != previousHp) return 463;
+
     // Canonical neutral-weather actors: residual phase is separate from clock expiry.
     const PokerogueContent::Species* normalSpecies = nullptr;
     const PokerogueContent::Species* rockSpecies = nullptr;
