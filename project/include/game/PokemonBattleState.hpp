@@ -349,7 +349,7 @@ struct PokemonHitPolicy {
     double accuracyMultiplier = 1.0; // Additional resolved multiplier; stages remain separate.
 };
 bool composePokemonAlwaysHitPolicy(const PokemonWeatherAbilityComponent* components,
-    std::size_t count, PokemonHitPolicy& output);
+    std::size_t count, PokemonHitPolicy& output, uint16_t moveId = 0);
 struct PokemonMoveDamageRoll {
     bool hit = false;
     bool critical = false;

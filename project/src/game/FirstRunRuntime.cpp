@@ -697,7 +697,8 @@ bool FirstRunRuntime::advanceBattleTurn() {
             {m_context.player.battleState.abilityId, true, !enemyActs},
             {m_context.enemy.battleState.abilityId, true, enemyActs}
         };
-        if (!composePokemonAlwaysHitPolicy(activeAbilities, 2, hit)) return false;
+        if (!composePokemonAlwaysHitPolicy(activeAbilities, 2, hit,
+                enemyActs ? enemyMove->id : selected->id)) return false;
         PokemonCriticalPolicy critical{};
         if (!resolveActiveMoveWeather(enemyActs, weather) ||
             !resolveActiveMoveCritical(enemyActs, critical)) return false;

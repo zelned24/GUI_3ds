@@ -1060,6 +1060,17 @@ extern "C" int runPokemonBattleStateChecks() {
     eyesComponent.belongsToAttacker = false;
     if (!Pokerogue3DS::composePokemonAlwaysHitPolicy(&eyesComponent, 1, hitPolicy) ||
         hitPolicy.accuracyMultiplier != 1.0) return 359;
+    uint16_t hustleId = 0;
+    for (const auto& profile : PokerogueContent::kAccuracyAbilityProfiles)
+        if (std::strcmp(profile.sourceSymbol, "AbilityId.HUSTLE") == 0 &&
+            profile.accuracy && profile.multiplier == 0.8 && profile.requiredCategory == 0) hustleId = profile.abilityId;
+    if (!hustleId) return 360;
+    Pokerogue3DS::PokemonWeatherAbilityComponent hustleComponent{hustleId, true, true};
+    if (!Pokerogue3DS::composePokemonAlwaysHitPolicy(&hustleComponent, 1, hitPolicy, 33) ||
+        hitPolicy.accuracyMultiplier != 0.8) return 361;
+    if (!Pokerogue3DS::composePokemonAlwaysHitPolicy(&hustleComponent, 1, hitPolicy, 55) ||
+        hitPolicy.accuracyMultiplier != 1.0) return 362;
+    if (Pokerogue3DS::composePokemonAlwaysHitPolicy(&hustleComponent, 1, hitPolicy)) return 363;
     PokemonBattleState noPpActor = state;
     noPpActor.moves[0].pp = 0;
     PokemonBattleState unchangedTarget = state;
