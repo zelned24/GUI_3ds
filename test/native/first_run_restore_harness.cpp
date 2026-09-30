@@ -150,6 +150,17 @@ int main() {
         game.captureNativeRunSave(afterWeatherReject);
         if (afterWeatherReject.weatherType || afterWeatherReject.enemyHp != loaded.enemyHp ||
             afterWeatherReject.playerHp != loaded.playerHp || afterWeatherReject.battleTurn != loaded.battleTurn) return 25;
+        NativeRunSave roomCheckpoint = loaded;
+        roomCheckpoint.trickRoomTurnsLeft = 3;
+        roomCheckpoint.trickRoomMaxDuration = 5;
+        roomCheckpoint.trickRoomSourceMoveId = 433;
+        roomCheckpoint.trickRoomSourcePokemonId = context.player.battleState.pokemonId;
+        if (!game.restoreNativeRunSave(roomCheckpoint)) return 26;
+        NativeRunSave roomRestored{};
+        game.captureNativeRunSave(roomRestored);
+        if (roomRestored.trickRoomTurnsLeft != 3 || roomRestored.trickRoomMaxDuration != 5 ||
+            roomRestored.trickRoomSourceMoveId != 433 ||
+            roomRestored.trickRoomSourcePokemonId != roomCheckpoint.trickRoomSourcePokemonId) return 27;
         return checkTrainerExperienceReplay();
     }
     return 7; // No supported canonical encounter found: do not silently skip.

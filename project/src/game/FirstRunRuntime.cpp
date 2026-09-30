@@ -86,6 +86,7 @@ bool FirstRunRuntime::restoreSetup(uint32_t seed, uint16_t starterDex) {
     if (index == PokerogueContent::kSpeciesCount) return false;
     m_run.seed = seed;
     m_arenaWeather = {};
+    m_trickRoom = {};
     m_runStarted = false;
     m_run.wave = 1;
     m_playerExperience = 0;
@@ -130,6 +131,10 @@ void FirstRunRuntime::captureNativeRunSave(NativeRunSave& output) const {
         }
         value.enemyHp = m_context.enemy.battleState.hp;
         value.battleTurn = m_turn;
+        value.trickRoomTurnsLeft = m_trickRoom.turnsLeft;
+        value.trickRoomMaxDuration = m_trickRoom.maxDuration;
+        value.trickRoomSourceMoveId = m_trickRoom.sourceMoveId;
+        value.trickRoomSourcePokemonId = m_trickRoom.sourcePokemonId;
         value.playerMoveCount = m_context.player.battleState.moveCount;
         value.enemyMoveCount = m_context.enemy.battleState.moveCount;
         for (uint8_t i = 0; i < value.playerMoveCount && i < 4; ++i) {
@@ -183,9 +188,6 @@ bool FirstRunRuntime::restoreNativeRunSaveInPlace(const NativeRunSave& save) {
     // Arena weather save data is supported by the codec. This baseline cannot
     // yet execute its ability/field effects; never load it as neutral weather.
     if (save.weatherType || save.weatherTurnsLeft || save.weatherMaxDuration) return false;
-    // Field commands are not enabled in this runtime yet; reject instead of losing state.
-    if (save.trickRoomTurnsLeft || save.trickRoomMaxDuration ||
-        save.trickRoomSourceMoveId || save.trickRoomSourcePokemonId) return false;
     if (validateNativeRunSave(save, PokerogueContent::kContentHash) != NativeSaveResult::Ok ||
         save.stage < NativeSaveStage::RunSetup ||
         save.stage > NativeSaveStage::ExperienceGranted) return false;
@@ -300,6 +302,8 @@ bool FirstRunRuntime::restoreNativeRunSaveInPlace(const NativeRunSave& save) {
         m_context.activeTrainerPartyIndex = save.activeTrainerMember;
         m_context.trainerParty[save.activeTrainerMember] = m_context.enemy;
     }
+    m_trickRoom = {save.trickRoomTurnsLeft, save.trickRoomMaxDuration,
+        save.trickRoomSourceMoveId, save.trickRoomSourcePokemonId};
     m_turn = save.battleTurn;
     m_enemySwitchCounter = save.enemySwitchCounter;
     if (save.trainerPartyCount) refreshTrainerBaselineMatchups();
@@ -683,8 +687,7 @@ bool FirstRunRuntime::advanceBattleTurn() {
 
     PokemonMoveWeatherContext turnWeather{};
     if (!resolveActiveMoveWeather(false, turnWeather)) return false;
-    PokemonTurnOrderFieldPolicy turnField{};
-    turnField.resolved = true; // Current eligible moves cannot set field tags.
+    const auto turnField = pokemonTrickRoomOrderPolicy(m_trickRoom);
     const auto firstMover = resolveBaselineFirstMover(playerState, enemyState,
         selected->id, enemyMove->id, m_seedCodeUnits.data(), m_seedLength,
         m_run.wave, m_turn, &turnWeather, &turnField);
@@ -743,6 +746,14 @@ bool FirstRunRuntime::advanceBattleTurn() {
 }
 
 bool FirstRunRuntime::finishBattleTurn() {
+    // TurnEndPhase lapses arena tags except during a biome interlude.
+    // Current checkpoint progression ends before the first X0 transition.
+    PokemonTrickRoomEvent roomEvent{};
+    if (!advancePokemonTrickRoomTurnEnd(m_trickRoom, roomEvent)) {
+        m_battleFeedback = "Invalid Trick Room field state";
+        buildScene();
+        return false;
+    }
     if (!m_context.enemy.battleState.hp || !m_context.player.battleState.hp) {
         m_battleFinished = true;
         m_playerWon = m_context.enemy.battleState.hp == 0;
@@ -999,6 +1010,7 @@ void FirstRunRuntime::resolve(bool carryPlayer) {
                 ClassicTrainerDecision::Invalid) return;
         if (isTrainer) {
             m_trainerBattle = true;
+            m_trickRoom = {}; // BattleScene.doPostBattleCleanup resets effects for trainers.
             const auto selectedTrainer = PokerogueEncounterResolver::resolveTrainerType(
                 m_run.biomeId, false, false, waveRng);
             if (!selectedTrainer.valid || !selectedTrainer.trainerType) {
@@ -1014,6 +1026,7 @@ void FirstRunRuntime::resolve(bool carryPlayer) {
         }
     } else if (waveKind == ClassicWaveKind::FixedTrainerBattle) {
         m_trainerBattle = true;
+        m_trickRoom = {}; // BattleScene.doPostBattleCleanup resets effects for trainers.
         const auto* fixedBattle = PokerogueContent::findClassicFixedBattleWave(m_run.wave);
         const auto* trainer = fixedBattle && fixedBattle->hasStaticTrainerType
             ? PokerogueContent::findTrainerType(fixedBattle->trainerTypeId) : nullptr;

@@ -3,6 +3,7 @@
 #include "screens/SceneData.hpp"
 #include "game/PokemonBattleState.hpp"
 #include "game/PokerogueBattleRng.hpp"
+#include "game/PokerogueTurnOrder.hpp"
 #include "game/PokerogueClassicVictoryPlan.hpp"
 #include "storage/NativeRunSave.hpp"
 #include <cstdint>
@@ -108,6 +109,7 @@ private:
 
     RunState m_run{};
     PokemonArenaWeatherState m_arenaWeather{};
+    PokemonTrickRoomState m_trickRoom{};
     PresentationContext m_context{};
     Citro2D::SceneDefinition m_scene{};
     std::array<Citro2D::SceneNodeData, 13> m_nodes{};

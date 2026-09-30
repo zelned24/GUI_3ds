@@ -195,3 +195,7 @@ This slice applies pinned level-driven species substitution/evolution after the 
 ## Native save v8: Trick Room field checkpoint
 
 The save codec now preserves Trick Room remaining/max duration and source move/Pokemon IDs. Active records must match the imported AddArenaTagAttr duration and canonical move ID. Versions 1–7 remain readable; older records migrate with an empty room state, while v7 weather remains intact. FirstRunRuntime explicitly rejects active room records until field command dispatch is integrated, preventing silent state loss. Tests added for round-trip, invalid source and v7 migration; execution and compilation remain deferred by user instruction.
+
+## Trick Room native runtime checkpoint integration
+
+FirstRunRuntime now owns the canonical room state, captures/restores it through save v8, supplies its resolved reversal to the actual turn-order call and lapses it at completed turns. Trainer entry clears it, while ordinary wild transitions preserve it, matching BattleScene.doPostBattleCleanup / Arena.resetArenaEffects and TurnEndPhase in the pinned source. The bounded runtime does not yet reach biome interludes; that branch still requires migration. Move selection/AI still exclude Trick Room, so this establishes checkpoint consumption, not full move availability. Host regression added for active field restoration and recapture; execution remains deferred.
