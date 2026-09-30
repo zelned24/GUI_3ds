@@ -524,8 +524,10 @@ const abilityStatStageRows = collections.abilities.flatMap(ability => {
   const multipliers = [...raw.matchAll(/\.attr\s*\(\s*StatStageChangeMultiplierAbAttr\s*,\s*(-?\d+)\s*\)/g)];
   const protectionAttrs = [...raw.matchAll(/\.attr\s*\(\s*ProtectStatAbAttr\b/g)];
   const protections = [...raw.matchAll(/\.attr\s*\(\s*ProtectStatAbAttr\s*(?:,\s*Stat\.([A-Z]+)\s*)?\)/g)];
-  if (!multiplierAttrs.length && !protectionAttrs.length) return [];
-  if (multiplierAttrs.length !== multipliers.length || protectionAttrs.length !== protections.length) return [];
+  const reflectionAttrs = [...raw.matchAll(/\.attr\s*\(\s*ReflectStatStageChangeAbAttr\b/g)];
+  const reflections = [...raw.matchAll(/\.attr\s*\(\s*ReflectStatStageChangeAbAttr\s*\)/g)];
+  if (!multiplierAttrs.length && !protectionAttrs.length && !reflectionAttrs.length) return [];
+  if (multiplierAttrs.length !== multipliers.length || protectionAttrs.length !== protections.length || reflectionAttrs.length !== reflections.length) return [];
   let multiplier = 1, protectedMask = 0;
   for (const match of multipliers) multiplier *= Number(match[1]);
   if (!Number.isInteger(multiplier) || multiplier < -6 || multiplier > 6) return [];
@@ -534,7 +536,7 @@ const abilityStatStageRows = collections.abilities.flatMap(ability => {
     else if (upstreamStatIds[match[1]]) protectedMask |= 1 << (upstreamStatIds[match[1]] - 1);
     else return [];
   }
-  return [`    {${ability.abilityId}, ${multiplier}, ${protectedMask}, ${/\.ignorable\s*\(\s*\)/.test(raw)}, "${field(ability.source?.sourcePath ?? '')}", "${field(ability.source?.sourceSymbol ?? '')}", "${field(ability.source?.sourceHash ?? '')}"}`];
+  return [`    {${ability.abilityId}, ${multiplier}, ${protectedMask}, ${reflections.length > 0}, ${/\.ignorable\s*\(\s*\)/.test(raw)}, "${field(ability.source?.sourcePath ?? '')}", "${field(ability.source?.sourceSymbol ?? '')}", "${field(ability.source?.sourceHash ?? '')}"}`];
 });
 const abilities = entityRows(collections.abilities);
 const abilityMovegenProfiles = collections.abilities.map(ability => {
@@ -671,7 +673,7 @@ const statStageHeader = trainerMoveHeader.replace(
 );
 const abilityStatStageHeader = statStageHeader.replace(
   'struct MoveAttribute {',
-  `struct AbilityStatStageProfile { uint16_t abilityId; int8_t multiplier; uint8_t protectedMask; bool ignorable; const char* sourcePath; const char* sourceSymbol; const char* sourceHash; };\ninline constexpr AbilityStatStageProfile kAbilityStatStageProfiles[] = {\n${abilityStatStageRows.join(',\n')}\n};\ninline constexpr const AbilityStatStageProfile* findAbilityStatStageProfile(uint16_t id) { for (const auto& profile : kAbilityStatStageProfiles) if (profile.abilityId == id) return &profile; return nullptr; }\nstruct MoveAttribute {`
+  `struct AbilityStatStageProfile { uint16_t abilityId; int8_t multiplier; uint8_t protectedMask; bool reflectDrops; bool ignorable; const char* sourcePath; const char* sourceSymbol; const char* sourceHash; };\ninline constexpr AbilityStatStageProfile kAbilityStatStageProfiles[] = {\n${abilityStatStageRows.join(',\n')}\n};\ninline constexpr const AbilityStatStageProfile* findAbilityStatStageProfile(uint16_t id) { for (const auto& profile : kAbilityStatStageProfiles) if (profile.abilityId == id) return &profile; return nullptr; }\nstruct MoveAttribute {`
 );
 await fs.writeFile(outputPath, abilityStatStageHeader, 'utf8');
 console.log(JSON.stringify({ output: path.relative(root, outputPath), bytes: Buffer.byteLength(abilityStatStageHeader), hash: report.contentHash }));

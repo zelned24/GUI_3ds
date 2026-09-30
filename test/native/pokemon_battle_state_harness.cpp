@@ -356,6 +356,21 @@ extern "C" int runPokemonBattleStateChecks() {
             mixedFiltered, mixedCount) || mixedCount != 1 || mixedFiltered[0] != 1) return 237;
     if (!Pokerogue3DS::filterEnemyKoMoveSlots(mixedSlots, mixedDamage, 2, 11,
             mixedFiltered, mixedCount) || mixedCount != 2 || mixedFiltered[0] != 0) return 238;
+    const PokerogueContent::AbilityStatStageProfile* mirrorArmor = nullptr;
+    for (const auto& profile : PokerogueContent::kAbilityStatStageProfiles)
+        if (std::strcmp(profile.sourceSymbol, "AbilityId.MIRROR_ARMOR") == 0) mirrorArmor = &profile;
+    if (!mirrorArmor || !mirrorArmor->reflectDrops) return 239;
+    const Pokerogue3DS::ResolvedStatStageAbilityComponent mirrorComponent[] = {{mirrorArmor, true}};
+    protectedPolicy = {};
+    if (!Pokerogue3DS::composePokemonStatStageAbilityPolicy(growlEffect, mirrorComponent,
+            1, false, protectedPolicy, true) || protectedPolicy.reflectedStatMask != 1 ||
+        protectedPolicy.cancelledStatMask != 1) return 240;
+    protectedPolicy.resolved = true;
+    effectRecipient = state;
+    if (Pokerogue3DS::applyPokemonStatStageEffect(effectRecipient, growlEffect, protectedPolicy,
+            replacementRng, stageEvent) != Pokerogue3DS::PokemonStatStageEffectResult::Ok ||
+        effectRecipient.statStages[0] || stageEvent.reflectedStatMask != 1 ||
+        stageEvent.reflectedStages != -1) return 241;
     PokemonBattleInit actorIdInput = input;
     actorIdInput.pokemonId = 0x12345678u;
     actorIdInput.deriveIvsFromPokemonId = true;

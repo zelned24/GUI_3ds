@@ -17,6 +17,7 @@ struct PokemonStatStageEffectPolicy {
     bool resolved = false;
     int8_t stageMultiplier = 1;
     uint8_t cancelledStatMask = 0;
+    uint8_t reflectedStatMask = 0;
     int16_t chance = -1;
 };
 
@@ -31,7 +32,8 @@ struct ResolvedStatStageAbilityComponent {
 inline bool composePokemonStatStageAbilityPolicy(
     const PokerogueContent::MoveStatStageEffect& effect,
     const ResolvedStatStageAbilityComponent* components, uint8_t count,
-    bool ignoreMultiplierAbilities, PokemonStatStageEffectPolicy& policy) {
+    bool ignoreMultiplierAbilities, PokemonStatStageEffectPolicy& policy,
+    bool allowReflection = false) {
     if (count > 2 || (count && !components) || !effect.statMask || effect.statMask > 127)
         return false;
     int multiplier = policy.stageMultiplier;
@@ -50,6 +52,13 @@ inline bool composePokemonStatStageAbilityPolicy(
         for (uint8_t i = 0; i < count; ++i)
             if (components[i].applies)
                 cancelled |= components[i].profile->protectedMask & effect.statMask;
+    uint8_t reflected = 0;
+    if (allowReflection && !effect.selfTarget && effect.stages * multiplier < 0)
+        for (uint8_t i = 0; i < count; ++i)
+            if (components[i].applies && components[i].profile->reflectDrops)
+                reflected |= effect.statMask & static_cast<uint8_t>(~cancelled);
+    cancelled |= reflected;
+    policy.reflectedStatMask = reflected;
     policy.stageMultiplier = static_cast<int8_t>(multiplier);
     policy.cancelledStatMask = cancelled;
     return true;
@@ -58,6 +67,8 @@ inline bool composePokemonStatStageAbilityPolicy(
 struct PokemonStatStageEffectEvent {
     bool triggered = false;
     uint8_t changedStatMask = 0;
+    uint8_t reflectedStatMask = 0;
+    int8_t reflectedStages = 0;
     int8_t changes[7]{};
 };
 
@@ -72,7 +83,8 @@ inline PokemonStatStageEffectResult applyPokemonStatStageEffect(
     if (!PokerogueContent::findMoveById(effect.moveId) || !effect.statMask ||
         effect.statMask > 127 || effect.stages < -6 || effect.stages > 6 ||
         policy.stageMultiplier < -6 || policy.stageMultiplier > 6 ||
-        policy.cancelledStatMask > 127 || policy.chance < -1 || policy.chance > 100)
+        policy.cancelledStatMask > 127 || policy.reflectedStatMask > 127 ||
+        (policy.reflectedStatMask & ~policy.cancelledStatMask) || policy.chance < -1 || policy.chance > 100)
         return PokemonStatStageEffectResult::InvalidDefinition;
     if (!recipient.hp) return PokemonStatStageEffectResult::InvalidState;
     for (int8_t stage : recipient.statStages)
@@ -85,6 +97,9 @@ inline PokemonStatStageEffectResult applyPokemonStatStageEffect(
         return PokemonStatStageEffectResult::Ok;
     }
     next.triggered = true;
+    next.reflectedStatMask = policy.reflectedStatMask & effect.statMask;
+    next.reflectedStages = next.reflectedStatMask
+        ? static_cast<int8_t>(effect.stages * policy.stageMultiplier) : 0;
     for (uint8_t stat = 0; stat < 7; ++stat) {
         const uint8_t bit = static_cast<uint8_t>(1u << stat);
         if (!(effect.statMask & bit) || (policy.cancelledStatMask & bit)) continue;
