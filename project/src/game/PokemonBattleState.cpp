@@ -1152,14 +1152,22 @@ PokemonMoveDamageResult resolveStandardPokemonMoveDamage(
     return PokemonMoveDamageResult::Ok;
 }
 
-bool pokemonSingleOpponentPpCost(uint16_t opponentAbilityId, uint8_t& output) {
-    if (!PokerogueContent::findAbilityMovegenProfile(opponentAbilityId)) return false;
+bool pokemonActiveTargetsPpCost(const uint16_t* abilityIds, uint8_t count, uint8_t& output) {
+    if (count && !abilityIds) return false;
     uint16_t cost = 1;
-    for (const auto& profile : PokerogueContent::kPpAbilityProfiles)
-        if (profile.abilityId == opponentAbilityId) cost += profile.increase;
-    if (cost > 255) return false;
+    // MovePhase.usePP: start at one, then apply IncreasePpUsedAbAttr per active target.
+    for (uint8_t i = 0; i < count; ++i) {
+        if (!PokerogueContent::findAbilityMovegenProfile(abilityIds[i])) return false;
+        for (const auto& profile : PokerogueContent::kPpAbilityProfiles)
+            if (profile.abilityId == abilityIds[i]) cost += profile.increase;
+        if (cost > 255) return false;
+    }
     output = static_cast<uint8_t>(cost);
     return true;
+}
+
+bool pokemonSingleOpponentPpCost(uint16_t opponentAbilityId, uint8_t& output) {
+    return pokemonActiveTargetsPpCost(&opponentAbilityId, 1, output);
 }
 
 PokemonMoveActionStatus useStandardPokemonMove(

@@ -147,7 +147,7 @@ private:
     bool generateVictoryRewards();
     bool finishBattleTurn();
     bool executeActiveBattleMove(bool enemyActs, uint8_t moveSlot, PokerogueRngAdapter& rng);
-    bool executeActiveBattleMove(uint8_t userIndex, uint8_t targetIndex, uint8_t moveSlot, PokerogueRngAdapter& rng);
+    bool executeActiveBattleMove(uint8_t userIndex, uint8_t targetIndex, uint8_t moveSlot, PokerogueRngAdapter& rng, const PokemonPpPolicy* ppOverride = nullptr);
     void refreshTrainerBaselineMatchups();
     bool resolveActiveMoveWeather(bool enemyAttacks, PokemonMoveWeatherContext& output) const;
     bool resolveActiveMoveWeather(const PokemonBattleState& user, const PokemonBattleState& opponent,

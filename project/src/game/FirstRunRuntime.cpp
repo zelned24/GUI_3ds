@@ -1278,11 +1278,22 @@ bool FirstRunRuntime::advanceBattleTurnInPlace() {
                      std::strcmp(pMove->target, "ALL_ENEMIES") == 0 ||
                      std::strcmp(pMove->target, "ALL_OTHERS") == 0);
                 if (isSpread) {
+                    // Only the migrated stat-stage family currently admits area targets.
+                    // Damage-area multipliers and other effects require their own resolver.
+                    if (!supportsPokemonStatStageMove(pMove->id)) return false;
+                    uint16_t targetAbilities[2]{};
+                    uint8_t targetCount = 0;
+                    if (m_context.enemy.battleState.hp) targetAbilities[targetCount++] = m_context.enemy.battleState.abilityId;
+                    if (m_context.secondEnemy.battleState.hp) targetAbilities[targetCount++] = m_context.secondEnemy.battleState.abilityId;
+                    PokemonPpPolicy areaPp{};
+                    areaPp.resolved = true;
+                    if (!pokemonActiveTargetsPpCost(targetAbilities, targetCount, areaPp.cost)) return false;
                     if (m_context.enemy.battleState.hp > 0) {
-                        if (!executeActiveBattleMove(0, 1, m_selectedBattleMove, *rng)) { m_battleFeedback = "Double battle action failed"; return false; }
+                        if (!executeActiveBattleMove(0, 1, m_selectedBattleMove, *rng, &areaPp)) { m_battleFeedback = "Double battle action failed"; return false; }
+                        areaPp.cost = 0; // Subsequent target executes in resolved ignore-PP mode.
                     }
                     if (m_context.secondEnemy.battleState.hp > 0) {
-                        if (!executeActiveBattleMove(0, 2, m_selectedBattleMove, *rng)) { m_battleFeedback = "Double battle action failed"; return false; }
+                        if (!executeActiveBattleMove(0, 2, m_selectedBattleMove, *rng, &areaPp)) { m_battleFeedback = "Double battle action failed"; return false; }
                     }
                 } else {
                     uint8_t target = m_selectedTarget == 0 ? 1 : 2;
@@ -1348,7 +1359,7 @@ bool FirstRunRuntime::advanceBattleTurnInPlace() {
 }
 
 bool FirstRunRuntime::executeActiveBattleMove(uint8_t userIndex, uint8_t targetIndex, uint8_t moveSlot,
-    PokerogueRngAdapter& rng) {
+    PokerogueRngAdapter& rng, const PokemonPpPolicy* ppOverride) {
     if (userIndex > 2 || targetIndex > 2) return false;
     PokemonBattleState* actors[3] = {
         &m_context.player.battleState,
@@ -1372,7 +1383,10 @@ bool FirstRunRuntime::executeActiveBattleMove(uint8_t userIndex, uint8_t targetI
     }
     PokemonPpPolicy pp{};
     pp.resolved = true;
-    if (!pokemonSingleOpponentPpCost(opponent.abilityId, pp.cost)) return false;
+    if (ppOverride) {
+        if (!ppOverride->resolved) return false;
+        pp = *ppOverride;
+    } else if (!pokemonSingleOpponentPpCost(opponent.abilityId, pp.cost)) return false;
     if (pokemonWeatherChangeProfile(move->id)) {
         PokemonWeatherChangePolicy policy{};
         policy.resolved = policy.weatherCallbacksResolved = weatherBattleSupported();

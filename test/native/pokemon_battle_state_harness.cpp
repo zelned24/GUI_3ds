@@ -1445,6 +1445,19 @@ extern "C" int runPokemonBattleStateChecks() {
     for (const auto& profile : PokerogueContent::kPpAbilityProfiles)
         if (!Pokerogue3DS::pokemonSingleOpponentPpCost(profile.abilityId, pressureCost) ||
             pressureCost != 1 + profile.increase) return 389;
+    // Real Pressure metadata composes once across all active area targets.
+    for (const auto& profile : PokerogueContent::kPpAbilityProfiles) {
+        const uint16_t targets[] = {profile.abilityId, profile.abilityId};
+        if (!Pokerogue3DS::pokemonActiveTargetsPpCost(targets, 2, pressureCost) ||
+            pressureCost != 1 + 2 * profile.increase) return 464;
+        if (!Pokerogue3DS::pokemonActiveTargetsPpCost(targets, 1, pressureCost) ||
+            pressureCost != 1 + profile.increase) return 465;
+    }
+    if (!Pokerogue3DS::pokemonActiveTargetsPpCost(nullptr, 0, pressureCost) || pressureCost != 1) return 466;
+    pressureCost = 7;
+    const uint16_t unknownTarget[] = {65535};
+    if (Pokerogue3DS::pokemonActiveTargetsPpCost(nullptr, 1, pressureCost) ||
+        Pokerogue3DS::pokemonActiveTargetsPpCost(unknownTarget, 1, pressureCost) || pressureCost != 7) return 467;
     Pokerogue3DS::PokemonTrickRoomState roomState{};
     Pokerogue3DS::PokemonTrickRoomEvent roomEvent{};
     if (!Pokerogue3DS::applyPokemonTrickRoomMove(roomState, 433, 123, roomEvent) ||

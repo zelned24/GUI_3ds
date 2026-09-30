@@ -181,3 +181,11 @@
 3. Scope RNG inválido y overflow del offset de turno fallan explícitamente.
 4. Regresión 217–220 recorre encuentros reales y comprueba HP/PP/RNG de turnos rechazados. Escrita, pendiente de ejecución. No demuestra fallos inyectados a mitad del turno.
 5. Pendientes: dobles 2vs2 completos, semántica de ataques de área/PP, orden de respuestas tras captura/cambio, save extendido y fases Eternamax. Classic sigue incompleto.
+
+## PP de movimientos de estado de área
+
+1. Fuente inspeccionada: PokéRogue pinned, src/phases/move-phase.ts, MovePhase.usePP y getActiveTargetPokemon. Un gasto base más IncreasePpUsedAbAttr de cada objetivo activo, una vez por movimiento.
+2. Ruta doble de StatStageChangeAttr calcula el coste conjunto antes de ejecutar objetivos. El segundo objetivo usa modo ignore-PP resuelto, incluso si el primero agotó los PP. No se cobra de nuevo por objetivo.
+3. pokemonActiveTargetsPpCost reutiliza kPpAbilityProfiles importados; referencias desconocidas fallan sin publicar coste. El resolver de un oponente delega en él.
+4. Regresiones 464–467 escritas para dos Pressure, un objetivo, lista vacía e IDs inválidos; modo ignore-PP de stat stages ya tiene regresión. Pendientes de ejecución, sin compilación.
+5. Daño de área, 2vs2 y efectos posteriores completos siguen pendientes. Esta corrección no los declara implementados.

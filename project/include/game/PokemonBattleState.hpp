@@ -407,6 +407,7 @@ struct PokemonPpPolicy {
     bool resolved = false;
     uint8_t cost = 1; // Zero represents a resolved ignore-PP execution mode.
 };
+bool pokemonActiveTargetsPpCost(const uint16_t* abilityIds, uint8_t count, uint8_t& output);
 bool pokemonSingleOpponentPpCost(uint16_t opponentAbilityId, uint8_t& output);
 struct PokemonMoveActionResult {
     PokemonMoveDamageRoll damageRoll{};
