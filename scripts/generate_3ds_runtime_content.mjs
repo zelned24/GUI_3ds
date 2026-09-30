@@ -989,5 +989,10 @@ const catchRows = collections.species.map(species => {
 });
 const captureHeader = weatherLifecycleHeader.replace('struct MoveAttribute {',
   `struct SpeciesCatchProfile { uint16_t speciesDex; uint8_t catchRate; const char* sourcePath; const char* sourceSymbol; const char* sourceHash; };\ninline constexpr SpeciesCatchProfile kSpeciesCatchProfiles[] = {\n${catchRows.join(',\n')}\n};\nstruct MoveAttribute {`);
-await fs.writeFile(outputPath, captureHeader, 'utf8');
-console.log(JSON.stringify({ output: path.relative(root, outputPath), bytes: Buffer.byteLength(captureHeader), hash: report.contentHash }));
+const simpleEvolutionRows = evolutionEdges.filter(({ edge }) =>
+  edge.level > 1 && !edge.item && !edge.condition && !edge.preFormKey && !edge.evoFormKey
+).map(({ species, edge, order }) => `    {"${field(species.id)}", ${order}}`);
+const evolutionCapabilityHeader = captureHeader.replace('struct MoveAttribute {',
+  `struct SimpleLevelEvolutionProfile { const char* speciesId; uint16_t sourceOrder; };\ninline constexpr SimpleLevelEvolutionProfile kSimpleLevelEvolutionProfiles[] = {\n${simpleEvolutionRows.join(',\n')}\n};\nstruct MoveAttribute {`);
+await fs.writeFile(outputPath, evolutionCapabilityHeader, 'utf8');
+console.log(JSON.stringify({ output: path.relative(root, outputPath), bytes: Buffer.byteLength(evolutionCapabilityHeader), hash: report.contentHash }));

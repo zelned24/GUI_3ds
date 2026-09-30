@@ -587,6 +587,27 @@ static int checkLevelUpMoveLearningAndEvolution() {
 }
 
 int main() {
+    // A high new level must not wrap to negative and hide real low-level moves.
+    {
+        Pokerogue3DS::PokemonBattleState learner{};
+        learner.speciesDex = PokerogueContent::kSpecies[0].dex;
+        uint16_t ids[4]{};
+        uint8_t count = 0;
+        if (!Pokerogue3DS::learnNewLevelMoves(learner.speciesDex, 1, 128, learner, ids, count) ||
+            !count || count != learner.moveCount) return 214;
+        const auto* alreadyEligible = Pokerogue3DS::checkSpeciesLevelEvolution("bulbasaur", 20, 21);
+        if (!alreadyEligible || alreadyEligible->level != 16) return 215;
+        // A level alone must not select an item/condition/form evolution.
+        for (const auto& edge : PokerogueContent::kSpeciesEvolutions) {
+            const auto* selected = Pokerogue3DS::checkSpeciesLevelEvolution(edge.sourceSpeciesId, 1, 100);
+            if (!selected) continue;
+            bool eligible = false;
+            for (const auto& row : PokerogueContent::kSimpleLevelEvolutionProfiles)
+                if (row.sourceOrder == selected->sourceOrder &&
+                    Pokerogue3DS::pokemonEvolutionTextEqual(row.speciesId, selected->sourceSpeciesId)) eligible = true;
+            if (!eligible) return 216;
+        }
+    }
     // Catch rates must be generated for the full real canonical species catalog.
     if (sizeof(PokerogueContent::kSpeciesCatchProfiles) / sizeof(PokerogueContent::kSpeciesCatchProfiles[0]) !=
             PokerogueContent::kSpeciesCount) return 210;

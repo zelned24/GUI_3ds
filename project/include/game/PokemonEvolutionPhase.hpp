@@ -36,8 +36,11 @@ inline const PokerogueContent::SpeciesEvolution* checkSpeciesLevelEvolution(
         if (!pokemonEvolutionTextEqual(edge.sourceSpeciesId, currentSpeciesId)) continue;
 
         // Level-based evolution: edge.level > 1, newLevel >= edge.level, and oldLevel < edge.level
-        if (edge.level > 1 && newLevel >= edge.level && oldLevel < edge.level) {
-            return &edge;
+        if (edge.level > 1 && newLevel >= edge.level) {
+            for (const auto& capability : PokerogueContent::kSimpleLevelEvolutionProfiles)
+                if (capability.sourceOrder == edge.sourceOrder &&
+                    pokemonEvolutionTextEqual(capability.speciesId, currentSpeciesId)) return &edge;
+            // Conditional/item/form evolutions require their own resolved policy.
         }
     }
     return nullptr;
@@ -58,7 +61,7 @@ inline uint8_t learnNewLevelMoves(
     uint8_t learnedCount = 0;
     for (uint16_t i = 0; i < species->learnsetCount; ++i) {
         const auto& lm = levelMoves[i];
-        if (lm.level <= static_cast<int8_t>(oldLevel) || lm.level > static_cast<int8_t>(newLevel)) {
+        if (lm.level <= 0 || static_cast<uint16_t>(lm.level) <= oldLevel || static_cast<uint16_t>(lm.level) > newLevel) {
             continue;
         }
 
@@ -118,12 +121,27 @@ inline bool applySpeciesEvolution(
 
     PokemonBattleInit input{};
     input.speciesDex = target->dex;
-    input.formId = battleState.formId;
+    if (!oldSpecies || battleState.speciesDex != oldDex) return false;
+    const auto* oldForm = battleState.formId ? PokerogueContent::findFormById(battleState.formId) : nullptr;
+    if (battleState.formId && !oldForm) return false;
+    input.formId = target->firstFormId && *target->firstFormId ? target->firstFormId : nullptr;
+    const auto* targetForm = input.formId ? PokerogueContent::findFormById(input.formId) : nullptr;
+    if (input.formId && !targetForm) return false;
+    const uint16_t oldAbilities[] = {oldForm ? oldForm->ability1 : oldSpecies->ability1,
+        oldForm ? oldForm->ability2 : oldSpecies->ability2,
+        oldForm ? oldForm->abilityHidden : oldSpecies->abilityHidden};
+    const uint16_t nextAbilities[] = {targetForm ? targetForm->ability1 : target->ability1,
+        targetForm ? targetForm->ability2 : target->ability2,
+        targetForm ? targetForm->abilityHidden : target->abilityHidden};
+    uint8_t abilitySlot = 0;
+    while (abilitySlot < 3 && oldAbilities[abilitySlot] != battleState.abilityId) ++abilitySlot;
+    if (abilitySlot == 3) return false;
+    const uint16_t evolvedAbility = nextAbilities[abilitySlot] ? nextAbilities[abilitySlot] : nextAbilities[0];
     input.level = battleState.level;
     input.pokemonId = battleState.pokemonId;
     input.nature = battleState.nature;
     input.gender = battleState.gender;
-    input.abilityId = battleState.abilityId;
+    input.abilityId = evolvedAbility;
     input.moveCount = battleState.moveCount;
     for (uint8_t i = 0; i < 6; ++i) input.ivs[i] = battleState.ivs[i];
     for (uint8_t i = 0; i < battleState.moveCount; ++i) input.moveIds[i] = battleState.moves[i].moveId;

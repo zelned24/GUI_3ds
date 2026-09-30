@@ -158,3 +158,11 @@
 4. Save v8 rechaza estados que no puede serializar: dobles, equipo capturado, inventario modificado, waves posteriores a 9 y entrenador distinto de wave 5. Guarda temporal; persistencia extendida sigue pendiente.
 5. Whitespace corregido. Regresiones de catálogo completo y rechazo de cambio inválido añadidas, no ejecutadas.
 6. Pendientes: save completo, fases Eternatus/Eternamax, GameClear/profile, fidelidad completa de captura y orden de respuestas dobles. No se declara Classic completo.
+
+## Evolución y aprendizaje: correcciones de fidelidad
+
+1. Aprendizaje compara niveles como uint16_t; no trunca 128+ a int8_t. Prueba de aprendizaje real hasta 128 añadida, pendiente de ejecución.
+2. Solo evoluciones de nivel sin item, condición ni cambio de forma pueden usar el resolver simple. Capacidad generada desde edge canónico y sourceOrder; no se descartan las demás evoluciones del catálogo.
+3. Elegibilidad tras subir de nivel admite Pokémon que ya superaron el mínimo, siguiendo Pokemon.getEvolution/validate; no exige cruzar exactamente el umbral.
+4. Inicialización de la especie evolucionada usa forma de destino y slot de habilidad correspondiente; conserva HP/PP/stages. Referencias de presentación/form/assets actualizadas.
+5. Pendientes: elección/cancelación de evolución, condiciones/items/formas, reemplazo cuando hay cuatro movimientos, identidad de habilidad ambigua y soporte de niveles superiores a 100 en el estado de batalla/EXP/save. No se declara P10 completo.

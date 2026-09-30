@@ -855,6 +855,11 @@ bool FirstRunRuntime::grantVictoryExperience() {
                 m_context.player.dex = evoResult.newDex;
                 m_context.player.speciesId = evoResult.newSpeciesId;
                 m_context.player.localizedName = evoResult.newName;
+                const auto* evolvedSpecies = PokerogueContent::findSpeciesByDex(evoResult.newDex);
+                m_context.player.formId = next.formId;
+                m_context.player.actor.formId = next.formId;
+                m_context.player.assetSourcePath = evolvedSpecies ? evolvedSpecies->assetSourcePath : nullptr;
+
                 m_battleFeedback = evoFeedback;
             }
         }
