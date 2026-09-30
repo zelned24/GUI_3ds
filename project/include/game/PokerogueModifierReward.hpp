@@ -33,18 +33,21 @@ public:
 // This provider is valid only for the first wild victory, before a modifier
 // has been granted, caught Pokemon added, or a lure activated. Later rewards
 // require the actual inventory/party model and another weight provider.
-class InitialClassicCommonWeights final : public ModifierRewardWeightProvider {
+class InitialClassicRewardWeights final : public ModifierRewardWeightProvider {
 public:
-    explicit InitialClassicCommonWeights(const PokemonBattleState& starter)
-        : m_starter(starter) {}
+    InitialClassicRewardWeights(const PokemonBattleState& starter,
+                                bool hasLearnableLevelMoves)
+        : m_starter(starter), m_hasLearnableLevelMoves(hasLearnableLevelMoves) {}
 
     bool weightFor(const PokerogueContent::ModifierPoolEntry& entry,
                    uint32_t& weight) const override {
         weight = 0;
-        if (std::strcmp(entry.pool, "modifierPool") != 0 ||
-            std::strcmp(entry.tier, "COMMON") != 0) return false;
+        if (std::strcmp(entry.pool, "modifierPool") != 0) return false;
         if (!m_starter.maxHp || m_starter.hp > m_starter.maxHp ||
             m_starter.moveCount > 4) return false;
+        if (std::strcmp(entry.tier, "GREAT") == 0)
+            return greatWeight(entry, weight);
+        if (std::strcmp(entry.tier, "COMMON") != 0) return false;
         if (std::strcmp(entry.itemId, "POKEBALL") == 0) { weight = 6; return true; }
         const bool living = m_starter.hp != 0;
         const uint32_t missingHp = m_starter.maxHp - m_starter.hp;
@@ -61,12 +64,7 @@ public:
         if (std::strcmp(entry.itemId, "ETHER") == 0 ||
             std::strcmp(entry.itemId, "MAX_ETHER") == 0) {
             bool lowPp = false;
-            for (uint8_t i = 0; i < m_starter.moveCount; ++i) {
-                const auto& move = m_starter.moves[i];
-                if (move.pp > move.maxPp) return false;
-                const uint32_t used = move.maxPp - move.pp;
-                if (used && move.pp <= 5 && used > move.maxPp / 2) lowPp = true;
-            }
+            if (!hasLowPp(lowPp)) return false;
             weight = living && lowPp
                 ? (std::strcmp(entry.itemId, "ETHER") == 0 ? 3u : 1u) : 0u;
             return true;
@@ -81,7 +79,74 @@ public:
     }
 
 private:
+    bool hasLowPp(bool& lowPp) const {
+        lowPp = false;
+        for (uint8_t i = 0; i < m_starter.moveCount; ++i) {
+            const auto& move = m_starter.moves[i];
+            if (move.pp > move.maxPp) return false;
+            const uint32_t used = move.maxPp - move.pp;
+            if (used && move.pp <= 5 && used > move.maxPp / 2) lowPp = true;
+        }
+        return true;
+    }
+
+    bool greatWeight(const PokerogueContent::ModifierPoolEntry& entry,
+                     uint32_t& weight) const {
+        const char* id = entry.itemId;
+        const bool living = m_starter.hp != 0;
+        const uint32_t missingHp = m_starter.maxHp - m_starter.hp;
+        if (std::strcmp(id, "GREAT_BALL") == 0) { weight = 6; return true; }
+        // The supported first battle has one living starter and no status,
+        // held items, fusion, lures, rerolls, or existing modifiers.
+        if (std::strcmp(id, "FULL_HEAL") == 0 ||
+            std::strcmp(id, "REVIVE") == 0 ||
+            std::strcmp(id, "MAX_REVIVE") == 0 ||
+            std::strcmp(id, "SACRED_ASH") == 0 ||
+            std::strcmp(id, "FULL_RESTORE") == 0 ||
+            std::strcmp(id, "DNA_SPLICERS") == 0) { weight = 0; return true; }
+        if (std::strcmp(id, "HYPER_POTION") == 0) {
+            weight = living && missingHp >= 100 &&
+                8u * m_starter.hp <= 5u * m_starter.maxHp ? 3u : 0u;
+            return true;
+        }
+        if (std::strcmp(id, "MAX_POTION") == 0) {
+            weight = living && missingHp >= 100 &&
+                2u * m_starter.hp <= m_starter.maxHp ? 1u : 0u;
+            return true;
+        }
+        if (std::strcmp(id, "ELIXIR") == 0 ||
+            std::strcmp(id, "MAX_ELIXIR") == 0) {
+            bool lowPp = false;
+            if (!hasLowPp(lowPp)) return false;
+            weight = living && lowPp
+                ? (std::strcmp(id, "ELIXIR") == 0 ? 3u : 1u) : 0u;
+            return true;
+        }
+        if (std::strcmp(id, "SUPER_LURE") == 0) { weight = 4; return true; }
+        if (std::strcmp(id, "NUGGET") == 0) { weight = 5; return true; }
+        if (std::strcmp(id, "EVOLUTION_ITEM") == 0) { weight = 1; return true; }
+        if (std::strcmp(id, "MAP") == 0) { weight = 2; return true; }
+        if (std::strcmp(id, "MEMORY_MUSHROOM") == 0) {
+            weight = m_hasLearnableLevelMoves ? 1u : 0u;
+            return true;
+        }
+        if (std::strcmp(id, "TERA_SHARD") == 0) {
+            const auto* species = PokerogueContent::findSpeciesByDex(m_starter.speciesDex);
+            if (!species) return false;
+            weight = std::strcmp(species->id, "terapagos") &&
+                std::strcmp(species->id, "ogerpon") &&
+                std::strcmp(species->id, "shedinja") ? 1u : 0u;
+            return true;
+        }
+        if (std::strcmp(id, "VOUCHER") == 0) { weight = 1; return true; }
+        if (entry.staticWeight < 0 || entry.staticWeight > 0x7fffffff ||
+            entry.staticWeight != static_cast<uint32_t>(entry.staticWeight)) return false;
+        weight = static_cast<uint32_t>(entry.staticWeight);
+        return true;
+    }
+
     const PokemonBattleState& m_starter;
+    bool m_hasLearnableLevelMoves;
 };
 
 inline bool hasPlayerModifierTier(uint8_t tier) {
