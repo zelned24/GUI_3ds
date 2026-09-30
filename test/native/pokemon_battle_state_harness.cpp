@@ -2051,5 +2051,23 @@ extern "C" int runPokemonBattleStateChecks() {
         return true;
     };
     if (!checkRealMoveset(dexFor("bulbasaur"), 65) || !checkRealMoveset(dexFor("pikachu"), 9)) return 117;
+    Pokerogue3DS::PokemonBossSegmentDamage bossDamage{};
+    if (!Pokerogue3DS::calculatePokemonBossSegmentDamage(99, 300, 300, 3, 2, 0, bossDamage) ||
+        bossDamage.adjustedDamage != 99 || bossDamage.clearedSegmentIndex != 3) return 468;
+    if (!Pokerogue3DS::calculatePokemonBossSegmentDamage(100, 300, 300, 3, 2, 0, bossDamage) ||
+        bossDamage.adjustedDamage != 100 || bossDamage.clearedSegmentIndex != 2) return 469;
+    if (!Pokerogue3DS::calculatePokemonBossSegmentDamage(150, 300, 300, 3, 2, 0, bossDamage) ||
+        bossDamage.adjustedDamage != 100 || bossDamage.clearedSegmentIndex != 2) return 470;
+    if (!Pokerogue3DS::calculatePokemonBossSegmentDamage(500, 300, 300, 3, 2, 0, bossDamage) ||
+        bossDamage.adjustedDamage != 300 || bossDamage.clearedSegmentIndex != 0) return 471;
+    if (!Pokerogue3DS::calculatePokemonBossSegmentDamage(500, 300, 300, 3, 2, 1, bossDamage) ||
+        bossDamage.adjustedDamage != 200 || bossDamage.clearedSegmentIndex != 1) return 472;
+    if (!Pokerogue3DS::calculatePokemonBossSegmentDamage(35, 101, 101, 3, 2, 0, bossDamage) ||
+        bossDamage.adjustedDamage != 33 || bossDamage.clearedSegmentIndex != 2) return 473;
+    const auto beforeBossDamage = bossDamage;
+    if (Pokerogue3DS::calculatePokemonBossSegmentDamage(1, 1, 0, 3, 2, 0, bossDamage) ||
+        Pokerogue3DS::calculatePokemonBossSegmentDamage(1, 1, 300, 3, 1, 2, bossDamage) ||
+        bossDamage.adjustedDamage != beforeBossDamage.adjustedDamage ||
+        bossDamage.clearedSegmentIndex != beforeBossDamage.clearedSegmentIndex) return 474;
     return 0;
 }

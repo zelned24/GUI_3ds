@@ -1278,4 +1278,40 @@ PokemonGenderSelectionResult selectPokemonGender(
     return PokemonGenderSelectionResult::Ok;
 }
 
+bool calculatePokemonBossSegmentDamage(uint32_t damage, uint16_t currentHp,
+    uint16_t maxHp, uint16_t segmentCount, uint16_t currentSegmentIndex,
+    uint16_t minimumSegmentIndex, PokemonBossSegmentDamage& output) {
+    if (!maxHp || !currentHp || currentHp > maxHp || !segmentCount ||
+        currentSegmentIndex >= segmentCount || minimumSegmentIndex > currentSegmentIndex)
+        return false;
+    PokemonBossSegmentDamage result{damage, 1};
+    if (!currentSegmentIndex) { output = result; return true; }
+    const double segmentHp = static_cast<double>(maxHp) / segmentCount;
+    const double threshold = segmentHp * currentSegmentIndex;
+    const uint32_t roundedThreshold = static_cast<uint32_t>(threshold + 0.5);
+    const int64_t remaining = static_cast<int64_t>(currentHp) - roundedThreshold;
+    const int64_t leftover = static_cast<int64_t>(damage) - remaining;
+    if (leftover < 0) {
+        result.clearedSegmentIndex = currentSegmentIndex + 1;
+    } else if (!leftover) {
+        result.clearedSegmentIndex = currentSegmentIndex;
+    } else {
+        // floor(log2(leftover / segmentHp)), clamped to [0, index - minimum].
+        // Doubling avoids a libm logarithm on ARM11 and consumes no RNG.
+        const uint16_t maximumBypass = currentSegmentIndex - minimumSegmentIndex;
+        uint16_t bypass = 0;
+        double boundary = segmentHp * 2.0;
+        while (bypass < maximumBypass && static_cast<double>(leftover) >= boundary) {
+            ++bypass;
+            boundary *= 2.0;
+        }
+        const double adjusted = currentHp - threshold + segmentHp * bypass;
+        if (adjusted > 4294967295.0) return false;
+        result.adjustedDamage = adjusted < 1.0 ? 1 : static_cast<uint32_t>(adjusted);
+        result.clearedSegmentIndex = currentSegmentIndex - bypass;
+    }
+    output = result;
+    return true;
+}
+
 } // namespace Pokerogue3DS

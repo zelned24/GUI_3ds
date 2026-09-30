@@ -279,3 +279,9 @@
 1. Fuente: src/data/pokemon-species.ts, PokemonSpecies.getTrainerSpeciesForLevel/getSpeciesForLevel; src/ai/ai-species-gen.ts, determineEnemySpecies, revisión 8555c08c823b856cbec4eb99ca84ea52a955836d. strength solo aparece en la declaración y en la llamada recursiva; calcEvoChance y selección aleatoria dependen de nivel y encounterKind.
 2. Esta evidencia corrige el pendiente anterior, sin introducir un multiplicador de fuerza inventado. PartyMemberStrength sí afecta los niveles del equipo en Trainer.getPartyLevels; esa ruta es distinta.
 3. Pendientes reales: filtros generales de especies, selección fija de gyms/rivales, dobles 2vs2, reglas de movimientos/habilidades completas, persistencia del equipo, Eternamax, presentación, OTA y validación final de Azahar/Old 3DS.
+
+## Cálculo de daño contra segmentos de jefe
+
+1. Portado calculateBossSegmentDamage de src/utils/damage.ts pinned a calculatePokemonBossSegmentDamage en el módulo BattleState existente. Conserva umbral Math.round, bypass log2 acotado y toDmgValue floor/min1, sin RNG. Duplicación sucesiva evita libm log en ARM11.
+2. Regresiones 468–474 escritas para daño insuficiente/exacto, daño excedente limitado, bypass, mínimo de segmento de primera fase final, HP no divisibles e inputs inválidos sin mutación de salida. Pendientes de ejecución.
+3. Resolver puro todavía no conectado a los comandos: faltan estado de segmentos, stat boosts, transformación Eternamax y evento/render. No se declara combate de jefe ni GameClear completo.
