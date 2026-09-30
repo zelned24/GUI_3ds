@@ -849,12 +849,13 @@ PokemonDamageCoreResult calculatePokemonDamageCore(
     return PokemonDamageCoreResult::Ok;
 }
 
-bool pokemonMoveCriticalDenominator(uint16_t moveId, uint8_t& outputDenominator) {
+bool pokemonMoveCriticalDenominator(uint16_t moveId, uint8_t& outputDenominator,
+    uint8_t resolvedBonusStages) {
     const auto* move = PokerogueContent::findMoveById(moveId);
     if (!move || move->category == PokerogueContent::MoveStatus || move->power <= 0 ||
         move->attributeOffset > PokerogueContent::kMoveAttributeCount ||
         move->attributeCount > PokerogueContent::kMoveAttributeCount - move->attributeOffset) return false;
-    uint8_t stage = 0;
+    uint8_t stage = resolvedBonusStages > 3 ? 3 : resolvedBonusStages;
     for (uint16_t i = 0; i < move->attributeCount; ++i)
         if (sameText(PokerogueContent::kMoveAttributes[move->attributeOffset + i].id, "HighCritAttr") && stage < 3)
             ++stage;
@@ -922,14 +923,24 @@ PokemonMoveDamageResult resolveStandardPokemonMoveDamage(
     // Baseline hitCheck -> getCriticalHitResult -> damage RNG ordering:
     // Canonical HighCrit raises the stage; CritOnly skips the critical draw.
     // Stage0 is1/24; random damage is inclusive [85,100].
+    uint8_t bonusCriticalStages = 0;
+    bool abilityBlocksCritical = false;
+    // Current baseline uses unsuppressed primary abilities. Passive, tag,
+    // item, conditional and bypass effects require subsequent policy dispatch.
+    for (const auto& profile : PokerogueContent::kCriticalAbilityProfiles) {
+        if (profile.abilityId == attacker.abilityId) bonusCriticalStages = profile.bonusStages;
+        if (profile.abilityId == defender.abilityId) abilityBlocksCritical = profile.blocksCritical;
+    }
     uint8_t criticalDenominator = 24;
-    if (!pokemonMoveCriticalDenominator(moveId, criticalDenominator)) return PokemonMoveDamageResult::InvalidStats;
+    if (!pokemonMoveCriticalDenominator(moveId, criticalDenominator, bonusCriticalStages)) return PokemonMoveDamageResult::InvalidStats;
     next.critical = criticalDenominator == 1;
     if (!next.critical) {
         next.criticalWasRolled = true;
         next.criticalRoll = static_cast<uint8_t>(battleRng.randSeedInt(criticalDenominator));
         next.critical = next.criticalRoll == 0;
     }
+    // BlockCritAbAttr is applied after the critical RNG/guarantee check.
+    if (abilityBlocksCritical) next.critical = false;
     if (next.critical && calculatePokemonBaseDamage(attacker, defender, moveId,
             baseDamage, true, weatherContext) != PokemonBaseDamageResult::Ok)
         return PokemonMoveDamageResult::InvalidStats;

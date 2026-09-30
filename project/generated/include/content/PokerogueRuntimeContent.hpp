@@ -312,6 +312,12 @@ struct MoveWeatherOverride { uint16_t moveId; uint8_t weatherId; const char* sou
 inline constexpr MoveWeatherOverride kMoveWeatherOverrides[] = {
     {876, 1, "src/data/moves/move.ts", "MoveId.HYDRO_STEAM"}
 };
+struct CriticalAbilityProfile { uint16_t abilityId; uint8_t bonusStages; bool blocksCritical; bool ignorable; const char* sourcePath; const char* sourceSymbol; const char* sourceHash; };
+inline constexpr CriticalAbilityProfile kCriticalAbilityProfiles[] = {
+    {4, 0, true, true, "src/data/abilities/init-abilities.ts", "AbilityId.BATTLE_ARMOR", "040ccf2ca2e00a2111ef0acf54878ec67c45d98c831e35dda3e0bac52f1ee8e6"},
+    {75, 0, true, true, "src/data/abilities/init-abilities.ts", "AbilityId.SHELL_ARMOR", "040ccf2ca2e00a2111ef0acf54878ec67c45d98c831e35dda3e0bac52f1ee8e6"},
+    {105, 1, false, false, "src/data/abilities/init-abilities.ts", "AbilityId.SUPER_LUCK", "040ccf2ca2e00a2111ef0acf54878ec67c45d98c831e35dda3e0bac52f1ee8e6"}
+};
 struct MoveAttribute { const char* id; };
 struct Move { uint16_t id; uint8_t category; int16_t power; int16_t accuracy; int16_t pp; int8_t priority; int16_t upstreamChance; uint8_t generation; uint16_t upstreamFlags; uint8_t multiHitType; uint32_t attributeOffset; uint16_t attributeCount; const char* key; const char* name; const char* type; const char* target; const char* sourcePath; const char* sourceSymbol; const char* sourceHash; };
 struct PokemonSpriteAtlas { uint16_t speciesDex; uint16_t width; uint16_t height; uint32_t frameOffset; uint16_t frameCount; const char* manifestPath; const char* imagePath; const char* manifestHash; }; struct PokemonSpriteFrame { const char* filename; uint16_t x; uint16_t y; uint16_t width; uint16_t height; uint16_t sourceWidth; uint16_t sourceHeight; uint16_t trimX; uint16_t trimY; }; struct SpeciesLevelMove { uint16_t speciesDex; int8_t level; uint16_t moveId; }; struct SpeciesEggMove { uint16_t speciesDex; uint16_t moveId; };

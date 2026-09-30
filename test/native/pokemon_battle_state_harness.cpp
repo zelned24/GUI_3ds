@@ -943,6 +943,29 @@ extern "C" int runPokemonBattleStateChecks() {
     if (actualGuaranteedState.carry != expectedGuaranteedState.carry ||
         actualGuaranteedState.s0 != expectedGuaranteedState.s0 || actualGuaranteedState.s1 != expectedGuaranteedState.s1 ||
         actualGuaranteedState.s2 != expectedGuaranteedState.s2) return 337;
+    uint16_t battleArmorId = 0, superLuckId = 0;
+    for (const auto& profile : PokerogueContent::kCriticalAbilityProfiles) {
+        if (std::strcmp(profile.sourceSymbol, "AbilityId.BATTLE_ARMOR") == 0 &&
+            profile.blocksCritical && profile.ignorable) battleArmorId = profile.abilityId;
+        if (std::strcmp(profile.sourceSymbol, "AbilityId.SUPER_LUCK") == 0 &&
+            profile.bonusStages == 1) superLuckId = profile.abilityId;
+    }
+    if (!battleArmorId || !superLuckId) return 338;
+    if (!Pokerogue3DS::pokemonMoveCriticalDenominator(2, criticalDenominator, 1) ||
+        criticalDenominator != 2) return 339;
+    PokemonBattleState armorTarget = state;
+    armorTarget.abilityId = battleArmorId;
+    PokerogueRngAdapter armorRng = actionRng;
+    PokerogueRngAdapter expectedArmorRng = armorRng;
+    (void)expectedArmorRng.randSeedInt(100);
+    const auto armorDamagePercent = expectedArmorRng.randSeedIntRange(85, 100);
+    PokemonMoveDamageRoll armorRoll{};
+    if (Pokerogue3DS::resolveStandardPokemonMoveDamage(state, armorTarget, 480, false,
+            armorRng, armorRoll) != PokemonMoveDamageResult::Ok || armorRoll.critical ||
+        armorRoll.criticalWasRolled || armorRoll.randomDamagePercent != armorDamagePercent) return 340;
+    const auto armorActual = armorRng.state(), armorExpected = expectedArmorRng.state();
+    if (armorActual.carry != armorExpected.carry || armorActual.s0 != armorExpected.s0 ||
+        armorActual.s1 != armorExpected.s1 || armorActual.s2 != armorExpected.s2) return 341;
     PokemonBattleState noPpActor = state;
     noPpActor.moves[0].pp = 0;
     PokemonBattleState unchangedTarget = state;

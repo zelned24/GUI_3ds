@@ -787,5 +787,16 @@ const moveWeatherOverrideRows = collections.moves.flatMap(move => {
 });
 const moveWeatherHeader = weatherDamageHeader.replace('struct MoveAttribute {',
   `struct MoveWeatherOverride { uint16_t moveId; uint8_t weatherId; const char* sourcePath; const char* sourceSymbol; };\ninline constexpr MoveWeatherOverride kMoveWeatherOverrides[] = {\n${moveWeatherOverrideRows.join(',\n')}\n};\nstruct MoveAttribute {`);
-await fs.writeFile(outputPath, moveWeatherHeader, 'utf8');
-console.log(JSON.stringify({ output: path.relative(root, outputPath), bytes: Buffer.byteLength(moveWeatherHeader), hash: report.contentHash }));
+const criticalAbilityRows = collections.abilities.flatMap(ability => {
+  const raw = ability.extensions?.upstreamAttributes?.value ?? '';
+  const bonus = [...raw.matchAll(/\.attr\s*\(\s*BonusCritAbAttr\s*\)/g)].length;
+  const block = [...raw.matchAll(/\.attr\s*\(\s*BlockCritAbAttr\s*\)/g)].length;
+  const declarations = [...raw.matchAll(/\.attr\s*\(\s*(?:BonusCritAbAttr|BlockCritAbAttr)\b/g)].length;
+  if (declarations !== bonus + block || bonus > 3) throw new Error(`Unsupported critical ability: ${ability.id}`);
+  if (!declarations) return [];
+  return [`    {${ability.abilityId}, ${bonus}, ${block > 0}, ${/\.ignorable\s*\(/.test(raw)}, "${field(ability.source?.sourcePath ?? '')}", "${field(ability.source?.sourceSymbol ?? '')}", "${field(ability.source?.sourceHash ?? '')}"}`];
+});
+const criticalHeader = moveWeatherHeader.replace('struct MoveAttribute {',
+  `struct CriticalAbilityProfile { uint16_t abilityId; uint8_t bonusStages; bool blocksCritical; bool ignorable; const char* sourcePath; const char* sourceSymbol; const char* sourceHash; };\ninline constexpr CriticalAbilityProfile kCriticalAbilityProfiles[] = {\n${criticalAbilityRows.join(',\n')}\n};\nstruct MoveAttribute {`);
+await fs.writeFile(outputPath, criticalHeader, 'utf8');
+console.log(JSON.stringify({ output: path.relative(root, outputPath), bytes: Buffer.byteLength(criticalHeader), hash: report.contentHash }));
