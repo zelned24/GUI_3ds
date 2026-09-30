@@ -113,6 +113,40 @@ extern "C" int runNativeSaveChecks() {
         restored.playerStatStages[0] != -6 || restored.enemyStatStages[4] != 6 ||
         restored.trainerParty[1].statStages[5] != -2 || restored.enemySwitchCounter != 2 || restored.trainerPartyCount != 2 || restored.trainerParty[1].hp != 9 ||
         restored.trainerParty[1].pp[0] != 17 || restored.activeTrainerMember != 0) return 13;
+    NativeRunSave roomSave = trainerSave;
+    roomSave.trickRoomTurnsLeft = 3;
+    roomSave.trickRoomMaxDuration = 5;
+    roomSave.trickRoomSourceMoveId = 433;
+    roomSave.trickRoomSourcePokemonId = 123;
+    char roomBytes[kNativeSaveMaxBytes]{};
+    size_t roomSize = 0;
+    if (encodeNativeRunSave(roomSave, roomBytes, sizeof(roomBytes), roomSize) != NativeSaveResult::Ok ||
+        decodeNativeRunSave(roomBytes, roomSize, PokerogueContent::kContentHash, restored) != NativeSaveResult::Ok ||
+        restored.trickRoomTurnsLeft != 3 || restored.trickRoomMaxDuration != 5 ||
+        restored.trickRoomSourceMoveId != 433 || restored.trickRoomSourcePokemonId != 123) return 38;
+    roomSave.trickRoomSourceMoveId = 33;
+    if (validateNativeRunSave(roomSave, PokerogueContent::kContentHash) != NativeSaveResult::InvalidRecord) return 39;
+    char versionSevenBytes[kNativeSaveMaxBytes]{};
+    std::memcpy(versionSevenBytes, roomBytes, roomSize);
+    size_t versionSevenSize = 0;
+    for (size_t n = 0; n < roomSize; ++n) {
+        if (n + 18 <= roomSize && std::memcmp(versionSevenBytes + n, "trickRoomTurnsLeft=", 18) == 0) {
+            versionSevenSize = n; break;
+        }
+        if (n + 16 <= roomSize && std::memcmp(versionSevenBytes + n, "saveVersion=0008", 16) == 0)
+            versionSevenBytes[n + 15] = '7';
+        if (n + 19 <= roomSize && std::memcmp(versionSevenBytes + n, "runtimeVersion=0008", 19) == 0)
+            versionSevenBytes[n + 18] = '7';
+    }
+    if (!versionSevenSize) return 40;
+    IntegritySha256::hashHex(versionSevenBytes, versionSevenSize, digest);
+    std::memcpy(versionSevenBytes + versionSevenSize, "sha256=", 7);
+    std::memcpy(versionSevenBytes + versionSevenSize + 7, digest, 64);
+    versionSevenBytes[versionSevenSize + 71] = '\n';
+    if (decodeNativeRunSave(versionSevenBytes, versionSevenSize + 72, PokerogueContent::kContentHash, restored) != NativeSaveResult::Ok ||
+        restored.saveVersion != kNativeSaveVersion || restored.weatherType != 2 ||
+        restored.trickRoomTurnsLeft || restored.trickRoomMaxDuration ||
+        restored.trickRoomSourceMoveId || restored.trickRoomSourcePokemonId) return 41;
     NativeRunSave invalidWeather = trainerSave;
     invalidWeather.weatherTurnsLeft = 6;
     if (validateNativeRunSave(invalidWeather, PokerogueContent::kContentHash) != NativeSaveResult::InvalidRecord) return 34;
@@ -126,9 +160,9 @@ extern "C" int runNativeSaveChecks() {
         if (n + 12 <= partySize && std::memcmp(versionSixBytes + n, "weatherType=", 12) == 0) {
             versionSixSize = n; break;
         }
-        if (n + 16 <= partySize && std::memcmp(versionSixBytes + n, "saveVersion=0007", 16) == 0)
+        if (n + 16 <= partySize && std::memcmp(versionSixBytes + n, "saveVersion=0008", 16) == 0)
             versionSixBytes[n + 15] = '6';
-        if (n + 19 <= partySize && std::memcmp(versionSixBytes + n, "runtimeVersion=0007", 19) == 0)
+        if (n + 19 <= partySize && std::memcmp(versionSixBytes + n, "runtimeVersion=0008", 19) == 0)
             versionSixBytes[n + 18] = '6';
     }
     if (!versionSixSize) return 36;
@@ -149,9 +183,9 @@ extern "C" int runNativeSaveChecks() {
         legacyTrainerBytes[legacyTrainerSize++] = partyBytes[n++];
     }
     for (size_t n = 0; n < legacyTrainerSize; ++n) {
-        if (n + 16 <= legacyTrainerSize && std::memcmp(legacyTrainerBytes + n, "saveVersion=0007", 16) == 0)
+        if (n + 16 <= legacyTrainerSize && std::memcmp(legacyTrainerBytes + n, "saveVersion=0008", 16) == 0)
             legacyTrainerBytes[n + 15] = '4';
-        if (n + 19 <= legacyTrainerSize && std::memcmp(legacyTrainerBytes + n, "runtimeVersion=0007", 19) == 0)
+        if (n + 19 <= legacyTrainerSize && std::memcmp(legacyTrainerBytes + n, "runtimeVersion=0008", 19) == 0)
             legacyTrainerBytes[n + 18] = '4';
     }
     IntegritySha256::hashHex(legacyTrainerBytes, legacyTrainerSize, digest);
@@ -186,9 +220,9 @@ extern "C" int runNativeSaveChecks() {
         if (n + 19 <= partySize && std::memcmp(partyBytes + n, "enemySwitchCounter=", 19) == 0) {
             legacyBodySize = n; break;
         }
-        if (n + 16 <= partySize && std::memcmp(partyBytes + n, "saveVersion=0007", 16) == 0)
+        if (n + 16 <= partySize && std::memcmp(partyBytes + n, "saveVersion=0008", 16) == 0)
             partyBytes[n + 15] = '3';
-        if (n + 19 <= partySize && std::memcmp(partyBytes + n, "runtimeVersion=0007", 19) == 0)
+        if (n + 19 <= partySize && std::memcmp(partyBytes + n, "runtimeVersion=0008", 19) == 0)
             partyBytes[n + 18] = '3';
     }
     if (!legacyBodySize) return 19;

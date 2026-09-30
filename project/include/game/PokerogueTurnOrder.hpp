@@ -23,6 +23,15 @@ struct PokemonTrickRoomState {
     uint16_t sourceMoveId = 0;
     uint32_t sourcePokemonId = 0;
 };
+inline bool validPokemonTrickRoomState(const PokemonTrickRoomState& state) {
+    if (!state.turnsLeft)
+        return !state.maxDuration && !state.sourceMoveId && !state.sourcePokemonId;
+    if (state.turnsLeft > state.maxDuration) return false;
+    for (const auto& profile : PokerogueContent::kTrickRoomMoveProfiles)
+        if (profile.moveId == state.sourceMoveId && profile.duration == state.maxDuration)
+            return true;
+    return false;
+}
 struct PokemonTrickRoomEvent {
     bool activated = false;
     bool removed = false;
@@ -30,8 +39,7 @@ struct PokemonTrickRoomEvent {
 };
 inline bool applyPokemonTrickRoomMove(PokemonTrickRoomState& state, uint16_t moveId,
     uint32_t sourcePokemonId, PokemonTrickRoomEvent& output) {
-    if (state.turnsLeft > state.maxDuration || (!state.turnsLeft &&
-        (state.maxDuration || state.sourceMoveId || state.sourcePokemonId))) return false;
+    if (!validPokemonTrickRoomState(state)) return false;
     const auto* move = PokerogueContent::findMoveById(moveId);
     if (!move || move->category != PokerogueContent::MoveStatus) return false;
     for (const auto& profile : PokerogueContent::kTrickRoomMoveProfiles) {
@@ -97,8 +105,7 @@ inline PokemonTrickRoomCommandResult usePokemonTrickRoomCommand(
 
 inline bool advancePokemonTrickRoomTurnEnd(PokemonTrickRoomState& state,
     PokemonTrickRoomEvent& output) {
-    if (state.turnsLeft > state.maxDuration || (!state.turnsLeft &&
-        (state.maxDuration || state.sourceMoveId || state.sourcePokemonId))) return false;
+    if (!validPokemonTrickRoomState(state)) return false;
     PokemonTrickRoomEvent event{};
     if (state.turnsLeft && --state.turnsLeft == 0) {
         state = {};
@@ -109,8 +116,7 @@ inline bool advancePokemonTrickRoomTurnEnd(PokemonTrickRoomState& state,
 }
 inline PokemonTurnOrderFieldPolicy pokemonTrickRoomOrderPolicy(const PokemonTrickRoomState& state) {
     PokemonTurnOrderFieldPolicy policy{};
-    policy.resolved = state.turnsLeft <= state.maxDuration &&
-        (state.turnsLeft || (!state.maxDuration && !state.sourceMoveId && !state.sourcePokemonId));
+    policy.resolved = validPokemonTrickRoomState(state);
     policy.speedReversed = state.turnsLeft != 0;
     return policy;
 }
