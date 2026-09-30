@@ -548,6 +548,9 @@ const abilityStatReactionRows = collections.abilities.flatMap(ability => {
   if (!Number.isInteger(multiplier) || multiplier < 1 || multiplier > 6) return [];
   return [`    {${ability.abilityId}, ${upstreamStatIds[match[1]]}, ${multiplier}, "${field(ability.source?.sourceSymbol ?? '')}"}`];
 });
+const negativeStageResetItemRows = collections.items.filter(item =>
+  /new\s+ResetNegativeStatStageModifier\s*\(/.test(item.extensions?.upstreamRawRecord?.value ?? '')
+).map(item => `    {"${field(item.id)}", "${field(item.source?.sourcePath ?? '')}", "${field(item.source?.sourceSymbol ?? '')}", "${field(item.source?.sourceHash ?? '')}"}`);
 const abilities = entityRows(collections.abilities);
 const abilityMovegenProfiles = collections.abilities.map(ability => {
   const raw = ability.extensions?.upstreamAttributes?.value ?? '';
@@ -687,5 +690,7 @@ const abilityStatStageHeader = statStageHeader.replace(
 );
 const reactionHeader = abilityStatStageHeader.replace('struct MoveAttribute {',
   `struct AbilityStatStageReaction { uint16_t abilityId; uint8_t stat; uint8_t stagesPerRequestedStat; const char* sourceSymbol; };\ninline constexpr AbilityStatStageReaction kAbilityStatStageReactions[] = {\n${abilityStatReactionRows.join(',\n')}\n};\nstruct MoveAttribute {`);
-await fs.writeFile(outputPath, reactionHeader, 'utf8');
-console.log(JSON.stringify({ output: path.relative(root, outputPath), bytes: Buffer.byteLength(reactionHeader), hash: report.contentHash }));
+const itemStageHeader = reactionHeader.replace('struct MoveAttribute {',
+  `struct NegativeStageResetItemProfile { const char* itemId; const char* sourcePath; const char* sourceSymbol; const char* sourceHash; };\ninline constexpr NegativeStageResetItemProfile kNegativeStageResetItemProfiles[] = {\n${negativeStageResetItemRows.join(',\n')}\n};\nstruct MoveAttribute {`);
+await fs.writeFile(outputPath, itemStageHeader, 'utf8');
+console.log(JSON.stringify({ output: path.relative(root, outputPath), bytes: Buffer.byteLength(itemStageHeader), hash: report.contentHash }));

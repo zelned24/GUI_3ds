@@ -464,6 +464,24 @@ extern "C" int runPokemonBattleStateChecks() {
     if (Pokerogue3DS::applyPokemonCopiedStatStageRaise(copyingActor, requestedRaise,
             true, boostPolicy, reflectedEvent) != Pokerogue3DS::PokemonStatStageEffectResult::Ok ||
         copyingActor.statStages[0] != 2 || reflectedEvent.triggered) return 256;
+    PokemonBattleState herbHolder = state;
+    herbHolder.statStages[0] = -3;
+    herbHolder.statStages[1] = 2;
+    uint8_t herbStack = 2;
+    Pokerogue3DS::PokemonNegativeStageResetItemEvent herbEvent{};
+    if (Pokerogue3DS::applyPokemonNegativeStageResetItem(herbHolder, "WHITE_HERB",
+            herbHolder.pokemonId, herbStack, true, herbEvent) !=
+            Pokerogue3DS::PokemonStatStageEffectResult::Ok || herbEvent.consumed ||
+        herbHolder.statStages[0] != -3 || herbStack != 2) return 257;
+    if (Pokerogue3DS::applyPokemonNegativeStageResetItem(herbHolder, "WHITE_HERB",
+            herbHolder.pokemonId, herbStack, false, herbEvent) !=
+            Pokerogue3DS::PokemonStatStageEffectResult::Ok || !herbEvent.consumed ||
+        herbEvent.changes[0] != 3 || herbHolder.statStages[0] ||
+        herbHolder.statStages[1] != 2 || herbStack != 1) return 258;
+    if (Pokerogue3DS::applyPokemonNegativeStageResetItem(herbHolder, "WHITE_HERB",
+            herbHolder.pokemonId, herbStack, false, herbEvent) !=
+            Pokerogue3DS::PokemonStatStageEffectResult::Ok || herbEvent.consumed || herbStack != 1)
+        return 259;
     PokemonBattleInit actorIdInput = input;
     actorIdInput.pokemonId = 0x12345678u;
     actorIdInput.deriveIvsFromPokemonId = true;

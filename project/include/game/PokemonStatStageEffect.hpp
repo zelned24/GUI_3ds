@@ -358,4 +358,39 @@ inline PokemonStatStageEffectResult usePokemonStatStageStatusCommand(
     return PokemonStatStageEffectResult::Ok;
 }
 
+struct PokemonNegativeStageResetItemEvent {
+    bool consumed = false;
+    uint8_t restoredStatMask = 0;
+    int8_t changes[7]{};
+};
+
+// Existing modifier inventory owns the stack; this resolver emits consumption
+// for PostItemLost dispatch. Defer until the holder has no queued stat phases.
+inline PokemonStatStageEffectResult applyPokemonNegativeStageResetItem(
+    PokemonBattleState& holder, const char* canonicalItemId, uint32_t ownerPokemonId,
+    uint8_t& stackCount, bool holderHasPendingStatPhases,
+    PokemonNegativeStageResetItemEvent& output) {
+    if (!canonicalItemId || !stackCount || stackCount > 2 ||
+        (ownerPokemonId != 0xFFFFFFFFu && ownerPokemonId != holder.pokemonId))
+        return PokemonStatStageEffectResult::InvalidState;
+    bool supported = false;
+    for (const auto& profile : PokerogueContent::kNegativeStageResetItemProfiles)
+        if (std::strcmp(profile.itemId, canonicalItemId) == 0) supported = true;
+    if (!supported) return PokemonStatStageEffectResult::InvalidDefinition;
+    for (int8_t stage : holder.statStages)
+        if (stage < -6 || stage > 6) return PokemonStatStageEffectResult::InvalidState;
+    PokemonNegativeStageResetItemEvent event{};
+    if (!holderHasPendingStatPhases) {
+        for (uint8_t stat = 0; stat < 7; ++stat) {
+            if (holder.statStages[stat] >= 0) continue;
+            event.restoredStatMask |= static_cast<uint8_t>(1u << stat);
+            event.changes[stat] = static_cast<int8_t>(-holder.statStages[stat]);
+            holder.statStages[stat] = 0;
+        }
+        if (event.restoredStatMask) { --stackCount; event.consumed = true; }
+    }
+    output = event;
+    return PokemonStatStageEffectResult::Ok;
+}
+
 } // namespace Pokerogue3DS
