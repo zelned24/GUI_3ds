@@ -57,6 +57,7 @@ public:
     bool advanceBattleTurn();
     uint8_t selectedBattleMove() const { return m_selectedBattleMove; }
     bool battleFinished() const { return m_battleFinished; }
+    bool experienceGranted() const { return m_experienceGranted; }
     const ClassicVictoryPlan& victoryPlan() const { return m_victoryPlan; }
     bool runStarted() const { return m_runStarted; }
     void setStorageFeedback(const char* message);
@@ -68,6 +69,7 @@ public:
 
 private:
     void resolve();
+    bool grantVictoryExperience();
     void buildScene();
     static const char* locale(const char* canonicalId, const char* fallback);
 
@@ -88,6 +90,7 @@ private:
     uint32_t m_playerExperience = 0;
     bool m_battleFinished = false;
     bool m_playerWon = false;
+    bool m_experienceGranted = false;
     ClassicVictoryPlan m_victoryPlan{};
     bool m_runStarted = false;
     bool m_checkpointAvailable = true;

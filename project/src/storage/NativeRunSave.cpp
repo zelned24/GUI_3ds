@@ -251,10 +251,12 @@ NativeSaveResult validateNativeRunSave(const NativeRunSave& save, const char* ex
         return NativeSaveResult::Ok;
     }
     if (save.stage != NativeSaveStage::BattleActive && save.stage != NativeSaveStage::BattleWon &&
-        save.stage != NativeSaveStage::BattleLost) return NativeSaveResult::UnsupportedStage;
+        save.stage != NativeSaveStage::BattleLost &&
+        save.stage != NativeSaveStage::ExperienceGranted) return NativeSaveResult::UnsupportedStage;
     if (!save.battleTurn || !save.encounterDex || !save.playerMoveCount || save.playerMoveCount > 4 ||
         !save.enemyMoveCount || save.enemyMoveCount > 4 || (save.stage == NativeSaveStage::BattleActive &&
             (!save.playerHp || !save.enemyHp)) || (save.stage == NativeSaveStage::BattleWon &&
+            (save.enemyHp || !save.playerHp)) || (save.stage == NativeSaveStage::ExperienceGranted &&
             (save.enemyHp || !save.playerHp)) || (save.stage == NativeSaveStage::BattleLost &&
             (save.playerHp || !save.enemyHp))) return NativeSaveResult::InvalidRecord;
 

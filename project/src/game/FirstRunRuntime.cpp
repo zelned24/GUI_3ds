@@ -113,7 +113,9 @@ void FirstRunRuntime::captureNativeRunSave(NativeRunSave& output) const {
     value.playerExperience = m_playerExperience;
     if (m_runStarted && m_encounterResolved && !m_doubleBattle) {
         value.stage = m_battleFinished
-            ? (m_playerWon ? NativeSaveStage::BattleWon : NativeSaveStage::BattleLost)
+            ? (m_playerWon ? (m_experienceGranted ? NativeSaveStage::ExperienceGranted
+                                                : NativeSaveStage::BattleWon)
+                           : NativeSaveStage::BattleLost)
             : NativeSaveStage::BattleActive;
         value.encounterDex = m_context.enemy.dex;
         value.playerHp = m_context.player.battleState.hp;
@@ -136,10 +138,12 @@ void FirstRunRuntime::captureNativeRunSave(NativeRunSave& output) const {
 bool FirstRunRuntime::restoreNativeRunSave(const NativeRunSave& save) {
     if (validateNativeRunSave(save, PokerogueContent::kContentHash) != NativeSaveResult::Ok ||
         save.stage < NativeSaveStage::RunSetup ||
-        save.stage > NativeSaveStage::BattleLost) return false;
+        save.stage > NativeSaveStage::ExperienceGranted) return false;
     if (!restoreSetup(save.seed, save.starterDex)) return false;
-    if (save.wave != m_run.wave || save.playerLevel != m_context.player.level
-        || save.playerExperience != m_playerExperience) return false;
+    if (save.wave != m_run.wave) return false;
+    if (save.stage == NativeSaveStage::ExperienceGranted && !grantVictoryExperience()) return false;
+    if (save.playerLevel != m_context.player.level ||
+        save.playerExperience != m_playerExperience) return false;
     if (save.stage == NativeSaveStage::RunSetup) return true;
     if (!m_encounterResolved || m_doubleBattle || save.encounterDex != m_run.encounterDex ||
         !save.battleTurn || !save.playerMoveCount || save.playerMoveCount > 4 ||
@@ -149,7 +153,8 @@ bool FirstRunRuntime::restoreNativeRunSave(const NativeRunSave& save) {
         save.playerHp > m_context.player.battleState.maxHp ||
         save.enemyHp > m_context.enemy.battleState.maxHp ||
         (save.stage == NativeSaveStage::BattleActive && (!save.playerHp || !save.enemyHp)) ||
-        (save.stage == NativeSaveStage::BattleWon && (save.enemyHp || !save.playerHp)) ||
+        ((save.stage == NativeSaveStage::BattleWon ||
+          save.stage == NativeSaveStage::ExperienceGranted) && (save.enemyHp || !save.playerHp)) ||
         (save.stage == NativeSaveStage::BattleLost && (save.playerHp || !save.enemyHp))) return false;
     for (uint8_t i = 0; i < save.playerMoveCount; ++i) {
         const auto& move = m_context.player.battleState.moves[i];
@@ -172,8 +177,11 @@ bool FirstRunRuntime::restoreNativeRunSave(const NativeRunSave& save) {
     m_turn = save.battleTurn;
     m_runStarted = true;
     m_checkpointAvailable = true;
-    m_battleFinished = save.stage == NativeSaveStage::BattleWon || save.stage == NativeSaveStage::BattleLost;
-    m_playerWon = save.stage == NativeSaveStage::BattleWon;
+    m_battleFinished = save.stage == NativeSaveStage::BattleWon ||
+        save.stage == NativeSaveStage::ExperienceGranted || save.stage == NativeSaveStage::BattleLost;
+    m_playerWon = save.stage == NativeSaveStage::BattleWon ||
+        save.stage == NativeSaveStage::ExperienceGranted;
+    m_experienceGranted = save.stage == NativeSaveStage::ExperienceGranted;
     m_victoryPlan = {};
     if (m_playerWon && !planClassicVictory(m_run.wave, m_victoryPlan)) return false;
     m_battleFeedback = m_battleFinished ? (m_playerWon ? "Restored: wild battle won" : "Restored: Pokemon fainted")
@@ -279,7 +287,73 @@ bool FirstRunRuntime::selectBattleMove(int direction) {
     return false;
 }
 
+bool FirstRunRuntime::grantVictoryExperience() {
+    if (m_experienceGranted || !m_context.player.actorIdentityResolved ||
+        !m_context.enemy.actorIdentityResolved || m_doubleBattle) return false;
+    const auto* starter = PokerogueContent::findSpeciesByDex(m_context.player.dex);
+    const auto* defeated = PokerogueContent::findSpeciesByDex(m_context.enemy.dex);
+    const auto* defeatedForm = m_context.enemy.formId
+        ? PokerogueContent::findFormById(m_context.enemy.formId) : nullptr;
+    if (!starter || !defeated || (m_context.enemy.formId && !defeatedForm)) return false;
+    double rawExperience = 0.0;
+    if (pokemonExperienceForDefeat(*defeated, m_context.enemy.level, rawExperience,
+                                  defeatedForm) != PokemonExperienceResult::Ok ||
+        rawExperience < 0.0 || rawExperience > 4294967295.0) return false;
+    // In the supported one-participant wild battle, applyPartyExp floors the
+    // defeated Pokemon's getExpValue() once before Pokemon.addExp().
+    PokemonExperienceProgress progress{};
+    if (applyPokemonExperience(starter->growthRate, m_context.player.level,
+                               m_playerExperience, static_cast<uint32_t>(rawExperience),
+                               classicExperienceLevelCap(m_run.wave), progress)
+        != PokemonExperienceResult::Ok || progress.level > 100) return false;
+
+    PokemonBattleState next = m_context.player.battleState;
+    if (progress.level != next.level) {
+        PokemonBattleInit input{};
+        input.speciesDex = next.speciesDex;
+        input.formId = next.formId;
+        input.level = progress.level;
+        input.pokemonId = next.pokemonId;
+        input.nature = next.nature;
+        input.gender = next.gender;
+        input.abilityId = next.abilityId;
+        input.moveCount = next.moveCount;
+        for (uint8_t i = 0; i < 6; ++i) input.ivs[i] = next.ivs[i];
+        for (uint8_t i = 0; i < next.moveCount; ++i) input.moveIds[i] = next.moves[i].moveId;
+        PokemonBattleState leveled{};
+        if (initializePokemonBattleState(input, leveled) != PokemonBattleInitResult::Ok) return false;
+        // Pinned Pokemon.calculateStats heals the max-HP increase for a living
+        // Pokemon, while retaining current PP across a level change.
+        if (next.hp && leveled.maxHp > next.maxHp)
+            leveled.hp = static_cast<uint16_t>(next.hp + leveled.maxHp - next.maxHp);
+        else if (next.hp > leveled.maxHp) leveled.hp = leveled.maxHp;
+        else leveled.hp = next.hp;
+        for (uint8_t i = 0; i < next.moveCount; ++i) leveled.moves[i].pp = next.moves[i].pp;
+        next = leveled;
+    }
+    m_context.player.battleState = next;
+    m_context.player.level = progress.level;
+    m_playerExperience = progress.totalExperience;
+    m_experienceGranted = true;
+    return true;
+}
+
 bool FirstRunRuntime::advanceBattleTurn() {
+    if (m_battleFinished && m_playerWon && !m_experienceGranted) {
+        if (!grantVictoryExperience()) {
+            m_battleFeedback = "Victory experience could not be resolved";
+            buildScene();
+            return false;
+        }
+        m_battleFeedback = "Experience granted - rewards pending";
+        buildScene();
+        return true;
+    }
+    if (m_battleFinished && m_playerWon && m_experienceGranted) {
+        m_battleFeedback = "Item reward selection is not ported yet";
+        buildScene();
+        return false;
+    }
     if (!battleInputSupported()) {
         m_battleFeedback = m_doubleBattle ? "Double battle turn order unsupported" :
             "Battle move metadata unsupported; no action taken";
@@ -415,6 +489,7 @@ void FirstRunRuntime::resolve() {
     m_turn = 1;
     m_battleFinished = false;
     m_playerWon = false;
+    m_experienceGranted = false;
     m_victoryPlan = {};
     m_runStarted = false;
     m_checkpointAvailable = true;
@@ -635,8 +710,10 @@ void FirstRunRuntime::buildScene() {
         std::snprintf(line, sizeof(line), "Wave 1 encounter: UNSUPPORTED");
     }
     m_text[4] = line;
-    m_text[5] = m_runStarted ? "A: fight  UP/DOWN: move" :
-        "A: fight  UP/DOWN: move  LEFT/RIGHT: starter";
+    m_text[5] = m_battleFinished
+        ? (m_playerWon && !m_experienceGranted ? "A: collect experience" : "X: save  Y: export")
+        : (m_runStarted ? "A: fight  UP/DOWN: move" :
+            "A: fight  UP/DOWN: move  LEFT/RIGHT: starter");
     if (m_doubleBattle && m_secondEncounterResolved) {
         std::snprintf(line, sizeof(line), "2nd: %s Lv. %u", m_context.secondEnemy.localizedName,
                       static_cast<unsigned>(m_context.secondEnemy.level));
@@ -652,9 +729,7 @@ void FirstRunRuntime::buildScene() {
             static_cast<unsigned>(m_context.enemy.battleState.maxHp));
         m_text[6] = line;
         if (m_battleFinished) m_text[6] = m_playerWon
-            ? (m_victoryPlan.contains(ClassicVictoryStep::SelectModifier)
-                ? "EXP + item choice pending"
-                : "EXP + fixed reward pending")
+            ? (m_experienceGranted ? "Item reward pending" : "A: grant EXP")
             : "Starter fainted - run end pending";
     } else if (m_encounterResolved) {
         m_text[6] = "Wild evolution rules applied";

@@ -14,6 +14,7 @@ enum class NativeSaveStage : uint16_t {
     BattleActive = 2,
     BattleWon = 3,
     BattleLost = 4,
+    ExperienceGranted = 5,
 };
 
 struct NativeRunSave {
