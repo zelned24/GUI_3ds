@@ -254,6 +254,16 @@ bool pokemonWeatherIsImmutable(PokemonEffectiveWeather type);
 bool setPokemonArenaWeather(PokemonArenaWeatherState& state,
     PokemonEffectiveWeather type, uint16_t resolvedDuration);
 bool lapsePokemonArenaWeather(PokemonArenaWeatherState& state);
+struct PokemonWeatherTurnEndEvent {
+    bool expired = false;
+    PokemonEffectiveWeather previousWeather = PokemonEffectiveWeather::None;
+    bool requestWeatherFormReversion = false;
+};
+// Phase-level transition: unlike Weather.lapse, clears expired weather and
+// returns the event needed by presentation and the form-change resolver.
+bool advancePokemonArenaWeatherTurnEnd(PokemonArenaWeatherState& state,
+    PokemonWeatherTurnEndEvent& output);
+
 struct PokemonWeatherResolutionPolicy {
     bool resolved = false;
     bool suppressesOrdinaryWeather = false;

@@ -580,6 +580,21 @@ extern "C" int runPokemonBattleStateChecks() {
         resolvedWeather.effectiveWeather != PokemonEffectiveWeather::Sunny) return 286;
     if (!Pokerogue3DS::setPokemonArenaWeather(arenaWeather, PokemonEffectiveWeather::None, 5) ||
         arenaWeather.turnsLeft != 0) return 287;
+    Pokerogue3DS::PokemonWeatherTurnEndEvent weatherEnd{};
+    if (!Pokerogue3DS::setPokemonArenaWeather(arenaWeather, PokemonEffectiveWeather::Rain, 1) ||
+        !Pokerogue3DS::advancePokemonArenaWeatherTurnEnd(arenaWeather, weatherEnd) ||
+        !weatherEnd.expired || weatherEnd.previousWeather != PokemonEffectiveWeather::Rain ||
+        !weatherEnd.requestWeatherFormReversion || arenaWeather.type != PokemonEffectiveWeather::None ||
+        arenaWeather.turnsLeft || arenaWeather.maxDuration) return 298;
+    if (!Pokerogue3DS::advancePokemonArenaWeatherTurnEnd(arenaWeather, weatherEnd) ||
+        weatherEnd.expired || weatherEnd.requestWeatherFormReversion) return 299;
+    if (!Pokerogue3DS::setPokemonArenaWeather(arenaWeather, PokemonEffectiveWeather::Rain, 0) ||
+        !Pokerogue3DS::advancePokemonArenaWeatherTurnEnd(arenaWeather, weatherEnd) ||
+        weatherEnd.expired || arenaWeather.type != PokemonEffectiveWeather::Rain) return 300;
+    arenaWeather.turnsLeft = 2; // Invalid duration must not mutate state or event.
+    weatherEnd.expired = true;
+    if (Pokerogue3DS::advancePokemonArenaWeatherTurnEnd(arenaWeather, weatherEnd) ||
+        arenaWeather.turnsLeft != 2 || !weatherEnd.expired) return 301;
     Pokerogue3DS::PokemonMoveWeatherContext weatherContext{};
     double weatherMultiplier = 17.0;
     if (Pokerogue3DS::pokemonMoveWeatherMultiplier(52, weatherContext, weatherMultiplier) ||

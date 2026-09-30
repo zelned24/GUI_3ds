@@ -594,6 +594,25 @@ bool lapsePokemonArenaWeather(PokemonArenaWeatherState& state) {
     return state.turnsLeft != 0;
 }
 
+bool advancePokemonArenaWeatherTurnEnd(PokemonArenaWeatherState& state,
+    PokemonWeatherTurnEndEvent& output) {
+    if (static_cast<uint8_t>(state.type) > 9 ||
+        (state.type == PokemonEffectiveWeather::None && (state.turnsLeft || state.maxDuration)) ||
+        (pokemonWeatherIsImmutable(state.type) && (state.turnsLeft || state.maxDuration)) ||
+        state.turnsLeft > state.maxDuration) return false;
+    PokemonArenaWeatherState next = state;
+    PokemonWeatherTurnEndEvent event{};
+    if (next.type != PokemonEffectiveWeather::None && !lapsePokemonArenaWeather(next)) {
+        event.expired = true;
+        event.previousWeather = next.type;
+        event.requestWeatherFormReversion = true;
+        if (!setPokemonArenaWeather(next, PokemonEffectiveWeather::None, 0)) return false;
+    }
+    state = next;
+    output = event;
+    return true;
+}
+
 bool resolvePokemonMoveWeatherContext(const PokemonArenaWeatherState& arena,
     const PokemonWeatherResolutionPolicy& policy, PokemonMoveWeatherContext& output) {
     if (!policy.resolved || static_cast<uint8_t>(arena.type) > 9 ||
