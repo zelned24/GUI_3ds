@@ -40,12 +40,13 @@ function biomeColor(id) {
   for (let i = 0; i < id.length; ++i) hash = ((hash * 31) + id.charCodeAt(i)) >>> 0;
   return palette[hash % palette.length];
 }
-let previousJson = '', state = {};
+let previousJson = '', state = {}, partyMenu = false, partyCursor = 0;
 globalThis._3ds_tick = function(input) {
   const json = _3ds_getBattleState();
   if (json !== previousJson) { state = JSON.parse(json); previousJson = json; }
   // input contains hidKeysDown pulses already; do not edge-detect it as held keys.
   // Queue one command. Host processes it before the next snapshot/render frame.
+  const presentation = _3ds_getPresentationInfo() || {};
   const gameOverScreen = state.finished && !state.playerWon;
   if (input.L) _3ds_saveNative();
   else if (input.R) _3ds_loadNative();
@@ -53,7 +54,19 @@ globalThis._3ds_tick = function(input) {
     if (input.left) _3ds_cycleStarter(-1);
     else if (input.right) _3ds_cycleStarter(1);
     else if (input.start || input.A) _3ds_resetRun();
-  } else if (!state.runStarted && input.left) _3ds_cycleStarter(-1);
+  } else if (!state.finished && input.select) {
+    partyMenu = !partyMenu;
+    partyCursor = presentation.activePlayerPartyIndex || 0;
+  } else if (partyMenu && !state.finished) {
+    const count = presentation.playerPartyCount || 1;
+    if (input.up) partyCursor = (partyCursor + count - 1) % count;
+    else if (input.down) partyCursor = (partyCursor + 1) % count;
+    else if (input.B) partyMenu = false;
+    else if (input.A) { _3ds_submitAction(211 + partyCursor); partyMenu = false; }
+  } else if (input.B && !state.finished && state.runStarted) _3ds_submitAction(210);
+  else if (state.runStarted && !state.finished && presentation.doubleBattle && input.left) _3ds_cycleStarter(-1);
+  else if (state.runStarted && !state.finished && presentation.doubleBattle && input.right) _3ds_cycleStarter(1);
+  else if (!state.runStarted && input.left) _3ds_cycleStarter(-1);
   else if (!state.runStarted && input.right) _3ds_cycleStarter(1);
   else if (input.start || input.A) {
     if (state.finished && state.playerWon && state.experienceGranted) _3ds_skipReward();
@@ -62,7 +75,6 @@ globalThis._3ds_tick = function(input) {
   else if (input.down) _3ds_submitAction(100);
   else if (input.B && state.finished && state.playerWon && state.experienceGranted) _3ds_skipReward();
   const combatLog = _3ds_getCombatLog();
-  const presentation = _3ds_getPresentationInfo() || {};
   if (presentation.classicClearPending) {
     _3ds_beginTop(); _3ds_clear(0xFF2D1B4E);
     _3ds_drawText('Final battle won', 80, 70, 0.8, GREEN);
@@ -106,6 +118,13 @@ globalThis._3ds_tick = function(input) {
   _3ds_beginBottom();
   _3ds_clear(0xFF16213E);
   _3ds_drawText('Wave: ' + (state.wave || 0) + (presentation.doubleBattle ? ' - Doble batalla' : ''), 10, 10, 0.55, 0xFF00FFFF);
+  if (partyMenu && !state.finished) {
+    const party = presentation.playerParty || [];
+    for (let i = 0; i < party.length; ++i)
+      _3ds_drawText((i === partyCursor ? '> ' : '  ') + 'Pokemon #' + party[i], 10, 40 + i * 24, 0.5, WHITE);
+    _3ds_drawText('A: switch  B: cancel', 10, 205, 0.45, WHITE);
+    return;
+  }
   const moves = state.playerMoves || [], pp = state.playerPP || [];
   for (let i = 0; i < 4; ++i) {
     _3ds_drawText((i === state.selectedMove ? '> ' : '  ') + (i + 1) + ': ' + _3ds_getMoveName(moves[i] || 0) + ' PP:' + (pp[i] || 0),
@@ -121,7 +140,7 @@ globalThis._3ds_tick = function(input) {
     _3ds_drawText((presentation.trainerName || 'Trainer') + ' (' + (presentation.trainerPartyCount || 0) + ' Pokemon)', 8, 166, 0.4, WHITE);
     _3ds_drawText('Party: ' + (presentation.trainerParty || []).join(' / '), 8, 183, 0.4, WHITE);
   } else _3ds_drawText('Up/Down: move  Left/Right: starter', 8, 185, 0.43, WHITE);
-  _3ds_drawText('Start/A:Confirm  B:Reward  X:Save', 8, 203, 0.43, WHITE);
+  _3ds_drawText('A:Confirm B:Catch/Skip Select:Party', 8, 203, 0.43, WHITE);
   _3ds_drawText('L:Save  R:Load  Y:Export', 8, 219, 0.43, WHITE);
 };
 `;

@@ -112,6 +112,7 @@ bool FirstRunRuntime::restoreSetup(uint32_t seed, uint16_t starterDex) {
     m_runStarted = false;
     m_run.wave = 1;
     m_playerExperience = 0;
+    m_pokeballs = {5, 0, 0, 0, 0, 0};
     m_seedLength = 0;
     m_seedCodeUnits.fill(0);
     char seedText[11];
@@ -128,6 +129,14 @@ bool FirstRunRuntime::restoreSetup(uint32_t seed, uint16_t starterDex) {
 
 void FirstRunRuntime::captureNativeRunSave(NativeRunSave& output) const {
     NativeRunSave value{};
+    // v8 cannot serialize doubles, captured party, inventory or later trainer history.
+    // Never report a setup checkpoint as a successful save of an active double battle.
+    const std::array<uint16_t, 6> initialBalls{5, 0, 0, 0, 0, 0};
+    if (m_doubleBattle || m_context.playerPartyCount > 1 || m_pokeballs != initialBalls ||
+        m_run.wave > 9 || (m_trainerBattle && m_run.wave != 5)) {
+        output = {};
+        return;
+    }
     if (m_runStarted && !m_checkpointAvailable) {
         output = {};
         return;
@@ -858,6 +867,96 @@ bool FirstRunRuntime::grantVictoryExperience() {
     return true;
 }
 
+bool FirstRunRuntime::selectEnemyMoveSlot(const PokemonBattleState& enemyState,
+    const PokemonBattleState& playerState, PokerogueRngAdapter& rng, uint8_t& enemyMoveSlot) {
+    // Pinned EnemyPokemon.SMART_RANDOM: score each usable move in moveset order,
+    // then advance through the descending pool while randBattleSeedInt(8) >= 5.
+    PokemonMoveWeatherContext simulatedWeather{};
+    if (!resolveActiveMoveWeather(enemyState, playerState, simulatedWeather)) return false;
+    uint8_t usableSlots[4]{};
+    uint32_t projectedDamage[4]{};
+    uint8_t usableCount = 0;
+    for (uint8_t slot = 0; slot < enemyState.moveCount; ++slot) {
+        if (!enemyState.moves[slot].pp) continue;
+        uint32_t damage = 0;
+        const auto* candidateMove = PokerogueContent::findMoveById(enemyState.moves[slot].moveId);
+        if (!candidateMove) return false;
+        // Status moves cannot KO and remain eligible only when no attack can KO.
+        if (candidateMove->category != PokerogueContent::MoveStatus &&
+            calculatePokemonDamageCore(enemyState, playerState,
+                enemyState.moves[slot].moveId, false, damage, &simulatedWeather) != PokemonDamageCoreResult::Ok) {
+            m_battleFeedback = "Enemy simulated damage unsupported";
+            buildScene();
+            return false;
+        }
+        usableSlots[usableCount] = slot;
+        projectedDamage[usableCount++] = damage;
+    }
+    uint8_t filteredSlots[4]{};
+    uint8_t filteredCount = 0;
+    if (!filterEnemyKoMoveSlots(usableSlots, projectedDamage, usableCount,
+            playerState.hp, filteredSlots, filteredCount)) {
+        m_battleFeedback = "Enemy KO move pool unavailable";
+        buildScene();
+        return false;
+    }
+    uint8_t candidates[4]{};
+    double scores[4]{};
+    uint8_t candidateCount = 0;
+    for (uint8_t entry = 0; entry < filteredCount; ++entry) {
+        const uint8_t i = filteredSlots[entry];
+        const auto* move = PokerogueContent::findMoveById(enemyState.moves[i].moveId);
+        if (!move) {
+            m_battleFeedback = "Canonical enemy move reference invalid";
+            buildScene();
+            return false;
+        }
+        // getNextTargets() resolves one candidate target. In this bounded
+        // one-opponent case its adjusted weight is one, so randSeedInt(1)
+        // short-circuits in the pinned source without consuming the stream.
+        (void)rng.randSeedInt(1);
+        candidates[candidateCount] = i;
+        scores[candidateCount] = baselineEnemyMoveScore(enemyState, playerState, *move);
+        ++candidateCount;
+    }
+    for (uint8_t i = 1; i < candidateCount; ++i) {
+        const uint8_t candidate = candidates[i];
+        const double score = scores[i];
+        uint8_t position = i;
+        while (position && score > scores[position - 1]) {
+            candidates[position] = candidates[position - 1];
+            scores[position] = scores[position - 1];
+            --position;
+        }
+        candidates[position] = candidate;
+        scores[position] = score;
+    }
+    enemyMoveSlot = 0;
+    if (m_trainerBattle) {
+        // EnemyPokemon constructor selects SMART whenever hasTrainer() is true.
+        if (!selectSmartTrainerMoveSlot(scores, candidates, candidateCount, rng,
+                enemyMoveSlot)) {
+            m_battleFeedback = "Trainer SMART move selection failed";
+            buildScene();
+            return false;
+        }
+    } else {
+        uint8_t chosenIndex = 0;
+        while (chosenIndex + 1 < candidateCount && rng.randSeedInt(8) >= 5) ++chosenIndex;
+        enemyMoveSlot = candidates[chosenIndex];
+    }
+    return true;
+}
+
+bool FirstRunRuntime::executeEnemyResponse(uint8_t userIndex, PokerogueRngAdapter& rng) {
+    if (userIndex != 1 && userIndex != 2) return false;
+    const auto& enemy = userIndex == 1 ? m_context.enemy : m_context.secondEnemy;
+    if (!enemy.battleState.hp || !m_context.player.battleState.hp) return true;
+    uint8_t slot = 0;
+    return selectEnemyMoveSlot(enemy.battleState, m_context.player.battleState, rng, slot) &&
+        executeActiveBattleMove(userIndex, 0, slot, rng);
+}
+
 bool FirstRunRuntime::advanceBattleTurn() {
     if (m_rewardsPending) {
         return claimRewardChoice();
@@ -1170,82 +1269,8 @@ bool FirstRunRuntime::advanceBattleTurn() {
         return finishBattleTurn();
     }
 
-    // Pinned EnemyPokemon.SMART_RANDOM: score each usable move in moveset order,
-    // then advance through the descending pool while randBattleSeedInt(8) >= 5.
-    PokemonMoveWeatherContext simulatedWeather{};
-    if (!resolveActiveMoveWeather(true, simulatedWeather)) return false;
-    uint8_t usableSlots[4]{};
-    uint32_t projectedDamage[4]{};
-    uint8_t usableCount = 0;
-    for (uint8_t slot = 0; slot < enemyState.moveCount; ++slot) {
-        if (!enemyState.moves[slot].pp) continue;
-        uint32_t damage = 0;
-        const auto* candidateMove = PokerogueContent::findMoveById(enemyState.moves[slot].moveId);
-        if (!candidateMove) return false;
-        // Status moves cannot KO and remain eligible only when no attack can KO.
-        if (candidateMove->category != PokerogueContent::MoveStatus &&
-            calculatePokemonDamageCore(enemyState, playerState,
-                enemyState.moves[slot].moveId, false, damage, &simulatedWeather) != PokemonDamageCoreResult::Ok) {
-            m_battleFeedback = "Enemy simulated damage unsupported";
-            buildScene();
-            return false;
-        }
-        usableSlots[usableCount] = slot;
-        projectedDamage[usableCount++] = damage;
-    }
-    uint8_t filteredSlots[4]{};
-    uint8_t filteredCount = 0;
-    if (!filterEnemyKoMoveSlots(usableSlots, projectedDamage, usableCount,
-            playerState.hp, filteredSlots, filteredCount)) {
-        m_battleFeedback = "Enemy KO move pool unavailable";
-        buildScene();
-        return false;
-    }
-    uint8_t candidates[4]{};
-    double scores[4]{};
-    uint8_t candidateCount = 0;
-    for (uint8_t entry = 0; entry < filteredCount; ++entry) {
-        const uint8_t i = filteredSlots[entry];
-        const auto* move = PokerogueContent::findMoveById(enemyState.moves[i].moveId);
-        if (!move) {
-            m_battleFeedback = "Canonical enemy move reference invalid";
-            buildScene();
-            return false;
-        }
-        // getNextTargets() resolves one candidate target. In this bounded
-        // one-opponent case its adjusted weight is one, so randSeedInt(1)
-        // short-circuits in the pinned source without consuming the stream.
-        (void)rng->randSeedInt(1);
-        candidates[candidateCount] = i;
-        scores[candidateCount] = baselineEnemyMoveScore(enemyState, playerState, *move);
-        ++candidateCount;
-    }
-    for (uint8_t i = 1; i < candidateCount; ++i) {
-        const uint8_t candidate = candidates[i];
-        const double score = scores[i];
-        uint8_t position = i;
-        while (position && score > scores[position - 1]) {
-            candidates[position] = candidates[position - 1];
-            scores[position] = scores[position - 1];
-            --position;
-        }
-        candidates[position] = candidate;
-        scores[position] = score;
-    }
     uint8_t enemyMoveSlot = 0;
-    if (m_trainerBattle) {
-        // EnemyPokemon constructor selects SMART whenever hasTrainer() is true.
-        if (!selectSmartTrainerMoveSlot(scores, candidates, candidateCount, *rng,
-                enemyMoveSlot)) {
-            m_battleFeedback = "Trainer SMART move selection failed";
-            buildScene();
-            return false;
-        }
-    } else {
-        uint8_t chosenIndex = 0;
-        while (chosenIndex + 1 < candidateCount && rng->randSeedInt(8) >= 5) ++chosenIndex;
-        enemyMoveSlot = candidates[chosenIndex];
-    }
+    if (!selectEnemyMoveSlot(enemyState, playerState, *rng, enemyMoveSlot)) return false;
     const auto* enemyMove = PokerogueContent::findMoveById(enemyState.moves[enemyMoveSlot].moveId);
     if (!enemyMove) {
         m_battleFeedback = "Canonical enemy move reference invalid";
@@ -1688,6 +1713,19 @@ void FirstRunRuntime::refreshTrainerBaselineMatchups() {
 }
 
 bool FirstRunRuntime::throwPokeball(PokeballType ball) {
+    // Commands run before render. Commit the complete action only on success.
+    FirstRunRuntime candidate = *this;
+    if (!candidate.throwPokeballInPlace(ball)) {
+        m_battleFeedback = candidate.m_battleFeedback;
+        buildScene();
+        return false;
+    }
+    *this = candidate;
+    buildScene(); // Rebind scene/text pointers after copying the candidate.
+    return true;
+}
+
+bool FirstRunRuntime::throwPokeballInPlace(PokeballType ball) {
     if (m_battleFinished) {
         m_battleFeedback = "Battle is already finished";
         buildScene();
@@ -1741,7 +1779,11 @@ bool FirstRunRuntime::throwPokeball(PokeballType ball) {
 
     PokemonCaptureEvent captureEvent{};
     const bool isFinalBoss = (m_run.wave == PokerogueContent::kClassicFinalWave);
-    executeCaptureAttempt(target->battleState, ball, false, false, false, isFinalBoss, *rng, captureEvent);
+    if (!executeCaptureAttempt(target->battleState, ball, false, false, false, isFinalBoss, *rng, captureEvent)) {
+        m_battleFeedback = "Capture inputs could not resolve";
+        buildScene();
+        return false;
+    }
 
     if (captureEvent.caught) {
         target->battleState.hp = 0;
@@ -1772,12 +1814,20 @@ bool FirstRunRuntime::throwPokeball(PokeballType ball) {
 
         if (m_context.enemy.battleState.hp > 0) {
             PokerogueRngAdapter enemyActionRng = *rng;
-            executeActiveBattleMove(1, 0, 0, enemyActionRng);
+            if (!executeEnemyResponse(1, enemyActionRng)) {
+                m_battleFeedback = "Enemy response could not resolve";
+                buildScene();
+                return false;
+            }
             *rng = enemyActionRng;
         }
         if (m_doubleBattle && m_context.secondEnemy.battleState.hp > 0) {
             PokerogueRngAdapter secondEnemyRng = *rng;
-            executeActiveBattleMove(2, 0, 0, secondEnemyRng);
+            if (!executeEnemyResponse(2, secondEnemyRng)) {
+                m_battleFeedback = "Second enemy response could not resolve";
+                buildScene();
+                return false;
+            }
             *rng = secondEnemyRng;
         }
         m_battleFeedback = fb + " " + m_battleFeedback;
@@ -1786,6 +1836,19 @@ bool FirstRunRuntime::throwPokeball(PokeballType ball) {
 }
 
 bool FirstRunRuntime::switchPlayerPokemon(uint8_t targetIndex) {
+    // Commands run before render. Commit the complete action only on success.
+    FirstRunRuntime candidate = *this;
+    if (!candidate.switchPlayerPokemonInPlace(targetIndex)) {
+        m_battleFeedback = candidate.m_battleFeedback;
+        buildScene();
+        return false;
+    }
+    *this = candidate;
+    buildScene(); // Rebind scene/text pointers after copying the candidate.
+    return true;
+}
+
+bool FirstRunRuntime::switchPlayerPokemonInPlace(uint8_t targetIndex) {
     if (m_battleFinished) return false;
     if (targetIndex >= m_context.playerPartyCount || targetIndex == m_context.activePlayerPartyIndex) {
         m_battleFeedback = "Invalid party member selected";
@@ -1812,17 +1875,29 @@ bool FirstRunRuntime::switchPlayerPokemon(uint8_t targetIndex) {
 
     if (m_trainerBattle) {
         PokerogueRngAdapter enemyActionRng = *rng;
-        executeActiveBattleMove(1, 0, 0, enemyActionRng);
+        if (!executeEnemyResponse(1, enemyActionRng)) {
+                m_battleFeedback = "Enemy response could not resolve";
+                buildScene();
+                return false;
+            }
         *rng = enemyActionRng;
     } else {
         if (m_context.enemy.battleState.hp > 0) {
             PokerogueRngAdapter enemyActionRng = *rng;
-            executeActiveBattleMove(1, 0, 0, enemyActionRng);
+            if (!executeEnemyResponse(1, enemyActionRng)) {
+                m_battleFeedback = "Enemy response could not resolve";
+                buildScene();
+                return false;
+            }
             *rng = enemyActionRng;
         }
         if (m_doubleBattle && m_context.secondEnemy.battleState.hp > 0) {
             PokerogueRngAdapter secondEnemyRng = *rng;
-            executeActiveBattleMove(2, 0, 0, secondEnemyRng);
+            if (!executeEnemyResponse(2, secondEnemyRng)) {
+                m_battleFeedback = "Second enemy response could not resolve";
+                buildScene();
+                return false;
+            }
             *rng = secondEnemyRng;
         }
     }

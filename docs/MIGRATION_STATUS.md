@@ -149,3 +149,12 @@
 
 
 
+
+## Correcciones tras revisión de 8d80d88
+
+1. QuickJS acepta captura 210 y los seis slots 211–216. B captura; Select abre equipo, Up/Down selecciona, A cambia y B cancela; Left/Right cambia objetivo en dobles. L/R conservan save/load.
+2. Respuestas tras captura fallida/cambio reutilizan el selector SMART/SMART_RANDOM del turno normal y comprueban resultados. Comandos completos aplicados sobre candidato y publicados solo en éxito. Reinicio restablece inventario inicial.
+3. Catch rates manuales retirados: generación desde upstreamRawRecord canónico para todas las especies con sourcePath/symbol/SHA-256; desconocidos no reciben 45 arbitrario.
+4. Save v8 rechaza estados que no puede serializar: dobles, equipo capturado, inventario modificado, waves posteriores a 9 y entrenador distinto de wave 5. Guarda temporal; persistencia extendida sigue pendiente.
+5. Whitespace corregido. Regresiones de catálogo completo y rechazo de cambio inválido añadidas, no ejecutadas.
+6. Pendientes: save completo, fases Eternatus/Eternamax, GameClear/profile, fidelidad completa de captura y orden de respuestas dobles. No se declara Classic completo.

@@ -981,5 +981,13 @@ const weatherLifecycleRows = collections.abilities.map(ability => {
 });
 const weatherLifecycleHeader = weatherChangeHeader.replace('struct MoveAttribute {',
   `struct WeatherLifecycleAbilityProfile { uint16_t abilityId; bool requiresDispatcher; const char* sourcePath; const char* sourceSymbol; const char* sourceHash; };\ninline constexpr WeatherLifecycleAbilityProfile kWeatherLifecycleAbilityProfiles[] = {\n${weatherLifecycleRows.join(',\n')}\n};\nstruct MoveAttribute {`);
-await fs.writeFile(outputPath, weatherLifecycleHeader, 'utf8');
-console.log(JSON.stringify({ output: path.relative(root, outputPath), bytes: Buffer.byteLength(weatherLifecycleHeader), hash: report.contentHash }));
+const catchRows = collections.species.map(species => {
+  const raw = species.extensions?.upstreamRawRecord?.value ?? '';
+  const parsed = /\bcatchRate\s*:\s*(\d+)\b/.exec(raw);
+  if (!parsed || Number(parsed[1]) > 255) throw new Error(`Missing/invalid pinned catch rate: ${species.id}`);
+  return `    {${species.speciesId}, ${Number(parsed[1])}, "${field(species.source?.sourcePath ?? '')}", "${field(species.source?.sourceSymbol ?? '')}", "${field(species.source?.sourceHash ?? '')}"}`;
+});
+const captureHeader = weatherLifecycleHeader.replace('struct MoveAttribute {',
+  `struct SpeciesCatchProfile { uint16_t speciesDex; uint8_t catchRate; const char* sourcePath; const char* sourceSymbol; const char* sourceHash; };\ninline constexpr SpeciesCatchProfile kSpeciesCatchProfiles[] = {\n${catchRows.join(',\n')}\n};\nstruct MoveAttribute {`);
+await fs.writeFile(outputPath, captureHeader, 'utf8');
+console.log(JSON.stringify({ output: path.relative(root, outputPath), bytes: Buffer.byteLength(captureHeader), hash: report.contentHash }));

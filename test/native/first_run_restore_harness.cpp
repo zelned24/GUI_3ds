@@ -587,6 +587,29 @@ static int checkLevelUpMoveLearningAndEvolution() {
 }
 
 int main() {
+    // Catch rates must be generated for the full real canonical species catalog.
+    if (sizeof(PokerogueContent::kSpeciesCatchProfiles) / sizeof(PokerogueContent::kSpeciesCatchProfiles[0]) !=
+            PokerogueContent::kSpeciesCount) return 210;
+    for (const auto& species : PokerogueContent::kSpecies) {
+        bool found = false;
+        for (const auto& row : PokerogueContent::kSpeciesCatchProfiles) {
+            if (row.speciesDex != species.dex) continue;
+            if (!row.sourceHash || !*row.sourceHash || !row.sourcePath || !*row.sourcePath) return 211;
+            found = true;
+        }
+        if (!found) return 212;
+    }
+    {
+        Pokerogue3DS::FirstRunRuntime game(1);
+        const auto beforeRng = game.battleRng().state();
+        const auto beforeDex = game.presentation().player.dex;
+        const auto beforeHp = game.presentation().player.battleState.hp;
+        if (game.switchPlayerPokemon(255) || game.presentation().player.dex != beforeDex ||
+            game.presentation().player.battleState.hp != beforeHp ||
+            game.pokeballCount(Pokerogue3DS::PokeballType::Pokeball) != 5) return 213;
+        (void)beforeRng; // Invalid command must not publish a party or inventory mutation.
+    }
+
     using namespace Pokerogue3DS;
     for (uint32_t seed = 1; seed <= 64; ++seed) {
         FirstRunRuntime game(seed);

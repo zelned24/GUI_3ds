@@ -132,6 +132,11 @@ public:
     bool throwPokeball(PokeballType type = PokeballType::Pokeball);
 
 private:
+    bool throwPokeballInPlace(PokeballType ball);
+    bool switchPlayerPokemonInPlace(uint8_t targetIndex);
+    bool selectEnemyMoveSlot(const PokemonBattleState& enemy, const PokemonBattleState& player,
+        PokerogueRngAdapter& rng, uint8_t& slot);
+    bool executeEnemyResponse(uint8_t userIndex, PokerogueRngAdapter& rng);
     bool enemyPartyDefeated() const;
     bool weatherBattleSupported() const;
     void resolve(bool carryPlayer = false);
