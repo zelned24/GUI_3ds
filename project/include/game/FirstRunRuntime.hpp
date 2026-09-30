@@ -98,6 +98,7 @@ private:
     void resolve(bool carryPlayer = false);
     bool restoreNativeRunSaveInPlace(const NativeRunSave& save);
     bool grantVictoryExperience();
+    bool advanceTrainerAfterDefeat();
     void refreshTrainerBaselineMatchups();
     void buildScene();
     static const char* locale(const char* canonicalId, const char* fallback);

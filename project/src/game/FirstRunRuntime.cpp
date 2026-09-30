@@ -108,6 +108,15 @@ void FirstRunRuntime::captureNativeRunSave(NativeRunSave& output) const {
         output = {};
         return;
     }
+    // v4 replay cannot yet reconstruct intermediate trainer EXP awards.
+    // Do not write a checkpoint that the existing loader cannot reproduce.
+    if (m_trainerBattle && m_runStarted) {
+        for (uint8_t member = 0; member < m_context.trainerPartyCount; ++member) {
+            const auto& state = member == m_context.activeTrainerPartyIndex
+                ? m_context.enemy.battleState : m_context.trainerParty[member].battleState;
+            if (!state.hp) { output = {}; return; }
+        }
+    }
     if (makeNativeRunSetupSave(m_run.seed, m_run.starterDex, value) != NativeSaveResult::Ok) {
         output = {};
         return;
@@ -259,8 +268,8 @@ bool FirstRunRuntime::restoreNativeRunSaveInPlace(const NativeRunSave& save) {
         m_context.activeTrainerPartyIndex = save.activeTrainerMember;
         m_context.trainerParty[save.activeTrainerMember] = m_context.enemy;
     }
-    if (save.trainerPartyCount) refreshTrainerBaselineMatchups();
     m_turn = save.battleTurn;
+    if (save.trainerPartyCount) refreshTrainerBaselineMatchups();
     m_runStarted = true;
     m_checkpointAvailable = true;
     m_battleFinished = save.stage == NativeSaveStage::BattleWon ||
@@ -416,13 +425,19 @@ bool FirstRunRuntime::grantVictoryExperience() {
 }
 
 bool FirstRunRuntime::advanceBattleTurn() {
-    if (m_battleFinished && m_playerWon && !m_experienceGranted) {
-        if (!grantVictoryExperience()) {
+    if (m_battleFinished && m_playerWon && (!m_experienceGranted || m_trainerBattle)) {
+        if (!m_experienceGranted && !grantVictoryExperience()) {
             m_battleFeedback = "Victory experience could not be resolved";
             buildScene();
             return false;
         }
-        m_battleFeedback = "Experience granted - rewards pending";
+        if (m_trainerBattle && !advanceTrainerAfterDefeat()) {
+            m_battleFeedback = "Trainer replacement could not be resolved";
+            buildScene();
+            return false;
+        }
+        m_battleFeedback = m_battleFinished ? "Experience granted - rewards pending"
+            : "Trainer sent the next Pokemon";
         buildScene();
         return true;
     }
@@ -599,6 +614,41 @@ bool FirstRunRuntime::skipVictoryReward() {
         m_battleFeedback = "Reward skipped - next Classic wave";
     buildScene();
     return m_encounterResolved && !m_doubleBattle;
+}
+
+bool FirstRunRuntime::advanceTrainerAfterDefeat() {
+    if (!m_trainerBattle || !m_battleFinished || !m_playerWon ||
+        !m_experienceGranted || m_context.enemy.battleState.hp ||
+        !m_context.player.battleState.hp || !m_context.trainerPartyBattleStatesResolved ||
+        m_context.activeTrainerPartyIndex >= m_context.trainerPartyCount) return false;
+    bool hasReserve = false;
+    for (uint8_t member = 0; member < m_context.trainerPartyCount; ++member)
+        if (member != m_context.activeTrainerPartyIndex &&
+            m_context.trainerParty[member].battleState.hp) hasReserve = true;
+    if (!hasReserve) {
+        m_context.trainerParty[m_context.activeTrainerPartyIndex] = m_context.enemy;
+        return true;
+    }
+    refreshTrainerBaselineMatchups();
+    const uint8_t next = m_context.nextTrainerPartyIndex;
+    if (next >= m_context.trainerPartyCount ||
+        !m_context.trainerParty[next].battleState.hp || m_turn == 0xFFFFFFFFu) return false;
+    // Prepare the next turn stream before committing the actor replacement.
+    PokerogueBattleRng nextTurn = m_battleRng;
+    if (!nextTurn.beginTurn(m_turn + 1)) return false;
+    m_context.trainerParty[m_context.activeTrainerPartyIndex] = m_context.enemy;
+    m_context.activeTrainerPartyIndex = next;
+    m_context.enemy = m_context.trainerParty[next];
+    m_run.encounterDex = m_context.enemy.dex;
+    m_battleRng = nextTurn;
+    ++m_turn;
+    m_battleFinished = false;
+    m_playerWon = false;
+    m_experienceGranted = false;
+    m_victoryPlan = {};
+    m_checkpointAvailable = false;
+    refreshTrainerBaselineMatchups();
+    return true;
 }
 
 void FirstRunRuntime::refreshTrainerBaselineMatchups() {
