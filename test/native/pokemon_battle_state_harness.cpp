@@ -371,6 +371,24 @@ extern "C" int runPokemonBattleStateChecks() {
             replacementRng, stageEvent) != Pokerogue3DS::PokemonStatStageEffectResult::Ok ||
         effectRecipient.statStages[0] || stageEvent.reflectedStatMask != 1 ||
         stageEvent.reflectedStages != -1) return 241;
+    PokemonBattleState reflectedSource = state;
+    Pokerogue3DS::PokemonStatStageEffectPolicy reflectedPolicy{};
+    Pokerogue3DS::PokemonStatStageEffectEvent reflectedEvent{};
+    reflectedPolicy.resolved = true;
+    reflectedPolicy.stageMultiplier = 2;
+    if (Pokerogue3DS::applyReflectedPokemonStatStages(reflectedSource, stageEvent,
+            reflectedPolicy, reflectedEvent) != Pokerogue3DS::PokemonStatStageEffectResult::Ok ||
+        reflectedSource.statStages[0] != -2 || reflectedEvent.changes[0] != -2 ||
+        reflectedEvent.reflectedStatMask) return 242;
+    reflectedPolicy.reflectedStatMask = 1;
+    if (Pokerogue3DS::applyReflectedPokemonStatStages(reflectedSource, stageEvent,
+            reflectedPolicy, reflectedEvent) != Pokerogue3DS::PokemonStatStageEffectResult::UnresolvedPolicy ||
+        reflectedSource.statStages[0] != -2) return 243;
+    reflectedPolicy.reflectedStatMask = 0;
+    reflectedPolicy.stageMultiplier = -1;
+    if (Pokerogue3DS::applyReflectedPokemonStatStages(reflectedSource, stageEvent,
+            reflectedPolicy, reflectedEvent) != Pokerogue3DS::PokemonStatStageEffectResult::Ok ||
+        reflectedSource.statStages[0] != -1 || reflectedEvent.changes[0] != 1) return 244;
     PokemonBattleInit actorIdInput = input;
     actorIdInput.pokemonId = 0x12345678u;
     actorIdInput.deriveIvsFromPokemonId = true;

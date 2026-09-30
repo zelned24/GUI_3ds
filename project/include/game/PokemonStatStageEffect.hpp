@@ -114,6 +114,40 @@ inline PokemonStatStageEffectResult applyPokemonStatStageEffect(
     return PokemonStatStageEffectResult::Ok;
 }
 
+// A reflected phase has no move-chance roll: the original attribute already
+// triggered. Its sourceEffectType is MIRROR_ARMOR, forbidding another reflection.
+inline PokemonStatStageEffectResult applyReflectedPokemonStatStages(
+    PokemonBattleState& source, const PokemonStatStageEffectEvent& reflection,
+    const PokemonStatStageEffectPolicy& sourcePolicy, PokemonStatStageEffectEvent& output) {
+    if (!sourcePolicy.resolved || sourcePolicy.reflectedStatMask)
+        return PokemonStatStageEffectResult::UnresolvedPolicy;
+    if (reflection.reflectedStatMask > 127 || reflection.reflectedStages < -36 ||
+        reflection.reflectedStages > 36 || sourcePolicy.stageMultiplier < -6 ||
+        sourcePolicy.stageMultiplier > 6 || sourcePolicy.cancelledStatMask > 127)
+        return PokemonStatStageEffectResult::InvalidDefinition;
+    PokemonStatStageEffectEvent event{};
+    if (!reflection.triggered || !reflection.reflectedStatMask || !source.hp) {
+        output = event;
+        return PokemonStatStageEffectResult::Ok;
+    }
+    for (int8_t stage : source.statStages)
+        if (stage < -6 || stage > 6) return PokemonStatStageEffectResult::InvalidState;
+    event.triggered = true;
+    const int requestedChange = reflection.reflectedStages * sourcePolicy.stageMultiplier;
+    for (uint8_t stat = 0; stat < 7; ++stat) {
+        const uint8_t bit = static_cast<uint8_t>(1u << stat);
+        if (!(reflection.reflectedStatMask & bit) || (sourcePolicy.cancelledStatMask & bit)) continue;
+        const int before = source.statStages[stat];
+        const int requested = before + requestedChange;
+        const int after = requested < -6 ? -6 : requested > 6 ? 6 : requested;
+        source.statStages[stat] = static_cast<int8_t>(after);
+        event.changes[stat] = static_cast<int8_t>(after - before);
+        if (after != before) event.changedStatMask |= bit;
+    }
+    output = event;
+    return PokemonStatStageEffectResult::Ok;
+}
+
 struct PokemonStatStageMovePolicy {
     bool hitPolicyResolved = false;
     bool blockedBeforeAccuracy = false;
