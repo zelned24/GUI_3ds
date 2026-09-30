@@ -42,4 +42,84 @@ inline bool selectSmartTrainerMoveSlot(const double* scores, const uint8_t* slot
     return true;
 }
 
+// Resolved inputs to Pokemon.getMatchupScore. The effect/type layer must
+// account for abilities, illusion, effective speed and usable damaging moves.
+// Attack effectiveness entries already include the source's conditional STAB.
+struct PokemonTrainerMatchupInput {
+    double defensiveEffectiveness[2]{1.0, 1.0};
+    uint8_t opponentTypeCount = 1;
+    double attackEffectiveness[4]{};
+    uint8_t usableAttackCount = 0;
+    double hpRatio = 1.0;
+    double opponentHpRatio = 1.0;
+    bool outspeeds = false;
+    bool active = false;
+};
+
+inline bool calculateTrainerMatchupScore(const PokemonTrainerMatchupInput& input,
+                                         double& output) {
+    if (!input.opponentTypeCount || input.opponentTypeCount > 2 ||
+        input.usableAttackCount > 4 || !std::isfinite(input.hpRatio) ||
+        !std::isfinite(input.opponentHpRatio) || input.hpRatio < 0 || input.hpRatio > 1 ||
+        input.opponentHpRatio < 0 || input.opponentHpRatio > 1) return false;
+    double defense = 1.0;
+    for (uint8_t i = 0; i < input.opponentTypeCount; ++i) {
+        const double effectiveness = input.defensiveEffectiveness[i];
+        if (!std::isfinite(effectiveness) || effectiveness < 0) return false;
+        defense /= effectiveness > 0.25 ? effectiveness : 0.25;
+    }
+    double attack = 0;
+    for (uint8_t i = 0; i < input.usableAttackCount; ++i) {
+        if (!std::isfinite(input.attackEffectiveness[i]) || input.attackEffectiveness[i] < 0)
+            return false;
+        attack += input.attackEffectiveness[i];
+    }
+    attack /= input.usableAttackCount ? input.usableAttackCount : 1;
+    double hpDifference = input.hpRatio + (1.0 - input.opponentHpRatio);
+    if (input.hpRatio <= 0.2 && input.active) {
+        if (!input.outspeeds && attack < 1.5 && defense < 1.5)
+            hpDifference *= 0.85;
+        else hpDifference = 1.0 - input.hpRatio + (input.outspeeds ? 0.2 : 0.1);
+    } else if (input.outspeeds) hpDifference *= 1.25;
+    else if (input.hpRatio > 0.2 && input.hpRatio <= 0.4) hpDifference *= 0.5;
+    const double score = (attack + defense) * (hpDifference < 1.0 ? hpDifference : 1.0);
+    if (!std::isfinite(score)) return false;
+    output = score;
+    return true;
+}
+
+// EnemyCommandPhase's threshold after party eligibility, entry hazards and
+// opponent averaging have been resolved by the caller. Traps/queued moves
+// are command-layer gates and must be checked before invoking this function.
+inline bool shouldTrainerSwitch(double activeScore, double bestReserveScore,
+                                uint32_t switchCounter, bool boss, bool& output) {
+    if (!std::isfinite(activeScore) || !std::isfinite(bestReserveScore) ||
+        activeScore < 0 || bestReserveScore < 0) return false;
+    const double multiplier = switchCounter
+        ? 1.0 - std::pow(0.1, 1.0 / switchCounter) : 1.0;
+    output = bestReserveScore * multiplier >= activeScore * (boss ? 2.0 : 3.0);
+    return true;
+}
+
+// Trainer.getNextSummonIndex: retain party order among equally best scores.
+// The caller scopes this RNG to waveSeed + (turn << 2); the battle-turn stream
+// must not be passed here. A unique best member does not consume a draw.
+inline bool selectTrainerSummonIndex(const double* scores, const uint8_t* indexes,
+                                     uint8_t count, PokerogueRngAdapter& scopedRng,
+                                     uint8_t& output) {
+    if (!scores || !indexes || !count || count > 6) return false;
+    double best = -1.0;
+    uint8_t choices[6]{};
+    uint8_t choiceCount = 0;
+    for (uint8_t i = 0; i < count; ++i) {
+        if (!std::isfinite(scores[i]) || scores[i] < 0 || indexes[i] >= 6) return false;
+        for (uint8_t earlier = 0; earlier < i; ++earlier)
+            if (indexes[earlier] == indexes[i]) return false;
+        if (scores[i] > best) { best = scores[i]; choiceCount = 0; }
+        if (scores[i] == best) choices[choiceCount++] = indexes[i];
+    }
+    output = choices[choiceCount > 1 ? scopedRng.randSeedInt(choiceCount) : 0];
+    return true;
+}
+
 } // namespace Pokerogue3DS

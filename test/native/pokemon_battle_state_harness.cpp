@@ -45,6 +45,32 @@ extern "C" int runPokemonBattleStateChecks() {
     if (!Pokerogue3DS::selectSmartTrainerMoveSlot(separatedScores, separatedSlots, 2,
             trainerAiRng, selectedTrainerSlot) || selectedTrainerSlot != 2 ||
         !sameTrainerRng(trainerAiRng.state(), beforeNoDraw)) return 178;
+    Pokerogue3DS::PokemonTrainerMatchupInput matchup{};
+    matchup.usableAttackCount = 1;
+    matchup.attackEffectiveness[0] = 1.5;
+    matchup.hpRatio = 0.1;
+    matchup.active = true;
+    matchup.outspeeds = true;
+    double matchupScore = 0;
+    if (!Pokerogue3DS::calculateTrainerMatchupScore(matchup, matchupScore) ||
+        matchupScore != 2.5) return 183;
+    matchup.active = false;
+    if (!Pokerogue3DS::calculateTrainerMatchupScore(matchup, matchupScore) ||
+        matchupScore != 0.3125) return 184;
+    bool wantsSwitch = false;
+    if (!Pokerogue3DS::shouldTrainerSwitch(1.0, 3.0, 0, false, wantsSwitch) ||
+        !wantsSwitch) return 185;
+    if (!Pokerogue3DS::shouldTrainerSwitch(1.0, 3.0, 1, false, wantsSwitch) ||
+        wantsSwitch) return 186;
+    const double reserveScores[3] = {2.0, 3.0, 3.0};
+    const uint8_t reserveIndexes[3] = {1, 4, 2};
+    PokerogueRngAdapter summonRng = trainerAiRng;
+    PokerogueRngAdapter expectedSummonRng = summonRng;
+    const uint8_t expectedSummon = expectedSummonRng.randSeedInt(2) ? 2 : 4;
+    uint8_t nextSummon = 0;
+    if (!Pokerogue3DS::selectTrainerSummonIndex(reserveScores, reserveIndexes, 3,
+            summonRng, nextSummon) || nextSummon != expectedSummon ||
+        !sameTrainerRng(summonRng.state(), expectedSummonRng.state())) return 187;
     uint8_t derivedIvs[6]{};
     Pokerogue3DS::derivePokemonIvsFromId(0xFFFFFFFFu, derivedIvs);
     for (uint8_t iv : derivedIvs) if (iv != 31) return 57;
