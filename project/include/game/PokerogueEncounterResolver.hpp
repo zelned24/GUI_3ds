@@ -105,6 +105,7 @@ public:
     }
 
     // Ports the trainer branch of determineEnemySpecies for source-derived
+    // PartyMemberStrength is carried but unused by this pinned upstream function.
     // NORMAL/STRONG evolution thresholds. The caller owns the trainer RNG
     // stream and supplies the current Classic trainer-wave suppression fact.
     // allowEvolving=false still permits a required prevolution, matching the

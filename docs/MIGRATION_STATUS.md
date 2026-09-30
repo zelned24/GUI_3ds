@@ -272,4 +272,10 @@
 
 1. Trainer.genNewPartyMemberSpecies pinned llama baseSpecies.getTrainerSpeciesForLevel con template.evoLevelThresholdKind, no getEvoThresholdKind del segmento. Primera resolución del pool usa ahora parentEvolutionThresholdKindId, igual que el reroll specialty. Los callbacks signature conservan el umbral del slot que sí reciben upstream.
 2. Regresión de secuencia RNG actualizada para el umbral padre. Regresión 252–255 verifica NORMAL canónico en todos los templates compuestos y umbral propio en templates simples. Escritas, no ejecutadas.
-3. Falta aún portar el efecto de PartyMemberStrength en la evolución y comprobar la construcción completa contra upstream. No se declara fidelidad completa de equipos.
+3. Revisado PartyMemberStrength: el snapshot pinned lo transporta como parámetro de determineEnemySpecies, pero no lo usa al decidir evolución. No existe un efecto adicional que portar en esa función. Sigue pendiente comprobar la construcción completa contra upstream; no se declara fidelidad completa de equipos.
+
+## Auditoría de strength en evolución
+
+1. Fuente: src/data/pokemon-species.ts, PokemonSpecies.getTrainerSpeciesForLevel/getSpeciesForLevel; src/ai/ai-species-gen.ts, determineEnemySpecies, revisión 8555c08c823b856cbec4eb99ca84ea52a955836d. strength solo aparece en la declaración y en la llamada recursiva; calcEvoChance y selección aleatoria dependen de nivel y encounterKind.
+2. Esta evidencia corrige el pendiente anterior, sin introducir un multiplicador de fuerza inventado. PartyMemberStrength sí afecta los niveles del equipo en Trainer.getPartyLevels; esa ruta es distinta.
+3. Pendientes reales: filtros generales de especies, selección fija de gyms/rivales, dobles 2vs2, reglas de movimientos/habilidades completas, persistencia del equipo, Eternamax, presentación, OTA y validación final de Azahar/Old 3DS.
