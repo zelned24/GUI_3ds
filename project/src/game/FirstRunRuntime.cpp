@@ -5,6 +5,7 @@
 #include "game/PokerogueRngAdapter.hpp"
 #include "game/PokemonLevelMovePool.hpp"
 #include "game/PokemonTrainerMoveFilter.hpp"
+#include "game/PokemonTrainerMovesetGenerator.hpp"
 #include "game/PokemonFreshProfile.hpp"
 #include "game/PokemonExperience.hpp"
 #include "game/PokemonStarterMoveset.hpp"
@@ -537,9 +538,12 @@ void FirstRunRuntime::resolve(bool carryPlayer) {
     m_context.trainerPartyHardMoveFilterResolved = false;
     m_context.trainerPartySingleMoveFilterResolved = false;
     m_context.trainerPartyBaseWeightsResolved = false;
+    m_context.trainerPartyDamageWeightsResolved = false;
+    m_context.trainerPartyMovesetsResolved = false;
     for (auto& level : m_context.trainerPartyLevels) level = 0;
     for (auto& member : m_context.trainerParty) member = {};
     for (auto& state : m_trainerConstructorRngStates) state = {};
+    for (auto& state : m_trainerPostMovesetRngStates) state = {};
     for (auto& count : m_context.trainerPartyLevelMoveCounts) count = 0;
     for (auto& count : m_context.trainerPartySupersededMoveCounts) count = 0;
     for (auto& count : m_context.trainerPartyHardEligibleMoveCounts) count = 0;
@@ -681,6 +685,8 @@ void FirstRunRuntime::resolve(bool carryPlayer) {
                         bool allHardMoveFiltersResolved = true;
                         bool allSingleMoveFiltersResolved = true;
                         bool allBaseWeightsResolved = true;
+                        bool allDamageWeightsResolved = true;
+                        bool allMovesetsResolved = true;
                         for (uint8_t i = 0; i < levels.count; ++i) {
                             uint32_t memberOffset = 0;
                             if (!trainerPartyMemberSeedOffset(*trainer, m_run.wave, i, memberOffset)) {
@@ -777,6 +783,45 @@ void FirstRunRuntime::resolve(bool carryPlayer) {
                                 allBaseWeightsResolved = false;
                                 continue;
                             }
+                            PokemonBattleInit preMovegenInput{};
+                            preMovegenInput.speciesDex = member.species->dex;
+                            preMovegenInput.formId = actor.formId;
+                            preMovegenInput.level = levels.values[i];
+                            PokemonBattleState preMovegenState{};
+                            if (initializePokemonBattleStateForActor(preMovegenInput,
+                                    actor, preMovegenState) != PokemonBattleInitResult::Ok) {
+                                allDamageWeightsResolved = false;
+                                continue;
+                            }
+                            PokemonWeightedMove weightedMoves[128]{};
+                            std::size_t weightedCount = 0;
+                            if (weightTrainerLevelMoves(adjustedMoves, adjustedCount,
+                                    preMovegenState.abilityId, preMovegenState.stats[1],
+                                    preMovegenState.stats[3], preMovegenState.stats[2],
+                                    weightedMoves, 128, weightedCount) !=
+                                PokemonTrainerMovesetResult::Ok) {
+                                allDamageWeightsResolved = false;
+                                continue;
+                            }
+                            const auto* selectedForm = actor.formId
+                                ? PokerogueContent::findFormById(actor.formId) : nullptr;
+                            const char* type1 = selectedForm ? selectedForm->type1 : member.species->type1;
+                            const char* type2 = selectedForm ? selectedForm->type2 : member.species->type2;
+                            uint16_t moveIds[4]{};
+                            uint8_t moveCount = 0;
+                            if (selectTrainerMovesetFromWeightedPool(member.species->dex,
+                                    false, false, weightedMoves, weightedCount, type1, type2,
+                                    memberRng, moveIds, moveCount) !=
+                                PokemonTrainerMovesetResult::Ok || !moveCount) {
+                                allMovesetsResolved = false;
+                                continue;
+                            }
+                            auto& partyMember = m_context.trainerParty[i];
+                            partyMember.moveCount = moveCount;
+                            partyMember.movesetResolved = true;
+                            for (uint8_t slot = 0; slot < moveCount; ++slot)
+                                partyMember.moveIds[slot] = moveIds[slot];
+                            m_trainerPostMovesetRngStates[i] = memberRng.state();
                         }
                         m_context.trainerPartySpeciesResolved = allSpeciesResolved;
                         m_context.trainerPartyConstructorResolved =
@@ -791,10 +836,18 @@ void FirstRunRuntime::resolve(bool carryPlayer) {
                             m_context.trainerPartyHardMoveFilterResolved && allSingleMoveFiltersResolved;
                         m_context.trainerPartyBaseWeightsResolved =
                             m_context.trainerPartySingleMoveFilterResolved && allBaseWeightsResolved;
+                        m_context.trainerPartyDamageWeightsResolved =
+                            m_context.trainerPartyBaseWeightsResolved && allDamageWeightsResolved;
+                        m_context.trainerPartyMovesetsResolved =
+                            m_context.trainerPartyDamageWeightsResolved && allMovesetsResolved;
                     }
                 }
-                m_battleFeedback = m_context.trainerPartyBaseWeightsResolved
-                    ? "Trainer damage weights, IVs and battle pending"
+                m_battleFeedback = m_context.trainerPartyMovesetsResolved
+                    ? "Trainer shiny, IVs and battle pending"
+                    : m_context.trainerPartyDamageWeightsResolved
+                    ? "Trainer move selection unsupported"
+                    : m_context.trainerPartyBaseWeightsResolved
+                    ? "Trainer damage weights unsupported"
                     : m_context.trainerPartySingleMoveFilterResolved
                     ? "Trainer base move weights unsupported"
                     : m_context.trainerPartyHardMoveFilterResolved

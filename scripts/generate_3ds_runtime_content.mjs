@@ -458,6 +458,18 @@ const moves = collections.moves.map(move => {
     throw new Error(`Move attribute range exceeds native representation: ${move.id}`);
   }
   moveAttributes.push(...sourceAttributes);
+  const selfStatus = /^\s*new\s+SelfStatusMove\s*\(/.test(upstreamRaw);
+  const offensiveSelfBoost = selfStatus && sourceAttributes.length === 1 &&
+    (['curse', 'bulk_up', 'hone_claws', 'calm_mind', 'take_heart'].includes(move.id) ||
+      [...upstreamRaw.matchAll(/\.attr\s*\(\s*StatStageChangeAttr\s*,\s*\[([^\]]*)\]/g)]
+        .some(match => /^\s*Stat\.(?:ATK|SPATK)\s*$/.test(match[1])));
+  const requiresPostSelectionFilter = sourceAttributes.includes('WeatherChangeAttr') ||
+    offensiveSelfBoost ||
+    /targetSleptOrComatoseCondition|userSleptOrComatoseCondition/.test(upstreamRaw) ||
+    ['rain_dance', 'sunny_day', 'snowscape', 'hail', 'sandstorm', 'aurora_veil',
+      'solar_beam', 'solar_blade', 'venom_drench'].includes(move.id);
+  const variableMovegenType = move.category !== 'Status' &&
+    sourceAttributes.some(attribute => /TypeAttr$/.test(attribute));
   const upstreamFlags = [];
   if (move.isUnimplemented || /\.unimplemented\s*\(/.test(upstreamRaw)) upstreamFlags.push('MoveIsUnimplemented');
   if (/SacrificialAttrOnHit/.test(upstreamRaw)) upstreamFlags.push('MoveHasSacrificialAttrOnHit');
@@ -468,6 +480,8 @@ const moves = collections.moves.map(move => {
   if (/DelayedAttackAttr/.test(upstreamRaw)) upstreamFlags.push('MoveHasDelayedAttack');
   if (/RechargeAttr/.test(upstreamRaw)) upstreamFlags.push('MoveHasRecharge');
   if (strongSelfStatBoost) upstreamFlags.push('MoveHasStrongSelfStatBoost');
+  if (requiresPostSelectionFilter) upstreamFlags.push('MoveRequiresPostSelectionFilter');
+  if (variableMovegenType) upstreamFlags.push('MoveHasVariableMovegenType');
   if (/^\s*new\s+Charging\w*Move\s*\(/.test(upstreamRaw)) upstreamFlags.push('MoveIsCharging');
   if (/\.checkAllHits\s*\(/.test(upstreamRaw)) upstreamFlags.push('MoveChecksAccuracyPerHit');
   if (/DefAtkAttr/.test(upstreamRaw)) upstreamFlags.push('MoveUsesDefense');
@@ -575,7 +589,7 @@ const runtimeHeader = expandedHeader
   )
   .replace(
     'enum MoveCategory : uint8_t { MovePhysical = 0, MoveSpecial = 1, MoveStatus = 2 };',
-    'enum MoveCategory : uint8_t { MovePhysical = 0, MoveSpecial = 1, MoveStatus = 2 }; enum MoveUpstreamFlags : uint16_t { MoveIsUnimplemented = 1, MoveHasSacrificialAttrOnHit = 2, MoveHasMultiHit = 4, MoveHasMultiHitPowerIncrement = 8, MoveHasDelayedAttack = 16, MoveHasRecharge = 32, MoveIsCharging = 64, MoveChecksAccuracyPerHit = 128, MoveUsesDefense = 256, MoveSelectsOffensiveCategory = 512, MoveHasSacrificialAttr = 1024, MoveIsStabBlacklisted = 2048, MoveHasStrongSelfStatBoost = 4096 };'
+    'enum MoveCategory : uint8_t { MovePhysical = 0, MoveSpecial = 1, MoveStatus = 2 }; enum MoveUpstreamFlags : uint16_t { MoveIsUnimplemented = 1, MoveHasSacrificialAttrOnHit = 2, MoveHasMultiHit = 4, MoveHasMultiHitPowerIncrement = 8, MoveHasDelayedAttack = 16, MoveHasRecharge = 32, MoveIsCharging = 64, MoveChecksAccuracyPerHit = 128, MoveUsesDefense = 256, MoveSelectsOffensiveCategory = 512, MoveHasSacrificialAttr = 1024, MoveIsStabBlacklisted = 2048, MoveHasStrongSelfStatBoost = 4096, MoveRequiresPostSelectionFilter = 8192, MoveHasVariableMovegenType = 16384 };'
   )
   .replace(
     'struct SpeciesLevelMove { uint16_t speciesDex; uint8_t level; uint16_t moveId; };',

@@ -56,6 +56,8 @@ struct PresentationContext {
     uint16_t trainerPartySingleEligibleMoveCounts[6]{};
     bool trainerPartySingleMoveFilterResolved = false;
     bool trainerPartyBaseWeightsResolved = false;
+    bool trainerPartyDamageWeightsResolved = false;
+    bool trainerPartyMovesetsResolved = false;
     ResolvedPokemon player;
     ResolvedPokemon enemy;
     ResolvedPokemon secondEnemy;
@@ -101,6 +103,7 @@ private:
     std::array<uint16_t, 10> m_seedCodeUnits{};
     PokerogueBattleRng m_battleRng{};
     PokerogueRngState m_trainerConstructorRngStates[6]{};
+    PokerogueRngState m_trainerPostMovesetRngStates[6]{};
     std::size_t m_seedLength = 0;
     bool m_encounterResolved = false;
     bool m_doubleBattle = false;
