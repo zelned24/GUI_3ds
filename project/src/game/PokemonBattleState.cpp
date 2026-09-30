@@ -898,6 +898,13 @@ bool composePokemonAlwaysHitPolicy(const PokemonWeatherAbilityComponent* compone
         if (!PokerogueContent::findAbilityMovegenProfile(components[i].abilityId)) return false;
         for (const auto& profile : PokerogueContent::kAlwaysHitAbilityProfiles)
             if (profile.abilityId == components[i].abilityId) next.bypassAccuracy = true;
+        for (const auto& profile : PokerogueContent::kAccuracyAbilityProfiles) {
+            if (profile.abilityId != components[i].abilityId) continue;
+            if (components[i].belongsToAttacker && profile.accuracy)
+                next.accuracyMultiplier *= profile.multiplier;
+            else if (!components[i].belongsToAttacker && !profile.accuracy)
+                next.accuracyMultiplier /= profile.multiplier;
+        }
     }
     output = next;
     return true;

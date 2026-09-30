@@ -323,6 +323,13 @@ struct AlwaysHitAbilityProfile { uint16_t abilityId; const char* sourcePath; con
 inline constexpr AlwaysHitAbilityProfile kAlwaysHitAbilityProfiles[] = {
     {99, "src/data/abilities/init-abilities.ts", "AbilityId.NO_GUARD", "040ccf2ca2e00a2111ef0acf54878ec67c45d98c831e35dda3e0bac52f1ee8e6"}
 };
+struct AccuracyAbilityProfile { uint16_t abilityId; bool accuracy; double multiplier; const char* sourcePath; const char* sourceSymbol; const char* sourceHash; };
+inline constexpr AccuracyAbilityProfile kAccuracyAbilityProfiles[] = {
+    {8, false, 1.25, "src/data/abilities/init-abilities.ts", "AbilityId.SAND_VEIL", "040ccf2ca2e00a2111ef0acf54878ec67c45d98c831e35dda3e0bac52f1ee8e6"},
+    {14, true, 1.3, "src/data/abilities/init-abilities.ts", "AbilityId.COMPOUND_EYES", "040ccf2ca2e00a2111ef0acf54878ec67c45d98c831e35dda3e0bac52f1ee8e6"},
+    {81, false, 1.25, "src/data/abilities/init-abilities.ts", "AbilityId.SNOW_CLOAK", "040ccf2ca2e00a2111ef0acf54878ec67c45d98c831e35dda3e0bac52f1ee8e6"},
+    {162, true, 1.1, "src/data/abilities/init-abilities.ts", "AbilityId.VICTORY_STAR", "040ccf2ca2e00a2111ef0acf54878ec67c45d98c831e35dda3e0bac52f1ee8e6"}
+};
 struct MoveAttribute { const char* id; };
 struct Move { uint16_t id; uint8_t category; int16_t power; int16_t accuracy; int16_t pp; int8_t priority; int16_t upstreamChance; uint8_t generation; uint16_t upstreamFlags; uint8_t multiHitType; uint32_t attributeOffset; uint16_t attributeCount; const char* key; const char* name; const char* type; const char* target; const char* sourcePath; const char* sourceSymbol; const char* sourceHash; };
 struct PokemonSpriteAtlas { uint16_t speciesDex; uint16_t width; uint16_t height; uint32_t frameOffset; uint16_t frameCount; const char* manifestPath; const char* imagePath; const char* manifestHash; }; struct PokemonSpriteFrame { const char* filename; uint16_t x; uint16_t y; uint16_t width; uint16_t height; uint16_t sourceWidth; uint16_t sourceHeight; uint16_t trimX; uint16_t trimY; }; struct SpeciesLevelMove { uint16_t speciesDex; int8_t level; uint16_t moveId; }; struct SpeciesEggMove { uint16_t speciesDex; uint16_t moveId; };

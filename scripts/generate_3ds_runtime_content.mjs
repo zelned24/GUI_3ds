@@ -806,5 +806,15 @@ const alwaysHitRows = collections.abilities.filter(ability =>
 ).map(ability => `    {${ability.abilityId}, "${field(ability.source?.sourcePath ?? '')}", "${field(ability.source?.sourceSymbol ?? '')}", "${field(ability.source?.sourceHash ?? '')}"}`);
 const hitHeader = criticalHeader.replace('struct MoveAttribute {',
   `struct AlwaysHitAbilityProfile { uint16_t abilityId; const char* sourcePath; const char* sourceSymbol; const char* sourceHash; };\ninline constexpr AlwaysHitAbilityProfile kAlwaysHitAbilityProfiles[] = {\n${alwaysHitRows.join(',\n')}\n};\nstruct MoveAttribute {`);
-await fs.writeFile(outputPath, hitHeader, 'utf8');
-console.log(JSON.stringify({ output: path.relative(root, outputPath), bytes: Buffer.byteLength(hitHeader), hash: report.contentHash }));
+const accuracyAbilityRows = collections.abilities.flatMap(ability => {
+  const raw = ability.extensions?.upstreamAttributes?.value ?? '';
+  return [...raw.matchAll(/\.attr\s*\(\s*StatMultiplierAbAttr\s*,\s*Stat\.(ACC|EVA)\s*,\s*(\d+(?:\.\d+)?)\s*\)/g)].map(match => {
+    const multiplier = Number(match[2]);
+    if (!Number.isFinite(multiplier) || multiplier <= 0 || multiplier > 16) throw new Error(`Invalid accuracy multiplier: ${ability.id}`);
+    return `    {${ability.abilityId}, ${match[1] === 'ACC'}, ${multiplier}, "${field(ability.source?.sourcePath ?? '')}", "${field(ability.source?.sourceSymbol ?? '')}", "${field(ability.source?.sourceHash ?? '')}"}`;
+  });
+});
+const accuracyHeader = hitHeader.replace('struct MoveAttribute {',
+  `struct AccuracyAbilityProfile { uint16_t abilityId; bool accuracy; double multiplier; const char* sourcePath; const char* sourceSymbol; const char* sourceHash; };\ninline constexpr AccuracyAbilityProfile kAccuracyAbilityProfiles[] = {\n${accuracyAbilityRows.join(',\n')}\n};\nstruct MoveAttribute {`);
+await fs.writeFile(outputPath, accuracyHeader, 'utf8');
+console.log(JSON.stringify({ output: path.relative(root, outputPath), bytes: Buffer.byteLength(accuracyHeader), hash: report.contentHash }));

@@ -1049,6 +1049,17 @@ extern "C" int runPokemonBattleStateChecks() {
             noGuardRng, invalidHitAction, nullptr, nullptr, &hitPolicy) !=
             PokemonMoveActionStatus::UnsupportedAbilityCondition ||
         invalidHitActor.moves[0].pp != state.moves[0].pp || invalidHitTarget.hp != state.hp) return 356;
+    uint16_t compoundEyesId = 0;
+    for (const auto& profile : PokerogueContent::kAccuracyAbilityProfiles)
+        if (std::strcmp(profile.sourceSymbol, "AbilityId.COMPOUND_EYES") == 0 &&
+            profile.accuracy && profile.multiplier == 1.3) compoundEyesId = profile.abilityId;
+    if (!compoundEyesId) return 357;
+    Pokerogue3DS::PokemonWeatherAbilityComponent eyesComponent{compoundEyesId, true, true};
+    if (!Pokerogue3DS::composePokemonAlwaysHitPolicy(&eyesComponent, 1, hitPolicy) ||
+        hitPolicy.accuracyMultiplier != 1.3 || hitPolicy.bypassAccuracy) return 358;
+    eyesComponent.belongsToAttacker = false;
+    if (!Pokerogue3DS::composePokemonAlwaysHitPolicy(&eyesComponent, 1, hitPolicy) ||
+        hitPolicy.accuracyMultiplier != 1.0) return 359;
     PokemonBattleState noPpActor = state;
     noPpActor.moves[0].pp = 0;
     PokemonBattleState unchangedTarget = state;
