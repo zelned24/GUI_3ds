@@ -73,3 +73,24 @@
 2. `supportsPokemonStatStageMove` en `FirstRunRuntime.cpp` sustituye el filtro anterior exclusivo de usuario propio, ampliando la cobertura a 54 movimientos de cambio de etapas con un único `StatStageChangeAttr`.
 3. `executeActiveBattleMove` resuelve atómicamente el hit check contra el oponente (incluyendo bloqueo previo por inmunidades sonoras y de polvo mediante `composePokemonAlwaysHitPolicy`), el coste de PP con `Pressure`, y la composición de políticas de habilidades del receptor y fuente (protección con `Clear Body`, reflexión con `Mirror Armor`, reacciones con `Defiant`/`Competitive` y copia con `Opportunist`).
 4. Regresiones 441–450 en `pokemon_battle_state_harness.cpp` verifican: objetivos canónicos, puntuación IA, reducción efectiva de estadísticas de oponente, bloqueo por habilidad sonora (Soundproof), protección total (Clear Body), reflexión de caída (Mirror Armor) y coste con Pressure. Todas escritas y pendientes de ejecución según la instrucción del usuario.
+
+## Desbloqueo y ejecución de combates de entrenador (P1)
+
+1. `trainerBattleSupported()` en `FirstRunRuntime` verifica la validez estructural y operativa del equipo rival completo (1 a 6 integrantes con movimientos válidos y habilidades compatibles con el ciclo de vida de clima).
+2. `battleInputSupported()` desbloquea la entrada del jugador durante combates contra entrenadores cuando `trainerBattleSupported()` es verificado, eliminando el bloqueo estático anterior.
+3. El bucle de combate de entrenador resuelve turnos interactivos: selección de movimientos SMART por la IA enemiga (`selectSmartTrainerMoveSlot`), cambio táctico por ventaja (`resolveTrainerSwitchDecision`) donde el ataque del jugador impacta al entrante, debilitamiento del actor activo, concesión individual de experiencia (`grantVictoryExperience`), relevo ordenado hacia la reserva (`advanceTrainerAfterDefeat`), y transición a la fase de victoria al derrotar al último miembro.
+4. Regresiones escritas en `test/native/first_run_restore_harness.cpp` (`checkTrainerInteractiveBattle`): comprueban que el combate de entrenador de wave 5 es interactivo, ejecuta comandos de ataque, rota la reserva al debilitarse el primer Pokémon y progresa a la siguiente wave tras vencer al equipo completo.
+
+## Recompensas de victoria y modificadores canónicos (P2)
+
+1. `generateVictoryRewards()` en `FirstRunRuntime` consulta `rollPlayerModifierReward` con la provisión canónica `InitialClassicRewardWeights` y el flujo pseudoaleatorio determinista de la wave, generando hasta 3 opciones de modificador de `ModifierPool`.
+2. Interfaz y controles de recompensas: navegación entre las 3 opciones con UP/DOWN, confirmación/reclamación con A (`claimRewardChoice()`) y descarte/salto voluntario con B (`skipVictoryReward()`).
+3. La reclamación de consumibles aplica atómicamente los efectos correspondientes (restauración de HP para Potion, Super Potion, Hyper Potion, Max Potion y Full Restore; recuperación de PP para Ether, Max Ether, Elixir y Max Elixir) antes de avanzar a la siguiente wave.
+4. Regresiones escritas en `test/native/first_run_restore_harness.cpp` (`checkModifierRewardGenerationAndClaim`): verifican la generación de 3 opciones canónicas tras vencer un combate, la navegación bidireccional y la aplicación/reclamación con progreso a la wave siguiente.
+
+## Transición de biomas y progresión por segmentos (P3)
+
+1. Conexión de `PokerogueBiomeTransition.hpp` en `resolve()`: cada 10 waves en Classic (`(wave - 1) % 10 == 0`), se invoca `resolveClassicNextBiome` con las conexiones canónicas (`BiomeLinks`), determinando el destino mediante la semilla de wave completada.
+2. Actualización de contexto: el identificador de bioma de la run (`m_run.biomeId`) y su localización de texto (`m_context.biomeName`) se actualizan dinámicamente con el bioma entrante.
+3. El clima inicial del nuevo bioma se evalúa e inicializa mediante `selectPokemonBiomeWeather` y el validador de ciclo de clima en los actores.
+4. Regresiones escritas en `test/native/first_run_restore_harness.cpp` (`checkBiomeTransitionProgression`): verifican que al superar la wave 10 en Town y avanzar a la wave 11, el runtime conmuta deterministamente al bioma conectado correspondiente según la tabla canónica.

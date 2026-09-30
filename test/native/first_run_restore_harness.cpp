@@ -157,6 +157,146 @@ static int checkResolvedActionFieldLifecycle() {
     return 33; // No supported real encounter: never silently skip integration coverage.
 }
 
+static int checkTrainerInteractiveBattle() {
+    using namespace Pokerogue3DS;
+    for (uint32_t seed = 1; seed <= 256; ++seed) {
+        FirstRunRuntime game(seed);
+        bool eligible = true;
+        for (uint16_t wave = 1; wave <= 4; ++wave) {
+            const auto& context = game.presentation();
+            if (!context.enemy.actorIdentityResolved || context.secondEnemy.dex ||
+                context.trainerPartyCount) { eligible = false; break; }
+            NativeRunSave won{};
+            game.captureNativeRunSave(won);
+            won.stage = NativeSaveStage::BattleWon;
+            won.encounterDex = context.enemy.dex;
+            won.playerHp = context.player.battleState.hp;
+            won.enemyHp = 0;
+            won.battleTurn = 1;
+            won.playerMoveCount = context.player.battleState.moveCount;
+            won.enemyMoveCount = context.enemy.battleState.moveCount;
+            for (uint8_t slot = 0; slot < won.playerMoveCount; ++slot) {
+                won.playerMoveIds[slot] = context.player.battleState.moves[slot].moveId;
+                won.playerPp[slot] = context.player.battleState.moves[slot].pp;
+            }
+            for (uint8_t slot = 0; slot < won.enemyMoveCount; ++slot) {
+                won.enemyMoveIds[slot] = context.enemy.battleState.moves[slot].moveId;
+                won.enemyPp[slot] = context.enemy.battleState.moves[slot].pp;
+            }
+            if (!game.restoreNativeRunSave(won) || !game.advanceBattleTurn() ||
+                !game.skipVictoryReward()) { eligible = false; break; }
+        }
+        if (!eligible || game.presentation().trainerPartyCount != 2 ||
+            !game.presentation().trainerPartyBattleStatesResolved) continue;
+
+        // At wave 5, verify trainer battle is supported and interactive
+        if (!game.trainerBattleSupported()) return 40;
+        if (!game.battleInputSupported()) return 41;
+
+        // Execute a battle turn interactively against the trainer
+        const uint16_t initialPlayerHp = game.presentation().player.battleState.hp;
+        const uint16_t initialEnemyHp = game.presentation().enemy.battleState.hp;
+        if (!game.advanceBattleTurn()) return 42;
+        const auto& activeAfter = game.presentation();
+        if (activeAfter.enemy.battleState.hp == initialEnemyHp &&
+            activeAfter.player.battleState.hp == initialPlayerHp &&
+            activeAfter.activeTrainerPartyIndex == 0) return 43;
+
+        // Defeat first trainer Pokemon and transition to second
+        NativeRunSave firstDefeated{};
+        game.captureNativeRunSave(firstDefeated);
+        firstDefeated.stage = NativeSaveStage::BattleWon;
+        firstDefeated.enemyHp = 0;
+        firstDefeated.trainerParty[firstDefeated.activeTrainerMember].hp = 0;
+        if (!game.restoreNativeRunSave(firstDefeated)) return 44;
+        if (!game.advanceBattleTurn()) return 45;
+        // Active trainer member must now be the reserve (index 1)
+        if (game.presentation().activeTrainerPartyIndex != 1) return 46;
+        if (game.battleFinished()) return 47;
+        if (!game.trainerBattleSupported() || !game.battleInputSupported()) return 48;
+
+        // Execute interactive turn against the second Pokemon
+        if (!game.advanceBattleTurn()) return 49;
+
+        // Defeat the second Pokemon
+        NativeRunSave secondDefeated{};
+        game.captureNativeRunSave(secondDefeated);
+        secondDefeated.stage = NativeSaveStage::BattleWon;
+        secondDefeated.enemyHp = 0;
+        secondDefeated.trainerParty[secondDefeated.activeTrainerMember].hp = 0;
+        if (!game.restoreNativeRunSave(secondDefeated)) return 50;
+        if (!game.advanceBattleTurn()) return 51;
+        // Both trainer Pokémon fainted: battle is won, experience granted
+        if (!game.battleFinished() || !game.playerWon() || !game.experienceGranted()) return 52;
+        // Advancing now generates rewards or allows skipping
+        if (!game.skipVictoryReward()) return 53;
+        // Wave progresses to wave 6
+        if (game.run().wave != 6) return 54;
+        return 0;
+    }
+    return 55;
+}
+
+static int checkModifierRewardGenerationAndClaim() {
+    using namespace Pokerogue3DS;
+    for (uint32_t seed = 1; seed <= 64; ++seed) {
+        FirstRunRuntime game(seed);
+        const auto& context = game.presentation();
+        if (!context.enemy.actorIdentityResolved || context.secondEnemy.dex) continue;
+        NativeRunSave won{};
+        game.captureNativeRunSave(won);
+        won.stage = NativeSaveStage::BattleWon;
+        won.enemyHp = 0;
+        if (!game.restoreNativeRunSave(won)) return 60;
+        if (!game.advanceBattleTurn()) return 61;
+        if (!game.experienceGranted() || !game.battleFinished() || !game.playerWon()) return 62;
+        if (!game.advanceBattleTurn()) return 63; // Triggers reward generation
+        if (!game.rewardsPending() || game.rewardChoiceCount() != 3) return 64;
+        if (game.selectedRewardChoice() != 0) return 65;
+        if (!game.selectBattleMove(1) || game.selectedRewardChoice() != 1) return 66;
+        if (!game.selectBattleMove(-1) || game.selectedRewardChoice() != 0) return 67;
+        const auto* choice0 = game.rewardChoice(0);
+        if (!choice0 || !choice0->poolEntry || !choice0->poolEntry->itemId) return 68;
+        if (!game.claimRewardChoice()) return 69;
+        if (game.run().wave != 2 || game.rewardsPending()) return 70;
+        return 0;
+    }
+    return 71;
+}
+
+static int checkBiomeTransitionProgression() {
+    using namespace Pokerogue3DS;
+    for (uint32_t seed = 1; seed <= 64; ++seed) {
+        FirstRunRuntime game(seed);
+        bool eligible = true;
+        for (uint16_t wave = 1; wave <= 9; ++wave) {
+            NativeRunSave skipSave{};
+            game.captureNativeRunSave(skipSave);
+            skipSave.stage = NativeSaveStage::BattleWon;
+            skipSave.enemyHp = 0;
+            if (skipSave.trainerPartyCount) {
+                for (uint8_t i = 0; i < skipSave.trainerPartyCount; ++i)
+                    skipSave.trainerParty[i].hp = 0;
+            }
+            if (!game.restoreNativeRunSave(skipSave) || !game.advanceBattleTurn() ||
+                !game.skipVictoryReward()) { eligible = false; break; }
+        }
+        if (!eligible || game.run().wave != 10) continue;
+        if (std::strcmp(game.run().biomeId, "town") != 0) return 80;
+        NativeRunSave wave10Won{};
+        game.captureNativeRunSave(wave10Won);
+        wave10Won.stage = NativeSaveStage::BattleWon;
+        wave10Won.enemyHp = 0;
+        if (!game.restoreNativeRunSave(wave10Won) || !game.advanceBattleTurn()) return 81;
+        if (!game.skipVictoryReward()) return 82;
+        if (game.run().wave != 11) return 83;
+        if (std::strcmp(game.run().biomeId, "town") == 0) return 84;
+        if (!game.presentation().biomeName || !*game.presentation().biomeName) return 85;
+        return 0;
+    }
+    return 86;
+}
+
 int main() {
     using namespace Pokerogue3DS;
     for (uint32_t seed = 1; seed <= 64; ++seed) {
@@ -234,7 +374,14 @@ int main() {
             roomRestored.trickRoomSourceMoveId != 433 ||
             roomRestored.trickRoomSourcePokemonId != roomCheckpoint.trickRoomSourcePokemonId) return 27;
         const int fieldCheck = checkResolvedActionFieldLifecycle();
-        return fieldCheck ? fieldCheck : checkTrainerExperienceReplay();
+        if (fieldCheck) return fieldCheck;
+        const int replayCheck = checkTrainerExperienceReplay();
+        if (replayCheck) return replayCheck;
+        const int trainerCheck = checkTrainerInteractiveBattle();
+        if (trainerCheck) return trainerCheck;
+        const int rewardCheck = checkModifierRewardGenerationAndClaim();
+        if (rewardCheck) return rewardCheck;
+        return checkBiomeTransitionProgression();
     }
     return 7; // No supported canonical encounter found: do not silently skip.
 }

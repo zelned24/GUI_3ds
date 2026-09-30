@@ -62,8 +62,8 @@
 
 ### 4.2. Waves, biomas y mapa
 
-1. Conectar `PokerogueBiomeTransition.hpp` y los enlaces canónicos a la run real, incluida elección por Map Modifier.
-2. Completar transición cada segmento, reloj/time-of-day, semillas y continuidad del campo según upstream. No crear una tabla inventada wave por wave.
+1. Conectar `PokerogueBiomeTransition.hpp` y los enlaces canónicos a la run real (`resolveClassicNextBiome` conectado en `resolve()` cada 10 waves; `m_run.biomeId` y `m_context.biomeName` dinámicos; elección manual por Map Modifier pendiente de integración de dicho item).
+2. Completar transición cada segmento, reloj/time-of-day, semillas y continuidad del campo según upstream (reloj y selección de clima de bioma en waves 1/11/... integrados). No crear una tabla inventada wave por wave.
 3. Completar encuentros salvajes, dobles, jefes, entrenadores aleatorios/fijos, rivales y encuentros especiales/mystery del snapshot.
 4. Completar niveles, rarezas, variantes, escalado, composición de grupos, movimientos y modificadores de encuentros para toda la progresión.
 5. Conectar recuperación/interludios/transiciones especiales y entrada a End según reglas canónicas.
@@ -106,7 +106,7 @@
 
 ### 6.1. Equipos y decisiones
 
-1. El catálogo/equipos y partes de la IA existen; el combate de entrenador sigue bloqueado en `battleInputSupported`. Resolver dependencias antes de quitar ese bloqueo.
+1. El catálogo/equipos y partes de la IA existen; el combate de entrenador queda desbloqueado en `FirstRunRuntime` mediante `trainerBattleSupported()`, turnos interactivos, SMART move AI y switching hacia relevos hasta la derrota del equipo.
 2. Completar todos los generadores de equipo, plantillas/callbacks, firmas, variantes, roles, dificultad, objetos y habilidades del snapshot.
 3. Completar puntuación de matchup con inmunidades/absorciones, habilidades, illusion, movimientos utilizables, campo y visibilidad upstream.
 4. Completar valoración de atributos de movimientos, condiciones, objetivos múltiples y todos los modos de decisión de IA.
@@ -123,7 +123,7 @@
 2. Completar Poké Balls y cálculo de captura, bloqueo en encuentros no capturables, incorporación al equipo/reserva y desbloqueos.
 3. Completar uso de curas, revivir, recuperación de PP, berries, held items, transferencia y retirada.
 4. Completar dinero, compra, costes, rerolls, tiers/pools/pesos de recompensa y restricciones por equipo/run.
-5. Conectar selección de recompensa real: el flujo existente de saltar recompensa no satisface el requisito de recompensa completa.
+5. Conectar selección de recompensa real (`generateVictoryRewards` genera 3 opciones de `ModifierPool` mediante `rollPlayerModifierReward` y `InitialClassicRewardWeights`, con navegación interactiva UP/DOWN, reclamación con efectos de HP/PP y salto con B).
 6. Completar EXP de equipo, participantes, EXP Share/modificadores y recompensas especiales; evitar repetir EXP al restaurar/cambiar.
 7. Completar pasivas/desbloqueos, candies, vouchers/eggs y demás progreso del perfil aplicable al snapshot, con persistencia separada de la run.
 

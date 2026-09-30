@@ -5,6 +5,7 @@
 #include "game/PokerogueBattleRng.hpp"
 #include "game/PokerogueTurnOrder.hpp"
 #include "game/PokerogueClassicVictoryPlan.hpp"
+#include "game/PokerogueModifierReward.hpp"
 #include "storage/NativeRunSave.hpp"
 #include <cstdint>
 #include <array>
@@ -80,6 +81,15 @@ public:
     void captureNativeRunSave(NativeRunSave& output) const;
     bool restoreNativeRunSave(const NativeRunSave& save);
     bool battleInputSupported() const;
+    bool trainerBattleSupported() const;
+    bool rewardsPending() const { return m_rewardsPending; }
+    uint8_t rewardChoiceCount() const { return m_rewardChoiceCount; }
+    uint8_t selectedRewardChoice() const { return m_selectedRewardChoice; }
+    const ModifierRewardRoll* rewardChoice(uint8_t index) const {
+        return index < m_rewardChoiceCount ? &m_rewardChoices[index] : nullptr;
+    }
+    bool selectRewardChoice(int direction);
+    bool claimRewardChoice();
     bool selectBattleMove(int direction);
     bool advanceBattleTurn();
     bool skipVictoryReward();
@@ -106,6 +116,7 @@ private:
     bool restoreNativeRunSaveInPlace(const NativeRunSave& save);
     bool grantVictoryExperience();
     bool advanceTrainerAfterDefeat();
+    bool generateVictoryRewards();
     bool finishBattleTurn();
     bool executeActiveBattleMove(bool enemyActs, uint8_t moveSlot, PokerogueRngAdapter& rng);
     void refreshTrainerBaselineMatchups();
@@ -140,6 +151,10 @@ private:
     bool m_playerWon = false;
     bool m_experienceGranted = false;
     ClassicVictoryPlan m_victoryPlan{};
+    std::array<ModifierRewardRoll, 3> m_rewardChoices{};
+    uint8_t m_rewardChoiceCount = 0;
+    uint8_t m_selectedRewardChoice = 0;
+    bool m_rewardsPending = false;
     bool m_runStarted = false;
     bool m_checkpointAvailable = true;
     std::string m_battleFeedback;
