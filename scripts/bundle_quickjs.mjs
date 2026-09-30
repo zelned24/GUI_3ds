@@ -89,7 +89,7 @@ globalThis._3ds_tick = function(input) {
   }
   const phaseText = state.finished
     ? state.playerWon
-      ? state.experienceGranted ? 'Victory - Start: skip reward / next wave' : 'Victory - Start: collect EXP'
+      ? state.experienceGranted ? state.rewardPending ? 'Reward pending - Start: skip (no item)' : 'Victory transition needs remaining phases' : 'Victory - Start: collect EXP'
       : 'Defeat - Start: restart'
     : state.supported ? 'Start/A: execute selected move' : 'Pending rules block this battle';
   _3ds_drawText(phaseText, 10, 147, 0.43, state.playerWon || state.supported ? GREEN : RED);

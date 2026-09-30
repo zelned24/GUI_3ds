@@ -160,7 +160,7 @@ int main() {
                 "\"supported\":%s,\"finished\":%s,\"selectedMove\":%u,"
                 "\"playerMoves\":[%u,%u,%u,%u],\"playerPP\":[%u,%u,%u,%u],"
                 "\"playerWon\":%s,\"experienceGranted\":%s,\"runStarted\":%s,"
-                "\"starterDex\":%u,\"generation\":%u,\"finalWave\":%u}",
+                "\"starterDex\":%u,\"generation\":%u,\"finalWave\":%u,\"rewardPending\":%s}",
                 unsigned(game.run().wave), unsigned(actor.hp), unsigned(actor.maxHp),
                 unsigned(opponent.hp), unsigned(opponent.maxHp), unsigned(state.player.dex),
                 unsigned(state.enemy.dex), unsigned(snapshot.stage), unsigned(selected ? selected->id : 0),
@@ -170,7 +170,9 @@ int main() {
                 unsigned(movePp[0]), unsigned(movePp[1]), unsigned(movePp[2]), unsigned(movePp[3]),
                 game.playerWon() ? "true" : "false", game.experienceGranted() ? "true" : "false",
                 game.runStarted() ? "true" : "false", unsigned(bridge.restartStarterDex()),
-                unsigned(bridge.journalGeneration()), unsigned(PokerogueContent::kClassicFinalWave));
+                unsigned(bridge.journalGeneration()), unsigned(PokerogueContent::kClassicFinalWave),
+                game.battleFinished() && game.playerWon() && game.experienceGranted() &&
+                    game.victoryPlan().contains(Pokerogue3DS::ClassicVictoryStep::SelectModifier) ? "true" : "false");
             if (length > 0 && static_cast<size_t>(length) < sizeof(stateJson))
                 bridge.setBattleStateJson(stateJson, static_cast<size_t>(length));
         }

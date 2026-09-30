@@ -351,7 +351,11 @@ bool QuickJSBridge::processPendingAction() {
         }
         std::snprintf(m_actionFeedback, sizeof(m_actionFeedback), "%s: %s", action == 204 ? "Save" : "Load", nativeSaveResultName(status));
     } else if (action == -1 || action == 100) m_game->selectBattleMove(action == -1 ? -1 : 1);
-    else if (action == 200) m_game->skipVictoryReward();
+    else if (action == 200) {
+        const bool skipped = m_game->skipVictoryReward();
+        std::snprintf(m_actionFeedback, sizeof(m_actionFeedback), "%s", skipped
+            ? "Reward skipped; no item granted" : "Reward transition blocked");
+    }
     else if (action >= 0 && action <= 3) {
         if (!m_game->battleFinished()) {
             const auto count = m_game->presentation().player.battleState.moveCount;
