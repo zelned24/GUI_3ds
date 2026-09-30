@@ -816,5 +816,16 @@ const accuracyAbilityRows = collections.abilities.flatMap(ability => {
 });
 const accuracyHeader = hitHeader.replace('struct MoveAttribute {',
   `struct AccuracyAbilityProfile { uint16_t abilityId; bool accuracy; double multiplier; int8_t requiredCategory; const char* sourcePath; const char* sourceSymbol; const char* sourceHash; };\ninline constexpr AccuracyAbilityProfile kAccuracyAbilityProfiles[] = {\n${accuracyAbilityRows.join(',\n')}\n};\nstruct MoveAttribute {`);
-await fs.writeFile(outputPath, accuracyHeader, 'utf8');
-console.log(JSON.stringify({ output: path.relative(root, outputPath), bytes: Buffer.byteLength(accuracyHeader), hash: report.contentHash }));
+const damageStatRows = collections.abilities.flatMap(ability => {
+  const raw = ability.extensions?.upstreamAttributes?.value ?? '';
+  return [...raw.matchAll(/\.attr\s*\(\s*StatMultiplierAbAttr\s*,\s*Stat\.(ATK|DEF|SPATK|SPDEF)\s*,\s*(\d+(?:\.\d+)?)\s*\)/g)].map(match => {
+    const stat = { ATK: 1, DEF: 2, SPATK: 3, SPDEF: 4 }[match[1]];
+    const multiplier = Number(match[2]);
+    if (!Number.isFinite(multiplier) || multiplier <= 0 || multiplier > 16) throw new Error(`Invalid damage stat multiplier: ${ability.id}`);
+    return `    {${ability.abilityId}, ${stat}, ${multiplier}, ${/\.condition\s*\(/.test(raw)}, "${field(ability.source?.sourcePath ?? '')}", "${field(ability.source?.sourceSymbol ?? '')}", "${field(ability.source?.sourceHash ?? '')}"}`;
+  });
+});
+const statHeader = accuracyHeader.replace('struct MoveAttribute {',
+  `struct DamageStatAbilityProfile { uint16_t abilityId; uint8_t stat; double multiplier; bool requiresCondition; const char* sourcePath; const char* sourceSymbol; const char* sourceHash; };\ninline constexpr DamageStatAbilityProfile kDamageStatAbilityProfiles[] = {\n${damageStatRows.join(',\n')}\n};\nstruct MoveAttribute {`);
+await fs.writeFile(outputPath, statHeader, 'utf8');
+console.log(JSON.stringify({ output: path.relative(root, outputPath), bytes: Buffer.byteLength(statHeader), hash: report.contentHash }));

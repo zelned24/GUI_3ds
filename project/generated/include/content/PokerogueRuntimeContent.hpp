@@ -331,6 +331,15 @@ inline constexpr AccuracyAbilityProfile kAccuracyAbilityProfiles[] = {
     {81, false, 1.25, -1, "src/data/abilities/init-abilities.ts", "AbilityId.SNOW_CLOAK", "040ccf2ca2e00a2111ef0acf54878ec67c45d98c831e35dda3e0bac52f1ee8e6"},
     {162, true, 1.1, -1, "src/data/abilities/init-abilities.ts", "AbilityId.VICTORY_STAR", "040ccf2ca2e00a2111ef0acf54878ec67c45d98c831e35dda3e0bac52f1ee8e6"}
 };
+struct DamageStatAbilityProfile { uint16_t abilityId; uint8_t stat; double multiplier; bool requiresCondition; const char* sourcePath; const char* sourceSymbol; const char* sourceHash; };
+inline constexpr DamageStatAbilityProfile kDamageStatAbilityProfiles[] = {
+    {37, 1, 2, false, "src/data/abilities/init-abilities.ts", "AbilityId.HUGE_POWER", "040ccf2ca2e00a2111ef0acf54878ec67c45d98c831e35dda3e0bac52f1ee8e6"},
+    {55, 1, 1.5, false, "src/data/abilities/init-abilities.ts", "AbilityId.HUSTLE", "040ccf2ca2e00a2111ef0acf54878ec67c45d98c831e35dda3e0bac52f1ee8e6"},
+    {74, 1, 2, false, "src/data/abilities/init-abilities.ts", "AbilityId.PURE_POWER", "040ccf2ca2e00a2111ef0acf54878ec67c45d98c831e35dda3e0bac52f1ee8e6"},
+    {94, 3, 1.5, true, "src/data/abilities/init-abilities.ts", "AbilityId.SOLAR_POWER", "040ccf2ca2e00a2111ef0acf54878ec67c45d98c831e35dda3e0bac52f1ee8e6"},
+    {129, 1, 0.5, true, "src/data/abilities/init-abilities.ts", "AbilityId.DEFEATIST", "040ccf2ca2e00a2111ef0acf54878ec67c45d98c831e35dda3e0bac52f1ee8e6"},
+    {129, 3, 0.5, true, "src/data/abilities/init-abilities.ts", "AbilityId.DEFEATIST", "040ccf2ca2e00a2111ef0acf54878ec67c45d98c831e35dda3e0bac52f1ee8e6"}
+};
 struct MoveAttribute { const char* id; };
 struct Move { uint16_t id; uint8_t category; int16_t power; int16_t accuracy; int16_t pp; int8_t priority; int16_t upstreamChance; uint8_t generation; uint16_t upstreamFlags; uint8_t multiHitType; uint32_t attributeOffset; uint16_t attributeCount; const char* key; const char* name; const char* type; const char* target; const char* sourcePath; const char* sourceSymbol; const char* sourceHash; };
 struct PokemonSpriteAtlas { uint16_t speciesDex; uint16_t width; uint16_t height; uint32_t frameOffset; uint16_t frameCount; const char* manifestPath; const char* imagePath; const char* manifestHash; }; struct PokemonSpriteFrame { const char* filename; uint16_t x; uint16_t y; uint16_t width; uint16_t height; uint16_t sourceWidth; uint16_t sourceHeight; uint16_t trimX; uint16_t trimY; }; struct SpeciesLevelMove { uint16_t speciesDex; int8_t level; uint16_t moveId; }; struct SpeciesEggMove { uint16_t speciesDex; uint16_t moveId; };

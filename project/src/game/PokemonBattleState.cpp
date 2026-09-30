@@ -477,8 +477,18 @@ PokemonBaseDamageResult calculatePokemonBaseDamage(
                 (sameText(type1, "ROCK") || sameText(type2, "ROCK"))))
             weatherDefenseMultiplier = 1.5;
     }
-    uint32_t attack = static_cast<uint32_t>(attacker.stats[attackStat] * attackStage);
-    uint32_t defense = static_cast<uint32_t>(defender.stats[defenseStat] * defenseStage * weatherDefenseMultiplier);
+    double attackAbilityMultiplier = 1.0, defenseAbilityMultiplier = 1.0;
+    for (const auto& profile : PokerogueContent::kDamageStatAbilityProfiles) {
+        const bool attacking = profile.abilityId == attacker.abilityId && profile.stat == attackStat;
+        const bool defending = profile.abilityId == defender.abilityId && profile.stat == defenseStat;
+        if (!attacking && !defending) continue;
+        if (profile.requiresCondition) return PokemonBaseDamageResult::UnsupportedAbilityCondition;
+        if (attacking) attackAbilityMultiplier *= profile.multiplier;
+        if (defending) defenseAbilityMultiplier *= profile.multiplier;
+    }
+    // StatMultiplierAbAttr precedes stages and weather; floor only at the end.
+    uint32_t attack = static_cast<uint32_t>(attacker.stats[attackStat] * attackAbilityMultiplier * attackStage);
+    uint32_t defense = static_cast<uint32_t>(defender.stats[defenseStat] * defenseAbilityMultiplier * defenseStage * weatherDefenseMultiplier);
     if (!attack) attack = 1;
     if (!defense) defense = 1;
     if (attacker.level == 0 || defense == 0 || attack == 0) return PokemonBaseDamageResult::InvalidStats;

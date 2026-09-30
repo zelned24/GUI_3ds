@@ -1071,6 +1071,24 @@ extern "C" int runPokemonBattleStateChecks() {
     if (!Pokerogue3DS::composePokemonAlwaysHitPolicy(&hustleComponent, 1, hitPolicy, 55) ||
         hitPolicy.accuracyMultiplier != 1.0) return 362;
     if (Pokerogue3DS::composePokemonAlwaysHitPolicy(&hustleComponent, 1, hitPolicy)) return 363;
+    PokemonBattleState hustleActor = state;
+    hustleActor.abilityId = hustleId;
+    hustleActor.stats[1] = 53;
+    hustleActor.statStages[0] = 1;
+    PokemonBattleState neutralHustleActor = hustleActor;
+    neutralHustleActor.abilityId = 0;
+    double neutralHustleDamage = 0, boostedHustleDamage = 0;
+    if (Pokerogue3DS::calculatePokemonBaseDamage(neutralHustleActor, state, 33,
+            neutralHustleDamage) != Pokerogue3DS::PokemonBaseDamageResult::Ok ||
+        Pokerogue3DS::calculatePokemonBaseDamage(hustleActor, state, 33,
+            boostedHustleDamage) != Pokerogue3DS::PokemonBaseDamageResult::Ok) return 364;
+    const double hustleError = boostedHustleDamage - ((neutralHustleDamage - 2.0) * 119.0 / 79.0 + 2.0);
+    if (hustleError < -0.00000001 || hustleError > 0.00000001) return 365;
+    if (Pokerogue3DS::calculatePokemonBaseDamage(neutralHustleActor, state, 55,
+            neutralHustleDamage) != Pokerogue3DS::PokemonBaseDamageResult::Ok ||
+        Pokerogue3DS::calculatePokemonBaseDamage(hustleActor, state, 55,
+            boostedHustleDamage) != Pokerogue3DS::PokemonBaseDamageResult::Ok ||
+        boostedHustleDamage != neutralHustleDamage) return 366;
     PokemonBattleState noPpActor = state;
     noPpActor.moves[0].pp = 0;
     PokemonBattleState unchangedTarget = state;
