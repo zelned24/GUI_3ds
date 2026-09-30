@@ -519,6 +519,21 @@ extern "C" int runPokemonBattleStateChecks() {
     typePowerActor.abilityId = sandForce->abilityId;
     if (Pokerogue3DS::calculatePokemonBaseDamage(typePowerActor, state, 232,
             boostedSteelDamage) != Pokerogue3DS::PokemonBaseDamageResult::UnsupportedAbilityCondition) return 266;
+    Pokerogue3DS::PokemonMoveWeatherContext sandContext{};
+    sandContext.resolved = true;
+    sandContext.effectiveWeather = Pokerogue3DS::PokemonEffectiveWeather::Sunny;
+    sandContext.cancellationWeather = Pokerogue3DS::PokemonEffectiveWeather::Sandstorm;
+    if (std::strcmp(sandForce->conditionWeatherSymbol, "SANDSTORM") != 0 ||
+        Pokerogue3DS::calculatePokemonBaseDamage(typePowerActor, state, 232,
+            boostedSteelDamage, false, &sandContext) != Pokerogue3DS::PokemonBaseDamageResult::Ok) return 315;
+    const double expectedSandBoost = (neutralSteelDamage - 2.0) * 1.3 + 2.0;
+    const double sandError = boostedSteelDamage - expectedSandBoost;
+    if (sandError < -0.00000001 || sandError > 0.00000001) return 316;
+    sandContext.effectiveWeather = Pokerogue3DS::PokemonEffectiveWeather::Sandstorm;
+    sandContext.cancellationWeather = Pokerogue3DS::PokemonEffectiveWeather::None;
+    if (Pokerogue3DS::calculatePokemonBaseDamage(typePowerActor, state, 232,
+            boostedSteelDamage, false, &sandContext) != Pokerogue3DS::PokemonBaseDamageResult::Ok ||
+        boostedSteelDamage != neutralSteelDamage) return 317;
     uint32_t unresolvedDamage = 777;
     if (Pokerogue3DS::calculatePokemonDamageCore(typePowerActor, state, 232, false,
             unresolvedDamage) != Pokerogue3DS::PokemonDamageCoreResult::UnsupportedAbilityCondition ||

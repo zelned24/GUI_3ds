@@ -216,12 +216,14 @@ PokemonBattleInitResult initializePokemonBattleStateForActor(
     const PokemonActorIdentity& identity,
     PokemonBattleState& output);
 
+struct PokemonMoveWeatherContext;
 enum class PokemonBaseDamageResult : uint8_t { Ok = 0, MissingMove, NonDamagingMove, InvalidStats, UnsupportedAbilityCondition };
 PokemonBaseDamageResult calculatePokemonBaseDamage(
     const PokemonBattleState& attacker,
     const PokemonBattleState& defender,
     uint16_t moveId,
-    double& outputBaseDamage, bool critical = false);
+    double& outputBaseDamage, bool critical = false,
+    const PokemonMoveWeatherContext* weatherContext = nullptr);
 
 enum class PokemonTypeEffectivenessResult : uint8_t { Ok = 0, MissingSpecies, MissingMove, InvalidType };
 // Baseline chart lookup for an attack type independent of a move ID.

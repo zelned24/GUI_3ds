@@ -564,10 +564,13 @@ const typePowerAbilityRows = collections.abilities.flatMap(ability => {
   const matches = [...raw.matchAll(/\.attr\s*\(\s*MoveTypePowerBoostAbAttr\s*,\s*PokemonType\.([A-Z]+)\s*(?:,\s*(\d+(?:\.\d+)?)\s*(?:,\s*(?:true|false)\s*)?)?\)/g)];
   if (!declarations.length || declarations.length !== matches.length) return [];
   const requiresCondition = /\.condition\s*\(/.test(raw);
+  const weatherCondition = raw.match(/\.condition\s*\(\s*getWeatherCondition\s*\(\s*WeatherType\.([A-Z_]+)\s*\)\s*\)/);
+  const conditionCount = [...raw.matchAll(/\.condition\s*\(/g)].length;
+  const conditionWeather = weatherCondition && conditionCount === 1 ? weatherCondition[1] : '';
   return matches.map(match => {
     const multiplier = match[2] == null || Number(match[2]) === 0 ? 1.5 : Number(match[2]);
     if (!Number.isFinite(multiplier) || multiplier <= 0 || multiplier > 16) throw new Error(`Invalid type-power ability: ${ability.id}`);
-    return `    {${ability.abilityId}, "${field(match[1])}", ${multiplier}, ${requiresCondition}, "${field(ability.source?.sourcePath ?? '')}", "${field(ability.source?.sourceSymbol ?? '')}", "${field(ability.source?.sourceHash ?? '')}"}`;
+    return `    {${ability.abilityId}, "${field(match[1])}", ${multiplier}, ${requiresCondition}, "${field(conditionWeather)}", "${field(ability.source?.sourcePath ?? '')}", "${field(ability.source?.sourceSymbol ?? '')}", "${field(ability.source?.sourceHash ?? '')}"}`;
   });
 });
 const abilities = entityRows(collections.abilities);
@@ -714,7 +717,7 @@ const itemStageHeader = reactionHeader.replace('struct MoveAttribute {',
 const damageAbilityHeader = itemStageHeader.replace('struct MoveAttribute {',
   `struct LowHpTypePowerAbility { uint16_t abilityId; const char* type; const char* sourcePath; const char* sourceSymbol; const char* sourceHash; };\ninline constexpr LowHpTypePowerAbility kLowHpTypePowerAbilities[] = {\n${lowHpTypePowerRows.join(',\n')}\n};\nstruct MoveAttribute {`);
 const typePowerHeader = damageAbilityHeader.replace('struct MoveAttribute {',
-  `struct TypePowerAbility { uint16_t abilityId; const char* type; double multiplier; bool requiresCondition; const char* sourcePath; const char* sourceSymbol; const char* sourceHash; };\ninline constexpr TypePowerAbility kTypePowerAbilities[] = {\n${typePowerAbilityRows.join(',\n')}\n};\nstruct MoveAttribute {`);
+  `struct TypePowerAbility { uint16_t abilityId; const char* type; double multiplier; bool requiresCondition; const char* conditionWeatherSymbol; const char* sourcePath; const char* sourceSymbol; const char* sourceHash; };\ninline constexpr TypePowerAbility kTypePowerAbilities[] = {\n${typePowerAbilityRows.join(',\n')}\n};\nstruct MoveAttribute {`);
 // Normalize the inspected pinned WeatherPool declarations from preserved raw
 // records. Unknown syntax fails generation rather than producing neutral weather.
 const biomeWeatherRows = [];

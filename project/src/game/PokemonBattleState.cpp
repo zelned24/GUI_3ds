@@ -443,7 +443,8 @@ PokemonBaseDamageResult calculatePokemonBaseDamage(
     const PokemonBattleState& attacker,
     const PokemonBattleState& defender,
     uint16_t moveId,
-    double& outputBaseDamage, bool critical) {
+    double& outputBaseDamage, bool critical,
+    const PokemonMoveWeatherContext* weatherContext) {
     const auto* move = PokerogueContent::findMoveById(moveId);
     if (!move) return PokemonBaseDamageResult::MissingMove;
     if (move->category == PokerogueContent::MoveStatus || move->power <= 0) {
@@ -479,9 +480,17 @@ PokemonBaseDamageResult calculatePokemonBaseDamage(
     }
     for (const auto& profile : PokerogueContent::kTypePowerAbilities) {
         if (profile.abilityId != attacker.abilityId || !sameText(profile.type, move->type)) continue;
-        // A field-gated component needs the field resolver; never pretend it
-        // is unconditional. Current baseline has no weather context to supply.
-        if (profile.requiresCondition) return PokemonBaseDamageResult::UnsupportedAbilityCondition;
+        // Field-gated components require an inspected condition and resolved
+        // arena context; an unknown condition must not become unconditional.
+        if (profile.requiresCondition) {
+            if (!weatherContext || !weatherContext->resolved ||
+                static_cast<uint8_t>(weatherContext->cancellationWeather) > 9 ||
+                !sameText(profile.conditionWeatherSymbol, "SANDSTORM"))
+                return PokemonBaseDamageResult::UnsupportedAbilityCondition;
+            // getWeatherCondition uses suppressed arena weather, not a
+            // PreAttackWeatherOverrideAbAttr override for the attacker.
+            if (weatherContext->cancellationWeather != PokemonEffectiveWeather::Sandstorm) continue;
+        }
         if (attacker.hp) power *= profile.multiplier;
     }
     const double baseDamage = (levelMultiplier * power * attack) / defense / 50.0 + 2.0;
@@ -753,7 +762,7 @@ PokemonDamageCoreResult calculatePokemonDamageCore(
     double weatherMultiplier = 1.0;
     if (weatherContext && !pokemonMoveWeatherMultiplier(moveId, *weatherContext, weatherMultiplier))
         return PokemonDamageCoreResult::UnresolvedWeather;
-    const auto baseStatus = calculatePokemonBaseDamage(attacker, defender, moveId, baseDamage);
+    const auto baseStatus = calculatePokemonBaseDamage(attacker, defender, moveId, baseDamage, false, weatherContext);
     if (baseStatus == PokemonBaseDamageResult::UnsupportedAbilityCondition)
         return PokemonDamageCoreResult::UnsupportedAbilityCondition;
     if (baseStatus != PokemonBaseDamageResult::Ok) return PokemonDamageCoreResult::InvalidStats;
@@ -820,7 +829,7 @@ PokemonMoveDamageResult resolveStandardPokemonMoveDamage(
     double weatherMultiplier = 1.0;
     if (weatherContext && !pokemonMoveWeatherMultiplier(moveId, *weatherContext, weatherMultiplier))
         return PokemonMoveDamageResult::UnresolvedWeather;
-    const auto baseStatus = calculatePokemonBaseDamage(attacker, defender, moveId, baseDamage);
+    const auto baseStatus = calculatePokemonBaseDamage(attacker, defender, moveId, baseDamage, false, weatherContext);
     if (baseStatus == PokemonBaseDamageResult::UnsupportedAbilityCondition)
         return PokemonMoveDamageResult::UnsupportedAbilityCondition;
     if (baseStatus != PokemonBaseDamageResult::Ok) return PokemonMoveDamageResult::InvalidStats;
@@ -843,7 +852,7 @@ PokemonMoveDamageResult resolveStandardPokemonMoveDamage(
     next.criticalRoll = static_cast<uint8_t>(battleRng.randSeedInt(24));
     next.critical = next.criticalRoll == 0;
     if (next.critical && calculatePokemonBaseDamage(attacker, defender, moveId,
-            baseDamage, true) != PokemonBaseDamageResult::Ok)
+            baseDamage, true, weatherContext) != PokemonBaseDamageResult::Ok)
         return PokemonMoveDamageResult::InvalidStats;
     next.randomDamagePercent = static_cast<uint8_t>(battleRng.randSeedIntRange(85, 100));
 

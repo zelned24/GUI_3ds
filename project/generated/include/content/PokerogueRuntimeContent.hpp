@@ -217,17 +217,17 @@ inline constexpr LowHpTypePowerAbility kLowHpTypePowerAbilities[] = {
     {67, "WATER", "src/data/abilities/init-abilities.ts", "AbilityId.TORRENT", "040ccf2ca2e00a2111ef0acf54878ec67c45d98c831e35dda3e0bac52f1ee8e6"},
     {68, "BUG", "src/data/abilities/init-abilities.ts", "AbilityId.SWARM", "040ccf2ca2e00a2111ef0acf54878ec67c45d98c831e35dda3e0bac52f1ee8e6"}
 };
-struct TypePowerAbility { uint16_t abilityId; const char* type; double multiplier; bool requiresCondition; const char* sourcePath; const char* sourceSymbol; const char* sourceHash; };
+struct TypePowerAbility { uint16_t abilityId; const char* type; double multiplier; bool requiresCondition; const char* conditionWeatherSymbol; const char* sourcePath; const char* sourceSymbol; const char* sourceHash; };
 inline constexpr TypePowerAbility kTypePowerAbilities[] = {
-    {159, "ROCK", 1.3, true, "src/data/abilities/init-abilities.ts", "AbilityId.SAND_FORCE", "040ccf2ca2e00a2111ef0acf54878ec67c45d98c831e35dda3e0bac52f1ee8e6"},
-    {159, "GROUND", 1.3, true, "src/data/abilities/init-abilities.ts", "AbilityId.SAND_FORCE", "040ccf2ca2e00a2111ef0acf54878ec67c45d98c831e35dda3e0bac52f1ee8e6"},
-    {159, "STEEL", 1.3, true, "src/data/abilities/init-abilities.ts", "AbilityId.SAND_FORCE", "040ccf2ca2e00a2111ef0acf54878ec67c45d98c831e35dda3e0bac52f1ee8e6"},
-    {199, "WATER", 2, false, "src/data/abilities/init-abilities.ts", "AbilityId.WATER_BUBBLE", "040ccf2ca2e00a2111ef0acf54878ec67c45d98c831e35dda3e0bac52f1ee8e6"},
-    {200, "STEEL", 1.5, false, "src/data/abilities/init-abilities.ts", "AbilityId.STEELWORKER", "040ccf2ca2e00a2111ef0acf54878ec67c45d98c831e35dda3e0bac52f1ee8e6"},
-    {262, "ELECTRIC", 1.3, false, "src/data/abilities/init-abilities.ts", "AbilityId.TRANSISTOR", "040ccf2ca2e00a2111ef0acf54878ec67c45d98c831e35dda3e0bac52f1ee8e6"},
-    {263, "DRAGON", 1.5, false, "src/data/abilities/init-abilities.ts", "AbilityId.DRAGONS_MAW", "040ccf2ca2e00a2111ef0acf54878ec67c45d98c831e35dda3e0bac52f1ee8e6"},
-    {276, "ROCK", 1.5, false, "src/data/abilities/init-abilities.ts", "AbilityId.ROCKY_PAYLOAD", "040ccf2ca2e00a2111ef0acf54878ec67c45d98c831e35dda3e0bac52f1ee8e6"},
-    {316, "FIRE", 1.5, false, "src/data/abilities/init-abilities.ts", "AbilityId.FIRE_MANE", "040ccf2ca2e00a2111ef0acf54878ec67c45d98c831e35dda3e0bac52f1ee8e6"}
+    {159, "ROCK", 1.3, true, "SANDSTORM", "src/data/abilities/init-abilities.ts", "AbilityId.SAND_FORCE", "040ccf2ca2e00a2111ef0acf54878ec67c45d98c831e35dda3e0bac52f1ee8e6"},
+    {159, "GROUND", 1.3, true, "SANDSTORM", "src/data/abilities/init-abilities.ts", "AbilityId.SAND_FORCE", "040ccf2ca2e00a2111ef0acf54878ec67c45d98c831e35dda3e0bac52f1ee8e6"},
+    {159, "STEEL", 1.3, true, "SANDSTORM", "src/data/abilities/init-abilities.ts", "AbilityId.SAND_FORCE", "040ccf2ca2e00a2111ef0acf54878ec67c45d98c831e35dda3e0bac52f1ee8e6"},
+    {199, "WATER", 2, false, "", "src/data/abilities/init-abilities.ts", "AbilityId.WATER_BUBBLE", "040ccf2ca2e00a2111ef0acf54878ec67c45d98c831e35dda3e0bac52f1ee8e6"},
+    {200, "STEEL", 1.5, false, "", "src/data/abilities/init-abilities.ts", "AbilityId.STEELWORKER", "040ccf2ca2e00a2111ef0acf54878ec67c45d98c831e35dda3e0bac52f1ee8e6"},
+    {262, "ELECTRIC", 1.3, false, "", "src/data/abilities/init-abilities.ts", "AbilityId.TRANSISTOR", "040ccf2ca2e00a2111ef0acf54878ec67c45d98c831e35dda3e0bac52f1ee8e6"},
+    {263, "DRAGON", 1.5, false, "", "src/data/abilities/init-abilities.ts", "AbilityId.DRAGONS_MAW", "040ccf2ca2e00a2111ef0acf54878ec67c45d98c831e35dda3e0bac52f1ee8e6"},
+    {276, "ROCK", 1.5, false, "", "src/data/abilities/init-abilities.ts", "AbilityId.ROCKY_PAYLOAD", "040ccf2ca2e00a2111ef0acf54878ec67c45d98c831e35dda3e0bac52f1ee8e6"},
+    {316, "FIRE", 1.5, false, "", "src/data/abilities/init-abilities.ts", "AbilityId.FIRE_MANE", "040ccf2ca2e00a2111ef0acf54878ec67c45d98c831e35dda3e0bac52f1ee8e6"}
 };
 struct BiomeWeatherPoolEntry { const char* biomeId; const char* weatherSymbol; uint16_t weight; const char* sourcePath; const char* sourceSymbol; const char* sourceHash; };
 inline constexpr BiomeWeatherPoolEntry kBiomeWeatherPools[] = {
