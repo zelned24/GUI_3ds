@@ -918,5 +918,21 @@ const healRows = collections.moves.flatMap(move => {
 });
 const healingHeader = immunityHeader.replace('struct MoveAttribute {',
   `struct MoveHealProfile { uint16_t moveId; double ratio; bool showAnimation; bool selfTarget; bool failOnFullHp; };\ninline constexpr MoveHealProfile kMoveHealProfiles[] = {\n${healRows.join(',\n')}\n};\nstruct MoveAttribute {`);
-await fs.writeFile(outputPath, healingHeader, 'utf8');
-console.log(JSON.stringify({ output: path.relative(root, outputPath), bytes: Buffer.byteLength(healingHeader), hash: report.contentHash }));
+const drainRows = collections.moves.flatMap(move => {
+  const raw = move.extensions?.upstreamEffectMetadata?.value ?? '';
+  const declarations = [...raw.matchAll(/\.attr\s*\(\s*HitHealAttr\b/g)];
+  const parsed = [...raw.matchAll(/\.attr\s*\(\s*HitHealAttr(?:\s*,\s*(\d+(?:\.\d+)?))?\s*\)/g)];
+  if (!declarations.length || declarations.length !== parsed.length) return [];
+  return parsed.map(m => {
+    const ratio = m[1] === undefined ? 0.5 : Number(m[1]);
+    if (!(ratio > 0 && ratio <= 1)) throw new Error(`Invalid drain ratio: ${move.id}`);
+    return `    {${move.moveId}, ${ratio}}`;
+  });
+});
+const reverseDrainRows = collections.abilities.filter(ability =>
+  /\bReverseDrainAbAttr\b/.test(ability.extensions?.upstreamAttributes?.value ?? '')
+).map(ability => `    {${ability.abilityId}}`);
+const drainHeader = healingHeader.replace('struct MoveAttribute {',
+  `struct MoveDrainProfile { uint16_t moveId; double ratio; };\ninline constexpr MoveDrainProfile kMoveDrainProfiles[] = {\n${drainRows.join(',\n')}\n};\nstruct ReverseDrainProfile { uint16_t abilityId; };\ninline constexpr ReverseDrainProfile kReverseDrainProfiles[] = {\n${reverseDrainRows.join(',\n')}\n};\nstruct MoveAttribute {`);
+await fs.writeFile(outputPath, drainHeader, 'utf8');
+console.log(JSON.stringify({ output: path.relative(root, outputPath), bytes: Buffer.byteLength(drainHeader), hash: report.contentHash }));

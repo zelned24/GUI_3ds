@@ -13,7 +13,10 @@
 
 1. `HealAttr` constante: constructor importado → `MoveHealProfile` generado → `PokemonHealingEffect.hpp` → turno real en `FirstRunRuntime.cpp` y score de IA. Fuente pinned: `src/data/moves/move.ts`, `HealAttr`; PP: `src/phases/move-phase.ts`, `usePP`; curación: `src/phases/pokemon-heal-phase.ts`, `getHealAmount`.
 2. Curación propia con un único atributo: redondeo base half-up, multiplicador de HealingBooster resuelto por policy y redondeado hacia abajo, límite de HP, fallo a HP completo tras consumo de PP, Heal Block y cancelación previa diferenciados. USER cuesta un PP sin Pressure. Sin draws RNG.
-3. El runtime actual conecta actores sin items/passives/tags, multiplicadores neutrales. Rest, VariableHealAttr, drenaje, curación aliada y movimientos con efectos adicionales permanecen no soportados. Regresiones nativas escritas (400–410), sin ejecutar. Entrenadores continúan bloqueados.
+3. El runtime actual conecta actores sin items/passives/tags, multiplicadores neutrales. Rest, VariableHealAttr, curación aliada y movimientos con efectos adicionales permanecen no soportados. Regresiones nativas escritas (400–410), sin ejecutar. Entrenadores continúan bloqueados.
+
+4. `HitHealAttr` basado en daño: ratios constantes generados (incluido default 0.5), ataque+drenaje atómicos en el turno y beneficio de IA. Fuente pinned `src/data/moves/move.ts`, `HitHealAttr`; daño aplicado según `src/phases/move-effect-phase.ts`. Mínimo uno/floor, cap de HP y multiplicadores posteriores. No se ejecuta al fallar, inmunidad o daño cero.
+5. Resolver de Liquid Ooze conserva reversión, redondeo negativo de PokemonHealPhase y bloqueo de daño indirecto mediante policy; el flujo real todavía rechaza esta habilidad hasta conectar post-defend/indirect-damage completo. Strength Sap y atributos adicionales no se sustituyen por drain genérico. Regresiones 411–418 escritas, no ejecutadas.
 
 ## No completado
 

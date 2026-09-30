@@ -77,4 +77,65 @@ inline bool canonicalSelfHealingAiScore(const PokemonBattleState& user, uint16_t
     score = std::floor(raw / (1.0 - profile->ratio / 2.0) + 0.5);
     return true;
 }
+inline const PokerogueContent::MoveDrainProfile* damageDrainProfile(uint16_t id) {
+    const auto* move = PokerogueContent::findMoveById(id);
+    if (!move || move->category == PokerogueContent::MoveStatus || move->power <= 0 ||
+        !move->target || std::strcmp(move->target, "NEAR_OTHER") || move->upstreamFlags != 0 ||
+        move->attributeCount != 1 || !PokerogueContent::moveHasAttribute(*move, "HitHealAttr")) return nullptr;
+    const PokerogueContent::MoveDrainProfile* found = nullptr;
+    for (const auto& profile : PokerogueContent::kMoveDrainProfiles) {
+        if (profile.moveId != id) continue;
+        if (found || !std::isfinite(profile.ratio) || profile.ratio <= 0 || profile.ratio > 1) return nullptr;
+        found = &profile;
+    }
+    return found;
+}
+inline bool hasCanonicalReverseDrain(uint16_t abilityId) {
+    for (const auto& profile : PokerogueContent::kReverseDrainProfiles)
+        if (profile.abilityId == abilityId) return true;
+    return false;
+}
+struct PokemonDrainPolicy {
+    bool resolved = false;
+    bool healBlocked = false;
+    bool reverseDrain = false;
+    bool indirectDamageBlocked = false;
+    double healingMultiplier = 1.0;
+};
+struct PokemonDrainEvent { uint16_t healed = 0; uint16_t reversedDamage = 0; bool blocked = false; };
+inline PokemonHealingResult applyPokemonDamageDrain(PokemonBattleState& user, uint16_t moveId,
+    uint16_t damageApplied, const PokemonDrainPolicy& policy, PokemonDrainEvent& output) {
+    if (!policy.resolved) return PokemonHealingResult::UnresolvedPolicy;
+    const auto* profile = damageDrainProfile(moveId);
+    if (!profile) return PokemonHealingResult::UnsupportedMove;
+    if (!user.maxHp || user.hp > user.maxHp || !std::isfinite(policy.healingMultiplier) ||
+        policy.healingMultiplier <= 0) return PokemonHealingResult::InvalidState;
+    PokemonDrainEvent event{};
+    if (!user.hp || !damageApplied) { output = event; return PokemonHealingResult::Ok; }
+    const double base = std::fmax(std::floor(damageApplied * profile->ratio), 1.0);
+    const double amount = policy.reverseDrain ? std::ceil(base * policy.healingMultiplier)
+        : std::floor(base * policy.healingMultiplier);
+    if (!std::isfinite(amount)) return PokemonHealingResult::InvalidState;
+    if (policy.reverseDrain) {
+        // ReverseDrainAbAttr suppresses HitHealAttr even if indirect damage is blocked.
+        event.blocked = policy.indirectDamageBlocked;
+        if (!event.blocked) {
+            event.reversedDamage = amount >= user.hp ? user.hp : static_cast<uint16_t>(amount);
+            user.hp -= event.reversedDamage;
+        }
+    } else if (policy.healBlocked) event.blocked = true;
+    else {
+        const uint16_t missing = user.maxHp - user.hp;
+        event.healed = amount >= missing ? missing : static_cast<uint16_t>(amount);
+        user.hp += event.healed;
+    }
+    output = event;
+    return PokemonHealingResult::Ok;
+}
+inline double canonicalDamageDrainAiBenefit(const PokemonBattleState& user,
+    const PokerogueContent::Move& move) {
+    if (!user.maxHp || !damageDrainProfile(move.id)) return 0;
+    return std::floor(std::fmax(1.0 - static_cast<double>(user.hp) / user.maxHp - 0.33, 0.0) * (move.power / 4.0));
+}
+
 }

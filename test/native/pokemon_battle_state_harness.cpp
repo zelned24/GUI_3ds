@@ -71,6 +71,32 @@ extern "C" int runPokemonBattleStateChecks() {
     healPolicy.healingMultiplier = 1.5;
     if (Pokerogue3DS::usePokemonSelfHealingCommand(healing, 0, healPolicy, healEvent) !=
         Pokerogue3DS::PokemonHealingResult::Ok || healEvent.healed != 6 || healing.hp != 7) return 410;
+    uint16_t absorbId = 0;
+    for (const auto& move : PokerogueContent::kMoves)
+        if (std::strcmp(move.key, "absorb") == 0) absorbId = move.id;
+    if (!absorbId || !Pokerogue3DS::damageDrainProfile(absorbId)) return 411;
+    Pokerogue3DS::PokemonDrainPolicy drainPolicy{};
+    Pokerogue3DS::PokemonDrainEvent drainEvent{};
+    healing.maxHp = 101; healing.hp = 20;
+    if (Pokerogue3DS::applyPokemonDamageDrain(healing, absorbId, 3, drainPolicy, drainEvent) !=
+        Pokerogue3DS::PokemonHealingResult::UnresolvedPolicy || healing.hp != 20) return 412;
+    drainPolicy.resolved = true;
+    if (Pokerogue3DS::applyPokemonDamageDrain(healing, absorbId, 3, drainPolicy, drainEvent) !=
+        Pokerogue3DS::PokemonHealingResult::Ok || drainEvent.healed != 1 || healing.hp != 21) return 413;
+    if (Pokerogue3DS::applyPokemonDamageDrain(healing, absorbId, 1, drainPolicy, drainEvent) !=
+        Pokerogue3DS::PokemonHealingResult::Ok || drainEvent.healed != 1 || healing.hp != 22) return 414;
+    if (Pokerogue3DS::applyPokemonDamageDrain(healing, absorbId, 0, drainPolicy, drainEvent) !=
+        Pokerogue3DS::PokemonHealingResult::Ok || drainEvent.healed || healing.hp != 22) return 415;
+    drainPolicy.reverseDrain = true; drainPolicy.healingMultiplier = 1.5;
+    if (Pokerogue3DS::applyPokemonDamageDrain(healing, absorbId, 3, drainPolicy, drainEvent) !=
+        Pokerogue3DS::PokemonHealingResult::Ok || drainEvent.reversedDamage != 2 || healing.hp != 20) return 416;
+    drainPolicy.indirectDamageBlocked = true;
+    if (Pokerogue3DS::applyPokemonDamageDrain(healing, absorbId, 3, drainPolicy, drainEvent) !=
+        Pokerogue3DS::PokemonHealingResult::Ok || !drainEvent.blocked || drainEvent.healed ||
+        drainEvent.reversedDamage || healing.hp != 20) return 417;
+    drainPolicy.reverseDrain = false; drainPolicy.healingMultiplier = 1; drainPolicy.healBlocked = true;
+    if (Pokerogue3DS::applyPokemonDamageDrain(healing, absorbId, 3, drainPolicy, drainEvent) !=
+        Pokerogue3DS::PokemonHealingResult::Ok || !drainEvent.blocked || healing.hp != 20) return 418;
     uint32_t awardedExperience = 99;
     if (Pokerogue3DS::pokemonSingleParticipantExperience(52.2, false, awardedExperience) !=
         Pokerogue3DS::PokemonExperienceResult::Ok || awardedExperience != 52) return 198;
