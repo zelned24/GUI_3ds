@@ -312,3 +312,9 @@
 2. ResolvedPokemon conserva bossState; resolución de actores wild inicializa desde especies/niveles canónicos. Capturado pierde estado de boss del enemigo. Save v8 rechaza estados de jefe que no puede serializar.
 3. Regresiones 492–496 escritas para actor no boss, X0, nivel100, Eternatus real con cuatro segmentos e ID inválido sin mutación. No ejecutadas.
 4. Pendientes: asignación proporcional en encuentros múltiples, callbacks, pasar contexto al comando, Eternamax y save. Inicializar segmentos no demuestra jefe jugable.
+
+## Captura y shields de jefes
+
+1. CommandPhase.handleBallCommand pinned: boss con segmentIndex>=1 bloquea bolas normales, con excepciones Master Ball y hasAbility(WONDER_GUARD,false,true). Runtime consulta estado real de segmentos antes de gastar bolas o RNG. Referencia Wonder Guard se resuelve mediante metadata de perfil canónico, sin ID numérico paralelo.
+2. executeCaptureAttempt también permite Master Ball frente a shields ordinarios. Regresiones 256–260 escritas para bloqueo, Master, Wonder Guard, último segmento y captura garantizada. No ejecutadas.
+3. El jefe final conserva bloqueo temporal porque falta perfil/dex completo que permite su captura upstream; no se declara esa regla terminada. Shields aún deben avanzar mediante daño del runtime y callbacks completos.

@@ -1848,11 +1848,20 @@ bool FirstRunRuntime::throwPokeballInPlace(PokeballType ball) {
         return false;
     }
 
+    bool bossShieldBlocked = false;
+    if (!pokemonBossShieldCaptureBlocked(target->bossState, target->battleState.abilityId, ball, bossShieldBlocked)) {
+        m_battleFeedback = "Boss capture policy could not resolve";
+        return false;
+    }
+    if (bossShieldBlocked) {
+        m_battleFeedback = "Weaken the boss before throwing a ball";
+        return false;
+    }
     --m_pokeballs[ballIdx];
 
     PokemonCaptureEvent captureEvent{};
     const bool isFinalBoss = (m_run.wave == PokerogueContent::kClassicFinalWave);
-    if (!executeCaptureAttempt(target->battleState, ball, false, false, false, isFinalBoss, *rng, captureEvent)) {
+    if (!executeCaptureAttempt(target->battleState, ball, false, false, bossShieldBlocked, isFinalBoss, *rng, captureEvent)) {
         m_battleFeedback = "Capture inputs could not resolve";
         buildScene();
         return false;

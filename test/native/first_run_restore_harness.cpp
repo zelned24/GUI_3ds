@@ -472,6 +472,22 @@ static int checkPokeballCaptureMechanics() {
     if (executeCaptureAttempt(targetState, PokeballType::Pokeball, false, false, true, false, rng, outEvent) ||
         outEvent.blocker != CaptureBlocker::BossShieldActive) return 142;
 
+    PokemonBossState shieldState{3, 2, false, false};
+    uint16_t wonderGuardId = 0, ordinaryAbilityId = 0;
+    for (const auto& profile : PokerogueContent::kAbilityMovegenProfiles) {
+        if (std::strcmp(profile.sourceSymbol, "AbilityId.WONDER_GUARD") == 0) wonderGuardId = profile.abilityId;
+        else if (!ordinaryAbilityId) ordinaryAbilityId = profile.abilityId;
+    }
+    bool blocked = false;
+    if (!wonderGuardId || !ordinaryAbilityId ||
+        !pokemonBossShieldCaptureBlocked(shieldState, ordinaryAbilityId, PokeballType::Pokeball, blocked) || !blocked) return 256;
+    if (!pokemonBossShieldCaptureBlocked(shieldState, ordinaryAbilityId, PokeballType::MasterBall, blocked) || blocked) return 257;
+    if (!pokemonBossShieldCaptureBlocked(shieldState, wonderGuardId, PokeballType::Pokeball, blocked) || blocked) return 258;
+    shieldState.segmentIndex = 0;
+    if (!pokemonBossShieldCaptureBlocked(shieldState, ordinaryAbilityId, PokeballType::Pokeball, blocked) || blocked) return 259;
+    if (!executeCaptureAttempt(targetState, PokeballType::MasterBall, false, false, true, false, rng, outEvent) ||
+        !outEvent.caught) return 260;
+
     // Master ball guaranteed catch
     if (!executeCaptureAttempt(targetState, PokeballType::MasterBall, false, false, false, false, rng, outEvent) ||
         !outEvent.caught || outEvent.shakeCount != 3) return 143;

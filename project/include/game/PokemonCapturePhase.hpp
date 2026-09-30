@@ -6,6 +6,7 @@
 #include <cstdint>
 #include <cmath>
 #include <algorithm>
+#include <cstring>
 
 namespace Pokerogue3DS {
 
@@ -68,6 +69,18 @@ struct PokemonCaptureEvent {
     CaptureBlocker blocker = CaptureBlocker::None;
 };
 
+// CommandPhase.handleBallCommand: non-final Classic bosses can bypass shields
+// with Master Ball, or when the target has Wonder Guard (canApply=false).
+inline bool pokemonBossShieldCaptureBlocked(const PokemonBossState& boss,
+    uint16_t abilityId, PokeballType ball, bool& output) {
+    const auto* ability = PokerogueContent::findAbilityMovegenProfile(abilityId);
+    if (!ability || !ability->sourceSymbol || (boss.segmentCount && boss.segmentIndex >= boss.segmentCount)) return false;
+    const bool wonderGuard = std::strcmp(ability->sourceSymbol, "AbilityId.WONDER_GUARD") == 0;
+    output = boss.segmentCount && boss.segmentIndex >= 1 &&
+        ball != PokeballType::MasterBall && !wonderGuard;
+    return true;
+}
+
 // Calculates modified catch rate matching upstream AttemptCapturePhase:
 // modifiedCatchRate = round((((3*maxHp - 2*hp) * catchRate * pokeballMultiplier) / (3*maxHp)) * statusMultiplier)
 // shakeProbability = round(65536 / ((255 / modifiedCatchRate) ^ 0.1875))
@@ -102,7 +115,7 @@ inline bool executeCaptureAttempt(
         output = event;
         return false;
     }
-    if (isBossShieldActive) {
+    if (isBossShieldActive && ballType != PokeballType::MasterBall) {
         event.blocker = CaptureBlocker::BossShieldActive;
         output = event;
         return false;
