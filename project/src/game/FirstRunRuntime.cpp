@@ -825,6 +825,11 @@ bool FirstRunRuntime::finishPendingEvolution() {
     next.localizedName = locale(key.c_str(), species->name);
     next.formId = next.battleState.formId;
     next.assetSourcePath = species->assetSourcePath;
+    auto pending = m_pendingLevelMoves;
+    if (!learnPokemonEvolutionMoves(next.battleState, pending)) return false;
+    next.moveCount = next.battleState.moveCount;
+    for (uint8_t slot = 0; slot < next.moveCount; ++slot) next.moveIds[slot] = next.battleState.moves[slot].moveId;
+    m_pendingLevelMoves = pending;
     m_context.player = next;
     m_context.playerParty[m_context.activePlayerPartyIndex] = next;
     m_pendingEvolutionSpeciesId = nullptr;

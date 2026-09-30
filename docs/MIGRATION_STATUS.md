@@ -425,3 +425,8 @@
 3. Falta aprendizaje de EVOLVE_MOVE tras evolución, cancelación/pausa de evolución y callbacks. Regresiones existentes siguen pendientes de ejecución; no se declara secuencia completa.
 
 4. Regresiones 311-312 escritas para reemplazo elegido seguido de evolucion real y preservacion de move/PP. Prueba del flujo interactivo completo y ejecucion siguen pendientes.
+
+## Movimientos exclusivos de evolución conectados
+
+1. finishPendingEvolution solicita filas EVOLVE_MOVE=0 después de cambiar especie, como EvolutionPhase.postEvolve pinned. Combina especie/forma; aprende huecos o encola reemplazos, sin duplicados ni moves upstream no implementados. Actor/cola se publican conjuntamente.
+2. Regresiones 313–316 escritas con movimiento real marcado EVOLVE_MOVE del catálogo. No ejecutadas. Cancelación/pausa de evolución, callbacks y secuencia completa de UI siguen pendientes.

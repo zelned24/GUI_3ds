@@ -73,6 +73,41 @@ struct PokemonPendingLevelMoves {
     bool overflow = false;
 };
 
+// EvolutionPhase.postEvolve requests EVOLVE_MOVE (pinned constants.ts: 0).
+inline bool learnPokemonEvolutionMoves(PokemonBattleState& state, PokemonPendingLevelMoves& pending) {
+    const auto* species = PokerogueContent::findSpeciesByDex(state.speciesDex);
+    const auto* form = state.formId ? PokerogueContent::findFormById(state.formId) : nullptr;
+    if (!species || state.moveCount > 4 || pending.count > 128 ||
+        (state.formId && (!form || !pokemonEvolutionTextEqual(form->speciesId, species->id)))) return false;
+    auto next = state;
+    auto queue = pending;
+    for (uint8_t source = 0; source < 2; ++source) {
+        const auto* rows = source ? (form ? PokerogueContent::levelMovesFor(*form) : nullptr)
+            : PokerogueContent::levelMovesFor(*species);
+        const uint16_t count = source ? (form ? form->learnsetCount : 0) : species->learnsetCount;
+        for (uint16_t i = 0; rows && i < count; ++i) {
+            if (rows[i].level != 0) continue;
+            const auto* move = PokerogueContent::findMoveById(rows[i].moveId);
+            if (!move) return false;
+            if (move->upstreamFlags & PokerogueContent::MoveIsUnimplemented) continue;
+            bool known = false;
+            for (uint8_t slot = 0; slot < next.moveCount; ++slot) known |= next.moves[slot].moveId == move->id;
+            for (uint16_t q = 0; q < queue.count; ++q) known |= queue.moveIds[q] == move->id;
+            if (known) continue;
+            if (next.moveCount < 4) {
+                if (learnPokemonMoveAtSlot(next, move->id, next.moveCount) != PokemonLearnMoveResult::Learned)
+                    return false;
+            } else {
+                if (queue.count == 128) return false;
+                queue.moveIds[queue.count++] = move->id;
+            }
+        }
+    }
+    state = next;
+    pending = queue;
+    return true;
+}
+
 // Checks learnset moves for a species between oldLevel and newLevel, learning moves
 // into unoccupied move slots (< 4). Returns count of moves newly learned.
 inline uint8_t learnNewLevelMoves(

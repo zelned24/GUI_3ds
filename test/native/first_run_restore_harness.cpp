@@ -752,6 +752,26 @@ static int checkLevelUpMoveLearningAndEvolution() {
     if (!applySpeciesEvolution(1, "ivysaur", sequenceActor, sequenceEvolution, nullptr, &sequenceIdentity) ||
         sequenceActor.speciesDex != 2 || sequenceActor.moves[2].moveId != 75 ||
         sequenceActor.moves[2].pp != newMove->pp) return 312;
+    bool evolutionMoveCovered = false;
+    for (const auto& species : PokerogueContent::kSpecies) {
+        const auto* rows = PokerogueContent::levelMovesFor(species);
+        for (uint16_t i = 0; rows && i < species.learnsetCount; ++i) {
+            const auto* move = PokerogueContent::findMoveById(rows[i].moveId);
+            if (rows[i].level != 0 || !move || (move->upstreamFlags & PokerogueContent::MoveIsUnimplemented)) continue;
+            PokemonBattleState learner{};
+            learner.speciesDex = species.dex;
+            PokemonPendingLevelMoves queue{};
+            if (!learnPokemonEvolutionMoves(learner, queue) || !learner.moveCount) return 313;
+            bool found = false;
+            for (uint8_t slot = 0; slot < learner.moveCount; ++slot) found |= learner.moves[slot].moveId == move->id;
+            if (!found) return 314;
+            if (!learnPokemonEvolutionMoves(learner, queue)) return 315;
+            evolutionMoveCovered = true;
+            break;
+        }
+        if (evolutionMoveCovered) break;
+    }
+    if (!evolutionMoveCovered) return 316;
     // 3. Check learnNewLevelMoves
     // Bulbasaur learns Vine Whip (id 22) or Leech Seed at early levels
     PokemonBattleState learnState = bulbaState;
