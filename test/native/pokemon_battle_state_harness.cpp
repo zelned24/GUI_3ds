@@ -330,6 +330,21 @@ extern "C" int runPokemonBattleStateChecks() {
             Pokerogue3DS::PokemonStatStageEffectResult::Ok || supportEvent.hit ||
         supportEvent.accuracyRolled || growlUser.moves[0].pp != 38 ||
         growlTarget.statStages[0] != -1) return 231;
+    double supportBenefit = 0;
+    PokemonBattleState benefitTarget = state;
+    if (!Pokerogue3DS::calculateStatStageTargetBenefit(state, benefitTarget,
+            growlEffect, supportBenefit) || supportBenefit != -2) return 232;
+    benefitTarget.statStages[0] = -6;
+    if (!Pokerogue3DS::calculateStatStageTargetBenefit(state, benefitTarget,
+            growlEffect, supportBenefit) || supportBenefit != 2) return 233;
+    const PokerogueContent::MoveStatStageEffect swordsDanceEffect{14, 1, 2, true};
+    if (!Pokerogue3DS::calculateStatStageTargetBenefit(state, state,
+            swordsDanceEffect, supportBenefit) || supportBenefit != 6) return 234;
+    PokemonBattleState specialOnly = state;
+    specialOnly.moves[0].moveId = 55;
+    const PokerogueContent::MoveStatStageEffect specialBoostEffect{417, 4, 2, true};
+    if (!Pokerogue3DS::calculateStatStageTargetBenefit(specialOnly, specialOnly,
+            specialBoostEffect, supportBenefit) || supportBenefit != 0) return 235;
     PokemonBattleInit actorIdInput = input;
     actorIdInput.pokemonId = 0x12345678u;
     actorIdInput.deriveIvsFromPokemonId = true;

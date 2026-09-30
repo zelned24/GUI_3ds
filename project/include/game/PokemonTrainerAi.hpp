@@ -292,4 +292,37 @@ inline bool resolveTrainerSwitchDecision(
     return true;
 }
 
+// Raw StatStageChangeAttr.getTargetBenefitScore. Target allegiance and other
+// move/ability benefits are combined by the command scorer, not this helper.
+inline bool calculateStatStageTargetBenefit(
+    const PokemonBattleState& user, const PokemonBattleState& target,
+    const PokerogueContent::MoveStatStageEffect& effect, double& output) {
+    if (!effect.statMask || effect.statMask > 127 || effect.stages < -6 ||
+        effect.stages > 6 || user.moveCount > 4) return false;
+    bool hasPhysicalAttack = false;
+    for (uint8_t slot = 0; slot < user.moveCount; ++slot) {
+        const auto* move = PokerogueContent::findMoveById(user.moves[slot].moveId);
+        if (!move) return false;
+        if (move->category == PokerogueContent::MovePhysical) hasPhysicalAttack = true;
+    }
+    double score = 0;
+    for (uint8_t stat = 1; stat <= 7; ++stat) {
+        if (!(effect.statMask & (1u << (stat - 1)))) continue;
+        const int current = target.statStages[stat - 1];
+        if (current < -6 || current > 6) return false;
+        int next = current + effect.stages;
+        if (next > 6) next = 6;
+        if (next < -6) next = -6;
+        const int levels = next - current;
+        // The pinned source uses PHYSICAL for SPATK/SPDEF too. Preserve this
+        // source behavior instead of substituting an intended-looking formula.
+        const bool needsPhysical = ((stat == 1 || stat == 3) && effect.selfTarget) ||
+            ((stat == 2 || stat == 4) && !effect.selfTarget);
+        if (needsPhysical && !hasPhysicalAttack) continue;
+        score += levels * 4 + (levels > 0 ? -2 : 2);
+    }
+    output = score;
+    return true;
+}
+
 } // namespace Pokerogue3DS
