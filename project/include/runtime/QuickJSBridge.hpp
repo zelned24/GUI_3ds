@@ -1,6 +1,7 @@
 #pragma once
 // Optional target: enable POKEROGUE_ENABLE_QUICKJS and provide pinned quickjs.h/library.
 #include <quickjs.h>
+#include "runtime/PokemonAtlasPresenter.hpp"
 #include <cstddef>
 #include <cstdint>
 class Renderer2D;
@@ -17,6 +18,9 @@ public:
     bool evaluate(const char* source, std::size_t length, const char* sourceName);
     void tick(uint32_t keysDown);
     void fini();
+    void setPokemonPresentation(const ResolvedPokemon& player, const ResolvedPokemon& enemy,
+                                uint64_t animationTimeMs);
+    static JSValue drawPokemon(JSContext*, JSValueConst, int, JSValueConst*);
     bool setBattleStateJson(const char* json, std::size_t length);
     static JSValue getBattleState(JSContext*, JSValueConst, int, JSValueConst*);
     static JSValue drawText(JSContext*, JSValueConst, int, JSValueConst*);
@@ -36,6 +40,11 @@ private:
     unsigned m_interruptBudget = 0;
     char m_error[192]{};
     char m_battleStateJson[2048]{};
+    PokemonAtlasPresenter m_presenterPlayer;
+    PokemonAtlasPresenter m_presenterEnemy;
+    const ResolvedPokemon* m_player = nullptr;
+    const ResolvedPokemon* m_enemy = nullptr;
+    uint64_t m_animationTimeMs = 0;
     void captureException();
     static int interrupt(JSRuntime*, void*);
     static JSValue beginTop(JSContext*, JSValueConst, int, JSValueConst*);

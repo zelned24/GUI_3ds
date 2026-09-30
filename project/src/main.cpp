@@ -117,22 +117,32 @@ int main() {
             Pokerogue3DS::NativeRunSave snapshot{};
             game.captureNativeRunSave(snapshot);
             const auto& state = game.presentation();
+            bridge.setPokemonPresentation(state.player, state.enemy, osGetTime());
             const auto& actor = state.player.battleState;
             const auto& opponent = state.enemy.battleState;
             const uint8_t slot = game.selectedBattleMove();
             const auto* selected = slot < actor.moveCount && slot < 4
                 ? PokerogueContent::findMoveById(actor.moves[slot].moveId) : nullptr;
-            char stateJson[512];
+            uint16_t moveIds[4]{};
+            uint8_t movePp[4]{};
+            for (uint8_t i = 0; i < actor.moveCount && i < 4; ++i) {
+                moveIds[i] = actor.moves[i].moveId;
+                movePp[i] = actor.moves[i].pp;
+            }
+            char stateJson[768];
             const int length = std::snprintf(stateJson, sizeof(stateJson),
                 "{\"wave\":%u,\"playerHp\":%u,\"playerMaxHp\":%u,"
                 "\"enemyHp\":%u,\"enemyMaxHp\":%u,\"playerDex\":%u,"
                 "\"enemyDex\":%u,\"stage\":%u,\"moveId\":%u,\"pp\":%u,"
-                "\"supported\":%s,\"finished\":%s}",
+                "\"supported\":%s,\"finished\":%s,\"selectedMove\":%u,"
+                "\"playerMoves\":[%u,%u,%u,%u],\"playerPP\":[%u,%u,%u,%u]}",
                 unsigned(game.run().wave), unsigned(actor.hp), unsigned(actor.maxHp),
                 unsigned(opponent.hp), unsigned(opponent.maxHp), unsigned(state.player.dex),
                 unsigned(state.enemy.dex), unsigned(snapshot.stage), unsigned(selected ? selected->id : 0),
                 unsigned(selected ? actor.moves[slot].pp : 0),
-                game.battleInputSupported() ? "true" : "false", game.battleFinished() ? "true" : "false");
+                game.battleInputSupported() ? "true" : "false", game.battleFinished() ? "true" : "false", unsigned(slot),
+                unsigned(moveIds[0]), unsigned(moveIds[1]), unsigned(moveIds[2]), unsigned(moveIds[3]),
+                unsigned(movePp[0]), unsigned(movePp[1]), unsigned(movePp[2]), unsigned(movePp[3]));
             if (length > 0 && static_cast<size_t>(length) < sizeof(stateJson))
                 bridge.setBattleStateJson(stateJson, static_cast<size_t>(length));
         }

@@ -3,6 +3,7 @@
 #include "runtime/QuickJSBridge.hpp"
 #include "runtime/RuntimeAssetManager.hpp"
 #include "gfx/renderer2d.hpp"
+#include "game/FirstRunRuntime.hpp"
 #include <3ds.h>
 #include <cmath>
 #include <cstdio>
@@ -70,6 +71,7 @@ bool QuickJSBridge::init(Renderer2D& renderer) {
     const Binding bindings[] = {
         {"_3ds_beginTop", beginTop, 0}, {"_3ds_beginBottom", beginBottom, 0},
         {"_3ds_clear", clear, 1}, {"_3ds_drawImage", drawImage, 6},
+        {"_3ds_drawPokemon", drawPokemon, 5},
         {"_3ds_getBattleState", getBattleState, 0}, {"_3ds_drawText", drawText, 5},
         {"_3ds_preload", preload, 1}, {"_3ds_saveGame", saveGame, 1}, {"_3ds_loadGame", loadGame, 0}
     };
@@ -160,7 +162,43 @@ JSValue QuickJSBridge::drawText(JSContext* ctx, JSValueConst, int argc, JSValueC
     JS_FreeCString(ctx, text);
     return JS_UNDEFINED;
 }
+void QuickJSBridge::setPokemonPresentation(const ResolvedPokemon& player,
+    const ResolvedPokemon& enemy, uint64_t animationTimeMs) {
+    // Borrow canonical resolved values owned by FirstRunRuntime; main outlives each tick.
+    m_player = &player;
+    m_enemy = &enemy;
+    m_animationTimeMs = animationTimeMs; // Visual time only, never game/RNG state.
+}
+JSValue QuickJSBridge::drawPokemon(JSContext* ctx, JSValueConst, int argc, JSValueConst* argv) {
+    auto* bridge = static_cast<QuickJSBridge*>(JS_GetContextOpaque(ctx));
+    if (!bridge || !bridge->m_inTick || bridge->m_screenWidth != 400 || argc != 5)
+        return JS_ThrowTypeError(ctx, "drawPokemon requires top screen and five arguments");
+    double dexNumber, x, y, scale;
+    if (!number(ctx, argv[0], dexNumber) || !number(ctx, argv[2], x) ||
+        !number(ctx, argv[3], y) || !number(ctx, argv[4], scale))
+        return JS_ThrowTypeError(ctx, "Finite species/coordinates/scale required");
+    if (dexNumber < 1 || dexNumber > 65535 || std::floor(dexNumber) != dexNumber ||
+        x < 0 || x >= 400 || y < 0 || y >= 240 || scale <= 0 || scale > 2)
+        return JS_ThrowRangeError(ctx, "Invalid Pokemon draw parameters");
+    const int back = JS_ToBool(ctx, argv[1]);
+    if (back < 0) return JS_EXCEPTION;
+    const auto* pokemon = back ? bridge->m_player : bridge->m_enemy;
+    if (!pokemon || pokemon->dex != static_cast<uint16_t>(dexNumber) ||
+        !PokerogueContent::findSpeciesByDex(pokemon->dex))
+        return JS_ThrowRangeError(ctx, "Sprite must reference the resolved active actor");
+    auto& presenter = back ? bridge->m_presenterPlayer : bridge->m_presenterEnemy;
+    // Presenter owns metadata/cache/pages. It loads on key/page changes, not every frame.
+    // Internal filesystem/texture operations may allocate; callback has no explicit new/malloc.
+    presenter.draw(*bridge->m_renderer, *pokemon, back, static_cast<float>(x),
+        static_cast<float>(y), static_cast<float>(96 * scale), static_cast<float>(96 * scale),
+        bridge->m_animationTimeMs);
+    return JS_UNDEFINED;
+}
 void QuickJSBridge::fini() {
+    m_presenterPlayer.invalidate();
+    m_presenterEnemy.invalidate();
+    m_player = m_enemy = nullptr;
+    m_animationTimeMs = 0;
     if (m_context) {
         JS_FreeValue(m_context, m_tick);
         JS_FreeValue(m_context, m_input);

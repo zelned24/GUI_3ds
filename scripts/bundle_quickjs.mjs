@@ -38,18 +38,22 @@ globalThis._3ds_tick = function(input) {
   const json = _3ds_getBattleState();
   if (json !== previousJson) { state = JSON.parse(json); previousJson = json; }
   _3ds_beginTop();
-  _3ds_clear(0xFF1A1A2E);
-  _3ds_drawText('PokeRogue - Old 3DS', 90, 16, 0.7, WHITE);
-  _3ds_drawText('Native battle / QuickJS HUD', 70, 42, 0.5, GREEN);
-  _3ds_drawText('Gameplay coverage still incomplete', 55, 64, 0.45, WHITE);
+  _3ds_clear(0xFF2D1B4E);
+  if (state.enemyDex) _3ds_drawPokemon(state.enemyDex, false, 230, 42, 1.2);
+  if (state.playerDex) _3ds_drawPokemon(state.playerDex, true, 30, 100, 1.2);
+  _3ds_drawText('Wave ' + (state.wave || 0), 10, 8, 0.55, WHITE);
+  _3ds_drawText('Enemy #' + (state.enemyDex || 0), 222, 12, 0.48, WHITE);
+  _3ds_drawText(hpBar(state.enemyHp, state.enemyMaxHp), 222, 29, 0.48, GREEN);
+  _3ds_drawText('Player #' + (state.playerDex || 0), 10, 193, 0.48, WHITE);
+  _3ds_drawText(hpBar(state.playerHp, state.playerMaxHp), 10, 210, 0.48, GREEN);
   _3ds_beginBottom();
   _3ds_clear(0xFF16213E);
   _3ds_drawText('Wave: ' + (state.wave || 0), 10, 10, 0.65, 0xFF00FFFF);
-  _3ds_drawText('Player #' + (state.playerDex || 0), 10, 36, 0.55, WHITE);
-  _3ds_drawText('HP: ' + (state.playerHp || 0) + '/' + (state.playerMaxHp || 0) + ' ' + hpBar(state.playerHp, state.playerMaxHp), 10, 54, 0.48, GREEN);
-  _3ds_drawText('Enemy #' + (state.enemyDex || 0), 10, 80, 0.55, WHITE);
-  _3ds_drawText('HP: ' + (state.enemyHp || 0) + '/' + (state.enemyMaxHp || 0) + ' ' + hpBar(state.enemyHp, state.enemyMaxHp), 10, 98, 0.48, RED);
-  _3ds_drawText('Move #' + (state.moveId || 0) + ' PP: ' + (state.pp || 0), 10, 125, 0.5, WHITE);
+  const moves = state.playerMoves || [], pp = state.playerPP || [];
+  for (let i = 0; i < 4; ++i) {
+    _3ds_drawText((i === state.selectedMove ? '> ' : '  ') + (i + 1) + ': Move #' + (moves[i] || 0) + ' PP:' + (pp[i] || 0),
+      10, 42 + i * 25, 0.5, i === state.selectedMove ? GREEN : WHITE);
+  }
   _3ds_drawText(state.finished ? 'Battle finished' : state.supported ? 'Battle input available' : 'Pending rules block this battle', 10, 147, 0.45, state.supported ? GREEN : RED);
   _3ds_drawText('Up/Down: move  Left/Right: starter', 8, 185, 0.43, WHITE);
   _3ds_drawText('A:Turn/EXP  B:Skip reward  X:Save', 8, 203, 0.43, WHITE);
