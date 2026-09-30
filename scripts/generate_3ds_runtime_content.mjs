@@ -903,5 +903,20 @@ const immunityRows = collections.abilities.flatMap(ability => {
 });
 const immunityHeader = ppHeader.replace('struct MoveAttribute {',
   `struct MoveImmunityFlags { uint16_t moveId; uint8_t mask; };\ninline constexpr MoveImmunityFlags kMoveImmunityFlags[] = {\n${flaggedMoveRows.join(',\n')}\n};\nstruct MoveImmunityAbilityProfile { uint16_t abilityId; uint8_t mask; bool requiresDispatcher; const char* sourcePath; const char* sourceSymbol; const char* sourceHash; };\ninline constexpr MoveImmunityAbilityProfile kMoveImmunityAbilityProfiles[] = {\n${immunityRows.join(',\n')}\n};\nstruct MoveAttribute {`);
-await fs.writeFile(outputPath, immunityHeader, 'utf8');
-console.log(JSON.stringify({ output: path.relative(root, outputPath), bytes: Buffer.byteLength(immunityHeader), hash: report.contentHash }));
+// Preserve constant HealAttr constructor semantics; variable/callback healing remains raw.
+const healRows = collections.moves.flatMap(move => {
+  const raw = move.extensions?.upstreamEffectMetadata?.value ?? '';
+  const declarations = [...raw.matchAll(/\.attr\s*\(\s*HealAttr\b/g)];
+  if (!declarations.length) return [];
+  const parsed = [...raw.matchAll(/\.attr\s*\(\s*HealAttr\s*,\s*(\d+(?:\.\d+)?)(?:\s*,\s*(true|false))?(?:\s*,\s*(true|false))?(?:\s*,\s*(true|false))?\s*\)/g)];
+  if (parsed.length !== declarations.length) return []; // Explicitly unsupported by native resolver.
+  return parsed.map(m => {
+    const ratio = Number(m[1]);
+    if (!(ratio > 0 && ratio <= 1)) throw new Error(`Invalid constant healing ratio: ${move.id}`);
+    return `    {${move.moveId}, ${ratio}, ${m[2] === 'true'}, ${m[3] !== 'false'}, ${m[4] !== 'false'}}`;
+  });
+});
+const healingHeader = immunityHeader.replace('struct MoveAttribute {',
+  `struct MoveHealProfile { uint16_t moveId; double ratio; bool showAnimation; bool selfTarget; bool failOnFullHp; };\ninline constexpr MoveHealProfile kMoveHealProfiles[] = {\n${healRows.join(',\n')}\n};\nstruct MoveAttribute {`);
+await fs.writeFile(outputPath, healingHeader, 'utf8');
+console.log(JSON.stringify({ output: path.relative(root, outputPath), bytes: Buffer.byteLength(healingHeader), hash: report.contentHash }));

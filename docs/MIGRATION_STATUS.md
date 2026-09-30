@@ -9,6 +9,12 @@
 5. Conversión reportada de 2902 atlases a 2903 páginas t3x, incluida espalda de Thundurus Therian en dos páginas. Inventario físico en build/upstream-assets y build/romfs; animaciones upstream 10 FPS. Hardware no verificado.
 6. ContentUpdateStore y lecturas indexadas acotadas existen; catálogos siguen compilados. OTA completa no disponible.
 
+## Última ampliación de combate — pendiente de ejecución
+
+1. `HealAttr` constante: constructor importado → `MoveHealProfile` generado → `PokemonHealingEffect.hpp` → turno real en `FirstRunRuntime.cpp` y score de IA. Fuente pinned: `src/data/moves/move.ts`, `HealAttr`; PP: `src/phases/move-phase.ts`, `usePP`; curación: `src/phases/pokemon-heal-phase.ts`, `getHealAmount`.
+2. Curación propia con un único atributo: redondeo base half-up, multiplicador de HealingBooster resuelto por policy y redondeado hacia abajo, límite de HP, fallo a HP completo tras consumo de PP, Heal Block y cancelación previa diferenciados. USER cuesta un PP sin Pressure. Sin draws RNG.
+3. El runtime actual conecta actores sin items/passives/tags, multiplicadores neutrales. Rest, VariableHealAttr, drenaje, curación aliada y movimientos con efectos adicionales permanecen no soportados. Regresiones nativas escritas (400–410), sin ejecutar. Entrenadores continúan bloqueados.
+
 ## No completado
 
 1. Equipos completos, todos los efectos/status/abilities/items, dobles y entrenadores jugables. battleInputSupported mantiene bloqueo de entrenadores.

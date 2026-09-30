@@ -8,6 +8,7 @@
 #include "game/PokemonTrainerMovesetGenerator.hpp"
 #include "game/PokemonTrainerAi.hpp"
 #include "game/PokemonStatStageEffect.hpp"
+#include "game/PokemonHealingEffect.hpp"
 #include "game/PokemonFreshProfile.hpp"
 #include "game/PokemonExperience.hpp"
 #include "game/PokemonStarterMoveset.hpp"
@@ -352,7 +353,7 @@ bool supportsSelfStatStageMove(uint16_t moveId) {
     return count == 1;
 }
 bool supportsBaselineBattleMove(uint16_t moveId) {
-    if (supportsPokemonTrickRoomMove(moveId) || supportsSelfStatStageMove(moveId)) return true;
+    if (supportsPokemonTrickRoomMove(moveId) || supportsSelfStatStageMove(moveId) || selfHealingProfile(moveId)) return true;
     const auto* move = PokerogueContent::findMoveById(moveId);
     // This first resolver only executes plain, single-target damaging moves.
     // Only plain damage or a single migrated weather/critical attribute is
@@ -372,6 +373,7 @@ double baselineEnemyMoveScore(const PokemonBattleState& user,
     if (move.category == PokerogueContent::MoveStatus) {
         if (supportsPokemonTrickRoomMove(move.id)) return 0.0; // Inherited MoveAttr benefits.
         double score = 0;
+        if (canonicalSelfHealingAiScore(user, move.id, score)) return score;
         return calculateCanonicalStatStageStatusAiScore(user, target, move.id, score)
             ? score : -20.0;
     }
@@ -741,6 +743,17 @@ bool FirstRunRuntime::executeActiveBattleMove(bool enemyActs, uint8_t moveSlot,
     if (moveSlot >= user.moveCount || moveSlot >= 4) return false;
     const auto* move = PokerogueContent::findMoveById(user.moves[moveSlot].moveId);
     if (!move || !supportsBaselineBattleMove(move->id)) return false;
+    if (selfHealingProfile(move->id)) {
+        PokemonHealingPolicy policy{};
+        // Current fresh single actors have no held items, passives or Heal Block.
+        // Constant USER moves here have no PULSE flag, so Mega Launcher cannot boost them.
+        policy.resolved = true;
+        PokemonHealingEvent event{};
+        if (usePokemonSelfHealingCommand(user, moveSlot, policy, event) != PokemonHealingResult::Ok)
+            return false;
+        m_battleFeedback = event.healed ? "HP restored" : "HP unchanged";
+        return true;
+    }
     PokemonPpPolicy pp{};
     pp.resolved = true;
     if (!pokemonSingleOpponentPpCost(opponent.abilityId, pp.cost)) return false;

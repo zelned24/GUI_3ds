@@ -5,6 +5,7 @@
 #include "game/PokemonStarterMoveset.hpp"
 #include "game/PokemonTrainerAi.hpp"
 #include "game/PokemonStatStageEffect.hpp"
+#include "game/PokemonHealingEffect.hpp"
 #include "game/PokerogueTurnOrder.hpp"
 #include "game/PokemonExperience.hpp"
 #include "game/PokerogueRngAdapter.hpp"
@@ -25,6 +26,51 @@ using Pokerogue3DS::PokemonMoveActionStatus;
 using Pokerogue3DS::PokerogueRngAdapter;
 
 extern "C" int runPokemonBattleStateChecks() {
+    // Real canonical Recover/Soft-Boiled: no invented move identifiers.
+    uint16_t recoverId = 0, softBoiledId = 0;
+    for (const auto& move : PokerogueContent::kMoves) {
+        if (std::strcmp(move.key, "recover") == 0) recoverId = move.id;
+        if (std::strcmp(move.key, "soft-boiled") == 0 || std::strcmp(move.key, "soft_boiled") == 0)
+            softBoiledId = move.id;
+    }
+    if (!recoverId || !softBoiledId || !Pokerogue3DS::selfHealingProfile(recoverId) ||
+        !Pokerogue3DS::selfHealingProfile(softBoiledId)) return 400;
+    PokemonBattleState healing{};
+    healing.maxHp = 101; healing.hp = 20; healing.moveCount = 1;
+    healing.moves[0].moveId = recoverId; healing.moves[0].pp = healing.moves[0].maxPp = 5;
+    Pokerogue3DS::PokemonHealingPolicy healPolicy{};
+    Pokerogue3DS::PokemonHealingEvent healEvent{};
+    if (Pokerogue3DS::usePokemonSelfHealingCommand(healing, 0, healPolicy, healEvent) !=
+        Pokerogue3DS::PokemonHealingResult::UnresolvedPolicy || healing.hp != 20 || healing.moves[0].pp != 5) return 401;
+    healPolicy.resolved = true;
+    if (Pokerogue3DS::usePokemonSelfHealingCommand(healing, 0, healPolicy, healEvent) !=
+        Pokerogue3DS::PokemonHealingResult::Ok || healing.hp != 71 || healEvent.healed != 51 ||
+        healEvent.ppSpent != 1 || healing.moves[0].pp != 4) return 402;
+    if (Pokerogue3DS::usePokemonSelfHealingCommand(healing, 0, healPolicy, healEvent) !=
+        Pokerogue3DS::PokemonHealingResult::Ok || healing.hp != 101 || healEvent.healed != 30) return 403;
+    if (Pokerogue3DS::usePokemonSelfHealingCommand(healing, 0, healPolicy, healEvent) !=
+        Pokerogue3DS::PokemonHealingResult::Ok || !healEvent.failedFullHp || healEvent.healed ||
+        healing.moves[0].pp != 2) return 404;
+    healing.hp = 10; healPolicy.healBlocked = true;
+    if (Pokerogue3DS::usePokemonSelfHealingCommand(healing, 0, healPolicy, healEvent) !=
+        Pokerogue3DS::PokemonHealingResult::Ok || !healEvent.blocked || healing.hp != 10 ||
+        healing.moves[0].pp != 1) return 405;
+    healPolicy.blockedBeforeMove = true;
+    if (Pokerogue3DS::usePokemonSelfHealingCommand(healing, 0, healPolicy, healEvent) !=
+        Pokerogue3DS::PokemonHealingResult::Ok || healEvent.ppSpent || healing.moves[0].pp != 1) return 406;
+    healing.hp = 0;
+    if (Pokerogue3DS::usePokemonSelfHealingCommand(healing, 0, healPolicy, healEvent) !=
+        Pokerogue3DS::PokemonHealingResult::InvalidState || healing.hp) return 407;
+    healing.hp = 101; double healScore = 0;
+    if (!Pokerogue3DS::canonicalSelfHealingAiScore(healing, recoverId, healScore) || healScore != -7) return 408;
+    healing.hp = 20;
+    if (!Pokerogue3DS::canonicalSelfHealingAiScore(healing, recoverId, healScore) || healScore != 15) return 409;
+
+    healing.maxHp = 7; healing.hp = 1; healing.moves[0].pp = 1;
+    healPolicy.blockedBeforeMove = healPolicy.healBlocked = false;
+    healPolicy.healingMultiplier = 1.5;
+    if (Pokerogue3DS::usePokemonSelfHealingCommand(healing, 0, healPolicy, healEvent) !=
+        Pokerogue3DS::PokemonHealingResult::Ok || healEvent.healed != 6 || healing.hp != 7) return 410;
     uint32_t awardedExperience = 99;
     if (Pokerogue3DS::pokemonSingleParticipantExperience(52.2, false, awardedExperience) !=
         Pokerogue3DS::PokemonExperienceResult::Ok || awardedExperience != 52) return 198;
