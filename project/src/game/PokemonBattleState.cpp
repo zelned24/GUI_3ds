@@ -735,6 +735,29 @@ bool resolvePokemonMoveWeatherContext(const PokemonArenaWeatherState& arena,
     return true;
 }
 
+bool pokemonWeatherMoveAccuracy(uint16_t moveId,
+    const PokemonMoveWeatherContext* context, int16_t& outputAccuracy) {
+    const auto* move = PokerogueContent::findMoveById(moveId);
+    if (!move || move->accuracy < -1 || move->accuracy > 100) return false;
+    const bool thunder = PokerogueContent::moveHasAttribute(*move, "ThunderAccuracyAttr");
+    const bool storm = PokerogueContent::moveHasAttribute(*move, "StormAccuracyAttr");
+    const bool blizzard = PokerogueContent::moveHasAttribute(*move, "BlizzardAccuracyAttr");
+    if ((thunder || storm || blizzard) && (!context || !context->resolved ||
+        static_cast<uint8_t>(context->effectiveWeather) > 9)) return false;
+    int16_t accuracy = move->accuracy;
+    if (thunder || storm || blizzard) {
+        const auto weather = context->effectiveWeather;
+        if (thunder && (weather == PokemonEffectiveWeather::Sunny || weather == PokemonEffectiveWeather::HarshSun))
+            accuracy = 50;
+        if ((thunder || storm) && (weather == PokemonEffectiveWeather::Rain || weather == PokemonEffectiveWeather::HeavyRain))
+            accuracy = -1;
+        if (blizzard && (weather == PokemonEffectiveWeather::Hail || weather == PokemonEffectiveWeather::Snow))
+            accuracy = -1;
+    }
+    outputAccuracy = accuracy;
+    return true;
+}
+
 bool pokemonMoveWeatherMultiplier(uint16_t moveId,
     const PokemonMoveWeatherContext& context, double& outputMultiplier) {
     const auto* move = PokerogueContent::findMoveById(moveId);
@@ -855,13 +878,16 @@ PokemonMoveDamageResult resolveStandardPokemonMoveDamage(
         return PokemonMoveDamageResult::UnresolvedWeather;
     if (baseStatus != PokemonBaseDamageResult::Ok) return PokemonMoveDamageResult::InvalidStats;
 
-    if (move->accuracy >= 0) {
+    int16_t weatherAccuracy = move->accuracy;
+    if (!pokemonWeatherMoveAccuracy(moveId, weatherContext, weatherAccuracy))
+        return PokemonMoveDamageResult::UnresolvedWeather;
+    if (weatherAccuracy >= 0) {
         double accuracyStage = 1.0;
         if (!pokemonAccuracyStageMultiplier(attacker, defender, accuracyStage))
             return PokemonMoveDamageResult::InvalidAccuracy;
         next.accuracyWasRolled = true;
         next.accuracyRoll = static_cast<uint8_t>(battleRng.randSeedInt(100));
-        if (next.accuracyRoll >= move->accuracy * accuracyStage) {
+        if (next.accuracyRoll >= weatherAccuracy * accuracyStage) {
             output = next;
             return PokemonMoveDamageResult::Ok;
         }

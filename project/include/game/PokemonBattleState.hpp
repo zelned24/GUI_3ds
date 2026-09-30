@@ -310,6 +310,8 @@ struct PokemonMoveWeatherContext {
 };
 bool resolvePokemonMoveWeatherContext(const PokemonArenaWeatherState& arena,
     const PokemonWeatherResolutionPolicy& policy, PokemonMoveWeatherContext& output);
+bool pokemonWeatherMoveAccuracy(uint16_t moveId,
+    const PokemonMoveWeatherContext* context, int16_t& outputAccuracy);
 bool pokemonMoveWeatherMultiplier(uint16_t moveId,
     const PokemonMoveWeatherContext& context, double& outputMultiplier);
 

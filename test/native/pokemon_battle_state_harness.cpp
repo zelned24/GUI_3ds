@@ -726,6 +726,23 @@ extern "C" int runPokemonBattleStateChecks() {
     if (Pokerogue3DS::calculatePokemonDamageCore(state, state, 33, false,
             unresolvedDamage, &weatherContext) != Pokerogue3DS::PokemonDamageCoreResult::UnresolvedWeather ||
         unresolvedDamage != 777) return 275;
+    int16_t weatherAccuracy = 17;
+    weatherContext.resolved = true;
+    weatherContext.effectiveWeather = PokemonEffectiveWeather::Sunny;
+    if (!Pokerogue3DS::pokemonWeatherMoveAccuracy(87, &weatherContext, weatherAccuracy) ||
+        weatherAccuracy != 50) return 324;
+    weatherContext.effectiveWeather = PokemonEffectiveWeather::Rain;
+    if (!Pokerogue3DS::pokemonWeatherMoveAccuracy(87, &weatherContext, weatherAccuracy) ||
+        weatherAccuracy != -1) return 325;
+    weatherContext.effectiveWeather = PokemonEffectiveWeather::Snow;
+    if (!Pokerogue3DS::pokemonWeatherMoveAccuracy(59, &weatherContext, weatherAccuracy) ||
+        weatherAccuracy != -1) return 326;
+    weatherContext.effectiveWeather = PokemonEffectiveWeather::None;
+    if (!Pokerogue3DS::pokemonWeatherMoveAccuracy(59, &weatherContext, weatherAccuracy) ||
+        weatherAccuracy != 70) return 327;
+    weatherAccuracy = 17;
+    if (Pokerogue3DS::pokemonWeatherMoveAccuracy(87, nullptr, weatherAccuracy) ||
+        weatherAccuracy != 17) return 328;
     PokemonBattleInit actorIdInput = input;
     actorIdInput.pokemonId = 0x12345678u;
     actorIdInput.deriveIvsFromPokemonId = true;
