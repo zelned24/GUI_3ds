@@ -760,10 +760,10 @@ struct SceneNodeData {
     bool flipY;
     uint32_t tintColor;
     const char* text;
-    // BETA-UI-7: Production UX & Composition
+    // Production UX & Composition
     bool locked;
     SceneCompositionData composition;
-    // BETA-UI-8: Effects, Shape, Text
+    // Effects, Shape, Text
     SceneEffectData effect;
     SceneShapeData shape;
     SceneTextData textData;
@@ -783,7 +783,7 @@ struct SceneDefinition {
     const SceneMarker* markers;
     uint16_t audioCueCount;
     const SceneAudioCue* audioCues;
-    // BETA-UI-6: Clips & Sequence
+    // Clips & Sequence
     uint16_t clipCount;
     const SceneClip* clips;
     uint16_t sequenceCount;
@@ -878,7 +878,7 @@ extern const SceneDefinition g_SceneDefinition;
           lines.push('        { nullptr, 0, 0, 0, 1.0f, false },');
         }
 
-        // BETA-UI-8: Effect, Shape, TextData
+        // Effect, Shape, TextData
         const eff = node.effect || { type: 'None', enabled: false, opacity: 1.0, intensity: 0.0, factor: 1.0, color: 0xFFFFFFFF, blendMode: 0 };
         const effType = `EffectType::${eff.type || 'None'}`;
         lines.push(`        { ${effType}, ${eff.enabled ? 'true' : 'false'}, ${this.formatFloat(eff.opacity)}, ${this.formatFloat(eff.intensity)}, ${this.formatFloat(eff.factor)}, ${eff.color}, ${eff.blendMode} },`);
@@ -1158,7 +1158,7 @@ public:
     static float evaluateProgress(float t, InterpolationType type, float cp1x = 0.25f, float cp1y = 0.1f, float cp2x = 0.25f, float cp2y = 1.0f);
     static float evaluateTrack(const SceneTrack& track, uint32_t frame, float defaultValue);
     static float evaluateClipTrack(const SceneClipTrack& track, uint32_t frame, float defaultValue);
-    // BETA-UI-7: Nested composition time mapping
+    // Nested composition time mapping
     static int32_t mapCompositionLocalFrame(int32_t parentFrame, int32_t startFrame, uint16_t durationFrames, int32_t localOffset, float playbackRate, bool loop);
 
     // Node evaluation (local overrides at frame)
@@ -1956,7 +1956,7 @@ Screen* createScene() {
       }
     }
 
-    // 3. BETA-UI-7: Evaluate nested composition local frames
+    // 3. Evaluate nested composition local frames
     if (Array.isArray(exportModel.nodes)) {
       for (const node of exportModel.nodes) {
         if (node.composition && node.composition.sceneId) {

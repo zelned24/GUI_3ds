@@ -6,8 +6,8 @@ import { EncounterResolver, FirstRunFlow } from '../tools/js/game/FirstRunFlow.j
 import { CanonicalContent, RuntimeContent } from '../tools/js/data/CanonicalDataContract.js';
 import { DataManager } from '../tools/js/data/DataManager.js';
 
-export function registerBetaUI9ATests(test) {
-  test('BETA-UI-9A: pinned upstream content completes a deterministic first-run presentation flow', async () => {
+export function registerMigrationContentTests(test) {
+  test('Content migration: pinned upstream content completes a deterministic first-run presentation flow', async () => {
     const importer = new PokerogueImporter(new PokerogueRepository());
     const imported = await importer.importPlayableCanonicalContent(undefined, { generations: [1] });
     const repeatedImport = await importer.importPlayableCanonicalContent(undefined, { generations: [1] });
@@ -76,12 +76,12 @@ export function registerBetaUI9ATests(test) {
     assert.ok(imported.importReport.contentHash);
   });
 
-  test('BETA-UI-9A: production first-run pipeline rejects fixture content', () => {
+  test('Content migration: production first-run pipeline rejects fixture content', () => {
     const fixture = new CanonicalContent({ sourceSnapshot: { repository: 'test', revision: 'fixture', sourceType: 'TEST_FIXTURE' }, provenance: { sourceRepository: 'test', sourceRevision: 'fixture', sourcePath: 'test/fixtures/content.json', sourceType: 'TEST_FIXTURE' }, collections: {} });
     assert.throws(() => new FirstRunFlow({ runtimeContent: new RuntimeContent({ canonicalContent: fixture }) }), /fixture\/non-UPSTREAM/);
   });
 
-  test('BETA-UI-9A: Old 3DS C++ bundle matches pinned import report and carries real catalogs', async () => {
+  test('Content migration: Old 3DS C++ bundle matches pinned import report and carries real catalogs', async () => {
     const [header, reportText, canonicalText] = await Promise.all([
       readFile('project/generated/include/content/PokerogueRuntimeContent.hpp', 'utf8'),
       readFile('project/data/pokerogue/import-report.json', 'utf8'),

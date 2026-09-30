@@ -599,7 +599,7 @@ export class SceneModel {
     return false;
   }
 
-  // --- Guides Operations (BETA-UI-7) ---
+  // --- Guides Operations ---
 
   addGuide(arg1, arg2, arg3, historyManager) {
     let orientation = 'h';
@@ -686,7 +686,7 @@ export class SceneModel {
     return [...this.guides];
   }
 
-  // --- Z-Order & Node Locking Operations (BETA-UI-7) ---
+  // --- Z-Order & Node Locking Operations ---
 
   setNodeLocked(nodeId, locked = true, historyManager = null) {
     const node = this.getNode(nodeId);

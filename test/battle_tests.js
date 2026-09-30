@@ -7,8 +7,8 @@ import { fileURLToPath } from 'url';
 const testDir = path.dirname(fileURLToPath(import.meta.url));
 const rootDir = path.resolve(testDir, '..');
 
-export function registerBetaUI9DTests(test) {
-  test('BETA-UI-9D: canonical species and moves initialize validated native battle state', () => {
+export function registerBattleTests(test) {
+  test('Native battle state: canonical species and moves initialize validated native battle state', () => {
     const clangCandidates = process.platform === 'win32'
       ? [path.join(rootDir, 'node_modules', 'clang-wasm-win64', 'clang.exe'), path.join(rootDir, 'node_modules', '.bin', 'clang.exe')]
       : [path.join(rootDir, 'node_modules', 'clang-wasm-linux-x64', 'clang'), path.join(rootDir, 'node_modules', 'clang-wasm-linux-arm64', 'clang'), path.join(rootDir, 'node_modules', '.bin', 'clang')];

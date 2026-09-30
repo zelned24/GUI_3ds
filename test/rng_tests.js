@@ -117,8 +117,8 @@ function nonBossLevelReference(wave, rng) {
   return Math.max(Math.round(baseLevel + Math.abs(sum / deviation)), 1);
 }
 
-export function registerBetaUI9CRngTests(test) {
-  test('BETA-UI-9C: Old 3DS Phaser RNG adapter matches pinned Phaser 3.90.0 golden vectors', async () => {
+export function registerRngTests(test) {
+  test('RNG parity: Old 3DS Phaser RNG adapter matches pinned Phaser 3.90.0 golden vectors', async () => {
     const clang = resolveClang();
     if (!clang) {
       const error = new Error('BLOCKED — missing toolchain/dependency: clang-wasm; install from package-lock.json with npm ci');

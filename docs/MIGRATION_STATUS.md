@@ -22,5 +22,5 @@
 1. Retirados servidor, HTML/CSS y editor/shell/preview web. Dependencias del pipeline trasladadas a tools/js, sin reconstruir el Studio.
 2. Retiradas suites monolíticas antiguas del Studio; conservadas migración/RNG/battle/native. Nuevo ejecutor las registra sin modificar sus asserts; no se ejecutó.
 3. Documentos históricos consolidados en este estado, lista de pendientes y contrato OTA; mapa semántico obsoleto retirado. Provenance sigue en los datos canónicos y código.
-4. Fallos históricos BETA-UI-8.19/8.34 pertenecen al Studio retirado, no se declaran arreglados. Suites actuales sin resultado validado todavía.
+4. Fallos históricos de validación del exporter y del preview pertenecen al Studio retirado, no se declaran arreglados. Suites actuales sin resultado validado todavía.
 5. Historial Git, assets, clones upstream y runtime/presentación C++ permanecen. Plan y lista exacta de retiros disponibles en el commit de limpieza.

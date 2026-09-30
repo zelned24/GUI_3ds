@@ -42,14 +42,14 @@ struct RuntimeMetrics {
     uint32_t drawCallCount;
     uint32_t activeNodeCount;
     uint32_t activeTrackCount;
-    // BETA-UI-6: Extended metrics
+    // Extended metrics
     uint32_t activeClips;
     uint32_t evaluatedTracks;
     uint32_t curveEvaluations;
     uint32_t sequencerSegments;
-    // BETA-UI-7: Composition metrics
+    // Composition metrics
     uint32_t nestedCompositions;
-    // BETA-UI-8: Effects, vector/text nodes & memory instrumentation
+    // Effects, vector/text nodes & memory instrumentation
     uint32_t effectEvaluations;
     uint32_t textNodes;
     uint32_t shapeNodes;

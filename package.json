@@ -11,7 +11,8 @@
     "convert:pokerogue-sprites": "node scripts/prepare_pokerogue_sprite_catalog.mjs",
     "3ds-test": "node test/native/check_3ds_toolchain.mjs",
     "3ds-build": "node test/native/run_3ds_build.mjs",
-    "native-test": "node test/run_native_build.mjs"
+    "native-test": "node test/run_native_build.mjs",
+    "brain-map": "node scripts/generate_brain_map.mjs"
   },
   "keywords": [
     "3ds",

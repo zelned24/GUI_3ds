@@ -111,7 +111,7 @@ void ScenePlayer::update(float dt) {
         m_timeline->seek(m_currentFrame);
     }
 
-    // Update BETA-UI-6 timeline metrics
+    // Update timeline metrics
     RuntimeAssetManager& assetMgr = getRuntimeAssetManager();
     uint32_t activeClips = 0;
     if (m_sceneDef.sequenceCount > 0 && m_sceneDef.sequence != nullptr) {

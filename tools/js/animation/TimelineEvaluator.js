@@ -108,7 +108,7 @@ export class TimelineEvaluator {
       }
     }
 
-    // 3. Evaluate nested compositions (BETA-UI-7)
+    // 3. Evaluate nested compositions
     const rawNodes = scene.nodes || scene.components || [];
     if (Array.isArray(rawNodes)) {
       for (const node of rawNodes) {
@@ -241,7 +241,7 @@ export class TimelineEvaluator {
       return;
     }
 
-    // Effects path handling (BETA-UI-8)
+    // Effects path handling
     if (path.startsWith('effects.') || path.startsWith('effects[')) {
       if (!Array.isArray(targetState.effects)) {
         targetState.effects = [];

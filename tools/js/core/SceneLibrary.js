@@ -426,7 +426,7 @@ export class SceneLibrary {
       tracks: []
     });
 
-    // 6. HUDOverlay (BETA-UI-8)
+    // 6. HUDOverlay
     this.registerTemplate('HUDOverlay', {
       schemaVersion: 4,
       id: 'template_hud_overlay',
@@ -461,7 +461,7 @@ export class SceneLibrary {
       tracks: []
     });
 
-    // 7. Notification (BETA-UI-8)
+    // 7. Notification
     this.registerTemplate('Notification', {
       schemaVersion: 4,
       id: 'template_notification',

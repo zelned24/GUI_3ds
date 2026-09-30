@@ -1,11 +1,11 @@
-import { registerBetaUI9ATests } from './migration_content_tests.js';
-import { registerBetaUI9CRngTests } from './rng_tests.js';
-import { registerBetaUI9DTests } from './battle_tests.js';
+import { registerMigrationContentTests } from './migration_content_tests.js';
+import { registerRngTests } from './rng_tests.js';
+import { registerBattleTests } from './battle_tests.js';
 const cases = [];
 const register = (name, run) => cases.push({ name, run });
-registerBetaUI9ATests(register);
-registerBetaUI9CRngTests(register);
-registerBetaUI9DTests(register);
+registerMigrationContentTests(register);
+registerRngTests(register);
+registerBattleTests(register);
 let failed = 0;
 for (const { name, run } of cases) {
   try { await run(); console.log(`PASS ${name}`); }

@@ -168,10 +168,10 @@ struct SceneNodeData {
     bool flipY;
     uint32_t tintColor;
     const char* text;
-    // BETA-UI-7: Production UX & Composition
+    // Production UX & Composition
     bool locked;
     SceneCompositionData composition;
-    // BETA-UI-8: Effects, Shape, Text
+    // Effects, Shape, Text
     SceneEffectData effect;
     SceneShapeData shape;
     SceneTextData textData;
@@ -191,7 +191,7 @@ struct SceneDefinition {
     const SceneMarker* markers;
     uint16_t audioCueCount;
     const SceneAudioCue* audioCues;
-    // BETA-UI-6: Clips & Sequence
+    // Clips & Sequence
     uint16_t clipCount;
     const SceneClip* clips;
     uint16_t sequenceCount;

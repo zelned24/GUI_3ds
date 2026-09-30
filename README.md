@@ -20,6 +20,8 @@ Migración de PokéRogue a C++ con devkitARM, libctru y Citro2D. Interfaz adapta
 
 Tests y compilación del programa están aplazados por el usuario. No hay npm start ni servidor/editor web.
 
+Mapa de estructura: `npm run brain-map` regenera [el brain map](docs/BRAIN_MAP.md).
+
 ## Documentación mínima
 
 1. [Reglas](AGENTS.md).

@@ -41,7 +41,7 @@ export class UINode {
     this.zIndex = Math.round(data.zIndex ?? 1);
     this.metadata = { ...(data.metadata || {}) };
 
-    // Effects stack (BETA-UI-8)
+    // Effects stack
     this.effects = data.effects instanceof EffectStack
       ? data.effects
       : new EffectStack(data.effects || []);
@@ -51,7 +51,7 @@ export class UINode {
     this.properties = { ...defaultProps, ...(data.properties || {}) };
   }
 
-  // --- Effects Management (BETA-UI-8) ---
+  // --- Effects Management ---
   addEffect(effect) {
     return this.effects.add(effect);
   }
