@@ -602,6 +602,7 @@ bool FirstRunRuntime::skipVictoryReward() {
 }
 
 void FirstRunRuntime::refreshTrainerBaselineMatchups() {
+    m_context.nextTrainerPartyIndex = 0xFF;
     m_context.trainerPartyBaselineMatchupResolved = false;
     for (auto& score : m_context.trainerPartyBaselineMatchupScores) score = 0;
     if (!m_trainerBattle || !m_context.trainerPartyBattleStatesResolved ||
@@ -620,6 +621,22 @@ void FirstRunRuntime::refreshTrainerBaselineMatchups() {
     for (uint8_t member = 0; member < m_context.trainerPartyCount; ++member)
         m_context.trainerPartyBaselineMatchupScores[member] = scores[member];
     m_context.trainerPartyBaselineMatchupResolved = true;
+    // Preview the legal replacement with the source wave-scoped stream.
+    // Never consume the battle-turn RNG while inspecting the trainer party.
+    PokemonBattleState party[6]{};
+    for (uint8_t member = 0; member < m_context.trainerPartyCount; ++member)
+        party[member] = member == m_context.activeTrainerPartyIndex
+            ? m_context.enemy.battleState : m_context.trainerParty[member].battleState;
+    uint16_t waveSeed[PokerogueRngAdapter::kMaxSeedCodeUnits]{};
+    if (!PokerogueRngAdapter::shiftCharCodes(m_seedCodeUnits.data(), m_seedLength,
+            m_run.wave, waveSeed, PokerogueRngAdapter::kMaxSeedCodeUnits)) return;
+    PokerogueRngAdapter replacementRng;
+    PokerogueSeedOffsetScope scope(replacementRng, waveSeed, m_seedLength, m_turn << 2);
+    if (!scope.valid()) return;
+    uint8_t replacement = 0xFF;
+    if (selectBaselineTrainerReplacement(party, m_context.trainerPartyCount,
+            m_context.activeTrainerPartyIndex, m_context.player.battleState,
+            replacementRng, replacement)) m_context.nextTrainerPartyIndex = replacement;
 }
 
 void FirstRunRuntime::resolve(bool carryPlayer) {
@@ -656,6 +673,7 @@ void FirstRunRuntime::resolve(bool carryPlayer) {
     m_context.trainerPartyMovesetsResolved = false;
     m_context.trainerPartyIvsResolved = false;
     m_context.trainerPartyBattleStatesResolved = false;
+    m_context.nextTrainerPartyIndex = 0xFF;
     m_context.trainerPartyBaselineMatchupResolved = false;
     for (auto& score : m_context.trainerPartyBaselineMatchupScores) score = 0;
     for (auto& level : m_context.trainerPartyLevels) level = 0;

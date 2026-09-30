@@ -61,6 +61,7 @@ struct PresentationContext {
     bool trainerPartyMovesetsResolved = false;
     bool trainerPartyIvsResolved = false;
     bool trainerPartyBattleStatesResolved = false;
+    uint8_t nextTrainerPartyIndex = 0xFF;
     bool trainerPartyBaselineMatchupResolved = false;
     double trainerPartyBaselineMatchupScores[6]{};
     ResolvedPokemon player;
