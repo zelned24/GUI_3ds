@@ -8,6 +8,7 @@
   "catalogCounts": {
     "abilities": 320,
     "biomes": 35,
+    "dynamicModifierWeights": 55,
     "eggMoveEntries": 2284,
     "experienceGrowthRates": 6,
     "fixedBattleWaves": 21,
@@ -17,6 +18,7 @@
     "items": 109,
     "locales": 3163,
     "modes": 5,
+    "modifierPoolEntries": 139,
     "moves": 920,
     "routes": 66,
     "species": 1084,
@@ -29,7 +31,7 @@
     "trainersWithSpeciesPools": 34,
     "trainersWithStaticPartyTemplates": 46
   },
-  "contentHash": "4dbbb7d2aa715cfbd050dd0fd692f666bec9baaadb93a1ec9afe24e26ee48277",
+  "contentHash": "1477c8872cbba9b952f8f490dbff0dae676aa3a41ba304f03ae3ab970c472481",
   "deterministicReimport": true,
   "provenance": [
     {
@@ -463,6 +465,12 @@
       "repository": "pokerogue",
       "revision": "8555c08c823b856cbec4eb99ca84ea52a955836d",
       "sourcePath": "src/init/init-biomes.ts"
+    },
+    {
+      "hash": "a3c3ca24afa100ae20473f0bdb8c1ae6ff5551843bdbe508d9ab212c32c2e330",
+      "repository": "pokerogue",
+      "revision": "8555c08c823b856cbec4eb99ca84ea52a955836d",
+      "sourcePath": "src/modifier/init-modifier-pools.ts"
     },
     {
       "hash": "2d2bcbf71adec1fc80fc6a097e47118f5c9da87a22cbef4723141bbb17fd7968",
