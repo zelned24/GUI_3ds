@@ -203,6 +203,24 @@ extern "C" int runPokemonBattleStateChecks() {
     if (!Pokerogue3DS::resolveTrainerSwitchDecision(2.0, reserveScores, reserveIndexes,
             1, 2, true, false, true, replacementRng, switchDecision) ||
         switchDecision.switchPokemon || switchDecision.nextSwitchCounter != 1) return 207;
+    PokemonBattleState staged = state;
+    double stageMultiplier = 0;
+    if (!Pokerogue3DS::setPokemonStatStage(staged, 1, -9) || staged.statStages[0] != -6 ||
+        !Pokerogue3DS::pokemonStatStageMultiplier(staged, 1, false, stageMultiplier) ||
+        stageMultiplier != 0.25) return 208;
+    if (!Pokerogue3DS::pokemonStatStageMultiplier(staged, 1, true, stageMultiplier) ||
+        stageMultiplier != 1.0) return 209;
+    if (!Pokerogue3DS::setPokemonStatStage(staged, 2, 9) ||
+        !Pokerogue3DS::pokemonStatStageMultiplier(staged, 2, true, stageMultiplier) ||
+        stageMultiplier != 1.0 || Pokerogue3DS::setPokemonStatStage(staged, 0, 1)) return 210;
+    if (!Pokerogue3DS::setPokemonStatStage(staged, 6, 6) ||
+        !Pokerogue3DS::setPokemonStatStage(matchupOpponent, 7, -6) ||
+        !Pokerogue3DS::pokemonAccuracyStageMultiplier(staged, matchupOpponent, stageMultiplier) ||
+        stageMultiplier != 3.0) return 211;
+    const uint16_t retainedHp = staged.hp;
+    Pokerogue3DS::resetPokemonStatStages(staged);
+    for (int8_t stage : staged.statStages) if (stage) return 212;
+    if (staged.hp != retainedHp || staged.moves[0].pp != state.moves[0].pp) return 213;
     PokemonBattleInit actorIdInput = input;
     actorIdInput.pokemonId = 0x12345678u;
     actorIdInput.deriveIvsFromPokemonId = true;

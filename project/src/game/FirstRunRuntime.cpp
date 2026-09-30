@@ -520,6 +520,7 @@ bool FirstRunRuntime::advanceBattleTurn() {
             // actor; the trainer consumes its command by switching, not attacking.
             PokemonBattleState playerAfter = playerState;
             ResolvedPokemon incoming = m_context.trainerParty[decision.partyIndex];
+            resetPokemonStatStages(incoming.battleState);
             PokerogueRngAdapter actionRng = *rng;
             PokemonMoveActionResult result{};
             if (useStandardPokemonMove(playerAfter, incoming.battleState,
@@ -726,6 +727,7 @@ bool FirstRunRuntime::advanceTrainerAfterDefeat() {
     m_context.trainerParty[m_context.activeTrainerPartyIndex] = m_context.enemy;
     m_context.activeTrainerPartyIndex = next;
     m_context.enemy = m_context.trainerParty[next];
+    resetPokemonStatStages(m_context.enemy.battleState);
     m_run.encounterDex = m_context.enemy.dex;
     m_battleRng = nextTurn;
     ++m_turn;

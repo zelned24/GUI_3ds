@@ -145,11 +145,50 @@ struct PokemonBattleState {
     uint8_t ivs[6]{};
     PokemonNature nature = PokemonNature::Unspecified;
     uint16_t stats[6]{}; // Upstream permanent-stat order.
+    int8_t statStages[7]{}; // Upstream Stat.ATK..Stat.EVA, indexed stat - 1.
     uint8_t moveCount = 0;
     BattleMoveState moves[4]{};
     bool ivsWereDerivedFromPokemonId = false;
     bool statsAreBaseFormulaOnly = true;
 };
+
+// Source Pokemon.setStatStage clamps to [-6, 6]. IDs follow upstream Stat;
+// HP (0) has no battle stage. Effects/abilities must resolve their policy first.
+inline bool setPokemonStatStage(PokemonBattleState& state, uint8_t stat, int32_t value) {
+    if (!stat || stat > 7) return false;
+    state.statStages[stat - 1] = static_cast<int8_t>(value < -6 ? -6 : value > 6 ? 6 : value);
+    return true;
+}
+
+inline void resetPokemonStatStages(PokemonBattleState& state) {
+    for (auto& stage : state.statStages) stage = 0;
+}
+
+// Baseline getStatStageMultiplier without abilities/move overrides/held items.
+// Critical hits ignore negative attack stages and positive defense stages.
+inline bool pokemonStatStageMultiplier(const PokemonBattleState& state, uint8_t stat,
+                                       bool critical, double& output) {
+    if (!stat || stat > 5) return false;
+    int stage = state.statStages[stat - 1];
+    if (stage < -6 || stage > 6) return false;
+    if (critical && ((stat == 1 || stat == 3) && stage < 0)) stage = 0;
+    if (critical && ((stat == 2 || stat == 4) && stage > 0)) stage = 0;
+    output = static_cast<double>(stage > 0 ? 2 + stage : 2) /
+        (stage < 0 ? 2 - stage : 2);
+    return true;
+}
+
+inline bool pokemonAccuracyStageMultiplier(const PokemonBattleState& user,
+    const PokemonBattleState& target, double& output) {
+    const int accuracy = user.statStages[5];
+    const int evasion = target.statStages[6];
+    if (accuracy < -6 || accuracy > 6 || evasion < -6 || evasion > 6) return false;
+    int difference = accuracy - evasion;
+    if (difference > 6) difference = 6;
+    if (difference < -6) difference = -6;
+    output = difference >= 0 ? (3.0 + difference) / 3.0 : 3.0 / (3.0 - difference);
+    return true;
+}
 
 // Pinned Pokemon constructor derives six five-bit IVs from the actor's
 // 32-bit identity, in permanent-stat order.
