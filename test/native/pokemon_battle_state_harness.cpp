@@ -518,7 +518,11 @@ extern "C" int runPokemonBattleStateChecks() {
         boostedSteelDamage != (neutralSteelDamage - 2.0) * 1.5 + 2.0) return 265;
     typePowerActor.abilityId = sandForce->abilityId;
     if (Pokerogue3DS::calculatePokemonBaseDamage(typePowerActor, state, 232,
-            boostedSteelDamage) != Pokerogue3DS::PokemonBaseDamageResult::InvalidStats) return 266;
+            boostedSteelDamage) != Pokerogue3DS::PokemonBaseDamageResult::UnsupportedAbilityCondition) return 266;
+    uint32_t unresolvedDamage = 777;
+    if (Pokerogue3DS::calculatePokemonDamageCore(typePowerActor, state, 232, false,
+            unresolvedDamage) != Pokerogue3DS::PokemonDamageCoreResult::UnsupportedAbilityCondition ||
+        unresolvedDamage != 777) return 267;
     PokemonBattleInit actorIdInput = input;
     actorIdInput.pokemonId = 0x12345678u;
     actorIdInput.deriveIvsFromPokemonId = true;

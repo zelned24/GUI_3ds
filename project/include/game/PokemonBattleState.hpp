@@ -215,7 +215,7 @@ PokemonBattleInitResult initializePokemonBattleStateForActor(
     const PokemonActorIdentity& identity,
     PokemonBattleState& output);
 
-enum class PokemonBaseDamageResult : uint8_t { Ok = 0, MissingMove, NonDamagingMove, InvalidStats };
+enum class PokemonBaseDamageResult : uint8_t { Ok = 0, MissingMove, NonDamagingMove, InvalidStats, UnsupportedAbilityCondition };
 PokemonBaseDamageResult calculatePokemonBaseDamage(
     const PokemonBattleState& attacker,
     const PokemonBattleState& defender,
@@ -233,7 +233,7 @@ PokemonTypeEffectivenessResult calculatePokemonTypeEffectiveness(
     double& outputMultiplier);
 
 enum class PokemonDamageCoreResult : uint8_t {
-    Ok = 0, MissingMove, MissingSpecies, NonDamagingMove, InvalidStats, InvalidType
+    Ok = 0, MissingMove, MissingSpecies, NonDamagingMove, InvalidStats, InvalidType, UnsupportedAbilityCondition
 };
 PokemonDamageCoreResult calculatePokemonDamageCore(
     const PokemonBattleState& attacker,
@@ -253,7 +253,7 @@ struct PokemonMoveDamageRoll {
     uint32_t damage = 0;
 };
 enum class PokemonMoveDamageResult : uint8_t {
-    Ok = 0, MissingMove, MissingSpecies, NonDamagingMove, InvalidAccuracy, InvalidStats, InvalidType
+    Ok = 0, MissingMove, MissingSpecies, NonDamagingMove, InvalidAccuracy, InvalidStats, InvalidType, UnsupportedAbilityCondition
 };
 PokemonMoveDamageResult resolveStandardPokemonMoveDamage(
     const PokemonBattleState& attacker,

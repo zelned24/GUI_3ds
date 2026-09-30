@@ -481,7 +481,7 @@ PokemonBaseDamageResult calculatePokemonBaseDamage(
         if (profile.abilityId != attacker.abilityId || !sameText(profile.type, move->type)) continue;
         // A field-gated component needs the field resolver; never pretend it
         // is unconditional. Current baseline has no weather context to supply.
-        if (profile.requiresCondition) return PokemonBaseDamageResult::InvalidStats;
+        if (profile.requiresCondition) return PokemonBaseDamageResult::UnsupportedAbilityCondition;
         if (attacker.hp) power *= profile.multiplier;
     }
     const double baseDamage = (levelMultiplier * power * attack) / defense / 50.0 + 2.0;
@@ -537,9 +537,10 @@ PokemonDamageCoreResult calculatePokemonDamageCore(
     if (attacker.formId && !attackerForm) return PokemonDamageCoreResult::InvalidType;
 
     double baseDamage = 0.0;
-    if (calculatePokemonBaseDamage(attacker, defender, moveId, baseDamage) != PokemonBaseDamageResult::Ok) {
-        return PokemonDamageCoreResult::InvalidStats;
-    }
+    const auto baseStatus = calculatePokemonBaseDamage(attacker, defender, moveId, baseDamage);
+    if (baseStatus == PokemonBaseDamageResult::UnsupportedAbilityCondition)
+        return PokemonDamageCoreResult::UnsupportedAbilityCondition;
+    if (baseStatus != PokemonBaseDamageResult::Ok) return PokemonDamageCoreResult::InvalidStats;
     double typeMultiplier = 1.0;
     if (calculatePokemonTypeEffectiveness(moveId, defender, typeMultiplier) != PokemonTypeEffectivenessResult::Ok) {
         return PokemonDamageCoreResult::InvalidType;
@@ -598,9 +599,10 @@ PokemonMoveDamageResult resolveStandardPokemonMoveDamage(
     }
 
     double baseDamage = 0.0;
-    if (calculatePokemonBaseDamage(attacker, defender, moveId, baseDamage) != PokemonBaseDamageResult::Ok) {
-        return PokemonMoveDamageResult::InvalidStats;
-    }
+    const auto baseStatus = calculatePokemonBaseDamage(attacker, defender, moveId, baseDamage);
+    if (baseStatus == PokemonBaseDamageResult::UnsupportedAbilityCondition)
+        return PokemonMoveDamageResult::UnsupportedAbilityCondition;
+    if (baseStatus != PokemonBaseDamageResult::Ok) return PokemonMoveDamageResult::InvalidStats;
 
     if (move->accuracy >= 0) {
         double accuracyStage = 1.0;
