@@ -238,10 +238,29 @@ enum class PokemonEffectiveWeather : uint8_t {
     None = 0, Sunny = 1, Rain = 2, Sandstorm = 3, Hail = 4,
     Snow = 5, Fog = 6, HeavyRain = 7, HarshSun = 8, StrongWinds = 9
 };
+// Weather duration is separate from per-user effective weather. Zero means
+// indefinite, including biome weather, matching upstream Weather.lapse.
+struct PokemonArenaWeatherState {
+    PokemonEffectiveWeather type = PokemonEffectiveWeather::None;
+    uint16_t turnsLeft = 0;
+    uint16_t maxDuration = 0;
+};
+bool pokemonWeatherIsImmutable(PokemonEffectiveWeather type);
+bool setPokemonArenaWeather(PokemonArenaWeatherState& state,
+    PokemonEffectiveWeather type, uint16_t resolvedDuration);
+bool lapsePokemonArenaWeather(PokemonArenaWeatherState& state);
+struct PokemonWeatherResolutionPolicy {
+    bool resolved = false;
+    bool suppressesOrdinaryWeather = false;
+    bool suppressesImmutableWeather = false;
+    PokemonEffectiveWeather attackerOverride = PokemonEffectiveWeather::None;
+};
 struct PokemonMoveWeatherContext {
     bool resolved = false;
     PokemonEffectiveWeather effectiveWeather = PokemonEffectiveWeather::None;
 };
+bool resolvePokemonMoveWeatherContext(const PokemonArenaWeatherState& arena,
+    const PokemonWeatherResolutionPolicy& policy, PokemonMoveWeatherContext& output);
 bool pokemonMoveWeatherMultiplier(uint16_t moveId,
     const PokemonMoveWeatherContext& context, double& outputMultiplier);
 

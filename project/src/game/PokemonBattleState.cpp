@@ -519,6 +519,53 @@ PokemonTypeEffectivenessResult calculatePokemonTypeEffectiveness(
     return calculatePokemonAttackTypeEffectiveness(move->type, defender, outputMultiplier);
 }
 
+bool pokemonWeatherIsImmutable(PokemonEffectiveWeather type) {
+    return type == PokemonEffectiveWeather::HeavyRain || type == PokemonEffectiveWeather::HarshSun ||
+        type == PokemonEffectiveWeather::StrongWinds;
+}
+
+bool setPokemonArenaWeather(PokemonArenaWeatherState& state,
+    PokemonEffectiveWeather type, uint16_t resolvedDuration) {
+    if (static_cast<uint8_t>(type) > 9 || static_cast<uint8_t>(state.type) > 9 ||
+        state.type == type) return false;
+    if (pokemonWeatherIsImmutable(state.type) && type != PokemonEffectiveWeather::None &&
+        !pokemonWeatherIsImmutable(type)) return false;
+    PokemonArenaWeatherState next{};
+    next.type = type;
+    if (type != PokemonEffectiveWeather::None && !pokemonWeatherIsImmutable(type)) {
+        next.turnsLeft = resolvedDuration;
+        next.maxDuration = resolvedDuration;
+    }
+    state = next;
+    return true;
+}
+
+bool lapsePokemonArenaWeather(PokemonArenaWeatherState& state) {
+    if (static_cast<uint8_t>(state.type) > 9) return false;
+    if (pokemonWeatherIsImmutable(state.type) || !state.turnsLeft) return true;
+    --state.turnsLeft;
+    // Like Weather.lapse, this reports expiration; the phase clears weather.
+    return state.turnsLeft != 0;
+}
+
+bool resolvePokemonMoveWeatherContext(const PokemonArenaWeatherState& arena,
+    const PokemonWeatherResolutionPolicy& policy, PokemonMoveWeatherContext& output) {
+    if (!policy.resolved || static_cast<uint8_t>(arena.type) > 9 ||
+        static_cast<uint8_t>(policy.attackerOverride) > 9) return false;
+    PokemonMoveWeatherContext next{};
+    next.resolved = true;
+    // PreAttackWeatherOverrideAbAttr takes precedence over field suppression.
+    if (policy.attackerOverride != PokemonEffectiveWeather::None) {
+        next.effectiveWeather = policy.attackerOverride;
+    } else {
+        const bool suppressed = pokemonWeatherIsImmutable(arena.type)
+            ? policy.suppressesImmutableWeather : policy.suppressesOrdinaryWeather;
+        next.effectiveWeather = suppressed ? PokemonEffectiveWeather::None : arena.type;
+    }
+    output = next;
+    return true;
+}
+
 bool pokemonMoveWeatherMultiplier(uint16_t moveId,
     const PokemonMoveWeatherContext& context, double& outputMultiplier) {
     const auto* move = PokerogueContent::findMoveById(moveId);

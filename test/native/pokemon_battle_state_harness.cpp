@@ -523,6 +523,31 @@ extern "C" int runPokemonBattleStateChecks() {
     if (Pokerogue3DS::calculatePokemonDamageCore(typePowerActor, state, 232, false,
             unresolvedDamage) != Pokerogue3DS::PokemonDamageCoreResult::UnsupportedAbilityCondition ||
         unresolvedDamage != 777) return 267;
+    Pokerogue3DS::PokemonArenaWeatherState arenaWeather{};
+    using Pokerogue3DS::PokemonEffectiveWeather;
+    if (!Pokerogue3DS::setPokemonArenaWeather(arenaWeather, PokemonEffectiveWeather::Rain, 2) ||
+        arenaWeather.turnsLeft != 2 || arenaWeather.maxDuration != 2) return 280;
+    if (!Pokerogue3DS::lapsePokemonArenaWeather(arenaWeather) || arenaWeather.turnsLeft != 1 ||
+        Pokerogue3DS::lapsePokemonArenaWeather(arenaWeather) || arenaWeather.turnsLeft != 0) return 281;
+    if (!Pokerogue3DS::setPokemonArenaWeather(arenaWeather, PokemonEffectiveWeather::HeavyRain, 5) ||
+        arenaWeather.turnsLeft != 0 || arenaWeather.maxDuration != 0 ||
+        !Pokerogue3DS::lapsePokemonArenaWeather(arenaWeather)) return 282;
+    if (Pokerogue3DS::setPokemonArenaWeather(arenaWeather, PokemonEffectiveWeather::Sunny, 5) ||
+        arenaWeather.type != PokemonEffectiveWeather::HeavyRain) return 283;
+    Pokerogue3DS::PokemonWeatherResolutionPolicy weatherPolicy{};
+    weatherPolicy.resolved = true;
+    weatherPolicy.suppressesOrdinaryWeather = true;
+    Pokerogue3DS::PokemonMoveWeatherContext resolvedWeather{};
+    if (!Pokerogue3DS::resolvePokemonMoveWeatherContext(arenaWeather, weatherPolicy, resolvedWeather) ||
+        resolvedWeather.effectiveWeather != PokemonEffectiveWeather::HeavyRain) return 284;
+    weatherPolicy.suppressesImmutableWeather = true;
+    if (!Pokerogue3DS::resolvePokemonMoveWeatherContext(arenaWeather, weatherPolicy, resolvedWeather) ||
+        resolvedWeather.effectiveWeather != PokemonEffectiveWeather::None) return 285;
+    weatherPolicy.attackerOverride = PokemonEffectiveWeather::Sunny;
+    if (!Pokerogue3DS::resolvePokemonMoveWeatherContext(arenaWeather, weatherPolicy, resolvedWeather) ||
+        resolvedWeather.effectiveWeather != PokemonEffectiveWeather::Sunny) return 286;
+    if (!Pokerogue3DS::setPokemonArenaWeather(arenaWeather, PokemonEffectiveWeather::None, 5) ||
+        arenaWeather.turnsLeft != 0) return 287;
     Pokerogue3DS::PokemonMoveWeatherContext weatherContext{};
     double weatherMultiplier = 17.0;
     if (Pokerogue3DS::pokemonMoveWeatherMultiplier(52, weatherContext, weatherMultiplier) ||
