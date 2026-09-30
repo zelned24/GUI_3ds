@@ -59,8 +59,8 @@ inline uint16_t trainerPartyRootDex(const PokerogueContent::Species& species) {
 }
 
 // Source order for a simple trainer pool member: tier roll, candidate roll,
-// first level evolution, duplicate rerolls (up to ten), then the second
-// getSpeciesForLevel call in Trainer.genPartyMember. Actor creation follows.
+// level evolution and duplicate rerolls (up to ten). Ordinary pool members
+// retain that species; sameSpecies overrides it after consuming those draws.
 // Balanced type rerolls still require the resolved form/type context.
 inline TrainerPartySpeciesChoice resolveSimpleTrainerPoolMember(
     const PokerogueContent::TrainerType& trainer,
@@ -102,8 +102,9 @@ inline TrainerPartySpeciesChoice resolveSimpleTrainerPoolMember(
           previousSpecies[member.segmentStart]->id, level, partyTemplate.parentEvolutionThresholdKindId,
           wave == 20, rng, true, false);
     } else {
-      finalId = PokerogueEncounterResolver::resolveTrainerSpeciesForLevel(
-          first->id, level, member.evolutionThresholdKindId, wave == 20, rng);
+      // genNewPartyMemberSpecies already evolved this species. genPartyMember
+      // calls a second evolution only for a separately selected newSpeciesPool.
+      finalId = first->id;
     }
     const auto* finalSpecies = trainerPartySpeciesById(finalId);
     return {finalSpecies, base->id, attempt, finalSpecies != nullptr};

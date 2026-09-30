@@ -240,3 +240,9 @@
 1. TrainerPartyCompoundTemplate llama super(totalSize, AVERAGE); TrainerPartyTemplate usa NORMAL por defecto. Tabla runtime conserva parentEvolutionThresholdKindId separado de los segmentos, derivando el ID NORMAL del catálogo importado.
 2. sameSpecies compuesto usa el umbral padre y retira su bloqueo temporal. Regresión 232–233 actualizada para consultar este campo.
 3. Generación de contenido permitida; tests y compilación siguen pendientes. Balanced y callbacks especiales aún requieren portado.
+
+## Sorteos de evolución del pool de entrenador
+
+1. Trainer.genNewPartyMemberSpecies retorna ret tras evolución y rerolls. Trainer.genPartyMember no vuelve a evolucionar el pool ordinario; la segunda transformación solo corresponde a newSpeciesPool. Retirado sorteo adicional local.
+2. sameSpecies conserva su sustitución posterior explícita. Corrección afecta especies y estado RNG consumido antes de crear actor, movimientos e IVs.
+3. Regresión 234–236 recorre trainers reales simples sin signature y compara especie y carry/s0/s1/s2 con la secuencia explícita del pool upstream. Escrita, pendiente de ejecución. Specialty filters, tipos balanced y firmas reservadas para evitar duplicados siguen pendientes.

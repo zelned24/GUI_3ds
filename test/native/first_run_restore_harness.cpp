@@ -5,6 +5,7 @@
 #include "game/PokemonWeatherPhase.hpp"
 #include "game/PokerogueClassicWaveSchedule.hpp"
 #include "game/PokerogueEncounterResolver.hpp"
+#include "game/PokerogueTrainerPartyLevels.hpp"
 
 // Standalone host regression for atomic checkpoint application. This requires
 // the standard C++ library; it is not the freestanding WASM parity harness.
@@ -633,6 +634,45 @@ static int checkLevelUpMoveLearningAndEvolution() {
     return 0;
 }
 
+static int checkTrainerPoolEvolutionDraws() {
+    using namespace Pokerogue3DS;
+    unsigned checked = 0;
+    for (const auto& trainer : PokerogueContent::kTrainerTypes) {
+        if (!trainer.speciesPoolCount || trainer.signatureCount) continue;
+        const uint16_t seed[] = {'p', 'o', 'o', 'l'};
+        PokerogueRngAdapter templateRng;
+        templateRng.sow(seed, 4);
+        const auto choice = selectTrainerPartyTemplate(trainer, 25, templateRng);
+        if (!choice.supported || !choice.value) continue;
+        const auto slot = trainerPartyMemberTemplate(*choice.value, 0);
+        if (!slot.supported || slot.balanced || slot.sameSpecies) continue;
+        PokerogueRngAdapter expectedRng, actualRng;
+        expectedRng.sow(seed, 4);
+        actualRng.sow(seed, 4);
+        const char* expected = nullptr;
+        for (uint8_t attempt = 0; attempt <= 10; ++attempt) {
+            expected = nullptr;
+            const auto pool = PokerogueEncounterResolver::resolveTrainerPoolSpecies(trainer, expectedRng);
+            if (!pool.valid) break;
+            const auto* base = trainerPartySpeciesById(pool.speciesId);
+            if (!base) break;
+            expected = PokerogueEncounterResolver::resolveTrainerSpeciesForLevel(base->id,
+                25, slot.evolutionThresholdKindId, false, expectedRng);
+            if (!expected) break;
+            if (base->prevolutionDex && std::strcmp(expected, base->id) && attempt < 10) continue;
+            break;
+        }
+        if (!expected) continue;
+        const auto actual = resolveSimpleTrainerPoolMember(trainer, *choice.value, 0, 25,
+            25, nullptr, 0, actualRng);
+        if (!actual.supported || !actual.species || std::strcmp(expected, actual.species->id)) return 234;
+        const auto a = actualRng.state(), e = expectedRng.state();
+        if (a.carry != e.carry || a.s0 != e.s0 || a.s1 != e.s1 || a.s2 != e.s2) return 235;
+        ++checked;
+    }
+    return checked ? 0 : 236;
+}
+
 static int checkCanonicalSameSpeciesTrainerMembers() {
     using namespace Pokerogue3DS;
     unsigned checked = 0;
@@ -686,6 +726,8 @@ static int checkCanonicalTrainerSignatureSlots() {
 }
 
 int main() {
+    const int poolDrawCheck = checkTrainerPoolEvolutionDraws();
+    if (poolDrawCheck) return poolDrawCheck;
     const int sameSpeciesCheck = checkCanonicalSameSpeciesTrainerMembers();
     if (sameSpeciesCheck) return sameSpeciesCheck;
     const int signatureCheck = checkCanonicalTrainerSignatureSlots();
