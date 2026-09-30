@@ -285,3 +285,9 @@
 1. Portado calculateBossSegmentDamage de src/utils/damage.ts pinned a calculatePokemonBossSegmentDamage en el módulo BattleState existente. Conserva umbral Math.round, bypass log2 acotado y toDmgValue floor/min1, sin RNG. Duplicación sucesiva evita libm log en ARM11.
 2. Regresiones 468–474 escritas para daño insuficiente/exacto, daño excedente limitado, bypass, mínimo de segmento de primera fase final, HP no divisibles e inputs inválidos sin mutación de salida. Pendientes de ejecución.
 3. Resolver puro todavía no conectado a los comandos: faltan estado de segmentos, stat boosts, transformación Eternamax y evento/render. No se declara combate de jefe ni GameClear completo.
+
+## Planificación de boosts por segmentos
+
+1. Portado EnemyPokemon.handleBossSegmentCleared y weightedPick pinned (src/field/pokemon.ts y src/utils/random.ts) a planPokemonBossSegmentCleared. Pesos usan stats permanentes, filtro stages + primer cambio pendiente, RNG randSeedInt y boosts de últimos shields. Entrenadores/no stats elegibles no consumen sorteos.
+2. Resultado es evento agregado por stat con nuevo índice de segmento; no muta BattleState. RNG/salida se publican solo si la planificación completa tiene éxito. Phase futura debe aplicar cambios con ignoreAbilities como upstream.
+3. Regresiones 475–482 escritas para stats maxed, último shield +2, entrenador sin boosts e inputs inválidos sin avanzar RNG. No ejecutadas. Conexión de segmentos al daño, aplicación de boosts, callbacks y Eternamax siguen pendientes.

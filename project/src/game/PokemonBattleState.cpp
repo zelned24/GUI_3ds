@@ -1278,6 +1278,45 @@ PokemonGenderSelectionResult selectPokemonGender(
     return PokemonGenderSelectionResult::Ok;
 }
 
+bool planPokemonBossSegmentCleared(const PokemonBattleState& boss, uint16_t segmentCount,
+    uint16_t currentSegmentIndex, uint16_t clearedSegmentIndex, bool hasTrainer,
+    PokerogueRngAdapter& rng, PokemonBossSegmentClearEvent& output) {
+    if (!segmentCount || currentSegmentIndex >= segmentCount || clearedSegmentIndex > currentSegmentIndex + 1)
+        return false;
+    for (uint8_t stat = 0; stat < 5; ++stat)
+        if (!boss.stats[stat + 1] || boss.statStages[stat] < -6 || boss.statStages[stat] > 6) return false;
+    auto nextRng = rng;
+    PokemonBossSegmentClearEvent event{};
+    event.nextSegmentIndex = currentSegmentIndex;
+    uint8_t firstPending[5]{};
+    bool boost = !hasTrainer;
+    while (event.nextSegmentIndex && (!clearedSegmentIndex || event.nextSegmentIndex >= clearedSegmentIndex)) {
+        --event.nextSegmentIndex;
+        if (!boost) continue;
+        uint32_t totalWeight = 0;
+        for (uint8_t stat = 0; stat < 5; ++stat)
+            if (boss.statStages[stat] + firstPending[stat] < 6) totalWeight += boss.stats[stat + 1];
+        if (!totalWeight) { boost = false; continue; }
+        const uint32_t roll = static_cast<uint32_t>(nextRng.randSeedInt(static_cast<int32_t>(totalWeight)));
+        uint32_t cumulative = 0;
+        uint8_t selected = 5;
+        for (uint8_t stat = 0; stat < 5; ++stat) {
+            if (boss.statStages[stat] + firstPending[stat] >= 6) continue;
+            cumulative += boss.stats[stat + 1];
+            if (roll < cumulative) { selected = stat; break; }
+        }
+        if (selected == 5) return false;
+        const uint8_t stages = 1 + (segmentCount >= 3 && event.nextSegmentIndex == 0) +
+            (segmentCount >= 5 && event.nextSegmentIndex == 1);
+        // Upstream filters against changes.find: the first pending change for this stat.
+        if (!firstPending[selected]) firstPending[selected] = stages;
+        event.statStages[selected] += stages;
+    }
+    rng = nextRng;
+    output = event;
+    return true;
+}
+
 bool calculatePokemonBossSegmentDamage(uint32_t damage, uint16_t currentHp,
     uint16_t maxHp, uint16_t segmentCount, uint16_t currentSegmentIndex,
     uint16_t minimumSegmentIndex, PokemonBossSegmentDamage& output) {

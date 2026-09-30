@@ -450,6 +450,14 @@ struct PokemonBossSegmentDamage {
     uint32_t adjustedDamage = 0;
     uint16_t clearedSegmentIndex = 0;
 };
+struct PokemonBossSegmentClearEvent {
+    uint16_t nextSegmentIndex = 0;
+    uint32_t statStages[5]{}; // ATK, DEF, SPATK, SPDEF, SPD; ignoreAbilities phase.
+};
+bool planPokemonBossSegmentCleared(const PokemonBattleState& boss, uint16_t segmentCount,
+    uint16_t currentSegmentIndex, uint16_t clearedSegmentIndex, bool hasTrainer,
+    PokerogueRngAdapter& rng, PokemonBossSegmentClearEvent& output);
+
 // Pinned utils/damage.ts calculateBossSegmentDamage. Does not mutate HP or
 // trigger shield stat boosts/forms; the boss phase owns those consequences.
 bool calculatePokemonBossSegmentDamage(uint32_t damage, uint16_t currentHp,

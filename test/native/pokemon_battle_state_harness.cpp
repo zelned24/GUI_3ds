@@ -2051,6 +2051,30 @@ extern "C" int runPokemonBattleStateChecks() {
         return true;
     };
     if (!checkRealMoveset(dexFor("bulbasaur"), 65) || !checkRealMoveset(dexFor("pikachu"), 9)) return 117;
+    Pokerogue3DS::PokemonBattleState bossBoostState{};
+    for (unsigned i = 0; i < 5; ++i) { bossBoostState.stats[i + 1] = 100; bossBoostState.statStages[i] = 6; }
+    Pokerogue3DS::PokerogueRngAdapter bossBoostRng;
+    const uint16_t bossSeed[] = {'b', 'o', 's', 's'};
+    bossBoostRng.sow(bossSeed, 4);
+    const auto beforeBoostRng = bossBoostRng.state();
+    Pokerogue3DS::PokemonBossSegmentClearEvent clearEvent{};
+    if (!Pokerogue3DS::planPokemonBossSegmentCleared(bossBoostState, 3, 2, 0, false, bossBoostRng, clearEvent) ||
+        clearEvent.nextSegmentIndex != 0) return 475;
+    const auto afterBoostRng = bossBoostRng.state();
+    if (beforeBoostRng.carry != afterBoostRng.carry || beforeBoostRng.s0 != afterBoostRng.s0 ||
+        beforeBoostRng.s1 != afterBoostRng.s1 || beforeBoostRng.s2 != afterBoostRng.s2) return 476;
+    for (auto stages : clearEvent.statStages) if (stages) return 477;
+    bossBoostState.statStages[0] = 0;
+    if (!Pokerogue3DS::planPokemonBossSegmentCleared(bossBoostState, 3, 1, 1, false, bossBoostRng, clearEvent) ||
+        clearEvent.nextSegmentIndex || clearEvent.statStages[0] != 2) return 478;
+    if (!Pokerogue3DS::planPokemonBossSegmentCleared(bossBoostState, 5, 2, 0, true, bossBoostRng, clearEvent) ||
+        clearEvent.nextSegmentIndex) return 479;
+    for (auto stages : clearEvent.statStages) if (stages) return 480;
+    const auto beforeInvalidBoost = bossBoostRng.state();
+    if (Pokerogue3DS::planPokemonBossSegmentCleared(bossBoostState, 3, 3, 0, false, bossBoostRng, clearEvent)) return 481;
+    const auto afterInvalidBoost = bossBoostRng.state();
+    if (beforeInvalidBoost.s0 != afterInvalidBoost.s0 || beforeInvalidBoost.s1 != afterInvalidBoost.s1 ||
+        beforeInvalidBoost.s2 != afterInvalidBoost.s2 || beforeInvalidBoost.carry != afterInvalidBoost.carry) return 482;
     Pokerogue3DS::PokemonBossSegmentDamage bossDamage{};
     if (!Pokerogue3DS::calculatePokemonBossSegmentDamage(99, 300, 300, 3, 2, 0, bossDamage) ||
         bossDamage.adjustedDamage != 99 || bossDamage.clearedSegmentIndex != 3) return 468;
