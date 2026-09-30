@@ -32,6 +32,73 @@ struct TrainerPartyMemberTemplate {
   bool supported = false;
 };
 
+inline TrainerPartyMemberTemplate trainerPartyMemberTemplate(
+    const PokerogueContent::TrainerPartyTemplate& partyTemplate, uint8_t memberIndex);
+
+struct TrainerPartySpeciesChoice {
+  const PokerogueContent::Species* species = nullptr;
+  const char* baseSpeciesId = nullptr;
+  uint8_t attempts = 0;
+  bool supported = false;
+};
+
+inline const PokerogueContent::Species* trainerPartySpeciesById(const char* id) {
+  if (!id) return nullptr;
+  for (const auto& species : PokerogueContent::kSpecies)
+    if (std::strcmp(species.id, id) == 0) return &species;
+  return nullptr;
+}
+
+inline uint16_t trainerPartyRootDex(const PokerogueContent::Species& species) {
+  const auto* current = &species;
+  for (uint8_t depth = 0; depth < 16 && current->prevolutionDex; ++depth) {
+    current = PokerogueContent::findSpeciesByDex(current->prevolutionDex);
+    if (!current) return 0;
+  }
+  return current->prevolutionDex ? 0 : current->dex;
+}
+
+// Source order for a simple trainer pool member: tier roll, candidate roll,
+// first level evolution, duplicate rerolls (up to ten), then the second
+// getSpeciesForLevel call in Trainer.genPartyMember. Actor creation follows.
+// This subset requires a plain non-balanced, non-same-species party template.
+inline TrainerPartySpeciesChoice resolveSimpleTrainerPoolMember(
+    const PokerogueContent::TrainerType& trainer,
+    const PokerogueContent::TrainerPartyTemplate& partyTemplate,
+    uint8_t memberIndex, uint16_t level, uint16_t wave,
+    const PokerogueContent::Species* const* previousSpecies, uint8_t previousCount,
+    PokerogueRngAdapter& rng) {
+  const auto member = trainerPartyMemberTemplate(partyTemplate, memberIndex);
+  if (!member.supported || member.balanced || member.sameSpecies ||
+      !level || !wave || !trainer.speciesPoolCount || trainer.signatureCount ||
+      previousCount > memberIndex || memberIndex >= 6) return {};
+  for (uint8_t attempt = 0; attempt <= 10; ++attempt) {
+    const auto pool = PokerogueEncounterResolver::resolveTrainerPoolSpecies(trainer, rng);
+    if (!pool.valid) return {};
+    const auto* base = trainerPartySpeciesById(pool.speciesId);
+    if (!base) return {};
+    const char* firstId = PokerogueEncounterResolver::resolveTrainerSpeciesForLevel(
+        base->id, level, member.evolutionThresholdKindId, wave == 20, rng);
+    const auto* first = trainerPartySpeciesById(firstId);
+    if (!first) return {};
+    bool retry = base->prevolutionDex && std::strcmp(first->id, base->id) != 0;
+    const uint16_t baseRoot = trainerPartyRootDex(*base);
+    if (!baseRoot) return {};
+    for (uint8_t i = 0; i < previousCount; ++i) {
+      if (!previousSpecies || !previousSpecies[i]) return {};
+      const uint16_t priorRoot = trainerPartyRootDex(*previousSpecies[i]);
+      if (!priorRoot) return {};
+      retry |= priorRoot == base->dex;
+    }
+    if (retry && attempt < 10) continue;
+    const char* finalId = PokerogueEncounterResolver::resolveTrainerSpeciesForLevel(
+        first->id, level, member.evolutionThresholdKindId, wave == 20, rng);
+    const auto* finalSpecies = trainerPartySpeciesById(finalId);
+    return {finalSpecies, base->id, attempt, finalSpecies != nullptr};
+  }
+  return {};
+}
+
 // Initializer-installed signature callbacks occupy the final party slots in
 // reverse declaration order: signature[0] is party[size - 1].
 inline const char* trainerSignatureSpeciesForMember(

@@ -529,7 +529,9 @@ void FirstRunRuntime::resolve(bool carryPlayer) {
     m_context.trainerPartyTemplateKey = nullptr;
     m_context.trainerPartyCount = 0;
     m_context.trainerFemaleVariant = false;
+    m_context.trainerPartySpeciesResolved = false;
     for (auto& level : m_context.trainerPartyLevels) level = 0;
+    for (auto& member : m_context.trainerParty) member = {};
     const auto& starter = PokerogueContent::kSpecies[m_starterIndex];
     m_run.starterDex = starter.dex;
     m_context.modeName = locale("gameMode:classic", "Classic");
@@ -659,10 +661,41 @@ void FirstRunRuntime::resolve(bool carryPlayer) {
                         m_context.trainerPartyCount = levels.count;
                         for (uint8_t i = 0; i < levels.count; ++i)
                             m_context.trainerPartyLevels[i] = levels.values[i];
+                        const PokerogueContent::Species* selectedSpecies[6]{};
+                        bool allSpeciesResolved = true;
+                        for (uint8_t i = 0; i < levels.count; ++i) {
+                            uint32_t memberOffset = 0;
+                            if (!trainerPartyMemberSeedOffset(*trainer, m_run.wave, i, memberOffset)) {
+                                allSpeciesResolved = false;
+                                break;
+                            }
+                            PokerogueRngAdapter memberRng;
+                            PokerogueSeedOffsetScope memberScope(memberRng,
+                                m_seedCodeUnits.data(), m_seedLength, memberOffset);
+                            if (!memberScope.valid()) {
+                                allSpeciesResolved = false;
+                                break;
+                            }
+                            const auto member = resolveSimpleTrainerPoolMember(*trainer,
+                                *chosen.value, i, levels.values[i], m_run.wave,
+                                selectedSpecies, i, memberRng);
+                            if (!member.supported || !member.species) {
+                                allSpeciesResolved = false;
+                                break;
+                            }
+                            selectedSpecies[i] = member.species;
+                            const std::string localeId = std::string("pokemon:") + member.species->id;
+                            m_context.trainerParty[i] = {member.species->dex, levels.values[i],
+                                member.species->id, locale(localeId.c_str(), member.species->name),
+                                member.species->firstFormId, member.species->assetSourcePath};
+                        }
+                        m_context.trainerPartySpeciesResolved = allSpeciesResolved;
                     }
                 }
-                m_battleFeedback = m_context.trainerPartyCount
-                    ? "Trainer species and battle pending"
+                m_battleFeedback = m_context.trainerPartySpeciesResolved
+                    ? "Trainer actors and battle pending"
+                    : m_context.trainerPartyCount
+                    ? "Canonical trainer species could not resolve"
                     : "Canonical trainer party template could not resolve";
             } else {
                 m_battleFeedback = "Fixed trainer variant callback is not ported yet";
@@ -816,7 +849,20 @@ void FirstRunRuntime::buildScene() {
         : (!m_encounterResolved && m_runStarted ? "Encounter integration pending" :
             m_runStarted ? "A: fight  UP/DOWN: move" :
             "A: fight  UP/DOWN: move  LEFT/RIGHT: starter");
-    if (m_context.trainerPartyCount) {
+    if (m_context.trainerPartySpeciesResolved) {
+        if (m_context.trainerPartyCount > 1) {
+            std::snprintf(line, sizeof(line), "Team: %s Lv.%u / %s Lv.%u",
+                m_context.trainerParty[0].localizedName,
+                static_cast<unsigned>(m_context.trainerParty[0].level),
+                m_context.trainerParty[1].localizedName,
+                static_cast<unsigned>(m_context.trainerParty[1].level));
+        } else {
+            std::snprintf(line, sizeof(line), "Team: %s Lv.%u",
+                m_context.trainerParty[0].localizedName,
+                static_cast<unsigned>(m_context.trainerParty[0].level));
+        }
+        m_text[6] = line;
+    } else if (m_context.trainerPartyCount) {
         std::snprintf(line, sizeof(line), "Party: %s | %u members, first Lv. %u",
             m_context.trainerPartyTemplateKey,
             static_cast<unsigned>(m_context.trainerPartyCount),
