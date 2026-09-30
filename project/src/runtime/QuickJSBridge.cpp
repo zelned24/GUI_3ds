@@ -72,7 +72,7 @@ bool QuickJSBridge::init(Renderer2D& renderer) {
         {"_3ds_beginTop", beginTop, 0}, {"_3ds_beginBottom", beginBottom, 0},
         {"_3ds_clear", clear, 1}, {"_3ds_drawImage", drawImage, 6},
         {"_3ds_resetRun", resetRun, 0}, {"_3ds_cycleStarter", cycleStarterBinding, 1},
-        {"_3ds_getStarterName", getStarterName, 0},
+        {"_3ds_getStarterName", getStarterName, 0}, {"_3ds_getMoveName", getMoveName, 1},
         {"_3ds_saveNative", saveNative, 0}, {"_3ds_loadNative", loadNative, 0},
         {"_3ds_submitAction", submitAction, 1}, {"_3ds_skipReward", skipReward, 0},
         {"_3ds_getCombatLog", getCombatLog, 0},
@@ -245,6 +245,13 @@ JSValue QuickJSBridge::cycleStarterBinding(JSContext* ctx, JSValueConst, int arg
     if (b->m_pendingAction != -999) return JS_FALSE;
     if (b->m_game->runStarted() && !(b->m_game->battleFinished() && !b->m_game->playerWon())) return JS_FALSE;
     b->m_pendingAction = direction < 0 ? 202 : 203; return JS_TRUE;
+}
+JSValue QuickJSBridge::getMoveName(JSContext* ctx, JSValueConst, int argc, JSValueConst* argv) {
+    double id;
+    if (argc != 1 || !number(ctx, argv[0], id) || id < 0 || id > 65535 || std::floor(id) != id)
+        return JS_ThrowRangeError(ctx, "Move ID must be a canonical integer");
+    const auto* move = PokerogueContent::findMoveById(static_cast<uint16_t>(id));
+    return JS_NewString(ctx, move && move->name ? move->name : "---");
 }
 JSValue QuickJSBridge::getStarterName(JSContext* ctx, JSValueConst, int, JSValueConst*) {
     auto* b = static_cast<QuickJSBridge*>(JS_GetContextOpaque(ctx));

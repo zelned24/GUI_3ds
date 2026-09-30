@@ -83,7 +83,7 @@ globalThis._3ds_tick = function(input) {
   _3ds_drawText('Wave: ' + (state.wave || 0), 10, 10, 0.65, 0xFF00FFFF);
   const moves = state.playerMoves || [], pp = state.playerPP || [];
   for (let i = 0; i < 4; ++i) {
-    _3ds_drawText((i === state.selectedMove ? '> ' : '  ') + (i + 1) + ': Move #' + (moves[i] || 0) + ' PP:' + (pp[i] || 0),
+    _3ds_drawText((i === state.selectedMove ? '> ' : '  ') + (i + 1) + ': ' + _3ds_getMoveName(moves[i] || 0) + ' PP:' + (pp[i] || 0),
       10, 42 + i * 25, 0.5, i === state.selectedMove ? GREEN : WHITE);
   }
   const phaseText = state.finished
