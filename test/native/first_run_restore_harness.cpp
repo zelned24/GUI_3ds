@@ -129,6 +129,9 @@ static int checkResolvedActionFieldLifecycle() {
         NativeRunSave after{};
         game.captureNativeRunSave(after);
         if (after.trickRoomTurnsLeft != 2 || after.trickRoomSourceMoveId != 433) return 31;
+        if (after.weatherType != static_cast<uint8_t>(game.arenaWeather().type) ||
+            after.weatherTurnsLeft != game.arenaWeather().turnsLeft ||
+            after.weatherMaxDuration != game.arenaWeather().maxDuration) return 34;
         if (game.presentation().player.battleState.hp && after.playerPp[moveSlot] !=
                 initialPp - (cost < initialPp ? cost : initialPp)) return 32;
         return 0;
