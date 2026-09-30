@@ -530,8 +530,10 @@ void FirstRunRuntime::resolve(bool carryPlayer) {
     m_context.trainerPartyCount = 0;
     m_context.trainerFemaleVariant = false;
     m_context.trainerPartySpeciesResolved = false;
+    m_context.trainerPartyConstructorResolved = false;
     for (auto& level : m_context.trainerPartyLevels) level = 0;
     for (auto& member : m_context.trainerParty) member = {};
+    for (auto& state : m_trainerConstructorRngStates) state = {};
     const auto& starter = PokerogueContent::kSpecies[m_starterIndex];
     m_run.starterDex = starter.dex;
     m_context.modeName = locale("gameMode:classic", "Classic");
@@ -663,6 +665,7 @@ void FirstRunRuntime::resolve(bool carryPlayer) {
                             m_context.trainerPartyLevels[i] = levels.values[i];
                         const PokerogueContent::Species* selectedSpecies[6]{};
                         bool allSpeciesResolved = true;
+                        bool allConstructorsResolved = true;
                         for (uint8_t i = 0; i < levels.count; ++i) {
                             uint32_t memberOffset = 0;
                             if (!trainerPartyMemberSeedOffset(*trainer, m_run.wave, i, memberOffset)) {
@@ -688,12 +691,35 @@ void FirstRunRuntime::resolve(bool carryPlayer) {
                             m_context.trainerParty[i] = {member.species->dex, levels.values[i],
                                 member.species->id, locale(localeId.c_str(), member.species->name),
                                 member.species->firstFormId, member.species->assetSourcePath};
+                            PokemonFormSelectionContext formContext{};
+                            formContext.biomeId = m_run.biomeId;
+                            formContext.timeOfDay = time == PokerogueTimeOfDay::Day ? "DAY"
+                                : time == PokerogueTimeOfDay::Dusk ? "DUSK"
+                                : time == PokerogueTimeOfDay::Night ? "NIGHT" : "DAWN";
+                            formContext.waveIndex = m_run.wave;
+                            formContext.trainerBattle = true;
+                            PokemonActorIdentity actor{};
+                            if (generatePokemonActorForWildEncounter(member.species->dex, 256,
+                                    formContext, memberRng, actor) != PokemonActorIdentityResult::Ok) {
+                                allConstructorsResolved = false;
+                                continue;
+                            }
+                            // This is only the shared Pokemon/EnemyPokemon constructor
+                            // prefix. Trainer moveset generation and the later six IV
+                            // draws must run before publishing a battle-ready actor.
+                            m_context.trainerParty[i].actor = actor;
+                            m_context.trainerParty[i].formId = actor.formId;
+                            m_trainerConstructorRngStates[i] = memberRng.state();
                         }
                         m_context.trainerPartySpeciesResolved = allSpeciesResolved;
+                        m_context.trainerPartyConstructorResolved =
+                            allSpeciesResolved && allConstructorsResolved;
                     }
                 }
-                m_battleFeedback = m_context.trainerPartySpeciesResolved
-                    ? "Trainer actors and battle pending"
+                m_battleFeedback = m_context.trainerPartyConstructorResolved
+                    ? "Trainer movesets, IVs and battle pending"
+                    : m_context.trainerPartySpeciesResolved
+                    ? "Trainer constructor metadata unsupported"
                     : m_context.trainerPartyCount
                     ? "Canonical trainer species could not resolve"
                     : "Canonical trainer party template could not resolve";

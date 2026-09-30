@@ -46,6 +46,7 @@ struct PresentationContext {
     bool trainerFemaleVariant = false;
     ResolvedPokemon trainerParty[6]{};
     bool trainerPartySpeciesResolved = false;
+    bool trainerPartyConstructorResolved = false;
     ResolvedPokemon player;
     ResolvedPokemon enemy;
     ResolvedPokemon secondEnemy;
@@ -90,6 +91,7 @@ private:
     std::size_t m_starterIndex = 0;
     std::array<uint16_t, 10> m_seedCodeUnits{};
     PokerogueBattleRng m_battleRng{};
+    PokerogueRngState m_trainerConstructorRngStates[6]{};
     std::size_t m_seedLength = 0;
     bool m_encounterResolved = false;
     bool m_doubleBattle = false;
