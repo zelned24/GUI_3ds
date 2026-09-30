@@ -1,7 +1,7 @@
 /**
- * Fallback Vertical Slice - Isolated Test Fixture.
- * CRITICAL: This is strictly a test fixture for unit tests and offline fallback.
- * IT MUST NEVER BE TREATED AS PRODUCTION DATA.
+ * Fallback Vertical Slice - Browser Fallback Test Fixture.
+ * CRITICAL: This is strictly an offline fallback fixture.
+ * IT MUST NEVER BE CONFUSED WITH PRODUCTION CANONICAL UPSTREAM DATA.
  * 
  * Source tag: 'TEST_FIXTURE_DO_NOT_USE_IN_PRODUCTION'
  */

@@ -2,8 +2,8 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { execFileSync, execSync } from 'child_process';
-import { TimelineEvaluator } from '../../public/js/animation/TimelineEvaluator.js';
-import { SceneCppExporter } from '../../public/js/generator/SceneCppExporter.js';
+import { TimelineEvaluator } from '../../tools/js/animation/TimelineEvaluator.js';
+import { SceneCppExporter } from '../../tools/js/generator/SceneCppExporter.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);

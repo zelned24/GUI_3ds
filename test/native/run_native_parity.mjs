@@ -1,6 +1,6 @@
-import { SceneModel } from '../../public/js/core/SceneModel.js';
-import { ComponentRegistry } from '../../public/js/components/ComponentRegistry.js';
-import { AnimationTrack } from '../../public/js/animation/AnimationTrack.js';
+import { SceneModel } from '../../tools/js/core/SceneModel.js';
+import { ComponentRegistry } from '../../tools/js/components/ComponentRegistry.js';
+import { AnimationTrack } from '../../tools/js/animation/AnimationTrack.js';
 import { NativeParityRunner } from './NativeParityRunner.js';
 
 console.log('====================================================');

@@ -2,7 +2,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { POKEROGUE_REPOSITORIES } from '../public/js/data/PokerogueSource.js';
+import { POKEROGUE_REPOSITORIES } from '../tools/js/data/PokerogueSource.js';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const repo = path.join(root, 'build/upstream/pokerogue-assets');
@@ -43,6 +43,6 @@ const source = `// Generated from ${POKEROGUE_REPOSITORIES['pokerogue-assets'].u
   + `export function hasPokerogueFormAtlas(key, facing = 'front') {\n`
   + `  return typeof key === 'string' && POKEROGUE_FORM_ATLAS_KEYS[facing]?.includes(key) === true;\n`
   + `}\n`;
-const output = path.join(root, 'public/js/data/PokerogueBaseAtlasIndex.js');
+const output = path.join(root, 'tools/js/data/PokerogueBaseAtlasIndex.js');
 await fs.writeFile(output, source);
 console.log(`Indexed ${ids.front.length}/${ids.back.length} base and ${forms.front.length}/${forms.back.length} named-form front/back atlas pairs`);

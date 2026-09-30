@@ -1,7 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { defaultAssetIndex } from '../public/js/data/AssetIndex.js';
+import { defaultAssetIndex } from '../tools/js/data/AssetIndex.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);

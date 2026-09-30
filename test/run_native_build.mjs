@@ -2,8 +2,8 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { execFileSync } from 'child_process';
-import { SceneModel } from '../public/js/core/SceneModel.js';
-import { SceneCppExporter } from '../public/js/generator/SceneCppExporter.js';
+import { SceneModel } from '../tools/js/core/SceneModel.js';
+import { SceneCppExporter } from '../tools/js/generator/SceneCppExporter.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);

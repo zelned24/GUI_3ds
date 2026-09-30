@@ -192,7 +192,7 @@ jobs:
           
           node --input-type=module -e "
             import fs from 'fs';
-            import { SceneCppExporter } from './public/js/generator/SceneCppExporter.js';
+            import { SceneCppExporter } from './tools/js/generator/SceneCppExporter.js';
             const sceneData = JSON.parse(fs.readFileSync('project/screens/PikachuEntrance.json', 'utf8'));
             const expA = SceneCppExporter.export(sceneData);
             const expB = SceneCppExporter.export(sceneData);

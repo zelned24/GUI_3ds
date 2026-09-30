@@ -3,9 +3,9 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { POKEROGUE_REPOSITORIES, PokerogueSource } from '../public/js/data/PokerogueSource.js';
+import { POKEROGUE_REPOSITORIES, PokerogueSource } from '../tools/js/data/PokerogueSource.js';
 import { POKEROGUE_BASE_ATLAS_REVISION, POKEROGUE_BASE_ATLAS_IDS,
-  POKEROGUE_FORM_ATLAS_KEYS } from '../public/js/data/PokerogueBaseAtlasIndex.js';
+  POKEROGUE_FORM_ATLAS_KEYS } from '../tools/js/data/PokerogueBaseAtlasIndex.js';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const lock = JSON.parse(await fs.readFile(path.join(root, 'project/data/assets/pokerogue-sprite-lock.json'), 'utf8'));

@@ -1,9 +1,9 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { PokerogueImporter } from '../public/js/data/PokerogueImporter.js';
+import { PokerogueImporter } from '../tools/js/data/PokerogueImporter.js';
 import { PinnedLocalRepository } from './PinnedLocalRepository.mjs';
-import { stableCanonicalStringify } from '../public/js/data/CanonicalDataContract.js';
+import { stableCanonicalStringify } from '../tools/js/data/CanonicalDataContract.js';
 import { execFileSync } from 'node:child_process';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');

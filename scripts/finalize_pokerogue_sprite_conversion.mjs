@@ -2,7 +2,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import { fileURLToPath } from 'node:url';
-import { POKEROGUE_REPOSITORIES } from '../public/js/data/PokerogueSource.js';
+import { POKEROGUE_REPOSITORIES } from '../tools/js/data/PokerogueSource.js';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const build = path.join(root, 'build/upstream-assets');

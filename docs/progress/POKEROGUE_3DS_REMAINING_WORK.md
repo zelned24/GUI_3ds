@@ -6,7 +6,7 @@
 2. Esta lista es un inventario de trabajo y evidencia pendiente; no certifica que exista una run Classic completa. Una clase, contrato o prueba escrita no demuestra integración jugable.
 3. Base de coordinación: rama `codex/pokerogue-3ds-migration`, repositorio `https://github.com/zelned24/GUI_3ds`, checkpoint publicado antes de este cierre `2d10ce6`. El commit que contiene este documento también cierra la parte de IA descrita abajo.
 4. Checkout de publicación usado por este agente: `D:/Proyectos/3ds_gui/GUI_3DS-publish`. No confundirlo con otros checkouts locales. Consultar HEAD y cambios locales antes de integrar trabajo externo.
-5. Fuentes de requisitos: MASTER CLASSIC PLAYABLE, AGENTS.md, GUI_3DS_NORTH_STAR.md y las especificaciones de contenido, flujo y presentación bajo `docs/`. Incluye requisitos posteriores del usuario: estética web, doble pantalla, C++, OTA y exportación de progreso.
+5. Fuentes de requisitos: instrucciones del usuario, AGENTS.md, GUI_3DS_NORTH_STAR.md y el estado consolidado `docs/MIGRATION_STATUS.md`. Incluye requisitos posteriores del usuario: estética web, doble pantalla, C++, OTA y exportación de progreso.
 6. Tests y compilación del programa están aplazados por instrucción del usuario. Se permite escribir pruebas y convertir PNG a `.t3x`. No describir funcionalidad como verificada en Azahar/Old 3DS hasta realizar esa validación final.
 7. Los documentos históricos de progreso/paridad contienen estados anteriores. El código y los informes de conversión actuales son la referencia para resolver discrepancias. Actualizar esos documentos al completar cada bloque.
 
@@ -19,7 +19,7 @@
 3. Reutilizar puntuaciones resueltas al elegir reemplazo, evitando recalcularlas con un campo neutral.
 4. Añadir una regresión escrita para reservas con etapas de velocidad opuestas.
 5. Revisar diff, registrar trazabilidad y publicar el checkpoint; no ejecutar tests ni compilar.
-6. Archivos de este bloque: `project/src/game/FirstRunRuntime.cpp`, `project/include/game/PokemonTrainerAi.hpp`, `test/native/pokemon_battle_state_harness.cpp` y `docs/generated/POKEROGUE_CLASSIC_TRACEABILITY.md`.
+6. Archivos de este bloque: `project/src/game/FirstRunRuntime.cpp`, `project/include/game/PokemonTrainerAi.hpp`, `test/native/pokemon_battle_state_harness.cpp` y `docs/MIGRATION_STATUS.md`.
 7. Esto no habilita todavía el combate de entrenador ni completa su semántica. No continuar modificando estos archivos simultáneamente desde ambas IA sin nuevo reparto.
 
 ### 2.2. Parte recomendada para la otra IA — presentación y assets
@@ -27,7 +27,7 @@
 1. Leer este documento y los contratos; inspeccionar `project/include/runtime`, `project/src/runtime`, `project/src/screens`, `project/src/gfx` y los scripts de assets existentes antes de crear sistemas.
 2. Completar los bloques 8 y 9 de esta lista: presentación web en ambas pantallas, controles, carga de sprites/formas, animaciones, fondos, HUD y audio.
 3. Consumir estados y eventos del dominio; no añadir reglas de combate, listas de Pokémon ni datos de ataques a la UI.
-4. Reutilizar `RuntimeAssetManager`, `PokemonAtlasPresenter`, `ScenePlayer`, AssetIndex y los bindings existentes. No reescribir Scene Composer ni crear otro motor de presentación.
+4. Reutilizar `RuntimeAssetManager`, `PokemonAtlasPresenter`, `ScenePlayer`, AssetIndex y los bindings existentes. No reconstruir el Studio ni crear otro motor de presentación.
 5. Trabajar en una rama propia `codex/...` o un worktree separado desde el checkpoint acordado. No compartir un checkout con escrituras concurrentes.
 6. No editar inicialmente `FirstRunRuntime.cpp`, `PokemonBattleState.*`, `PokemonTrainerAi.hpp`, `NativeRunSave.*`, el generador central o el contenido generado: solicitar coordinación cuando una integración requiera esos archivos.
 7. Registrar conexiones que necesite del dominio mediante un contrato de datos/eventos y un diff revisable. No sustituir estados ausentes por fixtures.
@@ -137,7 +137,7 @@
 4. Implementar foco y navegación D-pad/A/B/X/Y/L/R/Start/Select, táctil resistivo y feedback coherente sin dependencia exclusiva del táctil.
 5. Integrar HP/EXP/PP/status, cambio de Pokémon, selección de objetivos, mensajes de combate y efectos mediante eventos del dominio.
 6. Resolver idiomas mediante locale IDs, fallback explícito, fuentes/glyphs y límites de texto; eliminar presentación inglesa fija donde exista contenido localizado.
-7. Mantener Scene Composer/Timeline/ScenePlayer separados del dominio; adaptar bindings sin reescribir infraestructura general.
+7. Mantener presentación C++ y ScenePlayer separados del dominio; Studio web retirado.
 
 ### 8.2. Sprites, formas, animaciones y audio
 

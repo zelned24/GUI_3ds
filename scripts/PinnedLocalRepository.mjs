@@ -1,8 +1,8 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
-import { PokerogueRepository } from '../public/js/data/PokerogueRepository.js';
-import { POKEROGUE_REPOSITORIES } from '../public/js/data/PokerogueSource.js';
+import { PokerogueRepository } from '../tools/js/data/PokerogueRepository.js';
+import { POKEROGUE_REPOSITORIES } from '../tools/js/data/PokerogueSource.js';
 
 /** Reads the exact configured revisions from ignored local Git snapshots when available. */
 export class PinnedLocalRepository extends PokerogueRepository {

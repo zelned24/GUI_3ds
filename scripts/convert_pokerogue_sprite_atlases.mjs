@@ -3,7 +3,7 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { POKEROGUE_REPOSITORIES } from '../public/js/data/PokerogueSource.js';
+import { POKEROGUE_REPOSITORIES } from '../tools/js/data/PokerogueSource.js';
 
 // The default invocation only writes a deterministic conversion plan. Actual
 // texture conversion is explicit so the source migration can be inspected

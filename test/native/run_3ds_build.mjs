@@ -2,9 +2,9 @@ import fs from 'fs';
 import path from 'path';
 import { execSync } from 'child_process';
 import { fileURLToPath } from 'url';
-import { SceneValidator } from '../../public/js/generator/SceneValidator.js';
-import { SceneCppExporter } from '../../public/js/generator/SceneCppExporter.js';
-import { AssetPackager } from '../../public/js/generator/AssetPackager.js';
+import { SceneValidator } from '../../tools/js/generator/SceneValidator.js';
+import { SceneCppExporter } from '../../tools/js/generator/SceneCppExporter.js';
+import { AssetPackager } from '../../tools/js/generator/AssetPackager.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);

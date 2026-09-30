@@ -1,7 +1,4 @@
 {
-  "name": "3DS UI Game Creation Studio — PokéRogue 3DS",
-  "description": "Local visual IDE for Nintendo 3DS and PokéRogue interfaces",
-  "capabilities": [
-    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
-  ]
+  "name": "Pok\u00e9Rogue 3DS",
+  "description": "Native C++ adaptation for Old 3DS XL; Azahar and hardware validation"
 }
