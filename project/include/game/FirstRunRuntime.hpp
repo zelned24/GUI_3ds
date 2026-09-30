@@ -101,10 +101,12 @@ private:
     bool advanceTrainerAfterDefeat();
     bool finishBattleTurn();
     void refreshTrainerBaselineMatchups();
+    bool resolveActiveMoveWeather(bool enemyAttacks, PokemonMoveWeatherContext& output) const;
     void buildScene();
     static const char* locale(const char* canonicalId, const char* fallback);
 
     RunState m_run{};
+    PokemonArenaWeatherState m_arenaWeather{};
     PresentationContext m_context{};
     Citro2D::SceneDefinition m_scene{};
     std::array<Citro2D::SceneNodeData, 13> m_nodes{};

@@ -85,6 +85,7 @@ bool FirstRunRuntime::restoreSetup(uint32_t seed, uint16_t starterDex) {
     }
     if (index == PokerogueContent::kSpeciesCount) return false;
     m_run.seed = seed;
+    m_arenaWeather = {};
     m_runStarted = false;
     m_run.wave = 1;
     m_playerExperience = 0;
@@ -371,6 +372,21 @@ double baselineEnemyMoveScore(const PokemonBattleState& user,
 
 }
 
+bool FirstRunRuntime::resolveActiveMoveWeather(bool enemyAttacks,
+    PokemonMoveWeatherContext& output) const {
+    // Fresh-profile regular single encounters have no active passives or
+    // ability-changing effects. Those effects must extend field resolution.
+    if (m_doubleBattle || !m_context.player.actorIdentityResolved ||
+        !m_context.enemy.actorIdentityResolved) return false;
+    const PokemonWeatherAbilityComponent components[2] = {
+        {m_context.player.battleState.abilityId, true, !enemyAttacks},
+        {m_context.enemy.battleState.abilityId, true, enemyAttacks}
+    };
+    PokemonWeatherResolutionPolicy policy{};
+    return composePokemonWeatherResolutionPolicy(components, 2, policy) &&
+        resolvePokemonMoveWeatherContext(m_arenaWeather, policy, output);
+}
+
 bool FirstRunRuntime::battleInputSupported() const {
     if (!m_encounterResolved || m_trainerBattle || !m_context.player.actorIdentityResolved ||
         !m_context.enemy.actorIdentityResolved || m_doubleBattle || m_battleFinished ||
@@ -655,19 +671,22 @@ bool FirstRunRuntime::advanceBattleTurn() {
 
     const auto act = [&](bool enemyActs) -> bool {
         PokemonMoveActionResult result{};
+        PokemonMoveWeatherContext weather{};
+        if (!resolveActiveMoveWeather(enemyActs, weather)) return false;
         if (enemyActs) {
             if (!m_context.player.battleState.hp) return true;
             const auto status = useStandardPokemonMove(m_context.enemy.battleState,
-                m_context.player.battleState, enemyMoveSlot, false, *rng, result);
+                m_context.player.battleState, enemyMoveSlot, false, *rng, result, &weather);
             if (status != PokemonMoveActionStatus::Ok) return false;
-            m_battleFeedback = result.damageRoll.hit
+            m_battleFeedback = result.weatherCancelled ? "Enemy move blocked by weather" : result.damageRoll.hit
                 ? "Enemy move hit" : "Enemy move missed";
         } else {
             if (!m_context.enemy.battleState.hp) return true;
             const auto status = useStandardPokemonMove(m_context.player.battleState,
-                m_context.enemy.battleState, m_selectedBattleMove, false, *rng, result);
+                m_context.enemy.battleState, m_selectedBattleMove, false, *rng, result, &weather);
             if (status != PokemonMoveActionStatus::Ok) return false;
-            m_battleFeedback = result.damageRoll.hit ? "Your move hit" : "Your move missed";
+            m_battleFeedback = result.weatherCancelled ? "Your move blocked by weather" :
+                result.damageRoll.hit ? "Your move hit" : "Your move missed";
         }
         return true;
     };
@@ -1342,6 +1361,16 @@ void FirstRunRuntime::resolve(bool carryPlayer) {
             secondSpecies.assetSourcePath};
         if (!resolveEnemyActor(secondSpecies, m_context.secondEnemy)) return;
         m_secondEncounterResolved = true;
+    }
+    if (m_run.wave == 1) {
+        PokemonEffectiveWeather initialWeather{};
+        if (!selectPokemonBiomeWeather(m_run.biomeId,
+                time == PokerogueTimeOfDay::Dusk || time == PokerogueTimeOfDay::Night,
+                waveRng, initialWeather)) return;
+        // Current starting biome has only NONE. Non-neutral fields require
+        // residual damage, stat modifiers and summon effects before eligibility.
+        if (initialWeather != PokemonEffectiveWeather::None) return;
+        m_arenaWeather = {};
     }
     m_encounterResolved = true;
     m_checkpointAvailable = !m_doubleBattle;

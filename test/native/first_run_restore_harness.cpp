@@ -139,6 +139,17 @@ int main() {
         if (loaded.stage != NativeSaveStage::BattleActive || loaded.enemyHp != active.enemyHp ||
             loaded.seed != seed || loaded.playerStatStages[0] != -2 ||
             loaded.enemyStatStages[4] != 3) return 6;
+        if (loaded.weatherType || loaded.weatherTurnsLeft || loaded.weatherMaxDuration) return 23;
+        NativeRunSave unsupportedWeather = loaded;
+        unsupportedWeather.weatherType = 2;
+        unsupportedWeather.weatherTurnsLeft = 3;
+        unsupportedWeather.weatherMaxDuration = 5;
+        if (validateNativeRunSave(unsupportedWeather, PokerogueContent::kContentHash) != NativeSaveResult::Ok ||
+            game.restoreNativeRunSave(unsupportedWeather)) return 24;
+        NativeRunSave afterWeatherReject{};
+        game.captureNativeRunSave(afterWeatherReject);
+        if (afterWeatherReject.weatherType || afterWeatherReject.enemyHp != loaded.enemyHp ||
+            afterWeatherReject.playerHp != loaded.playerHp || afterWeatherReject.battleTurn != loaded.battleTurn) return 25;
         return checkTrainerExperienceReplay();
     }
     return 7; // No supported canonical encounter found: do not silently skip.
