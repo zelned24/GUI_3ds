@@ -343,6 +343,13 @@ bool composePokemonCriticalAbilityPolicy(const PokemonCriticalAbilityComponent* 
 bool pokemonMoveCriticalDenominator(uint16_t moveId, uint8_t& outputDenominator,
     uint8_t resolvedBonusStages = 0);
 
+struct PokemonHitPolicy {
+    bool resolved = false;
+    bool bypassAccuracy = false;
+    double accuracyMultiplier = 1.0; // Additional resolved multiplier; stages remain separate.
+};
+bool composePokemonAlwaysHitPolicy(const PokemonWeatherAbilityComponent* components,
+    std::size_t count, PokemonHitPolicy& output);
 struct PokemonMoveDamageRoll {
     bool hit = false;
     bool critical = false;
@@ -365,7 +372,8 @@ PokemonMoveDamageResult resolveStandardPokemonMoveDamage(
     PokerogueRngAdapter& battleRng,
     PokemonMoveDamageRoll& output,
     const PokemonMoveWeatherContext* weatherContext = nullptr,
-    const PokemonCriticalPolicy* criticalPolicy = nullptr);
+    const PokemonCriticalPolicy* criticalPolicy = nullptr,
+    const PokemonHitPolicy* hitPolicy = nullptr);
 
 struct PokemonMoveActionResult {
     PokemonMoveDamageRoll damageRoll{};
@@ -386,7 +394,8 @@ PokemonMoveActionStatus useStandardPokemonMove(
     PokerogueRngAdapter& battleRng,
     PokemonMoveActionResult& output,
     const PokemonMoveWeatherContext* weatherContext = nullptr,
-    const PokemonCriticalPolicy* criticalPolicy = nullptr);
+    const PokemonCriticalPolicy* criticalPolicy = nullptr,
+    const PokemonHitPolicy* hitPolicy = nullptr);
 
 enum class PokemonAbilitySelectionResult : uint8_t { Ok = 0, MissingSpecies, InvalidHiddenRate };
 PokemonAbilitySelectionResult selectPokemonAbilityIndex(

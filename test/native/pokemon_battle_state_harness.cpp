@@ -1035,6 +1035,20 @@ extern "C" int runPokemonBattleStateChecks() {
     if (Pokerogue3DS::resolveStandardPokemonMoveDamage(state, guardedTarget, 33, false, noGuardRng,
             noGuardRoll) != PokemonMoveDamageResult::Ok || !noGuardRoll.hit || noGuardRoll.accuracyWasRolled ||
         noGuardRoll.criticalRoll != expectedNoGuardCritical || noGuardRoll.randomDamagePercent != expectedNoGuardDamage) return 353;
+    Pokerogue3DS::PokemonWeatherAbilityComponent hitComponent{noGuardId, true, false};
+    Pokerogue3DS::PokemonHitPolicy hitPolicy{};
+    if (!Pokerogue3DS::composePokemonAlwaysHitPolicy(&hitComponent, 1, hitPolicy) ||
+        !hitPolicy.resolved || !hitPolicy.bypassAccuracy) return 354;
+    hitComponent.applies = false;
+    if (!Pokerogue3DS::composePokemonAlwaysHitPolicy(&hitComponent, 1, hitPolicy) ||
+        hitPolicy.bypassAccuracy) return 355;
+    hitPolicy.resolved = false;
+    PokemonMoveActionResult invalidHitAction{};
+    PokemonBattleState invalidHitActor = state, invalidHitTarget = state;
+    if (Pokerogue3DS::useStandardPokemonMove(invalidHitActor, invalidHitTarget, 0, false,
+            noGuardRng, invalidHitAction, nullptr, nullptr, &hitPolicy) !=
+            PokemonMoveActionStatus::UnsupportedAbilityCondition ||
+        invalidHitActor.moves[0].pp != state.moves[0].pp || invalidHitTarget.hp != state.hp) return 356;
     PokemonBattleState noPpActor = state;
     noPpActor.moves[0].pp = 0;
     PokemonBattleState unchangedTarget = state;

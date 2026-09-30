@@ -888,6 +888,21 @@ bool pokemonMoveCriticalDenominator(uint16_t moveId, uint8_t& outputDenominator,
     return true;
 }
 
+bool composePokemonAlwaysHitPolicy(const PokemonWeatherAbilityComponent* components,
+    std::size_t count, PokemonHitPolicy& output) {
+    if (count && !components) return false;
+    PokemonHitPolicy next{};
+    next.resolved = true;
+    for (std::size_t i = 0; i < count; ++i) {
+        if (!components[i].applies) continue;
+        if (!PokerogueContent::findAbilityMovegenProfile(components[i].abilityId)) return false;
+        for (const auto& profile : PokerogueContent::kAlwaysHitAbilityProfiles)
+            if (profile.abilityId == components[i].abilityId) next.bypassAccuracy = true;
+    }
+    output = next;
+    return true;
+}
+
 PokemonMoveDamageResult resolveStandardPokemonMoveDamage(
     const PokemonBattleState& attacker,
     const PokemonBattleState& defender,
@@ -896,7 +911,8 @@ PokemonMoveDamageResult resolveStandardPokemonMoveDamage(
     PokerogueRngAdapter& battleRng,
     PokemonMoveDamageRoll& output,
     const PokemonMoveWeatherContext* weatherContext,
-    const PokemonCriticalPolicy* criticalPolicy) {
+    const PokemonCriticalPolicy* criticalPolicy,
+    const PokemonHitPolicy* hitPolicy) {
     const auto* move = PokerogueContent::findMoveById(moveId);
     if (!move) return PokemonMoveDamageResult::MissingMove;
     if (move->category == PokerogueContent::MoveStatus || move->power <= 0) {
@@ -938,13 +954,21 @@ PokemonMoveDamageResult resolveStandardPokemonMoveDamage(
     for (const auto& profile : PokerogueContent::kAlwaysHitAbilityProfiles)
         if (profile.abilityId == attacker.abilityId || profile.abilityId == defender.abilityId)
             alwaysHits = true;
+    double additionalAccuracyMultiplier = 1.0;
+    if (hitPolicy) {
+        if (!hitPolicy->resolved) return PokemonMoveDamageResult::UnsupportedAbilityCondition;
+        if (!(hitPolicy->accuracyMultiplier > 0.0) || hitPolicy->accuracyMultiplier > 256.0)
+            return PokemonMoveDamageResult::InvalidAccuracy;
+        alwaysHits = hitPolicy->bypassAccuracy;
+        additionalAccuracyMultiplier = hitPolicy->accuracyMultiplier;
+    }
     if (weatherAccuracy >= 0 && !alwaysHits) {
         double accuracyStage = 1.0;
         if (!pokemonAccuracyStageMultiplier(attacker, defender, accuracyStage))
             return PokemonMoveDamageResult::InvalidAccuracy;
         next.accuracyWasRolled = true;
         next.accuracyRoll = static_cast<uint8_t>(battleRng.randSeedInt(100));
-        if (next.accuracyRoll >= weatherAccuracy * accuracyStage) {
+        if (next.accuracyRoll >= weatherAccuracy * accuracyStage * additionalAccuracyMultiplier) {
             output = next;
             return PokemonMoveDamageResult::Ok;
         }
@@ -1019,7 +1043,8 @@ PokemonMoveActionStatus useStandardPokemonMove(
     PokerogueRngAdapter& battleRng,
     PokemonMoveActionResult& output,
     const PokemonMoveWeatherContext* weatherContext,
-    const PokemonCriticalPolicy* criticalPolicy) {
+    const PokemonCriticalPolicy* criticalPolicy,
+    const PokemonHitPolicy* hitPolicy) {
     if (moveSlot >= attacker.moveCount || moveSlot >= 4 || attacker.moves[moveSlot].moveId == 0) {
         return PokemonMoveActionStatus::InvalidMoveSlot;
     }
@@ -1051,7 +1076,7 @@ PokemonMoveActionStatus useStandardPokemonMove(
     // Commit RNG only after a resolved action, just like HP and PP.
     PokerogueRngAdapter nextRng = battleRng;
     next.damageResolutionStatus = resolveStandardPokemonMoveDamage(
-        attacker, defender, attacker.moves[moveSlot].moveId, moveIsTypeless, nextRng, next.damageRoll, weatherContext, criticalPolicy);
+        attacker, defender, attacker.moves[moveSlot].moveId, moveIsTypeless, nextRng, next.damageRoll, weatherContext, criticalPolicy, hitPolicy);
     if (next.damageResolutionStatus == PokemonMoveDamageResult::UnsupportedAbilityCondition)
         return PokemonMoveActionStatus::UnsupportedAbilityCondition;
     if (next.damageResolutionStatus == PokemonMoveDamageResult::UnresolvedWeather)
