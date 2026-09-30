@@ -108,14 +108,11 @@ void FirstRunRuntime::captureNativeRunSave(NativeRunSave& output) const {
         output = {};
         return;
     }
-    // v4 replay cannot yet reconstruct intermediate trainer EXP awards.
-    // Do not write a checkpoint that the existing loader cannot reproduce.
-    if (m_trainerBattle && m_runStarted) {
-        for (uint8_t member = 0; member < m_context.trainerPartyCount; ++member) {
-            const auto& state = member == m_context.activeTrainerPartyIndex
-                ? m_context.enemy.battleState : m_context.trainerParty[member].battleState;
-            if (!state.hp) { output = {}; return; }
-        }
+    // Trainer final victory/loss replay remains unsupported. Active checkpoints
+    // can reconstruct per-KO EXP from the saved fainted party members.
+    if (m_trainerBattle && m_runStarted && m_battleFinished) {
+        output = {};
+        return;
     }
     if (makeNativeRunSetupSave(m_run.seed, m_run.starterDex, value) != NativeSaveResult::Ok) {
         output = {};
@@ -186,8 +183,8 @@ bool FirstRunRuntime::restoreNativeRunSaveInPlace(const NativeRunSave& save) {
         save.stage < NativeSaveStage::RunSetup ||
         save.stage > NativeSaveStage::ExperienceGranted) return false;
     // Wave five is currently the only complete deterministic trainer party.
-    // Trainer EXP/victory replay is not ported yet, so only active checkpoints
-    // can be restored through this path.
+    // Only active checkpoints can be restored here; whole-trainer victory
+    // and subsequent-wave replay remain pending.
     if (save.trainerPartyCount && (save.wave != 5 ||
         save.stage != NativeSaveStage::BattleActive)) return false;
     if (!restoreSetup(save.seed, save.starterDex)) return false;
@@ -216,6 +213,20 @@ bool FirstRunRuntime::restoreNativeRunSaveInPlace(const NativeRunSave& save) {
                     return false;
             }
         }
+    }
+    if (save.trainerPartyCount) {
+        // The supported fixed party has no revives, reward modifiers or player
+        // switches. Each fainted reserve has already awarded EXP exactly once.
+        // Recompute from canonical definitions rather than trusting saved EXP.
+        const ResolvedPokemon initialEnemy = m_context.enemy;
+        for (uint8_t member = 0; member < save.trainerPartyCount; ++member) {
+            if (save.trainerParty[member].hp) continue;
+            m_context.enemy = m_context.trainerParty[member];
+            m_experienceGranted = false;
+            if (!grantVictoryExperience()) return false;
+        }
+        m_context.enemy = initialEnemy;
+        m_experienceGranted = false;
     }
     const auto& reconstructedEnemy = save.trainerPartyCount
         ? m_context.trainerParty[save.activeTrainerMember] : m_context.enemy;
@@ -646,7 +657,7 @@ bool FirstRunRuntime::advanceTrainerAfterDefeat() {
     m_playerWon = false;
     m_experienceGranted = false;
     m_victoryPlan = {};
-    m_checkpointAvailable = false;
+    m_checkpointAvailable = true;
     refreshTrainerBaselineMatchups();
     return true;
 }
