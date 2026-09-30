@@ -85,6 +85,7 @@ public:
     bool skipVictoryReward();
     uint8_t selectedBattleMove() const { return m_selectedBattleMove; }
     const std::string& battleFeedback() const { return m_battleFeedback; }
+    const PokemonArenaWeatherState& arenaWeather() const { return m_arenaWeather; }
     bool doubleBattle() const { return m_doubleBattle; }
     bool playerWon() const { return m_playerWon; }
     bool battleFinished() const { return m_battleFinished; }

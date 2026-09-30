@@ -85,6 +85,7 @@ globalThis._3ds_tick = function(input) {
   _3ds_drawText('Classic ' + hpBar(state.wave, state.finalWave) + ' ' + (state.wave || 0) + '/' + (state.finalWave || 0), 10, 28, 0.38, WHITE);
   _3ds_drawText('Enemy #' + (state.enemyDex || 0), 222, 12, 0.48, WHITE);
   _3ds_drawText(hpBar(state.enemyHp, state.enemyMaxHp), 222, 29, 0.48, GREEN);
+  _3ds_drawText('Weather: ' + (presentation.weatherName || 'NONE'), 10, 52, 0.4, WHITE);
   _3ds_drawText('Player #' + (state.playerDex || 0), 10, 193, 0.48, WHITE);
   _3ds_drawText(hpBar(state.playerHp, state.playerMaxHp), 10, 208, 0.48, GREEN);
   if (combatLog) _3ds_drawText(combatLog.slice(0, 65), 10, 225, 0.38, 0xFFFFDD44);

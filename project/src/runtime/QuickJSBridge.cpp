@@ -260,6 +260,10 @@ JSValue QuickJSBridge::getPresentationInfo(JSContext* ctx, JSValueConst, int, JS
     auto* b = static_cast<QuickJSBridge*>(JS_GetContextOpaque(ctx));
     if (!b || !b->m_game) return JS_NULL;
     const auto& view = b->m_game->presentation();
+    // Presentation labels follow PokemonEffectiveWeather / pinned WeatherType enum order.
+    static const char* weatherNames[] = {"NONE", "SUN", "RAIN", "SANDSTORM", "HAIL",
+        "SNOW", "FOG", "HEAVY RAIN", "HARSH SUN", "STRONG WINDS"};
+    const unsigned weather = static_cast<unsigned>(b->m_game->arenaWeather().type);
     JSValue info = JS_NewObject(ctx);
     if (JS_IsException(info)) return JS_EXCEPTION;
     auto set = [&](const char* key, JSValue value) {
@@ -270,6 +274,8 @@ JSValue QuickJSBridge::getPresentationInfo(JSContext* ctx, JSValueConst, int, JS
         !set("trainerName", JS_NewString(ctx, view.trainerName ? view.trainerName : "")) ||
         !set("trainerPartyCount", JS_NewUint32(ctx, view.trainerPartyCount)) ||
         !set("doubleBattle", JS_NewBool(ctx, b->m_game->doubleBattle())) ||
+        !set("weatherType", JS_NewUint32(ctx, weather)) ||
+        !set("weatherName", JS_NewString(ctx, weather < 10 ? weatherNames[weather] : "UNSUPPORTED")) ||
         !set("secondEnemyDex", JS_NewUint32(ctx, b->m_game->doubleBattle() ? view.secondEnemy.dex : 0)) ||
         !set("activeTrainerMember", JS_NewUint32(ctx, view.activeTrainerPartyIndex)) ||
         !set("biomeId", JS_NewString(ctx, b->m_game->run().biomeId ? b->m_game->run().biomeId : "")) ||
