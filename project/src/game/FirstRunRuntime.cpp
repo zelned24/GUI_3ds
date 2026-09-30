@@ -114,7 +114,7 @@ void FirstRunRuntime::captureNativeRunSave(NativeRunSave& output) const {
     value.wave = m_run.wave;
     value.playerLevel = m_context.player.level;
     value.playerExperience = m_playerExperience;
-    if (m_runStarted && m_encounterResolved && !m_doubleBattle && !m_trainerBattle) {
+    if (m_runStarted && m_encounterResolved && !m_doubleBattle) {
         value.stage = m_battleFinished
             ? (m_playerWon ? (m_experienceGranted ? NativeSaveStage::ExperienceGranted
                                                 : NativeSaveStage::BattleWon)
@@ -134,6 +134,27 @@ void FirstRunRuntime::captureNativeRunSave(NativeRunSave& output) const {
             value.enemyMoveIds[i] = m_context.enemy.battleState.moves[i].moveId;
             value.enemyPp[i] = m_context.enemy.battleState.moves[i].pp;
         }
+        if (m_trainerBattle) {
+            if (!m_context.trainerPartyBattleStatesResolved ||
+                m_context.activeTrainerPartyIndex >= m_context.trainerPartyCount) {
+                output = {}; return;
+            }
+            value.trainerTypeId = m_context.trainerTypeId;
+            value.trainerPartyCount = m_context.trainerPartyCount;
+            value.activeTrainerMember = m_context.activeTrainerPartyIndex;
+            for (uint8_t member = 0; member < value.trainerPartyCount; ++member) {
+                const auto& actor = member == value.activeTrainerMember
+                    ? m_context.enemy : m_context.trainerParty[member];
+                auto& saved = value.trainerParty[member];
+                saved.speciesDex = actor.dex;
+                saved.hp = actor.battleState.hp;
+                saved.moveCount = actor.battleState.moveCount;
+                for (uint8_t slot = 0; slot < saved.moveCount && slot < 4; ++slot) {
+                    saved.moveIds[slot] = actor.battleState.moves[slot].moveId;
+                    saved.pp[slot] = actor.battleState.moves[slot].pp;
+                }
+            }
+        }
     }
     output = value;
 }
@@ -142,9 +163,11 @@ bool FirstRunRuntime::restoreNativeRunSave(const NativeRunSave& save) {
     if (validateNativeRunSave(save, PokerogueContent::kContentHash) != NativeSaveResult::Ok ||
         save.stage < NativeSaveStage::RunSetup ||
         save.stage > NativeSaveStage::ExperienceGranted) return false;
-    // Party codec is available, but trainer-turn restoration is not connected
-    // yet. Reject explicitly before mutating the live run.
-    if (save.trainerPartyCount) return false;
+    // Wave five is currently the only complete deterministic trainer party.
+    // Trainer EXP/victory replay is not ported yet, so only active checkpoints
+    // can be restored through this path.
+    if (save.trainerPartyCount && (save.wave != 5 ||
+        save.stage != NativeSaveStage::BattleActive)) return false;
     if (!restoreSetup(save.seed, save.starterDex)) return false;
     // A skipped reward adds no modifier or party member. Replay each earlier
     // supported wild victory from its pinned seed to reconstruct level/EXP;
@@ -155,17 +178,37 @@ bool FirstRunRuntime::restoreNativeRunSave(const NativeRunSave& save) {
         resolve(true);
     }
     if (save.wave != m_run.wave) return false;
+    if (m_trainerBattle != (save.trainerPartyCount != 0)) return false;
+    if (save.trainerPartyCount) {
+        if (!m_context.trainerPartyBattleStatesResolved ||
+            save.trainerTypeId != m_context.trainerTypeId ||
+            save.trainerPartyCount != m_context.trainerPartyCount) return false;
+        for (uint8_t member = 0; member < save.trainerPartyCount; ++member) {
+            const auto& saved = save.trainerParty[member];
+            const auto& actor = m_context.trainerParty[member];
+            if (saved.speciesDex != actor.dex || saved.hp > actor.battleState.maxHp ||
+                saved.moveCount != actor.battleState.moveCount) return false;
+            for (uint8_t slot = 0; slot < saved.moveCount; ++slot) {
+                const auto& move = actor.battleState.moves[slot];
+                if (saved.moveIds[slot] != move.moveId || saved.pp[slot] > move.maxPp)
+                    return false;
+            }
+        }
+    }
+    const auto& reconstructedEnemy = save.trainerPartyCount
+        ? m_context.trainerParty[save.activeTrainerMember] : m_context.enemy;
+
     if (save.stage == NativeSaveStage::ExperienceGranted && !grantVictoryExperience()) return false;
     if (save.playerLevel != m_context.player.level ||
         save.playerExperience != m_playerExperience) return false;
     if (save.stage == NativeSaveStage::RunSetup) return save.wave == 1;
-    if (!m_encounterResolved || m_doubleBattle || save.encounterDex != m_run.encounterDex ||
+    if (!m_encounterResolved || m_doubleBattle || save.encounterDex != reconstructedEnemy.dex ||
         !save.battleTurn || !save.playerMoveCount || save.playerMoveCount > 4 ||
         !save.enemyMoveCount || save.enemyMoveCount > 4 ||
         save.playerMoveCount != m_context.player.battleState.moveCount ||
-        save.enemyMoveCount != m_context.enemy.battleState.moveCount ||
+        save.enemyMoveCount != reconstructedEnemy.battleState.moveCount ||
         save.playerHp > m_context.player.battleState.maxHp ||
-        save.enemyHp > m_context.enemy.battleState.maxHp ||
+        save.enemyHp > reconstructedEnemy.battleState.maxHp ||
         (save.stage == NativeSaveStage::BattleActive && (!save.playerHp || !save.enemyHp)) ||
         ((save.stage == NativeSaveStage::BattleWon ||
           save.stage == NativeSaveStage::ExperienceGranted) && (save.enemyHp || !save.playerHp)) ||
@@ -175,19 +218,34 @@ bool FirstRunRuntime::restoreNativeRunSave(const NativeRunSave& save) {
         if (save.playerMoveIds[i] != move.moveId || save.playerPp[i] > move.maxPp) return false;
     }
     for (uint8_t i = 0; i < save.enemyMoveCount; ++i) {
-        const auto& move = m_context.enemy.battleState.moves[i];
+        const auto& move = reconstructedEnemy.battleState.moves[i];
         if (save.enemyMoveIds[i] != move.moveId || save.enemyPp[i] > move.maxPp) return false;
     }
     // Run commands are accepted only between turns. The pinned battle stream
     // is re-seeded from battleSeed + turn index, so no mid-turn Alea state is
     // needed in a portable checkpoint.
     if (!m_battleRng.beginTurn(save.battleTurn)) return false;
+    if (save.trainerPartyCount) {
+        m_context.enemy = reconstructedEnemy;
+        m_run.encounterDex = m_context.enemy.dex;
+    }
     m_context.player.battleState.hp = save.playerHp;
     m_context.enemy.battleState.hp = save.enemyHp;
     for (uint8_t i = 0; i < save.playerMoveCount; ++i)
         m_context.player.battleState.moves[i].pp = save.playerPp[i];
     for (uint8_t i = 0; i < save.enemyMoveCount; ++i)
         m_context.enemy.battleState.moves[i].pp = save.enemyPp[i];
+    if (save.trainerPartyCount) {
+        for (uint8_t member = 0; member < save.trainerPartyCount; ++member) {
+            auto& actor = m_context.trainerParty[member];
+            const auto& saved = save.trainerParty[member];
+            actor.battleState.hp = saved.hp;
+            for (uint8_t slot = 0; slot < saved.moveCount; ++slot)
+                actor.battleState.moves[slot].pp = saved.pp[slot];
+        }
+        m_context.activeTrainerPartyIndex = save.activeTrainerMember;
+        m_context.trainerParty[save.activeTrainerMember] = m_context.enemy;
+    }
     m_turn = save.battleTurn;
     m_runStarted = true;
     m_checkpointAvailable = true;
@@ -199,7 +257,7 @@ bool FirstRunRuntime::restoreNativeRunSave(const NativeRunSave& save) {
     m_victoryPlan = {};
     if (m_playerWon && !planClassicVictory(m_run.wave, m_victoryPlan)) return false;
     m_battleFeedback = m_battleFinished ? (m_playerWon ? "Restored: wild battle won" : "Restored: Pokemon fainted")
-                                       : "Battle progress restored";
+                                       : (m_trainerBattle ? "Trainer party restored; battle pending" : "Battle progress restored");
     buildScene();
     return true;
 }
@@ -896,7 +954,7 @@ void FirstRunRuntime::resolve(bool carryPlayer) {
                             m_context.enemy = m_context.trainerParty[0];
                             m_run.encounterDex = m_context.enemy.dex;
                             m_encounterResolved = true;
-                            m_checkpointAvailable = false;
+                            m_checkpointAvailable = true;
                         }
                     }
                 }
