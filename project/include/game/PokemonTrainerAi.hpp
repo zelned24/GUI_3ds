@@ -240,9 +240,9 @@ inline bool selectBaselineTrainerReplacement(
         if (member == activeIndex || !party[member].hp) continue;
         PokemonTrainerMatchupInput input{};
         double score = 0;
-        uint32_t actorSpeed = 0, opponentSpeed = 0;
-        if (!pokemonBaselineEffectiveStat(party[member], 5, false, actorSpeed) ||
-            !pokemonBaselineEffectiveStat(opponent, 5, false, opponentSpeed) ||
+        const uint32_t actorSpeed = party[member].stats[5]; // Reserve speed excludes stages.
+        uint32_t opponentSpeed = 0;
+        if (!actorSpeed || !pokemonBaselineEffectiveStat(opponent, 5, false, opponentSpeed) ||
             !buildBaselineTrainerMatchupInput(party[member], opponent,
                 actorSpeed, opponentSpeed, false, input) ||
             !calculateTrainerMatchupScore(input, score)) return false;

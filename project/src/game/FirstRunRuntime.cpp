@@ -608,6 +608,8 @@ bool FirstRunRuntime::advanceBattleTurn() {
 
     // Pinned EnemyPokemon.SMART_RANDOM: score each usable move in moveset order,
     // then advance through the descending pool while randBattleSeedInt(8) >= 5.
+    PokemonMoveWeatherContext simulatedWeather{};
+    if (!resolveActiveMoveWeather(true, simulatedWeather)) return false;
     uint8_t usableSlots[4]{};
     uint32_t projectedDamage[4]{};
     uint8_t usableCount = 0;
@@ -619,7 +621,7 @@ bool FirstRunRuntime::advanceBattleTurn() {
         // Status moves cannot KO and remain eligible only when no attack can KO.
         if (candidateMove->category != PokerogueContent::MoveStatus &&
             calculatePokemonDamageCore(enemyState, playerState,
-                enemyState.moves[slot].moveId, false, damage) != PokemonDamageCoreResult::Ok) {
+                enemyState.moves[slot].moveId, false, damage, &simulatedWeather) != PokemonDamageCoreResult::Ok) {
             m_battleFeedback = "Enemy simulated damage unsupported";
             buildScene();
             return false;
@@ -854,15 +856,19 @@ void FirstRunRuntime::refreshTrainerBaselineMatchups() {
     if (!m_trainerBattle || !m_context.trainerPartyBattleStatesResolved ||
         !m_context.trainerPartyCount || m_context.trainerPartyCount > 6 ||
         m_context.activeTrainerPartyIndex >= m_context.trainerPartyCount) return;
+    PokemonMoveWeatherContext speedWeather{};
+    uint32_t opponentSpeed = 0;
+    if (!resolveActiveMoveWeather(false, speedWeather) ||
+        !pokemonWeatherEffectiveSpeed(m_context.player.battleState, speedWeather, opponentSpeed)) return;
     double scores[6]{};
     for (uint8_t member = 0; member < m_context.trainerPartyCount; ++member) {
         const bool active = member == m_context.activeTrainerPartyIndex;
         const auto& state = active ? m_context.enemy.battleState
             : m_context.trainerParty[member].battleState;
         PokemonTrainerMatchupInput matchup{};
-        uint32_t actorSpeed = 0, opponentSpeed = 0;
-        if (!pokemonBaselineEffectiveStat(state, 5, false, actorSpeed) ||
-            !pokemonBaselineEffectiveStat(m_context.player.battleState, 5, false, opponentSpeed) ||
+        uint32_t actorSpeed = state.stats[5]; // Reserve getStat(SPD, false): no stages/abilities.
+        if ((active && !pokemonWeatherEffectiveSpeed(state, speedWeather, actorSpeed)) ||
+            !actorSpeed ||
             !buildBaselineTrainerMatchupInput(state, m_context.player.battleState,
                 actorSpeed, opponentSpeed, active, matchup) ||
             !calculateTrainerMatchupScore(matchup, scores[member])) return;
@@ -872,10 +878,16 @@ void FirstRunRuntime::refreshTrainerBaselineMatchups() {
     m_context.trainerPartyBaselineMatchupResolved = true;
     // Preview the legal replacement with the source wave-scoped stream.
     // Never consume the battle-turn RNG while inspecting the trainer party.
-    PokemonBattleState party[6]{};
-    for (uint8_t member = 0; member < m_context.trainerPartyCount; ++member)
-        party[member] = member == m_context.activeTrainerPartyIndex
-            ? m_context.enemy.battleState : m_context.trainerParty[member].battleState;
+    const auto* opponentSpecies = PokerogueContent::findSpeciesByDex(m_context.player.battleState.speciesDex);
+    if (!opponentSpecies || opponentSpecies->legendary < 0) return;
+    double reserveScores[6]{};
+    uint8_t reserveIndexes[6]{};
+    uint8_t reserveCount = 0;
+    for (uint8_t member = 0; member < m_context.trainerPartyCount; ++member) {
+        if (member == m_context.activeTrainerPartyIndex || !m_context.trainerParty[member].battleState.hp) continue;
+        reserveScores[reserveCount] = opponentSpecies->legendary ? scores[member] / 2.0 : scores[member];
+        reserveIndexes[reserveCount++] = member;
+    }
     uint16_t waveSeed[PokerogueRngAdapter::kMaxSeedCodeUnits]{};
     if (!PokerogueRngAdapter::shiftCharCodes(m_seedCodeUnits.data(), m_seedLength,
             m_run.wave, waveSeed, PokerogueRngAdapter::kMaxSeedCodeUnits)) return;
@@ -883,8 +895,7 @@ void FirstRunRuntime::refreshTrainerBaselineMatchups() {
     PokerogueSeedOffsetScope scope(replacementRng, waveSeed, m_seedLength, m_turn << 2);
     if (!scope.valid()) return;
     uint8_t replacement = 0xFF;
-    if (selectBaselineTrainerReplacement(party, m_context.trainerPartyCount,
-            m_context.activeTrainerPartyIndex, m_context.player.battleState,
+    if (reserveCount && selectTrainerSummonIndex(reserveScores, reserveIndexes, reserveCount,
             replacementRng, replacement)) m_context.nextTrainerPartyIndex = replacement;
 }
 

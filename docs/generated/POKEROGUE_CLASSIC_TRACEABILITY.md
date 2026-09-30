@@ -211,3 +211,7 @@ The existing damage command accepts an explicit resolved PP policy, rejects unre
 ## Incoming trainer actor command integration
 
 Trainer switch reactions and normal turn actions now use the same FirstRunRuntime::executeActiveBattleMove dispatcher. Incoming identity/ability/form are installed before composing weather, accuracy, critical and PP policies; rejected commands restore the outgoing actor without committing RNG or party selection. Trick Room dispatch is also shared. This removes the old bare damage action from the trainer switch route. Trainer gameplay remains gated pending full summon/AI/party effect integration; no complete trainer encounter claim. Static diff review only; tests and compilation deferred.
+
+## Trainer effective speed and resolved KO simulation
+
+Pokemon.getMatchupScore in the pinned source compares active effective SPD against opponent effective SPD, while reserve actors use getStat(SPD, false). Native runtime now uses weather-resolved active/opponent speed and unmodified reserve SPD. Replacement selection reuses those resolved matchup scores rather than rebuilding a second neutral-field score set. The neutral replacement helper also excludes reserve stat stages. Trick Room does not invert matchup outspeed: upstream getMatchupScore compares numerical speeds directly. Enemy KO simulation now receives resolved attacking weather. Full ability-aware matchup effectiveness and simulated visibility rules remain pending; trainer gate unchanged. No tests or program compilation executed.

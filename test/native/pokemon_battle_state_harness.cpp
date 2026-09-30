@@ -186,6 +186,20 @@ extern "C" int runPokemonBattleStateChecks() {
     if (!Pokerogue3DS::selectBaselineTrainerReplacement(replacementParty, 3, 0,
             matchupOpponent, replacementRng, replacementIndex) || replacementIndex != 2)
         return 202;
+    PokemonBattleState stagedReserveParty[3] = {state, state, state};
+    stagedReserveParty[0].hp = 0;
+    stagedReserveParty[1].statStages[4] = -6;
+    stagedReserveParty[2].statStages[4] = 6;
+    PokerogueRngAdapter stagedReserveRng, plainReserveRng;
+    stagedReserveRng.sow(trainerAiSeed, sizeof(trainerAiSeed) / sizeof(trainerAiSeed[0]));
+    plainReserveRng = stagedReserveRng;
+    uint8_t stagedReserveIndex = 99, plainReserveIndex = 99;
+    if (!Pokerogue3DS::selectBaselineTrainerReplacement(stagedReserveParty, 3, 0,
+            matchupOpponent, stagedReserveRng, stagedReserveIndex)) return 393;
+    stagedReserveParty[1].statStages[4] = stagedReserveParty[2].statStages[4] = 0;
+    if (!Pokerogue3DS::selectBaselineTrainerReplacement(stagedReserveParty, 3, 0,
+            matchupOpponent, plainReserveRng, plainReserveIndex) ||
+        stagedReserveIndex != plainReserveIndex) return 394;
     replacementParty[2].hp = 0;
     if (Pokerogue3DS::selectBaselineTrainerReplacement(replacementParty, 3, 0,
             matchupOpponent, replacementRng, replacementIndex)) return 203;
