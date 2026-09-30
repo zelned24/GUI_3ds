@@ -67,15 +67,6 @@ inline bool supportsPokemonTrickRoomMove(uint16_t moveId) {
         if (profile.moveId == moveId) return true;
     return false;
 }
-inline bool pokemonSingleOpponentPpCost(uint16_t opponentAbilityId, uint8_t& output) {
-    if (!PokerogueContent::findAbilityMovegenProfile(opponentAbilityId)) return false;
-    uint16_t cost = 1;
-    for (const auto& profile : PokerogueContent::kPpAbilityProfiles)
-        if (profile.abilityId == opponentAbilityId) cost += profile.increase;
-    if (cost > 255) return false;
-    output = static_cast<uint8_t>(cost);
-    return true;
-}
 enum class PokemonTrickRoomCommandResult : uint8_t {
     Ok, InvalidActor, InvalidSlot, InvalidDefinition, NoPp, UnresolvedPolicy, InvalidField
 };

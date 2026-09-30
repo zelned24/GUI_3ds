@@ -1083,6 +1083,16 @@ PokemonMoveDamageResult resolveStandardPokemonMoveDamage(
     return PokemonMoveDamageResult::Ok;
 }
 
+bool pokemonSingleOpponentPpCost(uint16_t opponentAbilityId, uint8_t& output) {
+    if (!PokerogueContent::findAbilityMovegenProfile(opponentAbilityId)) return false;
+    uint16_t cost = 1;
+    for (const auto& profile : PokerogueContent::kPpAbilityProfiles)
+        if (profile.abilityId == opponentAbilityId) cost += profile.increase;
+    if (cost > 255) return false;
+    output = static_cast<uint8_t>(cost);
+    return true;
+}
+
 PokemonMoveActionStatus useStandardPokemonMove(
     PokemonBattleState& attacker,
     PokemonBattleState& defender,
@@ -1092,14 +1102,20 @@ PokemonMoveActionStatus useStandardPokemonMove(
     PokemonMoveActionResult& output,
     const PokemonMoveWeatherContext* weatherContext,
     const PokemonCriticalPolicy* criticalPolicy,
-    const PokemonHitPolicy* hitPolicy) {
+    const PokemonHitPolicy* hitPolicy,
+    const PokemonPpPolicy* ppPolicy) {
     if (moveSlot >= attacker.moveCount || moveSlot >= 4 || attacker.moves[moveSlot].moveId == 0) {
         return PokemonMoveActionStatus::InvalidMoveSlot;
     }
-    if (attacker.moves[moveSlot].pp == 0) return PokemonMoveActionStatus::NoPp;
+    if (ppPolicy && !ppPolicy->resolved) return PokemonMoveActionStatus::UnresolvedPp;
+    const uint8_t ppCost = ppPolicy ? ppPolicy->cost : 1;
+    if (attacker.moves[moveSlot].pp == 0 && ppCost) return PokemonMoveActionStatus::NoPp;
+    if (attacker.moves[moveSlot].pp > attacker.moves[moveSlot].maxPp)
+        return PokemonMoveActionStatus::InvalidMoveSlot;
     if (defender.hp == 0) return PokemonMoveActionStatus::TargetAlreadyFainted;
 
     PokemonMoveActionResult next{};
+    next.ppConsumed = ppCost < attacker.moves[moveSlot].pp ? ppCost : attacker.moves[moveSlot].pp;
     if (weatherContext) {
         const auto* move = PokerogueContent::findMoveById(attacker.moves[moveSlot].moveId);
         if (!weatherContext->resolved || static_cast<uint8_t>(weatherContext->effectiveWeather) > 9 ||
@@ -1115,7 +1131,7 @@ PokemonMoveActionStatus useStandardPokemonMove(
                 sameText(move->type, "FIRE")));
         if (cancelled) {
             // MovePhase.usePP precedes secondFailureCheck (primal weather).
-            --attacker.moves[moveSlot].pp;
+            attacker.moves[moveSlot].pp = static_cast<uint8_t>(attacker.moves[moveSlot].pp - next.ppConsumed);
             next.weatherCancelled = true;
             output = next;
             return PokemonMoveActionStatus::Ok;
@@ -1133,8 +1149,8 @@ PokemonMoveActionStatus useStandardPokemonMove(
         return PokemonMoveActionStatus::DamageResolutionFailed;
     }
 
-    // A successful move attempt consumes one PP whether it hits or misses.
-    --attacker.moves[moveSlot].pp;
+    // Consume resolved PP on a successful attempt, including misses and immunities.
+    attacker.moves[moveSlot].pp = static_cast<uint8_t>(attacker.moves[moveSlot].pp - next.ppConsumed);
     if (next.damageRoll.hit && next.damageRoll.damage > 0) {
         const uint16_t applied = static_cast<uint16_t>(next.damageRoll.damage < defender.hp
             ? next.damageRoll.damage : defender.hp);

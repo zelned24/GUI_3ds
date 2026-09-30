@@ -718,6 +718,10 @@ bool FirstRunRuntime::advanceBattleTurn() {
             m_battleFeedback = event.field.activated ? "Trick Room activated" : "Trick Room removed";
             return true;
         }
+        PokemonPpPolicy pp{};
+        pp.resolved = true;
+        const auto& ppOpponent = enemyActs ? m_context.player.battleState : m_context.enemy.battleState;
+        if (!pokemonSingleOpponentPpCost(ppOpponent.abilityId, pp.cost)) return false;
         PokemonMoveActionResult result{};
         PokemonMoveWeatherContext weather{};
         PokemonHitPolicy hit{};
@@ -734,14 +738,14 @@ bool FirstRunRuntime::advanceBattleTurn() {
         if (enemyActs) {
             if (!m_context.player.battleState.hp) return true;
             const auto status = useStandardPokemonMove(m_context.enemy.battleState,
-                m_context.player.battleState, enemyMoveSlot, false, *rng, result, &weather, &critical, &hit);
+                m_context.player.battleState, enemyMoveSlot, false, *rng, result, &weather, &critical, &hit, &pp);
             if (status != PokemonMoveActionStatus::Ok) return false;
             m_battleFeedback = result.weatherCancelled ? "Enemy move blocked by weather" : result.damageRoll.hit
                 ? "Enemy move hit" : "Enemy move missed";
         } else {
             if (!m_context.enemy.battleState.hp) return true;
             const auto status = useStandardPokemonMove(m_context.player.battleState,
-                m_context.enemy.battleState, m_selectedBattleMove, false, *rng, result, &weather, &critical, &hit);
+                m_context.enemy.battleState, m_selectedBattleMove, false, *rng, result, &weather, &critical, &hit, &pp);
             if (status != PokemonMoveActionStatus::Ok) return false;
             m_battleFeedback = result.weatherCancelled ? "Your move blocked by weather" :
                 result.damageRoll.hit ? "Your move hit" : "Your move missed";

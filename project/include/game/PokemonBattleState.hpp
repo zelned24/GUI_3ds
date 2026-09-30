@@ -378,16 +378,22 @@ PokemonMoveDamageResult resolveStandardPokemonMoveDamage(
     const PokemonCriticalPolicy* criticalPolicy = nullptr,
     const PokemonHitPolicy* hitPolicy = nullptr);
 
+struct PokemonPpPolicy {
+    bool resolved = false;
+    uint8_t cost = 1; // Zero represents a resolved ignore-PP execution mode.
+};
+bool pokemonSingleOpponentPpCost(uint16_t opponentAbilityId, uint8_t& output);
 struct PokemonMoveActionResult {
     PokemonMoveDamageRoll damageRoll{};
     uint16_t damageApplied = 0;
     bool targetFainted = false;
     bool weatherCancelled = false;
+    uint8_t ppConsumed = 0;
     PokemonMoveDamageResult damageResolutionStatus = PokemonMoveDamageResult::Ok;
 };
 enum class PokemonMoveActionStatus : uint8_t {
     Ok = 0, InvalidMoveSlot, NoPp, TargetAlreadyFainted, DamageResolutionFailed,
-    UnsupportedAbilityCondition, UnresolvedWeather
+    UnsupportedAbilityCondition, UnresolvedWeather, UnresolvedPp
 };
 PokemonMoveActionStatus useStandardPokemonMove(
     PokemonBattleState& attacker,
@@ -398,7 +404,8 @@ PokemonMoveActionStatus useStandardPokemonMove(
     PokemonMoveActionResult& output,
     const PokemonMoveWeatherContext* weatherContext = nullptr,
     const PokemonCriticalPolicy* criticalPolicy = nullptr,
-    const PokemonHitPolicy* hitPolicy = nullptr);
+    const PokemonHitPolicy* hitPolicy = nullptr,
+    const PokemonPpPolicy* ppPolicy = nullptr);
 
 enum class PokemonAbilitySelectionResult : uint8_t { Ok = 0, MissingSpecies, InvalidHiddenRate };
 PokemonAbilitySelectionResult selectPokemonAbilityIndex(

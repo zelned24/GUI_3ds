@@ -1175,6 +1175,27 @@ extern "C" int runPokemonBattleStateChecks() {
     if (Pokerogue3DS::usePokemonTrickRoomCommand(roomUser, roomState, 0, roomCommandPolicy,
             roomCommandEvent) != Pokerogue3DS::PokemonTrickRoomCommandResult::Ok ||
         !roomCommandEvent.failed || roomState.turnsLeft || roomUser.moves[0].pp != 2) return 387;
+    PokemonBattleState ppActor = state;
+    PokemonBattleState ppTarget = state;
+    ppActor.moves[0] = {33, 1, 35};
+    ppTarget.hp = ppTarget.maxHp;
+    PokerogueRngAdapter ppRng;
+    ppRng.sow(damageSeed, sizeof(damageSeed) / sizeof(damageSeed[0]));
+    Pokerogue3DS::PokemonPpPolicy ppPolicy{};
+    Pokerogue3DS::PokemonMoveActionResult ppEvent{};
+    if (Pokerogue3DS::useStandardPokemonMove(ppActor, ppTarget, 0, false, ppRng, ppEvent,
+            nullptr, nullptr, nullptr, &ppPolicy) != Pokerogue3DS::PokemonMoveActionStatus::UnresolvedPp ||
+        ppActor.moves[0].pp != 1 || ppTarget.hp != ppTarget.maxHp) return 390;
+    ppPolicy.resolved = true;
+    ppPolicy.cost = 2;
+    if (Pokerogue3DS::useStandardPokemonMove(ppActor, ppTarget, 0, false, ppRng, ppEvent,
+            nullptr, nullptr, nullptr, &ppPolicy) != Pokerogue3DS::PokemonMoveActionStatus::Ok ||
+        ppActor.moves[0].pp || ppEvent.ppConsumed != 1) return 391;
+    ppPolicy.cost = 0;
+    ppTarget.hp = ppTarget.maxHp;
+    if (Pokerogue3DS::useStandardPokemonMove(ppActor, ppTarget, 0, false, ppRng, ppEvent,
+            nullptr, nullptr, nullptr, &ppPolicy) != Pokerogue3DS::PokemonMoveActionStatus::Ok ||
+        ppActor.moves[0].pp || ppEvent.ppConsumed) return 392;
     PokemonBattleState noPpActor = state;
     noPpActor.moves[0].pp = 0;
     PokemonBattleState unchangedTarget = state;
