@@ -629,6 +629,19 @@ void FirstRunRuntime::resolve(bool carryPlayer) {
             buildScene();
             return;
         }
+    } else if (waveKind == ClassicWaveKind::FixedTrainerBattle) {
+        const auto* fixedBattle = PokerogueContent::findClassicFixedBattleWave(m_run.wave);
+        const auto* trainer = fixedBattle && fixedBattle->hasStaticTrainerType
+            ? PokerogueContent::findTrainerType(fixedBattle->trainerTypeId) : nullptr;
+        if (trainer) {
+            m_context.trainerTypeId = trainer->id;
+            m_context.trainerName = trainer->name;
+            m_battleFeedback = "Fixed trainer party construction pending";
+        } else {
+            m_battleFeedback = "Fixed trainer selection callback is not ported yet";
+        }
+        buildScene();
+        return;
     } else if (waveKind != ClassicWaveKind::RegularWild) {
         m_battleFeedback = waveKind == ClassicWaveKind::Invalid
             ? "Invalid Classic wave" : "Classic fixed trainer or boss encounter is not ported yet";

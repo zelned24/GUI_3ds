@@ -120,7 +120,7 @@ function parseClassicFixedBossWaves(source) {
   return entries.sort((left, right) => left.wave - right.wave);
 }
 
-function parseClassicFixedBattleWaves(source, fixedBossWaves) {
+function parseClassicFixedBattleWaves(source, fixedBossWaves, trainerTypes) {
   const marker = /export\s+const\s+classicFixedBattles\s*:\s*FixedBattleConfigs\s*=\s*\{/;
   const match = marker.exec(source);
   if (!match) throw new Error('Pinned classicFixedBattles configuration was not found');
@@ -135,7 +135,14 @@ function parseClassicFixedBattleWaves(source, fixedBossWaves) {
     if (!key) throw new Error(`Pinned classicFixedBattles contains an unsupported declaration: ${raw.slice(0, 96)}`);
     const wave = bySymbol.get(key[1]);
     if (!Number.isSafeInteger(wave)) throw new Error(`Pinned classicFixedBattles references unresolved ClassicFixedBossWaves.${key[1]}`);
-    entries.push({ wave, symbol: key[1], raw });
+    // Only a direct constructor has a fixed trainer identity. Dynamic callbacks
+    // remain in raw until their selection semantics are ported.
+    const staticTrainer = raw.match(/\.setGetTrainerFunc\(\s*\(\)\s*=>\s*new Trainer\(\s*TrainerType\.([A-Z][A-Z0-9_]*)\s*,/);
+    const trainerTypeSymbol = staticTrainer?.[1] ?? null;
+    const trainerTypeId = trainerTypeSymbol ? trainerTypes.getId(trainerTypeSymbol) : null;
+    if (trainerTypeSymbol && !Number.isSafeInteger(trainerTypeId))
+      throw new Error(`Pinned fixed battle ${key[1]} references unknown TrainerType.${trainerTypeSymbol}`);
+    entries.push({ wave, symbol: key[1], trainerTypeSymbol, trainerTypeId, raw });
   }
   if (!entries.length) throw new Error('Pinned classicFixedBattles configuration produced no wave keys');
   if (new Set(entries.map(entry => entry.wave)).size !== entries.length) throw new Error('Pinned classicFixedBattles contains duplicate wave keys');
@@ -906,7 +913,6 @@ export class PokerogueImporter {
     const fixedBossWaveSource = byPath.get('pokerogue:src/enums/fixed-boss-waves.ts');
     const classicFixedBossWaves = parseClassicFixedBossWaves(fixedBossWaveSource.content);
     const fixedBattleSource = byPath.get('pokerogue:src/data/trainers/fixed-battle-configs.ts');
-    const classicFixedBattleWaves = parseClassicFixedBattleWaves(fixedBattleSource.content, classicFixedBossWaves);
     const trainerConfigSource = byPath.get('pokerogue:src/data/trainers/trainer-config.ts');
     const trainerConfigRecords = parseTrainerConfigRecords(trainerConfigSource.content);
     const trainerPartyTemplateSource = byPath.get('pokerogue:src/data/trainers/trainer-party-template.ts');
@@ -922,6 +928,7 @@ export class PokerogueImporter {
     ];
     const enumCatalogs = {};
     for (const [key, name, path] of enumSpecs) enumCatalogs[key] = this.enumParser.parseEnum(byPath.get(`pokerogue:${path}`).content, name, path);
+    const classicFixedBattleWaves = parseClassicFixedBattleWaves(fixedBattleSource.content, classicFixedBossWaves, enumCatalogs.trainerType);
     this.setEnumCatalogs({ species: enumCatalogs.species, moves: enumCatalogs.move, abilities: enumCatalogs.ability, types: enumCatalogs.type });
 
     const localeEntries = [];
