@@ -519,6 +519,52 @@ PokemonTypeEffectivenessResult calculatePokemonTypeEffectiveness(
     return calculatePokemonAttackTypeEffectiveness(move->type, defender, outputMultiplier);
 }
 
+bool selectPokemonBiomeWeather(const char* biomeId, bool duskOrNight,
+    PokerogueRngAdapter& rng, PokemonEffectiveWeather& output,
+    const uint16_t* resolvedEventWeights) {
+    if (!biomeId || !*biomeId) return false;
+    // Enum order matters: upstream builds the Map with getEnumValues, not
+    // weatherPool property order. Generated catalog rows may sort differently.
+    static constexpr const char* symbols[10] = {
+        "NONE", "SUNNY", "RAIN", "SANDSTORM", "HAIL", "SNOW", "FOG",
+        "HEAVY_RAIN", "HARSH_SUN", "STRONG_WINDS"
+    };
+    uint16_t weights[10]{};
+    bool seen[10]{};
+    bool foundBiome = false;
+    for (const auto& entry : PokerogueContent::kBiomeWeatherPools) {
+        if (!sameText(entry.biomeId, biomeId)) continue;
+        foundBiome = true;
+        uint8_t index = 0;
+        while (index < 10 && !sameText(entry.weatherSymbol, symbols[index])) ++index;
+        if (index == 10 || seen[index]) return false;
+        seen[index] = true;
+        weights[index] = entry.weight;
+    }
+    if (!foundBiome) return false;
+    if (resolvedEventWeights)
+        for (uint8_t i = 0; i < 10; ++i) weights[i] = resolvedEventWeights[i];
+    if (duskOrNight) {
+        weights[1] = 0;
+        if (sameText(biomeId, "forest")) weights[6] = 1;
+    }
+    uint32_t total = 0;
+    for (const auto weight : weights) total += weight;
+    if (!total) { weights[0] = 1; total = 1; }
+    PokerogueRngAdapter nextRng = rng;
+    const uint32_t roll = static_cast<uint32_t>(nextRng.randSeedInt(static_cast<int32_t>(total)));
+    uint32_t cumulative = 0;
+    for (uint8_t i = 0; i < 10; ++i) {
+        cumulative += weights[i];
+        if (roll < cumulative) {
+            output = static_cast<PokemonEffectiveWeather>(i);
+            rng = nextRng;
+            return true;
+        }
+    }
+    return false;
+}
+
 bool pokemonWeatherIsImmutable(PokemonEffectiveWeather type) {
     return type == PokemonEffectiveWeather::HeavyRain || type == PokemonEffectiveWeather::HarshSun ||
         type == PokemonEffectiveWeather::StrongWinds;

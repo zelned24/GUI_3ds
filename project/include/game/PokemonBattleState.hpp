@@ -245,6 +245,11 @@ struct PokemonArenaWeatherState {
     uint16_t turnsLeft = 0;
     uint16_t maxDuration = 0;
 };
+// Caller supplies the resolved time-of-day and any effective timed-event pool.
+// An override contains ten weights in pinned WeatherType enum order.
+bool selectPokemonBiomeWeather(const char* biomeId, bool duskOrNight,
+    PokerogueRngAdapter& rng, PokemonEffectiveWeather& output,
+    const uint16_t* resolvedEventWeights = nullptr);
 bool pokemonWeatherIsImmutable(PokemonEffectiveWeather type);
 bool setPokemonArenaWeather(PokemonArenaWeatherState& state,
     PokemonEffectiveWeather type, uint16_t resolvedDuration);

@@ -534,6 +534,27 @@ extern "C" int runPokemonBattleStateChecks() {
             forestNoneFound = pool.weight == 8;
     }
     if (!plainsWeatherFound || !forestRainFound || !forestNoneFound) return 292;
+    PokerogueRngAdapter biomeWeatherRng;
+    const uint16_t weatherSeed[] = {'w', 'e', 'a', 't', 'h', 'e', 'r'};
+    biomeWeatherRng.sow(weatherSeed, 7);
+    const auto beforePlainsWeather = biomeWeatherRng.state();
+    Pokerogue3DS::PokemonEffectiveWeather selectedWeather = Pokerogue3DS::PokemonEffectiveWeather::Rain;
+    if (!Pokerogue3DS::selectPokemonBiomeWeather("plains", false, biomeWeatherRng, selectedWeather) ||
+        selectedWeather != Pokerogue3DS::PokemonEffectiveWeather::None) return 293;
+    const auto afterPlainsWeather = biomeWeatherRng.state();
+    if (beforePlainsWeather.carry != afterPlainsWeather.carry || beforePlainsWeather.s0 != afterPlainsWeather.s0 ||
+        beforePlainsWeather.s1 != afterPlainsWeather.s1 || beforePlainsWeather.s2 != afterPlainsWeather.s2) return 294;
+    PokerogueRngAdapter forestExpectedRng = biomeWeatherRng;
+    const int32_t forestRoll = forestExpectedRng.randSeedInt(13); // NONE8, RAIN4, night FOG1.
+    const auto forestExpected = forestRoll < 8 ? Pokerogue3DS::PokemonEffectiveWeather::None :
+        forestRoll < 12 ? Pokerogue3DS::PokemonEffectiveWeather::Rain : Pokerogue3DS::PokemonEffectiveWeather::Fog;
+    if (!Pokerogue3DS::selectPokemonBiomeWeather("forest", true, biomeWeatherRng, selectedWeather) ||
+        selectedWeather != forestExpected) return 295;
+    uint16_t sunOnlyEvent[10]{};
+    sunOnlyEvent[1] = 5;
+    if (!Pokerogue3DS::selectPokemonBiomeWeather("plains", true, biomeWeatherRng, selectedWeather, sunOnlyEvent) ||
+        selectedWeather != Pokerogue3DS::PokemonEffectiveWeather::None) return 296;
+    if (Pokerogue3DS::selectPokemonBiomeWeather("missing-biome", false, biomeWeatherRng, selectedWeather)) return 297;
     Pokerogue3DS::PokemonArenaWeatherState arenaWeather{};
     using Pokerogue3DS::PokemonEffectiveWeather;
     if (!Pokerogue3DS::setPokemonArenaWeather(arenaWeather, PokemonEffectiveWeather::Rain, 2) ||
