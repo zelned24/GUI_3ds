@@ -71,6 +71,8 @@ bool QuickJSBridge::init(Renderer2D& renderer) {
     const Binding bindings[] = {
         {"_3ds_beginTop", beginTop, 0}, {"_3ds_beginBottom", beginBottom, 0},
         {"_3ds_clear", clear, 1}, {"_3ds_drawImage", drawImage, 6},
+        {"_3ds_submitAction", submitAction, 1}, {"_3ds_skipReward", skipReward, 0},
+        {"_3ds_getCombatLog", getCombatLog, 0},
         {"_3ds_drawPokemon", drawPokemon, 5},
         {"_3ds_getBattleState", getBattleState, 0}, {"_3ds_drawText", drawText, 5},
         {"_3ds_preload", preload, 1}, {"_3ds_saveGame", saveGame, 1}, {"_3ds_loadGame", loadGame, 0}
@@ -194,7 +196,55 @@ JSValue QuickJSBridge::drawPokemon(JSContext* ctx, JSValueConst, int argc, JSVal
         bridge->m_animationTimeMs);
     return JS_UNDEFINED;
 }
+JSValue QuickJSBridge::submitAction(JSContext* ctx, JSValueConst, int argc, JSValueConst* argv) {
+    auto* bridge = static_cast<QuickJSBridge*>(JS_GetContextOpaque(ctx));
+    if (!bridge || !bridge->m_game || !bridge->m_inTick || argc != 1)
+        return JS_ThrowTypeError(ctx, "submitAction requires runtime and one command");
+    double value;
+    if (!number(ctx, argv[0], value) || std::floor(value) != value ||
+        !((value >= 0 && value <= 3) || value == -1 || value == 100))
+        return JS_ThrowRangeError(ctx, "Use slots 0..3, cursor -1 or +100");
+    if (bridge->m_pendingAction != -999) return JS_FALSE;
+    if (value >= 0 && value <= 3 && !bridge->m_game->battleFinished() &&
+        value >= bridge->m_game->presentation().player.battleState.moveCount) return JS_FALSE;
+    bridge->m_pendingAction = static_cast<int>(value);
+    return JS_TRUE; // Accepted for processing before the next frame, not a claimed successful turn.
+}
+JSValue QuickJSBridge::skipReward(JSContext* ctx, JSValueConst, int argc, JSValueConst*) {
+    auto* bridge = static_cast<QuickJSBridge*>(JS_GetContextOpaque(ctx));
+    if (!bridge || !bridge->m_game || !bridge->m_inTick || argc != 0)
+        return JS_ThrowTypeError(ctx, "skipReward requires bound runtime");
+    if (bridge->m_pendingAction != -999 || !bridge->m_game->battleFinished() ||
+        !bridge->m_game->playerWon() || !bridge->m_game->experienceGranted()) return JS_FALSE;
+    bridge->m_pendingAction = 200;
+    return JS_TRUE;
+}
+JSValue QuickJSBridge::getCombatLog(JSContext* ctx, JSValueConst, int, JSValueConst*) {
+    auto* bridge = static_cast<QuickJSBridge*>(JS_GetContextOpaque(ctx));
+    return JS_NewString(ctx, bridge && bridge->m_game ? bridge->m_game->battleFeedback().c_str() : "");
+}
+bool QuickJSBridge::processPendingAction() {
+    const int action = m_pendingAction;
+    m_pendingAction = -999;
+    if (!m_game || !m_healthy || m_inTick || action == -999) return false;
+    if (action == -1 || action == 100) m_game->selectBattleMove(action == -1 ? -1 : 1);
+    else if (action == 200) m_game->skipVictoryReward();
+    else if (action >= 0 && action <= 3) {
+        if (!m_game->battleFinished()) {
+            const auto count = m_game->presentation().player.battleState.moveCount;
+            if (action >= count) return false;
+            for (unsigned i = 0; i < 4 && m_game->selectedBattleMove() != action; ++i)
+                m_game->selectBattleMove(1);
+            if (m_game->selectedBattleMove() != action) return false;
+        }
+        // Also advances the engine's post-victory EXP/replacement phase; at most once.
+        m_game->advanceBattleTurn();
+    }
+    return true;
+}
 void QuickJSBridge::fini() {
+    m_pendingAction = -999;
+    m_game = nullptr;
     m_presenterPlayer.invalidate();
     m_presenterEnemy.invalidate();
     m_player = m_enemy = nullptr;

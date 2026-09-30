@@ -37,6 +37,15 @@ let previousJson = '', state = {};
 globalThis._3ds_tick = function(input) {
   const json = _3ds_getBattleState();
   if (json !== previousJson) { state = JSON.parse(json); previousJson = json; }
+  // input contains hidKeysDown pulses already; do not edge-detect it as held keys.
+  // Queue one command. Host processes it before the next snapshot/render frame.
+  if (input.start || input.A) {
+    if (state.finished && state.playerWon && state.experienceGranted) _3ds_skipReward();
+    else if (!state.finished || state.playerWon) _3ds_submitAction(state.selectedMove || 0);
+  } else if (input.up) _3ds_submitAction(-1);
+  else if (input.down) _3ds_submitAction(100);
+  else if (input.B && state.finished && state.playerWon && state.experienceGranted) _3ds_skipReward();
+  const combatLog = _3ds_getCombatLog();
   _3ds_beginTop();
   _3ds_clear(0xFF2D1B4E);
   if (state.enemyDex) _3ds_drawPokemon(state.enemyDex, false, 230, 42, 1.2);
@@ -45,7 +54,8 @@ globalThis._3ds_tick = function(input) {
   _3ds_drawText('Enemy #' + (state.enemyDex || 0), 222, 12, 0.48, WHITE);
   _3ds_drawText(hpBar(state.enemyHp, state.enemyMaxHp), 222, 29, 0.48, GREEN);
   _3ds_drawText('Player #' + (state.playerDex || 0), 10, 193, 0.48, WHITE);
-  _3ds_drawText(hpBar(state.playerHp, state.playerMaxHp), 10, 210, 0.48, GREEN);
+  _3ds_drawText(hpBar(state.playerHp, state.playerMaxHp), 10, 208, 0.48, GREEN);
+  if (combatLog) _3ds_drawText(combatLog.slice(0, 65), 10, 225, 0.38, 0xFFFFDD44);
   _3ds_beginBottom();
   _3ds_clear(0xFF16213E);
   _3ds_drawText('Wave: ' + (state.wave || 0), 10, 10, 0.65, 0xFF00FFFF);
@@ -54,9 +64,14 @@ globalThis._3ds_tick = function(input) {
     _3ds_drawText((i === state.selectedMove ? '> ' : '  ') + (i + 1) + ': Move #' + (moves[i] || 0) + ' PP:' + (pp[i] || 0),
       10, 42 + i * 25, 0.5, i === state.selectedMove ? GREEN : WHITE);
   }
-  _3ds_drawText(state.finished ? 'Battle finished' : state.supported ? 'Battle input available' : 'Pending rules block this battle', 10, 147, 0.45, state.supported ? GREEN : RED);
+  const phaseText = state.finished
+    ? state.playerWon
+      ? state.experienceGranted ? 'Victory - Start: skip reward / next wave' : 'Victory - Start: collect EXP'
+      : 'Defeat - restart flow still pending'
+    : state.supported ? 'Start/A: execute selected move' : 'Pending rules block this battle';
+  _3ds_drawText(phaseText, 10, 147, 0.43, state.playerWon || state.supported ? GREEN : RED);
   _3ds_drawText('Up/Down: move  Left/Right: starter', 8, 185, 0.43, WHITE);
-  _3ds_drawText('A:Turn/EXP  B:Skip reward  X:Save', 8, 203, 0.43, WHITE);
+  _3ds_drawText('Start/A:Confirm  B:Reward  X:Save', 8, 203, 0.43, WHITE);
   _3ds_drawText('Y:Export  L:Load  R:Import', 8, 219, 0.43, WHITE);
 };
 `;

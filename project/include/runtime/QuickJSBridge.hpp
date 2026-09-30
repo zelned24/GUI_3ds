@@ -6,6 +6,7 @@
 #include <cstdint>
 class Renderer2D;
 namespace Pokerogue3DS {
+class FirstRunRuntime;
 class QuickJSBridge {
 public:
     QuickJSBridge() = default;
@@ -21,6 +22,11 @@ public:
     void setPokemonPresentation(const ResolvedPokemon& player, const ResolvedPokemon& enemy,
                                 uint64_t animationTimeMs);
     static JSValue drawPokemon(JSContext*, JSValueConst, int, JSValueConst*);
+    void bindRuntime(FirstRunRuntime& game) { m_game = &game; }
+    bool processPendingAction(); // Call before beginFrame; returns whether a command was attempted.
+    static JSValue submitAction(JSContext*, JSValueConst, int, JSValueConst*);
+    static JSValue skipReward(JSContext*, JSValueConst, int, JSValueConst*);
+    static JSValue getCombatLog(JSContext*, JSValueConst, int, JSValueConst*);
     bool setBattleStateJson(const char* json, std::size_t length);
     static JSValue getBattleState(JSContext*, JSValueConst, int, JSValueConst*);
     static JSValue drawText(JSContext*, JSValueConst, int, JSValueConst*);
@@ -45,6 +51,8 @@ private:
     const ResolvedPokemon* m_player = nullptr;
     const ResolvedPokemon* m_enemy = nullptr;
     uint64_t m_animationTimeMs = 0;
+    FirstRunRuntime* m_game = nullptr; // borrowed, never deleted
+    int m_pendingAction = -999; // 0..3 attack, -1/100 cursor, 200 reward
     void captureException();
     static int interrupt(JSRuntime*, void*);
     static JSValue beginTop(JSContext*, JSValueConst, int, JSValueConst*);

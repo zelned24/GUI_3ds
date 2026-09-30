@@ -84,6 +84,8 @@ public:
     bool advanceBattleTurn();
     bool skipVictoryReward();
     uint8_t selectedBattleMove() const { return m_selectedBattleMove; }
+    const std::string& battleFeedback() const { return m_battleFeedback; }
+    bool playerWon() const { return m_playerWon; }
     bool battleFinished() const { return m_battleFinished; }
     bool experienceGranted() const { return m_experienceGranted; }
     const ClassicVictoryPlan& victoryPlan() const { return m_victoryPlan; }
