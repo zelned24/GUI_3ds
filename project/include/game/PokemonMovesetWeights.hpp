@@ -1,5 +1,6 @@
 #pragma once
 #include "game/PokerogueRngAdapter.hpp"
+#include "content/PokerogueRuntimeContent.hpp"
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
@@ -114,6 +115,65 @@ inline PokemonMovesetWeightResult drawPokemonWeightedMove(
         roll -= pool[i].weight;
     }
     return PokemonMovesetWeightResult::InvalidInput;
+}
+
+enum class PokemonSignatureMoveResult : uint8_t {
+    Ok = 0, InvalidInput, InvalidCatalog
+};
+
+// Pinned forceSignatureMove: a rival map entry replaces the regular entry,
+// and scalar/list declarations differ in whether a successful coin flip
+// consumes an additional selection draw. Duplicate list values stay present.
+inline PokemonSignatureMoveResult selectPokemonForcedSignatureMove(
+    uint16_t speciesDex, bool useRivalSignatures,
+    const PokemonWeightedMove* pool, std::size_t count,
+    PokerogueRngAdapter& rng, uint16_t& selectedMoveId) {
+    selectedMoveId = 0;
+    if (!speciesDex || (!pool && count)) return PokemonSignatureMoveResult::InvalidInput;
+    bool hasRivalEntry = false;
+    for (const auto& entry : PokerogueContent::kForcedSignatureMoves)
+        if (entry.speciesDex == speciesDex && entry.rival) { hasRivalEntry = true; break; }
+    const bool rival = useRivalSignatures && hasRivalEntry;
+    bool hasEntry = false;
+    bool isArray = false;
+    std::size_t availableCount = 0;
+    uint16_t firstAvailable = 0;
+    for (const auto& entry : PokerogueContent::kForcedSignatureMoves) {
+        if (entry.speciesDex != speciesDex || entry.rival != rival) continue;
+        if (hasEntry && entry.isArray != isArray) return PokemonSignatureMoveResult::InvalidCatalog;
+        hasEntry = true;
+        isArray = entry.isArray;
+        for (std::size_t i = 0; i < count; ++i) {
+            if (pool[i].moveId != entry.moveId) continue;
+            if (!pool[i].weight) return PokemonSignatureMoveResult::InvalidInput;
+            firstAvailable = entry.moveId;
+            ++availableCount;
+            break;
+        }
+    }
+    if (!availableCount) return PokemonSignatureMoveResult::Ok;
+    if (rng.randSeedInt(100) >= PokerogueContent::kForcedSignatureMoveChance)
+        return PokemonSignatureMoveResult::Ok;
+    if (!isArray) {
+        if (availableCount != 1) return PokemonSignatureMoveResult::InvalidCatalog;
+        selectedMoveId = firstAvailable;
+        return PokemonSignatureMoveResult::Ok;
+    }
+    const int32_t chosen = rng.pickIndex(static_cast<uint32_t>(availableCount));
+    if (chosen < 0) return PokemonSignatureMoveResult::InvalidCatalog;
+    std::size_t ordinal = 0;
+    for (const auto& entry : PokerogueContent::kForcedSignatureMoves) {
+        if (entry.speciesDex != speciesDex || entry.rival != rival) continue;
+        for (std::size_t i = 0; i < count; ++i) {
+            if (pool[i].moveId != entry.moveId) continue;
+            if (ordinal++ == static_cast<std::size_t>(chosen)) {
+                selectedMoveId = entry.moveId;
+                return PokemonSignatureMoveResult::Ok;
+            }
+            break;
+        }
+    }
+    return PokemonSignatureMoveResult::InvalidCatalog;
 }
 
 inline PokemonMovesetWeightResult generatePokemonWildMoveset(

@@ -41,6 +41,23 @@ if (moveBlocklists?.provenance?.sourcePath !== 'src/data/balance/moves/forbidden
   throw new Error('Pinned trainer move blocklists are missing or invalid');
 }
 const moveBlocklistRows = key => moveBlocklists[key].map(id => `    ${id}`).join(',\n');
+const forcedSignatures = content.extensions?.forcedSignatureMoves;
+const canonicalSpeciesDex = new Set(collections.species.map(species => species.speciesId));
+if (forcedSignatures?.provenance?.sourcePath !== 'src/data/balance/moves/signature-moves.ts' ||
+    !forcedSignatures.provenance.sourceHash ||
+    !Number.isInteger(forcedSignatures.chancePercent) ||
+    forcedSignatures.chancePercent < 1 || forcedSignatures.chancePercent > 100 ||
+    forcedSignatures.chanceProvenance?.sourcePath !== 'src/data/balance/moves/moveset-generation.ts' ||
+    !forcedSignatures.chanceProvenance.sourceHash ||
+    ['regular', 'rival'].some(key => !Array.isArray(forcedSignatures[key]) ||
+      !forcedSignatures[key].length || forcedSignatures[key].some(entry =>
+        !canonicalSpeciesDex.has(entry.speciesDex) || typeof entry.isArray !== 'boolean' ||
+        !Array.isArray(entry.moveIds) || !entry.moveIds.length ||
+        entry.moveIds.some(id => !catalogMoveIds.has(id))))) {
+  throw new Error('Pinned forced signature move map is missing or invalid');
+}
+const signatureRows = ['regular', 'rival'].flatMap(key => forcedSignatures[key].flatMap(entry =>
+  entry.moveIds.map(moveId => `    {${entry.speciesDex}, ${moveId}, ${entry.isArray}, ${key === 'rival'}}`))).join(',\n');
 const experienceRates = content.extensions?.pokemonExperience?.growthRates;
 const growthRateNames = ['ERRATIC', 'FAST', 'MEDIUM_FAST', 'MEDIUM_SLOW', 'SLOW', 'FLUCTUATING'];
 if (!experienceRates || growthRateNames.some(rate => !Array.isArray(experienceRates[rate]) || experienceRates[rate].length !== 100 || experienceRates[rate].some(value => !Number.isInteger(value) || value < 0 || value > 0xFFFFFFFF))) {
@@ -577,13 +594,13 @@ const atlasHeader = runtimeHeader
   .replace('inline constexpr Entity kLocales[] = {', `inline constexpr PokemonSpriteFrame kPokemonSpriteFrames[] = {\n${spriteFrameRows}\n};\ninline constexpr PokemonSpriteAtlas kPokemonSpriteAtlases[] = {\n${spriteAtlasRows}\n};\ninline constexpr Entity kLocales[] = {`)
   .replace('inline constexpr std::size_t kLocaleCount = sizeof(kLocales) / sizeof(kLocales[0]);', 'inline constexpr std::size_t kLocaleCount = sizeof(kLocales) / sizeof(kLocales[0]); inline constexpr std::size_t kPokemonSpriteFrameCount = sizeof(kPokemonSpriteFrames) / sizeof(kPokemonSpriteFrames[0]); inline constexpr std::size_t kPokemonSpriteAtlasCount = sizeof(kPokemonSpriteAtlases) / sizeof(kPokemonSpriteAtlases[0]); inline constexpr const PokemonSpriteAtlas* findPokemonSpriteAtlas(uint16_t dex) { for (const auto& atlas : kPokemonSpriteAtlases) if (atlas.speciesDex == dex) return &atlas; return nullptr; }');
 const trainerMoveHeader = atlasHeader
-  .replace('struct MoveAttribute {', 'struct MoveSupercedence { uint16_t moveId; uint16_t replacementMoveId; }; struct MoveAttribute {')
+  .replace('struct MoveAttribute {', 'struct MoveSupercedence { uint16_t moveId; uint16_t replacementMoveId; }; struct ForcedSignatureMove { uint16_t speciesDex; uint16_t moveId; bool isArray; bool rival; }; struct MoveAttribute {')
   .replace('inline constexpr SpeciesLevelMove kSpeciesLevelMoves[] = {',
     `inline constexpr MoveSupercedence kMoveSupercedence[] = {\n${supercedenceRows}\n};\ninline constexpr char kMoveSupercedenceSourcePath[] = "${field(supercedence.provenance.sourcePath)}";\ninline constexpr char kMoveSupercedenceSourceHash[] = "${field(supercedence.provenance.sourceHash)}";\ninline constexpr SpeciesLevelMove kSpeciesLevelMoves[] = {`)
   .replace('inline constexpr std::size_t kSpeciesLevelMoveCount =',
     'inline constexpr std::size_t kMoveSupercedenceCount = sizeof(kMoveSupercedence) / sizeof(kMoveSupercedence[0]);\ninline constexpr std::size_t kSpeciesLevelMoveCount =')
   .replace('inline constexpr SpeciesLevelMove kSpeciesLevelMoves[] = {',
-    `inline constexpr uint16_t kForbiddenSinglesMoveIds[] = {\n${moveBlocklistRows('singles')}\n};\ninline constexpr uint16_t kLevelBasedDeniedMoveIds[] = {\n${moveBlocklistRows('levelBased')}\n};\ninline constexpr uint16_t kForbiddenTmMoveIds[] = {\n${moveBlocklistRows('tm')}\n};\ninline constexpr char kMoveBlocklistsSourcePath[] = "${field(moveBlocklists.provenance.sourcePath)}";\ninline constexpr char kMoveBlocklistsSourceHash[] = "${field(moveBlocklists.provenance.sourceHash)}";\ninline constexpr SpeciesLevelMove kSpeciesLevelMoves[] = {`);
+    `inline constexpr uint16_t kForbiddenSinglesMoveIds[] = {\n${moveBlocklistRows('singles')}\n};\ninline constexpr uint16_t kLevelBasedDeniedMoveIds[] = {\n${moveBlocklistRows('levelBased')}\n};\ninline constexpr uint16_t kForbiddenTmMoveIds[] = {\n${moveBlocklistRows('tm')}\n};\ninline constexpr char kMoveBlocklistsSourcePath[] = "${field(moveBlocklists.provenance.sourcePath)}";\ninline constexpr char kMoveBlocklistsSourceHash[] = "${field(moveBlocklists.provenance.sourceHash)}";\ninline constexpr ForcedSignatureMove kForcedSignatureMoves[] = {\n${signatureRows}\n};\ninline constexpr uint8_t kForcedSignatureMoveChance = ${forcedSignatures.chancePercent};\ninline constexpr char kForcedSignatureSourcePath[] = "${field(forcedSignatures.provenance.sourcePath)}";\ninline constexpr char kForcedSignatureSourceHash[] = "${field(forcedSignatures.provenance.sourceHash)}";\ninline constexpr SpeciesLevelMove kSpeciesLevelMoves[] = {`);
 await fs.mkdir(path.dirname(outputPath), { recursive: true });
 await fs.writeFile(outputPath, trainerMoveHeader, 'utf8');
 console.log(JSON.stringify({ output: path.relative(root, outputPath), bytes: Buffer.byteLength(trainerMoveHeader), hash: report.contentHash }));

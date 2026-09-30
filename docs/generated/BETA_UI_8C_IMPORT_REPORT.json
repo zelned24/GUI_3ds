@@ -15,6 +15,8 @@
     "fixedBossWaves": 21,
     "forbiddenSinglesMoves": 22,
     "forbiddenTmMoves": 24,
+    "forcedRivalSignatureSpecies": 7,
+    "forcedSignatureSpecies": 187,
     "forms": 609,
     "freshProfileStarters": 27,
     "items": 109,
@@ -35,7 +37,7 @@
     "trainersWithSpeciesPools": 34,
     "trainersWithStaticPartyTemplates": 46
   },
-  "contentHash": "63987beddaff752f42c55e795102cd4b46cbfb6c79059b5078e7b48e52c4bfed",
+  "contentHash": "f90033dff214b46f95f40d88ac5f94c345a895eaeb738818c215a7c78ef690e8",
   "deterministicReimport": true,
   "provenance": [
     {
@@ -283,6 +285,12 @@
       "repository": "pokerogue",
       "revision": "8555c08c823b856cbec4eb99ca84ea52a955836d",
       "sourcePath": "src/data/balance/moves/moveset-generation.ts"
+    },
+    {
+      "hash": "c724ba8c60c2fe429e531541ec151324329ff2a2909638a426adbdecc85e3857",
+      "repository": "pokerogue",
+      "revision": "8555c08c823b856cbec4eb99ca84ea52a955836d",
+      "sourcePath": "src/data/balance/moves/signature-moves.ts"
     },
     {
       "hash": "90239d15bd94b9823ecfdecc6b4733cc4533b052983087f22b48e4954246ac0f",

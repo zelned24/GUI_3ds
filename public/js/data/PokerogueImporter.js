@@ -477,6 +477,40 @@ function parseMoveGenerationBlocklist(source, declaration, moveEnum) {
   return ids;
 }
 
+function parseForcedSignatureMoves(source, declaration, speciesEnum, moveEnum) {
+  const marker = new RegExp(`\\bexport\\s+const\\s+${declaration}\\s*:[^=]+?=\\s*`).exec(source);
+  if (!marker) throw new Error(`Invalid import: ${declaration} declaration missing`);
+  const open = source.indexOf('{', marker.index + marker[0].length);
+  const literal = extractBalancedLiteral(source, open);
+  if (!literal) throw new Error(`Invalid import: unclosed ${declaration} map`);
+  const entries = [];
+  const seen = new Set();
+  for (const raw of splitTopLevelArguments(literal.slice(1, -1))) {
+    const entry = raw.replace(/\/\*[\s\S]*?\*\/|\/\/[^\n]*/g, '').trim();
+    if (!entry) continue;
+    const match = /^\[SpeciesId\.([A-Z0-9_]+)\]\s*:\s*([\s\S]+)$/.exec(entry);
+    if (!match) throw new Error(`Invalid import: unsupported ${declaration} entry ${entry}`);
+    const speciesDex = speciesEnum.getId(match[1]);
+    if (!Number.isInteger(speciesDex) || speciesDex < 1 || speciesDex > 0xFFFF || seen.has(speciesDex))
+      throw new Error(`Invalid import: unknown or duplicate ${declaration} SpeciesId.${match[1]}`);
+    seen.add(speciesDex);
+    const isArray = match[2].startsWith('[');
+    const rawMoves = isArray ? splitTopLevelArguments(match[2].slice(1, -1)) : [match[2]];
+    if (isArray && !match[2].endsWith(']')) throw new Error(`Invalid import: unclosed ${declaration} move array`);
+    const moveIds = rawMoves.map(rawMove => {
+      const moveMatch = /^MoveId\.([A-Z0-9_]+)$/.exec(rawMove.trim());
+      const moveId = moveMatch ? moveEnum.getId(moveMatch[1]) : null;
+      if (!Number.isInteger(moveId) || moveId < 1 || moveId > 0xFFFF)
+        throw new Error(`Invalid import: unknown ${declaration} move ${rawMove}`);
+      return moveId;
+    });
+    if (!moveIds.length) throw new Error(`Invalid import: empty ${declaration} move array`);
+    entries.push({ speciesDex, isArray, moveIds });
+  }
+  if (!entries.length) throw new Error(`Invalid import: empty ${declaration} map`);
+  return entries;
+}
+
 function parseDerivedTrainerTypes(source, catalog) {
   const marker = /getDerivedType\s*\(/.exec(source);
   // Locate the declaration, excluding constructor calls to this method.
@@ -960,7 +994,8 @@ export class PokerogueImporter {
       'src/modifier/modifier-type.ts', 'src/modifier/init-modifier-pools.ts', 'src/data/trainers/trainer-config.ts', 'src/data/trainers/trainer-party-template.ts', 'src/data/balance/signature-species.ts',
       'src/enums/party-member-strength.ts', 'src/enums/evo-level-threshold-kind.ts', 'src/enums/trainer-pool-tier.ts', 'src/data/species-data-registry.ts',
       'src/data/balance/moves/moveset-generation.ts', 'src/data/balance/moves/egg-moves.ts',
-      'src/data/balance/moves/superceded-moves.ts', 'src/data/balance/moves/forbidden-moves.ts'
+      'src/data/balance/moves/superceded-moves.ts', 'src/data/balance/moves/forbidden-moves.ts',
+      'src/data/balance/moves/signature-moves.ts'
     ];
     const requests = [
       ...fixedPaths.map(path => ({ repo: 'pokerogue', path })),
@@ -1227,6 +1262,16 @@ export class PokerogueImporter {
       'LEVEL_BASED_DENYLIST', enumCatalogs.move);
     const forbiddenTmMoveIds = parseMoveGenerationBlocklist(forbiddenMoveFile.content,
       'FORBIDDEN_TM_MOVES', enumCatalogs.move);
+    const signatureMoveFile = byPath.get('pokerogue:src/data/balance/moves/signature-moves.ts');
+    const forcedSignatureMoves = parseForcedSignatureMoves(signatureMoveFile.content,
+      'FORCED_SIGNATURE_MOVES', enumCatalogs.species, enumCatalogs.move);
+    const forcedRivalSignatureMoves = parseForcedSignatureMoves(signatureMoveFile.content,
+      'FORCED_RIVAL_SIGNATURE_MOVES', enumCatalogs.species, enumCatalogs.move);
+    const signatureChanceSource = byPath.get('pokerogue:src/data/balance/moves/moveset-generation.ts');
+    const signatureChanceMatch = /\bexport\s+const\s+FORCED_SIGNATURE_MOVE_CHANCE\s*=\s*(\d+)\b/.exec(signatureChanceSource.content);
+    const forcedSignatureChance = signatureChanceMatch ? Number(signatureChanceMatch[1]) : null;
+    if (!Number.isInteger(forcedSignatureChance) || forcedSignatureChance < 1 || forcedSignatureChance > 100)
+      throw new Error('Invalid import: pinned forced signature move chance missing');
     const abilityFile = byPath.get('pokerogue:src/data/abilities/init-abilities.ts');
     const parsedMoves = this.parseMoves(moveFile.content, null,
       byPath.get('pokerogue:src/data/balance/moves/moveset-generation.ts')?.content ?? null);
@@ -1386,6 +1431,19 @@ export class PokerogueImporter {
         sourceSymbol: 'FORBIDDEN_SINGLES_MOVES/LEVEL_BASED_DENYLIST/FORBIDDEN_TM_MOVES',
         sourceHash: sourceHash(forbiddenMoveFile) }
     };
+    canonicalContent.extensions.forcedSignatureMoves = {
+      regular: forcedSignatureMoves,
+      rival: forcedRivalSignatureMoves,
+      chancePercent: forcedSignatureChance,
+      provenance: { repository: game.url, revision: game.revision,
+        sourcePath: 'src/data/balance/moves/signature-moves.ts',
+        sourceSymbol: 'FORCED_SIGNATURE_MOVES/FORCED_RIVAL_SIGNATURE_MOVES',
+        sourceHash: sourceHash(signatureMoveFile) },
+      chanceProvenance: { repository: game.url, revision: game.revision,
+        sourcePath: 'src/data/balance/moves/moveset-generation.ts',
+        sourceSymbol: 'FORCED_SIGNATURE_MOVE_CHANCE',
+        sourceHash: sourceHash(signatureChanceSource) }
+    };
     console.log('[canonical-import] hashing canonical snapshot');
     const errors = canonicalContent.validate();
     if (errors.length) throw new Error(`Invalid canonical production import: ${errors.join('; ')}`);
@@ -1458,6 +1516,8 @@ export class PokerogueImporter {
     report.catalogCounts.forbiddenSinglesMoves = forbiddenSinglesMoveIds.length;
     report.catalogCounts.levelBasedDeniedMoves = levelBasedDenylistMoveIds.length;
     report.catalogCounts.forbiddenTmMoves = forbiddenTmMoveIds.length;
+    report.catalogCounts.forcedSignatureSpecies = forcedSignatureMoves.length;
+    report.catalogCounts.forcedRivalSignatureSpecies = forcedRivalSignatureMoves.length;
     const result = { sourceType: CanonicalSourceType.UPSTREAM, sourceSnapshot: snapshot, canonicalContent, runtimeContent: new (await import('./CanonicalDataContract.js')).RuntimeContent({ canonicalContent }), gameModes, species, forms, moves, abilities, items, locales: localeEntries, enums: enumCatalogs, importReport: report, manifest: this.manifest };
     this.canonicalImportCache = { key: cacheKey, result };
     return result;
