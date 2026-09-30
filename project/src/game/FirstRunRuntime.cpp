@@ -1500,6 +1500,7 @@ bool FirstRunRuntime::executeActiveBattleMove(uint8_t userIndex, uint8_t targetI
     ResolvedPokemon* resolvedActors[] = {&m_context.player, &m_context.enemy, &m_context.secondEnemy};
     auto* targetBossState = &resolvedActors[targetIndex]->bossState;
     auto nextBossState = *targetBossState;
+    auto nextGlobalRng = m_globalRng;
     const bool targetIsBoss = nextBossState.segmentCount != 0;
     PokemonBossDamagePolicy bossPolicy{};
     const auto* bossAbility = PokerogueContent::findAbilityMovegenProfile(opponent.abilityId);
@@ -1516,7 +1517,8 @@ bool FirstRunRuntime::executeActiveBattleMove(uint8_t userIndex, uint8_t targetI
         PokemonMoveActionResult attack{};
         if (useStandardPokemonMove(nextUser, nextOpponent, moveSlot, false, nextRng,
             attack, &weather, &critical, &hit, &pp, targetIsBoss ? &nextBossState : nullptr,
-            targetIsBoss ? &bossPolicy : nullptr) != PokemonMoveActionStatus::Ok) return false;
+            targetIsBoss ? &bossPolicy : nullptr,
+            targetIsBoss ? &nextGlobalRng : nullptr) != PokemonMoveActionStatus::Ok) return false;
         const auto policy = canonicalFreshActorRecoilPolicy(user.abilityId);
         PokemonRecoilEvent recoil{};
         if (applyPokemonRecoil(nextUser, move->id, attack.damageApplied,
@@ -1525,7 +1527,10 @@ bool FirstRunRuntime::executeActiveBattleMove(uint8_t userIndex, uint8_t targetI
         user = nextUser;
         opponent = nextOpponent;
         rng = nextRng;
-        if (targetIsBoss) *targetBossState = nextBossState;
+        if (targetIsBoss) {
+            *targetBossState = nextBossState;
+            m_globalRng = nextGlobalRng;
+        }
         m_battleFeedback = recoil.damage ? "Attack caused recoil" :
             attack.weatherCancelled ? "Move blocked by weather" :
             attack.damageRoll.hit ? "Attack hit" : "Attack missed";
@@ -1539,7 +1544,8 @@ bool FirstRunRuntime::executeActiveBattleMove(uint8_t userIndex, uint8_t targetI
         PokemonMoveActionResult attack{};
         if (useStandardPokemonMove(nextUser, nextOpponent, moveSlot, false, nextRng,
             attack, &weather, &critical, &hit, &pp, targetIsBoss ? &nextBossState : nullptr,
-            targetIsBoss ? &bossPolicy : nullptr) != PokemonMoveActionStatus::Ok) return false;
+            targetIsBoss ? &bossPolicy : nullptr,
+            targetIsBoss ? &nextGlobalRng : nullptr) != PokemonMoveActionStatus::Ok) return false;
         PokemonDrainPolicy policy{};
         policy.resolved = true;
         PokemonDrainEvent event{};
@@ -1549,7 +1555,10 @@ bool FirstRunRuntime::executeActiveBattleMove(uint8_t userIndex, uint8_t targetI
         user = nextUser;
         opponent = nextOpponent;
         rng = nextRng;
-        if (targetIsBoss) *targetBossState = nextBossState;
+        if (targetIsBoss) {
+            *targetBossState = nextBossState;
+            m_globalRng = nextGlobalRng;
+        }
         m_battleFeedback = event.healed ? "Attack drained HP" :
             attack.weatherCancelled ? "Move blocked by weather" :
             attack.damageRoll.hit ? "Attack hit" : "Attack missed";
@@ -1558,8 +1567,12 @@ bool FirstRunRuntime::executeActiveBattleMove(uint8_t userIndex, uint8_t targetI
     PokemonMoveActionResult result{};
     if (useStandardPokemonMove(user, opponent, moveSlot, false, rng, result,
             &weather, &critical, &hit, &pp, targetIsBoss ? &nextBossState : nullptr,
-            targetIsBoss ? &bossPolicy : nullptr) != PokemonMoveActionStatus::Ok) return false;
-    if (targetIsBoss) *targetBossState = nextBossState;
+            targetIsBoss ? &bossPolicy : nullptr,
+            targetIsBoss ? &nextGlobalRng : nullptr) != PokemonMoveActionStatus::Ok) return false;
+    if (targetIsBoss) {
+        *targetBossState = nextBossState;
+        m_globalRng = nextGlobalRng;
+    }
     const bool enemyActs = userIndex != 0;
     m_battleFeedback = result.weatherCancelled
         ? (enemyActs ? "Enemy move blocked by weather" : "Your move blocked by weather")
@@ -1582,6 +1595,9 @@ bool FirstRunRuntime::finishBattleTurn() {
     auto nextPlayer = m_context.player.battleState;
     auto nextEnemy = m_context.enemy.battleState;
     auto nextSecondEnemy = m_context.secondEnemy.battleState;
+    auto nextEnemyBoss = m_context.enemy.bossState;
+    auto nextSecondEnemyBoss = m_context.secondEnemy.bossState;
+    auto nextGlobalRng = m_globalRng;
     PokemonWeatherPhaseEvent residual{};
     const bool allEnemiesDown = m_doubleBattle
         ? (!nextEnemy.hp && !nextSecondEnemy.hp)
@@ -1590,7 +1606,10 @@ bool FirstRunRuntime::finishBattleTurn() {
         m_run.wave % 10 == 0 && nextPlayer.hp &&
         allEnemiesDown && enemyPartyDefeated();
     if (!applyPokemonMultiWeatherPhase(nextPlayer, nextEnemy, m_doubleBattle ? &nextSecondEnemy : nullptr,
-            m_arenaWeather, upcomingInterlude, residual)) {
+            m_arenaWeather, upcomingInterlude, residual,
+            nextEnemyBoss.segmentCount ? &nextEnemyBoss : nullptr,
+            m_doubleBattle && nextSecondEnemyBoss.segmentCount ? &nextSecondEnemyBoss : nullptr,
+            &nextGlobalRng)) {
         m_battleFeedback = "Weather effects require ability dispatcher";
         buildScene();
         return false;
@@ -1617,7 +1636,12 @@ bool FirstRunRuntime::finishBattleTurn() {
     }
     m_context.player.battleState = nextPlayer;
     m_context.enemy.battleState = nextEnemy;
-    if (m_doubleBattle) m_context.secondEnemy.battleState = nextSecondEnemy;
+    m_context.enemy.bossState = nextEnemyBoss;
+    if (m_doubleBattle) {
+        m_context.secondEnemy.battleState = nextSecondEnemy;
+        m_context.secondEnemy.bossState = nextSecondEnemyBoss;
+    }
+    m_globalRng = nextGlobalRng;
     m_trickRoom = nextRoom;
     m_arenaWeather = nextWeather;
     m_context.playerParty[m_context.activePlayerPartyIndex] = m_context.player;
@@ -2492,6 +2516,7 @@ void FirstRunRuntime::resolve(bool carryPlayer) {
                             m_context.activeTrainerPartyIndex = 0;
                             m_context.enemy = m_context.trainerParty[0];
                             m_run.encounterDex = m_context.enemy.dex;
+                            m_globalRng = waveRng;
                             m_encounterResolved = true;
                             m_checkpointAvailable = true;
                             refreshTrainerBaselineMatchups();
@@ -2695,6 +2720,7 @@ void FirstRunRuntime::resolve(bool carryPlayer) {
             m_arenaWeather = {};
         }
     }
+    m_globalRng = waveRng;
     m_encounterResolved = true;
     m_checkpointAvailable = true;
 }

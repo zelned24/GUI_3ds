@@ -1181,12 +1181,13 @@ PokemonMoveActionStatus useStandardPokemonMove(
     const PokemonCriticalPolicy* criticalPolicy,
     const PokemonHitPolicy* hitPolicy,
     const PokemonPpPolicy* ppPolicy,
-    PokemonBossState* targetBossState, const PokemonBossDamagePolicy* bossDamagePolicy) {
+    PokemonBossState* targetBossState, const PokemonBossDamagePolicy* bossDamagePolicy,
+    PokerogueRngAdapter* bossGlobalRng) {
     if (moveSlot >= attacker.moveCount || moveSlot >= 4 || attacker.moves[moveSlot].moveId == 0) {
         return PokemonMoveActionStatus::InvalidMoveSlot;
     }
     if ((targetBossState != nullptr) != (bossDamagePolicy != nullptr) ||
-        (targetBossState && (!bossDamagePolicy->resolved || !bossDamagePolicy->damageCallbacksResolved ||
+        (targetBossState && (!bossGlobalRng || bossGlobalRng == &battleRng || !bossDamagePolicy->resolved || !bossDamagePolicy->damageCallbacksResolved ||
             !targetBossState->segmentCount || targetBossState->segmentIndex >= targetBossState->segmentCount ||
             !defender.maxHp || defender.hp > defender.maxHp || &attacker == &defender)))
         return PokemonMoveActionStatus::UnresolvedBoss;
@@ -1222,6 +1223,9 @@ PokemonMoveActionStatus useStandardPokemonMove(
     }
     // Commit RNG only after a resolved action, just like HP and PP.
     PokerogueRngAdapter nextRng = battleRng;
+    // weightedPick in shield boosts uses Phaser.Math.RND, not Battle.randSeedInt.
+    PokerogueRngAdapter nextGlobalRng;
+    if (bossGlobalRng) nextGlobalRng = *bossGlobalRng;
     next.damageResolutionStatus = resolveStandardPokemonMoveDamage(
         attacker, defender, attacker.moves[moveSlot].moveId, moveIsTypeless, nextRng, next.damageRoll, weatherContext, criticalPolicy, hitPolicy);
     if (next.damageResolutionStatus == PokemonMoveDamageResult::UnsupportedAbilityCondition)
@@ -1239,7 +1243,7 @@ PokemonMoveActionStatus useStandardPokemonMove(
         if (targetBossState) {
             PokemonBossDamageEvent bossEvent{};
             if (!applyPokemonBossDamage(nextDefender, nextBossState, next.damageRoll.damage,
-                    *bossDamagePolicy, nextRng, bossEvent)) return PokemonMoveActionStatus::UnresolvedBoss;
+                    *bossDamagePolicy, nextGlobalRng, bossEvent)) return PokemonMoveActionStatus::UnresolvedBoss;
             next.damageApplied = bossEvent.damageApplied;
         } else {
             next.damageApplied = static_cast<uint16_t>(next.damageRoll.damage < nextDefender.hp
@@ -1250,7 +1254,10 @@ PokemonMoveActionStatus useStandardPokemonMove(
     }
     // Commit resolved PP, target/shields/stages and RNG together after all phases succeed.
     defender = nextDefender;
-    if (targetBossState) *targetBossState = nextBossState;
+    if (targetBossState) {
+        *targetBossState = nextBossState;
+        *bossGlobalRng = nextGlobalRng;
+    }
     attacker.moves[moveSlot].pp = static_cast<uint8_t>(attacker.moves[moveSlot].pp - next.ppConsumed);
     battleRng = nextRng;
     output = next;

@@ -172,6 +172,7 @@ private:
     std::size_t m_starterIndex = 0;
     std::array<uint16_t, 10> m_seedCodeUnits{};
     PokerogueBattleRng m_battleRng{};
+    PokerogueRngAdapter m_globalRng{}; // Wave stream for non-Battle.randSeedInt draws.
     PokerogueRngState m_trainerConstructorRngStates[6]{};
     PokerogueRngState m_trainerPostMovesetRngStates[6]{};
     PokerogueRngState m_trainerPostIvRngStates[6]{};

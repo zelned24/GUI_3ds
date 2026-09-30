@@ -435,7 +435,8 @@ PokemonMoveActionStatus useStandardPokemonMove(
     const PokemonHitPolicy* hitPolicy = nullptr,
     const PokemonPpPolicy* ppPolicy = nullptr,
     PokemonBossState* targetBossState = nullptr,
-    const PokemonBossDamagePolicy* bossDamagePolicy = nullptr);
+    const PokemonBossDamagePolicy* bossDamagePolicy = nullptr,
+    PokerogueRngAdapter* bossGlobalRng = nullptr);
 
 enum class PokemonAbilitySelectionResult : uint8_t { Ok = 0, MissingSpecies, InvalidHiddenRate };
 PokemonAbilitySelectionResult selectPokemonAbilityIndex(

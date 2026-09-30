@@ -331,3 +331,20 @@
 1. EncounterPhase pinned (src/phases/encounter-phase.ts) reduce segmentos únicamente cuando existen varios jefes generados: ceil(segmentos * BST de forma / BST total). Runtime aplica esa proporción con aritmética entera y referencias a formas canónicas; no usa stats de combate.
 2. Regresiones 497–500 escritas para proporciones desiguales, redondeo, entrada inválida sin mutación y encuentro con un solo jefe. Pendientes de ejecución por instrucción del usuario.
 3. Continúan pendientes dobles 2vs2, callbacks completos, daño residual de jefes, Eternamax y persistencia. No se declara Classic completo.
+
+## RNG de shields separado del RNG de turno
+
+1. Auditoría pinned: utils/random.ts weightedPick llama utils/common.ts randSeedInt (Phaser.Math.RND); Battle.randSeedInt conserva otro stream por turno. La conexión anterior consumía boosts desde el stream de daño: corregido.
+2. Comando estándar exige stream global distinto para contexto de jefe, copia ambos y publica HP/PP/shields/RNG conjuntamente. FirstRunRuntime retiene el stream de wave tras la construcción resuelta del encuentro. Save v8 ya rechaza jefes y no pretende serializar este estado.
+3. Queda pendiente parity del stream global completo: modifiers, fases y rewards aún no portados también consumen draws upstream. Esta separación corrige la mezcla, sin afirmar fidelidad RNG de una partida completa.
+4. Eternamax inspeccionado: BattleScene.initFinalBossPhaseTwo se invoca al terminar DamageAnimPhase/PostTurnStatusEffectPhase; QuietFormChangePhase restaura HP/status/PP, borra tags, establece 5 segmentos y cancela movimientos del jefe. Incluye moveset de segunda fase, Mini Black Hole y dos actores del jugador; conexión completa pendiente.
+
+5. Regresiones 501-504 escritas: igualdad del stream de hit/crit/roll frente a comando ordinario, consumo separado de boosts, rechazo de stream ausente/alias sin gastar PP. No ejecutadas.
+
+## Daño climático de jefes conectado
+
+1. WeatherEffectPhase pinned llama damageAndUpdate con ignoreSegments:true. PokemonWeatherPhase aplica ahora el daño residual a través del contexto real de jefe, recalcula shields y boosts en el stream global separado. Inmunidades no consumen boosts; callbacks no resueltos se rechazan.
+2. Actor, shields y RNG se copian y publican al completar la fase. FirstRunRuntime integra ambos enemigos y conserva el evento del segundo. Regresiones 505–508 escritas para Eternatus real, cruce de shield y ausencia de contexto RNG sin mutación; no ejecutadas.
+3. Esto no implementa la transformación Eternamax ni todos los tags/abilities de clima. Siguen pendientes para Classic completo y validación final.
+
+4. Revision estatica del harness: los casos de shields ahora construyen su actor con movimiento real; antes reutilizaban state, que otra prueba habia reemplazado por un actor sin moves. Asserts conservados, arreglo del setup, pendiente de ejecucion.

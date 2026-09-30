@@ -1,5 +1,6 @@
 #pragma once
 #include "game/PokemonBattleState.hpp"
+#include "game/PokerogueRngAdapter.hpp"
 #include <cstring>
 
 namespace Pokerogue3DS {
@@ -24,11 +25,14 @@ inline const PokerogueContent::MoveWeatherChangeProfile* pokemonWeatherChangePro
 struct PokemonWeatherPhaseEvent {
     PokemonWeatherDamageEvent player;
     PokemonWeatherDamageEvent enemy;
+    PokemonWeatherDamageEvent secondEnemy;
 };
 inline bool applyPokemonMultiWeatherPhase(PokemonBattleState& player,
     PokemonBattleState& enemy, PokemonBattleState* secondEnemy,
     const PokemonArenaWeatherState& arena, bool upcomingInterlude,
-    PokemonWeatherPhaseEvent& output) {
+    PokemonWeatherPhaseEvent& output,
+    PokemonBossState* enemyBoss = nullptr, PokemonBossState* secondEnemyBoss = nullptr,
+    PokerogueRngAdapter* globalRng = nullptr) {
     output = {};
     if (upcomingInterlude || arena.type == PokemonEffectiveWeather::None) {
         return true;
@@ -57,7 +61,12 @@ inline bool applyPokemonMultiWeatherPhase(PokemonBattleState& player,
     PokemonBattleState nextSecondEnemy{};
     if (secondEnemy) nextSecondEnemy = *secondEnemy;
 
-    const auto apply = [&](PokemonBattleState& actor, PokemonWeatherDamageEvent& result) {
+    PokemonBossState nextBoss = enemyBoss ? *enemyBoss : PokemonBossState{};
+    PokemonBossState nextSecondBoss = secondEnemyBoss ? *secondEnemyBoss : PokemonBossState{};
+    PokerogueRngAdapter nextGlobalRng;
+    if (globalRng) nextGlobalRng = *globalRng;
+    const auto apply = [&](PokemonBattleState& actor, PokemonBossState* boss,
+            PokemonWeatherDamageEvent& result) {
         if (!actor.hp) return true;
         const auto* species = PokerogueContent::findSpeciesByDex(actor.speciesDex);
         const auto* form = actor.formId ? PokerogueContent::findFormById(actor.formId) : nullptr;
@@ -68,15 +77,32 @@ inline bool applyPokemonMultiWeatherPhase(PokemonBattleState& player,
         policy.type1 = form ? form->type1 : species->type1;
         policy.type2 = form ? form->type2 : species->type2;
         if (!pokemonAbilityBlocksWeatherDamage(actor.abilityId, arena.type, policy.abilityBlocksDamage)) return false;
-        return applyPokemonWeatherResidualDamage(actor, arena, policy, result);
+        const uint16_t originalHp = actor.hp;
+        if (!applyPokemonWeatherResidualDamage(actor, arena, policy, result)) return false;
+        if (boss && boss->segmentCount && result.damageApplied) {
+            const auto* ability = PokerogueContent::findAbilityMovegenProfile(actor.abilityId);
+            if (!globalRng || !ability || !ability->bossDamageCallbacksResolved) return false;
+            actor.hp = originalHp;
+            PokemonBossDamagePolicy bossPolicy{true, true, true};
+            PokemonBossDamageEvent bossEvent{};
+            if (!applyPokemonBossDamage(actor, *boss, result.damageApplied, bossPolicy,
+                    nextGlobalRng, bossEvent)) return false;
+            result.damageApplied = bossEvent.damageApplied;
+            result.fainted = actor.hp == 0;
+        }
+        return true;
     };
 
-    if (!apply(nextPlayer, output.player) || !apply(nextEnemy, output.enemy)) return false;
-    PokemonWeatherDamageEvent dummy{};
-    if (secondEnemy && !apply(nextSecondEnemy, dummy)) return false;
+    if (!apply(nextPlayer, nullptr, output.player) ||
+        !apply(nextEnemy, enemyBoss ? &nextBoss : nullptr, output.enemy)) return false;
+    if (secondEnemy && !apply(nextSecondEnemy, secondEnemyBoss ? &nextSecondBoss : nullptr,
+            output.secondEnemy)) return false;
     player = nextPlayer;
     enemy = nextEnemy;
     if (secondEnemy) *secondEnemy = nextSecondEnemy;
+    if (enemyBoss) *enemyBoss = nextBoss;
+    if (secondEnemyBoss) *secondEnemyBoss = nextSecondBoss;
+    if (globalRng) *globalRng = nextGlobalRng;
     return true;
 }
 

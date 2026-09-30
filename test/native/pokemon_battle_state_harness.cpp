@@ -2100,28 +2100,77 @@ extern "C" int runPokemonBattleStateChecks() {
     const auto afterBossPhaseRng = bossBoostRng.state();
     if (beforeBossPhaseRng.s0 != afterBossPhaseRng.s0 || beforeBossPhaseRng.s1 != afterBossPhaseRng.s1 ||
         beforeBossPhaseRng.s2 != afterBossPhaseRng.s2 || beforeBossPhaseRng.carry != afterBossPhaseRng.carry) return 488;
-    auto shieldMoveUser = state;
-    auto shieldMoveTarget = state;
+    PokemonBattleInit shieldCommandInput{};
+    shieldCommandInput.speciesDex = 1;
+    shieldCommandInput.level = 50;
+    shieldCommandInput.abilityId = 65;
+    shieldCommandInput.gender = PokemonGender::Male;
+    shieldCommandInput.moveCount = 1;
+    shieldCommandInput.moveIds[0] = 33;
+    PokemonBattleState shieldCommandActor{};
+    if (Pokerogue3DS::initializePokemonBattleState(shieldCommandInput, shieldCommandActor) != PokemonBattleInitResult::Ok)
+        return 509;
+    auto shieldMoveUser = shieldCommandActor;
+    auto shieldMoveTarget = shieldCommandActor;
     shieldMoveTarget.hp = 1;
     Pokerogue3DS::PokemonBossState moveBossState{3, 0, true, false};
     Pokerogue3DS::PokemonBossDamagePolicy moveBossPolicy{true, true, false};
     Pokerogue3DS::PokemonMoveActionResult shieldMoveEvent{};
     const auto initialShieldPp = shieldMoveUser.moves[0].pp;
     if (Pokerogue3DS::useStandardPokemonMove(shieldMoveUser, shieldMoveTarget, 0, false,
-            actionRng, shieldMoveEvent, nullptr, nullptr, nullptr, nullptr, &moveBossState, &moveBossPolicy) !=
+            actionRng, shieldMoveEvent, nullptr, nullptr, nullptr, nullptr, &moveBossState, &moveBossPolicy, &bossBoostRng) !=
             PokemonMoveActionStatus::Ok || shieldMoveTarget.hp != 1 || shieldMoveEvent.targetFainted ||
         shieldMoveUser.moves[0].pp != initialShieldPp - 1) return 489;
     moveBossPolicy.damageCallbacksResolved = false;
     const auto beforeRejectedShieldPp = shieldMoveUser.moves[0].pp;
     const auto beforeRejectedShieldRng = actionRng.state();
     if (Pokerogue3DS::useStandardPokemonMove(shieldMoveUser, shieldMoveTarget, 0, false,
-            actionRng, shieldMoveEvent, nullptr, nullptr, nullptr, nullptr, &moveBossState, &moveBossPolicy) !=
+            actionRng, shieldMoveEvent, nullptr, nullptr, nullptr, nullptr, &moveBossState, &moveBossPolicy, &bossBoostRng) !=
             PokemonMoveActionStatus::UnresolvedBoss || shieldMoveTarget.hp != 1 ||
         shieldMoveUser.moves[0].pp != beforeRejectedShieldPp) return 490;
     const auto afterRejectedShieldRng = actionRng.state();
     if (beforeRejectedShieldRng.carry != afterRejectedShieldRng.carry ||
         beforeRejectedShieldRng.s0 != afterRejectedShieldRng.s0 || beforeRejectedShieldRng.s1 != afterRejectedShieldRng.s1 ||
         beforeRejectedShieldRng.s2 != afterRejectedShieldRng.s2) return 491;
+    // Damage and hit draws must be identical with and without shield boosts.
+    auto streamUser = shieldCommandActor;
+    auto streamTarget = shieldCommandActor;
+    streamUser.moves[0].pp = streamUser.moves[0].maxPp;
+    streamTarget.hp = static_cast<uint16_t>((static_cast<uint32_t>(streamTarget.maxHp) * 2 + 1) / 3 + 1);
+    for (auto& stage : streamTarget.statStages) stage = 0;
+    auto ordinaryUser = streamUser;
+    auto ordinaryTarget = streamTarget;
+    auto ordinaryRng = actionRng;
+    auto shieldBattleRng = actionRng;
+    auto shieldGlobalRng = bossBoostRng;
+    const auto globalBefore = shieldGlobalRng.state();
+    Pokerogue3DS::PokemonHitPolicy shieldHitPolicy{};
+    shieldHitPolicy.resolved = shieldHitPolicy.bypassAccuracy = true;
+    moveBossState = {3, 2, false, false};
+    moveBossPolicy = {true, true, false};
+    Pokerogue3DS::PokemonMoveActionResult ordinaryEvent{};
+    if (Pokerogue3DS::useStandardPokemonMove(ordinaryUser, ordinaryTarget, 0, false,
+            ordinaryRng, ordinaryEvent, nullptr, nullptr, &shieldHitPolicy) != PokemonMoveActionStatus::Ok ||
+        Pokerogue3DS::useStandardPokemonMove(streamUser, streamTarget, 0, false,
+            shieldBattleRng, shieldMoveEvent, nullptr, nullptr, &shieldHitPolicy, nullptr,
+            &moveBossState, &moveBossPolicy, &shieldGlobalRng) != PokemonMoveActionStatus::Ok ||
+        moveBossState.segmentIndex >= 2) return 501;
+    const auto ordinaryAfter = ordinaryRng.state();
+    const auto battleAfter = shieldBattleRng.state();
+    const auto globalAfter = shieldGlobalRng.state();
+    if (ordinaryAfter.s0 != battleAfter.s0 || ordinaryAfter.s1 != battleAfter.s1 ||
+        ordinaryAfter.s2 != battleAfter.s2 || ordinaryAfter.carry != battleAfter.carry ||
+        (globalBefore.s0 == globalAfter.s0 && globalBefore.s1 == globalAfter.s1 &&
+         globalBefore.s2 == globalAfter.s2 && globalBefore.carry == globalAfter.carry)) return 502;
+    const auto ppBeforeMissingGlobal = streamUser.moves[0].pp;
+    if (Pokerogue3DS::useStandardPokemonMove(streamUser, streamTarget, 0, false,
+            shieldBattleRng, shieldMoveEvent, nullptr, nullptr, &shieldHitPolicy, nullptr,
+            &moveBossState, &moveBossPolicy) != PokemonMoveActionStatus::UnresolvedBoss ||
+        streamUser.moves[0].pp != ppBeforeMissingGlobal) return 503;
+    if (Pokerogue3DS::useStandardPokemonMove(streamUser, streamTarget, 0, false,
+            shieldBattleRng, shieldMoveEvent, nullptr, nullptr, &shieldHitPolicy, nullptr,
+            &moveBossState, &moveBossPolicy, &shieldBattleRng) != PokemonMoveActionStatus::UnresolvedBoss ||
+        streamUser.moves[0].pp != ppBeforeMissingGlobal) return 504;
     Pokerogue3DS::PokemonBossState initializedBoss{};
     if (!Pokerogue3DS::initializeClassicPokemonBossState(1, 5, 1, false, false, initializedBoss) ||
         initializedBoss.segmentCount) return 492;
@@ -2137,6 +2186,32 @@ extern "C" int runPokemonBattleStateChecks() {
         !initializedBoss.classicFinalBossFirstPhase) return 495;
     if (Pokerogue3DS::initializeClassicPokemonBossState(65535, 5, 1, false, false, initializedBoss) ||
         initializedBoss.segmentCount != 4) return 496;
+    PokemonBattleInit weatherBossInput{};
+    weatherBossInput.speciesDex = eternatus->dex;
+    weatherBossInput.level = 200;
+    weatherBossInput.abilityId = eternatus->ability1;
+    PokemonBattleState weatherBossActor{};
+    if (Pokerogue3DS::initializePokemonBattleState(weatherBossInput, weatherBossActor) != PokemonBattleInitResult::Ok)
+        return 505;
+    weatherBossActor.hp = static_cast<uint16_t>((static_cast<uint32_t>(weatherBossActor.maxHp) * 4 + 4) / 5 + 1);
+    Pokerogue3DS::PokemonBossState weatherBossState{5, 4, false, false};
+    auto weatherPlayer = phasePlayer;
+    auto residualRng = bossBoostRng;
+    const auto residualBefore = residualRng.state();
+    Pokerogue3DS::PokemonWeatherPhaseEvent bossWeatherEvent{};
+    if (!Pokerogue3DS::applyPokemonMultiWeatherPhase(weatherPlayer, weatherBossActor, nullptr,
+            phaseWeather, false, bossWeatherEvent, &weatherBossState, nullptr, &residualRng) ||
+        weatherBossState.segmentIndex != 3 || !bossWeatherEvent.enemy.damageApplied) return 506;
+    const auto residualAfter = residualRng.state();
+    if (residualBefore.s0 == residualAfter.s0 && residualBefore.s1 == residualAfter.s1 &&
+        residualBefore.s2 == residualAfter.s2 && residualBefore.carry == residualAfter.carry) return 507;
+    const uint16_t weatherBossHp = weatherBossActor.hp;
+    const uint16_t weatherPlayerHp = weatherPlayer.hp;
+    const uint16_t weatherBossIndex = weatherBossState.segmentIndex;
+    if (Pokerogue3DS::applyPokemonMultiWeatherPhase(weatherPlayer, weatherBossActor, nullptr,
+            phaseWeather, false, bossWeatherEvent, &weatherBossState) ||
+        weatherBossActor.hp != weatherBossHp || weatherPlayer.hp != weatherPlayerHp ||
+        weatherBossState.segmentIndex != weatherBossIndex) return 508;
     Pokerogue3DS::PokemonBossState firstDoubleBoss{3, 2, false, false};
     Pokerogue3DS::PokemonBossState secondDoubleBoss{4, 3, false, false};
     if (!Pokerogue3DS::distributePokemonDoubleBossSegments(firstDoubleBoss, 300, secondDoubleBoss, 700) ||
