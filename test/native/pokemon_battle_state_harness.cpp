@@ -523,6 +523,17 @@ extern "C" int runPokemonBattleStateChecks() {
     if (Pokerogue3DS::calculatePokemonDamageCore(typePowerActor, state, 232, false,
             unresolvedDamage) != Pokerogue3DS::PokemonDamageCoreResult::UnsupportedAbilityCondition ||
         unresolvedDamage != 777) return 267;
+    bool plainsWeatherFound = false, forestRainFound = false, forestNoneFound = false;
+    for (const auto& pool : PokerogueContent::kBiomeWeatherPools) {
+        if (!pool.sourcePath || !*pool.sourcePath || !pool.sourceHash || !*pool.sourceHash) return 291;
+        if (std::strcmp(pool.biomeId, "plains") == 0 && std::strcmp(pool.weatherSymbol, "NONE") == 0)
+            plainsWeatherFound = pool.weight == 1;
+        if (std::strcmp(pool.biomeId, "forest") == 0 && std::strcmp(pool.weatherSymbol, "RAIN") == 0)
+            forestRainFound = pool.weight == 4;
+        if (std::strcmp(pool.biomeId, "forest") == 0 && std::strcmp(pool.weatherSymbol, "NONE") == 0)
+            forestNoneFound = pool.weight == 8;
+    }
+    if (!plainsWeatherFound || !forestRainFound || !forestNoneFound) return 292;
     Pokerogue3DS::PokemonArenaWeatherState arenaWeather{};
     using Pokerogue3DS::PokemonEffectiveWeather;
     if (!Pokerogue3DS::setPokemonArenaWeather(arenaWeather, PokemonEffectiveWeather::Rain, 2) ||

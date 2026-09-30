@@ -715,5 +715,27 @@ const damageAbilityHeader = itemStageHeader.replace('struct MoveAttribute {',
   `struct LowHpTypePowerAbility { uint16_t abilityId; const char* type; const char* sourcePath; const char* sourceSymbol; const char* sourceHash; };\ninline constexpr LowHpTypePowerAbility kLowHpTypePowerAbilities[] = {\n${lowHpTypePowerRows.join(',\n')}\n};\nstruct MoveAttribute {`);
 const typePowerHeader = damageAbilityHeader.replace('struct MoveAttribute {',
   `struct TypePowerAbility { uint16_t abilityId; const char* type; double multiplier; bool requiresCondition; const char* sourcePath; const char* sourceSymbol; const char* sourceHash; };\ninline constexpr TypePowerAbility kTypePowerAbilities[] = {\n${typePowerAbilityRows.join(',\n')}\n};\nstruct MoveAttribute {`);
-await fs.writeFile(outputPath, typePowerHeader, 'utf8');
-console.log(JSON.stringify({ output: path.relative(root, outputPath), bytes: Buffer.byteLength(typePowerHeader), hash: report.contentHash }));
+// Normalize the inspected pinned WeatherPool declarations from preserved raw
+// records. Unknown syntax fails generation rather than producing neutral weather.
+const biomeWeatherRows = [];
+for (const biome of [...collections.biomes].sort((a, b) => a.id.localeCompare(b.id))) {
+  const raw = biome.extensions?.upstreamRawRecord?.value;
+  const match = typeof raw === 'string' && raw.match(/const\s+weatherPool\s*:\s*WeatherPool\s*=\s*\{([\s\S]*?)\};/);
+  if (!match) throw new Error(`Missing pinned weatherPool: ${biome.id}`);
+  const body = match[1].replace(/\/\/[^\n]*/g, '').trim();
+  const entries = [...body.matchAll(/\[WeatherType\.([A-Z_]+)\]\s*:\s*(\d+)\s*,?/g)];
+  const remainder = body.replace(/\[WeatherType\.[A-Z_]+\]\s*:\s*\d+\s*,?/g, '').trim();
+  if (remainder || !entries.length) throw new Error(`Unsupported pinned weatherPool syntax: ${biome.id}`);
+  const seen = new Set();
+  for (const entry of entries.sort((a, b) => a[1].localeCompare(b[1]))) {
+    if (seen.has(entry[1])) throw new Error(`Duplicate weatherPool key: ${biome.id}/${entry[1]}`);
+    seen.add(entry[1]);
+    const weight = Number(entry[2]);
+    if (!Number.isSafeInteger(weight) || weight > 65535) throw new Error(`Unsupported weather weight: ${biome.id}`);
+    biomeWeatherRows.push(`    {"${field(biome.id)}", "${field(entry[1])}", ${weight}, "${field(biome.provenance.sourcePath)}", "weatherPool.${field(entry[1])}", "${field(biome.provenance.sourceHash)}"}`);
+  }
+}
+const weatherHeader = typePowerHeader.replace('struct MoveAttribute {',
+  `struct BiomeWeatherPoolEntry { const char* biomeId; const char* weatherSymbol; uint16_t weight; const char* sourcePath; const char* sourceSymbol; const char* sourceHash; };\ninline constexpr BiomeWeatherPoolEntry kBiomeWeatherPools[] = {\n${biomeWeatherRows.join(',\n')}\n};\nstruct MoveAttribute {`);
+await fs.writeFile(outputPath, weatherHeader, 'utf8');
+console.log(JSON.stringify({ output: path.relative(root, outputPath), bytes: Buffer.byteLength(weatherHeader), hash: report.contentHash }));
