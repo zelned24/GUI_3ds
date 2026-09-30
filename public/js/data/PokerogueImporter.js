@@ -882,7 +882,7 @@ export class PokerogueImporter {
     const requests = [
       ...fixedPaths.map(path => ({ repo: 'pokerogue', path })),
       ...[...generations].sort((a, b) => a - b).map(generation => ({ repo: 'pokerogue', path: `src/data/balance/species/generation-${String(generation).padStart(2, '0')}.ts`, generation })),
-      ...[...locales].sort().flatMap(locale => ['game-mode', 'pokemon', 'pokemon-form', 'move', 'ability', 'modifier', 'trainer-classes', 'trainer-names'].map(namespace => ({ repo: 'pokerogue-locales', path: `${locale}/${namespace}.json`, locale, namespace })))
+      ...[...locales].sort().flatMap(locale => ['game-mode', 'pokemon', 'pokemon-form', 'move', 'ability', 'modifier', 'modifier-type', 'trainer-classes', 'trainer-names'].map(namespace => ({ repo: 'pokerogue-locales', path: `${locale}/${namespace}.json`, locale, namespace })))
     ];
     const loaded = new Array(requests.length);
     let requestIndex = 0;
@@ -929,7 +929,10 @@ export class PokerogueImporter {
     for (const file of loaded.filter(item => item.repo === 'pokerogue-locales').sort((a, b) => a.path.localeCompare(b.path))) {
       const data = JSON.parse(file.content);
       this.localeImporter.parseLocale(file.content, file.locale, file.namespace, file.path, 'pokerogue-locales');
-      for (const [id, value] of Object.entries(data).sort(([a], [b]) => a.localeCompare(b))) {
+      const entries = file.namespace === 'modifier-type'
+        ? Object.entries(data.ModifierType || {}).map(([id, value]) => [`ModifierType.${id}`, value])
+        : Object.entries(data);
+      for (const [id, value] of entries.sort(([a], [b]) => a.localeCompare(b))) {
         const enumKey = ({ pokemon: 'species', move: 'move', ability: 'ability' })[file.namespace];
         const compact = text => String(text).toLowerCase().replace(/[^a-z0-9]/g, '');
         const canonicalSymbol = enumKey ? enumCatalogs[enumKey].entries().find(([symbol]) => compact(symbol) === compact(id))?.[0] : null;
@@ -1184,15 +1187,34 @@ export class PokerogueImporter {
       ability.extensions = { ...ability.extensions, runtimeBehavior: 'NOT_IMPORTED', unknownUpstreamFields: ['attribute constructor semantics'] };
     }
     const modifierFile = byPath.get('pokerogue:src/modifier/modifier-type.ts');
+    const modifierMarker = /const\s+modifierTypeInitObj\s*=\s*Object\.freeze\s*\(/.exec(modifierFile.content);
+    if (!modifierMarker) throw new Error('Invalid import: pinned modifierTypeInitObj missing');
+    const modifierOpening = modifierFile.content.indexOf('{', modifierMarker.index + modifierMarker[0].length);
+    const modifierLiteral = extractBalancedLiteral(modifierFile.content, modifierOpening);
+    if (!modifierLiteral) throw new Error('Invalid import: pinned modifierTypeInitObj is unclosed');
+    const modifierLocales = new Map(loaded.filter(file => file.repo === 'pokerogue-locales' && file.namespace === 'modifier-type')
+      .map(file => [file.locale, { file, values: JSON.parse(file.content) }]));
     const items = [];
-    const classRe = /export\s+class\s+([A-Za-z0-9_]+)\s+extends\s+(?:Pokemon)?(?:HeldItem)?ModifierType/g; let cm;
-    while ((cm = classRe.exec(modifierFile.content)) !== null) {
-      const symbol = cm[1]; const id = symbol.replace(/ModifierType$/, '').replace(/([a-z])([A-Z])/g, '$1_$2').toLowerCase();
-      const localeId = id.replace(/_/g, '');
-      const rawEnd = modifierFile.content.indexOf('\nexport class ', cm.index + cm[0].length);
-      const raw = modifierFile.content.slice(cm.index, rawEnd < 0 ? modifierFile.content.length : rawEnd);
-      items.push(new ItemDefinition({ id, name: symbol, category: null, tier: null, price: null, description: '', source: new SourceMetadata({ sourceType: 'UPSTREAM', sourceRepository: game.url, sourceRevision: game.revision, sourcePath: 'src/modifier/modifier-type.ts', sourceSymbol: symbol, sourceHash: sourceHash(modifierFile), license: game.license }), extensions: { upstreamRawRecord: { format: 'typescript-source-fragment', value: raw }, localeKey: localeId, runtimeBehavior: 'NOT_IMPORTED' } }));
+    for (const entry of splitTopLevelArguments(modifierLiteral.slice(1, -1))) {
+      const raw = entry.replace(/^\s*(?:(?:\/\/[^\n]*\n)|(?:\/\*[\s\S]*?\*\/))*\s*/, '');
+      if (!raw) continue;
+      const match = /^([A-Z][A-Z0-9_]*)\s*:\s*([\s\S]+)$/.exec(raw);
+      if (!match) throw new Error(`Invalid import: unsupported modifierTypeInitObj entry ${raw.slice(0, 80)}`);
+      const id = match[1];
+      const english = modifierLocales.get('en')?.values?.ModifierType?.[id];
+      const spanish = modifierLocales.get('es')?.values?.ModifierType?.[id]
+        || modifierLocales.get('es-ES')?.values?.ModifierType?.[id];
+      items.push(new ItemDefinition({ id, name: english?.name || id,
+        names: { en: english?.name || id, es: spanish?.name || english?.name || id },
+        category: null, tier: null, price: null, description: english?.description || '',
+        descriptions: { en: english?.description || '', es: spanish?.description || '' },
+        source: new SourceMetadata({ sourceType: 'UPSTREAM', sourceRepository: game.url, sourceRevision: game.revision,
+          sourcePath: 'src/modifier/modifier-type.ts', sourceSymbol: `modifierTypeInitObj.${id}`,
+          sourceHash: sourceHash(modifierFile), license: game.license }),
+        extensions: { upstreamRawRecord: { format: 'typescript-source-fragment', value: raw },
+          localeKey: `modifier-type:${id}`, runtimeBehavior: 'NOT_IMPORTED' } }));
     }
+    if (!items.length) throw new Error('Invalid import: pinned modifierTypeInitObj has no entries');
     const modeResult = await this.importGameModes(repository);
     const gameModes = modeResult.gameModes;
     console.log(`[canonical-import] parsed ${species.length} species, ${forms.length} forms, ${items.length} modifier definitions, ${gameModes.length} modes`);

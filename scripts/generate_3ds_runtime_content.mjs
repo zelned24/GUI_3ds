@@ -212,7 +212,7 @@ const speciesRows = collections.species.map(item => {
   return `    {${item.nationalDexId}, ${prevolution?.nationalDexId ?? 0}, ${item.baseExp}, ${malePercentTenths}, ${item.generation ?? 0}, ${item.starterCost ?? -1}, ${item.starterEligible === true ? 'true' : 'false'}, ${defaultStarterSet.has(item.id) ? 'true' : 'false'}, ${freshStarterOrdinal}, ${item.baseTotal ?? 0}, ${stats.hp}, ${stats.atk}, ${stats.def}, ${stats.spatk}, ${stats.spdef}, ${stats.spd}, ${primaryAbilityId}, ${secondaryAbilityId}, ${abilityIdFor(abilityData.hidden ?? abilityData.abilityHidden)}, ${abilityIdFor(abilityData.passive)}, ${learnset.offset}, ${learnset.count}, ${eggMoveRange.offset}, ${eggMoveRange.count}, ${flag(item.rarity?.legendary)}, ${flag(item.rarity?.subLegendary)}, ${flag(item.rarity?.mythical)}, "${field(item.growthRate ?? '')}", "${field(item.id)}", "${field(item.name)}", "${field(item.type1)}", "${field(item.type2)}", "${field(form?.id ?? '')}", "${field(asset?.sourcePath ?? '')}", "${field(item.source?.sourcePath ?? '')}", "${field(item.source?.sourceSymbol ?? '')}", "${field(item.source?.sourceHash ?? '')}"}`;
 }).join(',\n');
 const localeRows = collections.locales
-  .filter(item => ['pokemon', 'move', 'ability', 'item', 'gameMode', 'biomes', 'trainer-classes', 'trainer-names'].includes(item.namespace))
+  .filter(item => ['pokemon', 'move', 'ability', 'item', 'modifier-type', 'gameMode', 'biomes', 'trainer-classes', 'trainer-names'].includes(item.namespace))
   .map(item => ({ id: `${item.locale}:${item.namespace}:${item.canonicalId}`, name: item.value?.name ?? (typeof item.value === 'string' ? item.value : ''), provenance: item.source }));
 const locales = entityRows(localeRows);
 const modes = entityRows(collections.gameModes);
