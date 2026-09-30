@@ -2075,6 +2075,31 @@ extern "C" int runPokemonBattleStateChecks() {
     const auto afterInvalidBoost = bossBoostRng.state();
     if (beforeInvalidBoost.s0 != afterInvalidBoost.s0 || beforeInvalidBoost.s1 != afterInvalidBoost.s1 ||
         beforeInvalidBoost.s2 != afterInvalidBoost.s2 || beforeInvalidBoost.carry != afterInvalidBoost.carry) return 482;
+    bossBoostState.maxHp = bossBoostState.hp = 300;
+    for (unsigned i = 0; i < 5; ++i) bossBoostState.statStages[i] = 6;
+    Pokerogue3DS::PokemonBossState bossPhase{3, 2, true, false};
+    Pokerogue3DS::PokemonBossDamagePolicy bossDamagePolicy{true, true, false};
+    Pokerogue3DS::PokemonBossDamageEvent bossHit{};
+    if (!Pokerogue3DS::applyPokemonBossDamage(bossBoostState, bossPhase, 500, bossDamagePolicy,
+            bossBoostRng, bossHit) || bossBoostState.hp != 100 || bossPhase.segmentIndex != 0 ||
+        bossHit.damageApplied != 200) return 483;
+    if (!Pokerogue3DS::applyPokemonBossDamage(bossBoostState, bossPhase, 500, bossDamagePolicy,
+            bossBoostRng, bossHit) || bossBoostState.hp != 1 || !bossHit.preventedFinalBossKo) return 484;
+    bossPhase.classicFinalBossFirstPhase = false;
+    if (!Pokerogue3DS::applyPokemonBossDamage(bossBoostState, bossPhase, 500, bossDamagePolicy,
+            bossBoostRng, bossHit) || bossBoostState.hp || bossHit.damageApplied != 1) return 485;
+    bossBoostState.hp = 300;
+    bossPhase = {3, 2, false, true};
+    bossDamagePolicy.ignoreSegments = true;
+    if (!Pokerogue3DS::applyPokemonBossDamage(bossBoostState, bossPhase, 250, bossDamagePolicy,
+            bossBoostRng, bossHit) || bossBoostState.hp != 50 || bossPhase.segmentIndex != 0) return 486;
+    const auto beforeBossPhaseRng = bossBoostRng.state();
+    bossDamagePolicy.damageCallbacksResolved = false;
+    if (Pokerogue3DS::applyPokemonBossDamage(bossBoostState, bossPhase, 500, bossDamagePolicy,
+            bossBoostRng, bossHit) || bossBoostState.hp != 50) return 487;
+    const auto afterBossPhaseRng = bossBoostRng.state();
+    if (beforeBossPhaseRng.s0 != afterBossPhaseRng.s0 || beforeBossPhaseRng.s1 != afterBossPhaseRng.s1 ||
+        beforeBossPhaseRng.s2 != afterBossPhaseRng.s2 || beforeBossPhaseRng.carry != afterBossPhaseRng.carry) return 488;
     Pokerogue3DS::PokemonBossSegmentDamage bossDamage{};
     if (!Pokerogue3DS::calculatePokemonBossSegmentDamage(99, 300, 300, 3, 2, 0, bossDamage) ||
         bossDamage.adjustedDamage != 99 || bossDamage.clearedSegmentIndex != 3) return 468;

@@ -291,3 +291,10 @@
 1. Portado EnemyPokemon.handleBossSegmentCleared y weightedPick pinned (src/field/pokemon.ts y src/utils/random.ts) a planPokemonBossSegmentCleared. Pesos usan stats permanentes, filtro stages + primer cambio pendiente, RNG randSeedInt y boosts de últimos shields. Entrenadores/no stats elegibles no consumen sorteos.
 2. Resultado es evento agregado por stat con nuevo índice de segmento; no muta BattleState. RNG/salida se publican solo si la planificación completa tiene éxito. Phase futura debe aplicar cambios con ignoreAbilities como upstream.
 3. Regresiones 475–482 escritas para stats maxed, último shield +2, entrenador sin boosts e inputs inválidos sin avanzar RNG. No ejecutadas. Conexión de segmentos al daño, aplicación de boosts, callbacks y Eternamax siguen pendientes.
+
+## Operación de daño de jefe
+
+1. applyPokemonBossDamage une cálculo de segmentos, nuevo HP, planificación RNG de boosts y aplicación de stat stages ignoreAbilities, publicando actor/estado/RNG/evento conjuntamente. Requiere policy resuelta y damageCallbacksResolved.
+2. Fuente EnemyPokemon.damage pinned: ignoreSegments recalcula índice desde HP restante; primera fase Classic con índice cero limita daño a hp-1. Protección no se aplica a fases posteriores.
+3. Regresiones 483–488 escritas para daño limitado, primera fase a 1 HP, fase posterior KO, ignoreSegments y callbacks sin resolver sin mutación. No ejecutadas.
+4. Aún falta conectar a useStandardPokemonMove/FirstRunRuntime, inicializar segmentos canónicos, resolver Endure/PostDamage/form callbacks y Eternamax. Esta operación aislada no demuestra jefe jugable.

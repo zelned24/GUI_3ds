@@ -464,4 +464,26 @@ bool calculatePokemonBossSegmentDamage(uint32_t damage, uint16_t currentHp,
     uint16_t maxHp, uint16_t segmentCount, uint16_t currentSegmentIndex,
     uint16_t minimumSegmentIndex, PokemonBossSegmentDamage& output);
 
+struct PokemonBossState {
+    uint16_t segmentCount = 0;
+    uint16_t segmentIndex = 0;
+    bool classicFinalBossFirstPhase = false;
+    bool hasTrainer = false;
+};
+struct PokemonBossDamagePolicy {
+    bool resolved = false;
+    bool damageCallbacksResolved = false;
+    bool ignoreSegments = false;
+};
+struct PokemonBossDamageEvent {
+    uint16_t damageApplied = 0;
+    bool preventedFinalBossKo = false;
+    PokemonBossSegmentClearEvent segments{};
+};
+// Owns only resolved direct damage + ignoreAbilities shield boosts. Caller must
+// resolve Endure/PostDamage/form callbacks before publishing a battle command.
+bool applyPokemonBossDamage(PokemonBattleState& boss, PokemonBossState& state,
+    uint32_t damage, const PokemonBossDamagePolicy& policy, PokerogueRngAdapter& rng,
+    PokemonBossDamageEvent& output);
+
 } // namespace Pokerogue3DS

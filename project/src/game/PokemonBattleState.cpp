@@ -1353,4 +1353,51 @@ bool calculatePokemonBossSegmentDamage(uint32_t damage, uint16_t currentHp,
     return true;
 }
 
+bool applyPokemonBossDamage(PokemonBattleState& boss, PokemonBossState& state,
+    uint32_t damage, const PokemonBossDamagePolicy& policy, PokerogueRngAdapter& rng,
+    PokemonBossDamageEvent& output) {
+    if (!policy.resolved || !policy.damageCallbacksResolved || !state.segmentCount ||
+        state.segmentIndex >= state.segmentCount || !boss.maxHp || boss.hp > boss.maxHp)
+        return false;
+    PokemonBossDamageEvent event{};
+    event.segments.nextSegmentIndex = state.segmentIndex;
+    if (!boss.hp) { output = event; return true; }
+    auto nextBoss = boss;
+    auto nextState = state;
+    auto nextRng = rng;
+    uint16_t cleared = state.segmentIndex + 1;
+    if (!policy.ignoreSegments) {
+        PokemonBossSegmentDamage segmentDamage{};
+        const uint16_t minimum = state.classicFinalBossFirstPhase && state.segmentIndex ? 1 : 0;
+        if (!calculatePokemonBossSegmentDamage(damage, boss.hp, boss.maxHp,
+                state.segmentCount, state.segmentIndex, minimum, segmentDamage)) return false;
+        damage = segmentDamage.adjustedDamage;
+        cleared = segmentDamage.clearedSegmentIndex;
+    }
+    // EnemyPokemon.damage prevents fainting before Eternamax transformation.
+    if (state.classicFinalBossFirstPhase && !state.segmentIndex && damage >= boss.hp) {
+        damage = boss.hp - 1;
+        event.preventedFinalBossKo = true;
+    }
+    event.damageApplied = static_cast<uint16_t>(damage < boss.hp ? damage : boss.hp);
+    nextBoss.hp -= event.damageApplied;
+    if (policy.ignoreSegments) {
+        cleared = static_cast<uint16_t>((static_cast<uint64_t>(nextBoss.hp) * state.segmentCount +
+            boss.maxHp - 1) / boss.maxHp);
+    }
+    if (cleared <= state.segmentIndex) {
+        if (!planPokemonBossSegmentCleared(nextBoss, state.segmentCount, state.segmentIndex,
+                cleared, state.hasTrainer, nextRng, event.segments)) return false;
+        nextState.segmentIndex = event.segments.nextSegmentIndex;
+        for (uint8_t stat = 0; stat < 5; ++stat)
+            if (event.segments.statStages[stat] && !setPokemonStatStage(nextBoss, stat + 1,
+                    nextBoss.statStages[stat] + static_cast<int32_t>(event.segments.statStages[stat]))) return false;
+    }
+    boss = nextBoss;
+    state = nextState;
+    rng = nextRng;
+    output = event;
+    return true;
+}
+
 } // namespace Pokerogue3DS
