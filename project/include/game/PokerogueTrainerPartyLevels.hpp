@@ -70,7 +70,8 @@ inline TrainerPartySpeciesChoice resolveSimpleTrainerPoolMember(
     PokerogueRngAdapter& rng) {
   const auto member = trainerPartyMemberTemplate(partyTemplate, memberIndex);
   if (!member.supported || member.balanced || member.sameSpecies ||
-      !level || !wave || !trainer.speciesPoolCount || trainer.signatureCount ||
+      !level || !wave || !trainer.speciesPoolCount ||
+      (trainer.signatureCount && memberIndex + trainer.signatureCount >= partyTemplate.totalSize) ||
       previousCount > memberIndex || memberIndex >= 6) return {};
   for (uint8_t attempt = 0; attempt <= 10; ++attempt) {
     const auto pool = PokerogueEncounterResolver::resolveTrainerPoolSpecies(trainer, rng);

@@ -633,7 +633,28 @@ static int checkLevelUpMoveLearningAndEvolution() {
     return 0;
 }
 
+static int checkCanonicalTrainerSignatureSlots() {
+    using namespace Pokerogue3DS;
+    unsigned checked = 0;
+    for (const auto& trainer : PokerogueContent::kTrainerTypes) {
+        if (!(trainer.flags & 32U) || !trainer.signatureCount || trainer.signatureCount > 6) continue;
+        const uint8_t partySize = 6;
+        for (uint8_t distance = 1; distance <= trainer.signatureCount; ++distance) {
+            PokerogueRngAdapter rng;
+            const uint16_t seed[] = {'s', 'i', 'g'};
+            rng.sow(seed, 3);
+            const char* id = trainerSignatureSpeciesForMember(trainer, partySize,
+                static_cast<uint8_t>(partySize - distance), rng);
+            if (!id || !trainerPartySpeciesById(id)) return 230;
+            ++checked;
+        }
+    }
+    return checked ? 0 : 231; // Real catalog coverage, not a synthetic trainer.
+}
+
 int main() {
+    const int signatureCheck = checkCanonicalTrainerSignatureSlots();
+    if (signatureCheck) return signatureCheck;
     // A high new level must not wrap to negative and hide real low-level moves.
     {
         Pokerogue3DS::PokemonBattleState learner{};

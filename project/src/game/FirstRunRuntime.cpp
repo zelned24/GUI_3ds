@@ -2264,9 +2264,23 @@ void FirstRunRuntime::resolve(bool carryPlayer) {
                                 allSpeciesResolved = false;
                                 break;
                             }
-                            const auto member = resolveSimpleTrainerPoolMember(*trainer,
-                                *chosen.value, i, levels.values[i], m_run.wave,
-                                selectedSpecies, i, memberRng);
+                            TrainerPartySpeciesChoice member{};
+                            const bool signatureSlot = trainer->signatureCount &&
+                                i + trainer->signatureCount >= levels.count;
+                            if (signatureSlot) {
+                                const auto slotTemplate = trainerPartyMemberTemplate(*chosen.value, i);
+                                if (!slotTemplate.supported) { allSpeciesResolved = false; break; }
+                                const char* speciesId = resolveTrainerSignatureMemberSpecies(*trainer,
+                                    levels.count, i, levels.values[i], slotTemplate.evolutionThresholdKindId,
+                                    m_run.wave, memberRng);
+                                member.species = trainerPartySpeciesById(speciesId);
+                                member.baseSpeciesId = speciesId;
+                                member.supported = member.species != nullptr;
+                            } else {
+                                member = resolveSimpleTrainerPoolMember(*trainer,
+                                    *chosen.value, i, levels.values[i], m_run.wave,
+                                    selectedSpecies, i, memberRng);
+                            }
                             if (!member.supported || !member.species) {
                                 allSpeciesResolved = false;
                                 break;
