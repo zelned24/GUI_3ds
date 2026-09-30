@@ -58,6 +58,24 @@ inline bool applyPokemonTrickRoomMove(PokemonTrickRoomState& state, uint16_t mov
     return false;
 }
 inline PokemonTurnOrderFieldPolicy pokemonTrickRoomOrderPolicy(const PokemonTrickRoomState& state);
+inline bool supportsPokemonTrickRoomMove(uint16_t moveId) {
+    const auto* move = PokerogueContent::findMoveById(moveId);
+    if (!move || move->category != PokerogueContent::MoveStatus || !move->target ||
+        std::strcmp(move->target, "BOTH_SIDES") || move->attributeCount != 1 ||
+        !PokerogueContent::moveHasAttribute(*move, "AddArenaTagAttr")) return false;
+    for (const auto& profile : PokerogueContent::kTrickRoomMoveProfiles)
+        if (profile.moveId == moveId) return true;
+    return false;
+}
+inline bool pokemonSingleOpponentPpCost(uint16_t opponentAbilityId, uint8_t& output) {
+    if (!PokerogueContent::findAbilityMovegenProfile(opponentAbilityId)) return false;
+    uint16_t cost = 1;
+    for (const auto& profile : PokerogueContent::kPpAbilityProfiles)
+        if (profile.abilityId == opponentAbilityId) cost += profile.increase;
+    if (cost > 255) return false;
+    output = static_cast<uint8_t>(cost);
+    return true;
+}
 enum class PokemonTrickRoomCommandResult : uint8_t {
     Ok, InvalidActor, InvalidSlot, InvalidDefinition, NoPp, UnresolvedPolicy, InvalidField
 };
@@ -79,14 +97,8 @@ inline PokemonTrickRoomCommandResult usePokemonTrickRoomCommand(
     if (moveSlot >= 4 || moveSlot >= user.moveCount) return PokemonTrickRoomCommandResult::InvalidSlot;
     const auto& slot = user.moves[moveSlot];
     const auto* move = PokerogueContent::findMoveById(slot.moveId);
-    if (!move || move->category != PokerogueContent::MoveStatus || !move->target ||
-        std::strcmp(move->target, "BOTH_SIDES") || move->attributeCount != 1 ||
-        !PokerogueContent::moveHasAttribute(*move, "AddArenaTagAttr"))
+    if (!supportsPokemonTrickRoomMove(slot.moveId))
         return PokemonTrickRoomCommandResult::InvalidDefinition;
-    bool represented = false;
-    for (const auto& profile : PokerogueContent::kTrickRoomMoveProfiles)
-        if (profile.moveId == move->id) represented = true;
-    if (!represented) return PokemonTrickRoomCommandResult::InvalidDefinition;
     if (!slot.pp && policy.ppCost) return PokemonTrickRoomCommandResult::NoPp;
     if (slot.pp > slot.maxPp) return PokemonTrickRoomCommandResult::InvalidActor;
     if (!pokemonTrickRoomOrderPolicy(state).resolved) return PokemonTrickRoomCommandResult::InvalidField;

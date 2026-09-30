@@ -1139,6 +1139,12 @@ extern "C" int runPokemonBattleStateChecks() {
     trickRoomPolicy.resolved = false;
     if (Pokerogue3DS::resolveBaselineFirstMover(trickFast, trickSlow, 33, 33,
             weatherSeed, 7, 1, 1, nullptr, &trickRoomPolicy) != Pokerogue3DS::BaselineFirstMover::Invalid) return 377;
+    if (!Pokerogue3DS::supportsPokemonTrickRoomMove(433) ||
+        Pokerogue3DS::supportsPokemonTrickRoomMove(33)) return 388;
+    uint8_t pressureCost = 0;
+    for (const auto& profile : PokerogueContent::kPpAbilityProfiles)
+        if (!Pokerogue3DS::pokemonSingleOpponentPpCost(profile.abilityId, pressureCost) ||
+            pressureCost != 1 + profile.increase) return 389;
     Pokerogue3DS::PokemonTrickRoomState roomState{};
     Pokerogue3DS::PokemonTrickRoomEvent roomEvent{};
     if (!Pokerogue3DS::applyPokemonTrickRoomMove(roomState, 433, 123, roomEvent) ||

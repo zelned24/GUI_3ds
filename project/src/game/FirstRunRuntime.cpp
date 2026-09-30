@@ -341,6 +341,7 @@ const char* FirstRunRuntime::locale(const char* canonicalId, const char* fallbac
 
 namespace {
 bool supportsBaselineBattleMove(uint16_t moveId) {
+    if (supportsPokemonTrickRoomMove(moveId)) return true;
     const auto* move = PokerogueContent::findMoveById(moveId);
     // This first resolver only executes plain, single-target damaging moves.
     // Only plain damage or a single migrated weather/critical attribute is
@@ -358,6 +359,7 @@ double baselineEnemyMoveScore(const PokemonBattleState& user,
                               const PokemonBattleState& target,
                               const PokerogueContent::Move& move) {
     if (move.category == PokerogueContent::MoveStatus) {
+        if (supportsPokemonTrickRoomMove(move.id)) return 0.0; // Inherited MoveAttr benefits.
         double score = 0;
         return calculateCanonicalStatStageStatusAiScore(user, target, move.id, score)
             ? score : -20.0;
@@ -700,6 +702,22 @@ bool FirstRunRuntime::advanceBattleTurn() {
     m_checkpointAvailable = false;
 
     const auto act = [&](bool enemyActs) -> bool {
+        const auto* actingMove = enemyActs ? enemyMove : selected;
+        if (supportsPokemonTrickRoomMove(actingMove->id)) {
+            auto& user = enemyActs ? m_context.enemy.battleState : m_context.player.battleState;
+            const auto& opponent = enemyActs ? m_context.player.battleState : m_context.enemy.battleState;
+            if (!user.hp || !opponent.hp) return true;
+            PokemonTrickRoomCommandPolicy policy{};
+            // Fresh single actors currently have no status, held items, passives or move-blocking tags.
+            policy.resolved = true;
+            if (!pokemonSingleOpponentPpCost(opponent.abilityId, policy.ppCost)) return false;
+            PokemonTrickRoomCommandEvent event{};
+            if (usePokemonTrickRoomCommand(user, m_trickRoom,
+                    enemyActs ? enemyMoveSlot : m_selectedBattleMove, policy, event) !=
+                    PokemonTrickRoomCommandResult::Ok) return false;
+            m_battleFeedback = event.field.activated ? "Trick Room activated" : "Trick Room removed";
+            return true;
+        }
         PokemonMoveActionResult result{};
         PokemonMoveWeatherContext weather{};
         PokemonHitPolicy hit{};

@@ -875,5 +875,18 @@ const trickRoomRows = collections.moves.flatMap(move => {
 });
 const roomHeader = speedHeader.replace('struct MoveAttribute {',
   `struct TrickRoomMoveProfile { uint16_t moveId; uint16_t duration; };\ninline constexpr TrickRoomMoveProfile kTrickRoomMoveProfiles[] = {\n${trickRoomRows.join(',\n')}\n};\nstruct MoveAttribute {`);
-await fs.writeFile(outputPath, roomHeader, 'utf8');
-console.log(JSON.stringify({ output: path.relative(root, outputPath), bytes: Buffer.byteLength(roomHeader), hash: report.contentHash }));
+const ppAbilityRows = collections.abilities.flatMap(ability => {
+  const raw = ability.extensions?.upstreamAttributes?.value ?? '';
+  const declarations = [...raw.matchAll(/\.attr\s*\(\s*IncreasePpUsedAbAttr\b/g)];
+  const matches = [...raw.matchAll(/\.attr\s*\(\s*IncreasePpUsedAbAttr\s*(?:,\s*(\d+)\s*)?\)/g)];
+  if (declarations.length !== matches.length) throw new Error(`Unsupported PP constructor: ${ability.id}`);
+  return matches.map(match => {
+    const increase = Number(match[1] ?? 1);
+    if (!Number.isInteger(increase) || increase > 254) throw new Error(`Invalid PP increase: ${ability.id}`);
+    return `    {${ability.abilityId}, ${increase}, "${field(ability.source?.sourcePath ?? '')}", "${field(ability.source?.sourceSymbol ?? '')}", "${field(ability.source?.sourceHash ?? '')}"}`;
+  });
+});
+const ppHeader = roomHeader.replace('struct MoveAttribute {',
+  `struct PpAbilityProfile { uint16_t abilityId; uint8_t increase; const char* sourcePath; const char* sourceSymbol; const char* sourceHash; };\ninline constexpr PpAbilityProfile kPpAbilityProfiles[] = {\n${ppAbilityRows.join(',\n')}\n};\nstruct MoveAttribute {`);
+await fs.writeFile(outputPath, ppHeader, 'utf8');
+console.log(JSON.stringify({ output: path.relative(root, outputPath), bytes: Buffer.byteLength(ppHeader), hash: report.contentHash }));
