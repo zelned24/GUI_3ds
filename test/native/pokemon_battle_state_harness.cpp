@@ -3,6 +3,7 @@
 #include "game/PokemonLevelMovePool.hpp"
 #include "game/PokemonWildMovesetGenerator.hpp"
 #include "game/PokemonStarterMoveset.hpp"
+#include "game/PokemonTrainerAi.hpp"
 #include "game/PokerogueRngAdapter.hpp"
 
 using Pokerogue3DS::PokemonBattleInit;
@@ -21,6 +22,29 @@ using Pokerogue3DS::PokemonMoveActionStatus;
 using Pokerogue3DS::PokerogueRngAdapter;
 
 extern "C" int runPokemonBattleStateChecks() {
+    const uint16_t trainerAiSeed[] = {'t', 'r', 'a', 'i', 'n', 'e', 'r'};
+    PokerogueRngAdapter trainerAiRng;
+    trainerAiRng.sow(trainerAiSeed, 7);
+    const double tiedScores[3] = {10.0, 10.0, -1.0};
+    const uint8_t tiedSlots[3] = {3, 1, 2};
+    PokerogueRngAdapter expectedTrainerAiRng = trainerAiRng;
+    const uint8_t expectedTrainerSlot = expectedTrainerAiRng.randSeedInt(100) < 50 ? 1 : 3;
+    uint8_t selectedTrainerSlot = 0;
+    if (!Pokerogue3DS::selectSmartTrainerMoveSlot(tiedScores, tiedSlots, 3,
+            trainerAiRng, selectedTrainerSlot) || selectedTrainerSlot != expectedTrainerSlot)
+        return 176;
+    const auto sameTrainerRng = [](const Pokerogue3DS::PokerogueRngState& left,
+                                   const Pokerogue3DS::PokerogueRngState& right) {
+        return left.carry == right.carry && left.s0 == right.s0 &&
+            left.s1 == right.s1 && left.s2 == right.s2;
+    };
+    if (!sameTrainerRng(trainerAiRng.state(), expectedTrainerAiRng.state())) return 177;
+    const double separatedScores[2] = {8.0, -2.0};
+    const uint8_t separatedSlots[2] = {2, 0};
+    const auto beforeNoDraw = trainerAiRng.state();
+    if (!Pokerogue3DS::selectSmartTrainerMoveSlot(separatedScores, separatedSlots, 2,
+            trainerAiRng, selectedTrainerSlot) || selectedTrainerSlot != 2 ||
+        !sameTrainerRng(trainerAiRng.state(), beforeNoDraw)) return 178;
     uint8_t derivedIvs[6]{};
     Pokerogue3DS::derivePokemonIvsFromId(0xFFFFFFFFu, derivedIvs);
     for (uint8_t iv : derivedIvs) if (iv != 31) return 57;
