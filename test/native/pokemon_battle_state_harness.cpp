@@ -281,6 +281,16 @@ extern "C" int runPokemonBattleStateChecks() {
     if (Pokerogue3DS::applyPokemonStatStageEffect(effectRecipient, growlEffect, stagePolicy,
             replacementRng, stageEvent) != Pokerogue3DS::PokemonStatStageEffectResult::Ok ||
         stageEvent.changedStatMask || effectRecipient.statStages[0]) return 224;
+    const auto* simpleStageProfile = PokerogueContent::findAbilityStatStageProfile(86);
+    const auto* contraryStageProfile = PokerogueContent::findAbilityStatStageProfile(126);
+    const auto* clearBodyStageProfile = PokerogueContent::findAbilityStatStageProfile(29);
+    const auto* metalBodyStageProfile = PokerogueContent::findAbilityStatStageProfile(230);
+    if (!simpleStageProfile || simpleStageProfile->multiplier != 2 ||
+        !contraryStageProfile || contraryStageProfile->multiplier != -1 ||
+        !clearBodyStageProfile || clearBodyStageProfile->protectedMask != 127 ||
+        !clearBodyStageProfile->ignorable || !metalBodyStageProfile ||
+        metalBodyStageProfile->protectedMask != 127 || metalBodyStageProfile->ignorable)
+        return 225;
     PokemonBattleInit actorIdInput = input;
     actorIdInput.pokemonId = 0x12345678u;
     actorIdInput.deriveIvsFromPokemonId = true;

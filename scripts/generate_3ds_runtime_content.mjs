@@ -518,6 +518,24 @@ const moves = collections.moves.map(move => {
   const multiHitValue = { None: 0, TWO_TO_FIVE: 1, TWO: 2, THREE: 3, TEN: 4, BEAT_UP: 5 }[multiHitType ?? 'None'];
   return `    {${move.moveId}, ${category}, ${move.power}, ${move.accuracy}, ${move.pp}, ${move.priority}, ${move.extensions?.upstreamChance ?? 0}, ${move.extensions?.upstreamGeneration ?? 0}, ${upstreamFlags.join(' | ') || 0}, ${multiHitValue}, ${attributeOffset}, ${sourceAttributes.length}, "${field(move.id)}", "${field(move.names?.en ?? move.name)}", "${field(move.type)}", "${field(move.target ?? '')}", "${field(move.source?.sourcePath ?? '')}", "${field(move.source?.sourceSymbol ?? '')}", "${field(move.source?.sourceHash ?? '')}"}`;
 }).join(',\n');
+const abilityStatStageRows = collections.abilities.flatMap(ability => {
+  const raw = ability.extensions?.upstreamAttributes?.value ?? '';
+  const multiplierAttrs = [...raw.matchAll(/\.attr\s*\(\s*StatStageChangeMultiplierAbAttr\b/g)];
+  const multipliers = [...raw.matchAll(/\.attr\s*\(\s*StatStageChangeMultiplierAbAttr\s*,\s*(-?\d+)\s*\)/g)];
+  const protectionAttrs = [...raw.matchAll(/\.attr\s*\(\s*ProtectStatAbAttr\b/g)];
+  const protections = [...raw.matchAll(/\.attr\s*\(\s*ProtectStatAbAttr\s*(?:,\s*Stat\.([A-Z]+)\s*)?\)/g)];
+  if (!multiplierAttrs.length && !protectionAttrs.length) return [];
+  if (multiplierAttrs.length !== multipliers.length || protectionAttrs.length !== protections.length) return [];
+  let multiplier = 1, protectedMask = 0;
+  for (const match of multipliers) multiplier *= Number(match[1]);
+  if (!Number.isInteger(multiplier) || multiplier < -6 || multiplier > 6) return [];
+  for (const match of protections) {
+    if (!match[1]) protectedMask = 127;
+    else if (upstreamStatIds[match[1]]) protectedMask |= 1 << (upstreamStatIds[match[1]] - 1);
+    else return [];
+  }
+  return [`    {${ability.abilityId}, ${multiplier}, ${protectedMask}, ${/\.ignorable\s*\(\s*\)/.test(raw)}, "${field(ability.source?.sourcePath ?? '')}", "${field(ability.source?.sourceSymbol ?? '')}", "${field(ability.source?.sourceHash ?? '')}"}`];
+});
 const abilities = entityRows(collections.abilities);
 const abilityMovegenProfiles = collections.abilities.map(ability => {
   const raw = ability.extensions?.upstreamAttributes?.value ?? '';
@@ -651,5 +669,9 @@ const statStageHeader = trainerMoveHeader.replace(
   'struct MoveAttribute {',
   `struct MoveStatStageEffect { uint16_t moveId; uint8_t statMask; int8_t stages; bool selfTarget; };\ninline constexpr MoveStatStageEffect kMoveStatStageEffects[] = {\n${moveStatStageEffects.join(',\n')}\n};\ninline constexpr std::size_t kMoveStatStageEffectCount = sizeof(kMoveStatStageEffects) / sizeof(kMoveStatStageEffects[0]);\nstruct MoveAttribute {`
 );
-await fs.writeFile(outputPath, statStageHeader, 'utf8');
-console.log(JSON.stringify({ output: path.relative(root, outputPath), bytes: Buffer.byteLength(statStageHeader), hash: report.contentHash }));
+const abilityStatStageHeader = statStageHeader.replace(
+  'struct MoveAttribute {',
+  `struct AbilityStatStageProfile { uint16_t abilityId; int8_t multiplier; uint8_t protectedMask; bool ignorable; const char* sourcePath; const char* sourceSymbol; const char* sourceHash; };\ninline constexpr AbilityStatStageProfile kAbilityStatStageProfiles[] = {\n${abilityStatStageRows.join(',\n')}\n};\ninline constexpr const AbilityStatStageProfile* findAbilityStatStageProfile(uint16_t id) { for (const auto& profile : kAbilityStatStageProfiles) if (profile.abilityId == id) return &profile; return nullptr; }\nstruct MoveAttribute {`
+);
+await fs.writeFile(outputPath, abilityStatStageHeader, 'utf8');
+console.log(JSON.stringify({ output: path.relative(root, outputPath), bytes: Buffer.byteLength(abilityStatStageHeader), hash: report.contentHash }));
