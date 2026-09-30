@@ -111,7 +111,7 @@ bool FirstRunRuntime::restoreSetup(uint32_t seed, uint16_t starterDex) {
     m_trickRoom = {};
     m_runStarted = false;
     m_run.wave = 1;
-    m_playerExperience = 0;
+    m_context.player.totalExperience = 0;
     m_pokeballs = {5, 0, 0, 0, 0, 0};
     m_seedLength = 0;
     m_seedCodeUnits.fill(0);
@@ -147,7 +147,7 @@ void FirstRunRuntime::captureNativeRunSave(NativeRunSave& output) const {
     }
     value.wave = m_run.wave;
     value.playerLevel = m_context.player.level;
-    value.playerExperience = m_playerExperience;
+    value.playerExperience = m_context.player.totalExperience;
     if (m_runStarted && m_encounterResolved && !m_doubleBattle) {
         value.stage = m_battleFinished
             ? (m_playerWon ? (m_experienceGranted ? NativeSaveStage::ExperienceGranted
@@ -282,7 +282,7 @@ bool FirstRunRuntime::restoreNativeRunSaveInPlace(const NativeRunSave& save) {
     if (!save.trainerPartyCount && save.stage == NativeSaveStage::ExperienceGranted &&
         !grantVictoryExperience()) return false;
     if (save.playerLevel != m_context.player.level ||
-        save.playerExperience != m_playerExperience) return false;
+        save.playerExperience != m_context.player.totalExperience) return false;
     if (save.stage == NativeSaveStage::RunSetup) return save.wave == 1;
     if (!m_encounterResolved || m_doubleBattle || save.encounterDex != reconstructedEnemy.dex ||
         !save.battleTurn || !save.playerMoveCount || save.playerMoveCount > 4 ||
@@ -822,7 +822,7 @@ bool FirstRunRuntime::grantVictoryExperience() {
 
     PokemonExperienceProgress progress{};
     if (applyPokemonExperience(starter->growthRate, m_context.player.level,
-                               m_playerExperience, awardedExperience,
+                               m_context.player.totalExperience, awardedExperience,
                                classicExperienceLevelCap(m_run.wave), progress)
         != PokemonExperienceResult::Ok) return false;
 
@@ -877,7 +877,7 @@ bool FirstRunRuntime::grantVictoryExperience() {
     }
     m_context.player.battleState = next;
     m_context.player.level = progress.level;
-    m_playerExperience = progress.totalExperience;
+    m_context.player.totalExperience = progress.totalExperience;
     m_context.playerParty[m_context.activePlayerPartyIndex] = m_context.player;
     m_experienceGranted = true;
     return true;
@@ -1839,6 +1839,12 @@ bool FirstRunRuntime::throwPokeballInPlace(PokeballType ball) {
         target->battleState.hp = 0;
         if (m_context.playerPartyCount < 6) {
             ResolvedPokemon caughtMon = *target;
+            const auto* caughtSpecies = PokerogueContent::findSpeciesByDex(caughtMon.dex);
+            if (!caughtSpecies || pokemonTotalExperienceForLevel(caughtSpecies->growthRate,
+                    caughtMon.level, caughtMon.totalExperience) != PokemonExperienceResult::Ok) {
+                m_battleFeedback = "Captured Pokemon experience could not resolve";
+                return false;
+            }
             caughtMon.battleState.hp = caughtMon.battleState.maxHp;
             resetPokemonStatStages(caughtMon.battleState);
             m_context.playerParty[m_context.playerPartyCount++] = caughtMon;
@@ -2050,7 +2056,7 @@ void FirstRunRuntime::resolve(bool carryPlayer) {
     const std::string starterLocaleId = std::string("pokemon:") + starter.id;
     if (!carryPlayer) {
         m_context.player = {starter.dex, 5, starter.id, locale(starterLocaleId.c_str(), starter.name), starter.firstFormId, starter.assetSourcePath};
-        if (pokemonTotalExperienceForLevel(starter.growthRate, 5, m_playerExperience)
+        if (pokemonTotalExperienceForLevel(starter.growthRate, 5, m_context.player.totalExperience)
             != PokemonExperienceResult::Ok) return;
     }
     // Fresh-profile save data starts with no unlocked egg moves and no saved

@@ -37,6 +37,7 @@ struct ResolvedPokemon {
     uint8_t moveCount = 0;
     bool movesetResolved = false;
     PokemonBattleState battleState{};
+    uint32_t totalExperience = 0; // Pokemon.exp belongs to this actor, not to the run.
 };
 
 struct PresentationContext {
@@ -180,7 +181,6 @@ private:
     uint8_t m_selectedTarget = 0;
     uint32_t m_turn = 1;
     uint32_t m_enemySwitchCounter = 0;
-    uint32_t m_playerExperience = 0;
     bool m_battleFinished = false;
     bool m_playerWon = false;
     bool m_experienceGranted = false;

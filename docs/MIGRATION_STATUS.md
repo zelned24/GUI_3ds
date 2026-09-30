@@ -189,3 +189,10 @@
 3. pokemonActiveTargetsPpCost reutiliza kPpAbilityProfiles importados; referencias desconocidas fallan sin publicar coste. El resolver de un oponente delega en él.
 4. Regresiones 464–467 escritas para dos Pressure, un objetivo, lista vacía e IDs inválidos; modo ignore-PP de stat stages ya tiene regresión. Pendientes de ejecución, sin compilación.
 5. Daño de área, 2vs2 y efectos posteriores completos siguen pendientes. Esta corrección no los declara implementados.
+
+## EXP individual del equipo
+
+1. Pokemon.exp upstream (src/field/pokemon.ts, constructor y addExp) pertenece al Pokémon. Retirado acumulador único del runtime: ResolvedPokemon conserva totalExperience y la copia del miembro activo transporta su EXP en cambios y reemplazos por derrota.
+2. Concesión de EXP, replay y guardado del actor activo leen el valor individual. Captura inicializa EXP desde growthRate y nivel canónicos; datos inválidos rechazan la captura completa sin publicar el candidato.
+3. Regresiones 221–223 comprueban EXP de capturado, cambio y retorno al starter. Escritas, pendientes de ejecución.
+4. Distribución de EXP entre participantes/EXP Share y persistencia del equipo completo siguen pendientes. La corrección no declara esas capas completas.

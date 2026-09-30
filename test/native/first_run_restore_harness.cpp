@@ -546,14 +546,25 @@ static int checkPlayerPartyManagementAndSwitching() {
     if (game.playerPartyCount() != 2) return 174;
     if (game.activePlayerPartyIndex() != 0) return 175;
 
+    const auto starterExperience = game.presentation().player.totalExperience;
+    const auto reserveExperience = game.playerPartyMember(1)->totalExperience;
+    const auto* caughtSpecies = PokerogueContent::findSpeciesByDex(caughtDex);
+    uint32_t expectedReserveExperience = 0;
+    if (!caughtSpecies || pokemonTotalExperienceForLevel(caughtSpecies->growthRate,
+            game.playerPartyMember(1)->level, expectedReserveExperience) != PokemonExperienceResult::Ok ||
+        reserveExperience != expectedReserveExperience) return 221;
+
     // Switch to reserve member (index 1):
     if (!game.switchPlayerPokemon(1)) return 176;
     if (game.activePlayerPartyIndex() != 1) return 177;
     if (game.presentation().player.dex != caughtDex) return 178;
+    if (game.presentation().player.totalExperience != reserveExperience) return 222;
 
     // Switch back to starter (index 0):
     if (!game.switchPlayerPokemon(0)) return 179;
     if (game.activePlayerPartyIndex() != 0) return 180;
+    if (game.presentation().player.totalExperience != starterExperience ||
+        game.playerPartyMember(1)->totalExperience != reserveExperience) return 223;
 
     return 0;
 }
