@@ -217,7 +217,7 @@ PokemonBattleInitResult initializePokemonBattleStateForActor(
     PokemonBattleState& output);
 
 struct PokemonMoveWeatherContext;
-enum class PokemonBaseDamageResult : uint8_t { Ok = 0, MissingMove, NonDamagingMove, InvalidStats, UnsupportedAbilityCondition };
+enum class PokemonBaseDamageResult : uint8_t { Ok = 0, MissingMove, NonDamagingMove, InvalidStats, UnsupportedAbilityCondition, UnresolvedWeather };
 PokemonBaseDamageResult calculatePokemonBaseDamage(
     const PokemonBattleState& attacker,
     const PokemonBattleState& defender,

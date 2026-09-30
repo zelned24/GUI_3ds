@@ -460,8 +460,25 @@ PokemonBaseDamageResult calculatePokemonBaseDamage(
         !attacker.stats[attackStat] || !defender.stats[defenseStat])
         return PokemonBaseDamageResult::InvalidStats;
     // Pokemon.getEffectiveStat floors after stage multiplication, minimum one.
+    double weatherDefenseMultiplier = 1.0;
+    if (weatherContext) {
+        if (!weatherContext->resolved || static_cast<uint8_t>(weatherContext->effectiveWeather) > 9)
+            return PokemonBaseDamageResult::UnresolvedWeather;
+        const auto* species = PokerogueContent::findSpeciesByDex(defender.speciesDex);
+        const auto* form = defender.formId ? PokerogueContent::findFormById(defender.formId) : nullptr;
+        if (!species || (defender.formId && !form)) return PokemonBaseDamageResult::InvalidStats;
+        const char* type1 = form ? form->type1 : species->type1;
+        const char* type2 = form ? form->type2 : species->type2;
+        // forDefend uses the opponent's effective weather. Apply after stage
+        // scaling but before getEffectiveStat's final floor, not to floored stats.
+        if ((physical && weatherContext->effectiveWeather == PokemonEffectiveWeather::Snow &&
+                (sameText(type1, "ICE") || sameText(type2, "ICE"))) ||
+            (!physical && weatherContext->effectiveWeather == PokemonEffectiveWeather::Sandstorm &&
+                (sameText(type1, "ROCK") || sameText(type2, "ROCK"))))
+            weatherDefenseMultiplier = 1.5;
+    }
     uint32_t attack = static_cast<uint32_t>(attacker.stats[attackStat] * attackStage);
-    uint32_t defense = static_cast<uint32_t>(defender.stats[defenseStat] * defenseStage);
+    uint32_t defense = static_cast<uint32_t>(defender.stats[defenseStat] * defenseStage * weatherDefenseMultiplier);
     if (!attack) attack = 1;
     if (!defense) defense = 1;
     if (attacker.level == 0 || defense == 0 || attack == 0) return PokemonBaseDamageResult::InvalidStats;
@@ -765,6 +782,8 @@ PokemonDamageCoreResult calculatePokemonDamageCore(
     const auto baseStatus = calculatePokemonBaseDamage(attacker, defender, moveId, baseDamage, false, weatherContext);
     if (baseStatus == PokemonBaseDamageResult::UnsupportedAbilityCondition)
         return PokemonDamageCoreResult::UnsupportedAbilityCondition;
+    if (baseStatus == PokemonBaseDamageResult::UnresolvedWeather)
+        return PokemonDamageCoreResult::UnresolvedWeather;
     if (baseStatus != PokemonBaseDamageResult::Ok) return PokemonDamageCoreResult::InvalidStats;
     double typeMultiplier = 1.0;
     if (calculatePokemonTypeEffectiveness(moveId, defender, typeMultiplier) != PokemonTypeEffectivenessResult::Ok) {
@@ -832,6 +851,8 @@ PokemonMoveDamageResult resolveStandardPokemonMoveDamage(
     const auto baseStatus = calculatePokemonBaseDamage(attacker, defender, moveId, baseDamage, false, weatherContext);
     if (baseStatus == PokemonBaseDamageResult::UnsupportedAbilityCondition)
         return PokemonMoveDamageResult::UnsupportedAbilityCondition;
+    if (baseStatus == PokemonBaseDamageResult::UnresolvedWeather)
+        return PokemonMoveDamageResult::UnresolvedWeather;
     if (baseStatus != PokemonBaseDamageResult::Ok) return PokemonMoveDamageResult::InvalidStats;
 
     if (move->accuracy >= 0) {

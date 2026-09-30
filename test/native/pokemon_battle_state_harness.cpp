@@ -534,6 +534,34 @@ extern "C" int runPokemonBattleStateChecks() {
     if (Pokerogue3DS::calculatePokemonBaseDamage(typePowerActor, state, 232,
             boostedSteelDamage, false, &sandContext) != Pokerogue3DS::PokemonBaseDamageResult::Ok ||
         boostedSteelDamage != neutralSteelDamage) return 317;
+    PokemonBattleState rockDefender = state;
+    rockDefender.speciesDex = 74; // Canonical Geodude Rock/Ground.
+    rockDefender.formId = nullptr;
+    rockDefender.stats[4] = 53;
+    rockDefender.statStages[3] = 1;
+    PokemonBattleState weatherAttack = state;
+    weatherAttack.abilityId = 0;
+    double ordinaryRockDamage = 0, sandRockDamage = 0;
+    if (Pokerogue3DS::calculatePokemonBaseDamage(weatherAttack, rockDefender, 55,
+            ordinaryRockDamage) != Pokerogue3DS::PokemonBaseDamageResult::Ok) return 318;
+    sandContext.effectiveWeather = Pokerogue3DS::PokemonEffectiveWeather::Sandstorm;
+    if (Pokerogue3DS::calculatePokemonBaseDamage(weatherAttack, rockDefender, 55,
+            sandRockDamage, false, &sandContext) != Pokerogue3DS::PokemonBaseDamageResult::Ok) return 319;
+    const double expectedRockDamage = (ordinaryRockDamage - 2.0) * 79.0 / 119.0 + 2.0;
+    const double rockError = sandRockDamage - expectedRockDamage;
+    if (rockError < -0.00000001 || rockError > 0.00000001) return 320;
+    PokemonBattleState iceDefender = rockDefender;
+    iceDefender.speciesDex = 144; // Canonical Articuno Ice/Flying.
+    iceDefender.stats[2] = 53;
+    iceDefender.statStages[1] = 1;
+    double ordinaryIceDamage = 0, snowIceDamage = 0;
+    if (Pokerogue3DS::calculatePokemonBaseDamage(weatherAttack, iceDefender, 33,
+            ordinaryIceDamage) != Pokerogue3DS::PokemonBaseDamageResult::Ok) return 321;
+    sandContext.effectiveWeather = Pokerogue3DS::PokemonEffectiveWeather::Snow;
+    if (Pokerogue3DS::calculatePokemonBaseDamage(weatherAttack, iceDefender, 33,
+            snowIceDamage, false, &sandContext) != Pokerogue3DS::PokemonBaseDamageResult::Ok) return 322;
+    const double iceError = snowIceDamage - ((ordinaryIceDamage - 2.0) * 79.0 / 119.0 + 2.0);
+    if (iceError < -0.00000001 || iceError > 0.00000001) return 323;
     uint32_t unresolvedDamage = 777;
     if (Pokerogue3DS::calculatePokemonDamageCore(typePowerActor, state, 232, false,
             unresolvedDamage) != Pokerogue3DS::PokemonDamageCoreResult::UnsupportedAbilityCondition ||
