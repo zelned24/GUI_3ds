@@ -71,6 +71,15 @@ extern "C" int runPokemonBattleStateChecks() {
     if (!Pokerogue3DS::selectTrainerSummonIndex(reserveScores, reserveIndexes, 3,
             summonRng, nextSummon) || nextSummon != expectedSummon ||
         !sameTrainerRng(summonRng.state(), expectedSummonRng.state())) return 187;
+    double plainAttackScore = 0;
+    if (!Pokerogue3DS::calculatePlainAttackAiScore(1.0, 20, 20, 40, 100,
+            true, plainAttackScore) || plainAttackScore != 12.0) return 188;
+    if (!Pokerogue3DS::calculatePlainAttackAiScore(1.0, 20, 20, 50, 80,
+            false, plainAttackScore) || plainAttackScore != 8.0) return 189;
+    if (!Pokerogue3DS::calculatePlainAttackAiScore(0.0, 20, 20, 40, 100,
+            true, plainAttackScore) || plainAttackScore != -20.0) return 190;
+    if (!Pokerogue3DS::calculatePlainAttackAiScore(2.0, 20, 10, 40, 100,
+            false, plainAttackScore) || plainAttackScore != 24.0) return 191;
     uint8_t derivedIvs[6]{};
     Pokerogue3DS::derivePokemonIvsFromId(0xFFFFFFFFu, derivedIvs);
     for (uint8_t iv : derivedIvs) if (iv != 31) return 57;

@@ -42,6 +42,29 @@ inline bool selectSmartTrainerMoveSlot(const double* scores, const uint8_t* slot
     return true;
 }
 
+// AttackMove.getTargetBenefitScore plus EnemyPokemon.getNextMove's enemy
+// target sign, effectiveness and STAB. Only plain moves without attributes,
+// conditions or multi-turn behavior may use this resolved baseline.
+inline bool calculatePlainAttackAiScore(double effectiveness, uint32_t selectedStat,
+                                        uint32_t otherStat, int16_t power,
+                                        int16_t accuracy, bool stab, double& output) {
+    if (!std::isfinite(effectiveness) || effectiveness < 0 || !selectedStat ||
+        power <= 0 || accuracy < -1 || accuracy > 100) return false;
+    double attack = (effectiveness - 1.0) * (effectiveness - 1.0) *
+        (effectiveness < 1.0 ? -2.0 : 2.0);
+    const double statRatio = static_cast<double>(otherStat) / selectedStat;
+    if (statRatio <= 0.75) attack *= 2.0;
+    else if (statRatio <= 0.875) attack *= 1.5;
+    const double effectivePower = power * (accuracy == -1 ? 1.0 : accuracy / 100.0);
+    attack += std::floor(effectivePower / 5.0);
+    // The negative target benefit becomes positive for an opposing target.
+    double score = attack * effectiveness * (stab ? 1.5 : 1.0);
+    if (!score) score = -20.0;
+    if (!std::isfinite(score)) return false;
+    output = score;
+    return true;
+}
+
 // Resolved inputs to Pokemon.getMatchupScore. The effect/type layer must
 // account for abilities, illusion, effective speed and usable damaging moves.
 // Attack effectiveness entries already include the source's conditional STAB.

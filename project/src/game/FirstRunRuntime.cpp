@@ -6,6 +6,7 @@
 #include "game/PokemonLevelMovePool.hpp"
 #include "game/PokemonTrainerMoveFilter.hpp"
 #include "game/PokemonTrainerMovesetGenerator.hpp"
+#include "game/PokemonTrainerAi.hpp"
 #include "game/PokemonFreshProfile.hpp"
 #include "game/PokemonExperience.hpp"
 #include "game/PokemonStarterMoveset.hpp"
@@ -290,10 +291,6 @@ bool supportsBaselineBattleMove(uint16_t moveId) {
         std::strcmp(move->type, "Fire") != 0;
 }
 
-bool sameText(const char* left, const char* right) {
-    return left && right && std::strcmp(left, right) == 0;
-}
-
 double baselineEnemyMoveScore(const PokemonBattleState& user,
                               const PokemonBattleState& target,
                               const PokerogueContent::Move& move) {
@@ -304,21 +301,15 @@ double baselineEnemyMoveScore(const PokemonBattleState& user,
     const uint16_t selectedStat = user.stats[physical ? 1 : 3];
     const uint16_t otherStat = user.stats[physical ? 3 : 1];
     if (!selectedStat) return -20.0;
-    double attackScore = (effectiveness - 1.0) * (effectiveness - 1.0) *
-        (effectiveness < 1.0 ? -2.0 : 2.0);
-    const double statRatio = static_cast<double>(otherStat) / selectedStat;
-    if (statRatio <= 0.75) attackScore *= 2.0;
-    else if (statRatio <= 0.875) attackScore *= 1.5;
-    attackScore += move.power / 5;
-    double score = -attackScore;
-
     const auto* species = PokerogueContent::findSpeciesByDex(user.speciesDex);
     const auto* form = user.formId ? PokerogueContent::findFormById(user.formId) : nullptr;
     const char* type1 = form ? form->type1 : (species ? species->type1 : nullptr);
     const char* type2 = form ? form->type2 : (species ? species->type2 : nullptr);
-    if (sameText(type1, move.type) || (type2 && !sameText(type2, "NONE") && sameText(type2, move.type))) score *= 1.5;
-    score *= effectiveness;
-    if (!score) return -20.0;
+    const bool stab = sameTrainerMoveType(type1, move.type) ||
+        (type2 && !sameTrainerMoveType(type2, "NONE") && sameTrainerMoveType(type2, move.type));
+    double score = -20.0;
+    if (!calculatePlainAttackAiScore(effectiveness, selectedStat, otherStat,
+            move.power, move.accuracy, stab, score)) return -20.0;
     return score;
 }
 
