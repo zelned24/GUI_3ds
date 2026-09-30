@@ -2240,6 +2240,7 @@ void FirstRunRuntime::resolve(bool carryPlayer) {
                         for (uint8_t i = 0; i < levels.count; ++i)
                             m_context.trainerPartyLevels[i] = levels.values[i];
                         const PokerogueContent::Species* selectedSpecies[6]{};
+                        TrainerPartyMemberTypes selectedTypes[6]{};
                         bool allSpeciesResolved = true;
                         bool allConstructorsResolved = true;
                         bool allLevelMovesResolved = true;
@@ -2279,7 +2280,7 @@ void FirstRunRuntime::resolve(bool carryPlayer) {
                             } else {
                                 member = resolveSimpleTrainerPoolMember(*trainer,
                                     *chosen.value, i, levels.values[i], m_run.wave,
-                                    selectedSpecies, i, memberRng);
+                                    selectedSpecies, i, memberRng, selectedTypes);
                             }
                             if (!member.supported || !member.species) {
                                 allSpeciesResolved = false;
@@ -2308,6 +2309,10 @@ void FirstRunRuntime::resolve(bool carryPlayer) {
                             // draws must run before publishing a battle-ready actor.
                             m_context.trainerParty[i].actor = actor;
                             m_context.trainerParty[i].formId = actor.formId;
+                            const auto* memberForm = actor.formId ? PokerogueContent::findFormById(actor.formId) : nullptr;
+                            if (actor.formId && !memberForm) { allConstructorsResolved = false; break; }
+                            selectedTypes[i] = {memberForm ? memberForm->type1 : member.species->type1,
+                                memberForm ? memberForm->type2 : member.species->type2, true};
                             m_trainerConstructorRngStates[i] = memberRng.state();
                             PokemonLevelMoveCandidate levelMoves[128]{};
                             std::size_t levelMoveCount = 0;

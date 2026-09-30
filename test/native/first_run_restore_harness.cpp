@@ -634,6 +634,34 @@ static int checkLevelUpMoveLearningAndEvolution() {
     return 0;
 }
 
+static int checkTrainerBalancedTypes() {
+    using namespace Pokerogue3DS;
+    const auto* species = PokerogueContent::findSpeciesByDex(1);
+    if (!species || !species->type1) return 242;
+    const auto* form = PokerogueContent::findFormById(species->firstFormId);
+    if (!form) return 243;
+    TrainerPartyMemberTypes prior[] = {{form->type1, form->type2, true}};
+    bool overlap = false;
+    if (!trainerBalancedTypeOverlap(*species, prior, 1, overlap) || !overlap) return 244;
+    if (!trainerBalancedTypeOverlap(*species, nullptr, 0, overlap) || overlap) return 245;
+    prior[0].resolved = false;
+    overlap = true;
+    if (trainerBalancedTypeOverlap(*species, prior, 1, overlap) || !overlap ||
+        trainerBalancedTypeOverlap(*species, nullptr, 1, overlap)) return 246;
+    unsigned disjoint = 0;
+    prior[0].resolved = true;
+    for (const auto& other : PokerogueContent::kSpecies) {
+        const bool expected = std::strcmp(other.type1, form->type1) == 0 ||
+            (form->type2 && std::strcmp(form->type2, "NONE") && std::strcmp(other.type1, form->type2) == 0) ||
+            (other.type2 && std::strcmp(other.type2, "NONE") &&
+                (std::strcmp(other.type2, form->type1) == 0 ||
+                 (form->type2 && std::strcmp(form->type2, "NONE") && std::strcmp(other.type2, form->type2) == 0)));
+        if (!trainerBalancedTypeOverlap(other, prior, 1, overlap) || overlap != expected) return 247;
+        if (!overlap) ++disjoint;
+    }
+    return disjoint ? 0 : 248;
+}
+
 static int checkReservedTrainerSpecies() {
     using namespace Pokerogue3DS;
     unsigned checked = 0;
@@ -750,6 +778,8 @@ static int checkCanonicalTrainerSignatureSlots() {
 }
 
 int main() {
+    const int balancedTypesCheck = checkTrainerBalancedTypes();
+    if (balancedTypesCheck) return balancedTypesCheck;
     const int reservedSpeciesCheck = checkReservedTrainerSpecies();
     if (reservedSpeciesCheck) return reservedSpeciesCheck;
     const int poolDrawCheck = checkTrainerPoolEvolutionDraws();

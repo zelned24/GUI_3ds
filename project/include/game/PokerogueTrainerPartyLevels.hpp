@@ -86,18 +86,42 @@ inline bool trainerReservedSpeciesDuplicate(const PokerogueContent::TrainerType&
   return true;
 }
 
+struct TrainerPartyMemberTypes {
+  const char* type1 = nullptr;
+  const char* type2 = nullptr;
+  bool resolved = false;
+};
+
+inline bool trainerBalancedTypeOverlap(const PokerogueContent::Species& candidate,
+    const TrainerPartyMemberTypes* previous, uint8_t count, bool& overlap) {
+  if (!candidate.type1 || !*candidate.type1 || (count && !previous)) return false;
+  bool result = false;
+  for (uint8_t i = 0; i < count; ++i) {
+    if (!previous[i].resolved || !previous[i].type1 || !*previous[i].type1) return false;
+    const char* candidateTypes[] = {candidate.type1, candidate.type2};
+    const char* priorTypes[] = {previous[i].type1, previous[i].type2};
+    for (const auto* a : candidateTypes) {
+      if (!a || !*a || std::strcmp(a, "NONE") == 0) continue;
+      for (const auto* c : priorTypes)
+        if (c && *c && std::strcmp(c, "NONE") != 0 && std::strcmp(a, c) == 0) result = true;
+    }
+  }
+  overlap = result;
+  return true;
+}
+
 // Source order for a simple trainer pool member: tier roll, candidate roll,
 // level evolution and duplicate rerolls (up to ten). Ordinary pool members
 // retain that species; sameSpecies overrides it after consuming those draws.
-// Balanced type rerolls still require the resolved form/type context.
+// Balanced type rerolls require the resolved current types of earlier actors.
 inline TrainerPartySpeciesChoice resolveSimpleTrainerPoolMember(
     const PokerogueContent::TrainerType& trainer,
     const PokerogueContent::TrainerPartyTemplate& partyTemplate,
     uint8_t memberIndex, uint16_t level, uint16_t wave,
     const PokerogueContent::Species* const* previousSpecies, uint8_t previousCount,
-    PokerogueRngAdapter& rng) {
+    PokerogueRngAdapter& rng, const TrainerPartyMemberTypes* previousTypes = nullptr) {
   const auto member = trainerPartyMemberTemplate(partyTemplate, memberIndex);
-  if (!member.supported || member.balanced ||
+  if (!member.supported ||
       !level || !wave || !trainer.speciesPoolCount ||
       (trainer.signatureCount && memberIndex + trainer.signatureCount >= partyTemplate.totalSize) ||
       previousCount > memberIndex || memberIndex >= 6) return {};
@@ -111,6 +135,11 @@ inline TrainerPartySpeciesChoice resolveSimpleTrainerPoolMember(
     const auto* first = trainerPartySpeciesById(firstId);
     if (!first) return {};
     bool retry = base->prevolutionDex && std::strcmp(first->id, base->id) != 0;
+    if (!retry && member.balanced) {
+      bool overlap = false;
+      if (!trainerBalancedTypeOverlap(*first, previousTypes, previousCount, overlap)) return {};
+      retry = overlap;
+    }
     const uint16_t baseRoot = trainerPartyRootDex(*base);
     if (!baseRoot) return {};
     for (uint8_t i = 0; i < previousCount; ++i) {

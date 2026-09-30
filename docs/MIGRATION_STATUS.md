@@ -252,3 +252,9 @@
 1. Trainer.checkDuplicateSpecies pinned incluye raíces de signatureSpecies además de las especies presentes en el equipo. Resolver de pool consulta todas las opciones canónicas de signature sin consumir RNG y suma esa causa de reroll hasta el límite upstream de diez.
 2. Referencias/rangos inválidos fallan; no se ignoran firmas desconocidas. Comparación usa la especie base candidata frente a las raíces reservadas, como upstream.
 3. Regresión 237–241 recorre opciones signature reales, verifica reserva por raíz y rechazo de especie inválida sin publicar salida. Escrita, pendiente de ejecución. No demuestra todavía todos los equipos de entrenador jugables.
+
+## Equipos balanced: tipos de formas actuales
+
+1. Trainer.genNewPartyMemberSpecies pinned compara ret.type1/type2 contra enemyParty.getTypes antes de otros checks de duplicados. Resolver aplica ese reroll con contexto de tipos resueltos; falta de contexto falla explícitamente.
+2. Constructor pasa tipos canónicos de la forma real de cada actor ya construido; no los sustituye por los tipos base de su especie. Límite de diez rerolls conservado.
+3. Regresión 242–248 comprueba forma real, catálogo completo, coincidencias y ausencia de contexto. Escrita, no ejecutada. Falta parity de la construcción completa de equipos balanced, filtros specialty y reglas de cambios de tipo/Tera.
