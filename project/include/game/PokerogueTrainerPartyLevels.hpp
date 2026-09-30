@@ -61,7 +61,7 @@ inline uint16_t trainerPartyRootDex(const PokerogueContent::Species& species) {
 // Source order for a simple trainer pool member: tier roll, candidate roll,
 // first level evolution, duplicate rerolls (up to ten), then the second
 // getSpeciesForLevel call in Trainer.genPartyMember. Actor creation follows.
-// This subset requires a plain non-balanced, non-same-species party template.
+// Balanced type rerolls still require the resolved form/type context.
 inline TrainerPartySpeciesChoice resolveSimpleTrainerPoolMember(
     const PokerogueContent::TrainerType& trainer,
     const PokerogueContent::TrainerPartyTemplate& partyTemplate,
@@ -69,7 +69,8 @@ inline TrainerPartySpeciesChoice resolveSimpleTrainerPoolMember(
     const PokerogueContent::Species* const* previousSpecies, uint8_t previousCount,
     PokerogueRngAdapter& rng) {
   const auto member = trainerPartyMemberTemplate(partyTemplate, memberIndex);
-  if (!member.supported || member.balanced || member.sameSpecies ||
+  if (!member.supported || member.balanced ||
+      (member.sameSpecies && partyTemplate.isCompound) ||
       !level || !wave || !trainer.speciesPoolCount ||
       (trainer.signatureCount && memberIndex + trainer.signatureCount >= partyTemplate.totalSize) ||
       previousCount > memberIndex || memberIndex >= 6) return {};
@@ -92,8 +93,19 @@ inline TrainerPartySpeciesChoice resolveSimpleTrainerPoolMember(
       retry |= priorRoot == base->dex;
     }
     if (retry && attempt < 10) continue;
-    const char* finalId = PokerogueEncounterResolver::resolveTrainerSpeciesForLevel(
-        first->id, level, member.evolutionThresholdKindId, wave == 20, rng);
+    const char* finalId = nullptr;
+    if (member.sameSpecies && memberIndex > member.segmentStart) {
+      if (!previousSpecies || member.segmentStart >= previousCount ||
+          !previousSpecies[member.segmentStart]) return {};
+      // Trainer.genPartyMember still consumes genNewPartyMemberSpecies first.
+      // Then getTrainerSpeciesForLevel(..., false) uses the segment's first actor.
+      finalId = PokerogueEncounterResolver::resolveTrainerSpeciesForLevel(
+          previousSpecies[member.segmentStart]->id, level, member.evolutionThresholdKindId,
+          wave == 20, rng, true, false);
+    } else {
+      finalId = PokerogueEncounterResolver::resolveTrainerSpeciesForLevel(
+          first->id, level, member.evolutionThresholdKindId, wave == 20, rng);
+    }
     const auto* finalSpecies = trainerPartySpeciesById(finalId);
     return {finalSpecies, base->id, attempt, finalSpecies != nullptr};
   }

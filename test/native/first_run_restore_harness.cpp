@@ -633,6 +633,39 @@ static int checkLevelUpMoveLearningAndEvolution() {
     return 0;
 }
 
+static int checkCanonicalSameSpeciesTrainerMembers() {
+    using namespace Pokerogue3DS;
+    unsigned checked = 0;
+    for (const auto& trainer : PokerogueContent::kTrainerTypes) {
+        if (!trainer.speciesPoolCount || trainer.signatureCount) continue;
+        PokerogueRngAdapter templateRng;
+        const uint16_t seed[] = {'s', 'a', 'm', 'e'};
+        templateRng.sow(seed, 4);
+        const auto choice = selectTrainerPartyTemplate(trainer, 25, templateRng);
+        if (!choice.supported || !choice.value) continue;
+        const auto levels = resolveClassicTrainerPartyLevels(*choice.value, 25, false);
+        if (!levels.supported) continue;
+        const PokerogueContent::Species* previous[6]{};
+        for (uint8_t slot = 0; slot < levels.count; ++slot) {
+            PokerogueRngAdapter memberRng;
+            memberRng.sow(seed, 4);
+            const auto member = resolveSimpleTrainerPoolMember(trainer, *choice.value,
+                slot, levels.values[slot], 25, previous, slot, memberRng);
+            if (!member.supported || !member.species) break;
+            const auto metadata = trainerPartyMemberTemplate(*choice.value, slot);
+            if (metadata.sameSpecies && slot > metadata.segmentStart) {
+                const char* expected = PokerogueEncounterResolver::resolveTrainerSpeciesForLevel(
+                    previous[metadata.segmentStart]->id, levels.values[slot],
+                    metadata.evolutionThresholdKindId, false, memberRng, true, false);
+                if (!expected || std::strcmp(expected, member.species->id)) return 232;
+                ++checked;
+            }
+            previous[slot] = member.species;
+        }
+    }
+    return checked ? 0 : 233;
+}
+
 static int checkCanonicalTrainerSignatureSlots() {
     using namespace Pokerogue3DS;
     unsigned checked = 0;
@@ -653,6 +686,8 @@ static int checkCanonicalTrainerSignatureSlots() {
 }
 
 int main() {
+    const int sameSpeciesCheck = checkCanonicalSameSpeciesTrainerMembers();
+    if (sameSpeciesCheck) return sameSpeciesCheck;
     const int signatureCheck = checkCanonicalTrainerSignatureSlots();
     if (signatureCheck) return signatureCheck;
     // A high new level must not wrap to negative and hide real low-level moves.

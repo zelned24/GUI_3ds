@@ -226,3 +226,11 @@
 2. Constructor de equipos llama al resolver existente resolveTrainerSignatureMemberSpecies para los slots finales canónicos en orden inverso. Mantiene el scope RNG por miembro durante selección y construcción del actor.
 3. Los slots normales de un equipo mixto conservan el resolver de pool simple; este rechaza slots signature para impedir aplicar una selección de pool incorrecta.
 4. Regresión 230–231 recorre todos los trainers con metadata signature soportada y verifica IDs reales de los slots finales. Escrita, no ejecutada. No prueba aún combate completo ni todos los callbacks especiales del entrenador.
+
+## Segmentos sameSpecies de entrenador
+
+1. Trainer.genPartyMember pinned consume genNewPartyMemberSpecies antes de sustituir por la especie del primer actor del segmento. getTrainerSpeciesForLevel permite prevolución requerida y desactiva evolución ascendente en esta sustitución.
+2. Resolver de pool conserva esos sorteos y aplica la sustitución usando segmentStart canónico y previousSpecies. Ya no rechaza todos los segmentos sameSpecies. Balanced sigue requiriendo contexto real de formas/tipos.
+3. Regresión 232–233 recorre plantillas del catálogo real y exige alcanzar al menos un slot sameSpecies resuelto. Comprueba especie según el primer miembro del segmento. Escrita, pendiente de ejecución; parity RNG completo sigue pendiente.
+
+4. sameSpecies compuesto continúa bloqueado: upstream usa el threshold del template padre, que la tabla actual no representa por separado. No sustituirlo por el threshold del segmento.
