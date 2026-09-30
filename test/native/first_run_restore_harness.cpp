@@ -995,6 +995,21 @@ int main() {
         invalidActor = actorSnapshot;
         for (auto& ch : invalidActor.formId) ch = 'a';
         if (restoreNativePokemonSave(invalidActor, restoredActor)) return 276;
+        if (!captureNativePokemonActorSave(currentActor.battleState, currentActor.actor,
+                currentActor.totalExperience, actorSnapshot)) return 277;
+        PokemonActorIdentity restoredIdentity{};
+        if (!restoreNativePokemonActorSave(actorSnapshot, restoredActor, restoredIdentity) ||
+            restoredIdentity.abilityIndex != currentActor.actor.abilityIndex ||
+            restoredIdentity.initialTeraTypeIndex != currentActor.actor.initialTeraTypeIndex ||
+            !restoredIdentity.initialTeraTypeResolved) return 278;
+        auto invalidIdentity = actorSnapshot;
+        invalidIdentity.abilityIndex = 3;
+        const auto preservedIdentity = restoredIdentity;
+        if (restoreNativePokemonActorSave(invalidIdentity, restoredActor, restoredIdentity) ||
+            restoredIdentity.pokemonId != preservedIdentity.pokemonId) return 279;
+        invalidIdentity = actorSnapshot;
+        invalidIdentity.initialTeraTypeResolved = false;
+        if (restoreNativePokemonActorSave(invalidIdentity, restoredActor, restoredIdentity)) return 280;
         NativeRunSave inventorySnapshot = loaded;
         inventorySnapshot.pokeballCounts[0] = 0;
         inventorySnapshot.pokeballCounts[1] = 3;

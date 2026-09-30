@@ -308,6 +308,55 @@ bool captureNativePokemonSave(const PokemonBattleState& state, uint32_t experien
     return true;
 }
 
+bool restoreNativePokemonActorSave(const NativePokemonSave& saved,
+    PokemonBattleState& state, PokemonActorIdentity& identity) {
+    if (!saved.actorIdentityResolved || saved.abilityIndex > 2 ||
+        !saved.initialTeraTypeResolved || saved.initialTeraTypeIndex > 1) return false;
+    PokemonBattleState restored{};
+    if (!restoreNativePokemonSave(saved, restored)) return false;
+    const auto* form = PokerogueContent::findFormById(restored.formId);
+    const auto* species = PokerogueContent::findSpeciesByDex(restored.speciesDex);
+    if (!form || !species) return false;
+    const uint16_t first = form->ability1 ? form->ability1 : species->ability1;
+    const uint16_t second = form->ability2 ? form->ability2 : first;
+    const uint16_t hidden = form->abilityHidden ? form->abilityHidden : species->abilityHidden;
+    if (restored.abilityId != (saved.abilityIndex == 2 ? hidden : saved.abilityIndex == 1 ? second : first))
+        return false;
+    // Current actor representation stores the constructor's ordinal type pick.
+    if (saved.initialTeraTypeIndex && (!form->type2 || !form->type2[0] || equal(form->type2, "NONE")))
+        return false;
+    PokemonActorIdentity actor{};
+    actor.pokemonId = restored.pokemonId;
+    actor.abilityIndex = saved.abilityIndex;
+    actor.gender = restored.gender;
+    actor.nature = restored.nature;
+    actor.formId = restored.formId;
+    actor.initialTeraTypeIndex = saved.initialTeraTypeIndex;
+    actor.initialTeraTypeResolved = true;
+    for (uint8_t i = 0; i < 6; ++i) actor.ivs[i] = restored.ivs[i];
+    state = restored;
+    identity = actor;
+    return true;
+}
+
+bool captureNativePokemonActorSave(const PokemonBattleState& state,
+    const PokemonActorIdentity& identity, uint32_t experience, NativePokemonSave& output) {
+    if (identity.pokemonId != state.pokemonId || identity.gender != state.gender ||
+        identity.nature != state.nature || !equal(identity.formId, state.formId)) return false;
+    for (uint8_t i = 0; i < 6; ++i) if (identity.ivs[i] != state.ivs[i]) return false;
+    NativePokemonSave saved{};
+    if (!captureNativePokemonSave(state, experience, saved)) return false;
+    saved.actorIdentityResolved = true;
+    saved.abilityIndex = identity.abilityIndex;
+    saved.initialTeraTypeIndex = identity.initialTeraTypeIndex;
+    saved.initialTeraTypeResolved = identity.initialTeraTypeResolved;
+    PokemonBattleState restored{};
+    PokemonActorIdentity restoredIdentity{};
+    if (!restoreNativePokemonActorSave(saved, restored, restoredIdentity)) return false;
+    output = saved;
+    return true;
+}
+
 NativeSaveResult validateNativeRunSave(const NativeRunSave& save, const char* expectedContentHash) {
     if (save.saveVersion != kNativeSaveVersion) return NativeSaveResult::UnsupportedVersion;
     if (save.runtimeVersion != kNativeSaveRuntimeVersion) return NativeSaveResult::IncompatibleRuntime;

@@ -47,12 +47,21 @@ struct NativePokemonSave {
     uint8_t pp[4]{};
     int8_t statStages[7]{};
     bool ivsDerivedFromId = false;
+    bool actorIdentityResolved = false;
+    uint8_t abilityIndex = 0;
+    uint8_t initialTeraTypeIndex = 0;
+    bool initialTeraTypeResolved = false;
 };
 struct PokemonBattleState;
+struct PokemonActorIdentity;
 // Output is published only after full canonical validation succeeds.
 bool captureNativePokemonSave(const PokemonBattleState& state, uint32_t experience,
     NativePokemonSave& output);
 bool restoreNativePokemonSave(const NativePokemonSave& saved, PokemonBattleState& output);
+bool captureNativePokemonActorSave(const PokemonBattleState& state,
+    const PokemonActorIdentity& identity, uint32_t experience, NativePokemonSave& output);
+bool restoreNativePokemonActorSave(const NativePokemonSave& saved,
+    PokemonBattleState& state, PokemonActorIdentity& identity);
 
 struct NativeRunSave {
     uint32_t generation = 0;

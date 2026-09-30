@@ -364,3 +364,9 @@
 2. Capture/restore reconstruyen stats desde catálogo canónico y validan referencias, forma/especie, habilidad, IVs derivados, naturaleza, EXP mínima, PP, HP y stages antes de publicar salida. Form pointer pertenece al catálogo, no al buffer de save. Rechaza stats fuera del modelo base soportado; el validador de run debe resolver cap de EXP.
 3. Regresiones 269–276 escritas para roundtrip de actor real y rechazo atómico de HP/naturaleza/IV/form inválidos. No ejecutadas.
 4. Esta representación todavía no entra en el payload v9: faltan codec de equipo, identidad auxiliar del actor (abilityIndex/Tera), active slot, validación de contexto y restauración sin replay. El guardado de capturados continúa rechazado explícitamente hasta integrar esas capas.
+
+## Identidad auxiliar del snapshot
+
+1. Snapshot de actor conserva abilityIndex y ordinal initialTeraTypeIndex/resolved además del BattleState. Capture verifica coherencia entre identidad y estado; restore valida slot de habilidad contra forma/especie y publica ambos juntos con referencias al catálogo.
+2. Regresiones 277–280 escritas para actor real y rechazo de índice de habilidad/Tera no resuelto. No ejecutadas. Esta capacidad cubre actores actuales sin transformaciones; Tera real persistente tras evolución necesita identidad de tipo explícita, no ordinal recalculado.
+3. Codec de equipo y restauración de partidas capturadas siguen pendientes; no se cambia payload v9 ni se retira su bloqueo de equipo.
