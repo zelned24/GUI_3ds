@@ -863,6 +863,7 @@ bool composePokemonCriticalAbilityPolicy(const PokemonCriticalAbilityComponent* 
             if (component.belongsToAttacker) {
                 const unsigned sum = next.bonusStages + profile.bonusStages;
                 next.bonusStages = static_cast<uint8_t>(sum > 3 ? 3 : sum);
+                next.damageMultiplier *= profile.criticalMultiplier;
             } else if (!(ignoreDefenderAbilities && profile.ignorable)) {
                 next.blocked = next.blocked || profile.blocksCritical;
             }
@@ -948,15 +949,22 @@ PokemonMoveDamageResult resolveStandardPokemonMoveDamage(
     // Canonical HighCrit raises the stage; CritOnly skips the critical draw.
     // Stage0 is1/24; random damage is inclusive [85,100].
     uint8_t bonusCriticalStages = 0;
+    double abilityCriticalMultiplier = 1.0;
     bool abilityBlocksCritical = false;
     // Current baseline uses unsuppressed primary abilities. Passive, tag,
     // item, conditional and bypass effects require subsequent policy dispatch.
     for (const auto& profile : PokerogueContent::kCriticalAbilityProfiles) {
-        if (profile.abilityId == attacker.abilityId) bonusCriticalStages = profile.bonusStages;
+        if (profile.abilityId == attacker.abilityId) {
+            bonusCriticalStages = profile.bonusStages;
+            abilityCriticalMultiplier *= profile.criticalMultiplier;
+        }
         if (profile.abilityId == defender.abilityId) abilityBlocksCritical = profile.blocksCritical;
     }
     if (criticalPolicy) {
         if (!criticalPolicy->resolved) return PokemonMoveDamageResult::UnsupportedAbilityCondition;
+        if (!(criticalPolicy->damageMultiplier > 0.0) || criticalPolicy->damageMultiplier > 256.0)
+            return PokemonMoveDamageResult::InvalidStats;
+        abilityCriticalMultiplier = criticalPolicy->damageMultiplier;
         bonusCriticalStages = criticalPolicy->bonusStages;
         abilityBlocksCritical = criticalPolicy->blocked;
     }
@@ -986,7 +994,7 @@ PokemonMoveDamageResult resolveStandardPokemonMoveDamage(
         }
     }
 
-    const double criticalMultiplier = next.critical ? 1.5 : 1.0;
+    const double criticalMultiplier = next.critical ? 1.5 * abilityCriticalMultiplier : 1.0;
     const double damage = baseDamage * weatherMultiplier * criticalMultiplier
         * (static_cast<double>(next.randomDamagePercent) / 100.0)
         * stabMultiplier * next.typeEffectiveness;

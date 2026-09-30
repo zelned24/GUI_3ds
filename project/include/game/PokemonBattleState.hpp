@@ -330,6 +330,7 @@ struct PokemonCriticalPolicy {
     bool resolved = false;
     uint8_t bonusStages = 0;
     bool alwaysCritical = false;
+    double damageMultiplier = 1.0;
     bool blocked = false;
 };
 struct PokemonCriticalAbilityComponent {

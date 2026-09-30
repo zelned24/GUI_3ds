@@ -997,6 +997,31 @@ extern "C" int runPokemonBattleStateChecks() {
         !luckRoll.criticalWasRolled || luckRoll.criticalRoll != expectedLuckCritical ||
         luckRoll.critical != (expectedLuckCritical == 0) ||
         luckRoll.randomDamagePercent != expectedLuckDamage) return 346;
+    uint16_t sniperId = 0;
+    for (const auto& profile : PokerogueContent::kCriticalAbilityProfiles)
+        if (std::strcmp(profile.sourceSymbol, "AbilityId.SNIPER") == 0 && profile.criticalMultiplier == 1.5)
+            sniperId = profile.abilityId;
+    if (!sniperId) return 347;
+    Pokerogue3DS::PokemonCriticalAbilityComponent sniperComponent{sniperId, true, true};
+    Pokerogue3DS::PokemonCriticalPolicy sniperPolicy{};
+    if (!Pokerogue3DS::composePokemonCriticalAbilityPolicy(&sniperComponent, 1, false, sniperPolicy) ||
+        sniperPolicy.damageMultiplier != 1.5) return 348;
+    PokemonBattleState sniperActor = state;
+    sniperActor.abilityId = sniperId;
+    PokerogueRngAdapter sniperRng = actionRng, expectedSniperRng = actionRng;
+    (void)expectedSniperRng.randSeedInt(100);
+    const uint8_t sniperPercent = static_cast<uint8_t>(expectedSniperRng.randSeedIntRange(85, 100));
+    double sniperBase = 0, sniperType = 0;
+    if (Pokerogue3DS::calculatePokemonBaseDamage(sniperActor, state, 480, sniperBase, true) !=
+            Pokerogue3DS::PokemonBaseDamageResult::Ok ||
+        Pokerogue3DS::calculatePokemonTypeEffectiveness(480, state, sniperType) !=
+            Pokerogue3DS::PokemonTypeEffectivenessResult::Ok) return 349;
+    PokemonMoveDamageRoll sniperRoll{};
+    if (Pokerogue3DS::resolveStandardPokemonMoveDamage(sniperActor, state, 480, false, sniperRng,
+            sniperRoll, nullptr, &sniperPolicy) != PokemonMoveDamageResult::Ok || !sniperRoll.critical) return 350;
+    const uint32_t expectedSniperDamage = static_cast<uint32_t>(sniperBase * 2.25 *
+        (static_cast<double>(sniperPercent) / 100.0) * sniperType);
+    if (sniperRoll.damage != (expectedSniperDamage ? expectedSniperDamage : 1)) return 351;
     PokemonBattleState noPpActor = state;
     noPpActor.moves[0].pp = 0;
     PokemonBattleState unchangedTarget = state;

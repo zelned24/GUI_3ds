@@ -791,12 +791,15 @@ const criticalAbilityRows = collections.abilities.flatMap(ability => {
   const raw = ability.extensions?.upstreamAttributes?.value ?? '';
   const bonus = [...raw.matchAll(/\.attr\s*\(\s*BonusCritAbAttr\s*\)/g)].length;
   const block = [...raw.matchAll(/\.attr\s*\(\s*BlockCritAbAttr\s*\)/g)].length;
-  const declarations = [...raw.matchAll(/\.attr\s*\(\s*(?:BonusCritAbAttr|BlockCritAbAttr)\b/g)].length;
-  if (declarations !== bonus + block || bonus > 3) throw new Error(`Unsupported critical ability: ${ability.id}`);
+  const multipliers = [...raw.matchAll(/\.attr\s*\(\s*MultCritAbAttr\s*,\s*(\d+(?:\.\d+)?)\s*\)/g)];
+  const declarations = [...raw.matchAll(/\.attr\s*\(\s*(?:BonusCritAbAttr|BlockCritAbAttr|MultCritAbAttr)\b/g)].length;
+  if (declarations !== bonus + block + multipliers.length || bonus > 3) throw new Error(`Unsupported critical ability: ${ability.id}`);
   if (!declarations) return [];
-  return [`    {${ability.abilityId}, ${bonus}, ${block > 0}, ${/\.ignorable\s*\(/.test(raw)}, "${field(ability.source?.sourcePath ?? '')}", "${field(ability.source?.sourceSymbol ?? '')}", "${field(ability.source?.sourceHash ?? '')}"}`];
+  const multiplier = multipliers.reduce((value, match) => value * Number(match[1]), 1);
+  if (!Number.isFinite(multiplier) || multiplier <= 0 || multiplier > 16) throw new Error(`Invalid critical multiplier: ${ability.id}`);
+  return [`    {${ability.abilityId}, ${bonus}, ${block > 0}, ${multiplier}, ${/\.ignorable\s*\(/.test(raw)}, "${field(ability.source?.sourcePath ?? '')}", "${field(ability.source?.sourceSymbol ?? '')}", "${field(ability.source?.sourceHash ?? '')}"}`];
 });
 const criticalHeader = moveWeatherHeader.replace('struct MoveAttribute {',
-  `struct CriticalAbilityProfile { uint16_t abilityId; uint8_t bonusStages; bool blocksCritical; bool ignorable; const char* sourcePath; const char* sourceSymbol; const char* sourceHash; };\ninline constexpr CriticalAbilityProfile kCriticalAbilityProfiles[] = {\n${criticalAbilityRows.join(',\n')}\n};\nstruct MoveAttribute {`);
+  `struct CriticalAbilityProfile { uint16_t abilityId; uint8_t bonusStages; bool blocksCritical; double criticalMultiplier; bool ignorable; const char* sourcePath; const char* sourceSymbol; const char* sourceHash; };\ninline constexpr CriticalAbilityProfile kCriticalAbilityProfiles[] = {\n${criticalAbilityRows.join(',\n')}\n};\nstruct MoveAttribute {`);
 await fs.writeFile(outputPath, criticalHeader, 'utf8');
 console.log(JSON.stringify({ output: path.relative(root, outputPath), bytes: Buffer.byteLength(criticalHeader), hash: report.contentHash }));

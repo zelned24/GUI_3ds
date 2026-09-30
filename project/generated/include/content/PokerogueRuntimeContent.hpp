@@ -312,11 +312,12 @@ struct MoveWeatherOverride { uint16_t moveId; uint8_t weatherId; const char* sou
 inline constexpr MoveWeatherOverride kMoveWeatherOverrides[] = {
     {876, 1, "src/data/moves/move.ts", "MoveId.HYDRO_STEAM"}
 };
-struct CriticalAbilityProfile { uint16_t abilityId; uint8_t bonusStages; bool blocksCritical; bool ignorable; const char* sourcePath; const char* sourceSymbol; const char* sourceHash; };
+struct CriticalAbilityProfile { uint16_t abilityId; uint8_t bonusStages; bool blocksCritical; double criticalMultiplier; bool ignorable; const char* sourcePath; const char* sourceSymbol; const char* sourceHash; };
 inline constexpr CriticalAbilityProfile kCriticalAbilityProfiles[] = {
-    {4, 0, true, true, "src/data/abilities/init-abilities.ts", "AbilityId.BATTLE_ARMOR", "040ccf2ca2e00a2111ef0acf54878ec67c45d98c831e35dda3e0bac52f1ee8e6"},
-    {75, 0, true, true, "src/data/abilities/init-abilities.ts", "AbilityId.SHELL_ARMOR", "040ccf2ca2e00a2111ef0acf54878ec67c45d98c831e35dda3e0bac52f1ee8e6"},
-    {105, 1, false, false, "src/data/abilities/init-abilities.ts", "AbilityId.SUPER_LUCK", "040ccf2ca2e00a2111ef0acf54878ec67c45d98c831e35dda3e0bac52f1ee8e6"}
+    {4, 0, true, 1, true, "src/data/abilities/init-abilities.ts", "AbilityId.BATTLE_ARMOR", "040ccf2ca2e00a2111ef0acf54878ec67c45d98c831e35dda3e0bac52f1ee8e6"},
+    {75, 0, true, 1, true, "src/data/abilities/init-abilities.ts", "AbilityId.SHELL_ARMOR", "040ccf2ca2e00a2111ef0acf54878ec67c45d98c831e35dda3e0bac52f1ee8e6"},
+    {97, 0, false, 1.5, false, "src/data/abilities/init-abilities.ts", "AbilityId.SNIPER", "040ccf2ca2e00a2111ef0acf54878ec67c45d98c831e35dda3e0bac52f1ee8e6"},
+    {105, 1, false, 1, false, "src/data/abilities/init-abilities.ts", "AbilityId.SUPER_LUCK", "040ccf2ca2e00a2111ef0acf54878ec67c45d98c831e35dda3e0bac52f1ee8e6"}
 };
 struct MoveAttribute { const char* id; };
 struct Move { uint16_t id; uint8_t category; int16_t power; int16_t accuracy; int16_t pp; int8_t priority; int16_t upstreamChance; uint8_t generation; uint16_t upstreamFlags; uint8_t multiHitType; uint32_t attributeOffset; uint16_t attributeCount; const char* key; const char* name; const char* type; const char* target; const char* sourcePath; const char* sourceSymbol; const char* sourceHash; };
