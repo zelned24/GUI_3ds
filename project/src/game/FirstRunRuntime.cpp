@@ -4,6 +4,7 @@
 #include "game/PokerogueTurnOrder.hpp"
 #include "game/PokerogueRngAdapter.hpp"
 #include "game/PokemonLevelMovePool.hpp"
+#include "game/PokemonTrainerMoveFilter.hpp"
 #include "game/PokemonFreshProfile.hpp"
 #include "game/PokemonExperience.hpp"
 #include "game/PokemonStarterMoveset.hpp"
@@ -532,10 +533,12 @@ void FirstRunRuntime::resolve(bool carryPlayer) {
     m_context.trainerPartySpeciesResolved = false;
     m_context.trainerPartyConstructorResolved = false;
     m_context.trainerPartyLevelMovesResolved = false;
+    m_context.trainerPartyHardMoveFilterResolved = false;
     for (auto& level : m_context.trainerPartyLevels) level = 0;
     for (auto& member : m_context.trainerParty) member = {};
     for (auto& state : m_trainerConstructorRngStates) state = {};
     for (auto& count : m_context.trainerPartyLevelMoveCounts) count = 0;
+    for (auto& count : m_context.trainerPartyHardEligibleMoveCounts) count = 0;
     const auto& starter = PokerogueContent::kSpecies[m_starterIndex];
     m_run.starterDex = starter.dex;
     m_context.modeName = locale("gameMode:classic", "Classic");
@@ -669,6 +672,7 @@ void FirstRunRuntime::resolve(bool carryPlayer) {
                         bool allSpeciesResolved = true;
                         bool allConstructorsResolved = true;
                         bool allLevelMovesResolved = true;
+                        bool allHardMoveFiltersResolved = true;
                         for (uint8_t i = 0; i < levels.count; ++i) {
                             uint32_t memberOffset = 0;
                             if (!trainerPartyMemberSeedOffset(*trainer, m_run.wave, i, memberOffset)) {
@@ -723,16 +727,30 @@ void FirstRunRuntime::resolve(bool carryPlayer) {
                             }
                             m_context.trainerPartyLevelMoveCounts[i] =
                                 static_cast<uint16_t>(levelMoveCount);
+                            PokemonLevelMoveCandidate eligibleMoves[128]{};
+                            std::size_t eligibleCount = 0;
+                            if (filterTrainerHardForbiddenLevelMoves(levelMoves,
+                                    levelMoveCount, eligibleMoves, 128, eligibleCount) !=
+                                PokemonTrainerMoveFilterResult::Ok) {
+                                allHardMoveFiltersResolved = false;
+                                continue;
+                            }
+                            m_context.trainerPartyHardEligibleMoveCounts[i] =
+                                static_cast<uint16_t>(eligibleCount);
                         }
                         m_context.trainerPartySpeciesResolved = allSpeciesResolved;
                         m_context.trainerPartyConstructorResolved =
                             allSpeciesResolved && allConstructorsResolved;
                         m_context.trainerPartyLevelMovesResolved =
                             m_context.trainerPartyConstructorResolved && allLevelMovesResolved;
+                        m_context.trainerPartyHardMoveFilterResolved =
+                            m_context.trainerPartyLevelMovesResolved && allHardMoveFiltersResolved;
                     }
                 }
-                m_battleFeedback = m_context.trainerPartyLevelMovesResolved
-                    ? "Trainer move weighting, IVs and battle pending"
+                m_battleFeedback = m_context.trainerPartyHardMoveFilterResolved
+                    ? "Trainer move weights, IVs and battle pending"
+                    : m_context.trainerPartyLevelMovesResolved
+                    ? "Trainer hard move filter unsupported"
                     : m_context.trainerPartyConstructorResolved
                     ? "Trainer level-move metadata unsupported"
                     : m_context.trainerPartySpeciesResolved
