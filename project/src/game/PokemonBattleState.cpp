@@ -108,6 +108,12 @@ void derivePokemonIvsFromId(uint32_t pokemonId, uint8_t outputIvs[6]) {
     outputIvs[5] = static_cast<uint8_t>(pokemonId & 0x0000001Fu);
 }
 
+const char* resolvePokemonTypeSymbol(const char* type) {
+    for (const auto& row : kTypeChart)
+        if (sameText(type, row.defendingType)) return row.defendingType;
+    return sameText(type, "STELLAR") ? "STELLAR" : nullptr;
+}
+
 bool getPokemonNatureModifiers(PokemonNature nature, PokemonNatureModifiers& output) {
     static const int8_t kRaised[25] = {
         -1, 1, 1, 1, 1, 2, -1, 2, 2, 2, 5, 5, -1, 5, 5,
@@ -341,6 +347,8 @@ PokemonActorIdentityResult generatePokemonActorForWildEncounter(
     // Shiny variant generation is scoped to a derived seed and restores wave RNG.
     generatePokemonActorNature(next, rng);
     next.initialTeraTypeIndex = static_cast<uint8_t>(rng.randSeedInt(typeCount));
+    next.initialTeraType = resolvePokemonTypeSymbol(next.initialTeraTypeIndex ? secondaryType : primaryType);
+    if (!next.initialTeraType) return PokemonActorIdentityResult::InvalidTypes;
     next.initialTeraTypeResolved = true;
     output = next;
     return PokemonActorIdentityResult::Ok;

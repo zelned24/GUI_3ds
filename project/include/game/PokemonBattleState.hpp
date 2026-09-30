@@ -23,6 +23,8 @@ struct PokemonNatureModifiers {
     int8_t loweredStat = -1;
 };
 
+// Returns stable catalog-independent storage for a valid upstream type symbol.
+const char* resolvePokemonTypeSymbol(const char* type);
 bool getPokemonNatureModifiers(PokemonNature nature, PokemonNatureModifiers& output);
 PokemonNature selectPokemonNature(PokerogueRngAdapter& rng);
 
@@ -33,6 +35,7 @@ struct PokemonActorIdentity {
     PokemonGender gender = PokemonGender::Unspecified;
     PokemonNature nature = PokemonNature::Unspecified;
     const char* formId = nullptr;
+    const char* initialTeraType = nullptr; // Concrete constructor choice survives evolution.
     uint8_t initialTeraTypeIndex = 0;
     bool initialTeraTypeResolved = false;
 };

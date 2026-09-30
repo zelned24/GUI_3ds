@@ -2355,6 +2355,9 @@ void FirstRunRuntime::resolve(bool carryPlayer) {
             std::strcmp(starterType2, "NONE") != 0;
         starterActor.initialTeraTypeIndex = static_cast<uint8_t>(
             starterRng.randSeedInt(hasSecondaryType ? 2 : 1));
+        starterActor.initialTeraType = resolvePokemonTypeSymbol(
+            starterActor.initialTeraTypeIndex ? starterType2 : starterType1);
+        if (!starterActor.initialTeraType) return;
         starterActor.initialTeraTypeResolved = true;
 
         PokemonBattleInit starterInput{};

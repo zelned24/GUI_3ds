@@ -324,15 +324,21 @@ bool restoreNativePokemonActorSave(const NativePokemonSave& saved,
     const uint16_t hidden = form->abilityHidden ? form->abilityHidden : species->abilityHidden;
     if (restored.abilityId != (saved.abilityIndex == 2 ? hidden : saved.abilityIndex == 1 ? second : first))
         return false;
-    // Current actor representation stores the constructor's ordinal type pick.
-    if (saved.initialTeraTypeIndex && (!form->type2 || !form->type2[0] || equal(form->type2, "NONE")))
-        return false;
+    // Legacy actors lack the concrete type. Resolve their former ordinal once;
+    // new snapshots preserve the original type independently of current form.
+    bool typeTerminated = false;
+    for (char ch : saved.initialTeraType) if (!ch) { typeTerminated = true; break; }
+    if (!typeTerminated) return false;
+    const char* initialType = resolvePokemonTypeSymbol(saved.initialTeraType[0]
+        ? saved.initialTeraType : saved.initialTeraTypeIndex ? form->type2 : form->type1);
+    if (!initialType) return false;
     PokemonActorIdentity actor{};
     actor.pokemonId = restored.pokemonId;
     actor.abilityIndex = saved.abilityIndex;
     actor.gender = restored.gender;
     actor.nature = restored.nature;
     actor.formId = restored.formId;
+    actor.initialTeraType = initialType;
     actor.initialTeraTypeIndex = saved.initialTeraTypeIndex;
     actor.initialTeraTypeResolved = true;
     for (uint8_t i = 0; i < 6; ++i) actor.ivs[i] = restored.ivs[i];
@@ -352,9 +358,12 @@ bool captureNativePokemonActorSave(const PokemonBattleState& state,
     saved.abilityIndex = identity.abilityIndex;
     saved.initialTeraTypeIndex = identity.initialTeraTypeIndex;
     saved.initialTeraTypeResolved = identity.initialTeraTypeResolved;
+    if (identity.initialTeraType && (!resolvePokemonTypeSymbol(identity.initialTeraType) ||
+        !copyText(saved.initialTeraType, sizeof(saved.initialTeraType), identity.initialTeraType))) return false;
     PokemonBattleState restored{};
     PokemonActorIdentity restoredIdentity{};
     if (!restoreNativePokemonActorSave(saved, restored, restoredIdentity)) return false;
+    if (!copyText(saved.initialTeraType, sizeof(saved.initialTeraType), restoredIdentity.initialTeraType)) return false;
     output = saved;
     return true;
 }
@@ -367,7 +376,7 @@ NativeSaveResult encodeNativePokemonSave(const NativePokemonSave& saved, char* o
     if (!restoreNativePokemonActorSave(saved, state, identity)) return NativeSaveResult::InvalidRecord;
     if (!output) return NativeSaveResult::InvalidFormat;
     Writer writer{output, capacity};
-    writer.text("pokemon=2\n");
+    writer.text("pokemon=3\n");
     writer.hex(saved.speciesDex, 4);
     writer.text(saved.formId); writer.character('\n');
     writer.hex(saved.level, 4);
@@ -388,6 +397,7 @@ NativeSaveResult encodeNativePokemonSave(const NativePokemonSave& saved, char* o
     writer.hex(saved.abilityIndex, 2);
     writer.hex(saved.initialTeraTypeIndex, 2);
     writer.hex(saved.pauseEvolutions ? 1 : 0, 2);
+    writer.text(identity.initialTeraType); writer.character('\n');
     if (!writer.valid) return NativeSaveResult::TooLarge;
     written = writer.position;
     return NativeSaveResult::Ok;
@@ -399,9 +409,10 @@ NativeSaveResult decodeNativePokemonSave(const char* bytes, size_t length,
     Reader reader{bytes, length};
     NativePokemonSave saved{};
     uint32_t value = 0;
-    if (!reader.literal("pokemon=") || !reader.hex(1, value) || (value != 1 && value != 2))
+    if (!reader.literal("pokemon=") || !reader.hex(1, value) || (value < 1 || value > 3))
         return NativeSaveResult::InvalidFormat;
-    const bool hasEvolutionPause = value == 2;
+    const bool hasConcreteTeraType = value >= 3;
+    const bool hasEvolutionPause = value >= 2;
     if (!reader.hex(4, value)) return NativeSaveResult::InvalidFormat;
     saved.speciesDex = static_cast<uint16_t>(value);
     if (!reader.line(saved.formId, sizeof(saved.formId)) || !reader.hex(4, value))
@@ -438,6 +449,8 @@ NativeSaveResult decodeNativePokemonSave(const char* bytes, size_t length,
         if (!reader.hex(2, value) || value > 1) return NativeSaveResult::InvalidFormat;
         saved.pauseEvolutions = value != 0;
     }
+    if (hasConcreteTeraType && (!reader.line(saved.initialTeraType, sizeof(saved.initialTeraType)) ||
+        !saved.initialTeraType[0])) return NativeSaveResult::InvalidFormat;
     saved.actorIdentityResolved = saved.initialTeraTypeResolved = true;
     if (reader.position != reader.end) return NativeSaveResult::InvalidFormat;
     PokemonBattleState state{};

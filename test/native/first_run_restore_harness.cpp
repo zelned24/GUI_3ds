@@ -772,6 +772,40 @@ static int checkLevelUpMoveLearningAndEvolution() {
         if (evolutionMoveCovered) break;
     }
     if (!evolutionMoveCovered) return 316;
+    // A real Onix -> Steelix type change must retain its original Rock Tera type.
+    const auto* onix = PokerogueContent::findSpeciesByDex(95);
+    const auto* steelix = PokerogueContent::findSpeciesByDex(208);
+    if (!onix || !steelix) return 330;
+    PokemonBattleInit onixInput = bulbaInit;
+    onixInput.speciesDex = onix->dex;
+    onixInput.formId = onix->firstFormId;
+    onixInput.abilityId = onix->ability1;
+    PokemonBattleState onixState{};
+    if (initializePokemonBattleState(onixInput, onixState) != PokemonBattleInitResult::Ok) return 331;
+    PokemonActorIdentity onixIdentity{};
+    onixIdentity.pokemonId = onixState.pokemonId;
+    onixIdentity.gender = onixState.gender;
+    onixIdentity.nature = onixState.nature;
+    onixIdentity.formId = onixState.formId;
+    onixIdentity.initialTeraTypeResolved = true;
+    onixIdentity.initialTeraType = resolvePokemonTypeSymbol(onix->type1);
+    for (uint8_t i = 0; i < 6; ++i) onixIdentity.ivs[i] = onixState.ivs[i];
+    EvolutionResult steelixEvolution{};
+    if (!applySpeciesEvolution(onix->dex, steelix->id, onixState, steelixEvolution, nullptr, &onixIdentity) ||
+        !onixIdentity.initialTeraType || std::strcmp(onixIdentity.initialTeraType, onix->type1) ||
+        !std::strcmp(onixIdentity.initialTeraType, steelix->type1)) return 332;
+    uint32_t steelixExp = 0;
+    NativePokemonSave steelixSave{};
+    PokemonBattleState restoredSteelix{};
+    PokemonActorIdentity restoredSteelixIdentity{};
+    if (pokemonTotalExperienceForLevel(steelix->growthRate, onixState.level, steelixExp) !=
+            PokemonExperienceResult::Ok || !captureNativePokemonActorSave(onixState, onixIdentity,
+                steelixExp, steelixSave) || !restoreNativePokemonActorSave(steelixSave, restoredSteelix,
+                restoredSteelixIdentity) || std::strcmp(restoredSteelixIdentity.initialTeraType, onix->type1))
+        return 333;
+    std::strcpy(steelixSave.initialTeraType, "INVALID_TYPE");
+    if (restoreNativePokemonActorSave(steelixSave, restoredSteelix, restoredSteelixIdentity) ||
+        std::strcmp(restoredSteelixIdentity.initialTeraType, onix->type1)) return 334;
     // 3. Check learnNewLevelMoves
     // Bulbasaur learns Vine Whip (id 22) or Leech Seed at early levels
     PokemonBattleState learnState = bulbaState;
@@ -1210,12 +1244,18 @@ int main() {
             !restoreNativePokemonActorSave(decodedActor, restoredActor, restoredIdentity) ||
             !restoredActor.pauseEvolutions) return 321;
         // Member schema 1 has no pause field: preserve its exact former layout.
+        const size_t concreteTypeBytes = std::strlen(pausedActor.initialTeraType) + 1;
+        if (pauseSize < concreteTypeBytes + 3) return 328;
+        const size_t version2Size = pauseSize - concreteTypeBytes;
+        pauseBytes[8] = '2';
+        if (decodeNativePokemonSave(pauseBytes, version2Size, decodedActor) != NativeSaveResult::Ok ||
+            !decodedActor.pauseEvolutions) return 329;
         pauseBytes[8] = '1';
-        if (pauseSize < 3 || decodeNativePokemonSave(pauseBytes, pauseSize - 3, decodedActor) !=
+        if (decodeNativePokemonSave(pauseBytes, version2Size - 3, decodedActor) !=
                 NativeSaveResult::Ok || decodedActor.pauseEvolutions) return 322;
         pauseBytes[8] = '2';
-        pauseBytes[pauseSize - 2] = '2';
-        if (decodeNativePokemonSave(pauseBytes, pauseSize, decodedActor) !=
+        pauseBytes[version2Size - 2] = '2';
+        if (decodeNativePokemonSave(pauseBytes, version2Size, decodedActor) !=
                 NativeSaveResult::InvalidFormat || decodedActor.pauseEvolutions) return 323;
         NativeRunSave explicitParty = loaded;
         explicitParty.playerPartyCount = 1;

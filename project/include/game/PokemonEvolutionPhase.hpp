@@ -226,6 +226,14 @@ inline bool applySpeciesEvolution(
     const uint16_t nextAbilities[] = {targetForm ? targetForm->ability1 : target->ability1,
         targetForm ? targetForm->ability2 : target->ability2,
         targetForm ? targetForm->abilityHidden : target->abilityHidden};
+    const char* originalTeraType = identity ? identity->initialTeraType : nullptr;
+    if (identity && identity->initialTeraTypeResolved) {
+        if (identity->initialTeraTypeIndex > 1) return false;
+        originalTeraType = resolvePokemonTypeSymbol(originalTeraType ? originalTeraType
+            : identity->initialTeraTypeIndex ? (oldForm ? oldForm->type2 : oldSpecies->type2)
+                : (oldForm ? oldForm->type1 : oldSpecies->type1));
+        if (!originalTeraType) return false;
+    }
     uint8_t abilitySlot = identity ? identity->abilityIndex : 0;
     if (identity) {
         if (abilitySlot > 2 || identity->pokemonId != battleState.pokemonId ||
@@ -271,6 +279,7 @@ inline bool applySpeciesEvolution(
     evolvedState.pauseEvolutions = battleState.pauseEvolutions;
     battleState = evolvedState;
     if (identity) {
+        identity->initialTeraType = originalTeraType;
         identity->abilityIndex = abilitySlot;
         identity->formId = evolvedState.formId;
     }

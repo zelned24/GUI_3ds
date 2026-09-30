@@ -454,3 +454,9 @@
 1. Porta src/ui/handlers/party-ui-handler.ts processUnpauseEvolutionOption y elegibilidad hasEvolutions del upstream pinned. Comando togglePlayerEvolutionPause opera sobre miembro activo o reserva, bloquea decisiones pendientes/índice inválido/especie sin evoluciones y sincroniza actor activo.
 2. SELECT alterna el actor activo desde el host nativo; bridge admite acciones 220–225 para los seis miembros. No consume turnos, concede EXP ni inicia evolución inmediata. El cambio obliga a snapshot explícito y conserva la opción en restore.
 3. Regresiones 324–327 escritas para índice inválido, elegibilidad real, pausa/restore/reactivación y ausencia de avance de wave/turno/EXP/HP. Tests y compilación aplazados. Menú visual completo de equipo y animación de evolución siguen pendientes.
+
+## Tipo Tera concreto conservado tras evolución
+
+1. Pokemon constructor pinned src/field/pokemon.ts almacena teraType concreto al crear actor y lo copia desde dataSource; un ordinal de tipo no equivale a ese estado tras cambiar especie. Actor C++ conserva símbolo concreto, resuelto con la tabla de tipos existente sin consumir RNG adicional.
+2. Evolución mantiene el tipo original; captura/restore no lo recalcula a partir de la forma nueva. Codec pokemon=3 incluye tipo; lectores aceptan v1/v2 y resuelven una vez el antiguo ordinal de la forma guardada. Datos históricos que ya perdieron el tipo original no son recuperables sin evidencia adicional.
+3. Regresiones 328–334 escritas para migración v2, Onix→Steelix conservando ROCK frente a STEEL y rechazo de tipo inválido sin mutar actor. Esto verifica identidad/persistencia; no porta todavía trigger de Metal Coat ni combate Terastal. Tests/compilación aplazados.

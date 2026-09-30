@@ -50,6 +50,7 @@ struct NativePokemonSave {
     bool pauseEvolutions = false;
     bool actorIdentityResolved = false;
     uint8_t abilityIndex = 0;
+    char initialTeraType[16]{}; // Empty only for legacy actor payloads.
     uint8_t initialTeraTypeIndex = 0;
     bool initialTeraTypeResolved = false;
 };
