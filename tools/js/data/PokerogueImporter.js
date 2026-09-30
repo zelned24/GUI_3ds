@@ -680,7 +680,27 @@ function parseTrainerConfigDetails(raw, trainerType, speciesCatalog, trainerPool
       partyTemplateStatus = 'STATIC_CALLBACK_TEMPLATE';
     }
   }
+  let specialtyType = null;
+  let specialtyTypeStatus = 'RESOLVED';
+  for (const call of directCalls) {
+    let expression;
+    if (call.method === 'setSpecialtyType') expression = call.args[0];
+    else if (call.method.startsWith('initFor')) {
+      const definition = helperCalls.find(helper => helper.method === call.method)?.definition;
+      const raw = definition?.raw ?? '';
+      const parameters = extractBalancedLiteral(raw, raw.indexOf('('));
+      const index = parameters ? splitTopLevelArguments(parameters.slice(1, -1)).findIndex(parameter => /^specialtyType\??\s*:/.test(parameter.trim())) : -1;
+      if (index >= 0) expression = call.args[index];
+    }
+    if (expression === undefined) continue;
+    const symbol = expression.trim().match(/^PokemonType\.([A-Z][A-Z0-9_]*)$/)?.[1];
+    if (symbol) { specialtyType = symbol; specialtyTypeStatus = 'RESOLVED'; }
+    else if (/^(null|undefined)$/.test(expression.trim())) { specialtyType = null; specialtyTypeStatus = 'RESOLVED'; }
+    else specialtyTypeStatus = 'UNSUPPORTED_EXPRESSION';
+  }
   const trainerRules = {
+    specialtyType,
+    specialtyTypeStatus,
     isBoss: readMethod('Boss').length > 0,
     hasDouble: readMethod('HasDouble').length > 0,
     doubleOnly: readMethod('DoubleOnly').length > 0,

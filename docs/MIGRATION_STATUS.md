@@ -258,3 +258,12 @@
 1. Trainer.genNewPartyMemberSpecies pinned compara ret.type1/type2 contra enemyParty.getTypes antes de otros checks de duplicados. Resolver aplica ese reroll con contexto de tipos resueltos; falta de contexto falla explícitamente.
 2. Constructor pasa tipos canónicos de la forma real de cada actor ya construido; no los sustituye por los tipos base de su especie. Límite de diez rerolls conservado.
 3. Regresión 242–248 comprueba forma real, catálogo completo, coincidencias y ausencia de contexto. Escrita, no ejecutada. Falta parity de la construcción completa de equipos balanced, filtros specialty y reglas de cambios de tipo/Tera.
+
+## Especialidad de tipo de entrenadores
+
+1. Importer conserva specialtyType y specialtyTypeStatus desde setSpecialtyType y parámetro specialtyType de inicializadores inspeccionados. Expresiones desconocidas quedan preservadas en raw y marcadas UNSUPPORTED_EXPRESSION. Tabla C++ conserva tipo y resolución.
+2. Trainer.genNewPartyMemberSpecies: si no existe otra causa de reroll y la evolución no tiene tipo especializado, vuelve a resolver evolución de la misma especie base hasta diez veces usando el umbral padre. Después aplica checks de duplicados.
+3. Regresión 249–251 comprueba Brock/ROCK, Misty/WATER y referencias de tipos del catálogo. Regresión de pool ordinario excluye especialidades porque tienen otra secuencia. Escritas, pendientes de ejecución.
+4. Pinned import regenerado; el hash cambia por los nuevos campos normalizados. Guardados ligados al hash anterior no se aceptan automáticamente; migración de saves sigue pendiente. Filtros speciesFilter generales y parity completo de entrenadores siguen pendientes.
+
+5. Resultado del reimport: 126 entrenadores con especialidad; 272 trainerRules con specialtyTypeStatus RESOLVED. Dos importaciones pinned producen hash 9475c38f55fde778b84ea3c0d3b454c7c2ef3be4e1f61203efbd66b0392df611. Se conserva catálogo 1084 especies/609 formas/920 movimientos/320 habilidades.

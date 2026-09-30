@@ -634,6 +634,25 @@ static int checkLevelUpMoveLearningAndEvolution() {
     return 0;
 }
 
+static int checkCanonicalTrainerSpecialtyTypes() {
+    unsigned inspected = 0;
+    for (const auto& trainer : PokerogueContent::kTrainerTypes) {
+        if (std::strcmp(trainer.key, "brock") == 0 || std::strcmp(trainer.key, "misty") == 0) {
+            const char* expected = std::strcmp(trainer.key, "brock") == 0 ? "ROCK" : "WATER";
+            if (!trainer.specialtyTypeResolved || !trainer.specialtyType ||
+                std::strcmp(trainer.specialtyType, expected)) return 249;
+            ++inspected;
+        }
+        if (!trainer.specialtyTypeResolved || !trainer.specialtyType || !*trainer.specialtyType) continue;
+        bool canonicalType = false;
+        for (const auto& species : PokerogueContent::kSpecies)
+            if ((species.type1 && std::strcmp(species.type1, trainer.specialtyType) == 0) ||
+                (species.type2 && std::strcmp(species.type2, trainer.specialtyType) == 0)) canonicalType = true;
+        if (!canonicalType) return 250;
+    }
+    return inspected == 2 ? 0 : 251;
+}
+
 static int checkTrainerBalancedTypes() {
     using namespace Pokerogue3DS;
     const auto* species = PokerogueContent::findSpeciesByDex(1);
@@ -690,7 +709,8 @@ static int checkTrainerPoolEvolutionDraws() {
     using namespace Pokerogue3DS;
     unsigned checked = 0;
     for (const auto& trainer : PokerogueContent::kTrainerTypes) {
-        if (!trainer.speciesPoolCount || trainer.signatureCount) continue;
+        if (!trainer.speciesPoolCount || trainer.signatureCount || !trainer.specialtyTypeResolved ||
+                (trainer.specialtyType && *trainer.specialtyType)) continue;
         const uint16_t seed[] = {'p', 'o', 'o', 'l'};
         PokerogueRngAdapter templateRng;
         templateRng.sow(seed, 4);
@@ -778,6 +798,8 @@ static int checkCanonicalTrainerSignatureSlots() {
 }
 
 int main() {
+    const int specialtyCheck = checkCanonicalTrainerSpecialtyTypes();
+    if (specialtyCheck) return specialtyCheck;
     const int balancedTypesCheck = checkTrainerBalancedTypes();
     if (balancedTypesCheck) return balancedTypesCheck;
     const int reservedSpeciesCheck = checkReservedTrainerSpecies();

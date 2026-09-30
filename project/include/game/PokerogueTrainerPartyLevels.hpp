@@ -121,7 +121,7 @@ inline TrainerPartySpeciesChoice resolveSimpleTrainerPoolMember(
     const PokerogueContent::Species* const* previousSpecies, uint8_t previousCount,
     PokerogueRngAdapter& rng, const TrainerPartyMemberTypes* previousTypes = nullptr) {
   const auto member = trainerPartyMemberTemplate(partyTemplate, memberIndex);
-  if (!member.supported ||
+  if (!member.supported || !trainer.specialtyTypeResolved ||
       !level || !wave || !trainer.speciesPoolCount ||
       (trainer.signatureCount && memberIndex + trainer.signatureCount >= partyTemplate.totalSize) ||
       previousCount > memberIndex || memberIndex >= 6) return {};
@@ -139,6 +139,20 @@ inline TrainerPartySpeciesChoice resolveSimpleTrainerPoolMember(
       bool overlap = false;
       if (!trainerBalancedTypeOverlap(*first, previousTypes, previousCount, overlap)) return {};
       retry = overlap;
+    }
+    if (!retry && trainer.specialtyType && *trainer.specialtyType) {
+      const auto matchesSpecialty = [&](const PokerogueContent::Species& species) {
+        return (species.type1 && std::strcmp(species.type1, trainer.specialtyType) == 0) ||
+            (species.type2 && std::strcmp(species.type2, trainer.specialtyType) == 0);
+      };
+      retry = !matchesSpecialty(*first);
+      for (uint8_t evolutionAttempt = 0; retry && evolutionAttempt < 10; ++evolutionAttempt) {
+        const char* rerolled = PokerogueEncounterResolver::resolveTrainerSpeciesForLevel(
+            base->id, level, partyTemplate.parentEvolutionThresholdKindId, wave == 20, rng);
+        first = trainerPartySpeciesById(rerolled);
+        if (!first) return {};
+        retry = !matchesSpecialty(*first);
+      }
     }
     const uint16_t baseRoot = trainerPartyRootDex(*base);
     if (!baseRoot) return {};
