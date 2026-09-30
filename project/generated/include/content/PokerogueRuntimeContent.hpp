@@ -323,13 +323,13 @@ struct AlwaysHitAbilityProfile { uint16_t abilityId; const char* sourcePath; con
 inline constexpr AlwaysHitAbilityProfile kAlwaysHitAbilityProfiles[] = {
     {99, "src/data/abilities/init-abilities.ts", "AbilityId.NO_GUARD", "040ccf2ca2e00a2111ef0acf54878ec67c45d98c831e35dda3e0bac52f1ee8e6"}
 };
-struct AccuracyAbilityProfile { uint16_t abilityId; bool accuracy; double multiplier; int8_t requiredCategory; const char* sourcePath; const char* sourceSymbol; const char* sourceHash; };
+struct AccuracyAbilityProfile { uint16_t abilityId; bool accuracy; double multiplier; int8_t requiredCategory; bool requiresCondition; uint16_t weatherMask; const char* sourcePath; const char* sourceSymbol; const char* sourceHash; };
 inline constexpr AccuracyAbilityProfile kAccuracyAbilityProfiles[] = {
-    {8, false, 1.25, -1, "src/data/abilities/init-abilities.ts", "AbilityId.SAND_VEIL", "040ccf2ca2e00a2111ef0acf54878ec67c45d98c831e35dda3e0bac52f1ee8e6"},
-    {14, true, 1.3, -1, "src/data/abilities/init-abilities.ts", "AbilityId.COMPOUND_EYES", "040ccf2ca2e00a2111ef0acf54878ec67c45d98c831e35dda3e0bac52f1ee8e6"},
-    {55, true, 0.8, 0, "src/data/abilities/init-abilities.ts", "AbilityId.HUSTLE", "040ccf2ca2e00a2111ef0acf54878ec67c45d98c831e35dda3e0bac52f1ee8e6"},
-    {81, false, 1.25, -1, "src/data/abilities/init-abilities.ts", "AbilityId.SNOW_CLOAK", "040ccf2ca2e00a2111ef0acf54878ec67c45d98c831e35dda3e0bac52f1ee8e6"},
-    {162, true, 1.1, -1, "src/data/abilities/init-abilities.ts", "AbilityId.VICTORY_STAR", "040ccf2ca2e00a2111ef0acf54878ec67c45d98c831e35dda3e0bac52f1ee8e6"}
+    {8, false, 1.25, -1, true, 8, "src/data/abilities/init-abilities.ts", "AbilityId.SAND_VEIL", "040ccf2ca2e00a2111ef0acf54878ec67c45d98c831e35dda3e0bac52f1ee8e6"},
+    {14, true, 1.3, -1, false, 0, "src/data/abilities/init-abilities.ts", "AbilityId.COMPOUND_EYES", "040ccf2ca2e00a2111ef0acf54878ec67c45d98c831e35dda3e0bac52f1ee8e6"},
+    {55, true, 0.8, 0, false, 0, "src/data/abilities/init-abilities.ts", "AbilityId.HUSTLE", "040ccf2ca2e00a2111ef0acf54878ec67c45d98c831e35dda3e0bac52f1ee8e6"},
+    {81, false, 1.25, -1, true, 48, "src/data/abilities/init-abilities.ts", "AbilityId.SNOW_CLOAK", "040ccf2ca2e00a2111ef0acf54878ec67c45d98c831e35dda3e0bac52f1ee8e6"},
+    {162, true, 1.1, -1, false, 0, "src/data/abilities/init-abilities.ts", "AbilityId.VICTORY_STAR", "040ccf2ca2e00a2111ef0acf54878ec67c45d98c831e35dda3e0bac52f1ee8e6"}
 };
 struct DamageStatAbilityProfile { uint16_t abilityId; uint8_t stat; double multiplier; bool requiresCondition; const char* sourcePath; const char* sourceSymbol; const char* sourceHash; };
 inline constexpr DamageStatAbilityProfile kDamageStatAbilityProfiles[] = {

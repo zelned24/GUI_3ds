@@ -811,11 +811,22 @@ const accuracyAbilityRows = collections.abilities.flatMap(ability => {
   return [...raw.matchAll(/\.attr\s*\(\s*StatMultiplierAbAttr\s*,\s*Stat\.(ACC|EVA)\s*,\s*(\d+(?:\.\d+)?)\s*(?:,\s*\(_user,\s*_target,\s*move\)\s*=>\s*move\.category\s*===\s*MoveCategory\.(PHYSICAL|SPECIAL)\s*)?\)/g)].map(match => {
     const multiplier = Number(match[2]);
     if (!Number.isFinite(multiplier) || multiplier <= 0 || multiplier > 16) throw new Error(`Invalid accuracy multiplier: ${ability.id}`);
-    return `    {${ability.abilityId}, ${match[1] === 'ACC'}, ${multiplier}, ${match[3] === 'PHYSICAL' ? 0 : match[3] === 'SPECIAL' ? 1 : -1}, "${field(ability.source?.sourcePath ?? '')}", "${field(ability.source?.sourceSymbol ?? '')}", "${field(ability.source?.sourceHash ?? '')}"}`;
+    const requiresCondition = /\.condition\s*\(/.test(raw);
+    const condition = raw.match(/\.condition\s*\(\s*getWeatherCondition\s*\(([^)]*)\)\s*\)/);
+    let weatherMask = 0;
+    if (condition && [...raw.matchAll(/\.condition\s*\(/g)].length === 1) {
+      const remainder = condition[1].replace(/WeatherType\.[A-Z_]+|,|\s/g, '');
+      if (!remainder) for (const entry of condition[1].matchAll(/WeatherType\.([A-Z_]+)/g)) {
+        const index = weatherNames.indexOf(entry[1]);
+        if (index < 0) throw new Error(`Unknown accuracy weather condition: ${entry[1]}`);
+        weatherMask |= 1 << index;
+      }
+    }
+    return `    {${ability.abilityId}, ${match[1] === 'ACC'}, ${multiplier}, ${match[3] === 'PHYSICAL' ? 0 : match[3] === 'SPECIAL' ? 1 : -1}, ${requiresCondition}, ${weatherMask}, "${field(ability.source?.sourcePath ?? '')}", "${field(ability.source?.sourceSymbol ?? '')}", "${field(ability.source?.sourceHash ?? '')}"}`;
   });
 });
 const accuracyHeader = hitHeader.replace('struct MoveAttribute {',
-  `struct AccuracyAbilityProfile { uint16_t abilityId; bool accuracy; double multiplier; int8_t requiredCategory; const char* sourcePath; const char* sourceSymbol; const char* sourceHash; };\ninline constexpr AccuracyAbilityProfile kAccuracyAbilityProfiles[] = {\n${accuracyAbilityRows.join(',\n')}\n};\nstruct MoveAttribute {`);
+  `struct AccuracyAbilityProfile { uint16_t abilityId; bool accuracy; double multiplier; int8_t requiredCategory; bool requiresCondition; uint16_t weatherMask; const char* sourcePath; const char* sourceSymbol; const char* sourceHash; };\ninline constexpr AccuracyAbilityProfile kAccuracyAbilityProfiles[] = {\n${accuracyAbilityRows.join(',\n')}\n};\nstruct MoveAttribute {`);
 const damageStatRows = collections.abilities.flatMap(ability => {
   const raw = ability.extensions?.upstreamAttributes?.value ?? '';
   return [...raw.matchAll(/\.attr\s*\(\s*StatMultiplierAbAttr\s*,\s*Stat\.(ATK|DEF|SPATK|SPDEF)\s*,\s*(\d+(?:\.\d+)?)\s*\)/g)].map(match => {

@@ -899,7 +899,8 @@ bool pokemonMoveCriticalDenominator(uint16_t moveId, uint8_t& outputDenominator,
 }
 
 bool composePokemonAlwaysHitPolicy(const PokemonWeatherAbilityComponent* components,
-    std::size_t count, PokemonHitPolicy& output, uint16_t moveId) {
+    std::size_t count, PokemonHitPolicy& output, uint16_t moveId,
+    const PokemonMoveWeatherContext* weather) {
     if (count && !components) return false;
     PokemonHitPolicy next{};
     next.resolved = true;
@@ -910,6 +911,11 @@ bool composePokemonAlwaysHitPolicy(const PokemonWeatherAbilityComponent* compone
             if (profile.abilityId == components[i].abilityId) next.bypassAccuracy = true;
         for (const auto& profile : PokerogueContent::kAccuracyAbilityProfiles) {
             if (profile.abilityId != components[i].abilityId) continue;
+            if (profile.requiresCondition) {
+                if (!weather || !weather->resolved || !profile.weatherMask ||
+                    static_cast<uint8_t>(weather->cancellationWeather) > 9) return false;
+                if (!(profile.weatherMask & (1u << static_cast<uint8_t>(weather->cancellationWeather)))) continue;
+            }
             if (profile.requiredCategory >= 0) {
                 const auto* move = PokerogueContent::findMoveById(moveId);
                 if (!move) return false;

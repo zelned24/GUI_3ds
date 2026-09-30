@@ -1089,6 +1089,15 @@ extern "C" int runPokemonBattleStateChecks() {
         Pokerogue3DS::calculatePokemonBaseDamage(hustleActor, state, 55,
             boostedHustleDamage) != Pokerogue3DS::PokemonBaseDamageResult::Ok ||
         boostedHustleDamage != neutralHustleDamage) return 366;
+    Pokerogue3DS::PokemonWeatherAbilityComponent veilComponent{sandVeilId, true, false};
+    Pokerogue3DS::PokemonMoveWeatherContext veilWeather{};
+    veilWeather.resolved = true;
+    if (!Pokerogue3DS::composePokemonAlwaysHitPolicy(&veilComponent, 1, hitPolicy, 33, &veilWeather) ||
+        hitPolicy.accuracyMultiplier != 1.0) return 367;
+    veilWeather.cancellationWeather = PokemonEffectiveWeather::Sandstorm;
+    if (!Pokerogue3DS::composePokemonAlwaysHitPolicy(&veilComponent, 1, hitPolicy, 33, &veilWeather) ||
+        hitPolicy.accuracyMultiplier != 0.8) return 368;
+    if (Pokerogue3DS::composePokemonAlwaysHitPolicy(&veilComponent, 1, hitPolicy, 33)) return 369;
     PokemonBattleState noPpActor = state;
     noPpActor.moves[0].pp = 0;
     PokemonBattleState unchangedTarget = state;
