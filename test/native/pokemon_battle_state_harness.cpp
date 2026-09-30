@@ -4,6 +4,7 @@
 #include "game/PokemonWildMovesetGenerator.hpp"
 #include "game/PokemonStarterMoveset.hpp"
 #include "game/PokemonTrainerAi.hpp"
+#include "game/PokemonExperience.hpp"
 #include "game/PokerogueRngAdapter.hpp"
 
 using Pokerogue3DS::PokemonBattleInit;
@@ -22,6 +23,15 @@ using Pokerogue3DS::PokemonMoveActionStatus;
 using Pokerogue3DS::PokerogueRngAdapter;
 
 extern "C" int runPokemonBattleStateChecks() {
+    uint32_t awardedExperience = 99;
+    if (Pokerogue3DS::pokemonSingleParticipantExperience(52.2, false, awardedExperience) !=
+        Pokerogue3DS::PokemonExperienceResult::Ok || awardedExperience != 52) return 198;
+    if (Pokerogue3DS::pokemonSingleParticipantExperience(52.2, true, awardedExperience) !=
+        Pokerogue3DS::PokemonExperienceResult::Ok || awardedExperience != 78) return 199;
+    if (Pokerogue3DS::pokemonSingleParticipantExperience(-1.0, true, awardedExperience) !=
+        Pokerogue3DS::PokemonExperienceResult::Overflow || awardedExperience != 0) return 200;
+    if (Pokerogue3DS::pokemonSingleParticipantExperience(4294967295.0, true, awardedExperience) !=
+        Pokerogue3DS::PokemonExperienceResult::Overflow) return 201;
     const uint16_t trainerAiSeed[] = {'t', 'r', 'a', 'i', 'n', 'e', 'r'};
     PokerogueRngAdapter trainerAiRng;
     trainerAiRng.sow(trainerAiSeed, 7);

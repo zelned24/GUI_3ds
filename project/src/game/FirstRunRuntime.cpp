@@ -375,11 +375,12 @@ bool FirstRunRuntime::grantVictoryExperience() {
     if (pokemonExperienceForDefeat(*defeated, m_context.enemy.level, rawExperience,
                                   defeatedForm) != PokemonExperienceResult::Ok ||
         rawExperience < 0.0 || rawExperience > 4294967295.0) return false;
-    // In the supported one-participant wild battle, applyPartyExp floors the
-    // defeated Pokemon's getExpValue() once before Pokemon.addExp().
+    uint32_t awardedExperience = 0;
+    if (pokemonSingleParticipantExperience(rawExperience, m_trainerBattle,
+            awardedExperience) != PokemonExperienceResult::Ok) return false;
     PokemonExperienceProgress progress{};
     if (applyPokemonExperience(starter->growthRate, m_context.player.level,
-                               m_playerExperience, static_cast<uint32_t>(rawExperience),
+                               m_playerExperience, awardedExperience,
                                classicExperienceLevelCap(m_run.wave), progress)
         != PokemonExperienceResult::Ok || progress.level > 100) return false;
 

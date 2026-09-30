@@ -91,6 +91,19 @@ inline PokemonExperienceResult pokemonExperienceForDefeat(
     return PokemonExperienceResult::Ok;
 }
 
+// Pinned BattleScene.applyPartyExp: one living participant, no EXP modifiers.
+// Trainer multiplication is floored before participant distribution; wild EXP
+// is floored at the final per-member award. Multi-member sharing is separate.
+inline PokemonExperienceResult pokemonSingleParticipantExperience(
+    double defeatExperience, bool trainerBattle, uint32_t& output) {
+    output = 0;
+    if (!(defeatExperience >= 0.0)) return PokemonExperienceResult::Overflow;
+    const double award = defeatExperience * (trainerBattle ? 1.5 : 1.0);
+    if (!(award <= 4294967295.0)) return PokemonExperienceResult::Overflow;
+    output = static_cast<uint32_t>(award);
+    return PokemonExperienceResult::Ok;
+}
+
 inline uint16_t classicExperienceLevelCap(uint16_t waveIndex) {
     if (!waveIndex || waveIndex > 200) return 0;
     const uint16_t difficultyWave = static_cast<uint16_t>(((waveIndex + 9) / 10) * 10);
