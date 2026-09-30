@@ -508,14 +508,6 @@ void FirstRunRuntime::resolve() {
     m_context.player = {starter.dex, 5, starter.id, locale(starterLocaleId.c_str(), starter.name), starter.firstFormId, starter.assetSourcePath};
     if (pokemonTotalExperienceForLevel(starter.growthRate, 5, m_playerExperience)
         != PokemonExperienceResult::Ok) return;
-    const ClassicWaveKind waveKind = classifyClassicWave(m_run.wave);
-    if (waveKind != ClassicWaveKind::RegularWild) {
-        m_battleFeedback = waveKind == ClassicWaveKind::Invalid
-            ? "Invalid Classic wave"
-            : "This Classic trainer or boss encounter is not ported yet";
-        buildScene();
-        return;
-    }
     // Fresh-profile save data starts with no unlocked egg moves and no saved
     // move preferences. Resolve its actual level-1-to-5 learnset through the
     // same canonical catalog as the wild actor; do not invent a starter list.
@@ -584,6 +576,25 @@ void FirstRunRuntime::resolve() {
     PokerogueRngAdapter waveRng;
     PokerogueSeedOffsetScope waveScope(waveRng, m_seedCodeUnits.data(), m_seedLength, m_run.wave);
     if (!waveScope.valid()) return;
+    const ClassicWaveKind waveKind = classifyClassicWave(m_run.wave);
+    if (waveKind == ClassicWaveKind::TrainerChanceRequired) {
+        bool offsetGym = false;
+        bool isTrainer = false;
+        if (!PokerogueWaveClock::deriveOffsetGym(m_seedCodeUnits.data(), m_seedLength, offsetGym) ||
+            resolveClassicTrainerChance(m_run.wave, m_run.biomeId, offsetGym,
+                m_seedCodeUnits.data(), m_seedLength, waveRng, isTrainer) ==
+                ClassicTrainerDecision::Invalid) return;
+        if (isTrainer) {
+            m_battleFeedback = "Classic trainer encounter is not ported yet";
+            buildScene();
+            return;
+        }
+    } else if (waveKind != ClassicWaveKind::RegularWild) {
+        m_battleFeedback = waveKind == ClassicWaveKind::Invalid
+            ? "Invalid Classic wave" : "Classic fixed trainer or boss encounter is not ported yet";
+        buildScene();
+        return;
+    }
     m_doubleBattle = waveRng.randSeedInt(8) == 0; // Classic default chance, zero party luck.
     // newBattle has already reset the global seed to rootSeed + waveIndex;
     // Battle construction then applies waveIndex<<3 to that wave seed. The

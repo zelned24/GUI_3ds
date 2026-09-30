@@ -142,6 +142,18 @@ private:
 // stable five-wave cycle offset from a fresh root-seed Phaser stream.
 class PokerogueWaveClock {
 public:
+    // BattleScene.getGeneratedOffsetGym uses an independent root-seed scope:
+    // !randSeedInt(2). It must not consume the wave encounter stream.
+    static bool deriveOffsetGym(const uint16_t* rootSeed, size_t seedLength,
+                                bool& offsetGym) {
+        if (seedLength > PokerogueRngAdapter::kMaxSeedCodeUnits ||
+            (seedLength && !rootSeed)) return false;
+        PokerogueRngAdapter rng;
+        rng.sow(rootSeed, seedLength);
+        offsetGym = rng.randSeedInt(2) == 0;
+        return true;
+    }
+
     static bool deriveCycleOffset(const uint16_t* rootSeed, size_t seedLength,
                                   uint8_t& offset) {
         if (seedLength > PokerogueRngAdapter::kMaxSeedCodeUnits
