@@ -1098,6 +1098,27 @@ extern "C" int runPokemonBattleStateChecks() {
     if (!Pokerogue3DS::composePokemonAlwaysHitPolicy(&veilComponent, 1, hitPolicy, 33, &veilWeather) ||
         hitPolicy.accuracyMultiplier != 0.8) return 368;
     if (Pokerogue3DS::composePokemonAlwaysHitPolicy(&veilComponent, 1, hitPolicy, 33)) return 369;
+    uint16_t swiftSwimId = 0;
+    for (const auto& profile : PokerogueContent::kSpeedAbilityProfiles)
+        if (std::strcmp(profile.sourceSymbol, "AbilityId.SWIFT_SWIM") == 0 &&
+            profile.multiplier == 2.0 && profile.weatherMask == ((1u << 2) | (1u << 7))) swiftSwimId = profile.abilityId;
+    if (!swiftSwimId) return 370;
+    PokemonBattleState swimmer = state;
+    swimmer.abilityId = swiftSwimId;
+    swimmer.stats[5] = 53;
+    swimmer.statStages[4] = 1;
+    Pokerogue3DS::PokemonMoveWeatherContext speedWeather{};
+    speedWeather.resolved = true;
+    uint32_t weatherSpeed = 0;
+    if (!Pokerogue3DS::pokemonWeatherEffectiveSpeed(swimmer, speedWeather, weatherSpeed) ||
+        weatherSpeed != 79) return 371;
+    speedWeather.cancellationWeather = PokemonEffectiveWeather::Rain;
+    if (!Pokerogue3DS::pokemonWeatherEffectiveSpeed(swimmer, speedWeather, weatherSpeed) ||
+        weatherSpeed != 159) return 372;
+    speedWeather.effectiveWeather = PokemonEffectiveWeather::Rain;
+    speedWeather.cancellationWeather = PokemonEffectiveWeather::None;
+    if (!Pokerogue3DS::pokemonWeatherEffectiveSpeed(swimmer, speedWeather, weatherSpeed) ||
+        weatherSpeed != 79) return 373;
     PokemonBattleState noPpActor = state;
     noPpActor.moves[0].pp = 0;
     PokemonBattleState unchangedTarget = state;

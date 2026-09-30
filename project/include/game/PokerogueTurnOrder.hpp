@@ -21,7 +21,8 @@ inline BaselineFirstMover resolveBaselineFirstMover(
     const PokemonBattleState& player, const PokemonBattleState& enemy,
     uint16_t playerMoveId, uint16_t enemyMoveId,
     const uint16_t* rootSeed, std::size_t seedLength,
-    uint16_t wave, uint32_t turn) {
+    uint16_t wave, uint32_t turn,
+    const PokemonMoveWeatherContext* resolvedArenaWeather = nullptr) {
   if (!rootSeed || !seedLength || seedLength > PokerogueRngAdapter::kMaxSeedCodeUnits
       || !wave || !turn || turn > (0xffffffffU - 2U) / 1000U
       || !player.stats[5] || !enemy.stats[5]) return BaselineFirstMover::Invalid;
@@ -32,6 +33,9 @@ inline BaselineFirstMover resolveBaselineFirstMover(
   uint32_t playerSpeed = 0, enemySpeed = 0;
   if (!pokemonBaselineEffectiveStat(player, 5, false, playerSpeed) ||
       !pokemonBaselineEffectiveStat(enemy, 5, false, enemySpeed)) return BaselineFirstMover::Invalid;
+  if (resolvedArenaWeather &&
+      (!pokemonWeatherEffectiveSpeed(player, *resolvedArenaWeather, playerSpeed) ||
+       !pokemonWeatherEffectiveSpeed(enemy, *resolvedArenaWeather, enemySpeed))) return BaselineFirstMover::Invalid;
   uint16_t waveSeed[PokerogueRngAdapter::kMaxSeedCodeUnits]{};
   if (!PokerogueRngAdapter::shiftCharCodes(rootSeed, seedLength, wave,
           waveSeed, PokerogueRngAdapter::kMaxSeedCodeUnits)) return BaselineFirstMover::Invalid;

@@ -678,9 +678,11 @@ bool FirstRunRuntime::advanceBattleTurn() {
         return false;
     }
 
+    PokemonMoveWeatherContext turnWeather{};
+    if (!resolveActiveMoveWeather(false, turnWeather)) return false;
     const auto firstMover = resolveBaselineFirstMover(playerState, enemyState,
         selected->id, enemyMove->id, m_seedCodeUnits.data(), m_seedLength,
-        m_run.wave, m_turn);
+        m_run.wave, m_turn, &turnWeather);
     if (firstMover == BaselineFirstMover::Invalid) {
         m_battleFeedback = "Turn order inputs unsupported";
         buildScene();

@@ -745,6 +745,26 @@ bool resolvePokemonMoveWeatherContext(const PokemonArenaWeatherState& arena,
     return true;
 }
 
+bool pokemonWeatherEffectiveSpeed(const PokemonBattleState& state,
+    const PokemonMoveWeatherContext& weather, uint32_t& output) {
+    if (!weather.resolved || static_cast<uint8_t>(weather.cancellationWeather) > 9 || !state.stats[5]) return false;
+    double stageMultiplier = 1.0, abilityMultiplier = 1.0;
+    if (!pokemonStatStageMultiplier(state, 5, false, stageMultiplier)) return false;
+    for (const auto& profile : PokerogueContent::kSpeedAbilityProfiles) {
+        if (profile.abilityId != state.abilityId) continue;
+        if (profile.requiresCondition) {
+            if (!profile.weatherMask) return false;
+            if (!(profile.weatherMask & (1u << static_cast<uint8_t>(weather.cancellationWeather)))) continue;
+        }
+        abilityMultiplier *= profile.multiplier;
+    }
+    const double value = state.stats[5] * abilityMultiplier * stageMultiplier;
+    if (!(value >= 0.0) || value > 4294967295.0) return false;
+    const auto speed = static_cast<uint32_t>(value);
+    output = speed ? speed : 1;
+    return true;
+}
+
 bool pokemonWeatherMoveAccuracy(uint16_t moveId,
     const PokemonMoveWeatherContext* context, int16_t& outputAccuracy) {
     const auto* move = PokerogueContent::findMoveById(moveId);

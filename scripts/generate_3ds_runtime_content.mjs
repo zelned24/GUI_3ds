@@ -838,5 +838,29 @@ const damageStatRows = collections.abilities.flatMap(ability => {
 });
 const statHeader = accuracyHeader.replace('struct MoveAttribute {',
   `struct DamageStatAbilityProfile { uint16_t abilityId; uint8_t stat; double multiplier; bool requiresCondition; const char* sourcePath; const char* sourceSymbol; const char* sourceHash; };\ninline constexpr DamageStatAbilityProfile kDamageStatAbilityProfiles[] = {\n${damageStatRows.join(',\n')}\n};\nstruct MoveAttribute {`);
-await fs.writeFile(outputPath, statHeader, 'utf8');
-console.log(JSON.stringify({ output: path.relative(root, outputPath), bytes: Buffer.byteLength(statHeader), hash: report.contentHash }));
+const speedAbilityRows = collections.abilities.flatMap(ability => {
+  const raw = ability.extensions?.upstreamAttributes?.value ?? '';
+  const declarations = [...raw.matchAll(/\.attr\s*\(\s*StatMultiplierAbAttr\s*,\s*Stat\.SPD\b/g)];
+  const matches = [...raw.matchAll(/\.attr\s*\(\s*StatMultiplierAbAttr\s*,\s*Stat\.SPD\s*,\s*(\d+(?:\.\d+)?)\s*\)/g)];
+  if (declarations.length !== matches.length) throw new Error(`Unsupported speed constructor: ${ability.id}`);
+  const requiresCondition = /\.condition\s*\(/.test(raw);
+  const condition = raw.match(/\.condition\s*\(\s*getWeatherCondition\s*\(([^)]*)\)\s*\)/);
+  let weatherMask = 0;
+  if (condition && [...raw.matchAll(/\.condition\s*\(/g)].length === 1 &&
+      !condition[1].replace(/WeatherType\.[A-Z_]+|,|\s/g, '')) {
+    for (const entry of condition[1].matchAll(/WeatherType\.([A-Z_]+)/g)) {
+      const index = weatherNames.indexOf(entry[1]);
+      if (index < 0) throw new Error(`Unknown speed weather: ${entry[1]}`);
+      weatherMask |= 1 << index;
+    }
+  }
+  return matches.map(match => {
+    const multiplier = Number(match[1]);
+    if (!Number.isFinite(multiplier) || multiplier <= 0 || multiplier > 16) throw new Error(`Invalid speed multiplier: ${ability.id}`);
+    return `    {${ability.abilityId}, ${multiplier}, ${requiresCondition}, ${weatherMask}, "${field(ability.source?.sourcePath ?? '')}", "${field(ability.source?.sourceSymbol ?? '')}", "${field(ability.source?.sourceHash ?? '')}"}`;
+  });
+});
+const speedHeader = statHeader.replace('struct MoveAttribute {',
+  `struct SpeedAbilityProfile { uint16_t abilityId; double multiplier; bool requiresCondition; uint16_t weatherMask; const char* sourcePath; const char* sourceSymbol; const char* sourceHash; };\ninline constexpr SpeedAbilityProfile kSpeedAbilityProfiles[] = {\n${speedAbilityRows.join(',\n')}\n};\nstruct MoveAttribute {`);
+await fs.writeFile(outputPath, speedHeader, 'utf8');
+console.log(JSON.stringify({ output: path.relative(root, outputPath), bytes: Buffer.byteLength(speedHeader), hash: report.contentHash }));
