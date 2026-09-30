@@ -210,7 +210,7 @@ PokemonBaseDamageResult calculatePokemonBaseDamage(
     const PokemonBattleState& attacker,
     const PokemonBattleState& defender,
     uint16_t moveId,
-    double& outputBaseDamage);
+    double& outputBaseDamage, bool critical = false);
 
 enum class PokemonTypeEffectivenessResult : uint8_t { Ok = 0, MissingSpecies, MissingMove, InvalidType };
 // Baseline chart lookup for an attack type independent of a move ID.

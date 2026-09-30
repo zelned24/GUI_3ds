@@ -221,6 +221,18 @@ extern "C" int runPokemonBattleStateChecks() {
     Pokerogue3DS::resetPokemonStatStages(staged);
     for (int8_t stage : staged.statStages) if (stage) return 212;
     if (staged.hp != retainedHp || staged.moves[0].pp != state.moves[0].pp) return 213;
+    double neutralStageDamage = 0, reducedStageDamage = 0, criticalStageDamage = 0;
+    PokemonBattleState stagedDefender = state;
+    if (Pokerogue3DS::calculatePokemonBaseDamage(state, stagedDefender, 33,
+            neutralStageDamage) != Pokerogue3DS::PokemonBaseDamageResult::Ok ||
+        !Pokerogue3DS::setPokemonStatStage(staged, 1, -6) ||
+        !Pokerogue3DS::setPokemonStatStage(stagedDefender, 2, 6) ||
+        Pokerogue3DS::calculatePokemonBaseDamage(staged, stagedDefender, 33,
+            reducedStageDamage) != Pokerogue3DS::PokemonBaseDamageResult::Ok ||
+        reducedStageDamage >= neutralStageDamage ||
+        Pokerogue3DS::calculatePokemonBaseDamage(staged, stagedDefender, 33,
+            criticalStageDamage, true) != Pokerogue3DS::PokemonBaseDamageResult::Ok ||
+        criticalStageDamage != neutralStageDamage) return 214;
     PokemonBattleInit actorIdInput = input;
     actorIdInput.pokemonId = 0x12345678u;
     actorIdInput.deriveIvsFromPokemonId = true;

@@ -443,7 +443,7 @@ PokemonBaseDamageResult calculatePokemonBaseDamage(
     const PokemonBattleState& attacker,
     const PokemonBattleState& defender,
     uint16_t moveId,
-    double& outputBaseDamage) {
+    double& outputBaseDamage, bool critical) {
     const auto* move = PokerogueContent::findMoveById(moveId);
     if (!move) return PokemonBaseDamageResult::MissingMove;
     if (move->category == PokerogueContent::MoveStatus || move->power <= 0) {
@@ -451,8 +451,18 @@ PokemonBaseDamageResult calculatePokemonBaseDamage(
     }
 
     const bool physical = move->category == PokerogueContent::MovePhysical;
-    const uint16_t attack = attacker.stats[physical ? 1 : 3];
-    const uint16_t defense = defender.stats[physical ? 2 : 4];
+    const uint8_t attackStat = physical ? 1 : 3;
+    const uint8_t defenseStat = physical ? 2 : 4;
+    double attackStage = 1.0, defenseStage = 1.0;
+    if (!pokemonStatStageMultiplier(attacker, attackStat, critical, attackStage) ||
+        !pokemonStatStageMultiplier(defender, defenseStat, critical, defenseStage) ||
+        !attacker.stats[attackStat] || !defender.stats[defenseStat])
+        return PokemonBaseDamageResult::InvalidStats;
+    // Pokemon.getEffectiveStat floors after stage multiplication, minimum one.
+    uint32_t attack = static_cast<uint32_t>(attacker.stats[attackStat] * attackStage);
+    uint32_t defense = static_cast<uint32_t>(defender.stats[defenseStat] * defenseStage);
+    if (!attack) attack = 1;
+    if (!defense) defense = 1;
     if (attacker.level == 0 || defense == 0 || attack == 0) return PokemonBaseDamageResult::InvalidStats;
 
     // Pinned Pokemon.getBaseDamage formula before modifiers (STAB, type,
@@ -577,9 +587,12 @@ PokemonMoveDamageResult resolveStandardPokemonMoveDamage(
     }
 
     if (move->accuracy >= 0) {
+        double accuracyStage = 1.0;
+        if (!pokemonAccuracyStageMultiplier(attacker, defender, accuracyStage))
+            return PokemonMoveDamageResult::InvalidAccuracy;
         next.accuracyWasRolled = true;
         next.accuracyRoll = static_cast<uint8_t>(battleRng.randSeedInt(100));
-        if (next.accuracyRoll >= move->accuracy) {
+        if (next.accuracyRoll >= move->accuracy * accuracyStage) {
             output = next;
             return PokemonMoveDamageResult::Ok;
         }
@@ -590,6 +603,9 @@ PokemonMoveDamageResult resolveStandardPokemonMoveDamage(
     // stage 0 is 1/24; the random damage factor is inclusive [85, 100].
     next.criticalRoll = static_cast<uint8_t>(battleRng.randSeedInt(24));
     next.critical = next.criticalRoll == 0;
+    if (next.critical && calculatePokemonBaseDamage(attacker, defender, moveId,
+            baseDamage, true) != PokemonBaseDamageResult::Ok)
+        return PokemonMoveDamageResult::InvalidStats;
     next.randomDamagePercent = static_cast<uint8_t>(battleRng.randSeedIntRange(85, 100));
 
     double stabMultiplier = 1.0;

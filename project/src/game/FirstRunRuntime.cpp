@@ -431,6 +431,7 @@ bool FirstRunRuntime::grantVictoryExperience() {
         else if (next.hp > leveled.maxHp) leveled.hp = leveled.maxHp;
         else leveled.hp = next.hp;
         for (uint8_t i = 0; i < next.moveCount; ++i) leveled.moves[i].pp = next.moves[i].pp;
+        for (uint8_t stat = 0; stat < 7; ++stat) leveled.statStages[stat] = next.statStages[stat];
         next = leveled;
     }
     m_context.player.battleState = next;
