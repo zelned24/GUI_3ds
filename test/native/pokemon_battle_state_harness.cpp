@@ -63,6 +63,76 @@ extern "C" int runPokemonBattleStateChecks() {
     if (Pokerogue3DS::applyPokemonSingleWeatherPhase(phasePlayer, invalidWeatherActor, phaseWeather, false, phaseEvent) ||
         phasePlayer.hp != afterResidual) return 440;
 
+    // Real opposing StatStageChangeAttr moves (NEAR_OTHER / ALL_NEAR_ENEMIES).
+    const auto* tailWhip = PokerogueContent::findMoveById(39);
+    const auto* screech = PokerogueContent::findMoveById(103);
+    if (!tailWhip || !screech || std::strcmp(screech->target, "NEAR_OTHER") != 0 ||
+        std::strcmp(tailWhip->target, "ALL_NEAR_ENEMIES") != 0) return 441;
+
+    double aiScore = 0;
+    PokemonBattleState aiUser{}, aiOpponent{};
+    aiUser.hp = aiUser.maxHp = 100; aiOpponent.hp = aiOpponent.maxHp = 100;
+    aiUser.moveCount = 2;
+    aiUser.moves[0].moveId = 103; aiUser.moves[0].pp = 40; // Screech (DEF -2)
+    aiUser.moves[1].moveId = 33;  aiUser.moves[1].pp = 35; // Tackle (Physical move required to value DEF drops)
+    if (!Pokerogue3DS::calculateCanonicalStatStageStatusAiScore(aiUser, aiOpponent, 103, aiScore) || aiScore <= 0.0)
+        return 442;
+
+    PokerogueRngAdapter stageRng;
+    const uint16_t stageSeed[] = {'s', 't', 'a', 'g', 'e'};
+    stageRng.sow(stageSeed, 5);
+    PokemonBattleState screechUser = aiUser, screechTarget = aiOpponent;
+    Pokerogue3DS::PokemonStatStageCommandPolicy screechPolicy{};
+    screechPolicy.move.hitPolicyResolved = screechPolicy.move.stagePolicy.resolved = true;
+    screechPolicy.move.bypassAccuracy = true;
+    screechPolicy.postChangePoliciesResolved = screechPolicy.recipientReaction.resolved =
+        screechPolicy.sourceReaction.resolved = screechPolicy.reflection.resolved =
+        screechPolicy.opponentCopy.resolved = true;
+    Pokerogue3DS::PokemonStatStageCommandEvent screechEvent{};
+    if (Pokerogue3DS::usePokemonStatStageStatusCommand(screechUser, screechTarget, 0, screechPolicy, stageRng, screechEvent) !=
+        Pokerogue3DS::PokemonStatStageEffectResult::Ok || !screechEvent.move.hit ||
+        screechTarget.statStages[1] != -2 || screechUser.moves[0].pp != 39) return 443;
+
+    PokemonBattleState soundUser = aiUser, soundTarget = aiOpponent;
+    soundUser.moves[0].moveId = 45; soundUser.moves[0].pp = 40; // Growl
+    Pokerogue3DS::PokemonStatStageCommandPolicy soundPolicy = screechPolicy;
+    soundPolicy.move.bypassAccuracy = false;
+    soundPolicy.move.blockedBeforeAccuracy = true;
+    Pokerogue3DS::PokemonStatStageCommandEvent soundEvent{};
+    if (Pokerogue3DS::usePokemonStatStageStatusCommand(soundUser, soundTarget, 0, soundPolicy, stageRng, soundEvent) !=
+        Pokerogue3DS::PokemonStatStageEffectResult::Ok || soundEvent.move.hit ||
+        soundTarget.statStages[0] != 0 || soundUser.moves[0].pp != 39) return 444;
+
+    PokemonBattleState clearUser = aiUser, clearTarget = aiOpponent;
+    clearUser.moves[0].moveId = 39; clearUser.moves[0].pp = 30; // Tail Whip (DEF -1)
+    Pokerogue3DS::PokemonStatStageCommandPolicy clearPolicy = screechPolicy;
+    const auto* clearBodyProfile = PokerogueContent::findAbilityStatStageProfile(29); // Clear Body
+    if (!clearBodyProfile || clearBodyProfile->protectedMask != 127) return 445;
+    const Pokerogue3DS::ResolvedStatStageAbilityComponent clearComp[] = {{clearBodyProfile, true}};
+    const PokerogueContent::MoveStatStageEffect tailWhipEffect{39, 2, -1, false};
+    if (!Pokerogue3DS::composePokemonStatStageAbilityPolicy(tailWhipEffect, clearComp, 1, false, clearPolicy.move.stagePolicy, true))
+        return 446;
+    Pokerogue3DS::PokemonStatStageCommandEvent clearEvent{};
+    if (Pokerogue3DS::usePokemonStatStageStatusCommand(clearUser, clearTarget, 0, clearPolicy, stageRng, clearEvent) !=
+        Pokerogue3DS::PokemonStatStageEffectResult::Ok || !clearEvent.move.hit ||
+        clearEvent.move.stages.changedStatMask != 0 || clearTarget.statStages[1] != 0 ||
+        clearUser.moves[0].pp != 29) return 447;
+
+    PokemonBattleState mirrorUser = aiUser, mirrorTarget = aiOpponent;
+    mirrorUser.moves[0].moveId = 103; mirrorUser.moves[0].pp = 40; // Screech
+    Pokerogue3DS::PokemonStatStageCommandPolicy mirrorPolicy = screechPolicy;
+    const auto* mirrorArmorProfile = PokerogueContent::findAbilityStatStageProfile(240); // Mirror Armor
+    if (!mirrorArmorProfile || !mirrorArmorProfile->reflectDrops) return 448;
+    const Pokerogue3DS::ResolvedStatStageAbilityComponent mirrorComp[] = {{mirrorArmorProfile, true}};
+    const PokerogueContent::MoveStatStageEffect screechEffect{103, 2, -2, false};
+    if (!Pokerogue3DS::composePokemonStatStageAbilityPolicy(screechEffect, mirrorComp, 1, false, mirrorPolicy.move.stagePolicy, true))
+        return 449;
+    Pokerogue3DS::PokemonStatStageCommandEvent mirrorEvent{};
+    if (Pokerogue3DS::usePokemonStatStageStatusCommand(mirrorUser, mirrorTarget, 0, mirrorPolicy, stageRng, mirrorEvent) !=
+        Pokerogue3DS::PokemonStatStageEffectResult::Ok || !mirrorEvent.move.hit ||
+        mirrorTarget.statStages[1] != 0 || mirrorUser.statStages[1] != -2 ||
+        !(mirrorEvent.reflection.changedStatMask & 2)) return 450;
+
     // Real imported WeatherChangeAttr records; no synthetic move catalog.
     if (sizeof(PokerogueContent::kMoveWeatherChangeProfiles) == 0) return 427;
     for (const auto& profile : PokerogueContent::kMoveWeatherChangeProfiles) {

@@ -334,7 +334,8 @@ inline bool calculateCanonicalStatStageStatusAiScore(
         !PokerogueContent::moveHasAttribute(*move, "StatStageChangeAttr") || !move->target)
         return false;
     const bool selfTarget = std::strcmp(move->target, "USER") == 0;
-    if (!selfTarget && std::strcmp(move->target, "NEAR_ENEMY") != 0 &&
+    if (!selfTarget && std::strcmp(move->target, "NEAR_OTHER") != 0 &&
+        std::strcmp(move->target, "NEAR_ENEMY") != 0 &&
         std::strcmp(move->target, "ALL_NEAR_ENEMIES") != 0) return false;
     const PokerogueContent::MoveStatStageEffect* effect = nullptr;
     for (const auto& entry : PokerogueContent::kMoveStatStageEffects)

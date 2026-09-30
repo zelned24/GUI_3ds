@@ -250,7 +250,8 @@ inline PokemonStatStageEffectResult usePokemonStatStageStatusMove(
         !std::isfinite(policy.accuracyMultiplier) || policy.accuracyMultiplier < 0)
         return PokemonStatStageEffectResult::InvalidDefinition;
     const bool self = std::strcmp(move->target, "USER") == 0;
-    if (!self && std::strcmp(move->target, "NEAR_ENEMY") != 0 &&
+    if (!self && std::strcmp(move->target, "NEAR_OTHER") != 0 &&
+        std::strcmp(move->target, "NEAR_ENEMY") != 0 &&
         std::strcmp(move->target, "ALL_NEAR_ENEMIES") != 0)
         return PokemonStatStageEffectResult::InvalidDefinition;
     if (!self && (!target.hp || &user == &target))

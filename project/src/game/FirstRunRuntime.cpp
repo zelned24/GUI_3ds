@@ -347,18 +347,22 @@ const char* FirstRunRuntime::locale(const char* canonicalId, const char* fallbac
 }
 
 namespace {
-bool supportsSelfStatStageMove(uint16_t moveId) {
+bool supportsPokemonStatStageMove(uint16_t moveId) {
     const auto* move = PokerogueContent::findMoveById(moveId);
     if (!move || move->category != PokerogueContent::MoveStatus || !move->target ||
-        std::strcmp(move->target, "USER") || move->attributeCount != 1 ||
+        move->attributeCount != 1 ||
         !PokerogueContent::moveHasAttribute(*move, "StatStageChangeAttr")) return false;
+    const bool self = std::strcmp(move->target, "USER") == 0;
+    if (!self && std::strcmp(move->target, "NEAR_OTHER") != 0 &&
+        std::strcmp(move->target, "NEAR_ENEMY") != 0 &&
+        std::strcmp(move->target, "ALL_NEAR_ENEMIES") != 0) return false;
     unsigned count = 0;
     for (const auto& effect : PokerogueContent::kMoveStatStageEffects)
-        if (effect.moveId == moveId && effect.selfTarget) ++count;
+        if (effect.moveId == moveId && effect.selfTarget == self) ++count;
     return count == 1;
 }
 bool supportsBaselineBattleMove(uint16_t moveId) {
-    if (pokemonWeatherChangeProfile(moveId) || supportsPokemonTrickRoomMove(moveId) || supportsSelfStatStageMove(moveId) || selfHealingProfile(moveId) || damageDrainProfile(moveId) || damageRecoilProfile(moveId)) return true;
+    if (pokemonWeatherChangeProfile(moveId) || supportsPokemonTrickRoomMove(moveId) || supportsPokemonStatStageMove(moveId) || selfHealingProfile(moveId) || damageDrainProfile(moveId) || damageRecoilProfile(moveId)) return true;
     const auto* move = PokerogueContent::findMoveById(moveId);
     // This first resolver only executes plain, single-target damaging moves.
     // Only plain damage or a single migrated weather/critical attribute is
@@ -790,36 +794,72 @@ bool FirstRunRuntime::executeActiveBattleMove(bool enemyActs, uint8_t moveSlot,
         m_battleFeedback = event.changed ? "Weather changed" : "Weather move failed";
         return true;
     }
-    if (supportsSelfStatStageMove(move->id)) {
+    if (supportsPokemonStatStageMove(move->id)) {
+        const bool self = std::strcmp(move->target, "USER") == 0;
         PokemonStatStageCommandPolicy policy{};
-        policy.move.hitPolicyResolved = true; // USER bypasses hit checks upstream.
-        policy.move.ppCost = 1; // USER targets no opponent: Pressure cannot apply.
+        policy.move.hitPolicyResolved = true;
+        policy.move.ppCost = self ? 1 : pp.cost;
         policy.move.stagePolicy.resolved = true;
         policy.postChangePoliciesResolved = true;
-        const auto* ownProfile = PokerogueContent::findAbilityStatStageProfile(user.abilityId);
-        const auto* observerProfile = PokerogueContent::findAbilityStatStageProfile(opponent.abilityId);
-        const ResolvedStatStageAbilityComponent own[] = {{ownProfile, ownProfile != nullptr}};
-        const ResolvedStatStageAbilityComponent observer[] = {{observerProfile, observerProfile != nullptr}};
+        if (!self) {
+            PokemonMoveWeatherContext weatherContext{};
+            PokemonHitPolicy hit{};
+            const PokemonWeatherAbilityComponent activeAbilities[2] = {
+                {m_context.player.battleState.abilityId, true, !enemyActs},
+                {m_context.enemy.battleState.abilityId, true, enemyActs}
+            };
+            if (!resolveActiveMoveWeather(enemyActs, weatherContext) ||
+                !composePokemonAlwaysHitPolicy(activeAbilities, 2, hit, move->id, &weatherContext)) return false;
+            policy.move.blockedBeforeAccuracy = hit.blockedByAbility;
+            policy.move.bypassAccuracy = hit.bypassAccuracy || move->accuracy < 0;
+            policy.move.accuracyMultiplier = hit.accuracyMultiplier;
+        }
+
+        const auto* userProfile = PokerogueContent::findAbilityStatStageProfile(user.abilityId);
+        const auto* opponentProfile = PokerogueContent::findAbilityStatStageProfile(opponent.abilityId);
+        const auto* recipientProfile = self ? userProfile : opponentProfile;
+        const auto* observerProfile = self ? opponentProfile : userProfile;
+        const auto& recipient = self ? user : opponent;
+        const auto& source = user;
+
+        const ResolvedStatStageAbilityComponent recipientComp[] = {{recipientProfile, recipientProfile != nullptr}};
+        const ResolvedStatStageAbilityComponent sourceComp[] = {{userProfile, userProfile != nullptr}};
+        const ResolvedStatStageAbilityComponent observerComp[] = {{observerProfile, observerProfile != nullptr}};
+
         const PokerogueContent::MoveStatStageEffect* effect = nullptr;
         for (const auto& row : PokerogueContent::kMoveStatStageEffects)
-            if (row.moveId == move->id) effect = &row;
-        if (!effect || !composePokemonStatStageAbilityPolicy(*effect, own, 1, false,
-                policy.move.stagePolicy)) return false;
-        // Reaction phases apply their own stat multiplier; protection does not
-        // block self-originated changes. No items/passives/tags in fresh actors.
+            if (row.moveId == move->id && row.selfTarget == self) effect = &row;
+        if (!effect || !composePokemonStatStageAbilityPolicy(*effect, recipientComp, 1, false,
+                policy.move.stagePolicy, true)) return false;
+
         const PokerogueContent::MoveStatStageEffect reaction{move->id, 127, 1, true};
         policy.recipientReaction.resolved = policy.sourceReaction.resolved =
             policy.reflection.resolved = policy.opponentCopy.resolved = true;
-        if (!composePokemonStatStageAbilityPolicy(reaction, own, 1, false, policy.recipientReaction) ||
-            !composePokemonStatStageAbilityPolicy(reaction, observer, 1, false, policy.opponentCopy)) return false;
+        if (!composePokemonStatStageAbilityPolicy(reaction, recipientComp, 1, false, policy.recipientReaction) ||
+            !composePokemonStatStageAbilityPolicy(reaction, sourceComp, 1, false, policy.reflection) ||
+            !composePokemonStatStageAbilityPolicy(reaction, sourceComp, 1, false, policy.sourceReaction) ||
+            !composePokemonStatStageAbilityPolicy(reaction, observerComp, 1, false, policy.opponentCopy)) return false;
         policy.opponentCopyProfile = observerProfile;
-        uint8_t count = 0;
+
+        uint8_t recipientCount = 0;
         for (const auto& row : PokerogueContent::kAbilityStatStageReactions)
-            if (row.abilityId == user.abilityId && count < 2) policy.recipientReactions[count++] = &row;
+            if (row.abilityId == recipient.abilityId && recipientCount < 2)
+                policy.recipientReactions[recipientCount++] = &row;
+
+        uint8_t sourceCount = 0;
+        for (const auto& row : PokerogueContent::kAbilityStatStageReactions)
+            if (row.abilityId == source.abilityId && sourceCount < 2)
+                policy.sourceReactions[sourceCount++] = &row;
+
         PokemonStatStageCommandEvent event{};
         if (usePokemonStatStageStatusCommand(user, opponent, moveSlot, policy, rng, event) !=
                 PokemonStatStageEffectResult::Ok) return false;
-        m_battleFeedback = event.move.stages.changedStatMask ? "Stats changed" : "Stats unchanged";
+        if (!event.move.hit) {
+            m_battleFeedback = policy.move.blockedBeforeAccuracy ? "Move blocked by ability" : "Move missed";
+        } else {
+            m_battleFeedback = (event.move.stages.changedStatMask || event.reflection.changedStatMask)
+                ? "Stats changed" : "Stats unchanged";
+        }
         return true;
     }
     if (supportsPokemonTrickRoomMove(move->id)) {

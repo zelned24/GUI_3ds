@@ -88,7 +88,7 @@
 1. Completar las familias de efectos todavía excluidas por el filtro de movimientos del runtime, con cobertura por atributo real upstream.
 2. Migrar daño fijo/variable, ataques múltiples, carga/recarga, retroceso/drenaje, auto-KO, prioridad condicional, cambios de objetivo, sustituto, protección y movimientos reflejados.
 3. Completar status principales/secundarios, confusión, trampas, tags, inmunidades, curación, cambios de etapas y efectos de cambio.
-4. Conectar el resolver de etapas existente al flujo real, incluida reacción de habilidades y objetos.
+4. Conectar el resolver de etapas existente al flujo real, incluida reacción de habilidades y objetos (54 movimientos de etapas directos y contra rival conectados; habilidades receptoras Clear Body, Mirror Armor, Defiant y Competitive integradas; items/White Herb pendientes de inventario activo).
 5. Completar potencia, tipo/categoría variables, STAB especial, efectividad modificada y redondeos de todos los modificadores.
 6. Extender precisión/críticos/velocidad/PP a items, pasivas, aliados y tags; los perfiles actuales cubren solo familias migradas.
 7. Pressure y Trick Room ya tienen rutas conectadas limitadas; falta validarlas y ampliar sus condiciones al estado completo de combate.
