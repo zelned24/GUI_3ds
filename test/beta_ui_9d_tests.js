@@ -28,12 +28,16 @@ export function registerBetaUI9DTests(test) {
       '-Wl,--no-entry', '-Wl,--export-all', `-I${generatedInclude}`, `-I${projectInclude}`, `-I${hostCompat}`,
       '-o', out,
       path.join(rootDir, 'project', 'src', 'game', 'PokemonBattleState.cpp'),
+      path.join(rootDir, 'project', 'src', 'storage', 'NativeRunSave.cpp'),
+      path.join(testDir, 'native', 'native_save_harness.cpp'),
       path.join(testDir, 'native', 'pokemon_battle_state_harness.cpp'),
     ];
     try {
       execFileSync(clang, compile, { stdio: 'pipe' });
       const module = new WebAssembly.Module(fs.readFileSync(out));
       const instance = new WebAssembly.Instance(module);
+      assert.strictEqual(instance.exports.runNativeSaveChecks(), 0,
+        'save journal preserves prior state after interrupted writes and exports portable verified snapshots');
       assert.strictEqual(instance.exports.runPokemonBattleStateChecks(), 0,
         'pinned canonical battle state and real Pikachu Gigantamax level-move candidates match the native contract');
     } finally {

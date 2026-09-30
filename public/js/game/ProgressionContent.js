@@ -57,6 +57,7 @@ export class BiomeDefinition extends ProgressionDefinition {
     this.visualTemplate = data.visualTemplate ?? null;
     this.background = data.background ?? null;
     this.music = data.music ?? null;
+    this.trainerChance = data.trainerChance ?? null;
     this.encounterPools = data.encounterPools == null ? null : clone(data.encounterPools);
     this.trainerPools = data.trainerPools == null ? null : clone(data.trainerPools);
     this.routes = Array.isArray(data.routes) ? data.routes.map(route => clone(route)) : [];
@@ -65,6 +66,7 @@ export class BiomeDefinition extends ProgressionDefinition {
   validate(options = {}) {
     const errors = super.validate(options);
     if (!Array.isArray(this.routes)) errors.push(`BiomeDefinition ${this.id} routes must be an array`);
+    if (this.trainerChance !== null && (!Number.isSafeInteger(this.trainerChance) || this.trainerChance < 0)) errors.push(`BiomeDefinition ${this.id} trainerChance must be a non-negative safe integer or null`);
     return errors;
   }
 }

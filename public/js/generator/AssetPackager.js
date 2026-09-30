@@ -25,6 +25,7 @@ export class AssetPackager {
     this.pokemonResolver = options.pokemonResolver || new PokemonSpriteResolver();
     this.audioResolver = options.audioResolver || new AudioResolver();
     this.stagingDir = options.stagingDir || 'build/romfs';
+    this.allowTestFixtures = options.allowTestFixtures === true;
   }
 
   /**
@@ -69,6 +70,7 @@ export class AssetPackager {
     }
 
     const stagingRoot = path.resolve(options.stagingDir || this.stagingDir);
+    const allowTestFixtures = this.allowTestFixtures && options.allowTestFixtures !== false;
     fs.mkdirSync(stagingRoot, { recursive: true });
 
     const packagedRomfsPaths = new Map(); // romfsPath -> { assetId, sizeBytes, sha256, format }
@@ -142,7 +144,7 @@ export class AssetPackager {
       }
 
       // Verify integrity hash
-      const hash = resolvedInfo.hash || assetEntry.hash || assetEntry.contentSha256;
+      const hash = assetEntry.expectedSha256 || assetEntry.contentSha256 || assetEntry.hash || resolvedInfo.contentSha256 || resolvedInfo.hash;
       if (!hash || typeof hash !== 'string' || hash.length < 8) {
         throw new Error(`AssetPackager: asset "${assetId}" has missing or invalid integrity hash`);
       }
@@ -155,23 +157,31 @@ export class AssetPackager {
       const fullDestPath = path.join(stagingRoot, relRomfsPath);
       fs.mkdirSync(path.dirname(fullDestPath), { recursive: true });
 
-      // Locate physical source image/asset
-      let srcFile = resolvedInfo.sourcePath || assetEntry.sourcePath;
+      // Resolve physical bytes from the declared source. Test fixtures require an
+      // explicit opt-in and can never be selected by a production invocation.
+      let srcFile = assetEntry.sourcePath || resolvedInfo.sourcePath;
       if (!srcFile || !fs.existsSync(srcFile)) {
         const candidates = [
           path.resolve(process.cwd(), srcFile || ''),
+          path.resolve(process.cwd(), 'assets', srcFile || '')
+        ];
+        if (allowTestFixtures) candidates.push(
           path.resolve(process.cwd(), 'test/fixtures/assets', path.basename(srcFile || '')),
           path.resolve(process.cwd(), 'test/fixtures/assets', `${assetId}.png`),
           path.resolve(process.cwd(), 'test/fixtures/assets', `${assetId}.wav`),
-          path.resolve(process.cwd(), 'test/fixtures/assets', assetId + path.extname(srcFile || '')),
-          path.resolve(process.cwd(), 'assets', srcFile || '')
-        ];
+          path.resolve(process.cwd(), 'test/fixtures/assets', assetId + path.extname(srcFile || ''))
+        );
         const found = candidates.find(p => fs.existsSync(p));
         if (found) {
           srcFile = found;
         } else {
           throw new Error(`AssetPackager: source asset file for "${assetId}" not found on disk at "${resolvedInfo.sourcePath}". Packaging aborted.`);
         }
+      }
+      const fixtureRoot = path.resolve(process.cwd(), 'test/fixtures');
+      const resolvedSource = path.resolve(srcFile);
+      if (!allowTestFixtures && (resolvedSource === fixtureRoot || resolvedSource.startsWith(fixtureRoot + path.sep))) {
+        throw new Error(`AssetPackager: test fixture rejected for production asset "${assetId}"`);
       }
 
       const srcBytes = fs.readFileSync(srcFile);
@@ -219,38 +229,9 @@ export class AssetPackager {
           throw new Error(`AssetPackager: tex3ds produced empty .t3x output for asset "${assetId}"`);
         }
       } else {
-        // Non-t3x resource (e.g. raw audio or metadata)
-        let srcFile = resolvedInfo.sourcePath;
-        if (!srcFile || !fs.existsSync(srcFile)) {
-          const candidates = [
-            path.resolve(process.cwd(), srcFile || ''),
-            path.resolve(process.cwd(), 'test/fixtures/assets', path.basename(srcFile || '')),
-            path.resolve(process.cwd(), 'test/fixtures/assets', `${assetId}.wav`),
-            path.resolve(process.cwd(), 'test/fixtures/assets', assetId + path.extname(srcFile || '')),
-            path.resolve(process.cwd(), 'assets', srcFile || '')
-          ];
-          const found = candidates.find(p => fs.existsSync(p));
-          if (found) {
-            srcFile = found;
-          }
-        }
-
-        if (srcFile && fs.existsSync(srcFile)) {
-          const srcBytes = fs.readFileSync(srcFile);
-          const actualSourceSha256 = 'sha256:' + crypto.createHash('sha256').update(srcBytes).digest('hex');
-          const expectedHash = assetEntry.expectedSha256 || assetEntry.contentSha256 || resolvedInfo.contentSha256;
-          if (expectedHash && typeof expectedHash === 'string' && expectedHash.startsWith('sha256:') && !expectedHash.includes('unresolved')) {
-            if (actualSourceSha256 !== expectedHash) {
-              throw new Error(`AssetPackager: asset "${assetId}" content hash mismatch! Expected "${expectedHash}" but computed "${actualSourceSha256}". Packaging aborted.`);
-            }
-          }
-
-          fs.copyFileSync(srcFile, fullDestPath);
-          finalBytes = fs.readFileSync(fullDestPath);
-        } else {
-          // If neither tool nor file exists for non-t3x, reject rather than inventing fake payload
-          throw new Error(`AssetPackager: source asset file for non-texture asset "${assetId}" not found at "${resolvedInfo.sourcePath}". Packaging aborted.`);
-        }
+        // Raw audio and metadata use the same verified source bytes.
+        fs.copyFileSync(srcFile, fullDestPath);
+        finalBytes = fs.readFileSync(fullDestPath);
       }
 
       const fileSha256 = crypto.createHash('sha256').update(finalBytes).digest('hex');
@@ -260,7 +241,7 @@ export class AssetPackager {
         romfsPath: targetRomfsPath,
         sizeBytes: finalBytes.length,
         sha256: fileSha256,
-        sourceSha256: resolvedInfo.contentSha256 || ('sha256:' + fileSha256),
+        sourceSha256: actualSourceSha256,
         format: resolvedInfo.format || 'T3X',
         dimensions: resolvedInfo.dimensions || null
       });

@@ -38,6 +38,9 @@ export class SpeciesEvolutionDefinition {
     };
     this.item = data.item ?? null;
     this.condition = data.condition ?? null;
+    this.preFormKey = data.preFormKey ?? null;
+    this.evoFormKey = data.evoFormKey ?? null;
+    this.declarationKind = data.declarationKind ?? 'SpeciesEvolution';
     this.source = data.source ? new SourceMetadata(data.source) : null;
     this.extensions = data.extensions || {};
   }
@@ -71,6 +74,7 @@ export class SpeciesDefinition {
       spd: Number(data.baseStats?.spd ?? 40)
     };
     this.baseTotal = data.baseTotal == null ? null : Number(data.baseTotal);
+    this.baseExp = data.baseExp == null ? null : Number(data.baseExp);
     this.rarity = {
       legendary: data.rarity?.legendary ?? null,
       subLegendary: data.rarity?.subLegendary ?? null,
@@ -255,5 +259,40 @@ export class ItemDefinition {
   getName(locale = 'en') {
     const loc = String(locale).toLowerCase().startsWith('es') ? 'es' : 'en';
     return this.names?.[loc] || this.name;
+  }
+}
+
+/** Declarative upstream trainer identity and opaque config; no trainer logic is executed here. */
+export class TrainerDefinition {
+  constructor(data = {}) {
+    this.id = String(data.id || 'unknown').toLowerCase();
+    this.trainerTypeId = Number(data.trainerTypeId ?? 0);
+    this.name = data.name || this.id;
+    this.names = { en: data.names?.en || data.name || this.id, ...data.names };
+    this.source = new SourceMetadata(data.metadata || data.source);
+    this.metadata = this.source;
+    this.moneyMultiplier = data.moneyMultiplier === null ? null : Number(data.moneyMultiplier ?? 1);
+    this.partyTemplateKeys = Array.isArray(data.partyTemplateKeys) ? [...data.partyTemplateKeys] : [];
+    this.speciesPools = Array.isArray(data.speciesPools) ? data.speciesPools.map(pool => ({ ...pool, candidates: pool.candidates.map(candidate => ({ ...candidate, speciesIds: [...candidate.speciesIds] })) })) : [];
+    this.trainerRules = { ...(data.trainerRules || {}) };
+    this.trainerRules.signatureSpecies = Array.isArray(data.trainerRules?.signatureSpecies)
+      ? data.trainerRules.signatureSpecies.map(choice => ({ ...choice, speciesIds: [...choice.speciesIds] })) : [];
+    this.extensions = data.extensions || {};
+    this.schemaVersion = 1;
+  }
+}
+
+/** Compact, declarative party-strength/evolution template imported from PokéRogue. */
+export class TrainerPartyTemplateDefinition {
+  constructor(data = {}) {
+    this.id = String(data.id || 'unknown').toLowerCase();
+    this.templateKey = data.templateKey || this.id.toUpperCase();
+    this.totalSize = Number(data.totalSize ?? 0);
+    this.isCompound = data.isCompound === true;
+    this.segments = Array.isArray(data.segments) ? data.segments.map(segment => ({ ...segment })) : [];
+    this.source = new SourceMetadata(data.metadata || data.source);
+    this.metadata = this.source;
+    this.extensions = data.extensions || {};
+    this.schemaVersion = 1;
   }
 }

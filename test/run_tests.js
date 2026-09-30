@@ -588,6 +588,28 @@ test('Pinned move constructors normalize distinct signatures and preserve upstre
   assert.deepStrictEqual(moves.get('vine_whip').upstreamAttributes, ['SacrificialAttrOnHit'], 'attribute type is normalized while its full upstream fragment remains preserved');
 });
 
+test('Pinned ability builder parser preserves callback bodies across nested semicolons', () => {
+  const importer = new PokerogueImporter(null);
+  importer.sourceType = 'UPSTREAM';
+  importer.productionCanonicalImport = true;
+  const source = `allAbilities.push(
+    new AbBuilder(AbilityId.COMPOUND_EYES, 3)
+      .attr(AiMovegenMoveStatsAbAttr, ({ accMult }) => {
+        accMult.value *= 1.3;
+        accMult.value += 0;
+      })
+      .build(),
+    new AbBuilder(AbilityId.SKILL_LINK, 4).attr(MaxMultiHitAbAttr).build(),
+  );`;
+  const abilities = new Map(importer.parseAbilities(source).map(ability => [ability.id, ability]));
+  const compoundEyes = abilities.get('compound_eyes');
+  const skillLink = abilities.get('skill_link');
+  assert.ok(compoundEyes.extensions.upstreamAttributes.value.includes('accMult.value += 0;'),
+    'the entire callback body must remain available to the normalizer');
+  assert.ok(compoundEyes.extensions.upstreamAttributes.value.endsWith('.build()'));
+  assert.ok(skillLink.extensions.upstreamAttributes.value.includes('.attr(MaxMultiHitAbAttr)'));
+});
+
 test('FASE 9.2: PokemonSpriteResolver resolves real assets answering the 5 core questions without invented paths', () => {
   const resolver = new PokemonSpriteResolver();
   const pikaAsset = resolver.resolvePokemonSprite(25);

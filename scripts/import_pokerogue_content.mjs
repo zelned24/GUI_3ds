@@ -2,12 +2,12 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { PokerogueImporter } from '../public/js/data/PokerogueImporter.js';
-import { PokerogueRepository } from '../public/js/data/PokerogueRepository.js';
+import { PinnedLocalRepository } from './PinnedLocalRepository.mjs';
 import { stableCanonicalStringify } from '../public/js/data/CanonicalDataContract.js';
 import { execFileSync } from 'node:child_process';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const repository = new PokerogueRepository();
+const repository = new PinnedLocalRepository(root);
 const first = await new PokerogueImporter(repository).importPlayableCanonicalContent(repository);
 const second = await new PokerogueImporter(repository).importPlayableCanonicalContent(repository);
 if (first.importReport.contentHash !== second.importReport.contentHash) throw new Error('Pinned content import is not deterministic');

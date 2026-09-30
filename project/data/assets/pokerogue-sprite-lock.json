@@ -1,0 +1,67 @@
+{
+  "schemaVersion": 1,
+  "repository": "https://github.com/pagefaultgames/pokerogue-assets",
+  "revision": "056a1f408f26a3be4fef243f7462cb43608c7928",
+  "sprites": [
+    {
+      "speciesId": 1,
+      "facing": "front",
+      "manifestPath": "images/pokemon/1.json",
+      "manifestSha256": "7f4b396aac5768afdcd47d89d5441b8180e87252904460b4aa0462f1ec2bc1bc",
+      "imagePath": "images/pokemon/1.png",
+      "imageSha256": "48422b6f95756714c9680f157a8e02668a6376ce5bc4c61076062b98a21f4530",
+      "width": 181,
+      "height": 181
+    },
+    {
+      "speciesId": 6,
+      "facing": "front",
+      "manifestPath": "images/pokemon/6.json",
+      "manifestSha256": "c66b1e72d861f9b6a2b64492ee89f90825d74fc9b1a4449de665250bbb63e63b",
+      "imagePath": "images/pokemon/6.png",
+      "imageSha256": "604c5fe8a2d56366a54c8d14277075970081e6d5d99079aa1edae45106c87d95",
+      "width": 612,
+      "height": 612
+    },
+    {
+      "speciesId": 25,
+      "facing": "front",
+      "manifestPath": "images/pokemon/25.json",
+      "manifestSha256": "74ed3baa3c2d493c99fca22b2cdd72eba76b7b0ddd6d5448dae8324618073c72",
+      "imagePath": "images/pokemon/25.png",
+      "imageSha256": "e8f6d1624ad1f3ac73bcab09a1f5324e1bb8a6a8423121350ce7f11314bddbd3",
+      "width": 315,
+      "height": 315
+    },
+    {
+      "speciesId": 1,
+      "facing": "back",
+      "manifestPath": "images/pokemon/back/1.json",
+      "manifestSha256": "bd2237897a47e40a3fea4d9002d13e3866153aa2b81d06ba3e99f1defab71ae5",
+      "imagePath": "images/pokemon/back/1.png",
+      "imageSha256": "54d7413277db0d818d18b02c45da88d9b60062690e2fa9160f6ddb52e123ab9a",
+      "width": 156,
+      "height": 156
+    },
+    {
+      "speciesId": 6,
+      "facing": "back",
+      "manifestPath": "images/pokemon/back/6.json",
+      "manifestSha256": "5bd64ac43a0cd1340c189d67dc0bd2dae40992cb2bfcfec790f49434a43dc170",
+      "imagePath": "images/pokemon/back/6.png",
+      "imageSha256": "aa3717175e8ae18a8e18aa4e80cb6b52b267270c6588a0039826a4cf5922206b",
+      "width": 627,
+      "height": 627
+    },
+    {
+      "speciesId": 25,
+      "facing": "back",
+      "manifestPath": "images/pokemon/back/25.json",
+      "manifestSha256": "fe13dc45a53ed7841e0a05942894e79104931f7eb76ce6140b260d735d76b15f",
+      "imagePath": "images/pokemon/back/25.png",
+      "imageSha256": "b35ca969c5f3956bf378e7a5c3635e5a802d93c8cc5e8f5be9f318de5dbfc038",
+      "width": 302,
+      "height": 302
+    }
+  ]
+}

@@ -13,10 +13,10 @@ typedef struct {
 typedef struct {
     u16 width;
     u16 height;
-    u16 left;
-    u16 top;
-    u16 right;
-    u16 bottom;
+    float left;
+    float top;
+    float right;
+    float bottom;
 } Tex3DS_SubTexture;
 
 typedef struct {
@@ -57,7 +57,7 @@ void C2D_SceneBegin(C3D_RenderTarget* target);
 void C2D_TargetClear(C3D_RenderTarget* target, u32 clr);
 void C2D_DrawRectSolid(float x, float y, float z, float w, float h, u32 clr);
 void C2D_DrawImageAt(C2D_Image img, float x, float y, float z, const C2D_ImageTint* tint, float scaleX, float scaleY);
-void C2D_DrawImageAtRotatedScaled(C2D_Image img, float x, float y, float z, float rotation, const C2D_ImageTint* tint, float scaleX, float scaleY);
+void C2D_DrawImageAtRotated(C2D_Image img, float x, float y, float z, float rotation, const C2D_ImageTint* tint, float scaleX, float scaleY);
 void C2D_PlainImageTint(C2D_ImageTint* tint, u32 color, float blend);
 #define C2D_WithColor (1 << 0)
 C2D_TextBuf C2D_TextBufNew(size_t maxGlyphs);

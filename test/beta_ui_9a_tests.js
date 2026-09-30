@@ -94,13 +94,25 @@ export function registerBetaUI9ATests(test) {
     for (const domain of ['kSpecies', 'kForms', 'kMoves', 'kAbilities', 'kItems', 'kLocales', 'kModes', 'kBiomes', 'kBiomeEncounterPools', 'kBiomeTrainerPools', 'kRoutes']) {
       assert.ok(header.includes(`${domain}[] = {`), `native ROM bundle contains ${domain}`);
     }
-    assert.match(header, /\{1, 875, 1, 3, true, 318, 45, 49, 49, 65, 65, 45, 65, 65, 34, 0, 0, 17, -1, -1, -1, "MEDIUM_SLOW", "bulbasaur", "Bulbasaur"/);
+    assert.match(header, /\{1, 0, 875, 1, 3, true, true, 318, 45, 49, 49, 65, 65, 45, 65, 65, 34, 0, 0, 17, -1, -1, -1, "MEDIUM_SLOW", "bulbasaur", "Bulbasaur"/);
+    assert.ok(canonical.extensions.freshProfile.defaultStarterSpecies.includes('bulbasaur'));
+    assert.ok(canonical.sourceSnapshot.sources.some(source => source.sourcePath === 'src/constants.ts'), 'fresh-profile starter allowlist is pinned and hashed');
+    assert.deepStrictEqual(canonical.collections.species.find(species => species.id === 'bulbasaur').eggMoves,
+      ['giga_drain', 'gunk_shot', 'earth_power', 'sappy_seed'], 'real starter egg moves are imported from the pinned balance catalog');
+    assert.ok(canonical.sourceSnapshot.sources.some(source => source.sourcePath === 'src/data/balance/moves/egg-moves.ts'));
+    assert.ok(header.includes('kSpeciesEggMoves[] = {') && header.includes('eggMovesFor(const Species& species)'), 'native runtime exposes canonical egg-move ranges');
+    assert.ok(header.includes('uint16_t prevolutionDex'), 'native species carry registry-derived prevolutions');
+    const ivysaur = canonical.collections.species.find(species => species.id === 'ivysaur');
+    assert.strictEqual(ivysaur.starterEligible, false, 'evolution-line membership is not starter eligibility');
+    assert.strictEqual(ivysaur.prevolutionSpeciesId, 'bulbasaur');
     assert.ok(header.includes('findSpeciesByDex(6)->malePercentTenths == 875'), 'native content preserves the upstream numeric gender ratio');
     assert.ok(header.includes('findSpeciesByDex(81)->malePercentTenths == 65534'), 'native content preserves explicit genderless null');
-    assert.match(header, /\{33, 0, 40, 100, 35, 0, -1, 1, 0, "tackle", "Tackle", "NORMAL", "NEAR_OTHER"/);
-    assert.match(header, /\{117, 0, -1, -1, 10, 1, -1, 1, MoveIsUnimplemented, "bide", "Bide"/);
-    assert.match(header, /\{262, 2, -1, 100, 10, 0, -1, 3, MoveHasSacrificialAttrOnHit, "memento", "Memento"/);
-    assert.ok(header.includes('uint8_t upstreamFlags'), 'native move metadata exposes upstream move-generation flags');
+    assert.match(header, /\{33, 0, 40, 100, 35, 0, -1, 1, 0, 0, "tackle", "Tackle", "NORMAL", "NEAR_OTHER"/);
+    assert.match(header, /\{117, 0, -1, -1, 10, 1, -1, 1, MoveIsUnimplemented, 0, "bide", "Bide"/);
+    assert.match(header, /\{262, 2, -1, 100, 10, 0, -1, 3, MoveHasSacrificialAttrOnHit \| MoveHasSacrificialAttr, 0, "memento", "Memento"/);
+    assert.ok(header.includes('uint16_t upstreamFlags'), 'native move metadata exposes upstream move-generation and power flags');
+    assert.match(header, /MoveIsStabBlacklisted = 2048/, 'native move metadata preserves pinned forced-STAB blacklist');
+    assert.match(header, /\{3, 0, 15, 85, 10, 0, -1, 1, MoveHasMultiHit, 1, "double_slap"/, 'default MultiHitAttr maps to pinned TWO_TO_FIVE');
     assert.ok(header.includes('int8_t level; uint16_t moveId;'), 'native learnset retains upstream signed sentinel levels');
     assert.ok(header.includes('levelMovesFor(const Form& form)'), 'native runtime exposes form-specific learnset ranges');
     const gigantamaxRow = header.split(/\r?\n/).find(line => line.includes('{"pikachu:gigantamax"'));

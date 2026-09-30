@@ -46,3 +46,9 @@ This is still **not full encounter parity**. C++ resolves a real biome-pool spec
 1. Startup trace completed: `TitlePhase.end()` selects Classic, `GameMode.getStartingBiome()` returns Town, then `SelectStarterPhase` establishes wave 1 and `Arena.init()` prepares the pool before `EncounterPhase`.
 2. Port real trainer/boss species and trainer pool selection for Classic.
 3. Connect the resolved encounter to a battle state/phase implementation. Do not label the current pool candidate as a resolved battle encounter.
+
+## Current fidelity correction — deferred validation
+
+Reviewing the pinned `BattleScene.newBattle()` call order showed that its battle constructor seed is not just `rootSeed + (waveIndex << 3)`: `resetSeed(waveIndex)` first produces `waveSeed = rootSeed + waveIndex`, then `executeWithSeedOffset` applies `waveIndex << 3` to that wave seed. `Battle` creates its seeded 16-character `battleSeed` before generating wild levels, and `Battle.randSeedInt()` re-sows that battle seed with `turn << 6` after `incrementTurn()` resets its saved state.
+
+The native level resolver and BETA-UI-9C reference vectors now model this composed seed. `PokerogueBattleRng` owns the separate battle-seed/per-turn stream, while the encounter RNG remains on the wave-reset seed. These source and expected-vector changes have not been compiled or run; all final validation remains deferred per the active migration instruction.

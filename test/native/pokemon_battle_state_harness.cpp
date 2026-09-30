@@ -1,5 +1,8 @@
 #include "game/PokemonBattleState.hpp"
+#include "game/PokemonFreshProfile.hpp"
 #include "game/PokemonLevelMovePool.hpp"
+#include "game/PokemonWildMovesetGenerator.hpp"
+#include "game/PokemonStarterMoveset.hpp"
 #include "game/PokerogueRngAdapter.hpp"
 
 using Pokerogue3DS::PokemonBattleInit;
@@ -568,9 +571,140 @@ extern "C" int runPokemonBattleStateChecks() {
     if (Pokerogue3DS::buildPokemonLevelMovePool(
             dexFor("charizard"), "charizard:base_0", 1, learnset, 128, learnsetCount) !=
         Pokerogue3DS::PokemonLevelMovePoolResult::Ok) return 106;
+    // Current-species level-one reminders are excluded when the upstream
+    // prevolution chain is present; Charmeleon's pool precedes Charizard.
     bool dragonClawReminderWeight = false;
     for (std::size_t i = 0; i < learnsetCount; ++i)
         if (learnset[i].moveId == 337 && learnset[i].weight == 50) dragonClawReminderWeight = true;
-    if (!dragonClawReminderWeight) return 107;
+    if (dragonClawReminderWeight) return 107;
+    if (PokerogueContent::findSpeciesByDex(dexFor("charizard"))->starterEligible ||
+        !PokerogueContent::findSpeciesByDex(dexFor("pikachu"))->starterEligible ||
+        !PokerogueContent::findSpeciesByDex(dexFor("bulbasaur"))->freshProfileStarter ||
+        !PokerogueContent::findSpeciesByDex(dexFor("charmander"))->freshProfileStarter ||
+        PokerogueContent::findSpeciesByDex(dexFor("pikachu"))->freshProfileStarter ||
+        PokerogueContent::findSpeciesByDex(dexFor("pikachu"))->prevolutionDex != dexFor("pichu") ||
+        PokerogueContent::findSpeciesByDex(dexFor("charizard"))->prevolutionDex != dexFor("charmeleon")) return 108;
+    if (Pokerogue3DS::buildPokemonLevelMovePool(dexFor("pikachu"), nullptr, 200, learnset, 128, learnsetCount) !=
+        Pokerogue3DS::PokemonLevelMovePoolResult::Ok || learnsetCount == 0) return 109;
+
+    PokemonNature freshNature = PokemonNature::Unspecified;
+    if (Pokerogue3DS::pokemonFreshProfileNature(dexFor("bulbasaur"), freshNature) !=
+            Pokerogue3DS::PokemonFreshProfileResult::Ok ||
+        PokerogueContent::findSpeciesByDex(dexFor("bulbasaur"))->freshProfileStarterOrdinal != 0 ||
+        PokerogueContent::findSpeciesByDex(dexFor("charmander"))->freshProfileStarterOrdinal != 1 ||
+        (freshNature != PokemonNature::Hardy && freshNature != PokemonNature::Docile &&
+         freshNature != PokemonNature::Serious && freshNature != PokemonNature::Bashful &&
+         freshNature != PokemonNature::Quirky) ||
+        Pokerogue3DS::pokemonFreshProfileNature(dexFor("pikachu"), freshNature) !=
+            Pokerogue3DS::PokemonFreshProfileResult::NotDefaultStarter) return 121;
+
+    uint16_t starterMoves[4]{};
+    uint8_t starterMoveCount = 0;
+    if (Pokerogue3DS::selectPokemonStarterMoveset(dexFor("bulbasaur"), nullptr, 0,
+            nullptr, 0, starterMoves, starterMoveCount) != Pokerogue3DS::PokemonStarterMovesetResult::Ok ||
+        starterMoveCount != 3 || starterMoves[0] != 33 || starterMoves[1] != 45 || starterMoves[2] != 22) return 118;
+    const uint16_t preferredStarterMoves[] = {202, 33};
+    if (Pokerogue3DS::selectPokemonStarterMoveset(dexFor("bulbasaur"), nullptr, 1,
+            preferredStarterMoves, 2, starterMoves, starterMoveCount) != Pokerogue3DS::PokemonStarterMovesetResult::Ok ||
+        starterMoveCount != 4 || starterMoves[0] != 202 || starterMoves[1] != 33 ||
+        starterMoves[2] != 45 || starterMoves[3] != 22) return 119;
+    if (Pokerogue3DS::selectPokemonStarterMoveset(dexFor("bulbasaur"), nullptr, 0x10,
+            nullptr, 0, starterMoves, starterMoveCount) != Pokerogue3DS::PokemonStarterMovesetResult::InvalidEggMoveMask) return 120;
+    PokemonBattleInit freshStarterInput{};
+    freshStarterInput.speciesDex = dexFor("bulbasaur");
+    freshStarterInput.level = 5;
+    freshStarterInput.abilityId = PokerogueContent::findSpeciesByDex(freshStarterInput.speciesDex)->ability1;
+    freshStarterInput.gender = Pokerogue3DS::PokemonGender::Male;
+    freshStarterInput.nature = freshNature;
+    freshStarterInput.moveCount = starterMoveCount;
+    for (uint8_t i = 0; i < 6; ++i) freshStarterInput.ivs[i] = 15;
+    for (uint8_t i = 0; i < starterMoveCount; ++i) freshStarterInput.moveIds[i] = starterMoves[i];
+    PokemonBattleState freshStarterState{};
+    if (Pokerogue3DS::initializePokemonBattleState(freshStarterInput, freshStarterState) !=
+            PokemonBattleInitResult::Ok || freshStarterState.hp == 0 ||
+        freshStarterState.ivs[0] != 15 || freshStarterState.nature != freshNature ||
+        freshStarterState.moveCount != 3 || freshStarterState.moves[0].moveId != 33 ||
+        freshStarterState.moves[0].pp != PokerogueContent::findMoveById(33)->pp) return 122;
+
+    // Real ability callbacks feed the move-generation adapter. Supported
+    // declarative effects remain typed; unported callbacks fail closed.
+    const auto* compoundEyes = PokerogueContent::findAbilityMovegenProfile(14);
+    const auto* skillLink = PokerogueContent::findAbilityMovegenProfile(92);
+    const auto* drizzle = PokerogueContent::findAbilityMovegenProfile(2);
+    const auto* hustle = PokerogueContent::findAbilityMovegenProfile(55);
+    if (!compoundEyes || compoundEyes->flags != 0 || compoundEyes->accuracyMultiplier != 1.3 ||
+        !compoundEyes->sourcePath || !compoundEyes->sourceSymbol || !compoundEyes->sourceHash) return 110;
+    if (!skillLink || skillLink->flags != PokerogueContent::AbilityMovegenMaxMultiHit ||
+        !skillLink->sourcePath || !skillLink->sourceSymbol || !skillLink->sourceHash) return 111;
+    if (!drizzle || !(drizzle->flags & PokerogueContent::AbilityMovegenUnsupported)) return 112;
+    if (!hustle || !(hustle->flags & PokerogueContent::AbilityMovegenUnsupported)) return 116;
+    Pokerogue3DS::PokemonWildMoveRuntimeMetadata moveMetadata{};
+    if (!Pokerogue3DS::buildPokemonWildMoveRuntimeMetadata(33, 14, moveMetadata) ||
+        moveMetadata.type == nullptr || moveMetadata.power.power != 40 ||
+        moveMetadata.ability.accuracyMultiplier != 1.3) return 113;
+    if (!Pokerogue3DS::buildPokemonWildMoveRuntimeMetadata(292, 92, moveMetadata) ||
+        !moveMetadata.ability.maxMultiHitHolderPresent || !moveMetadata.ability.maxMultiHitValue) return 114;
+    if (Pokerogue3DS::buildPokemonWildMoveRuntimeMetadata(33, 2, moveMetadata) ||
+        Pokerogue3DS::buildPokemonWildMoveRuntimeMetadata(33, 65535, moveMetadata)) return 115;
+    const auto checkRealMoveset = [](uint16_t dex, uint16_t abilityId) {
+        const auto* species = PokerogueContent::findSpeciesByDex(dex);
+        if (!species || (abilityId != species->ability1 && abilityId != species->ability2 &&
+                         abilityId != species->abilityHidden)) return false;
+        PokemonBattleInit actorInput{};
+        actorInput.speciesDex = dex;
+        actorInput.level = 5;
+        actorInput.abilityId = abilityId;
+        actorInput.gender = PokemonGender::Male;
+        PokemonBattleState actorState{};
+        if (Pokerogue3DS::initializePokemonBattleState(actorInput, actorState) != PokemonBattleInitResult::Ok)
+            return false;
+        Pokerogue3DS::PokemonLevelMoveCandidate pool[128]{};
+        std::size_t poolCount = 0;
+        if (Pokerogue3DS::buildPokemonLevelMovePool(dex, nullptr, 5, pool, 128, poolCount) !=
+                Pokerogue3DS::PokemonLevelMovePoolResult::Ok || poolCount == 0 || poolCount > 128) return false;
+        Pokerogue3DS::PokemonWildMoveRuntimeMetadata candidates[128]{};
+        for (std::size_t i = 0; i < poolCount; ++i)
+            if (!Pokerogue3DS::buildPokemonWildMoveRuntimeMetadata(pool[i].moveId, abilityId, candidates[i])) return false;
+        const uint16_t seed[] = {'m', 'o', 'v', static_cast<uint16_t>(dex)};
+        PokerogueRngAdapter firstRng;
+        firstRng.sow(seed, sizeof(seed) / sizeof(seed[0]));
+        uint16_t firstMoves[4]{};
+        uint8_t firstCount = 0;
+        if (Pokerogue3DS::generateWildMovesetFromLearnset(dex, nullptr, 5,
+                actorState.stats[1], actorState.stats[3], actorState.stats[2],
+                species->type1, species->type2, candidates, poolCount,
+                firstRng, firstMoves, firstCount) != Pokerogue3DS::PokemonWildMovesetResult::Ok ||
+            firstCount == 0 || firstCount > 4) return false;
+        PokerogueRngAdapter replayRng;
+        replayRng.sow(seed, sizeof(seed) / sizeof(seed[0]));
+        uint16_t replayMoves[4]{};
+        uint8_t replayCount = 0;
+        if (Pokerogue3DS::generateWildMovesetFromLearnset(dex, nullptr, 5,
+                actorState.stats[1], actorState.stats[3], actorState.stats[2],
+                species->type1, species->type2, candidates, poolCount,
+                replayRng, replayMoves, replayCount) != Pokerogue3DS::PokemonWildMovesetResult::Ok ||
+            replayCount != firstCount) return false;
+        const auto firstState = firstRng.state();
+        const auto replayState = replayRng.state();
+        if (firstState.carry != replayState.carry || firstState.s0 != replayState.s0 ||
+            firstState.s1 != replayState.s1 || firstState.s2 != replayState.s2) return false;
+        for (uint8_t i = 0; i < firstCount; ++i) {
+            if (firstMoves[i] != replayMoves[i] || !PokerogueContent::findMoveById(firstMoves[i])) return false;
+            for (uint8_t j = 0; j < i; ++j) if (firstMoves[i] == firstMoves[j]) return false;
+        }
+        actorInput.moveCount = firstCount;
+        for (uint8_t i = 0; i < firstCount; ++i) actorInput.moveIds[i] = firstMoves[i];
+        PokemonBattleState battleReady{};
+        if (Pokerogue3DS::initializePokemonBattleState(actorInput, battleReady) != PokemonBattleInitResult::Ok ||
+            battleReady.moveCount != firstCount) return false;
+        for (uint8_t i = 0; i < firstCount; ++i) {
+            const auto* canonicalMove = PokerogueContent::findMoveById(firstMoves[i]);
+            if (!canonicalMove || battleReady.moves[i].moveId != firstMoves[i] ||
+                battleReady.moves[i].maxPp != canonicalMove->pp ||
+                battleReady.moves[i].pp != battleReady.moves[i].maxPp) return false;
+        }
+        return true;
+    };
+    if (!checkRealMoveset(dexFor("bulbasaur"), 65) || !checkRealMoveset(dexFor("pikachu"), 9)) return 117;
     return 0;
 }

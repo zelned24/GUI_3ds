@@ -1,20 +1,35 @@
 {
   "assetReferences": {
+    "pendingImageVerification": 1084,
     "pendingMetadataVerification": 1081,
-    "verified": 3
+    "verifiedImages": 0,
+    "verifiedManifests": 3
   },
   "catalogCounts": {
     "abilities": 320,
     "biomes": 35,
+    "eggMoveEntries": 2284,
+    "experienceGrowthRates": 6,
+    "fixedBattleWaves": 21,
+    "fixedBossWaves": 21,
     "forms": 609,
+    "freshProfileStarters": 27,
     "items": 35,
-    "locales": 2704,
+    "locales": 3040,
     "modes": 5,
     "moves": 920,
     "routes": 66,
-    "species": 1084
+    "species": 1084,
+    "speciesWithBaseExperience": 1084,
+    "trainerConfigs": 272,
+    "trainerPartyTemplates": 54,
+    "trainerSpeciesPoolCandidates": 892,
+    "trainers": 272,
+    "trainersWithDynamicPartyTemplateFunctions": 0,
+    "trainersWithSpeciesPools": 34,
+    "trainersWithStaticPartyTemplates": 46
   },
-  "contentHash": "0590caff2b1959e9cf66d3ffd3966b172b2c86eb9b44aa7fd311f2fb96b9f8db",
+  "contentHash": "1bc4b6c4979a464b7681fab362e773b514398dcf9ceebae01d83e155fbbc8365",
   "deterministicReimport": true,
   "provenance": [
     {
@@ -22,6 +37,12 @@
       "repository": "pokerogue",
       "revision": "8555c08c823b856cbec4eb99ca84ea52a955836d",
       "sourcePath": "src/battle.ts"
+    },
+    {
+      "hash": "983089a39ddf4ec77691326586c46ef6e8a289dedc17fe0834914fb1215e2c84",
+      "repository": "pokerogue",
+      "revision": "8555c08c823b856cbec4eb99ca84ea52a955836d",
+      "sourcePath": "src/constants.ts"
     },
     {
       "hash": "040ccf2ca2e00a2111ef0acf54878ec67c45d98c831e35dda3e0bac52f1ee8e6",
@@ -240,6 +261,24 @@
       "sourcePath": "src/data/balance/biomes/wasteland.ts"
     },
     {
+      "hash": "ee0c831bfc2015189d55f030621372859d926267ce6a7959253c23101b69170d",
+      "repository": "pokerogue",
+      "revision": "8555c08c823b856cbec4eb99ca84ea52a955836d",
+      "sourcePath": "src/data/balance/moves/egg-moves.ts"
+    },
+    {
+      "hash": "272f61daaa652eb256baa9cc9b54617447874e547f062740d22b7a2af172993e",
+      "repository": "pokerogue",
+      "revision": "8555c08c823b856cbec4eb99ca84ea52a955836d",
+      "sourcePath": "src/data/balance/moves/moveset-generation.ts"
+    },
+    {
+      "hash": "a1078adb262ebba59d52642b762a83a0e86627baf9a009caec140a0b01c2c06e",
+      "repository": "pokerogue",
+      "revision": "8555c08c823b856cbec4eb99ca84ea52a955836d",
+      "sourcePath": "src/data/balance/signature-species.ts"
+    },
+    {
       "hash": "c0b5edc7b1eeb528e5d4b91dadf7e3536f760f2ea4a281a775c42adf3f7520e5",
       "repository": "pokerogue",
       "revision": "8555c08c823b856cbec4eb99ca84ea52a955836d",
@@ -294,10 +333,40 @@
       "sourcePath": "src/data/balance/species/generation-09.ts"
     },
     {
+      "hash": "3a914059c951ff5374a728b83107526e8a9559650b765f067b6f5823973fee55",
+      "repository": "pokerogue",
+      "revision": "8555c08c823b856cbec4eb99ca84ea52a955836d",
+      "sourcePath": "src/data/exp.ts"
+    },
+    {
       "hash": "012df47701de494d4140e97cd4804b25cc7472fcf61805aa71aaa21fe7b59475",
       "repository": "pokerogue",
       "revision": "8555c08c823b856cbec4eb99ca84ea52a955836d",
       "sourcePath": "src/data/moves/move.ts"
+    },
+    {
+      "hash": "05a0f36171b70f953948ee47c33d1edf81e71cd5ca33cc5ed0c19358f58c97e1",
+      "repository": "pokerogue",
+      "revision": "8555c08c823b856cbec4eb99ca84ea52a955836d",
+      "sourcePath": "src/data/species-data-registry.ts"
+    },
+    {
+      "hash": "f08097fe3a9cbf7f038b10a56fe73afd4756d23915896d56a8a100f470d50239",
+      "repository": "pokerogue",
+      "revision": "8555c08c823b856cbec4eb99ca84ea52a955836d",
+      "sourcePath": "src/data/trainers/fixed-battle-configs.ts"
+    },
+    {
+      "hash": "1fc344e9f12e828ad0c05bedc2660425a958881923afcb6b310bf9d019678a2c",
+      "repository": "pokerogue",
+      "revision": "8555c08c823b856cbec4eb99ca84ea52a955836d",
+      "sourcePath": "src/data/trainers/trainer-config.ts"
+    },
+    {
+      "hash": "dda560317eed5e8825c3b561ddb17cc5b604f431d280cf980c5d0af4665a6eab",
+      "repository": "pokerogue",
+      "revision": "8555c08c823b856cbec4eb99ca84ea52a955836d",
+      "sourcePath": "src/data/trainers/trainer-party-template.ts"
     },
     {
       "hash": "5f530f1ff38339a649082afdd434bdd6c7a2ad8618b7901a248b86a273bcd183",
@@ -318,6 +387,18 @@
       "sourcePath": "src/enums/biome-pool-tier.ts"
     },
     {
+      "hash": "8f4533eafb4f30a27f346c4ed7ca9c9f70b6993c153f27e25e7341832391433d",
+      "repository": "pokerogue",
+      "revision": "8555c08c823b856cbec4eb99ca84ea52a955836d",
+      "sourcePath": "src/enums/evo-level-threshold-kind.ts"
+    },
+    {
+      "hash": "91f85af5b1f80824f7a2a80ee04f968397cdd13b9f2625f69c199ed660215d38",
+      "repository": "pokerogue",
+      "revision": "8555c08c823b856cbec4eb99ca84ea52a955836d",
+      "sourcePath": "src/enums/fixed-boss-waves.ts"
+    },
+    {
       "hash": "9ab3ac57198934f8a208292f29ca37eee6ca118cea338f350110fa05b21f8d47",
       "repository": "pokerogue",
       "revision": "8555c08c823b856cbec4eb99ca84ea52a955836d",
@@ -330,16 +411,40 @@
       "sourcePath": "src/enums/move-id.ts"
     },
     {
+      "hash": "20565d5457328c4ac945631a3788c1d389fdf77d5e8b4fd6bfbd5b70149696f8",
+      "repository": "pokerogue",
+      "revision": "8555c08c823b856cbec4eb99ca84ea52a955836d",
+      "sourcePath": "src/enums/party-member-strength.ts"
+    },
+    {
       "hash": "11fe8a098b329b18422a9728f70ed160bedfc1f9a1ccbc8757bef825f7f0fd60",
       "repository": "pokerogue",
       "revision": "8555c08c823b856cbec4eb99ca84ea52a955836d",
       "sourcePath": "src/enums/pokemon-type.ts"
     },
     {
+      "hash": "63b9eb102ac0fe6ff38bd5dccc1e0a7f1c2bbbfc4303bca33f4c9192d638c103",
+      "repository": "pokerogue",
+      "revision": "8555c08c823b856cbec4eb99ca84ea52a955836d",
+      "sourcePath": "src/enums/species-form-key.ts"
+    },
+    {
       "hash": "9daa85c28382f967eb700f52cf3bed1b90aaa6b222ff85fa9206fc5a85724790",
       "repository": "pokerogue",
       "revision": "8555c08c823b856cbec4eb99ca84ea52a955836d",
       "sourcePath": "src/enums/species-id.ts"
+    },
+    {
+      "hash": "1312e8276ba190df8321e17cbe4fed54129559b932b0b151d934ee268f6a808c",
+      "repository": "pokerogue",
+      "revision": "8555c08c823b856cbec4eb99ca84ea52a955836d",
+      "sourcePath": "src/enums/trainer-pool-tier.ts"
+    },
+    {
+      "hash": "d25988fad297eba520426c23708a5b97e0ffced51883c6af5c12467f4ea72f0d",
+      "repository": "pokerogue",
+      "revision": "8555c08c823b856cbec4eb99ca84ea52a955836d",
+      "sourcePath": "src/enums/trainer-type.ts"
     },
     {
       "hash": "042ca21383b34ac124c6d133bba42e5e56cccaaf23199b340799161498090ae3",
@@ -424,6 +529,18 @@
       "repository": "pokerogue-locales",
       "revision": "23aea1cb0da5a0b15b836f3c243791591cc42303",
       "sourcePath": "en/pokemon.json"
+    },
+    {
+      "hash": "5fb96b975b2aaa1f86ded076577038663175029575c15e76bd2e4482d23e6096",
+      "repository": "pokerogue-locales",
+      "revision": "23aea1cb0da5a0b15b836f3c243791591cc42303",
+      "sourcePath": "en/trainer-classes.json"
+    },
+    {
+      "hash": "e0efb057172b0ebf5510d8b0cb31bca88d0f3d7eff3a049f31ce32f4e522b10b",
+      "repository": "pokerogue-locales",
+      "revision": "23aea1cb0da5a0b15b836f3c243791591cc42303",
+      "sourcePath": "en/trainer-names.json"
     }
   ],
   "schemaVersion": "1.0.0",
@@ -843,7 +960,1210 @@
       "white",
       "with"
     ],
-    "preservedRawRecordCount": 2968
+    "preservedRawRecordCount": 3294,
+    "trainerConfigSemantics": "supported declarative subset normalized; all raw records preserved; callbacks remain NOT_IMPORTED",
+    "trainerPartyTemplateSemantics": "unknown constructor behavior retained as raw source; supported declarative fields normalized"
   },
-  "warnings": []
+  "warnings": [
+    {
+      "classification": "MISSING_IN_UPSTREAM",
+      "domain": "trainer",
+      "field": "trainerClassLocale",
+      "id": "unknown"
+    },
+    {
+      "classification": "MISSING_IN_UPSTREAM",
+      "domain": "trainer",
+      "field": "trainerClassLocale",
+      "id": "pokefan"
+    },
+    {
+      "classification": "MISSING_IN_UPSTREAM",
+      "domain": "trainer",
+      "field": "trainerClassLocale",
+      "id": "archer"
+    },
+    {
+      "classification": "MISSING_IN_UPSTREAM",
+      "domain": "trainer",
+      "field": "trainerClassLocale",
+      "id": "ariana"
+    },
+    {
+      "classification": "MISSING_IN_UPSTREAM",
+      "domain": "trainer",
+      "field": "trainerClassLocale",
+      "id": "proton"
+    },
+    {
+      "classification": "MISSING_IN_UPSTREAM",
+      "domain": "trainer",
+      "field": "trainerClassLocale",
+      "id": "petrel"
+    },
+    {
+      "classification": "MISSING_IN_UPSTREAM",
+      "domain": "trainer",
+      "field": "trainerClassLocale",
+      "id": "tabitha"
+    },
+    {
+      "classification": "MISSING_IN_UPSTREAM",
+      "domain": "trainer",
+      "field": "trainerClassLocale",
+      "id": "courtney"
+    },
+    {
+      "classification": "MISSING_IN_UPSTREAM",
+      "domain": "trainer",
+      "field": "trainerClassLocale",
+      "id": "matt"
+    },
+    {
+      "classification": "MISSING_IN_UPSTREAM",
+      "domain": "trainer",
+      "field": "trainerClassLocale",
+      "id": "shelly"
+    },
+    {
+      "classification": "MISSING_IN_UPSTREAM",
+      "domain": "trainer",
+      "field": "trainerClassLocale",
+      "id": "jupiter"
+    },
+    {
+      "classification": "MISSING_IN_UPSTREAM",
+      "domain": "trainer",
+      "field": "trainerClassLocale",
+      "id": "mars"
+    },
+    {
+      "classification": "MISSING_IN_UPSTREAM",
+      "domain": "trainer",
+      "field": "trainerClassLocale",
+      "id": "saturn"
+    },
+    {
+      "classification": "MISSING_IN_UPSTREAM",
+      "domain": "trainer",
+      "field": "trainerClassLocale",
+      "id": "zinzolin"
+    },
+    {
+      "classification": "MISSING_IN_UPSTREAM",
+      "domain": "trainer",
+      "field": "trainerClassLocale",
+      "id": "colress"
+    },
+    {
+      "classification": "MISSING_IN_UPSTREAM",
+      "domain": "trainer",
+      "field": "trainerClassLocale",
+      "id": "bryony"
+    },
+    {
+      "classification": "MISSING_IN_UPSTREAM",
+      "domain": "trainer",
+      "field": "trainerClassLocale",
+      "id": "xerosic"
+    },
+    {
+      "classification": "MISSING_IN_UPSTREAM",
+      "domain": "trainer",
+      "field": "trainerClassLocale",
+      "id": "aliana"
+    },
+    {
+      "classification": "MISSING_IN_UPSTREAM",
+      "domain": "trainer",
+      "field": "trainerClassLocale",
+      "id": "celosia"
+    },
+    {
+      "classification": "MISSING_IN_UPSTREAM",
+      "domain": "trainer",
+      "field": "trainerClassLocale",
+      "id": "mable"
+    },
+    {
+      "classification": "MISSING_IN_UPSTREAM",
+      "domain": "trainer",
+      "field": "trainerClassLocale",
+      "id": "faba"
+    },
+    {
+      "classification": "MISSING_IN_UPSTREAM",
+      "domain": "trainer",
+      "field": "trainerClassLocale",
+      "id": "plumeria"
+    },
+    {
+      "classification": "MISSING_IN_UPSTREAM",
+      "domain": "trainer",
+      "field": "trainerClassLocale",
+      "id": "oleana"
+    },
+    {
+      "classification": "MISSING_IN_UPSTREAM",
+      "domain": "trainer",
+      "field": "trainerClassLocale",
+      "id": "giacomo"
+    },
+    {
+      "classification": "MISSING_IN_UPSTREAM",
+      "domain": "trainer",
+      "field": "trainerClassLocale",
+      "id": "mela"
+    },
+    {
+      "classification": "MISSING_IN_UPSTREAM",
+      "domain": "trainer",
+      "field": "trainerClassLocale",
+      "id": "atticus"
+    },
+    {
+      "classification": "MISSING_IN_UPSTREAM",
+      "domain": "trainer",
+      "field": "trainerClassLocale",
+      "id": "ortega"
+    },
+    {
+      "classification": "MISSING_IN_UPSTREAM",
+      "domain": "trainer",
+      "field": "trainerClassLocale",
+      "id": "eri"
+    },
+    {
+      "classification": "MISSING_IN_UPSTREAM",
+      "domain": "trainer",
+      "field": "trainerClassLocale",
+      "id": "rocket_boss_giovanni_1"
+    },
+    {
+      "classification": "MISSING_IN_UPSTREAM",
+      "domain": "trainer",
+      "field": "trainerClassLocale",
+      "id": "rocket_boss_giovanni_2"
+    },
+    {
+      "classification": "MISSING_IN_UPSTREAM",
+      "domain": "trainer",
+      "field": "trainerClassLocale",
+      "id": "maxie"
+    },
+    {
+      "classification": "MISSING_IN_UPSTREAM",
+      "domain": "trainer",
+      "field": "trainerClassLocale",
+      "id": "maxie_2"
+    },
+    {
+      "classification": "MISSING_IN_UPSTREAM",
+      "domain": "trainer",
+      "field": "trainerClassLocale",
+      "id": "archie"
+    },
+    {
+      "classification": "MISSING_IN_UPSTREAM",
+      "domain": "trainer",
+      "field": "trainerClassLocale",
+      "id": "archie_2"
+    },
+    {
+      "classification": "MISSING_IN_UPSTREAM",
+      "domain": "trainer",
+      "field": "trainerClassLocale",
+      "id": "cyrus"
+    },
+    {
+      "classification": "MISSING_IN_UPSTREAM",
+      "domain": "trainer",
+      "field": "trainerClassLocale",
+      "id": "cyrus_2"
+    },
+    {
+      "classification": "MISSING_IN_UPSTREAM",
+      "domain": "trainer",
+      "field": "trainerClassLocale",
+      "id": "ghetsis"
+    },
+    {
+      "classification": "MISSING_IN_UPSTREAM",
+      "domain": "trainer",
+      "field": "trainerClassLocale",
+      "id": "ghetsis_2"
+    },
+    {
+      "classification": "MISSING_IN_UPSTREAM",
+      "domain": "trainer",
+      "field": "trainerClassLocale",
+      "id": "lysandre"
+    },
+    {
+      "classification": "MISSING_IN_UPSTREAM",
+      "domain": "trainer",
+      "field": "trainerClassLocale",
+      "id": "lysandre_2"
+    },
+    {
+      "classification": "MISSING_IN_UPSTREAM",
+      "domain": "trainer",
+      "field": "trainerClassLocale",
+      "id": "lusamine"
+    },
+    {
+      "classification": "MISSING_IN_UPSTREAM",
+      "domain": "trainer",
+      "field": "trainerClassLocale",
+      "id": "lusamine_2"
+    },
+    {
+      "classification": "MISSING_IN_UPSTREAM",
+      "domain": "trainer",
+      "field": "trainerClassLocale",
+      "id": "guzma"
+    },
+    {
+      "classification": "MISSING_IN_UPSTREAM",
+      "domain": "trainer",
+      "field": "trainerClassLocale",
+      "id": "guzma_2"
+    },
+    {
+      "classification": "MISSING_IN_UPSTREAM",
+      "domain": "trainer",
+      "field": "trainerClassLocale",
+      "id": "rose"
+    },
+    {
+      "classification": "MISSING_IN_UPSTREAM",
+      "domain": "trainer",
+      "field": "trainerClassLocale",
+      "id": "rose_2"
+    },
+    {
+      "classification": "MISSING_IN_UPSTREAM",
+      "domain": "trainer",
+      "field": "trainerClassLocale",
+      "id": "penny"
+    },
+    {
+      "classification": "MISSING_IN_UPSTREAM",
+      "domain": "trainer",
+      "field": "trainerClassLocale",
+      "id": "penny_2"
+    },
+    {
+      "classification": "MISSING_IN_UPSTREAM",
+      "domain": "trainer",
+      "field": "trainerClassLocale",
+      "id": "buck"
+    },
+    {
+      "classification": "MISSING_IN_UPSTREAM",
+      "domain": "trainer",
+      "field": "trainerClassLocale",
+      "id": "cheryl"
+    },
+    {
+      "classification": "MISSING_IN_UPSTREAM",
+      "domain": "trainer",
+      "field": "trainerClassLocale",
+      "id": "marley"
+    },
+    {
+      "classification": "MISSING_IN_UPSTREAM",
+      "domain": "trainer",
+      "field": "trainerClassLocale",
+      "id": "mira"
+    },
+    {
+      "classification": "MISSING_IN_UPSTREAM",
+      "domain": "trainer",
+      "field": "trainerClassLocale",
+      "id": "riley"
+    },
+    {
+      "classification": "MISSING_IN_UPSTREAM",
+      "domain": "trainer",
+      "field": "trainerClassLocale",
+      "id": "victor"
+    },
+    {
+      "classification": "MISSING_IN_UPSTREAM",
+      "domain": "trainer",
+      "field": "trainerClassLocale",
+      "id": "victoria"
+    },
+    {
+      "classification": "MISSING_IN_UPSTREAM",
+      "domain": "trainer",
+      "field": "trainerClassLocale",
+      "id": "vivi"
+    },
+    {
+      "classification": "MISSING_IN_UPSTREAM",
+      "domain": "trainer",
+      "field": "trainerClassLocale",
+      "id": "vicky"
+    },
+    {
+      "classification": "MISSING_IN_UPSTREAM",
+      "domain": "trainer",
+      "field": "trainerClassLocale",
+      "id": "vito"
+    },
+    {
+      "classification": "MISSING_IN_UPSTREAM",
+      "domain": "trainer",
+      "field": "trainerClassLocale",
+      "id": "bug_type_superfan"
+    },
+    {
+      "classification": "MISSING_IN_UPSTREAM",
+      "domain": "trainer",
+      "field": "trainerClassLocale",
+      "id": "expert_pokemon_breeder"
+    },
+    {
+      "classification": "MISSING_IN_UPSTREAM",
+      "domain": "trainer",
+      "field": "trainerClassLocale",
+      "id": "player_m_alternate"
+    },
+    {
+      "classification": "MISSING_IN_UPSTREAM",
+      "domain": "trainer",
+      "field": "trainerClassLocale",
+      "id": "player_f_alternate"
+    },
+    {
+      "classification": "MISSING_IN_UPSTREAM",
+      "domain": "trainer",
+      "field": "trainerClassLocale",
+      "id": "brock"
+    },
+    {
+      "classification": "MISSING_IN_UPSTREAM",
+      "domain": "trainer",
+      "field": "trainerClassLocale",
+      "id": "misty"
+    },
+    {
+      "classification": "MISSING_IN_UPSTREAM",
+      "domain": "trainer",
+      "field": "trainerClassLocale",
+      "id": "lt_surge"
+    },
+    {
+      "classification": "MISSING_IN_UPSTREAM",
+      "domain": "trainer",
+      "field": "trainerClassLocale",
+      "id": "erika"
+    },
+    {
+      "classification": "MISSING_IN_UPSTREAM",
+      "domain": "trainer",
+      "field": "trainerClassLocale",
+      "id": "janine"
+    },
+    {
+      "classification": "MISSING_IN_UPSTREAM",
+      "domain": "trainer",
+      "field": "trainerClassLocale",
+      "id": "sabrina"
+    },
+    {
+      "classification": "MISSING_IN_UPSTREAM",
+      "domain": "trainer",
+      "field": "trainerClassLocale",
+      "id": "blaine"
+    },
+    {
+      "classification": "MISSING_IN_UPSTREAM",
+      "domain": "trainer",
+      "field": "trainerClassLocale",
+      "id": "giovanni"
+    },
+    {
+      "classification": "MISSING_IN_UPSTREAM",
+      "domain": "trainer",
+      "field": "trainerClassLocale",
+      "id": "falkner"
+    },
+    {
+      "classification": "MISSING_IN_UPSTREAM",
+      "domain": "trainer",
+      "field": "trainerClassLocale",
+      "id": "bugsy"
+    },
+    {
+      "classification": "MISSING_IN_UPSTREAM",
+      "domain": "trainer",
+      "field": "trainerClassLocale",
+      "id": "whitney"
+    },
+    {
+      "classification": "MISSING_IN_UPSTREAM",
+      "domain": "trainer",
+      "field": "trainerClassLocale",
+      "id": "morty"
+    },
+    {
+      "classification": "MISSING_IN_UPSTREAM",
+      "domain": "trainer",
+      "field": "trainerClassLocale",
+      "id": "chuck"
+    },
+    {
+      "classification": "MISSING_IN_UPSTREAM",
+      "domain": "trainer",
+      "field": "trainerClassLocale",
+      "id": "jasmine"
+    },
+    {
+      "classification": "MISSING_IN_UPSTREAM",
+      "domain": "trainer",
+      "field": "trainerClassLocale",
+      "id": "pryce"
+    },
+    {
+      "classification": "MISSING_IN_UPSTREAM",
+      "domain": "trainer",
+      "field": "trainerClassLocale",
+      "id": "clair"
+    },
+    {
+      "classification": "MISSING_IN_UPSTREAM",
+      "domain": "trainer",
+      "field": "trainerClassLocale",
+      "id": "roxanne"
+    },
+    {
+      "classification": "MISSING_IN_UPSTREAM",
+      "domain": "trainer",
+      "field": "trainerClassLocale",
+      "id": "brawly"
+    },
+    {
+      "classification": "MISSING_IN_UPSTREAM",
+      "domain": "trainer",
+      "field": "trainerClassLocale",
+      "id": "wattson"
+    },
+    {
+      "classification": "MISSING_IN_UPSTREAM",
+      "domain": "trainer",
+      "field": "trainerClassLocale",
+      "id": "flannery"
+    },
+    {
+      "classification": "MISSING_IN_UPSTREAM",
+      "domain": "trainer",
+      "field": "trainerClassLocale",
+      "id": "norman"
+    },
+    {
+      "classification": "MISSING_IN_UPSTREAM",
+      "domain": "trainer",
+      "field": "trainerClassLocale",
+      "id": "winona"
+    },
+    {
+      "classification": "MISSING_IN_UPSTREAM",
+      "domain": "trainer",
+      "field": "trainerClassLocale",
+      "id": "tate"
+    },
+    {
+      "classification": "MISSING_IN_UPSTREAM",
+      "domain": "trainer",
+      "field": "trainerClassLocale",
+      "id": "liza"
+    },
+    {
+      "classification": "MISSING_IN_UPSTREAM",
+      "domain": "trainer",
+      "field": "trainerClassLocale",
+      "id": "juan"
+    },
+    {
+      "classification": "MISSING_IN_UPSTREAM",
+      "domain": "trainer",
+      "field": "trainerClassLocale",
+      "id": "roark"
+    },
+    {
+      "classification": "MISSING_IN_UPSTREAM",
+      "domain": "trainer",
+      "field": "trainerClassLocale",
+      "id": "gardenia"
+    },
+    {
+      "classification": "MISSING_IN_UPSTREAM",
+      "domain": "trainer",
+      "field": "trainerClassLocale",
+      "id": "maylene"
+    },
+    {
+      "classification": "MISSING_IN_UPSTREAM",
+      "domain": "trainer",
+      "field": "trainerClassLocale",
+      "id": "crasher_wake"
+    },
+    {
+      "classification": "MISSING_IN_UPSTREAM",
+      "domain": "trainer",
+      "field": "trainerClassLocale",
+      "id": "fantina"
+    },
+    {
+      "classification": "MISSING_IN_UPSTREAM",
+      "domain": "trainer",
+      "field": "trainerClassLocale",
+      "id": "byron"
+    },
+    {
+      "classification": "MISSING_IN_UPSTREAM",
+      "domain": "trainer",
+      "field": "trainerClassLocale",
+      "id": "candice"
+    },
+    {
+      "classification": "MISSING_IN_UPSTREAM",
+      "domain": "trainer",
+      "field": "trainerClassLocale",
+      "id": "volkner"
+    },
+    {
+      "classification": "MISSING_IN_UPSTREAM",
+      "domain": "trainer",
+      "field": "trainerClassLocale",
+      "id": "cilan"
+    },
+    {
+      "classification": "MISSING_IN_UPSTREAM",
+      "domain": "trainer",
+      "field": "trainerClassLocale",
+      "id": "chili"
+    },
+    {
+      "classification": "MISSING_IN_UPSTREAM",
+      "domain": "trainer",
+      "field": "trainerClassLocale",
+      "id": "cress"
+    },
+    {
+      "classification": "MISSING_IN_UPSTREAM",
+      "domain": "trainer",
+      "field": "trainerClassLocale",
+      "id": "cheren"
+    },
+    {
+      "classification": "MISSING_IN_UPSTREAM",
+      "domain": "trainer",
+      "field": "trainerClassLocale",
+      "id": "lenora"
+    },
+    {
+      "classification": "MISSING_IN_UPSTREAM",
+      "domain": "trainer",
+      "field": "trainerClassLocale",
+      "id": "roxie"
+    },
+    {
+      "classification": "MISSING_IN_UPSTREAM",
+      "domain": "trainer",
+      "field": "trainerClassLocale",
+      "id": "burgh"
+    },
+    {
+      "classification": "MISSING_IN_UPSTREAM",
+      "domain": "trainer",
+      "field": "trainerClassLocale",
+      "id": "elesa"
+    },
+    {
+      "classification": "MISSING_IN_UPSTREAM",
+      "domain": "trainer",
+      "field": "trainerClassLocale",
+      "id": "clay"
+    },
+    {
+      "classification": "MISSING_IN_UPSTREAM",
+      "domain": "trainer",
+      "field": "trainerClassLocale",
+      "id": "skyla"
+    },
+    {
+      "classification": "MISSING_IN_UPSTREAM",
+      "domain": "trainer",
+      "field": "trainerClassLocale",
+      "id": "brycen"
+    },
+    {
+      "classification": "MISSING_IN_UPSTREAM",
+      "domain": "trainer",
+      "field": "trainerClassLocale",
+      "id": "drayden"
+    },
+    {
+      "classification": "MISSING_IN_UPSTREAM",
+      "domain": "trainer",
+      "field": "trainerClassLocale",
+      "id": "marlon"
+    },
+    {
+      "classification": "MISSING_IN_UPSTREAM",
+      "domain": "trainer",
+      "field": "trainerClassLocale",
+      "id": "viola"
+    },
+    {
+      "classification": "MISSING_IN_UPSTREAM",
+      "domain": "trainer",
+      "field": "trainerClassLocale",
+      "id": "grant"
+    },
+    {
+      "classification": "MISSING_IN_UPSTREAM",
+      "domain": "trainer",
+      "field": "trainerClassLocale",
+      "id": "korrina"
+    },
+    {
+      "classification": "MISSING_IN_UPSTREAM",
+      "domain": "trainer",
+      "field": "trainerClassLocale",
+      "id": "ramos"
+    },
+    {
+      "classification": "MISSING_IN_UPSTREAM",
+      "domain": "trainer",
+      "field": "trainerClassLocale",
+      "id": "clemont"
+    },
+    {
+      "classification": "MISSING_IN_UPSTREAM",
+      "domain": "trainer",
+      "field": "trainerClassLocale",
+      "id": "valerie"
+    },
+    {
+      "classification": "MISSING_IN_UPSTREAM",
+      "domain": "trainer",
+      "field": "trainerClassLocale",
+      "id": "olympia"
+    },
+    {
+      "classification": "MISSING_IN_UPSTREAM",
+      "domain": "trainer",
+      "field": "trainerClassLocale",
+      "id": "wulfric"
+    },
+    {
+      "classification": "MISSING_IN_UPSTREAM",
+      "domain": "trainer",
+      "field": "trainerClassLocale",
+      "id": "milo"
+    },
+    {
+      "classification": "MISSING_IN_UPSTREAM",
+      "domain": "trainer",
+      "field": "trainerClassLocale",
+      "id": "nessa"
+    },
+    {
+      "classification": "MISSING_IN_UPSTREAM",
+      "domain": "trainer",
+      "field": "trainerClassLocale",
+      "id": "kabu"
+    },
+    {
+      "classification": "MISSING_IN_UPSTREAM",
+      "domain": "trainer",
+      "field": "trainerClassLocale",
+      "id": "bea"
+    },
+    {
+      "classification": "MISSING_IN_UPSTREAM",
+      "domain": "trainer",
+      "field": "trainerClassLocale",
+      "id": "allister"
+    },
+    {
+      "classification": "MISSING_IN_UPSTREAM",
+      "domain": "trainer",
+      "field": "trainerClassLocale",
+      "id": "opal"
+    },
+    {
+      "classification": "MISSING_IN_UPSTREAM",
+      "domain": "trainer",
+      "field": "trainerClassLocale",
+      "id": "bede"
+    },
+    {
+      "classification": "MISSING_IN_UPSTREAM",
+      "domain": "trainer",
+      "field": "trainerClassLocale",
+      "id": "gordie"
+    },
+    {
+      "classification": "MISSING_IN_UPSTREAM",
+      "domain": "trainer",
+      "field": "trainerClassLocale",
+      "id": "melony"
+    },
+    {
+      "classification": "MISSING_IN_UPSTREAM",
+      "domain": "trainer",
+      "field": "trainerClassLocale",
+      "id": "piers"
+    },
+    {
+      "classification": "MISSING_IN_UPSTREAM",
+      "domain": "trainer",
+      "field": "trainerClassLocale",
+      "id": "marnie"
+    },
+    {
+      "classification": "MISSING_IN_UPSTREAM",
+      "domain": "trainer",
+      "field": "trainerClassLocale",
+      "id": "raihan"
+    },
+    {
+      "classification": "MISSING_IN_UPSTREAM",
+      "domain": "trainer",
+      "field": "trainerClassLocale",
+      "id": "katy"
+    },
+    {
+      "classification": "MISSING_IN_UPSTREAM",
+      "domain": "trainer",
+      "field": "trainerClassLocale",
+      "id": "brassius"
+    },
+    {
+      "classification": "MISSING_IN_UPSTREAM",
+      "domain": "trainer",
+      "field": "trainerClassLocale",
+      "id": "iono"
+    },
+    {
+      "classification": "MISSING_IN_UPSTREAM",
+      "domain": "trainer",
+      "field": "trainerClassLocale",
+      "id": "kofu"
+    },
+    {
+      "classification": "MISSING_IN_UPSTREAM",
+      "domain": "trainer",
+      "field": "trainerClassLocale",
+      "id": "larry"
+    },
+    {
+      "classification": "MISSING_IN_UPSTREAM",
+      "domain": "trainer",
+      "field": "trainerClassLocale",
+      "id": "ryme"
+    },
+    {
+      "classification": "MISSING_IN_UPSTREAM",
+      "domain": "trainer",
+      "field": "trainerClassLocale",
+      "id": "tulip"
+    },
+    {
+      "classification": "MISSING_IN_UPSTREAM",
+      "domain": "trainer",
+      "field": "trainerClassLocale",
+      "id": "grusha"
+    },
+    {
+      "classification": "MISSING_IN_UPSTREAM",
+      "domain": "trainer",
+      "field": "trainerClassLocale",
+      "id": "lorelei"
+    },
+    {
+      "classification": "MISSING_IN_UPSTREAM",
+      "domain": "trainer",
+      "field": "trainerClassLocale",
+      "id": "bruno"
+    },
+    {
+      "classification": "MISSING_IN_UPSTREAM",
+      "domain": "trainer",
+      "field": "trainerClassLocale",
+      "id": "agatha"
+    },
+    {
+      "classification": "MISSING_IN_UPSTREAM",
+      "domain": "trainer",
+      "field": "trainerClassLocale",
+      "id": "lance"
+    },
+    {
+      "classification": "MISSING_IN_UPSTREAM",
+      "domain": "trainer",
+      "field": "trainerClassLocale",
+      "id": "will"
+    },
+    {
+      "classification": "MISSING_IN_UPSTREAM",
+      "domain": "trainer",
+      "field": "trainerClassLocale",
+      "id": "koga"
+    },
+    {
+      "classification": "MISSING_IN_UPSTREAM",
+      "domain": "trainer",
+      "field": "trainerClassLocale",
+      "id": "karen"
+    },
+    {
+      "classification": "MISSING_IN_UPSTREAM",
+      "domain": "trainer",
+      "field": "trainerClassLocale",
+      "id": "sidney"
+    },
+    {
+      "classification": "MISSING_IN_UPSTREAM",
+      "domain": "trainer",
+      "field": "trainerClassLocale",
+      "id": "phoebe"
+    },
+    {
+      "classification": "MISSING_IN_UPSTREAM",
+      "domain": "trainer",
+      "field": "trainerClassLocale",
+      "id": "glacia"
+    },
+    {
+      "classification": "MISSING_IN_UPSTREAM",
+      "domain": "trainer",
+      "field": "trainerClassLocale",
+      "id": "drake"
+    },
+    {
+      "classification": "MISSING_IN_UPSTREAM",
+      "domain": "trainer",
+      "field": "trainerClassLocale",
+      "id": "aaron"
+    },
+    {
+      "classification": "MISSING_IN_UPSTREAM",
+      "domain": "trainer",
+      "field": "trainerClassLocale",
+      "id": "bertha"
+    },
+    {
+      "classification": "MISSING_IN_UPSTREAM",
+      "domain": "trainer",
+      "field": "trainerClassLocale",
+      "id": "flint"
+    },
+    {
+      "classification": "MISSING_IN_UPSTREAM",
+      "domain": "trainer",
+      "field": "trainerClassLocale",
+      "id": "lucian"
+    },
+    {
+      "classification": "MISSING_IN_UPSTREAM",
+      "domain": "trainer",
+      "field": "trainerClassLocale",
+      "id": "shauntal"
+    },
+    {
+      "classification": "MISSING_IN_UPSTREAM",
+      "domain": "trainer",
+      "field": "trainerClassLocale",
+      "id": "marshal"
+    },
+    {
+      "classification": "MISSING_IN_UPSTREAM",
+      "domain": "trainer",
+      "field": "trainerClassLocale",
+      "id": "grimsley"
+    },
+    {
+      "classification": "MISSING_IN_UPSTREAM",
+      "domain": "trainer",
+      "field": "trainerClassLocale",
+      "id": "caitlin"
+    },
+    {
+      "classification": "MISSING_IN_UPSTREAM",
+      "domain": "trainer",
+      "field": "trainerClassLocale",
+      "id": "malva"
+    },
+    {
+      "classification": "MISSING_IN_UPSTREAM",
+      "domain": "trainer",
+      "field": "trainerClassLocale",
+      "id": "siebold"
+    },
+    {
+      "classification": "MISSING_IN_UPSTREAM",
+      "domain": "trainer",
+      "field": "trainerClassLocale",
+      "id": "wikstrom"
+    },
+    {
+      "classification": "MISSING_IN_UPSTREAM",
+      "domain": "trainer",
+      "field": "trainerClassLocale",
+      "id": "drasna"
+    },
+    {
+      "classification": "MISSING_IN_UPSTREAM",
+      "domain": "trainer",
+      "field": "trainerClassLocale",
+      "id": "hala"
+    },
+    {
+      "classification": "MISSING_IN_UPSTREAM",
+      "domain": "trainer",
+      "field": "trainerClassLocale",
+      "id": "molayne"
+    },
+    {
+      "classification": "MISSING_IN_UPSTREAM",
+      "domain": "trainer",
+      "field": "trainerClassLocale",
+      "id": "olivia"
+    },
+    {
+      "classification": "MISSING_IN_UPSTREAM",
+      "domain": "trainer",
+      "field": "trainerClassLocale",
+      "id": "acerola"
+    },
+    {
+      "classification": "MISSING_IN_UPSTREAM",
+      "domain": "trainer",
+      "field": "trainerClassLocale",
+      "id": "kahili"
+    },
+    {
+      "classification": "MISSING_IN_UPSTREAM",
+      "domain": "trainer",
+      "field": "trainerClassLocale",
+      "id": "marnie_elite"
+    },
+    {
+      "classification": "MISSING_IN_UPSTREAM",
+      "domain": "trainer",
+      "field": "trainerClassLocale",
+      "id": "bede_elite"
+    },
+    {
+      "classification": "MISSING_IN_UPSTREAM",
+      "domain": "trainer",
+      "field": "trainerClassLocale",
+      "id": "nessa_elite"
+    },
+    {
+      "classification": "MISSING_IN_UPSTREAM",
+      "domain": "trainer",
+      "field": "trainerClassLocale",
+      "id": "bea_elite"
+    },
+    {
+      "classification": "MISSING_IN_UPSTREAM",
+      "domain": "trainer",
+      "field": "trainerClassLocale",
+      "id": "allister_elite"
+    },
+    {
+      "classification": "MISSING_IN_UPSTREAM",
+      "domain": "trainer",
+      "field": "trainerClassLocale",
+      "id": "raihan_elite"
+    },
+    {
+      "classification": "MISSING_IN_UPSTREAM",
+      "domain": "trainer",
+      "field": "trainerClassLocale",
+      "id": "rika"
+    },
+    {
+      "classification": "MISSING_IN_UPSTREAM",
+      "domain": "trainer",
+      "field": "trainerClassLocale",
+      "id": "poppy"
+    },
+    {
+      "classification": "MISSING_IN_UPSTREAM",
+      "domain": "trainer",
+      "field": "trainerClassLocale",
+      "id": "larry_elite"
+    },
+    {
+      "classification": "MISSING_IN_UPSTREAM",
+      "domain": "trainer",
+      "field": "trainerClassLocale",
+      "id": "hassel"
+    },
+    {
+      "classification": "MISSING_IN_UPSTREAM",
+      "domain": "trainer",
+      "field": "trainerClassLocale",
+      "id": "crispin"
+    },
+    {
+      "classification": "MISSING_IN_UPSTREAM",
+      "domain": "trainer",
+      "field": "trainerClassLocale",
+      "id": "amarys"
+    },
+    {
+      "classification": "MISSING_IN_UPSTREAM",
+      "domain": "trainer",
+      "field": "trainerClassLocale",
+      "id": "lacey"
+    },
+    {
+      "classification": "MISSING_IN_UPSTREAM",
+      "domain": "trainer",
+      "field": "trainerClassLocale",
+      "id": "drayton"
+    },
+    {
+      "classification": "MISSING_IN_UPSTREAM",
+      "domain": "trainer",
+      "field": "trainerClassLocale",
+      "id": "blue"
+    },
+    {
+      "classification": "MISSING_IN_UPSTREAM",
+      "domain": "trainer",
+      "field": "trainerClassLocale",
+      "id": "red"
+    },
+    {
+      "classification": "MISSING_IN_UPSTREAM",
+      "domain": "trainer",
+      "field": "trainerClassLocale",
+      "id": "lance_champion"
+    },
+    {
+      "classification": "MISSING_IN_UPSTREAM",
+      "domain": "trainer",
+      "field": "trainerClassLocale",
+      "id": "steven"
+    },
+    {
+      "classification": "MISSING_IN_UPSTREAM",
+      "domain": "trainer",
+      "field": "trainerClassLocale",
+      "id": "wallace"
+    },
+    {
+      "classification": "MISSING_IN_UPSTREAM",
+      "domain": "trainer",
+      "field": "trainerClassLocale",
+      "id": "cynthia"
+    },
+    {
+      "classification": "MISSING_IN_UPSTREAM",
+      "domain": "trainer",
+      "field": "trainerClassLocale",
+      "id": "alder"
+    },
+    {
+      "classification": "MISSING_IN_UPSTREAM",
+      "domain": "trainer",
+      "field": "trainerClassLocale",
+      "id": "iris"
+    },
+    {
+      "classification": "MISSING_IN_UPSTREAM",
+      "domain": "trainer",
+      "field": "trainerClassLocale",
+      "id": "diantha"
+    },
+    {
+      "classification": "MISSING_IN_UPSTREAM",
+      "domain": "trainer",
+      "field": "trainerClassLocale",
+      "id": "kukui"
+    },
+    {
+      "classification": "MISSING_IN_UPSTREAM",
+      "domain": "trainer",
+      "field": "trainerClassLocale",
+      "id": "hau"
+    },
+    {
+      "classification": "MISSING_IN_UPSTREAM",
+      "domain": "trainer",
+      "field": "trainerClassLocale",
+      "id": "leon"
+    },
+    {
+      "classification": "MISSING_IN_UPSTREAM",
+      "domain": "trainer",
+      "field": "trainerClassLocale",
+      "id": "mustard"
+    },
+    {
+      "classification": "MISSING_IN_UPSTREAM",
+      "domain": "trainer",
+      "field": "trainerClassLocale",
+      "id": "geeta"
+    },
+    {
+      "classification": "MISSING_IN_UPSTREAM",
+      "domain": "trainer",
+      "field": "trainerClassLocale",
+      "id": "nemona"
+    },
+    {
+      "classification": "MISSING_IN_UPSTREAM",
+      "domain": "trainer",
+      "field": "trainerClassLocale",
+      "id": "kieran"
+    },
+    {
+      "classification": "MISSING_IN_UPSTREAM",
+      "domain": "trainer",
+      "field": "trainerClassLocale",
+      "id": "rival"
+    },
+    {
+      "classification": "MISSING_IN_UPSTREAM",
+      "domain": "trainer",
+      "field": "trainerClassLocale",
+      "id": "rival_2"
+    },
+    {
+      "classification": "MISSING_IN_UPSTREAM",
+      "domain": "trainer",
+      "field": "trainerClassLocale",
+      "id": "rival_3"
+    },
+    {
+      "classification": "MISSING_IN_UPSTREAM",
+      "domain": "trainer",
+      "field": "trainerClassLocale",
+      "id": "rival_4"
+    },
+    {
+      "classification": "MISSING_IN_UPSTREAM",
+      "domain": "trainer",
+      "field": "trainerClassLocale",
+      "id": "rival_5"
+    },
+    {
+      "classification": "MISSING_IN_UPSTREAM",
+      "domain": "trainer",
+      "field": "trainerClassLocale",
+      "id": "rival_6"
+    }
+  ]
 }

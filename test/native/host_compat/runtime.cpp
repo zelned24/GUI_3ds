@@ -54,7 +54,7 @@ void C2D_DrawRectSolid(float x, float y, float z, float w, float h, u32 clr) {
 void C2D_DrawImageAt(C2D_Image img, float x, float y, float z, const C2D_ImageTint* tint, float scaleX, float scaleY) {
     (void)img; (void)x; (void)y; (void)z; (void)tint; (void)scaleX; (void)scaleY;
 }
-void C2D_DrawImageAtRotatedScaled(C2D_Image img, float x, float y, float z, float rotation, const C2D_ImageTint* tint, float scaleX, float scaleY) {
+void C2D_DrawImageAtRotated(C2D_Image img, float x, float y, float z, float rotation, const C2D_ImageTint* tint, float scaleX, float scaleY) {
     (void)img; (void)x; (void)y; (void)z; (void)rotation; (void)tint; (void)scaleX; (void)scaleY;
 }
 void C2D_PlainImageTint(C2D_ImageTint* tint, u32 color, float blend) {
@@ -77,7 +77,7 @@ void C2D_DrawText(const C2D_Text* text, u32 flags, float x, float y, float z, fl
 
 static int s_dummySheet = 42;
 static C3D_Tex s_dummyTex = {};
-static Tex3DS_SubTexture s_dummySub = { 64, 64, 0, 0, 64, 64 };
+static Tex3DS_SubTexture s_dummySub = { 64, 64, 0, 1, 1, 0 };
 
 C2D_SpriteSheet C2D_SpriteSheetLoad(const char* filename) {
     if (!filename || filename[0] == '\0') return nullptr;
@@ -91,4 +91,3 @@ C2D_Image C2D_SpriteSheetGetImage(C2D_SpriteSheet sheet, size_t index) {
 void C2D_SpriteSheetFree(C2D_SpriteSheet sheet) { (void)sheet; }
 
 }
-

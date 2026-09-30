@@ -11,6 +11,11 @@
  */
 class Renderer2D {
 public:
+    struct AtlasFrame {
+        uint16_t x, y, width, height;
+        uint16_t sourceWidth, sourceHeight;
+        uint16_t trimX, trimY;
+    };
     Renderer2D();
     ~Renderer2D();
 
@@ -39,6 +44,12 @@ public:
         bool flipY = false,
         uint32_t tintColor = 0xFFFFFFFF
     );
+
+    // Draw one unrotated frame from a source atlas, retaining its original
+    // canvas and trim offset. Coordinates refer to the source PNG, not VRAM.
+    void drawAtlasFrame(C2D_Image atlas, const AtlasFrame& frame,
+        float x, float y, float width, float height,
+        float opacity = 1.0f, uint32_t tintColor = 0xFFFFFFFF);
 
     void drawImage(
         const char* assetId,

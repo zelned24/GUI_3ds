@@ -12,6 +12,7 @@
     "native-parity": "node test/native/run_native_parity.mjs",
     "import:pokerogue": "node scripts/import_pokerogue_content.mjs",
     "generate:3ds-content": "node scripts/generate_3ds_runtime_content.mjs",
+    "convert:pokerogue-sprites": "node scripts/prepare_pokerogue_sprite_catalog.mjs",
     "3ds-test": "node test/native/check_3ds_toolchain.mjs",
     "3ds-build": "node test/native/run_3ds_build.mjs",
     "native-test": "node test/run_native_build.mjs"

@@ -1,4 +1,4 @@
-import { SpeciesDefinition, SpeciesEvolutionDefinition, MoveDefinition, AbilityDefinition, ItemDefinition, SourceMetadata } from './CanonicalModels.js';
+import { SpeciesDefinition, SpeciesEvolutionDefinition, MoveDefinition, AbilityDefinition, ItemDefinition, TrainerDefinition, TrainerPartyTemplateDefinition, SourceMetadata } from './CanonicalModels.js';
 import { PokerogueManifest } from './PokerogueManifest.js';
 import { POKEROGUE_REPOSITORIES } from './PokerogueSource.js';
 import { PokerogueEnumParser } from './PokerogueEnumParser.js';
@@ -7,10 +7,11 @@ import { CanonicalContent, CanonicalSourceType, Provenance, SourceSnapshot } fro
 import { getOfflineImporterFixtureSources } from '../../../test/fixtures/offlineImporterSources.js';
 import { GameModeDefinition } from '../game/GameMode.js';
 import { BiomeDefinition, RouteDefinition } from '../game/ProgressionContent.js';
+import { POKEROGUE_BASE_ATLAS_IDS, POKEROGUE_BASE_ATLAS_REVISION, POKEROGUE_FORM_ATLAS_KEYS } from './PokerogueBaseAtlasIndex.js';
 
 function extractBalancedLiteral(source, openingIndex) {
   const opening = source[openingIndex];
-  const closing = opening === '[' ? ']' : opening === '{' ? '}' : null;
+  const closing = opening === '[' ? ']' : opening === '{' ? '}' : opening === '(' ? ')' : null;
   if (!closing) return null;
   let depth = 0;
   let quote = null;
@@ -38,15 +39,19 @@ function extractBalancedLiteral(source, openingIndex) {
 
 function splitTopLevelArguments(source) {
   const parts = [];
-  let start = 0, parens = 0, braces = 0, brackets = 0, quote = null, escaped = false;
+  let start = 0, parens = 0, braces = 0, brackets = 0, quote = null, escaped = false, lineComment = false, blockComment = false;
   for (let index = 0; index < source.length; index++) {
-    const char = source[index];
+    const char = source[index], next = source[index + 1];
+    if (lineComment) { if (char === '\n') lineComment = false; continue; }
+    if (blockComment) { if (char === '*' && next === '/') { blockComment = false; index++; } continue; }
     if (quote) {
       if (escaped) escaped = false;
       else if (char === '\\') escaped = true;
       else if (char === quote) quote = null;
       continue;
     }
+    if (char === '/' && next === '/') { lineComment = true; index++; continue; }
+    if (char === '/' && next === '*') { blockComment = true; index++; continue; }
     if (char === '"' || char === "'" || char === '`') { quote = char; continue; }
     if (char === '(') parens++;
     else if (char === ')') parens--;
@@ -74,6 +79,506 @@ function parseLevelMoveArray(arrayLiteral, context) {
     moves.push({ level, move: tuple[2].toLowerCase(), id: tuple[2].toLowerCase() });
   }
   return moves;
+}
+
+function parseExperienceGrowthRates(source) {
+  const marker = /\bconst\s+expLevels\s*=\s*/.exec(source);
+  if (!marker) throw new Error('Invalid import: pinned src/data/exp.ts has no expLevels table');
+  const open = source.indexOf('[', marker.index + marker[0].length);
+  const literal = extractBalancedLiteral(source, open);
+  if (!literal) throw new Error('Invalid import: unclosed pinned expLevels table');
+  const rows = [...literal.matchAll(/\[\s*(\d+(?:\s*,\s*\d+)*)\s*,?\s*\]/g)]
+    .map(match => match[1].split(',').map(value => Number(value.trim())));
+  const growthRates = ['ERRATIC', 'FAST', 'MEDIUM_FAST', 'MEDIUM_SLOW', 'SLOW', 'FLUCTUATING'];
+  if (rows.length !== growthRates.length || rows.some(row => row.length !== 100 || row.some(value => !Number.isSafeInteger(value) || value < 0))) {
+    throw new Error(`Invalid import: pinned expLevels table shape is ${rows.length} x ${rows.map(row => row.length).join(',')}; expected 6 x 100 non-negative integers`);
+  }
+  return Object.fromEntries(growthRates.map((rate, index) => [rate, rows[index]]));
+}
+
+function parseClassicFixedBossWaves(source) {
+  const body = source.match(/export\s+enum\s+ClassicFixedBossWaves\s*\{([\s\S]*?)\}/)?.[1];
+  if (!body) throw new Error('Pinned ClassicFixedBossWaves enum was not found');
+  const entries = [];
+  let nextValue = 0;
+  for (const line of body.split(/\r?\n/)) {
+    const match = line.match(/^\s*([A-Z][A-Z0-9_]*)\s*(?:=\s*(\d+))?\s*,?\s*$/);
+    if (!match) continue;
+    const wave = match[2] === undefined ? nextValue : Number(match[2]);
+    if (!Number.isInteger(wave) || wave < 1 || wave > 0xFFFF) {
+      throw new Error(`Pinned Classic fixed-boss wave is outside the native range: ${match[1]}=${wave}`);
+    }
+    entries.push({ id: match[1].toLowerCase(), symbol: match[1], wave });
+    nextValue = wave + 1;
+  }
+  if (!entries.length) throw new Error('Pinned ClassicFixedBossWaves enum contains no entries');
+  const seen = new Set();
+  for (const entry of entries) {
+    if (seen.has(entry.wave)) throw new Error(`Duplicate pinned Classic fixed-boss wave ${entry.wave}`);
+    seen.add(entry.wave);
+  }
+  return entries.sort((left, right) => left.wave - right.wave);
+}
+
+function parseClassicFixedBattleWaves(source, fixedBossWaves) {
+  const marker = /export\s+const\s+classicFixedBattles\s*:\s*FixedBattleConfigs\s*=\s*\{/;
+  const match = marker.exec(source);
+  if (!match) throw new Error('Pinned classicFixedBattles configuration was not found');
+  const open = source.indexOf('{', match.index);
+  const literal = extractBalancedLiteral(source, open);
+  const body = literal?.slice(1, -1);
+  if (!body) throw new Error('Pinned classicFixedBattles configuration is unclosed or empty');
+  const bySymbol = new Map(fixedBossWaves.map(entry => [entry.symbol, entry.wave]));
+  const entries = [];
+  for (const raw of splitTopLevelArguments(body)) {
+    const key = raw.replace(/^\s*(?:(?:\/\*[\s\S]*?\*\/)|(?:\/\/[^\n]*(?:\n|$))\s*)*/, '').match(/^\s*\[\s*ClassicFixedBossWaves\.([A-Z][A-Z0-9_]*)\s*\]\s*:/);
+    if (!key) throw new Error(`Pinned classicFixedBattles contains an unsupported declaration: ${raw.slice(0, 96)}`);
+    const wave = bySymbol.get(key[1]);
+    if (!Number.isSafeInteger(wave)) throw new Error(`Pinned classicFixedBattles references unresolved ClassicFixedBossWaves.${key[1]}`);
+    entries.push({ wave, symbol: key[1], raw });
+  }
+  if (!entries.length) throw new Error('Pinned classicFixedBattles configuration produced no wave keys');
+  if (new Set(entries.map(entry => entry.wave)).size !== entries.length) throw new Error('Pinned classicFixedBattles contains duplicate wave keys');
+  return entries.sort((left, right) => left.wave - right.wave);
+}
+
+function parseTrainerConfigRecords(source) {
+  const marker = /export\s+const\s+trainerConfigs\s*:\s*TrainerConfigs\s*=\s*\{/;
+  const match = marker.exec(source);
+  if (!match) throw new Error('Pinned trainerConfigs registry was not found');
+  const open = source.indexOf('{', match.index);
+  const literal = extractBalancedLiteral(source, open);
+  if (!literal) throw new Error('Pinned trainerConfigs registry is unclosed');
+  const records = new Map();
+  for (const raw of splitTopLevelArguments(literal.slice(1, -1))) {
+    const parsed = raw.replace(/^\s*(?:(?:\/\*[\s\S]*?\*\/)|(?:\/\/[^\n]*(?:\n|$))\s*)*/, '')
+      .match(/^\s*\[\s*TrainerType\.([A-Z][A-Z0-9_]*)\s*\]\s*:/);
+    if (!parsed) throw new Error(`Pinned trainerConfigs contains an unsupported declaration: ${raw.slice(0, 96)}`);
+    if (records.has(parsed[1])) throw new Error(`Duplicate pinned trainer config TrainerType.${parsed[1]}`);
+    records.set(parsed[1], raw);
+  }
+  if (!records.size) throw new Error('Pinned trainerConfigs registry produced no trainer records');
+  return records;
+}
+
+function parseEvoLevelThresholdKinds(source) {
+  const body = source.match(/export\s+const\s+EvoLevelThresholdKind\s*=\s*Object\.freeze\s*\(\s*\{([\s\S]*?)\}\s*\)/)?.[1];
+  if (!body) throw new Error('Pinned EvoLevelThresholdKind object was not found');
+  const values = new Map([...body.matchAll(/\b([A-Z][A-Z0-9_]*)\s*:\s*(\d+)\b/g)].map(match => [match[1], Number(match[2])]));
+  if (!values.has('NORMAL') || !values.has('STRONG')) throw new Error('Pinned trainer evolution-threshold symbols are incomplete');
+  return values;
+}
+
+function parseTrainerPartyTemplates(source, partyStrengthCatalog, evolutionThresholds) {
+  const marker = /export\s+const\s+trainerPartyTemplates\s*=\s*\{/;
+  const match = marker.exec(source);
+  if (!match) throw new Error('Pinned trainerPartyTemplates declaration was not found');
+  const open = source.indexOf('{', match.index);
+  const literal = extractBalancedLiteral(source, open);
+  if (!literal) throw new Error('Pinned trainerPartyTemplates declaration is unclosed');
+  const templates = [];
+  const parseSegments = (expression, templateId) => {
+    const clean = expression.replace(/\/\*[\s\S]*?\*\/|\/\/[^\n]*/g, '');
+    const calls = /new\s+TrainerPartyTemplate\s*\(/g;
+    const segments = [];
+    let call;
+    let lastEnd = 0;
+    while ((call = calls.exec(clean)) !== null) {
+      if (!/^[\s,]*$/.test(clean.slice(lastEnd, call.index))) throw new Error(`Unsupported trainer party segment expression in ${templateId}`);
+      const argsOpen = clean.indexOf('(', call.index);
+      const argsLiteral = extractBalancedLiteral(clean, argsOpen);
+      if (!argsLiteral) throw new Error(`Unclosed TrainerPartyTemplate in ${templateId}`);
+      const args = splitTopLevelArguments(argsLiteral.slice(1, -1));
+      const size = Number(args[0]);
+      const strengthSymbol = args[1]?.match(/^\s*PartyMemberStrength\.([A-Z][A-Z0-9_]*)\s*$/)?.[1];
+      const strengthId = strengthSymbol ? partyStrengthCatalog.getId(strengthSymbol) : undefined;
+      const sameSpecies = args[2] === undefined || args[2].trim() === 'undefined' ? false : args[2].trim() === 'true' ? true : args[2].trim() === 'false' ? false : null;
+      const balanced = args[3] === undefined || args[3].trim() === 'undefined' ? false : args[3].trim() === 'true' ? true : args[3].trim() === 'false' ? false : null;
+      const thresholdSymbol = args[4] === undefined || args[4].trim() === 'undefined'
+        ? 'NORMAL' : args[4].match(/^\s*EvoLevelThresholdKind\.([A-Z][A-Z0-9_]*)\s*$/)?.[1];
+      const thresholdId = thresholdSymbol ? evolutionThresholds.get(thresholdSymbol) : undefined;
+      if (!Number.isInteger(size) || size < 1 || size > 6 || !strengthSymbol || !Number.isInteger(strengthId) ||
+          sameSpecies === null || balanced === null || !['NORMAL', 'STRONG'].includes(thresholdSymbol) || !Number.isInteger(thresholdId)) {
+        throw new Error(`Unsupported or invalid pinned TrainerPartyTemplate constructor in ${templateId}: ${argsLiteral}`);
+      }
+      segments.push({ size, strength: strengthSymbol, strengthId, sameSpecies, balanced, evolutionThresholdKind: thresholdSymbol, evolutionThresholdKindId: thresholdId });
+      lastEnd = argsOpen + argsLiteral.length;
+      calls.lastIndex = lastEnd;
+    }
+    if (!segments.length || !/^[\s,]*$/.test(clean.slice(lastEnd))) throw new Error(`Unsupported trainer party template expression: ${templateId}`);
+    return segments;
+  };
+  for (const raw of splitTopLevelArguments(literal.slice(1, -1))) {
+    const cleanRaw = raw.replace(/^\s*(?:(?:\/\*[\s\S]*?\*\/)|(?:\/\/[^\n]*(?:\n|$))\s*)*/, '');
+    const keyMatch = cleanRaw.match(/^\s*([A-Z][A-Z0-9_]*)\s*:/);
+    if (!keyMatch) throw new Error(`Unsupported pinned trainer party template declaration: ${raw.slice(0, 96)}`);
+    const id = keyMatch[1].toLowerCase();
+    const expression = cleanRaw.slice(keyMatch[0].length).trim();
+    const compound = /^new\s+TrainerPartyCompoundTemplate\s*\(/.test(expression);
+    if (!compound && !/^new\s+TrainerPartyTemplate\s*\(/.test(expression)) throw new Error(`Unsupported pinned trainer party template form ${keyMatch[1]}`);
+    let segmentExpression = expression;
+    if (compound) {
+      const argsOpen = expression.indexOf('(');
+      const compoundArgs = extractBalancedLiteral(expression, argsOpen);
+      if (!compoundArgs || !/^\s*,?\s*$/.test(expression.slice(argsOpen + compoundArgs.length))) throw new Error(`Invalid compound trainer party template ${keyMatch[1]}`);
+      segmentExpression = compoundArgs.slice(1, -1);
+    }
+    const segments = parseSegments(segmentExpression, id);
+    const totalSize = segments.reduce((total, segment) => total + segment.size, 0);
+    if (totalSize > 6) throw new Error(`Pinned trainer party template ${id} exceeds upstream party size range`);
+    templates.push({ id, templateKey: keyMatch[1], totalSize, isCompound: compound, segments, raw });
+  }
+  if (!templates.length || new Set(templates.map(item => item.id)).size !== templates.length) throw new Error('Pinned trainer party template catalog is empty or duplicated');
+  return templates;
+}
+
+// Read only top-level calls. Callback bodies and nested expressions cannot
+// mutate the declarative configuration merely by containing a setter name.
+function trainerTopLevelCalls(source) {
+  const calls = [];
+  for (let index = 0; index < source.length; index++) {
+    const char = source[index], next = source[index + 1];
+    if (char === '/' && next === '/') { const end = source.indexOf('\n', index + 2); index = end < 0 ? source.length : end; continue; }
+    if (char === '/' && next === '*') { const end = source.indexOf('*/', index + 2); if (end < 0) throw new Error('Unclosed trainer config comment'); index = end + 1; continue; }
+    if (char === '"' || char === "'" || char === '`') {
+      const quote = char;
+      for (++index; index < source.length; index++) {
+        if (source[index] === '\\') { index++; continue; }
+        if (source[index] === quote) break;
+      }
+      continue;
+    }
+    if (char === '.') {
+      const match = source.slice(index).match(/^\.([A-Za-z_$][\w$]*)\s*\(/);
+      if (match) {
+        const open = index + match[0].lastIndexOf('(');
+        const literal = extractBalancedLiteral(source, open);
+        if (!literal) throw new Error(`Unclosed trainer config call ${match[1]}`);
+        calls.push({ method: match[1], args: splitTopLevelArguments(literal.slice(1, -1)), raw: source.slice(index, open + literal.length) });
+        index = open + literal.length - 1;
+        continue;
+      }
+    }
+    if (char === '(' || char === '[' || char === '{') {
+      const literal = extractBalancedLiteral(source, index);
+      if (!literal) throw new Error('Unclosed trainer config expression');
+      index += literal.length - 1;
+    }
+  }
+  return calls;
+}
+
+function parseClassicGymTemplatePolicy(source, templateIds) {
+  const marker = /export\s+function\s+getGymLeaderPartyTemplate\s*\(\s*\)\s*\{/.exec(source);
+  if (!marker) throw new Error('Missing pinned getGymLeaderPartyTemplate');
+  const body = extractBalancedLiteral(source, source.indexOf('{', marker.index));
+  const classic = body?.match(/case\s+GameModes\.CLASSIC\s*:([\s\S]*?)default\s*:/)?.[1];
+  if (!classic) throw new Error('Unsupported pinned Classic gym template policy');
+  let remaining = classic.replace(/\/\*[\s\S]*?\*\/|\/\/[^\n]*/g, '').trim();
+  const ranges = [];
+  while (remaining.startsWith('if')) {
+    const match = remaining.match(/^if\s*\(\s*currentBattle\?\.waveIndex\s*<=\s*(\d+)\s*\)\s*\{\s*return\s+trainerPartyTemplates\.([A-Z0-9_]+)\s*;\s*\}/);
+    if (!match) throw new Error('Unsupported pinned Classic gym condition');
+    const maxWave = Number(match[1]);
+    if (!Number.isSafeInteger(maxWave) || maxWave < 1 || maxWave > 65535 || (ranges.length && maxWave <= ranges.at(-1).maxWave)) throw new Error('Invalid Classic gym wave boundary');
+    ranges.push({ maxWave, templateKey: match[2] });
+    remaining = remaining.slice(match[0].length).trim();
+  }
+  const fallback = remaining.match(/^return\s+trainerPartyTemplates\.([A-Z0-9_]+)\s*;$/);
+  if (!fallback || !ranges.length) throw new Error('Unsupported Classic gym template fallback');
+  ranges.push({ maxWave: null, templateKey: fallback[1] });
+  for (const range of ranges) if (!templateIds.has(range.templateKey)) throw new Error(`Missing gym template ${range.templateKey}`);
+  return { modeId: 'classic', ranges, sourceSymbol: 'getGymLeaderPartyTemplate', raw: body };
+}
+
+function parseClassicGruntTemplatePolicy(source, templateIds, fixedWaves) {
+  const marker = /export\s+function\s+getEvilGruntPartyTemplate\s*\(\s*\)\s*:\s*TrainerPartyTemplate\s*\{/.exec(source);
+  if (!marker) throw new Error('Missing pinned getEvilGruntPartyTemplate');
+  const body = extractBalancedLiteral(source, source.indexOf('{', marker.index));
+  if (!body) throw new Error('Unclosed pinned grunt template policy');
+  let remaining = body.slice(1, -1).replace(/\/\*[\s\S]*?\*\/|\/\/[^\n]*/g, '').trim();
+  const waveBinding = remaining.match(/^const\s+waveIndex\s*=\s*globalScene\.currentBattle\?\.waveIndex\s*;/);
+  if (!waveBinding) throw new Error('Unsupported grunt template wave source');
+  remaining = remaining.slice(waveBinding[0].length).trim();
+  const bySymbol = new Map(fixedWaves.map(entry => [entry.symbol, entry.wave]));
+  const ranges = [];
+  while (remaining.startsWith('if')) {
+    const match = remaining.match(/^if\s*\(\s*waveIndex\s*<=\s*ClassicFixedBossWaves\.([A-Z0-9_]+)\s*\)\s*\{\s*return\s+trainerPartyTemplates\.([A-Z0-9_]+)\s*;\s*\}/);
+    if (!match) throw new Error('Unsupported pinned grunt template condition');
+    const maxWave = bySymbol.get(match[1]);
+    if (!Number.isSafeInteger(maxWave) || maxWave < 1 || maxWave > 65535 || (ranges.length && maxWave <= ranges.at(-1).maxWave)) throw new Error(`Invalid grunt template boundary ${match[1]}`);
+    ranges.push({ maxWave, waveSymbol: `ClassicFixedBossWaves.${match[1]}`, templateKey: match[2] });
+    remaining = remaining.slice(match[0].length).trim();
+  }
+  const fallback = remaining.match(/^return\s+trainerPartyTemplates\.([A-Z0-9_]+)\s*;$/);
+  if (!fallback || !ranges.length) throw new Error('Unsupported grunt template fallback');
+  ranges.push({ maxWave: null, templateKey: fallback[1] });
+  for (const range of ranges) if (!templateIds.has(range.templateKey)) throw new Error(`Missing grunt template ${range.templateKey}`);
+  return { modeId: 'classic', ranges, sourceSymbol: 'getEvilGruntPartyTemplate', raw: body };
+}
+
+function parseTrainerSignatureSpecies(source, speciesCatalog) {
+  const marker = /export\s+const\s+signatureSpecies\s*:\s*SignatureSpecies\s*=\s*new\s+Proxy\s*\(/.exec(source);
+  if (!marker) throw new Error('Missing pinned signatureSpecies registry');
+  const open = source.indexOf('{', marker.index + marker[0].length);
+  const literal = extractBalancedLiteral(source, open);
+  if (!literal) throw new Error('Unclosed pinned signatureSpecies registry');
+  const result = new Map();
+  for (const raw of splitTopLevelArguments(literal.slice(1, -1))) {
+    const clean = raw.replace(/\/\*[\s\S]*?\*\/|\/\/[^\n]*/g, '').trim();
+    if (!clean) continue;
+    const match = clean.match(/^([A-Z][A-Z0-9_]*)\s*:\s*/);
+    if (!match || result.has(match[1])) throw new Error(`Invalid signature species record: ${clean.slice(0, 80)}`);
+    const expression = clean.slice(match[0].length);
+    const list = extractBalancedLiteral(expression, 0);
+    if (!list || expression.slice(list.length).trim()) throw new Error(`Unsupported signature species list: ${match[1]}`);
+    const choices = splitTopLevelArguments(list.slice(1, -1)).map((candidate, slot) => {
+      const group = candidate.trim().startsWith('[');
+      const value = group ? extractBalancedLiteral(candidate.trim(), 0) : candidate.trim();
+      if (!value || (group && candidate.trim().slice(value.length).trim())) throw new Error(`Invalid signature group: ${match[1]}[${slot}]`);
+      const elements = group ? splitTopLevelArguments(value.slice(1, -1)) : [value];
+      const speciesIds = elements.map(element => {
+        const symbol = element.trim().match(/^SpeciesId\.([A-Z][A-Z0-9_]*)$/)?.[1];
+        if (!symbol || !speciesCatalog.hasSymbol(symbol)) throw new Error(`Unknown signature species: ${match[1]}[${slot}] ${element}`);
+        return symbol.toLowerCase();
+      });
+      if (!speciesIds.length) throw new Error(`Empty signature group: ${match[1]}[${slot}]`);
+      return { slot, isGroup: group, speciesIds };
+    });
+    result.set(match[1], { choices, raw });
+  }
+  if (!result.size) throw new Error('Empty pinned signatureSpecies registry');
+  return result;
+}
+
+function parsePokemonSpriteAtlas(source, sourcePath) {
+  const parsed = JSON.parse(source);
+  const textures = parsed?.textures;
+  const texture = Array.isArray(textures) && textures.length === 1
+    ? textures[0]
+    : parsed?.frames && typeof parsed.frames === 'object'
+      ? { image: parsed.meta?.image, size: parsed.meta?.size,
+          frames: Array.isArray(parsed.frames) ? parsed.frames
+            : Object.entries(parsed.frames).map(([filename, entry]) => ({ filename, ...entry })) }
+      : null;
+  if (!texture) throw new Error(`Unsupported pinned sprite atlas: ${sourcePath}`);
+  const width = texture?.size?.w;
+  const height = texture?.size?.h;
+  const imageName = texture?.image;
+  if (!Number.isInteger(width) || !Number.isInteger(height) || width < 1 || height < 1
+      || typeof imageName !== 'string' || !/^[A-Za-z0-9_-]+\.png$/.test(imageName)
+      || !Array.isArray(texture.frames) || !texture.frames.length)
+    throw new Error(`Invalid pinned sprite atlas: ${sourcePath}`);
+  const frames = texture.frames.map((entry, index) => {
+    const frame = entry?.frame;
+    const sourceSize = entry?.sourceSize;
+    const spriteSourceSize = entry?.spriteSourceSize;
+    if (typeof entry.filename !== 'string' || !/^[A-Za-z0-9_-]+\.png$/.test(entry.filename)
+        || entry.rotated !== false || typeof entry.trimmed !== 'boolean'
+        || ![frame?.x, frame?.y, frame?.w, frame?.h,
+          sourceSize?.w, sourceSize?.h, spriteSourceSize?.x,
+          spriteSourceSize?.y, spriteSourceSize?.w, spriteSourceSize?.h]
+          .every(value => Number.isInteger(value) && value >= 0)
+        || frame.w < 1 || frame.h < 1 || sourceSize.w < 1 || sourceSize.h < 1
+        || frame.x + frame.w > width || frame.y + frame.h > height
+        || spriteSourceSize.x + spriteSourceSize.w > sourceSize.w
+        || spriteSourceSize.y + spriteSourceSize.h > sourceSize.h
+        || spriteSourceSize.w !== frame.w || spriteSourceSize.h !== frame.h)
+      throw new Error(`Invalid pinned sprite frame ${sourcePath}[${index}]`);
+    const { filename, frame: _, sourceSize: __, spriteSourceSize: ___, ...other } = entry;
+    return { filename, frame: { ...frame }, sourceSize: { ...sourceSize },
+      spriteSourceSize: { ...spriteSourceSize }, extensions: other };
+  });
+  return { imagePath: sourcePath.slice(0, sourcePath.lastIndexOf('/') + 1) + imageName,
+    width, height, frames, format: Array.isArray(textures) ? 'TEXTUREPACKER_TEXTURES' : 'ASEPRITE_FRAMES',
+    extensions: Array.isArray(textures) ? { rawTextureMetadata: Object.fromEntries(Object.entries(texture).filter(([key]) => !['frames', 'size', 'image'].includes(key))) }
+      : { rawMeta: parsed.meta } };
+}
+
+function parseDerivedTrainerTypes(source, catalog) {
+  const marker = /getDerivedType\s*\(/.exec(source);
+  // Locate the declaration, excluding constructor calls to this method.
+  const declaration = /^\s*getDerivedType\s*\([^\n]*\)\s*:\s*TrainerType\s*\{/m.exec(source);
+  if (!marker || !declaration) throw new Error('Missing TrainerConfig.getDerivedType declaration');
+  const body = extractBalancedLiteral(source, source.indexOf('{', declaration.index));
+  const switchMatch = body?.match(/^\{\s*switch\s*\(\s*trainerType\s*\)\s*\{([\s\S]*)\}\s*\}$/);
+  if (!switchMatch) throw new Error('Unsupported derived trainer type implementation');
+  let remaining = switchMatch[1].trim();
+  const aliases = new Map();
+  while (remaining.startsWith('case')) {
+    const keys = [];
+    let match;
+    while ((match = remaining.match(/^case\s+TrainerType\.([A-Z0-9_]+)\s*:/))) {
+      keys.push(match[1]); remaining = remaining.slice(match[0].length).trim();
+    }
+    const target = remaining.match(/^return\s+TrainerType\.([A-Z0-9_]+)\s*;/);
+    if (!keys.length || !target || !catalog.hasSymbol(target[1])) throw new Error('Unsupported derived trainer type branch');
+    for (const key of keys) {
+      if (!catalog.hasSymbol(key) || aliases.has(key)) throw new Error(`Invalid derived trainer alias ${key}`);
+      aliases.set(key, catalog.getId(target[1]));
+    }
+    remaining = remaining.slice(target[0].length).trim();
+  }
+  if (!/^default\s*:\s*return\s+trainerType\s*;$/.test(remaining)) throw new Error('Unsupported derived trainer type fallback');
+  return { aliases, raw: body };
+}
+
+function trainerInitializerDefinition(source, method) {
+  const declaration = new RegExp(`^\\s*(?:public\\s+)?${method}\\s*\\(`, 'm').exec(source);
+  if (!declaration) throw new Error(`Missing upstream TrainerConfig.${method}`);
+  const open = source.indexOf('(', declaration.index);
+  const parameters = extractBalancedLiteral(source, open);
+  if (!parameters) throw new Error(`Unclosed TrainerConfig.${method} parameters`);
+  const suffix = source.slice(open + parameters.length).match(/^\s*:\s*TrainerConfig\s*\{/);
+  if (!suffix) throw new Error(`Unsupported TrainerConfig.${method} declaration`);
+  const bodyOpen = open + parameters.length + suffix[0].lastIndexOf('{');
+  const body = extractBalancedLiteral(source, bodyOpen);
+  if (!body) throw new Error(`Unclosed TrainerConfig.${method} body`);
+  const supported = new Set(['setPartyTemplates', 'setPartyTemplateFunc', 'setMoneyMultiplier', 'setBoss', 'setStaticParty']);
+  const calls = trainerTopLevelCalls(body.slice(1, -1));
+  return {
+    sourceSymbol: `TrainerConfig.${method}`,
+    raw: source.slice(declaration.index, bodyOpen + body.length),
+    declarativeCalls: calls.filter(call => supported.has(call.method)),
+    remainingCalls: calls.filter(call => !supported.has(call.method))
+  };
+}
+
+function parseTrainerConfigDetails(raw, trainerType, speciesCatalog, trainerPoolTierCatalog, templateIds, partyStrengthCatalog, evolutionThresholds, configSource, gymTemplatePolicy, gruntTemplatePolicy) {
+  const directCalls = trainerTopLevelCalls(raw);
+  const helperCalls = [];
+  const calls = [];
+  for (const call of directCalls) {
+    if (!call.method.startsWith('initFor')) { calls.push(call); continue; }
+    const definition = trainerInitializerDefinition(configSource, call.method);
+    helperCalls.push({ ...call, definition });
+    calls.push(...definition.declarativeCalls);
+  }
+  // Upstream setters assign, rather than append. Preserve chain order and
+  // allow a later explicit setter to override an initializer's assignment.
+  const readMethod = method => calls.filter(call => call.method === `set${method}`).slice(-1).map(call => call.args);
+  const partyCalls = readMethod('PartyTemplates');
+  const partyTemplateKeys = [];
+  const inlineTemplates = [];
+  for (const args of partyCalls) for (const arg of args) {
+    const normalizedArg = arg.replace(/^\s*(?:(?:\/\*[\s\S]*?\*\/)|(?:\/\/[^\n]*(?:\n|$))\s*)*/, '').trim();
+    let key = normalizedArg.match(/^trainerPartyTemplates\.([A-Z][A-Z0-9_]*)$/)?.[1];
+    if (!key && /^new\s+TrainerParty(?:Compound)?Template\s*\(/.test(normalizedArg)) {
+      key = `TRAINER_${trainerType}_PARTY_${inlineTemplates.length}`;
+      const wrappedSource = `export const trainerPartyTemplates = { ${key}: ${normalizedArg} };`;
+      const [template] = parseTrainerPartyTemplates(wrappedSource, partyStrengthCatalog, evolutionThresholds);
+      template.id = key.toLowerCase();
+      template.templateKey = key;
+      inlineTemplates.push({ ...template, sourceFragment: normalizedArg });
+    }
+    if (!key || (!templateIds.has(key) && !inlineTemplates.some(template => template.templateKey === key))) throw new Error(`Unsupported or missing static party template in TrainerConfig.${trainerType}: ${arg}`);
+    partyTemplateKeys.push(key);
+  }
+  const poolCalls = readMethod('SpeciesPools');
+  if (poolCalls.length > 1) throw new Error(`Duplicate TrainerConfig.setSpeciesPools call for ${trainerType}`);
+  const speciesPools = [];
+  if (poolCalls.length) {
+    const expression = poolCalls[0][0]?.trim();
+    if (!expression) throw new Error(`Empty TrainerConfig.setSpeciesPools for ${trainerType}`);
+    const pools = [];
+    if (expression.startsWith('{')) {
+      const literal = extractBalancedLiteral(expression, 0);
+      if (!literal || expression.slice(literal.length).trim()) throw new Error(`Unsupported TrainerConfig species pool object for ${trainerType}`);
+      for (const rawEntry of splitTopLevelArguments(literal.slice(1, -1))) {
+        const entry = rawEntry.replace(/^\s*(?:(?:\/\*[\s\S]*?\*\/)|(?:\/\/[^\n]*(?:\n|$))\s*)*/, '');
+        const key = entry.match(/^\s*\[\s*TrainerPoolTier\.([A-Z][A-Z0-9_]*)\s*\]\s*:/)?.[1];
+        if (!key || !trainerPoolTierCatalog.hasSymbol(key)) throw new Error(`Unknown TrainerPoolTier in ${trainerType}: ${entry.slice(0, 80)}`);
+        const colon = entry.indexOf(':');
+        const listExpression = entry.slice(colon + 1).trim();
+        const list = extractBalancedLiteral(listExpression, 0);
+        if (!list || !listExpression.startsWith('[') || listExpression.slice(list.length).trim()) throw new Error(`Unsupported species pool list for ${trainerType}.${key}`);
+        pools.push({ tier: key.toLowerCase(), tierId: trainerPoolTierCatalog.getId(key), list });
+      }
+    } else if (expression.startsWith('[')) {
+      const list = extractBalancedLiteral(expression, 0);
+      if (!list || expression.slice(list.length).trim()) throw new Error(`Unsupported common species pool list for ${trainerType}`);
+      pools.push({ tier: 'common', tierId: trainerPoolTierCatalog.getId('COMMON'), list });
+    } else throw new Error(`Unsupported TrainerConfig species pool expression for ${trainerType}: ${expression.slice(0, 80)}`);
+    for (const pool of pools) {
+      const candidates = [];
+      for (const rawCandidate of splitTopLevelArguments(pool.list.slice(1, -1))) {
+        const candidate = rawCandidate.replace(/\/\*[\s\S]*?\*\/|\/\/[^\n]*/g, '').trim();
+        if (!candidate) continue;
+        const speciesExpression = candidate.startsWith('[') ? extractBalancedLiteral(candidate, 0) : null;
+        if (candidate.startsWith('[') && (!speciesExpression || candidate.slice(speciesExpression.length).trim())) throw new Error(`Unsupported nested species choice for ${trainerType}.${pool.tier}`);
+        const symbols = [...(speciesExpression ?? candidate).matchAll(/SpeciesId\.([A-Z][A-Z0-9_]*)/g)].map(item => item[1]);
+        const expected = (speciesExpression ? speciesExpression.slice(1, -1) : candidate).replace(/SpeciesId\.[A-Z][A-Z0-9_]*/g, '').replace(/[\s,]/g, '');
+        if (!symbols.length || expected) throw new Error(`Unsupported trainer species candidate ${trainerType}.${pool.tier}: ${candidate}`);
+        const speciesIds = symbols.map(symbol => {
+          if (!speciesCatalog.hasSymbol(symbol)) throw new Error(`Unknown SpeciesId.${symbol} in TrainerConfig.${trainerType}`);
+          return symbol.toLowerCase();
+        });
+        candidates.push({ speciesIds, isGroup: speciesExpression !== null });
+      }
+      if (!candidates.length) throw new Error(`Empty trainer species pool ${trainerType}.${pool.tier}`);
+      speciesPools.push({ tier: pool.tier, tierId: pool.tierId, candidates });
+    }
+  }
+  const moneyCalls = readMethod('MoneyMultiplier');
+  if (moneyCalls.length > 1 || (moneyCalls.length && (!/^\d+(?:\.\d+)?$/.test(moneyCalls[0][0]?.trim() ?? '')))) throw new Error(`Unsupported TrainerConfig money multiplier for ${trainerType}`);
+  const moneyMultiplier = moneyCalls.length ? Number(moneyCalls[0][0].trim()) : 1;
+  if (!Number.isFinite(moneyMultiplier) || moneyMultiplier < 0) throw new Error(`Invalid TrainerConfig money multiplier for ${trainerType}`);
+  const partyTemplateFuncCalls = readMethod('PartyTemplateFunc');
+  let partyTemplateStatus = partyTemplateFuncCalls.length ? 'DYNAMIC_FUNCTION_PRESERVED' : partyCalls.length ? 'STATIC_TEMPLATES' : 'MISSING_IN_UPSTREAM';
+  const callbackTemplateKeys = [];
+  let callbackWavePolicy = null;
+  if (!partyCalls.length) {
+    if (!templateIds.has('TWO_AVG')) throw new Error(`Pinned TrainerConfig default party template is unavailable for ${trainerType}`);
+    partyTemplateKeys.push('TWO_AVG');
+    if (!partyTemplateFuncCalls.length) partyTemplateStatus = 'UPSTREAM_DEFAULT_TEMPLATE';
+  }
+  if (partyTemplateFuncCalls.length > 1) throw new Error(`Duplicate TrainerConfig.setPartyTemplateFunc call for ${trainerType}`);
+  if (partyTemplateFuncCalls.length) {
+    const callback = partyTemplateFuncCalls[0][0]?.trim() ?? '';
+    const waveCall = callback.match(/getWavePartyTemplate\s*\(/);
+    if (/^(?:getEvilGruntPartyTemplate|\(\s*\)\s*=>\s*getEvilGruntPartyTemplate\(\s*\))$/.test(callback)) {
+      callbackWavePolicy = gruntTemplatePolicy;
+      callbackTemplateKeys.push(...gruntTemplatePolicy.ranges.map(range => range.templateKey));
+      partyTemplateStatus = 'CLASSIC_WAVE_RANGE_TEMPLATES';
+    }
+    if (callback === 'getGymLeaderPartyTemplate') {
+      callbackWavePolicy = gymTemplatePolicy;
+      callbackTemplateKeys.push(...gymTemplatePolicy.ranges.map(range => range.templateKey));
+      partyTemplateStatus = 'CLASSIC_WAVE_RANGE_TEMPLATES';
+    }
+    if (waveCall && /^\(\s*\)\s*=>\s*getWavePartyTemplate\s*\(/.test(callback)) {
+      const open = callback.indexOf('(', waveCall.index);
+      const literal = extractBalancedLiteral(callback, open);
+      if (!literal || callback.slice(open + literal.length).trim()) throw new Error(`Unsupported wave-scaled party-template callback for ${trainerType}`);
+      for (const arg of splitTopLevelArguments(literal.slice(1, -1))) {
+        const key = arg.trim().match(/^trainerPartyTemplates\.([A-Z][A-Z0-9_]*)$/)?.[1];
+        if (!key || !templateIds.has(key)) throw new Error(`Invalid wave-scaled party template for ${trainerType}: ${arg}`);
+        callbackTemplateKeys.push(key);
+      }
+      if (!callbackTemplateKeys.length) throw new Error(`Empty wave-scaled party-template callback for ${trainerType}`);
+      partyTemplateStatus = 'WAVE_SCALED_TEMPLATES';
+    } else if (/^\(\s*\)\s*=>\s*trainerPartyTemplates\.([A-Z][A-Z0-9_]*)\s*$/.test(callback)) {
+      const key = callback.match(/trainerPartyTemplates\.([A-Z][A-Z0-9_]*)/)?.[1];
+      if (!templateIds.has(key)) throw new Error(`Missing callback party template for ${trainerType}: ${key}`);
+      callbackTemplateKeys.push(key);
+      partyTemplateStatus = 'STATIC_CALLBACK_TEMPLATE';
+    }
+  }
+  const trainerRules = {
+    isBoss: readMethod('Boss').length > 0,
+    hasDouble: readMethod('HasDouble').length > 0,
+    doubleOnly: readMethod('DoubleOnly').length > 0,
+    hasStaticParty: readMethod('StaticParty').length > 0,
+    useSameSeedForAllMembers: readMethod('UseSameSeedForAllMembers').length > 0,
+    // Direct initializer assignments are normalized from source. Conditional
+    // filters, signature species and callbacks still require runtime support.
+    partyTemplateStatus: helperCalls.length ? 'INITIALIZER_SEMANTICS_PRESERVED' : partyTemplateStatus,
+    initializerCalls: helperCalls.map(call => ({ method: call.method, arguments: call.args, raw: call.raw, definition: call.definition })),
+    callbackTemplateKeys,
+    callbackWavePolicy,
+    templateResolutionStatus: partyTemplateStatus
+  };
+  return { moneyMultiplier, partyTemplateKeys, speciesPools, trainerRules, inlineTemplates };
 }
 
 function parseFormLevelMoves(source, context) {
@@ -356,20 +861,28 @@ export class PokerogueImporter {
     const repos = POKEROGUE_REPOSITORIES;
     const game = repos.pokerogue;
     if (!/^[0-9a-f]{40}$/i.test(game.revision) || !/^[0-9a-f]{40}$/i.test(repos['pokerogue-assets'].revision) || !/^[0-9a-f]{40}$/i.test(repos['pokerogue-locales'].revision)) throw new Error('Pinned upstream source revisions are required');
+    if (POKEROGUE_BASE_ATLAS_REVISION !== repos['pokerogue-assets'].revision) throw new Error('Pinned sprite atlas index revision mismatch');
+    const indexedBaseFront = new Set(POKEROGUE_BASE_ATLAS_IDS.front);
+    const indexedBaseBack = new Set(POKEROGUE_BASE_ATLAS_IDS.back);
+    const indexedFormFront = new Set(POKEROGUE_FORM_ATLAS_KEYS.front);
+    const indexedFormBack = new Set(POKEROGUE_FORM_ATLAS_KEYS.back);
     this.sourceType = CanonicalSourceType.UPSTREAM;
     this.importedFrom = 'pinned-canonical-content-import';
     this.productionCanonicalImport = true;
 
     const fixedPaths = [
-      'src/enums/species-id.ts', 'src/enums/move-id.ts', 'src/enums/ability-id.ts',
+      'src/enums/species-id.ts', 'src/enums/species-form-key.ts', 'src/enums/move-id.ts', 'src/enums/ability-id.ts', 'src/enums/trainer-type.ts',
       'src/enums/pokemon-type.ts', 'src/enums/game-modes.ts', 'src/game-mode.ts',
+      'src/constants.ts', 'src/data/exp.ts', 'src/enums/fixed-boss-waves.ts', 'src/data/trainers/fixed-battle-configs.ts',
       'src/data/moves/move.ts', 'src/data/abilities/init-abilities.ts',
-      'src/modifier/modifier-type.ts'
+      'src/modifier/modifier-type.ts', 'src/data/trainers/trainer-config.ts', 'src/data/trainers/trainer-party-template.ts', 'src/data/balance/signature-species.ts',
+      'src/enums/party-member-strength.ts', 'src/enums/evo-level-threshold-kind.ts', 'src/enums/trainer-pool-tier.ts', 'src/data/species-data-registry.ts',
+      'src/data/balance/moves/moveset-generation.ts', 'src/data/balance/moves/egg-moves.ts'
     ];
     const requests = [
       ...fixedPaths.map(path => ({ repo: 'pokerogue', path })),
       ...[...generations].sort((a, b) => a - b).map(generation => ({ repo: 'pokerogue', path: `src/data/balance/species/generation-${String(generation).padStart(2, '0')}.ts`, generation })),
-      ...[...locales].sort().flatMap(locale => ['game-mode', 'pokemon', 'pokemon-form', 'move', 'ability', 'modifier'].map(namespace => ({ repo: 'pokerogue-locales', path: `${locale}/${namespace}.json`, locale, namespace })))
+      ...[...locales].sort().flatMap(locale => ['game-mode', 'pokemon', 'pokemon-form', 'move', 'ability', 'modifier', 'trainer-classes', 'trainer-names'].map(namespace => ({ repo: 'pokerogue-locales', path: `${locale}/${namespace}.json`, locale, namespace })))
     ];
     const loaded = new Array(requests.length);
     let requestIndex = 0;
@@ -383,11 +896,28 @@ export class PokerogueImporter {
     await Promise.all(workers);
     console.log(`[canonical-import] fetched ${loaded.length} pinned files`);
     const byPath = new Map(loaded.map(item => [`${item.repo}:${item.path}`, item]));
+    const formSpriteKeyEnum = new Map([...byPath.get('pokerogue:src/enums/species-form-key.ts').content
+      .matchAll(/^\s*([A-Z][A-Z0-9_]*)\s*=\s*"([a-z0-9-]+)"/gm)]
+      .map(match => [match[1], match[2]]));
     const sourceHash = item => PokerogueManifest.computeHash(item.content);
     const sourceRows = loaded.map(item => ({ repository: item.repo, revision: repos[item.repo].revision, sourcePath: item.path, hash: sourceHash(item) })).sort((a, b) => `${a.repository}:${a.sourcePath}`.localeCompare(`${b.repository}:${b.sourcePath}`));
+    const experienceSource = byPath.get('pokerogue:src/data/exp.ts');
+    const experienceGrowthRates = parseExperienceGrowthRates(experienceSource.content);
+    const fixedBossWaveSource = byPath.get('pokerogue:src/enums/fixed-boss-waves.ts');
+    const classicFixedBossWaves = parseClassicFixedBossWaves(fixedBossWaveSource.content);
+    const fixedBattleSource = byPath.get('pokerogue:src/data/trainers/fixed-battle-configs.ts');
+    const classicFixedBattleWaves = parseClassicFixedBattleWaves(fixedBattleSource.content, classicFixedBossWaves);
+    const trainerConfigSource = byPath.get('pokerogue:src/data/trainers/trainer-config.ts');
+    const trainerConfigRecords = parseTrainerConfigRecords(trainerConfigSource.content);
+    const trainerPartyTemplateSource = byPath.get('pokerogue:src/data/trainers/trainer-party-template.ts');
+    const partyStrengthCatalog = this.enumParser.parseEnum(byPath.get('pokerogue:src/enums/party-member-strength.ts').content, 'PartyMemberStrength', 'src/enums/party-member-strength.ts');
+    const evolutionThresholdSource = byPath.get('pokerogue:src/enums/evo-level-threshold-kind.ts');
+    const evolutionThresholds = parseEvoLevelThresholdKinds(evolutionThresholdSource.content);
+    const parsedTrainerPartyTemplates = parseTrainerPartyTemplates(trainerPartyTemplateSource.content, partyStrengthCatalog, evolutionThresholds);
     const enumSpecs = [
       ['species', 'SpeciesId', 'src/enums/species-id.ts'], ['move', 'MoveId', 'src/enums/move-id.ts'],
-      ['ability', 'AbilityId', 'src/enums/ability-id.ts'], ['type', 'PokemonType', 'src/enums/pokemon-type.ts'],
+      ['ability', 'AbilityId', 'src/enums/ability-id.ts'], ['trainerType', 'TrainerType', 'src/enums/trainer-type.ts'], ['type', 'PokemonType', 'src/enums/pokemon-type.ts'],
+      ['trainerPoolTier', 'TrainerPoolTier', 'src/enums/trainer-pool-tier.ts'],
       ['gameMode', 'GameModes', 'src/enums/game-modes.ts']
     ];
     const enumCatalogs = {};
@@ -410,6 +940,90 @@ export class PokerogueImporter {
       }
     }
 
+    const trainerTypeCatalog = enumCatalogs.trainerType;
+    const derivedTrainerTypes = parseDerivedTrainerTypes(trainerConfigSource.content, trainerTypeCatalog);
+    const signatureSource = byPath.get('pokerogue:src/data/balance/signature-species.ts');
+    const signatureSpecies = parseTrainerSignatureSpecies(signatureSource.content, enumCatalogs.species);
+    const trainerPartyTemplates = parsedTrainerPartyTemplates.map(template => new TrainerPartyTemplateDefinition({
+      ...template,
+      source: new SourceMetadata({ sourceType: CanonicalSourceType.UPSTREAM, sourceRepository: game.url, sourceRevision: game.revision,
+        sourcePath: 'src/data/trainers/trainer-party-template.ts', sourceSymbol: `trainerPartyTemplates.${template.templateKey}`,
+        sourceHash: sourceHash(trainerPartyTemplateSource) }),
+      extensions: { upstreamRawRecord: { format: 'typescript-source-fragment', value: template.raw }, semantics: 'DECLARATIVE_PARTY_STRENGTH_ONLY' }
+    }));
+    const trainerPartyTemplateIds = new Set(trainerPartyTemplates.map(template => template.templateKey));
+    const gymTemplatePolicy = {
+      ...parseClassicGymTemplatePolicy(trainerPartyTemplateSource.content, trainerPartyTemplateIds),
+      repository: game.url, revision: game.revision,
+      sourcePath: 'src/data/trainers/trainer-party-template.ts', sourceHash: sourceHash(trainerPartyTemplateSource)
+    };
+    const gruntTemplatePolicy = {
+      ...parseClassicGruntTemplatePolicy(trainerPartyTemplateSource.content, trainerPartyTemplateIds, classicFixedBossWaves),
+      repository: game.url, revision: game.revision,
+      sourcePath: 'src/data/trainers/trainer-party-template.ts', sourceHash: sourceHash(trainerPartyTemplateSource),
+      waveProvenance: { repository: game.url, revision: game.revision, sourcePath: 'src/enums/fixed-boss-waves.ts', sourceSymbol: 'ClassicFixedBossWaves', sourceHash: sourceHash(fixedBossWaveSource) }
+    };
+    for (const [symbol, raw] of trainerConfigRecords) {
+      for (const ref of raw.matchAll(/trainerPartyTemplates\.([A-Z][A-Z0-9_]*)/g)) {
+        if (!trainerPartyTemplateIds.has(ref[1])) throw new Error(`Pinned trainer config TrainerType.${symbol} references missing party template ${ref[1]}`);
+      }
+    }
+    const trainerTypeLocale = localeEntries.filter(entry => entry.namespace === 'trainer-classes' && entry.locale === 'en');
+    const trainerLocaleById = new Map(trainerTypeLocale.map(entry => [String(entry.canonicalId).toLowerCase(), entry.value]));
+    const trainers = trainerTypeCatalog.entries().map(([symbol, trainerTypeId]) => {
+      const id = symbol.toLowerCase();
+      const localeKey = symbol.replace(/[^a-z0-9]/gi, '').toLowerCase();
+      const locale = trainerLocaleById.get(localeKey);
+      const sourceRaw = trainerConfigRecords.get(symbol) ?? null;
+      const config = sourceRaw === null ? { moneyMultiplier: null, partyTemplateKeys: [], speciesPools: [], trainerRules: { partyTemplateStatus: 'MISSING_IN_UPSTREAM' } }
+        : parseTrainerConfigDetails(sourceRaw, symbol, enumCatalogs.species, enumCatalogs.trainerPoolTier, trainerPartyTemplateIds, partyStrengthCatalog, evolutionThresholds, trainerConfigSource.content, gymTemplatePolicy, gruntTemplatePolicy);
+      config.trainerRules.derivedTrainerTypeId = derivedTrainerTypes.aliases.get(symbol) ?? trainerTypeId;
+      config.trainerRules.derivedTypeProvenance = { repository: game.url, revision: game.revision, sourcePath: 'src/data/trainers/trainer-config.ts', sourceSymbol: 'TrainerConfig.getDerivedType', sourceHash: sourceHash(trainerConfigSource), raw: derivedTrainerTypes.raw };
+      const signature = signatureSpecies.get(symbol);
+      config.trainerRules.signatureSpecies = signature?.choices ?? [];
+      config.trainerRules.signatureSpeciesProvenance = signature ? { repository: game.url, revision: game.revision, sourcePath: 'src/data/balance/signature-species.ts', sourceSymbol: `signatureSpecies.${symbol}`, sourceHash: sourceHash(signatureSource), raw: signature.raw } : null;
+      config.trainerRules.signatureCallbackInstalled = (config.trainerRules.initializerCalls ?? []).some(call =>
+        ['initForGymLeader', 'initForEliteFour', 'initForEvilTeamLeader'].includes(call.method)
+        && call.arguments[0]?.trim() === `signatureSpecies["${symbol}"]`);
+      for (const inline of config.inlineTemplates ?? []) {
+        if (trainerPartyTemplateIds.has(inline.templateKey)) throw new Error(`Duplicate derived inline party-template key: ${inline.templateKey}`);
+        trainerPartyTemplateIds.add(inline.templateKey);
+        trainerPartyTemplates.push(new TrainerPartyTemplateDefinition({
+          ...inline,
+          source: new SourceMetadata({ sourceType: CanonicalSourceType.UPSTREAM, sourceRepository: game.url, sourceRevision: game.revision,
+            sourcePath: 'src/data/trainers/trainer-config.ts', sourceSymbol: `trainerConfigs[TrainerType.${symbol}].partyTemplates[${inline.templateKey}]`, sourceHash: sourceHash(trainerConfigSource) }),
+          extensions: { upstreamRawRecord: { format: 'typescript-source-fragment', value: inline.sourceFragment }, semantics: 'DECLARATIVE_PARTY_STRENGTH_ONLY', derivedKey: 'STABLE_FROM_UPSTREAM_TRAINER_AND_SLOT' }
+        }));
+      }
+      const { inlineTemplates, ...configData } = config;
+      return new TrainerDefinition({
+        id, trainerTypeId, name: typeof locale === 'string' ? locale : id,
+        names: { en: typeof locale === 'string' ? locale : id },
+        ...configData,
+        source: new SourceMetadata({ sourceType: CanonicalSourceType.UPSTREAM, sourceRepository: game.url, sourceRevision: game.revision, sourcePath: 'src/enums/trainer-type.ts', sourceSymbol: `TrainerType.${symbol}`, sourceHash: sourceHash(byPath.get('pokerogue:src/enums/trainer-type.ts')) }),
+        extensions: {
+          configStatus: sourceRaw === null ? 'MISSING_IN_UPSTREAM' : 'NORMALIZED_SUBSET_WITH_RAW_PRESERVED',
+          normalizedConfigFields: sourceRaw === null ? [] : ['moneyMultiplier', 'partyTemplateKeys', 'waveScaledPartyTemplatePolicy', 'speciesPools', 'isBoss', 'hasDouble', 'doubleOnly', 'hasStaticParty', 'useSameSeedForAllMembers'],
+          unsupportedConfigFields: sourceRaw === null ? [] : ['partyTemplateFunc (except recognized wave-scaled/static callback forms)', 'partyMemberFuncs', 'speciesFilter', 'AI', 'modifiers', 'dialogue', 'BGM', 'variant names'],
+          partyTemplateStatus: config.trainerRules.partyTemplateStatus,
+          ...(sourceRaw === null ? {} : { upstreamConfig: { repository: game.url, revision: game.revision, sourcePath: 'src/data/trainers/trainer-config.ts', sourceSymbol: `trainerConfigs[TrainerType.${symbol}]`, sourceHash: sourceHash(trainerConfigSource), raw: sourceRaw } }),
+          localizationStatus: typeof locale === 'string' ? 'RESOLVED' : 'MISSING_IN_UPSTREAM',
+          localizationNamespace: 'trainer-classes'
+        }
+      });
+    }).sort((left, right) => left.trainerTypeId - right.trainerTypeId);
+    this.manifest.recordFile('pokerogue', game.revision, 'src/enums/trainer-type.ts', byPath.get('pokerogue:src/enums/trainer-type.ts').content);
+    this.manifest.recordFile('pokerogue', game.revision, 'src/data/trainers/trainer-config.ts', trainerConfigSource.content);
+    this.manifest.recordFile('pokerogue', game.revision, 'src/data/trainers/trainer-party-template.ts', trainerPartyTemplateSource.content);
+    this.manifest.recordFile('pokerogue', game.revision, 'src/enums/party-member-strength.ts', byPath.get('pokerogue:src/enums/party-member-strength.ts').content);
+    this.manifest.recordFile('pokerogue', game.revision, 'src/enums/evo-level-threshold-kind.ts', evolutionThresholdSource.content);
+    for (const trainer of trainers) this.manifest.recordEntity('TrainerType', trainer.id, {
+      repository: 'pokerogue', revision: game.revision, sourcePath: trainer.source.sourcePath,
+      sourceSymbol: trainer.source.sourceSymbol, hash: trainer.source.sourceHash
+    });
+    const referencedTrainerTypes = new Set([...trainerConfigRecords.keys()]);
+    for (const symbol of referencedTrainerTypes) if (!trainerTypeCatalog.hasSymbol(symbol)) throw new Error(`Pinned trainer config references missing TrainerType.${symbol}`);
+
     const species = [];
     const forms = [];
     for (const generation of [...generations].sort((a, b) => a - b)) {
@@ -426,12 +1040,28 @@ export class PokerogueImporter {
         record.sprites = { atlasPath: null, icon: null, atlas: null, frame: null, hasFemale: null, hasShiny: null, hasVariants: null };
         record.sprite = record.sprites;
         record.forms = [];
-        // Upstream declares the starter identity explicitly. Preserve that semantic field
-        // instead of inferring starter eligibility from list position or UI choices.
-        record.starterEligible = /\bstarter\s*:\s*SpeciesId\./.test(record.extensions?.upstreamRawRecord?.value || '');
+        // SpeciesDataRegistry.isStarter checks the cost declared on this record;
+        // `starter` alone identifies an evolution line and does not grant eligibility.
+        const sourceRecord = record.extensions?.upstreamRawRecord?.value || '';
+        const starterCost = sourceRecord.match(/\bstarterCost\s*:\s*(\d+)/);
+        record.starterCost = starterCost ? Number(starterCost[1]) : null;
+        record.starterEligible = Boolean(record.starterCost);
+        record.starterSpeciesId = sourceRecord.match(/\bstarter\s*:\s*SpeciesId\.([A-Z0-9_]+)/)?.[1]?.toLowerCase() ?? null;
         record.source.sourceHash = sourceHash(file);
         record.source.sourceSymbol = `SpeciesId.${symbol}`;
-        record.extensions = { ...record.extensions, assetReference: { repository: repos['pokerogue-assets'].url, revision: repos['pokerogue-assets'].revision, speciesId: numericId, resolution: 'pending-source-manifest' } };
+        const namedFront = POKEROGUE_FORM_ATLAS_KEYS.front.filter(key => key.startsWith(`${numericId}-`));
+        const namedBack = POKEROGUE_FORM_ATLAS_KEYS.back.filter(key => key.startsWith(`${numericId}-`));
+        const assetReference = {
+          repository: repos['pokerogue-assets'].url, revision: repos['pokerogue-assets'].revision,
+          speciesId: numericId, resolution: indexedBaseFront.has(numericId) ? 'INDEXED_BASE_ATLAS'
+            : namedFront.length ? 'INDEXED_NAMED_FORM_ATLASES' : 'MISSING_IN_PINNED_ASSET_TREE',
+          sourcePath: indexedBaseFront.has(numericId) ? `images/pokemon/${numericId}.json` : null,
+          backSourcePath: indexedBaseBack.has(numericId) ? `images/pokemon/back/${numericId}.json` : null,
+          namedFrontPaths: namedFront.map(key => `images/pokemon/${key}.json`),
+          namedBackPaths: namedBack.map(key => `images/pokemon/back/${key}.json`),
+          manifestVerified: false, imageVerified: false
+        };
+        record.extensions = { ...record.extensions, assetReference };
         const localized = localeLookup.get(`en:pokemon:${record.id}`);
         if (typeof localized === 'string') { record.names.en = localized; record.name = localized; }
         species.push(record);
@@ -450,18 +1080,39 @@ export class PokerogueImporter {
               if (end < 0) throw new Error(`Invalid import: unclosed PokemonForm record for ${record.id}`);
               const rawForm = formText.slice(start, end + 1);
               const formName = rawForm.match(/formName\s*:\s*["']([^"']+)/)?.[1] || 'unnamed';
-              const formKeyMatch = rawForm.match(/formKey\s*:\s*(?:SpeciesFormKey\.([A-Z0-9_]+)|["']([^"']+)["']|([A-Za-z0-9_-]+))/);
+              const formKeyMatch = rawForm.match(/formKey\s*:\s*(?:SpeciesFormKey\.([A-Z0-9_]+)|["']([^"']*)["']|([A-Za-z0-9_-]+))/);
               const formKey = formKeyMatch?.[1] || formKeyMatch?.[2]?.toUpperCase() || formKeyMatch?.[3]?.toUpperCase() || 'BASE';
+              const upstreamFormKey = formKeyMatch?.[1] ? formSpriteKeyEnum.get(formKeyMatch[1])
+                : formKeyMatch?.[2] ?? formKeyMatch?.[3] ?? '';
+              const spriteMatch = rawForm.match(/\bformSpriteKey\s*:\s*(?:SpeciesFormKey\.([A-Z0-9_]+)|"([^"]*)"|'([^']*)'|(null))/);
+              const spriteDeclared = /\bformSpriteKey\s*:/.test(rawForm);
+              const formSpriteKey = !spriteDeclared || spriteMatch?.[4] === 'null' ? upstreamFormKey
+                : spriteMatch?.[1] ? formSpriteKeyEnum.get(spriteMatch[1])
+                : spriteMatch?.[2] ?? spriteMatch?.[3];
+              const spriteAtlasKey = typeof formSpriteKey === 'string'
+                ? `${numericId}${formSpriteKey ? `-${formSpriteKey}` : ''}` : null;
+              const frontIndexed = spriteAtlasKey && (spriteAtlasKey === String(numericId)
+                ? indexedBaseFront.has(numericId) : indexedFormFront.has(spriteAtlasKey));
+              const backIndexed = spriteAtlasKey && (spriteAtlasKey === String(numericId)
+                ? indexedBaseBack.has(numericId) : indexedFormBack.has(spriteAtlasKey));
               const levelMoves = record.extensions?.upstreamFormLevelMoves?.[formKey] ?? [];
               forms.push({
                 id: `${record.id}:${(formKey === 'BASE' ? `base_${formIndex}` : formKey.toLowerCase())}`,
                 speciesId: record.id,
                 formKey,
+                formSpriteKey: formSpriteKey ?? null,
+                spriteAtlasKey,
                 name: formName,
                 types: [...rawForm.matchAll(/type[12]\s*:\s*PokemonType\.([A-Z]+)/g)].map(match => match[1]),
                 baseStats: Object.fromEntries(['Hp', 'Atk', 'Def', 'Spatk', 'Spdef', 'Spd'].map(stat => [stat.toLowerCase(), Number(rawForm.match(new RegExp(`base${stat}\\s*:\\s*(\\d+)`))?.[1] || 0)])),
                 levelMoves,
-                assetReference: { repository: repos['pokerogue-assets'].url, revision: repos['pokerogue-assets'].revision, speciesId: numericId, resolution: 'pending-source-manifest' },
+                assetReference: { repository: repos['pokerogue-assets'].url,
+                  revision: repos['pokerogue-assets'].revision, speciesId: numericId,
+                  resolution: !spriteAtlasKey ? 'NOT_YET_SUPPORTED_BY_GUI_3DS'
+                    : frontIndexed ? 'INDEXED_FORM_ATLAS' : 'MISSING_IN_PINNED_ASSET_TREE',
+                  sourcePath: frontIndexed ? `images/pokemon/${spriteAtlasKey}.json` : null,
+                  backSourcePath: backIndexed ? `images/pokemon/back/${spriteAtlasKey}.json` : null,
+                  manifestVerified: false, imageVerified: false },
                 provenance: { sourceRepository: game.url, sourceRevision: game.revision, sourcePath: path, sourceSymbol: `SpeciesId.${symbol}.forms`, sourceType: CanonicalSourceType.UPSTREAM, sourceHash: sourceHash(file) },
                 extensions: { upstreamRawRecord: { format: 'typescript-source-fragment', value: rawForm }, runtimeTransform: 'NOT_IMPORTED' }
               });
@@ -472,9 +1123,18 @@ export class PokerogueImporter {
         }
       }
     }
+    const constantsSource = byPath.get('pokerogue:src/constants.ts').content;
+    const defaultStarterBlock = constantsSource.match(/export\s+const\s+defaultStarterSpecies\s*:[^=]+?=\s*\[([\s\S]*?)\]/);
+    if (!defaultStarterBlock) throw new Error('Pinned defaultStarterSpecies declaration was not found in src/constants.ts');
+    const defaultStarterSymbols = [...defaultStarterBlock[1].matchAll(/SpeciesId\.([A-Z0-9_]+)/g)].map(match => match[1].toLowerCase());
+    if (!defaultStarterSymbols.length || new Set(defaultStarterSymbols).size !== defaultStarterSymbols.length) throw new Error('Pinned defaultStarterSpecies declaration is empty or contains duplicates');
+    const canonicalSpeciesById = new Map(species.map(item => [item.id, item]));
+    const unresolvedDefaultStarters = defaultStarterSymbols.filter(id => !canonicalSpeciesById.has(id));
+    if (unresolvedDefaultStarters.length) throw new Error(`Pinned default starters are absent from imported species: ${unresolvedDefaultStarters.join(', ')}`);
     const moveFile = byPath.get('pokerogue:src/data/moves/move.ts');
     const abilityFile = byPath.get('pokerogue:src/data/abilities/init-abilities.ts');
-    const parsedMoves = this.parseMoves(moveFile.content);
+    const parsedMoves = this.parseMoves(moveFile.content, null,
+      byPath.get('pokerogue:src/data/balance/moves/moveset-generation.ts')?.content ?? null);
     const unmappedMoveConstructors = parsedMoves.filter(move => enumCatalogs.move.getId(move.id.toUpperCase()) === undefined).map(move => ({ domain: 'move', id: move.id, classification: 'NOT_YET_SUPPORTED_BY_GUI_3DS', reason: 'Upstream constructor symbol has no pinned MoveId enum entry; raw source remains represented in report.' }));
     const moves = parsedMoves.filter(move => enumCatalogs.move.getId(move.id.toUpperCase()) !== undefined);
     console.log(`[canonical-import] parsed ${moves.length} moves`);
@@ -489,6 +1149,31 @@ export class PokerogueImporter {
       move.flags = { contact: null, protectable: null, sound: null, bullet: null };
       move.extensions = { ...move.extensions, runtimeBehavior: 'NOT_IMPORTED' };
     }
+    const eggMoveFile = byPath.get('pokerogue:src/data/balance/moves/egg-moves.ts');
+    const speciesByEnumId = new Map(species.map(item => [enumCatalogs.species.getId(item.id.toUpperCase()), item]));
+    const moveByEnumId = new Map(moves.map(item => [item.moveId, item]));
+    const eggMoveRecord = /\[SpeciesId\.([A-Z0-9_]+)\]\s*:\s*\[([^\]]*)\]/g;
+    let eggMoveMatch;
+    const importedEggSpecies = new Set();
+    while ((eggMoveMatch = eggMoveRecord.exec(eggMoveFile.content)) !== null) {
+      const speciesEnumId = enumCatalogs.species.getId(eggMoveMatch[1]);
+      const speciesRecord = speciesByEnumId.get(speciesEnumId);
+      if (!speciesRecord) throw new Error(`Pinned egg move record references missing species: SpeciesId.${eggMoveMatch[1]}`);
+      if (importedEggSpecies.has(speciesEnumId)) throw new Error(`Duplicate pinned egg move record: SpeciesId.${eggMoveMatch[1]}`);
+      const symbols = [...eggMoveMatch[2].matchAll(/MoveId\.([A-Z0-9_]+)/g)].map(match => match[1]);
+      if (symbols.length !== 4) throw new Error(`Pinned egg move array must contain four entries: SpeciesId.${eggMoveMatch[1]}`);
+      const canonicalMoves = symbols.map(symbol => {
+        const moveId = enumCatalogs.move.getId(symbol);
+        const record = moveByEnumId.get(moveId);
+        if (moveId === undefined || !record) throw new Error(`Pinned egg move references missing canonical MoveId.${symbol}`);
+        return record.id;
+      });
+      speciesRecord.eggMoves = canonicalMoves;
+      speciesRecord.extensions = { ...speciesRecord.extensions,
+        upstreamEggMoves: { sourcePath: 'src/data/balance/moves/egg-moves.ts', sourceSymbol: `speciesEggMoves[SpeciesId.${eggMoveMatch[1]}]`, sourceHash: sourceHash(eggMoveFile), raw: eggMoveMatch[0] } };
+      importedEggSpecies.add(speciesEnumId);
+    }
+    if (!importedEggSpecies.size) throw new Error('Pinned speciesEggMoves declaration produced no egg move records');
     for (const ability of abilities) {
       const numericId = enumCatalogs.ability.getId(ability.id.toUpperCase());
       if (numericId === undefined) continue;
@@ -519,8 +1204,15 @@ export class PokerogueImporter {
     const assetMetadata = await Promise.all(assetRefs.map(async item => {
       const path = `images/pokemon/${item.speciesId}.json`;
       const content = await repository.getFile('pokerogue-assets', path);
-      const parsed = JSON.parse(content);
-      item.extensions.assetReference = { repository: repos['pokerogue-assets'].url, revision: repos['pokerogue-assets'].revision, speciesId: item.speciesId, sourcePath: path, sourceHash: PokerogueManifest.computeHash(content), verified: true, frames: Array.isArray(parsed.frames) ? parsed.frames.length : 0 };
+      const atlas = parsePokemonSpriteAtlas(content, path);
+      item.extensions.assetReference = { repository: repos['pokerogue-assets'].url, revision: repos['pokerogue-assets'].revision,
+        speciesId: item.speciesId, sourcePath: path, sourceHash: PokerogueManifest.computeHash(content),
+        imagePath: atlas.imagePath, imageHash: null, verified: true, manifestVerified: true, imageVerified: false,
+        backSourcePath: item.extensions.assetReference.backSourcePath,
+        namedFrontPaths: item.extensions.assetReference.namedFrontPaths,
+        namedBackPaths: item.extensions.assetReference.namedBackPaths,
+        atlasWidth: atlas.width, atlasHeight: atlas.height, frames: atlas.frames,
+        atlasFormat: atlas.format, extensions: atlas.extensions };
       return { repository: 'pokerogue-assets', revision: repos['pokerogue-assets'].revision, sourcePath: path, hash: PokerogueManifest.computeHash(content) };
     }));
     sourceRows.push(...assetMetadata);
@@ -529,12 +1221,19 @@ export class PokerogueImporter {
     const provenance = new Provenance({ sourceRepository: game.url, sourceRevision: game.revision, sourcePath: 'src/data/balance/species/generation-01.ts', sourceSymbol: 'initGenerationOne', sourceType: CanonicalSourceType.UPSTREAM, sourceHash: sourceRows.find(item => item.sourcePath.endsWith('generation-01.ts'))?.hash });
     const canonicalAssetReferences = species.map(item => ({ speciesId: item.id, ...item.extensions.assetReference }));
     const canonicalAssetBySpecies = new Map(canonicalAssetReferences.map(item => [item.speciesId, item]));
-    const canonicalContent = new CanonicalContent({ schemaVersion: '1.0.0', contentVersion: '1.0.0', sourceSnapshot: snapshot, provenance, collections: { gameModes, species, forms, moves, abilities, items, locales: localeEntries, assetReferences: [...canonicalAssetBySpecies.values()] }, extensions: { importer: 'PokerogueImporter.importCanonicalContent', unknownFieldPolicy: 'preserve-in-upstreamRawRecord', unsupportedBehavior: 'NOT_IMPORTED', skippedMoveRecords: parsedMoves.filter(move => enumCatalogs.move.getId(move.id.toUpperCase()) === undefined).map(move => ({ sourceSymbol: move.id, raw: move.extensions?.upstreamRawRecord || null })) } });
+    const classicModeDefinition = gameModes.find(mode => mode.id === 'classic');
+    if (!Number.isSafeInteger(classicModeDefinition?.rules?.maxWave) || !classicModeDefinition.provenance?.sourceHash) {
+      throw new Error('Pinned Classic final-wave rule is missing or unsupported');
+    }
+    if (classicFixedBossWaves.some(entry => entry.wave > classicModeDefinition.rules.maxWave)) {
+      throw new Error('Pinned Classic fixed-boss wave exceeds the imported Classic final wave');
+    }
+    const canonicalContent = new CanonicalContent({ schemaVersion: '1.0.0', contentVersion: '1.0.0', sourceSnapshot: snapshot, provenance, collections: { gameModes, species, forms, moves, abilities, items, trainers, trainerPartyTemplates, locales: localeEntries, assetReferences: [...canonicalAssetBySpecies.values()] }, extensions: { importer: 'PokerogueImporter.importCanonicalContent', unknownFieldPolicy: 'preserve-in-upstreamRawRecord', unsupportedBehavior: 'NOT_IMPORTED', freshProfile: { defaultStarterSpecies: defaultStarterSymbols, provenance: { repository: game.url, revision: game.revision, sourcePath: 'src/constants.ts', sourceSymbol: 'defaultStarterSpecies', sourceHash: sourceHash(byPath.get('pokerogue:src/constants.ts')) } }, pokemonExperience: { growthRates: experienceGrowthRates, provenance: { repository: game.url, revision: game.revision, sourcePath: 'src/data/exp.ts', sourceSymbol: 'GrowthRate/expLevels/getLevelTotalExp', sourceHash: sourceHash(experienceSource) } }, classicFixedBossWaves: { entries: classicFixedBossWaves, provenance: { repository: game.url, revision: game.revision, sourcePath: 'src/enums/fixed-boss-waves.ts', sourceSymbol: 'ClassicFixedBossWaves', sourceHash: sourceHash(fixedBossWaveSource) }, finalWave: { wave: classicModeDefinition.rules.maxWave, provenance: { repository: game.url, revision: game.revision, sourcePath: classicModeDefinition.provenance.sourcePath, sourceSymbol: 'GameMode.isWaveFinal:classic', sourceHash: classicModeDefinition.provenance.sourceHash } } }, classicFixedBattleWaves: { entries: classicFixedBattleWaves, provenance: { repository: game.url, revision: game.revision, sourcePath: 'src/data/trainers/fixed-battle-configs.ts', sourceSymbol: 'classicFixedBattles', sourceHash: sourceHash(fixedBattleSource) } }, trainerPartyTemplateCatalog: { provenance: { repository: game.url, revision: game.revision, sourcePath: 'src/data/trainers/trainer-party-template.ts', sourceSymbol: 'trainerPartyTemplates', sourceHash: sourceHash(trainerPartyTemplateSource) }, partyStrengthSource: { sourcePath: 'src/enums/party-member-strength.ts', sourceHash: sourceHash(byPath.get('pokerogue:src/enums/party-member-strength.ts')) }, evolutionThresholdSource: { sourcePath: 'src/enums/evo-level-threshold-kind.ts', sourceHash: sourceHash(evolutionThresholdSource) }, trainerPoolTierSource: { sourcePath: 'src/enums/trainer-pool-tier.ts', sourceHash: sourceHash(byPath.get('pokerogue:src/enums/trainer-pool-tier.ts')) } }, skippedMoveRecords: parsedMoves.filter(move => enumCatalogs.move.getId(move.id.toUpperCase()) === undefined).map(move => ({ sourceSymbol: move.id, raw: move.extensions?.upstreamRawRecord || null })) } });
     console.log('[canonical-import] hashing canonical snapshot');
     const errors = canonicalContent.validate();
     if (errors.length) throw new Error(`Invalid canonical production import: ${errors.join('; ')}`);
     const duplicateIds = records => { const ids = records.map(item => item.id); return ids.filter((id, index) => ids.indexOf(id) !== index); };
-    for (const [label, records] of Object.entries({ species, forms, moves, abilities, items, gameModes })) { const duplicates = duplicateIds(records); if (duplicates.length) throw new Error(`Invalid import: duplicate ${label} IDs ${[...new Set(duplicates)].join(', ')}`); }
+    for (const [label, records] of Object.entries({ species, forms, moves, abilities, items, trainers, trainerPartyTemplates, gameModes })) { const duplicates = duplicateIds(records); if (duplicates.length) throw new Error(`Invalid import: duplicate ${label} IDs ${[...new Set(duplicates)].join(', ')}`); }
     const speciesIds = new Set(species.map(item => item.id));
     const speciesById = new Map(species.map(item => [item.id, item]));
     const abilityIds = new Set(abilities.map(item => item.id));
@@ -556,6 +1255,35 @@ export class PokerogueImporter {
         throw new Error(`Invalid cross-reference: species ${item.id} evolution enum ID disagrees with canonical target ${evolution.targetSpeciesId}`);
       }
     }
+    // Port the registry's initialization rather than guessing a predecessor
+    // from one incoming edge: form evolutions may repeat the same target and
+    // starter resets happen in numeric SpeciesId order.
+    const registryFile = byPath.get('pokerogue:src/data/species-data-registry.ts');
+    const megaKeysLiteral = registryFile.content.match(/const\s+megaFormKeys\s*=\s*\[([\s\S]*?)\]/)?.[1];
+    if (!megaKeysLiteral) throw new Error('Invalid import: SpeciesDataRegistry.initPreEvolutions mega-form exclusions were not found');
+    const excludedPrevolutionForms = new Set([...megaKeysLiteral.matchAll(/SpeciesFormKey\.([A-Z0-9_]+)/g)].map(match => match[1]));
+    const prevolutionSource = { sourceRepository: game.url, sourceRevision: game.revision, sourcePath: registryFile.path,
+      sourceSymbol: 'SpeciesDataRegistry.initPreEvolutions', sourceHash: sourceHash(registryFile), sourceType: CanonicalSourceType.UPSTREAM };
+    for (const item of species) {
+      if (item.extensions.upstreamEvolutionDeclarations?.unsupported?.length) throw new Error(`Invalid import: unsupported evolution declaration for ${item.id}`);
+      item.prevolutionSpeciesId = null;
+      item.extensions.prevolution = { status: generations.length === 9 ? 'RESOLVED' : 'FILTERED_SNAPSHOT', source: prevolutionSource };
+    }
+    const assignPrevolutions = (item, visiting) => {
+      if (visiting.has(item.id)) throw new Error(`Invalid import: cyclic evolution chain at ${item.id}`);
+      const nextVisiting = new Set(visiting).add(item.id);
+      for (const evolution of item.evolutions) {
+        if (excludedPrevolutionForms.has(evolution.evoFormKey)) continue;
+        const target = speciesById.get(evolution.targetSpeciesId);
+        if (!target) continue; // A filtered snapshot records unresolved targets above.
+        target.prevolutionSpeciesId = item.id;
+        assignPrevolutions(target, nextVisiting);
+      }
+    };
+    for (const starter of [...species].filter(item => item.starterEligible).sort((a, b) => a.speciesId - b.speciesId)) {
+      starter.prevolutionSpeciesId = null;
+      assignPrevolutions(starter, new Set());
+    }
     for (const item of species) for (const ability of Object.values(item.abilities)) {
       if (!ability || String(ability).toUpperCase() === 'NONE') continue;
       const id = String(ability).toLowerCase().replace(/\s+/g, '_');
@@ -569,7 +1297,7 @@ export class PokerogueImporter {
       const raw = record.extensions?.upstreamRawRecord?.value;
       if (typeof raw === 'string') for (const field of raw.matchAll(/\b([A-Za-z_$][\w$]*)\s*:/g)) unknownFieldNames.add(field[1]);
     }
-    const report = { schemaVersion: '1.0.0', sourceRevisions: { pokerogue: game.revision, assets: repos['pokerogue-assets'].revision, locales: repos['pokerogue-locales'].revision }, contentHash: canonicalContent.hash(), catalogCounts: { modes: gameModes.length, species: species.length, forms: forms.length, moves: moves.length, abilities: abilities.length, items: items.length, locales: localeEntries.length }, skippedRecords: skippedMoves, warnings: [], unknownFields: { observedSourceFieldNames: [...unknownFieldNames].sort(), preservedRawRecordCount: species.length + forms.length + moves.length + abilities.length + items.length, abilityAttributeSemantics: 'preserved raw; not interpreted', modifierEffectSemantics: 'preserved raw; not interpreted' }, provenance: sourceRows, assetReferences: { verified: assetRefs.length, pendingMetadataVerification: species.length - assetRefs.length } };
+    const report = { schemaVersion: '1.0.0', sourceRevisions: { pokerogue: game.revision, assets: repos['pokerogue-assets'].revision, locales: repos['pokerogue-locales'].revision }, contentHash: canonicalContent.hash(), catalogCounts: { modes: gameModes.length, species: species.length, speciesWithBaseExperience: species.filter(item => Number.isInteger(item.baseExp)).length, experienceGrowthRates: Object.keys(experienceGrowthRates).length, fixedBossWaves: classicFixedBossWaves.length, fixedBattleWaves: classicFixedBattleWaves.length, trainers: trainers.length, trainerConfigs: trainers.filter(item => item.extensions.configStatus === 'NORMALIZED_SUBSET_WITH_RAW_PRESERVED').length, trainerPartyTemplates: trainerPartyTemplates.length, trainersWithStaticPartyTemplates: trainers.filter(item => item.trainerRules.partyTemplateStatus === 'STATIC_TEMPLATES').length, trainersWithDynamicPartyTemplateFunctions: trainers.filter(item => item.trainerRules.partyTemplateStatus === 'DYNAMIC_FUNCTION_PRESERVED').length, trainersWithSpeciesPools: trainers.filter(item => item.speciesPools.length > 0).length, trainerSpeciesPoolCandidates: trainers.reduce((total, trainer) => total + trainer.speciesPools.reduce((sum, pool) => sum + pool.candidates.length, 0), 0), forms: forms.length, freshProfileStarters: defaultStarterSymbols.length, eggMoveEntries: species.reduce((count, item) => count + (item.eggMoves?.length ?? 0), 0), moves: moves.length, abilities: abilities.length, items: items.length, locales: localeEntries.length }, skippedRecords: skippedMoves, warnings: [...species.filter(item => !Number.isInteger(item.baseExp)).map(item => ({ domain: 'species', id: item.id, classification: 'MISSING_IN_UPSTREAM', field: 'baseExp' })), ...trainers.filter(item => item.extensions.configStatus === 'MISSING_IN_UPSTREAM').map(item => ({ domain: 'trainer', id: item.id, classification: 'MISSING_IN_UPSTREAM', field: 'trainerConfig' })), ...trainers.filter(item => item.extensions.localizationStatus !== 'RESOLVED').map(item => ({ domain: 'trainer', id: item.id, classification: 'MISSING_IN_UPSTREAM', field: 'trainerClassLocale' }))], unknownFields: { observedSourceFieldNames: [...unknownFieldNames].sort(), preservedRawRecordCount: species.length + forms.length + moves.length + abilities.length + items.length + trainers.filter(item => item.extensions.upstreamConfig).length + trainerPartyTemplates.length, trainerConfigSemantics: 'supported declarative subset normalized; all raw records preserved; callbacks remain NOT_IMPORTED', trainerPartyTemplateSemantics: 'unknown constructor behavior retained as raw source; supported declarative fields normalized', abilityAttributeSemantics: 'preserved raw; not interpreted', modifierEffectSemantics: 'preserved raw; not interpreted' }, provenance: sourceRows, assetReferences: { verifiedManifests: assetRefs.length, verifiedImages: 0, pendingMetadataVerification: species.length - assetRefs.length, pendingImageVerification: species.length } };
     const result = { sourceType: CanonicalSourceType.UPSTREAM, sourceSnapshot: snapshot, canonicalContent, runtimeContent: new (await import('./CanonicalDataContract.js')).RuntimeContent({ canonicalContent }), gameModes, species, forms, moves, abilities, items, locales: localeEntries, enums: enumCatalogs, importReport: report, manifest: this.manifest };
     this.canonicalImportCache = { key: cacheKey, result };
     return result;
@@ -601,6 +1329,10 @@ export class PokerogueImporter {
       const record = source.slice(open + 1, close);
       const pokemonPools = this._parseBiomeSymbolPools(source, 'pokemonPool', 'TimeOfDay');
       const trainerPools = this._parseBiomeSymbolPools(source, 'trainerPool', null);
+      const trainerChanceMatch = record.match(/\btrainerChance\s*:\s*(\d+)\b/);
+      if (!trainerChanceMatch) throw new Error(`Upstream trainerChance was not found in ${sourcePath}`);
+      const trainerChance = Number(trainerChanceMatch[1]);
+      if (!Number.isSafeInteger(trainerChance) || trainerChance > 0xFFFF) throw new Error(`Upstream trainerChance is outside the 3DS canonical range in ${sourcePath}`);
       const idMatch = record.match(/biomeId\s*:\s*BiomeId\.([A-Z][A-Z0-9_]*)/);
       if (!idMatch || !upstreamIds.has(idMatch[1])) throw new Error(`Unresolved biomeId in ${sourcePath}`);
       const upstreamSymbol = idMatch[1];
@@ -644,13 +1376,14 @@ export class PokerogueImporter {
       definitions.push(new BiomeDefinition({
         id, upstreamId: upstreamIds.get(upstreamSymbol),
         localizedName: { namespace: 'biomes', key: localeKey },
-        visualTemplate: null, background: null, music: bgm,
+        visualTemplate: null, background: null, music: bgm, trainerChance,
         encounterPools: pokemonPools,
         trainerPools,
         routes: routeIds,
         metadata: { upstreamBiomeId: upstreamIds.get(upstreamSymbol), sourceBiomeSymbol: symbol },
         provenance: new Provenance({ ...provenance, sourceSymbol: symbol }),
         extensions: {
+          upstreamTrainerChance: { value: trainerChance, sourcePath, sourceSymbol: `${symbol}.trainerChance`, sourceHash },
           upstreamRawRecord: { format: 'typescript-source-file', value: source },
           upstreamEnumRef: { repository: repo.url, revision: repo.revision, sourcePath: 'src/enums/biome-id.ts', sha256: PokerogueManifest.computeHash(enumContent) },
           upstreamRegistryRef: { repository: repo.url, revision: repo.revision, sourcePath: 'src/init/init-biomes.ts', sha256: PokerogueManifest.computeHash(initializerContent) },
@@ -891,6 +1624,8 @@ export class PokerogueImporter {
       const bSpdef = block.match(/baseSpdef\s*:\s*(\d+)/i);
       const bSpd = block.match(/baseSpd\s*:\s*(\d+)/i);
       const baseTotalMatch = block.match(/baseTotal\s*:\s*(\d+)/i);
+      const baseExpMatch = block.match(/\bbaseExp\s*:\s*(\d+)/i);
+      if (/\bbaseExp\s*:/.test(block) && !baseExpMatch) throw new Error(`Invalid import: unsupported baseExp value for ${speciesKey}`);
       const rarityField = field => {
         const match = block.match(new RegExp(`\\b${field}\\s*:\\s*(true|false)`, 'i'));
         return match ? match[1].toLowerCase() === 'true' : null;
@@ -903,7 +1638,7 @@ export class PokerogueImporter {
         const arrayOpen = block.indexOf('[', evolutionArrayMatch.index);
         const evolutionArray = extractBalancedLiteral(block, arrayOpen);
         if (!evolutionArray) throw new Error(`Invalid import: unclosed evolutions array for ${speciesKey}`);
-        const evolutionCtor = /new\s+SpeciesEvolution\s*\(\s*\{/g;
+        const evolutionCtor = /new\s+(SpeciesEvolution|SpeciesFormEvolution)\s*\(\s*\{/g;
         let evolutionMatch;
         while ((evolutionMatch = evolutionCtor.exec(evolutionArray))) {
           const objectOpen = evolutionArray.indexOf('{', evolutionMatch.index);
@@ -914,6 +1649,11 @@ export class PokerogueImporter {
           const itemMatch = rawEvolution.match(/\bitem\s*:\s*(?:EvolutionItem\.)?([A-Za-z0-9_]+)/);
           const delayMatch = rawEvolution.match(/\bevoDelay\s*:\s*\[\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\]/);
           const conditionMatch = rawEvolution.match(/\bcondition\s*:\s*([\s\S]*?)(?=,\s*(?:evoDelay|item)\s*:|\s*}$)/);
+          const formKey = key => {
+            const match = rawEvolution.match(new RegExp(`\\b${key}\\s*:\\s*(?:SpeciesFormKey\\.([A-Z0-9_]+)|["']([^"']*)["'])`));
+            if (!match && new RegExp(`\\b${key}\\s*:`).test(rawEvolution)) throw new Error(`Invalid import: unsupported ${key} in ${speciesKey} evolution`);
+            return match ? (match[1] ?? match[2].toUpperCase()) : null;
+          };
           const targetSymbol = targetMatch?.[1]?.toUpperCase() ?? null;
           const targetSpeciesEnumId = targetSymbol ? this.speciesEnumCatalog?.getId(targetSymbol) : undefined;
           const edgeIndex = evolutions.length;
@@ -924,6 +1664,9 @@ export class PokerogueImporter {
             evoLevelThreshold: delayMatch ? { strong: Number(delayMatch[1]), normal: Number(delayMatch[2]), wild: Number(delayMatch[3]) } : null,
             item: itemMatch?.[1] ?? null,
             condition: conditionMatch?.[1]?.trim() ?? null,
+            declarationKind: evolutionMatch[1],
+            preFormKey: formKey('preFormKey'),
+            evoFormKey: formKey('evoFormKey'),
             source: {
               source: 'pokerogue', sourceType: this.sourceType,
               sourceRepository: this.sourceType === CanonicalSourceType.UPSTREAM ? repoInfo.url : 'local:test/fixtures/fallbackVerticalSlice.js',
@@ -936,7 +1679,7 @@ export class PokerogueImporter {
           }));
           evolutionCtor.lastIndex = objectOpen + rawEvolution.length;
         }
-        const declaredEvolutionCount = [...evolutionArray.matchAll(/new\s+SpeciesEvolution\s*\(/g)].length;
+        const declaredEvolutionCount = [...evolutionArray.matchAll(/new\s+Species(?:Form)?Evolution\s*\(/g)].length;
         if (declaredEvolutionCount !== evolutions.length) {
           unsupportedEvolutionDeclarations.push({ declaredCount: declaredEvolutionCount, parsedCount: evolutions.length, raw: evolutionArray });
         }
@@ -1089,6 +1832,7 @@ export class PokerogueImporter {
         type2,
         baseStats,
         baseTotal: baseTotalMatch ? Number(baseTotalMatch[1]) : null,
+        baseExp: baseExpMatch ? Number(baseExpMatch[1]) : null,
         rarity: { legendary: rarityField('legendary'), subLegendary: rarityField('subLegendary'), mythical: rarityField('mythical') },
         growthRate: growthRateMatch?.[1] ?? null,
         ...(malePercentMatch ? { malePercent } : {}),
@@ -1138,7 +1882,7 @@ export class PokerogueImporter {
    * @param {string[]} [targetIds] Optional filter
    * @returns {MoveDefinition[]}
    */
-  parseMoves(tsContent, targetIds = null) {
+  parseMoves(tsContent, targetIds = null, generationSource = null) {
     const moveList = [];
     const sourcePath = 'src/data/moves/move.ts';
     const repoInfo = POKEROGUE_REPOSITORIES.pokerogue;
@@ -1149,6 +1893,19 @@ export class PokerogueImporter {
     const targetSet = Array.isArray(targetIds) && targetIds.length > 0
       ? new Set(targetIds.map(t => t.toUpperCase()))
       : null;
+    let stabBlacklist = null;
+    let stabBlacklistSource = null;
+    if (generationSource !== null) {
+      const declaration = generationSource.match(/export\s+const\s+STAB_BLACKLIST\s*:[^=]+?=\s*new\s+Set\s*\(\s*\[([\s\S]*?)\]\s*\)/);
+      if (!declaration) throw new Error('Invalid import: pinned STAB_BLACKLIST declaration was not found');
+      stabBlacklist = new Set([...declaration[1].matchAll(/MoveId\.([A-Z0-9_]+)/g)].map(entry => entry[1]));
+      const upstream = POKEROGUE_REPOSITORIES.pokerogue;
+      stabBlacklistSource = { sourceRepository: upstream.url, sourceRevision: upstream.revision,
+        sourcePath: 'src/data/balance/moves/moveset-generation.ts', sourceSymbol: 'STAB_BLACKLIST',
+        sourceHash: PokerogueManifest.computeHash(generationSource), sourceType: this.sourceType };
+    } else if (this.productionCanonicalImport) {
+      throw new Error('Invalid import: production move catalog requires pinned STAB_BLACKLIST source');
+    }
 
     // Constructor signatures differ upstream: AttackMove, StatusMove and
     // SelfStatusMove do not share positional fields. Parse the call before mapping.
@@ -1245,7 +2002,9 @@ export class PokerogueImporter {
         secondaryEffects,
         source: provenance,
         metadata: { ...provenance, hash: fileHash },
-        extensions: { upstreamMoveClass: constructor, upstreamChance: chance, upstreamGeneration: generation, upstreamEffectMetadata: { format: 'typescript-source', value: rawExpression } },
+        extensions: { upstreamMoveClass: constructor, upstreamChance: chance, upstreamGeneration: generation,
+          upstreamMoveGeneration: stabBlacklist ? { stabBlacklisted: stabBlacklist.has(moveKey), source: stabBlacklistSource } : undefined,
+          upstreamEffectMetadata: { format: 'typescript-source', value: rawExpression } },
         raw: { format: 'typescript-source', value: rawExpression }
       });
 
@@ -1365,13 +2124,25 @@ export class PokerogueImporter {
       ? new Set(targetIds.map(t => t.toUpperCase()))
       : null;
 
-    // Pattern 1: Upstream AbBuilder syntax
-    // new AbBuilder(AbilityId.STATIC, ...)
-    const builderRegex = /new\s+AbBuilder\s*\(\s*(?:AbilityId\.|Abilities\.)?([A-Za-z0-9_]+)(?:[\s\S]*?)(?=(?:new\s+AbBuilder|;|\n\s*\n|$))/g;
+    // Pattern 1: Upstream AbBuilder syntax. Scan balanced constructor and
+    // chained expression so semicolons inside callback bodies do not truncate
+    // preserved source metadata.
+    const builderRegex = /new\s+AbBuilder\s*\(/g;
     let match;
 
     while ((match = builderRegex.exec(tsContent)) !== null) {
-      const abKey = match[1].toUpperCase();
+      const openingIndex = tsContent.indexOf('(', match.index);
+      const constructor = readConstructorCall(tsContent, openingIndex);
+      if (!constructor) throw new Error(`Invalid import: unclosed AbBuilder constructor at offset ${match.index}`);
+      const argumentsList = splitTopLevelArguments(constructor.argsText);
+      const idMatch = argumentsList[0]?.match(/^(?:AbilityId\.|Abilities\.)?([A-Za-z0-9_]+)$/);
+      if (!idMatch) throw new Error(`Invalid import: unsupported AbBuilder ability ID at offset ${match.index}`);
+      const chain = readChainedExpression(tsContent, constructor.closeIndex);
+      const rawDeclaration = tsContent.slice(match.index, constructor.closeIndex + 1) + chain;
+      if (!/\.build\s*\(\s*\)\s*$/.test(rawDeclaration.trim())) {
+        throw new Error(`Invalid import: AbBuilder declaration missing terminal build() at offset ${match.index}`);
+      }
+      const abKey = idMatch[1].toUpperCase();
       if (targetSet && !targetSet.has(abKey)) continue;
       if (abilityList.some(a => a.id === abKey.toLowerCase())) continue;
 
@@ -1412,8 +2183,8 @@ export class PokerogueImporter {
         effects,
         source: provenance,
         metadata: { ...provenance, hash: fileHash },
-        raw: { format: 'typescript-source', value: match[0] },
-        extensions: { upstreamAttributes: { format: 'typescript-source-fragment', value: match[0] }, runtimeBehavior: 'NOT_IMPORTED' }
+        raw: { format: 'typescript-source', value: rawDeclaration },
+        extensions: { upstreamAttributes: { format: 'typescript-source-fragment', value: rawDeclaration }, runtimeBehavior: 'NOT_IMPORTED' }
       });
 
       this.manifest.recordEntity('Ability', ability.id, {

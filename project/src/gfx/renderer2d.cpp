@@ -150,10 +150,11 @@ void Renderer2D::drawImageDirect(
     bool flipY,
     uint32_t tintColor
 ) {
-    if (!m_currentTarget || opacity <= 0.001f || !img.tex) return;
+    if (!m_currentTarget || opacity <= 0.001f || !img.tex || !img.subtex
+        || !img.subtex->width || !img.subtex->height) return;
 
-    float scaleX = width;
-    float scaleY = height;
+    float scaleX = width / img.subtex->width;
+    float scaleY = height / img.subtex->height;
     if (flipX) scaleX = -scaleX;
     if (flipY) scaleY = -scaleY;
 
@@ -165,15 +166,43 @@ void Renderer2D::drawImageDirect(
     C2D_PlainImageTint(&tint, modulatedTint, opacity);
 
     // Call real Citro2D rotated & scaled image renderer
-    C2D_DrawImageAtRotatedScaled(
+    C2D_DrawImageAtRotated(
         img,
-        x, y,
+        x + width * 0.5f, y + height * 0.5f,
         0.5f,
         rotation,
         &tint,
         scaleX,
         scaleY
     );
+}
+
+void Renderer2D::drawAtlasFrame(C2D_Image atlas, const AtlasFrame& frame,
+    float x, float y, float width, float height, float opacity, uint32_t tintColor) {
+    if (!m_currentTarget || !atlas.tex || !atlas.subtex || !frame.width || !frame.height
+        || !frame.sourceWidth || !frame.sourceHeight || width <= 0 || height <= 0
+        || frame.x + frame.width > atlas.subtex->width
+        || frame.y + frame.height > atlas.subtex->height
+        || frame.trimX + frame.width > frame.sourceWidth + 1
+        || frame.trimY + frame.height > frame.sourceHeight + 1
+        || atlas.subtex->top < atlas.subtex->bottom) return;
+
+    const auto& base = *atlas.subtex;
+    const float du = base.right - base.left;
+    const float dv = base.bottom - base.top;
+    Tex3DS_SubTexture sub = base;
+    sub.width = frame.width;
+    sub.height = frame.height;
+    sub.left = base.left + du * (float(frame.x) / base.width);
+    sub.right = base.left + du * (float(frame.x + frame.width) / base.width);
+    sub.top = base.top + dv * (float(frame.y) / base.height);
+    sub.bottom = base.top + dv * (float(frame.y + frame.height) / base.height);
+    C2D_Image cropped = { atlas.tex, &sub };
+
+    const float sx = width / frame.sourceWidth;
+    const float sy = height / frame.sourceHeight;
+    drawImageDirect(cropped, x + frame.trimX * sx, y + frame.trimY * sy,
+        frame.width * sx, frame.height * sy, 0.0f, opacity, false, false, tintColor);
 }
 
 void Renderer2D::drawImage(

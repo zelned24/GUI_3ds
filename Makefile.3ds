@@ -13,12 +13,12 @@ include $(DEVKITARM)/3ds_rules
 
 TARGET      := GUI_3DS
 BUILD       := build
-SOURCES     := project/src project/src/game project/src/gfx project/src/runtime project/generated/src/screens
+SOURCES     := project/src project/src/game project/src/gfx project/src/runtime project/src/storage project/src/content project/generated/src/screens
 INCLUDES    := project/include project/generated/include $(CTRULIB)/include $(DEVKITPRO)/libctru/include $(DEVKITPRO)/portlibs/3ds/include
 ROMFS       := build/romfs
 
 ARCH        := -march=armv6k -mtune=mpcore -mfloat-abi=hard -mtp=cp15
-CFLAGS      := -g -Wall -O2 -mword-relocations \
+CFLAGS      := -g -Wall -O2 -MMD -MP -mword-relocations \
                -fomit-frame-pointer -ffunction-sections \
                $(ARCH) -D__3DS__ -D_3DS -DARM11
 
@@ -42,6 +42,8 @@ APP_AUTHOR      := zelned24
 CFILES      := $(foreach dir,$(SOURCES),$(wildcard $(dir)/*.c))
 CPPFILES    := $(filter-out %ExampleScreen.cpp,$(foreach dir,$(SOURCES),$(wildcard $(dir)/*.cpp)))
 OFILES      := $(CFILES:%.c=$(BUILD)/%.o) $(CPPFILES:%.cpp=$(BUILD)/%.o)
+
+-include $(OFILES:.o=.d)
 
 .PHONY: all 3ds clean
 

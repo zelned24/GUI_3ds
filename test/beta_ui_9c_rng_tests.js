@@ -192,17 +192,28 @@ export function registerBetaUI9CRngTests(test) {
     const memberRng = phaserReference(shiftedSeed(rootSeed, 1));
     memberRng.int(8); memberRng.int(512);
     const memberIndex = pool.length > 1 ? memberRng.int(pool.length) : 0;
-    const levelRng = phaserReference(shiftedSeed(rootSeed, 8));
+    const levelRng = phaserReference(shiftedSeed(shiftedSeed(rootSeed, 1), 8));
     for (let i = 0; i < 16; i++) levelRng.int(62);
     let levelRandomSum = 0;
     for (let i = 0; i < 10; i++) levelRandomSum += levelRng.frac();
     const expectedLevel = Math.max(Math.round(1 + 1 / 2 + (1 / 25) ** 2 + Math.abs(levelRandomSum / 10)), 1);
-    const fractionalDeviationRng = phaserReference(shiftedSeed(rootSeed, 88));
+    const fractionalDeviationRng = phaserReference(shiftedSeed(shiftedSeed(rootSeed, 11), 88));
     for (let i = 0; i < 16; i++) fractionalDeviationRng.int(62);
     const fractionalDeviation = 10 / 11;
     let fractionalDeviationSum = 0;
     for (let i = fractionalDeviation; i > 0; i--) fractionalDeviationSum += fractionalDeviationRng.frac();
     const expectedWave11Level = Math.max(Math.round(1 + 11 / 2 + (11 / 25) ** 2 + Math.abs(fractionalDeviationSum / fractionalDeviation)), 1);
+    const battleSeedRng = phaserReference(shiftedSeed(shiftedSeed(rootSeed, 1), 8));
+    const battleSeedAlphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    let expectedBattleSeed = '';
+    for (let i = 0; i < 16; i++) expectedBattleSeed += battleSeedAlphabet[battleSeedRng.int(62)];
+    assert.equal(readString(api.harness_battle_seed_wave1()), expectedBattleSeed,
+      'Battle constructor creates its 16-character seed inside the wave-reset plus waveIndex<<3 scope');
+    for (const turn of [1, 2]) {
+      const turnRng = phaserReference(shiftedSeed(expectedBattleSeed, turn << 6));
+      assert.equal(api.harness_battle_rng_wave1_turn(turn), turnRng.int(100),
+        'Battle.randSeedInt re-sows the saved battle seed with the turn offset');
+    }
     const memory = new Uint8Array(api.memory.buffer);
     const ptr = api.harness_wave1_species_id();
     let end = ptr; while (memory[end]) end++;
@@ -256,7 +267,7 @@ export function registerBetaUI9CRngTests(test) {
     const doubleWaveRng = phaserReference(shiftedSeed(doubleSeed, 1));
     const doubleBattleRoll = doubleWaveRng.int(8);
     assert.equal(doubleBattleRoll, 0, 'fixed vector exercises Classic double battle');
-    const doubleLevelRng = phaserReference(shiftedSeed(doubleSeed, 8));
+    const doubleLevelRng = phaserReference(shiftedSeed(shiftedSeed(doubleSeed, 1), 8));
     for (let i = 0; i < 16; i++) doubleLevelRng.int(62);
     const expectedFirstLevel = nonBossLevelReference(1, doubleLevelRng);
     const expectedSecondLevel = nonBossLevelReference(1, doubleLevelRng);

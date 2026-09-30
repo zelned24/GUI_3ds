@@ -1,4 +1,5 @@
 #include "game/PokerogueRngAdapter.hpp"
+#include "game/PokerogueBattleRng.hpp"
 #include "game/PokerogueEncounterResolver.hpp"
 
 namespace {
@@ -56,7 +57,9 @@ Wave1DoubleTrace makeWave1DoubleTrace() {
     Pokerogue3DS::PokerogueWaveClock::deriveCycleOffset(kDoubleSeed, 8, offset);
     const auto time = Pokerogue3DS::PokerogueWaveClock::timeOfDay(1, offset);
     Pokerogue3DS::PokerogueRngAdapter levelRng;
-    Pokerogue3DS::PokerogueSeedOffsetScope levelScope(levelRng, kDoubleSeed, 8, 8);
+    uint16_t waveSeed[8]{};
+    Pokerogue3DS::PokerogueRngAdapter::shiftCharCodes(kDoubleSeed, 8, 1, waveSeed, 8);
+    Pokerogue3DS::PokerogueSeedOffsetScope levelScope(levelRng, waveSeed, 8, 8);
     for (uint8_t i = 0; i < 16; ++i) (void)levelRng.randSeedInt(62);
     trace.firstLevel = Pokerogue3DS::PokerogueEncounterResolver::nonBossLevelForWave(1, levelRng);
     trace.secondLevel = Pokerogue3DS::PokerogueEncounterResolver::nonBossLevelForWave(1, levelRng);
@@ -213,13 +216,17 @@ double harness_wave1_state_c_after_double() { Pokerogue3DS::PokerogueRngAdapter 
 double harness_wave1_first_fraction() { Pokerogue3DS::PokerogueRngAdapter rng; Pokerogue3DS::PokerogueSeedOffsetScope scope(rng,kSeed,16,1); return rng.frac(); }
 uint32_t harness_wave1_non_boss_level() {
     Pokerogue3DS::PokerogueRngAdapter rng;
-    Pokerogue3DS::PokerogueSeedOffsetScope scope(rng, kSeed, 16, 8);
+    uint16_t waveSeed[16]{};
+    Pokerogue3DS::PokerogueRngAdapter::shiftCharCodes(kSeed, 16, 1, waveSeed, 16);
+    Pokerogue3DS::PokerogueSeedOffsetScope scope(rng, waveSeed, 16, 8);
     for (uint8_t i = 0; i < 16; ++i) (void)rng.randSeedInt(62);
     return Pokerogue3DS::PokerogueEncounterResolver::nonBossLevelForWave(1, rng);
 }
 uint32_t harness_wave11_non_boss_level() {
     Pokerogue3DS::PokerogueRngAdapter rng;
-    Pokerogue3DS::PokerogueSeedOffsetScope scope(rng, kSeed, 16, 88);
+    uint16_t waveSeed[16]{};
+    Pokerogue3DS::PokerogueRngAdapter::shiftCharCodes(kSeed, 16, 11, waveSeed, 16);
+    Pokerogue3DS::PokerogueSeedOffsetScope scope(rng, waveSeed, 16, 88);
     for (uint8_t i = 0; i < 16; ++i) (void)rng.randSeedInt(62);
     return Pokerogue3DS::PokerogueEncounterResolver::nonBossLevelForWave(11, rng);
 }
@@ -235,6 +242,21 @@ const char* harness_level_evolution_species() {
     return Pokerogue3DS::PokerogueEncounterResolver::resolveWildSpeciesForLevel("bulbasaur", 18, true, rng);
 }
 uint32_t harness_test_double_wave1_roll() { return makeWave1DoubleTrace().doubleRoll; }
+const char* harness_battle_seed_wave1() {
+    static char output[Pokerogue3DS::PokerogueBattleRng::kBattleSeedLength + 1];
+    Pokerogue3DS::PokerogueBattleRng battle;
+    if (!battle.initialize(kSeed, 16, 1)) return "";
+    for (std::size_t i = 0; i < Pokerogue3DS::PokerogueBattleRng::kBattleSeedLength; ++i)
+        output[i] = static_cast<char>(battle.battleSeed()[i]);
+    output[Pokerogue3DS::PokerogueBattleRng::kBattleSeedLength] = '\0';
+    return output;
+}
+uint32_t harness_battle_rng_wave1_turn(uint32_t turn) {
+    Pokerogue3DS::PokerogueBattleRng battle;
+    if (!battle.initialize(kSeed, 16, 1) || !battle.beginTurn(turn)) return 0xffffffffu;
+    int32_t output = -1;
+    return battle.randSeedInt(100, output) ? static_cast<uint32_t>(output) : 0xffffffffu;
+}
 uint32_t harness_wave1_double_first_level() { return makeWave1DoubleTrace().firstLevel; }
 uint32_t harness_wave1_double_second_level() { return makeWave1DoubleTrace().secondLevel; }
 const char* harness_wave1_double_first_species() { return makeWave1DoubleTrace().firstSpecies; }
