@@ -1370,6 +1370,23 @@ bool calculatePokemonBossSegmentDamage(uint32_t damage, uint16_t currentHp,
     return true;
 }
 
+bool initializeClassicPokemonBossState(uint16_t speciesDex, uint16_t level, uint32_t wave,
+    bool forceBoss, bool finalBossFirstPhase, PokemonBossState& output) {
+    const auto* species = PokerogueContent::findSpeciesByDex(speciesDex);
+    if (!species || !level || !wave || wave > PokerogueContent::kClassicFinalWave ||
+        (finalBossFirstPhase && (!forceBoss || wave != PokerogueContent::kClassicFinalWave))) return false;
+    PokemonBossState state{};
+    const bool isBoss = forceBoss || wave % 10 == 0 || species->legendary == 1 ||
+        species->subLegendary == 1 || species->mythical == 1;
+    if (isBoss) {
+        state.segmentCount = static_cast<uint16_t>(2 + (level >= 100) + (species->baseTotal >= 670) + wave / 250);
+        state.segmentIndex = state.segmentCount - 1;
+        state.classicFinalBossFirstPhase = finalBossFirstPhase;
+    }
+    output = state;
+    return true;
+}
+
 bool applyPokemonBossDamage(PokemonBattleState& boss, PokemonBossState& state,
     uint32_t damage, const PokemonBossDamagePolicy& policy, PokerogueRngAdapter& rng,
     PokemonBossDamageEvent& output) {

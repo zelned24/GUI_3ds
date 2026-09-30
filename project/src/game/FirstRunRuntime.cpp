@@ -132,7 +132,7 @@ void FirstRunRuntime::captureNativeRunSave(NativeRunSave& output) const {
     // v8 cannot serialize doubles, captured party, inventory or later trainer history.
     // Never report a setup checkpoint as a successful save of an active double battle.
     const std::array<uint16_t, 6> initialBalls{5, 0, 0, 0, 0, 0};
-    if (m_doubleBattle || m_context.playerPartyCount > 1 || m_pokeballs != initialBalls ||
+    if (m_context.enemy.bossState.segmentCount || m_doubleBattle || m_context.playerPartyCount > 1 || m_pokeballs != initialBalls ||
         m_run.wave > 9 || (m_trainerBattle && m_run.wave != 5)) {
         output = {};
         return;
@@ -1861,6 +1861,7 @@ bool FirstRunRuntime::throwPokeballInPlace(PokeballType ball) {
     if (captureEvent.caught) {
         if (m_context.playerPartyCount < 6) {
             ResolvedPokemon caughtMon = *target;
+            caughtMon.bossState = {}; // PlayerPokemon is not an EnemyPokemon boss.
             const auto* caughtSpecies = PokerogueContent::findSpeciesByDex(caughtMon.dex);
             if (!caughtSpecies || pokemonTotalExperienceForLevel(caughtSpecies->growthRate,
                     caughtMon.level, caughtMon.totalExperience) != PokemonExperienceResult::Ok) {
@@ -2610,6 +2611,9 @@ void FirstRunRuntime::resolve(bool carryPlayer) {
     const std::string enemyLocaleId = std::string("pokemon:") + enemy.id;
     m_context.enemy = {enemy.dex, level, enemy.id, locale(enemyLocaleId.c_str(), enemy.name), enemy.firstFormId, enemy.assetSourcePath};
     if (!resolveEnemyActor(enemy, m_context.enemy)) return;
+    const bool finalBoss = waveKind == ClassicWaveKind::FinalBoss;
+    if (!initializeClassicPokemonBossState(enemy.dex, level, m_run.wave, finalBoss,
+            finalBoss, m_context.enemy.bossState)) return;
     if (m_doubleBattle) {
         // EncounterPhase resolves actors sequentially. The first actor and
         // its regular-wild moveset must consume their draws before slot two
@@ -2630,6 +2634,8 @@ void FirstRunRuntime::resolve(bool carryPlayer) {
             locale(secondLocaleId.c_str(), secondSpecies.name), secondSpecies.firstFormId,
             secondSpecies.assetSourcePath};
         if (!resolveEnemyActor(secondSpecies, m_context.secondEnemy)) return;
+        if (!initializeClassicPokemonBossState(secondSpecies.dex, secondLevel, m_run.wave, false,
+                false, m_context.secondEnemy.bossState)) return;
         m_secondEncounterResolved = true;
     }
     if (m_run.wave == 1 || (m_run.wave > 1 && (m_run.wave - 1) % 10 == 0)) {

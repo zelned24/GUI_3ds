@@ -37,6 +37,7 @@ struct ResolvedPokemon {
     uint8_t moveCount = 0;
     bool movesetResolved = false;
     PokemonBattleState battleState{};
+    PokemonBossState bossState{};
     uint32_t totalExperience = 0; // Pokemon.exp belongs to this actor, not to the run.
 };
 

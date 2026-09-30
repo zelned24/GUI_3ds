@@ -305,3 +305,10 @@
 2. Contexto parcial/callbacks sin resolver produce UnresolvedBoss antes de gastar PP/sortear; fallos posteriores conservan target, shields y RNG. Comandos normales conservan parámetros por defecto.
 3. Regresiones 489–491 escritas para movimiento real contra primera fase a 1 HP y rechazo sin mutación de callbacks no resueltos. Pendientes de ejecución.
 4. Falta que FirstRunRuntime inicialice/pase este contexto, resolver callbacks y transformar Eternamax. No se declara jefe final jugable.
+
+## Inicialización de segmentos Classic
+
+1. initializeClassicPokemonBossState porta BattleScene.getEncounterBossSegments y EnemyPokemon.setBoss pinned: wave X0/legend-like/forceBoss, 2 segmentos + nivel100 + BST670 + floor(wave/250), índice inicial count-1. Sin overrides de debug ni reglas Daily/random bosses Endless.
+2. ResolvedPokemon conserva bossState; resolución de actores wild inicializa desde especies/niveles canónicos. Capturado pierde estado de boss del enemigo. Save v8 rechaza estados de jefe que no puede serializar.
+3. Regresiones 492–496 escritas para actor no boss, X0, nivel100, Eternatus real con cuatro segmentos e ID inválido sin mutación. No ejecutadas.
+4. Pendientes: asignación proporcional en encuentros múltiples, callbacks, pasar contexto al comando, Eternamax y save. Inicializar segmentos no demuestra jefe jugable.

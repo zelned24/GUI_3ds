@@ -2122,6 +2122,21 @@ extern "C" int runPokemonBattleStateChecks() {
     if (beforeRejectedShieldRng.carry != afterRejectedShieldRng.carry ||
         beforeRejectedShieldRng.s0 != afterRejectedShieldRng.s0 || beforeRejectedShieldRng.s1 != afterRejectedShieldRng.s1 ||
         beforeRejectedShieldRng.s2 != afterRejectedShieldRng.s2) return 491;
+    Pokerogue3DS::PokemonBossState initializedBoss{};
+    if (!Pokerogue3DS::initializeClassicPokemonBossState(1, 5, 1, false, false, initializedBoss) ||
+        initializedBoss.segmentCount) return 492;
+    if (!Pokerogue3DS::initializeClassicPokemonBossState(1, 99, 10, false, false, initializedBoss) ||
+        initializedBoss.segmentCount != 2 || initializedBoss.segmentIndex != 1) return 493;
+    if (!Pokerogue3DS::initializeClassicPokemonBossState(1, 100, 10, false, false, initializedBoss) ||
+        initializedBoss.segmentCount != 3) return 494;
+    const PokerogueContent::Species* eternatus = nullptr;
+    for (const auto& species : PokerogueContent::kSpecies)
+        if (std::strcmp(species.id, "eternatus") == 0) eternatus = &species;
+    if (!eternatus || !Pokerogue3DS::initializeClassicPokemonBossState(eternatus->dex, 200, 200,
+            true, true, initializedBoss) || initializedBoss.segmentCount != 4 ||
+        !initializedBoss.classicFinalBossFirstPhase) return 495;
+    if (Pokerogue3DS::initializeClassicPokemonBossState(65535, 5, 1, false, false, initializedBoss) ||
+        initializedBoss.segmentCount != 4) return 496;
     Pokerogue3DS::PokemonBossSegmentDamage bossDamage{};
     if (!Pokerogue3DS::calculatePokemonBossSegmentDamage(99, 300, 300, 3, 2, 0, bossDamage) ||
         bossDamage.adjustedDamage != 99 || bossDamage.clearedSegmentIndex != 3) return 468;

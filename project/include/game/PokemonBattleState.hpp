@@ -474,6 +474,8 @@ struct PokemonBossState {
     bool classicFinalBossFirstPhase = false;
     bool hasTrainer = false;
 };
+bool initializeClassicPokemonBossState(uint16_t speciesDex, uint16_t level, uint32_t wave,
+    bool forceBoss, bool finalBossFirstPhase, PokemonBossState& output);
 struct PokemonBossDamagePolicy {
     bool resolved = false;
     bool damageCallbacksResolved = false;
