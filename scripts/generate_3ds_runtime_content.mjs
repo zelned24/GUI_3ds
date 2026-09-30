@@ -953,5 +953,19 @@ const recoilAbilityRows = collections.abilities.flatMap(ability => {
 });
 const recoilHeader = drainHeader.replace('struct MoveAttribute {',
   `struct MoveRecoilProfile { uint16_t moveId; bool useMaxHp; double ratio; bool unblockable; };\ninline constexpr MoveRecoilProfile kMoveRecoilProfiles[] = {\n${recoilRows.join(',\n')}\n};\nstruct RecoilAbilityProfile { uint16_t abilityId; bool blocksRecoil; bool blocksIndirectDamage; };\ninline constexpr RecoilAbilityProfile kRecoilAbilityProfiles[] = {\n${recoilAbilityRows.join(',\n')}\n};\nstruct MoveAttribute {`);
-await fs.writeFile(outputPath, recoilHeader, 'utf8');
-console.log(JSON.stringify({ output: path.relative(root, outputPath), bytes: Buffer.byteLength(recoilHeader), hash: report.contentHash }));
+// WeatherChangeAttr parameters are preserved from the imported pinned declarations.
+const weatherChangeRows = collections.moves.flatMap(move => {
+  const raw = move.extensions?.upstreamEffectMetadata?.value ?? '';
+  const declarations = [...raw.matchAll(/\.attr\s*\(\s*WeatherChangeAttr\b/g)];
+  const parsed = [...raw.matchAll(/\.attr\s*\(\s*WeatherChangeAttr\s*,\s*WeatherType\.([A-Z_]+)\s*\)/g)];
+  if (!declarations.length || declarations.length !== parsed.length) return [];
+  return parsed.map(match => {
+    const id = weatherNames.indexOf(match[1]);
+    if (id < 0) throw new Error(`Unknown WeatherChangeAttr enum: ${move.id}/${match[1]}`);
+    return `    {${move.moveId}, ${id}, "${field(move.source?.sourcePath ?? '')}", "${field(move.source?.sourceSymbol ?? '')}", "${field(move.source?.sourceHash ?? '')}"}`;
+  });
+});
+const weatherChangeHeader = recoilHeader.replace('struct MoveAttribute {',
+  `struct MoveWeatherChangeProfile { uint16_t moveId; uint8_t weatherType; const char* sourcePath; const char* sourceSymbol; const char* sourceHash; };\ninline constexpr MoveWeatherChangeProfile kMoveWeatherChangeProfiles[] = {\n${weatherChangeRows.join(',\n')}\n};\nstruct MoveAttribute {`);
+await fs.writeFile(outputPath, weatherChangeHeader, 'utf8');
+console.log(JSON.stringify({ output: path.relative(root, outputPath), bytes: Buffer.byteLength(weatherChangeHeader), hash: report.contentHash }));

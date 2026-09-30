@@ -699,6 +699,58 @@ bool advancePokemonArenaWeatherTurnEnd(PokemonArenaWeatherState& state,
     return true;
 }
 
+// Pinned WeatherChangeAttr.getCondition/apply, MovePhase.usePP, Arena.trySetWeather.
+PokemonWeatherChangeResult usePokemonWeatherChangeCommand(PokemonBattleState& user,
+    PokemonArenaWeatherState& arena, uint8_t moveSlot,
+    const PokemonWeatherChangePolicy& policy, PokemonWeatherChangeEvent& output) {
+    if (!policy.resolved || !policy.weatherCallbacksResolved)
+        return PokemonWeatherChangeResult::UnresolvedPolicy;
+    if (!user.hp || !user.maxHp || user.hp > user.maxHp || moveSlot >= user.moveCount ||
+        moveSlot >= 4 || !user.moves[moveSlot].pp ||
+        user.moves[moveSlot].pp > user.moves[moveSlot].maxPp || !policy.ppCost)
+        return PokemonWeatherChangeResult::InvalidState;
+    auto checkedArena = arena;
+    PokemonWeatherTurnEndEvent check{};
+    if (!advancePokemonArenaWeatherTurnEnd(checkedArena, check))
+        return PokemonWeatherChangeResult::InvalidState;
+    const auto* move = PokerogueContent::findMoveById(user.moves[moveSlot].moveId);
+    if (!move || move->category != PokerogueContent::MoveStatus || !sameText(move->target, "BOTH_SIDES") ||
+        move->accuracy != -1 || move->attributeCount != 1 ||
+        !PokerogueContent::moveHasAttribute(*move, "WeatherChangeAttr")) return PokemonWeatherChangeResult::UnsupportedMove;
+    const PokerogueContent::MoveWeatherChangeProfile* profile = nullptr;
+    for (const auto& candidate : PokerogueContent::kMoveWeatherChangeProfiles) {
+        if (candidate.moveId != move->id) continue;
+        if (profile || candidate.weatherType == 0 || candidate.weatherType > 9)
+            return PokemonWeatherChangeResult::UnsupportedMove;
+        profile = &candidate;
+    }
+    if (!profile) return PokemonWeatherChangeResult::UnsupportedMove;
+    if (!policy.duration) return PokemonWeatherChangeResult::InvalidState;
+    PokemonWeatherChangeEvent event{};
+    event.previousWeather = event.nextWeather = arena.type;
+    event.blocked = policy.blockedBeforeMove;
+    auto nextUser = user;
+    auto nextArena = arena;
+    if (!policy.blockedBeforeMove) {
+        event.ppSpent = nextUser.moves[moveSlot].pp < policy.ppCost
+            ? nextUser.moves[moveSlot].pp : policy.ppCost;
+        nextUser.moves[moveSlot].pp -= event.ppSpent;
+        // Default attribute conditions run after PP consumption, including repeat weather.
+        const auto requested = static_cast<PokemonEffectiveWeather>(profile->weatherType);
+        event.failedCondition = arena.type == requested || pokemonWeatherIsImmutable(arena.type);
+        if (!event.failedCondition) {
+            if (!setPokemonArenaWeather(nextArena, requested, policy.duration))
+                return PokemonWeatherChangeResult::InvalidState;
+            event.changed = true;
+            event.nextWeather = nextArena.type;
+        }
+    }
+    user = nextUser;
+    arena = nextArena;
+    output = event;
+    return PokemonWeatherChangeResult::Ok;
+}
+
 bool composePokemonWeatherResolutionPolicy(const PokemonWeatherAbilityComponent* components,
     std::size_t count, PokemonWeatherResolutionPolicy& output) {
     if (count && !components) return false;

@@ -288,6 +288,28 @@ struct PokemonWeatherTurnEndEvent {
 bool advancePokemonArenaWeatherTurnEnd(PokemonArenaWeatherState& state,
     PokemonWeatherTurnEndEvent& output);
 
+// WeatherChangeAttr command. Caller must resolve post-weather ability/form/tag hooks
+// and FieldEffectModifier duration before publishing the command's state and event.
+struct PokemonWeatherChangePolicy {
+    bool resolved = false;
+    bool weatherCallbacksResolved = false;
+    bool blockedBeforeMove = false;
+    uint16_t duration = 0;
+    uint8_t ppCost = 0;
+};
+struct PokemonWeatherChangeEvent {
+    bool blocked = false;
+    bool failedCondition = false;
+    bool changed = false;
+    uint8_t ppSpent = 0;
+    PokemonEffectiveWeather previousWeather = PokemonEffectiveWeather::None;
+    PokemonEffectiveWeather nextWeather = PokemonEffectiveWeather::None;
+};
+enum class PokemonWeatherChangeResult : uint8_t { Ok, InvalidState, UnsupportedMove, UnresolvedPolicy };
+PokemonWeatherChangeResult usePokemonWeatherChangeCommand(PokemonBattleState& user,
+    PokemonArenaWeatherState& arena, uint8_t moveSlot,
+    const PokemonWeatherChangePolicy& policy, PokemonWeatherChangeEvent& output);
+
 struct PokemonWeatherResolutionPolicy {
     bool resolved = false;
     bool suppressesOrdinaryWeather = false;

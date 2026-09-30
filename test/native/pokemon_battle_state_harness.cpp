@@ -27,6 +27,53 @@ using Pokerogue3DS::PokemonMoveActionStatus;
 using Pokerogue3DS::PokerogueRngAdapter;
 
 extern "C" int runPokemonBattleStateChecks() {
+    // Real imported WeatherChangeAttr records; no synthetic move catalog.
+    if (sizeof(PokerogueContent::kMoveWeatherChangeProfiles) == 0) return 427;
+    for (const auto& profile : PokerogueContent::kMoveWeatherChangeProfiles) {
+        const auto* move = PokerogueContent::findMoveById(profile.moveId);
+        if (!move || !profile.sourcePath || !*profile.sourcePath ||
+            !profile.sourceSymbol || !*profile.sourceSymbol ||
+            !profile.sourceHash || !*profile.sourceHash) return 428;
+        PokemonBattleState user{};
+        user.hp = user.maxHp = 100;
+        user.moveCount = 1;
+        user.moves[0].moveId = move->id;
+        user.moves[0].pp = user.moves[0].maxPp = move->pp;
+        Pokerogue3DS::PokemonArenaWeatherState arena{};
+        Pokerogue3DS::PokemonWeatherChangePolicy policy{};
+        Pokerogue3DS::PokemonWeatherChangeEvent event{};
+        policy.resolved = true;
+        policy.duration = 5;
+        policy.ppCost = 1;
+        if (Pokerogue3DS::usePokemonWeatherChangeCommand(user, arena, 0, policy, event) !=
+                Pokerogue3DS::PokemonWeatherChangeResult::UnresolvedPolicy ||
+            user.moves[0].pp != move->pp || arena.type != Pokerogue3DS::PokemonEffectiveWeather::None) return 429;
+        policy.weatherCallbacksResolved = true;
+        if (Pokerogue3DS::usePokemonWeatherChangeCommand(user, arena, 0, policy, event) !=
+                Pokerogue3DS::PokemonWeatherChangeResult::Ok || !event.changed || event.ppSpent != 1 ||
+            static_cast<uint8_t>(arena.type) != profile.weatherType ||
+            arena.turnsLeft != 5 || arena.maxDuration != 5) return 430;
+        if (Pokerogue3DS::usePokemonWeatherChangeCommand(user, arena, 0, policy, event) !=
+                Pokerogue3DS::PokemonWeatherChangeResult::Ok || !event.failedCondition ||
+            event.changed || event.ppSpent != 1 || user.moves[0].pp != move->pp - 2 ||
+            arena.turnsLeft != 5) return 431;
+        arena = {Pokerogue3DS::PokemonEffectiveWeather::HeavyRain, 0, 0};
+        if (Pokerogue3DS::usePokemonWeatherChangeCommand(user, arena, 0, policy, event) !=
+                Pokerogue3DS::PokemonWeatherChangeResult::Ok || !event.failedCondition ||
+            event.changed || arena.type != Pokerogue3DS::PokemonEffectiveWeather::HeavyRain) return 432;
+        policy.blockedBeforeMove = true;
+        const uint8_t ppBefore = user.moves[0].pp;
+        if (Pokerogue3DS::usePokemonWeatherChangeCommand(user, arena, 0, policy, event) !=
+                Pokerogue3DS::PokemonWeatherChangeResult::Ok || !event.blocked || event.ppSpent ||
+            user.moves[0].pp != ppBefore) return 433;
+        policy.blockedBeforeMove = false;
+        policy.ppCost = 2;
+        arena = {};
+        if (Pokerogue3DS::usePokemonWeatherChangeCommand(user, arena, 0, policy, event) !=
+                Pokerogue3DS::PokemonWeatherChangeResult::Ok || event.ppSpent != 2 ||
+            user.moves[0].pp != 0 || !event.changed) return 434;
+    }
+
     // Real canonical Recover/Soft-Boiled: no invented move identifiers.
     uint16_t recoverId = 0, softBoiledId = 0;
     for (const auto& move : PokerogueContent::kMoves) {
