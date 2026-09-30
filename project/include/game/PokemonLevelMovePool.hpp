@@ -8,6 +8,7 @@ namespace Pokerogue3DS {
 
 enum PokemonLearnsetSource : uint8_t {
     LearnsetSourceLevel = 0,
+    LearnsetSourceRelearn = 2,
     LearnsetSourceEvolution = 4,
     LearnsetSourcePrevolution = 6,
 };
@@ -30,13 +31,13 @@ inline bool pokemonLevelMoveTextEqual(const char* left, const char* right) {
     return *left == *right;
 }
 
-// Builds the pinned non-trainer level pool before AI power/STAB weighting.
-// This follows getPrevolutionMoves/filterAndSortLevelMoves for non-fused
-// actors; weighted selection and post-selection move filters remain separate.
+// Builds the pinned level pool before AI power/STAB weighting. Trainers include
+// RELEARN_MOVE entries, weighted zero below level 40; wild actors omit them.
+// Weighted selection and post-selection move filters remain separate.
 inline PokemonLevelMovePoolResult buildPokemonLevelMovePool(
     uint16_t speciesDex, const char* formId, uint16_t level,
     PokemonLevelMoveCandidate* output, std::size_t capacity,
-    std::size_t& outputCount) {
+    std::size_t& outputCount, bool includeRelearnerMoves = false) {
     outputCount = 0;
     if (level == 0) return PokemonLevelMovePoolResult::InvalidLevel;
     const auto* species = PokerogueContent::findSpeciesByDex(speciesDex);
@@ -80,12 +81,14 @@ inline PokemonLevelMovePoolResult buildPokemonLevelMovePool(
         const auto* moves = PokerogueContent::levelMovesFor(*species);
         for (uint16_t i = 0; moves && i < species->learnsetCount; ++i)
             if (moves[i].moveId == moveId && moves[i].level > 0 &&
-                (moves[i].level != 1 || !species->prevolutionDex) &&
+                (moves[i].level != 1 || !species->prevolutionDex ||
+                 includeRelearnerMoves) &&
                 ((moves[i].level > level) == future)) return true;
         moves = form ? PokerogueContent::levelMovesFor(*form) : nullptr;
         for (uint16_t i = 0; moves && i < form->learnsetCount; ++i)
             if (moves[i].moveId == moveId && moves[i].level > 0 &&
-                (moves[i].level != 1 || !species->prevolutionDex) &&
+                (moves[i].level != 1 || !species->prevolutionDex ||
+                 includeRelearnerMoves) &&
                 ((moves[i].level > level) == future)) return true;
         return false;
     };
@@ -95,8 +98,10 @@ inline PokemonLevelMovePoolResult buildPokemonLevelMovePool(
                                  std::size_t prevolutionIndex) -> PokemonLevelMovePoolResult {
         for (uint16_t i = 0; moves && i < count; ++i) {
             const auto& entry = moves[i];
-            if (entry.level < 0 || entry.level > level) continue;
-            if (entry.level == 1 && prevolutionIndex != 0) continue;
+            if (entry.level < -1 || (entry.level == -1 && !includeRelearnerMoves) ||
+                entry.level > level) continue;
+            if (entry.level == 1 && prevolutionIndex != 0 &&
+                !includeRelearnerMoves) continue;
             if ((isPrevolution || entry.level == 0) && containsOwnLevelMove(entry.moveId, false)) continue;
             if (isPrevolution && containsOwnLevelMove(entry.moveId, true)) continue;
             const auto* move = PokerogueContent::findMoveById(entry.moveId);
@@ -105,6 +110,7 @@ inline PokemonLevelMovePoolResult buildPokemonLevelMovePool(
                 (move->upstreamFlags & PokerogueContent::MoveHasSacrificialAttrOnHit)) continue;
 
             const uint8_t source = isPrevolution ? LearnsetSourcePrevolution
+                : entry.level == -1 ? LearnsetSourceRelearn
                 : entry.level == 0 ? LearnsetSourceEvolution : LearnsetSourceLevel;
             // Keep the earliest (level, source) entry for a move, matching the
             // upstream stable sort followed by getUniqueMoves().
@@ -119,7 +125,8 @@ inline PokemonLevelMovePoolResult buildPokemonLevelMovePool(
                 return PokemonLevelMovePoolResult::InsufficientCapacity;
             }
 
-            uint16_t weight = entry.level == 0 ? 60 : static_cast<uint16_t>(entry.level + 20);
+            uint16_t weight = entry.level == -1 ? (level >= 40 ? 50 : 0)
+                : entry.level == 0 ? 60 : static_cast<uint16_t>(entry.level + 20);
             if (entry.level == 1 && move->power >= 70) weight = 50;
             const PokemonLevelMoveCandidate candidate{entry.moveId, weight, entry.level, source};
             if (duplicate < outputCount) {

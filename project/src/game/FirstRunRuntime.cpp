@@ -531,9 +531,11 @@ void FirstRunRuntime::resolve(bool carryPlayer) {
     m_context.trainerFemaleVariant = false;
     m_context.trainerPartySpeciesResolved = false;
     m_context.trainerPartyConstructorResolved = false;
+    m_context.trainerPartyLevelMovesResolved = false;
     for (auto& level : m_context.trainerPartyLevels) level = 0;
     for (auto& member : m_context.trainerParty) member = {};
     for (auto& state : m_trainerConstructorRngStates) state = {};
+    for (auto& count : m_context.trainerPartyLevelMoveCounts) count = 0;
     const auto& starter = PokerogueContent::kSpecies[m_starterIndex];
     m_run.starterDex = starter.dex;
     m_context.modeName = locale("gameMode:classic", "Classic");
@@ -666,6 +668,7 @@ void FirstRunRuntime::resolve(bool carryPlayer) {
                         const PokerogueContent::Species* selectedSpecies[6]{};
                         bool allSpeciesResolved = true;
                         bool allConstructorsResolved = true;
+                        bool allLevelMovesResolved = true;
                         for (uint8_t i = 0; i < levels.count; ++i) {
                             uint32_t memberOffset = 0;
                             if (!trainerPartyMemberSeedOffset(*trainer, m_run.wave, i, memberOffset)) {
@@ -710,14 +713,28 @@ void FirstRunRuntime::resolve(bool carryPlayer) {
                             m_context.trainerParty[i].actor = actor;
                             m_context.trainerParty[i].formId = actor.formId;
                             m_trainerConstructorRngStates[i] = memberRng.state();
+                            PokemonLevelMoveCandidate levelMoves[128]{};
+                            std::size_t levelMoveCount = 0;
+                            if (buildPokemonLevelMovePool(member.species->dex,
+                                    actor.formId, levels.values[i], levelMoves, 128,
+                                    levelMoveCount, true) != PokemonLevelMovePoolResult::Ok) {
+                                allLevelMovesResolved = false;
+                                continue;
+                            }
+                            m_context.trainerPartyLevelMoveCounts[i] =
+                                static_cast<uint16_t>(levelMoveCount);
                         }
                         m_context.trainerPartySpeciesResolved = allSpeciesResolved;
                         m_context.trainerPartyConstructorResolved =
                             allSpeciesResolved && allConstructorsResolved;
+                        m_context.trainerPartyLevelMovesResolved =
+                            m_context.trainerPartyConstructorResolved && allLevelMovesResolved;
                     }
                 }
-                m_battleFeedback = m_context.trainerPartyConstructorResolved
-                    ? "Trainer movesets, IVs and battle pending"
+                m_battleFeedback = m_context.trainerPartyLevelMovesResolved
+                    ? "Trainer move weighting, IVs and battle pending"
+                    : m_context.trainerPartyConstructorResolved
+                    ? "Trainer level-move metadata unsupported"
                     : m_context.trainerPartySpeciesResolved
                     ? "Trainer constructor metadata unsupported"
                     : m_context.trainerPartyCount
