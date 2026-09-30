@@ -2100,6 +2100,28 @@ extern "C" int runPokemonBattleStateChecks() {
     const auto afterBossPhaseRng = bossBoostRng.state();
     if (beforeBossPhaseRng.s0 != afterBossPhaseRng.s0 || beforeBossPhaseRng.s1 != afterBossPhaseRng.s1 ||
         beforeBossPhaseRng.s2 != afterBossPhaseRng.s2 || beforeBossPhaseRng.carry != afterBossPhaseRng.carry) return 488;
+    auto shieldMoveUser = state;
+    auto shieldMoveTarget = state;
+    shieldMoveTarget.hp = 1;
+    Pokerogue3DS::PokemonBossState moveBossState{3, 0, true, false};
+    Pokerogue3DS::PokemonBossDamagePolicy moveBossPolicy{true, true, false};
+    Pokerogue3DS::PokemonMoveActionResult shieldMoveEvent{};
+    const auto initialShieldPp = shieldMoveUser.moves[0].pp;
+    if (Pokerogue3DS::useStandardPokemonMove(shieldMoveUser, shieldMoveTarget, 0, false,
+            actionRng, shieldMoveEvent, nullptr, nullptr, nullptr, nullptr, &moveBossState, &moveBossPolicy) !=
+            PokemonMoveActionStatus::Ok || shieldMoveTarget.hp != 1 || shieldMoveEvent.targetFainted ||
+        shieldMoveUser.moves[0].pp != initialShieldPp - 1) return 489;
+    moveBossPolicy.damageCallbacksResolved = false;
+    const auto beforeRejectedShieldPp = shieldMoveUser.moves[0].pp;
+    const auto beforeRejectedShieldRng = actionRng.state();
+    if (Pokerogue3DS::useStandardPokemonMove(shieldMoveUser, shieldMoveTarget, 0, false,
+            actionRng, shieldMoveEvent, nullptr, nullptr, nullptr, nullptr, &moveBossState, &moveBossPolicy) !=
+            PokemonMoveActionStatus::UnresolvedBoss || shieldMoveTarget.hp != 1 ||
+        shieldMoveUser.moves[0].pp != beforeRejectedShieldPp) return 490;
+    const auto afterRejectedShieldRng = actionRng.state();
+    if (beforeRejectedShieldRng.carry != afterRejectedShieldRng.carry ||
+        beforeRejectedShieldRng.s0 != afterRejectedShieldRng.s0 || beforeRejectedShieldRng.s1 != afterRejectedShieldRng.s1 ||
+        beforeRejectedShieldRng.s2 != afterRejectedShieldRng.s2) return 491;
     Pokerogue3DS::PokemonBossSegmentDamage bossDamage{};
     if (!Pokerogue3DS::calculatePokemonBossSegmentDamage(99, 300, 300, 3, 2, 0, bossDamage) ||
         bossDamage.adjustedDamage != 99 || bossDamage.clearedSegmentIndex != 3) return 468;

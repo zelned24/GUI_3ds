@@ -419,8 +419,10 @@ struct PokemonMoveActionResult {
 };
 enum class PokemonMoveActionStatus : uint8_t {
     Ok = 0, InvalidMoveSlot, NoPp, TargetAlreadyFainted, DamageResolutionFailed,
-    UnsupportedAbilityCondition, UnresolvedWeather, UnresolvedPp
+    UnsupportedAbilityCondition, UnresolvedWeather, UnresolvedPp, UnresolvedBoss
 };
+struct PokemonBossState;
+struct PokemonBossDamagePolicy;
 PokemonMoveActionStatus useStandardPokemonMove(
     PokemonBattleState& attacker,
     PokemonBattleState& defender,
@@ -431,7 +433,9 @@ PokemonMoveActionStatus useStandardPokemonMove(
     const PokemonMoveWeatherContext* weatherContext = nullptr,
     const PokemonCriticalPolicy* criticalPolicy = nullptr,
     const PokemonHitPolicy* hitPolicy = nullptr,
-    const PokemonPpPolicy* ppPolicy = nullptr);
+    const PokemonPpPolicy* ppPolicy = nullptr,
+    PokemonBossState* targetBossState = nullptr,
+    const PokemonBossDamagePolicy* bossDamagePolicy = nullptr);
 
 enum class PokemonAbilitySelectionResult : uint8_t { Ok = 0, MissingSpecies, InvalidHiddenRate };
 PokemonAbilitySelectionResult selectPokemonAbilityIndex(

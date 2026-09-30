@@ -298,3 +298,10 @@
 2. Fuente EnemyPokemon.damage pinned: ignoreSegments recalcula índice desde HP restante; primera fase Classic con índice cero limita daño a hp-1. Protección no se aplica a fases posteriores.
 3. Regresiones 483–488 escritas para daño limitado, primera fase a 1 HP, fase posterior KO, ignoreSegments y callbacks sin resolver sin mutación. No ejecutadas.
 4. Aún falta conectar a useStandardPokemonMove/FirstRunRuntime, inicializar segmentos canónicos, resolver Endure/PostDamage/form callbacks y Eternamax. Esta operación aislada no demuestra jefe jugable.
+
+## Comando de movimiento con segmentos
+
+1. useStandardPokemonMove acepta contexto opcional de jefe y aplica applyPokemonBossDamage tras resolver hit/daño, antes de publicar PP/target/RNG. Primera fase no se reporta como faint al llegar a 1 HP. Daño aplicado real queda en MoveActionResult para drain/recoil futuros.
+2. Contexto parcial/callbacks sin resolver produce UnresolvedBoss antes de gastar PP/sortear; fallos posteriores conservan target, shields y RNG. Comandos normales conservan parámetros por defecto.
+3. Regresiones 489–491 escritas para movimiento real contra primera fase a 1 HP y rechazo sin mutación de callbacks no resueltos. Pendientes de ejecución.
+4. Falta que FirstRunRuntime inicialice/pase este contexto, resolver callbacks y transformar Eternamax. No se declara jefe final jugable.

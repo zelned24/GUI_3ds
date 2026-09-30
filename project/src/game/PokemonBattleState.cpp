@@ -1180,10 +1180,16 @@ PokemonMoveActionStatus useStandardPokemonMove(
     const PokemonMoveWeatherContext* weatherContext,
     const PokemonCriticalPolicy* criticalPolicy,
     const PokemonHitPolicy* hitPolicy,
-    const PokemonPpPolicy* ppPolicy) {
+    const PokemonPpPolicy* ppPolicy,
+    PokemonBossState* targetBossState, const PokemonBossDamagePolicy* bossDamagePolicy) {
     if (moveSlot >= attacker.moveCount || moveSlot >= 4 || attacker.moves[moveSlot].moveId == 0) {
         return PokemonMoveActionStatus::InvalidMoveSlot;
     }
+    if ((targetBossState != nullptr) != (bossDamagePolicy != nullptr) ||
+        (targetBossState && (!bossDamagePolicy->resolved || !bossDamagePolicy->damageCallbacksResolved ||
+            !targetBossState->segmentCount || targetBossState->segmentIndex >= targetBossState->segmentCount ||
+            !defender.maxHp || defender.hp > defender.maxHp || &attacker == &defender)))
+        return PokemonMoveActionStatus::UnresolvedBoss;
     if (ppPolicy && !ppPolicy->resolved) return PokemonMoveActionStatus::UnresolvedPp;
     const uint8_t ppCost = ppPolicy ? ppPolicy->cost : 1;
     if (attacker.moves[moveSlot].pp == 0 && ppCost) return PokemonMoveActionStatus::NoPp;
@@ -1226,15 +1232,26 @@ PokemonMoveActionStatus useStandardPokemonMove(
         return PokemonMoveActionStatus::DamageResolutionFailed;
     }
 
-    // Consume resolved PP on a successful attempt, including misses and immunities.
-    attacker.moves[moveSlot].pp = static_cast<uint8_t>(attacker.moves[moveSlot].pp - next.ppConsumed);
+    auto nextDefender = defender;
+    PokemonBossState nextBossState{};
+    if (targetBossState) nextBossState = *targetBossState;
     if (next.damageRoll.hit && next.damageRoll.damage > 0) {
-        const uint16_t applied = static_cast<uint16_t>(next.damageRoll.damage < defender.hp
-            ? next.damageRoll.damage : defender.hp);
-        defender.hp = static_cast<uint16_t>(defender.hp - applied);
-        next.damageApplied = applied;
-        next.targetFainted = defender.hp == 0;
+        if (targetBossState) {
+            PokemonBossDamageEvent bossEvent{};
+            if (!applyPokemonBossDamage(nextDefender, nextBossState, next.damageRoll.damage,
+                    *bossDamagePolicy, nextRng, bossEvent)) return PokemonMoveActionStatus::UnresolvedBoss;
+            next.damageApplied = bossEvent.damageApplied;
+        } else {
+            next.damageApplied = static_cast<uint16_t>(next.damageRoll.damage < nextDefender.hp
+                ? next.damageRoll.damage : nextDefender.hp);
+            nextDefender.hp -= next.damageApplied;
+        }
+        next.targetFainted = nextDefender.hp == 0;
     }
+    // Commit resolved PP, target/shields/stages and RNG together after all phases succeed.
+    defender = nextDefender;
+    if (targetBossState) *targetBossState = nextBossState;
+    attacker.moves[moveSlot].pp = static_cast<uint8_t>(attacker.moves[moveSlot].pp - next.ppConsumed);
     battleRng = nextRng;
     output = next;
     return PokemonMoveActionStatus::Ok;
