@@ -75,6 +75,30 @@ inline PokemonTrainerMoveFilterResult filterTrainerHardForbiddenLevelMoves(
     return PokemonTrainerMoveFilterResult::Ok;
 }
 
+// Pinned FORBIDDEN_SINGLES_MOVES soft filter for a known single trainer
+// battle. Upstream retries the original hard-eligible pool with soft filters
+// disabled when every move was excluded.
+inline PokemonTrainerMoveFilterResult filterTrainerSingleBattleLevelMoves(
+    const PokemonLevelMoveCandidate* input, std::size_t count,
+    PokemonLevelMoveCandidate* output, std::size_t capacity,
+    std::size_t& written) {
+    written = 0;
+    if ((!input && count) || (!output && count))
+        return PokemonTrainerMoveFilterResult::InvalidInput;
+    if (capacity < count) return PokemonTrainerMoveFilterResult::InsufficientCapacity;
+    for (std::size_t i = 0; i < count; ++i) {
+        bool forbidden = false;
+        for (const auto id : PokerogueContent::kForbiddenSinglesMoveIds)
+            if (input[i].moveId == id) { forbidden = true; break; }
+        if (!forbidden) output[written++] = input[i];
+    }
+    if (!written && count) {
+        for (std::size_t i = 0; i < count; ++i) output[i] = input[i];
+        written = count;
+    }
+    return PokemonTrainerMoveFilterResult::Ok;
+}
+
 // Pinned adjustWeightsForTrainer, before damage/stat weighting and the 1.6
 // exponent. The strong self-boost flag is derived from each upstream
 // StatStageChangeAttr's stages and selfTarget constructor arguments.

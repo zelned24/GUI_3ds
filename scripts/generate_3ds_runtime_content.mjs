@@ -32,6 +32,15 @@ for (const pair of supercedence.pairs) {
 }
 const supercedenceRows = supercedence.pairs.map(pair =>
   `    {${pair.moveId}, ${pair.replacementMoveId}}`).join(',\n');
+const moveBlocklists = content.extensions?.trainerMoveBlocklists;
+if (moveBlocklists?.provenance?.sourcePath !== 'src/data/balance/moves/forbidden-moves.ts' ||
+    !moveBlocklists.provenance.sourceHash ||
+    ['singles', 'levelBased', 'tm'].some(key => !Array.isArray(moveBlocklists[key]) ||
+      !moveBlocklists[key].length || moveBlocklists[key].some(id => !catalogMoveIds.has(id)) ||
+      new Set(moveBlocklists[key]).size !== moveBlocklists[key].length)) {
+  throw new Error('Pinned trainer move blocklists are missing or invalid');
+}
+const moveBlocklistRows = key => moveBlocklists[key].map(id => `    ${id}`).join(',\n');
 const experienceRates = content.extensions?.pokemonExperience?.growthRates;
 const growthRateNames = ['ERRATIC', 'FAST', 'MEDIUM_FAST', 'MEDIUM_SLOW', 'SLOW', 'FLUCTUATING'];
 if (!experienceRates || growthRateNames.some(rate => !Array.isArray(experienceRates[rate]) || experienceRates[rate].length !== 100 || experienceRates[rate].some(value => !Number.isInteger(value) || value < 0 || value > 0xFFFFFFFF))) {
@@ -572,7 +581,9 @@ const trainerMoveHeader = atlasHeader
   .replace('inline constexpr SpeciesLevelMove kSpeciesLevelMoves[] = {',
     `inline constexpr MoveSupercedence kMoveSupercedence[] = {\n${supercedenceRows}\n};\ninline constexpr char kMoveSupercedenceSourcePath[] = "${field(supercedence.provenance.sourcePath)}";\ninline constexpr char kMoveSupercedenceSourceHash[] = "${field(supercedence.provenance.sourceHash)}";\ninline constexpr SpeciesLevelMove kSpeciesLevelMoves[] = {`)
   .replace('inline constexpr std::size_t kSpeciesLevelMoveCount =',
-    'inline constexpr std::size_t kMoveSupercedenceCount = sizeof(kMoveSupercedence) / sizeof(kMoveSupercedence[0]);\ninline constexpr std::size_t kSpeciesLevelMoveCount =');
+    'inline constexpr std::size_t kMoveSupercedenceCount = sizeof(kMoveSupercedence) / sizeof(kMoveSupercedence[0]);\ninline constexpr std::size_t kSpeciesLevelMoveCount =')
+  .replace('inline constexpr SpeciesLevelMove kSpeciesLevelMoves[] = {',
+    `inline constexpr uint16_t kForbiddenSinglesMoveIds[] = {\n${moveBlocklistRows('singles')}\n};\ninline constexpr uint16_t kLevelBasedDeniedMoveIds[] = {\n${moveBlocklistRows('levelBased')}\n};\ninline constexpr uint16_t kForbiddenTmMoveIds[] = {\n${moveBlocklistRows('tm')}\n};\ninline constexpr char kMoveBlocklistsSourcePath[] = "${field(moveBlocklists.provenance.sourcePath)}";\ninline constexpr char kMoveBlocklistsSourceHash[] = "${field(moveBlocklists.provenance.sourceHash)}";\ninline constexpr SpeciesLevelMove kSpeciesLevelMoves[] = {`);
 await fs.mkdir(path.dirname(outputPath), { recursive: true });
 await fs.writeFile(outputPath, trainerMoveHeader, 'utf8');
 console.log(JSON.stringify({ output: path.relative(root, outputPath), bytes: Buffer.byteLength(trainerMoveHeader), hash: report.contentHash }));

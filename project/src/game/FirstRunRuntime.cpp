@@ -535,6 +535,7 @@ void FirstRunRuntime::resolve(bool carryPlayer) {
     m_context.trainerPartyLevelMovesResolved = false;
     m_context.trainerPartySupercedenceResolved = false;
     m_context.trainerPartyHardMoveFilterResolved = false;
+    m_context.trainerPartySingleMoveFilterResolved = false;
     m_context.trainerPartyBaseWeightsResolved = false;
     for (auto& level : m_context.trainerPartyLevels) level = 0;
     for (auto& member : m_context.trainerParty) member = {};
@@ -542,6 +543,7 @@ void FirstRunRuntime::resolve(bool carryPlayer) {
     for (auto& count : m_context.trainerPartyLevelMoveCounts) count = 0;
     for (auto& count : m_context.trainerPartySupersededMoveCounts) count = 0;
     for (auto& count : m_context.trainerPartyHardEligibleMoveCounts) count = 0;
+    for (auto& count : m_context.trainerPartySingleEligibleMoveCounts) count = 0;
     const auto& starter = PokerogueContent::kSpecies[m_starterIndex];
     m_run.starterDex = starter.dex;
     m_context.modeName = locale("gameMode:classic", "Classic");
@@ -677,6 +679,7 @@ void FirstRunRuntime::resolve(bool carryPlayer) {
                         bool allLevelMovesResolved = true;
                         bool allSupercedenceResolved = true;
                         bool allHardMoveFiltersResolved = true;
+                        bool allSingleMoveFiltersResolved = true;
                         bool allBaseWeightsResolved = true;
                         for (uint8_t i = 0; i < levels.count; ++i) {
                             uint32_t memberOffset = 0;
@@ -752,12 +755,25 @@ void FirstRunRuntime::resolve(bool carryPlayer) {
                             }
                             m_context.trainerPartyHardEligibleMoveCounts[i] =
                                 static_cast<uint16_t>(eligibleCount);
+                            // This fixed Youngster callback only constructs DEFAULT
+                            // or FEMALE variants; upstream checkIsDouble treats both
+                            // as singles. Other trainer variants need their own path.
+                            PokemonLevelMoveCandidate singleMoves[128]{};
+                            std::size_t singleCount = 0;
+                            if (filterTrainerSingleBattleLevelMoves(eligibleMoves,
+                                    eligibleCount, singleMoves, 128, singleCount) !=
+                                PokemonTrainerMoveFilterResult::Ok) {
+                                allSingleMoveFiltersResolved = false;
+                                continue;
+                            }
+                            m_context.trainerPartySingleEligibleMoveCounts[i] =
+                                static_cast<uint16_t>(singleCount);
                             PokemonTrainerBaseWeightedMove adjustedMoves[128]{};
                             std::size_t adjustedCount = 0;
-                            if (adjustTrainerLevelMoveBaseWeights(eligibleMoves,
-                                    eligibleCount, adjustedMoves, 128, adjustedCount) !=
+                            if (adjustTrainerLevelMoveBaseWeights(singleMoves,
+                                    singleCount, adjustedMoves, 128, adjustedCount) !=
                                 PokemonTrainerMoveFilterResult::Ok ||
-                                adjustedCount != eligibleCount) {
+                                adjustedCount != singleCount) {
                                 allBaseWeightsResolved = false;
                                 continue;
                             }
@@ -771,14 +787,18 @@ void FirstRunRuntime::resolve(bool carryPlayer) {
                             m_context.trainerPartyLevelMovesResolved && allSupercedenceResolved;
                         m_context.trainerPartyHardMoveFilterResolved =
                             m_context.trainerPartySupercedenceResolved && allHardMoveFiltersResolved;
+                        m_context.trainerPartySingleMoveFilterResolved =
+                            m_context.trainerPartyHardMoveFilterResolved && allSingleMoveFiltersResolved;
                         m_context.trainerPartyBaseWeightsResolved =
-                            m_context.trainerPartyHardMoveFilterResolved && allBaseWeightsResolved;
+                            m_context.trainerPartySingleMoveFilterResolved && allBaseWeightsResolved;
                     }
                 }
                 m_battleFeedback = m_context.trainerPartyBaseWeightsResolved
                     ? "Trainer damage weights, IVs and battle pending"
-                    : m_context.trainerPartyHardMoveFilterResolved
+                    : m_context.trainerPartySingleMoveFilterResolved
                     ? "Trainer base move weights unsupported"
+                    : m_context.trainerPartyHardMoveFilterResolved
+                    ? "Trainer single-battle move filter unsupported"
                     : m_context.trainerPartyLevelMovesResolved
                     ? "Trainer move-filter metadata unsupported"
                     : m_context.trainerPartyConstructorResolved

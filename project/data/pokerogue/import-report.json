@@ -13,9 +13,12 @@
     "experienceGrowthRates": 6,
     "fixedBattleWaves": 21,
     "fixedBossWaves": 21,
+    "forbiddenSinglesMoves": 22,
+    "forbiddenTmMoves": 24,
     "forms": 609,
     "freshProfileStarters": 27,
     "items": 109,
+    "levelBasedDeniedMoves": 133,
     "locales": 3163,
     "modes": 5,
     "modifierPoolEntries": 139,
@@ -32,7 +35,7 @@
     "trainersWithSpeciesPools": 34,
     "trainersWithStaticPartyTemplates": 46
   },
-  "contentHash": "99a42813c4fb74c03732dac73aebcfeca87b1e60098255ee4856c3f06393ad9b",
+  "contentHash": "63987beddaff752f42c55e795102cd4b46cbfb6c79059b5078e7b48e52c4bfed",
   "deterministicReimport": true,
   "provenance": [
     {
@@ -268,6 +271,12 @@
       "repository": "pokerogue",
       "revision": "8555c08c823b856cbec4eb99ca84ea52a955836d",
       "sourcePath": "src/data/balance/moves/egg-moves.ts"
+    },
+    {
+      "hash": "146e6fc0962f58c3a8a62a7e662348375d5ea85b7bf098eddde8470838ea98c0",
+      "repository": "pokerogue",
+      "revision": "8555c08c823b856cbec4eb99ca84ea52a955836d",
+      "sourcePath": "src/data/balance/moves/forbidden-moves.ts"
     },
     {
       "hash": "272f61daaa652eb256baa9cc9b54617447874e547f062740d22b7a2af172993e",
