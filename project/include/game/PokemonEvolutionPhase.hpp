@@ -55,15 +55,36 @@ inline uint8_t learnNewLevelMoves(
     const auto* species = PokerogueContent::findSpeciesByDex(speciesDex);
     if (!species || oldLevel >= newLevel) return 0;
 
-    const auto* levelMoves = PokerogueContent::levelMovesFor(*species);
-    if (!levelMoves) return 0;
-
+    if (battleState.speciesDex != speciesDex || battleState.moveCount > 4) return 0;
+    const auto* form = battleState.formId ? PokerogueContent::findFormById(battleState.formId) : nullptr;
+    if (battleState.formId && (!form || !pokemonEvolutionTextEqual(form->speciesId, species->id))) return 0;
+    const auto* speciesMoves = PokerogueContent::levelMovesFor(*species);
+    const auto* formMoves = form ? PokerogueContent::levelMovesFor(*form) : nullptr;
+    const uint16_t speciesCount = species->learnsetCount;
+    const uint16_t formCount = form ? form->learnsetCount : 0;
+    if ((!speciesMoves && speciesCount) || (!formMoves && formCount)) return 0;
+    // SpeciesDataRegistry merges species + form moves; Pokemon.getLevelMoves
+    // stable-sorts by level. Select ascending levels without allocating a pool.
+    uint16_t previousLevel = oldLevel;
     uint8_t learnedCount = 0;
-    for (uint16_t i = 0; i < species->learnsetCount; ++i) {
-        const auto& lm = levelMoves[i];
-        if (lm.level <= 0 || static_cast<uint16_t>(lm.level) <= oldLevel || static_cast<uint16_t>(lm.level) > newLevel) {
-            continue;
+    while (previousLevel < newLevel) {
+        uint16_t selectedLevel = 0;
+        for (uint8_t source = 0; source < 2; ++source) {
+            const auto* rows = source ? formMoves : speciesMoves;
+            const uint16_t count = source ? formCount : speciesCount;
+            for (uint16_t i = 0; rows && i < count; ++i)
+                if (rows[i].level > 0 && static_cast<uint16_t>(rows[i].level) > previousLevel &&
+                    static_cast<uint16_t>(rows[i].level) <= newLevel &&
+                    (!selectedLevel || rows[i].level < selectedLevel)) selectedLevel = rows[i].level;
         }
+        if (!selectedLevel) break;
+        previousLevel = selectedLevel;
+        for (uint8_t source = 0; source < 2; ++source) {
+            const auto* levelMoves = source ? formMoves : speciesMoves;
+            const uint16_t count = source ? formCount : speciesCount;
+            for (uint16_t i = 0; levelMoves && i < count; ++i) {
+                const auto& lm = levelMoves[i];
+                if (lm.level != selectedLevel) continue;
 
         // Check if move is already known
         bool alreadyKnown = false;
@@ -95,6 +116,8 @@ inline uint8_t learnNewLevelMoves(
             if (feedback) {
                 if (!feedback->empty()) *feedback += " ";
                 *feedback += "Learned " + std::string(moveDef->name) + "!";
+            }
+        }
             }
         }
     }

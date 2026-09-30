@@ -400,3 +400,8 @@
 1. applySpeciesEvolution acepta identidad real y preserva abilityIndex frente a IDs duplicados; porta PlayerPokemon.evolve/getAbilityCount pinned: slot oculto pasa a slot1 si destino no tiene hidden. Runtime conecta identidad a evolución y preserva flag IVs derivados al recalcular nivel/stats.
 2. Regresiones 298–299 escritas para forma/slot de evolución y snapshot de Ivysaur real. Setup previo completado con habilidad/género/naturaleza explícitos; asserts conservados. No ejecutadas.
 3. Tera tras cambio de tipos sigue requiriendo identidad de tipo explícita; transformaciones, condiciones y evolución cancelable siguen pendientes. No se declara evolución completa.
+
+## Aprendizaje de formas por nivel
+
+1. learnNewLevelMoves combina learnset de especie y forma seleccionada, conforme SpeciesDataRegistry.getLevelMoves y Pokemon.getLevelMoves pinned; orden ascendente estable por nivel, species antes de form en empates, sin pool dinámico. Rechaza forma de otra especie y evita moves duplicados.
+2. Regresiones 300–302 escritas buscan una forma real con move exclusivo y comprueban aprendizaje en su nivel. No ejecutadas. Reemplazo de cuatro slots y diálogo de rechazo/aceptación siguen pendientes; el helper todavía solo llena huecos.

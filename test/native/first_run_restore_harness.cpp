@@ -940,6 +940,35 @@ int main() {
         uint8_t count = 0;
         if (!Pokerogue3DS::learnNewLevelMoves(learner.speciesDex, 1, 128, learner, ids, count) ||
             !count || count != learner.moveCount) return 214;
+        bool formMoveCovered = false;
+        for (const auto& form : PokerogueContent::kForms) {
+            const auto* species = Pokerogue3DS::findSpeciesById(form.speciesId);
+            const auto* rows = PokerogueContent::levelMovesFor(form);
+            if (!species || !rows) continue;
+            for (uint16_t i = 0; i < form.learnsetCount; ++i) {
+                if (rows[i].level < 2) continue;
+                const uint16_t level = static_cast<uint16_t>(rows[i].level);
+                bool speciesHasMove = false;
+                const auto* baseRows = PokerogueContent::levelMovesFor(*species);
+                for (uint16_t j = 0; baseRows && j < species->learnsetCount; ++j)
+                    speciesHasMove |= baseRows[j].moveId == rows[i].moveId;
+                if (speciesHasMove) continue;
+                Pokerogue3DS::PokemonBattleState formLearner{};
+                formLearner.speciesDex = species->dex;
+                formLearner.formId = form.id;
+                uint16_t formIds[4]{};
+                uint8_t formMoveCount = 0;
+                if (!Pokerogue3DS::learnNewLevelMoves(species->dex, level - 1, level,
+                        formLearner, formIds, formMoveCount)) return 300;
+                bool found = false;
+                for (uint8_t slot = 0; slot < formMoveCount; ++slot) found |= formIds[slot] == rows[i].moveId;
+                if (!found) return 301;
+                formMoveCovered = true;
+                break;
+            }
+            if (formMoveCovered) break;
+        }
+        if (!formMoveCovered) return 302;
         const auto* alreadyEligible = Pokerogue3DS::checkSpeciesLevelEvolution("bulbasaur", 20, 21);
         if (!alreadyEligible || alreadyEligible->level != 16) return 215;
         // A level alone must not select an item/condition/form evolution.
