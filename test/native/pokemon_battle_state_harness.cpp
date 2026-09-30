@@ -1151,6 +1151,24 @@ extern "C" int runPokemonBattleStateChecks() {
         if (!Pokerogue3DS::advancePokemonTrickRoomTurnEnd(roomState, roomEvent) || roomEvent.expired) return 382;
     if (!Pokerogue3DS::advancePokemonTrickRoomTurnEnd(roomState, roomEvent) ||
         !roomEvent.expired || !roomEvent.removed || roomState.sourceMoveId || roomState.turnsLeft) return 383;
+    PokemonBattleState roomUser = state;
+    roomUser.moves[0] = {433, 5, 5};
+    Pokerogue3DS::PokemonTrickRoomCommandPolicy roomCommandPolicy{};
+    Pokerogue3DS::PokemonTrickRoomCommandEvent roomCommandEvent{};
+    if (Pokerogue3DS::usePokemonTrickRoomCommand(roomUser, roomState, 0, roomCommandPolicy,
+            roomCommandEvent) != Pokerogue3DS::PokemonTrickRoomCommandResult::UnresolvedPolicy ||
+        roomUser.moves[0].pp != 5) return 384;
+    roomCommandPolicy.resolved = true;
+    if (Pokerogue3DS::usePokemonTrickRoomCommand(roomUser, roomState, 0, roomCommandPolicy,
+            roomCommandEvent) != Pokerogue3DS::PokemonTrickRoomCommandResult::Ok ||
+        !roomCommandEvent.field.activated || roomCommandEvent.ppConsumed != 1 || roomUser.moves[0].pp != 4) return 385;
+    if (Pokerogue3DS::usePokemonTrickRoomCommand(roomUser, roomState, 0, roomCommandPolicy,
+            roomCommandEvent) != Pokerogue3DS::PokemonTrickRoomCommandResult::Ok ||
+        !roomCommandEvent.field.removed || roomState.turnsLeft || roomUser.moves[0].pp != 3) return 386;
+    roomCommandPolicy.failsBeforeEffect = true;
+    if (Pokerogue3DS::usePokemonTrickRoomCommand(roomUser, roomState, 0, roomCommandPolicy,
+            roomCommandEvent) != Pokerogue3DS::PokemonTrickRoomCommandResult::Ok ||
+        !roomCommandEvent.failed || roomState.turnsLeft || roomUser.moves[0].pp != 2) return 387;
     PokemonBattleState noPpActor = state;
     noPpActor.moves[0].pp = 0;
     PokemonBattleState unchangedTarget = state;

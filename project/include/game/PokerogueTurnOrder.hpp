@@ -6,6 +6,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <cstring>
 
 namespace Pokerogue3DS {
 
@@ -48,6 +49,52 @@ inline bool applyPokemonTrickRoomMove(PokemonTrickRoomState& state, uint16_t mov
     }
     return false;
 }
+inline PokemonTurnOrderFieldPolicy pokemonTrickRoomOrderPolicy(const PokemonTrickRoomState& state);
+enum class PokemonTrickRoomCommandResult : uint8_t {
+    Ok, InvalidActor, InvalidSlot, InvalidDefinition, NoPp, UnresolvedPolicy, InvalidField
+};
+struct PokemonTrickRoomCommandPolicy {
+    bool resolved = false; // Pre-move status/tag/condition checks already resolved.
+    bool failsBeforeEffect = false;
+    uint8_t ppCost = 1; // Resolved Pressure/ignore-PP policy.
+};
+struct PokemonTrickRoomCommandEvent {
+    bool failed = false;
+    uint8_t ppConsumed = 0;
+    PokemonTrickRoomEvent field{};
+};
+inline PokemonTrickRoomCommandResult usePokemonTrickRoomCommand(
+    PokemonBattleState& user, PokemonTrickRoomState& state, uint8_t moveSlot,
+    const PokemonTrickRoomCommandPolicy& policy, PokemonTrickRoomCommandEvent& output) {
+    if (!policy.resolved) return PokemonTrickRoomCommandResult::UnresolvedPolicy;
+    if (!user.hp || !user.maxHp || user.hp > user.maxHp) return PokemonTrickRoomCommandResult::InvalidActor;
+    if (moveSlot >= 4 || moveSlot >= user.moveCount) return PokemonTrickRoomCommandResult::InvalidSlot;
+    const auto& slot = user.moves[moveSlot];
+    const auto* move = PokerogueContent::findMoveById(slot.moveId);
+    if (!move || move->category != PokerogueContent::MoveStatus || !move->target ||
+        std::strcmp(move->target, "BOTH_SIDES") || move->attributeCount != 1 ||
+        !PokerogueContent::moveHasAttribute(*move, "AddArenaTagAttr"))
+        return PokemonTrickRoomCommandResult::InvalidDefinition;
+    bool represented = false;
+    for (const auto& profile : PokerogueContent::kTrickRoomMoveProfiles)
+        if (profile.moveId == move->id) represented = true;
+    if (!represented) return PokemonTrickRoomCommandResult::InvalidDefinition;
+    if (!slot.pp && policy.ppCost) return PokemonTrickRoomCommandResult::NoPp;
+    if (slot.pp > slot.maxPp) return PokemonTrickRoomCommandResult::InvalidActor;
+    if (!pokemonTrickRoomOrderPolicy(state).resolved) return PokemonTrickRoomCommandResult::InvalidField;
+    PokemonTrickRoomState next = state;
+    PokemonTrickRoomCommandEvent event{};
+    event.failed = policy.failsBeforeEffect;
+    if (!event.failed && !applyPokemonTrickRoomMove(next, move->id, user.pokemonId, event.field))
+        return PokemonTrickRoomCommandResult::InvalidField;
+    event.ppConsumed = policy.ppCost < slot.pp ? policy.ppCost : slot.pp;
+    user.moves[moveSlot].pp = static_cast<uint8_t>(slot.pp - event.ppConsumed);
+    state = next;
+    output = event;
+    // BOTH_SIDES field hit check bypasses accuracy/type/critical RNG.
+    return PokemonTrickRoomCommandResult::Ok;
+}
+
 inline bool advancePokemonTrickRoomTurnEnd(PokemonTrickRoomState& state,
     PokemonTrickRoomEvent& output) {
     if (state.turnsLeft > state.maxDuration || (!state.turnsLeft &&
