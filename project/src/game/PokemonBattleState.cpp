@@ -594,6 +594,43 @@ bool lapsePokemonArenaWeather(PokemonArenaWeatherState& state) {
     return state.turnsLeft != 0;
 }
 
+bool applyPokemonWeatherResidualDamage(PokemonBattleState& target,
+    const PokemonArenaWeatherState& arena, const PokemonWeatherDamagePolicy& policy,
+    PokemonWeatherDamageEvent& output) {
+    if (!policy.resolved || static_cast<uint8_t>(arena.type) > 9 ||
+        !target.maxHp || target.hp > target.maxHp) return false;
+    PokemonWeatherDamageEvent event{};
+    if (!target.hp || policy.weatherSuppressed || policy.abilityBlocksDamage ||
+        policy.underground || policy.underwater || policy.switchingOut ||
+        (arena.type != PokemonEffectiveWeather::Sandstorm && arena.type != PokemonEffectiveWeather::Hail)) {
+        output = event;
+        return true;
+    }
+    if (!policy.type1 || !*policy.type1 || sameText(policy.type1, "NONE")) return false;
+    const auto knownType = [](const char* type) {
+        if (!type || !*type || sameText(type, "NONE")) return true;
+        for (const auto& row : kTypeChart)
+            if (sameText(row.defendingType, type)) return true;
+        return false;
+    };
+    if (!knownType(policy.type1) || !knownType(policy.type2)) return false;
+    const auto typeImmune = [&](const char* type) {
+        if (arena.type == PokemonEffectiveWeather::Hail) return sameText(type, "ICE");
+        return sameText(type, "GROUND") || sameText(type, "ROCK") || sameText(type, "STEEL");
+    };
+    if (typeImmune(policy.type1) || typeImmune(policy.type2)) {
+        output = event;
+        return true;
+    }
+    uint16_t damage = static_cast<uint16_t>(target.maxHp / 16);
+    if (!damage) damage = 1;
+    event.damageApplied = damage < target.hp ? damage : target.hp;
+    target.hp = static_cast<uint16_t>(target.hp - event.damageApplied);
+    event.fainted = target.hp == 0;
+    output = event;
+    return true;
+}
+
 bool advancePokemonArenaWeatherTurnEnd(PokemonArenaWeatherState& state,
     PokemonWeatherTurnEndEvent& output) {
     if (static_cast<uint8_t>(state.type) > 9 ||

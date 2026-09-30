@@ -615,6 +615,36 @@ extern "C" int runPokemonBattleStateChecks() {
     weatherEnd.expired = true;
     if (Pokerogue3DS::advancePokemonArenaWeatherTurnEnd(arenaWeather, weatherEnd) ||
         arenaWeather.turnsLeft != 2 || !weatherEnd.expired) return 301;
+    PokemonBattleState weatherVictim = state;
+    weatherVictim.maxHp = weatherVictim.hp = 100;
+    Pokerogue3DS::PokemonArenaWeatherState damageWeather{};
+    damageWeather.type = PokemonEffectiveWeather::Sandstorm;
+    Pokerogue3DS::PokemonWeatherDamagePolicy residualPolicy{};
+    residualPolicy.resolved = true;
+    residualPolicy.type1 = "NORMAL";
+    residualPolicy.type2 = "NONE";
+    Pokerogue3DS::PokemonWeatherDamageEvent residualEvent{};
+    if (!Pokerogue3DS::applyPokemonWeatherResidualDamage(weatherVictim, damageWeather, residualPolicy, residualEvent) ||
+        residualEvent.damageApplied != 6 || weatherVictim.hp != 94 || residualEvent.fainted) return 305;
+    residualPolicy.type2 = "STEEL";
+    if (!Pokerogue3DS::applyPokemonWeatherResidualDamage(weatherVictim, damageWeather, residualPolicy, residualEvent) ||
+        residualEvent.damageApplied || weatherVictim.hp != 94) return 306;
+    damageWeather.type = PokemonEffectiveWeather::Hail;
+    residualPolicy.type2 = "ICE";
+    if (!Pokerogue3DS::applyPokemonWeatherResidualDamage(weatherVictim, damageWeather, residualPolicy, residualEvent) ||
+        residualEvent.damageApplied) return 307;
+    residualPolicy.type2 = "NONE";
+    residualPolicy.underground = true;
+    if (!Pokerogue3DS::applyPokemonWeatherResidualDamage(weatherVictim, damageWeather, residualPolicy, residualEvent) ||
+        residualEvent.damageApplied) return 308;
+    residualPolicy.underground = false;
+    weatherVictim.maxHp = weatherVictim.hp = 1;
+    if (!Pokerogue3DS::applyPokemonWeatherResidualDamage(weatherVictim, damageWeather, residualPolicy, residualEvent) ||
+        residualEvent.damageApplied != 1 || !residualEvent.fainted || weatherVictim.hp) return 309;
+    residualPolicy.resolved = false;
+    residualEvent.damageApplied = 123;
+    if (Pokerogue3DS::applyPokemonWeatherResidualDamage(weatherVictim, damageWeather, residualPolicy, residualEvent) ||
+        residualEvent.damageApplied != 123) return 310;
     Pokerogue3DS::PokemonMoveWeatherContext weatherContext{};
     double weatherMultiplier = 17.0;
     if (Pokerogue3DS::pokemonMoveWeatherMultiplier(52, weatherContext, weatherMultiplier) ||

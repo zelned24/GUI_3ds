@@ -255,6 +255,24 @@ bool pokemonWeatherIsImmutable(PokemonEffectiveWeather type);
 bool setPokemonArenaWeather(PokemonArenaWeatherState& state,
     PokemonEffectiveWeather type, uint16_t resolvedDuration);
 bool lapsePokemonArenaWeather(PokemonArenaWeatherState& state);
+struct PokemonWeatherDamagePolicy {
+    bool resolved = false;
+    bool weatherSuppressed = false;
+    bool abilityBlocksDamage = false;
+    bool underground = false;
+    bool underwater = false;
+    bool switchingOut = false;
+    // Caller supplies resolved current types, including form/type changes.
+    const char* type1 = nullptr;
+    const char* type2 = nullptr;
+};
+struct PokemonWeatherDamageEvent {
+    uint16_t damageApplied = 0;
+    bool fainted = false;
+};
+bool applyPokemonWeatherResidualDamage(PokemonBattleState& target,
+    const PokemonArenaWeatherState& arena, const PokemonWeatherDamagePolicy& policy,
+    PokemonWeatherDamageEvent& output);
 struct PokemonWeatherTurnEndEvent {
     bool expired = false;
     PokemonEffectiveWeather previousWeather = PokemonEffectiveWeather::None;
