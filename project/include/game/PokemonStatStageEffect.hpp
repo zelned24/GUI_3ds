@@ -118,41 +118,51 @@ inline PokemonStatStageEffectResult applyPokemonStatStageEffect(
     return PokemonStatStageEffectResult::Ok;
 }
 
-// A reflected phase has no move-chance roll: the original attribute already
-// triggered. Its sourceEffectType is MIRROR_ARMOR, forbidding another reflection.
-inline PokemonStatStageEffectResult applyReflectedPokemonStatStages(
-    PokemonBattleState& source, const PokemonStatStageEffectEvent& reflection,
-    const PokemonStatStageEffectPolicy& sourcePolicy, PokemonStatStageEffectEvent& output) {
-    if (!sourcePolicy.resolved || sourcePolicy.reflectedStatMask)
+// Mutation part of a queued source/ability stat phase. No move-chance RNG
+// belongs here. Policies must resolve phase-specific protection and reactions.
+inline PokemonStatStageEffectResult applyResolvedPokemonStatStagePhase(
+    PokemonBattleState& recipient, uint8_t statMask, int16_t requestedStages,
+    const PokemonStatStageEffectPolicy& policy, PokemonStatStageEffectEvent& output) {
+    if (!policy.resolved || policy.reflectedStatMask)
         return PokemonStatStageEffectResult::UnresolvedPolicy;
-    if (reflection.reflectedStatMask > 127 || reflection.reflectedStages < -36 ||
-        reflection.reflectedStages > 36 || sourcePolicy.stageMultiplier < -6 ||
-        sourcePolicy.stageMultiplier > 6 || sourcePolicy.cancelledStatMask > 127)
-        return PokemonStatStageEffectResult::InvalidDefinition;
+    if (statMask > 127 || requestedStages < -42 || requestedStages > 42 ||
+        policy.stageMultiplier < -6 || policy.stageMultiplier > 6 ||
+        policy.cancelledStatMask > 127) return PokemonStatStageEffectResult::InvalidDefinition;
     PokemonStatStageEffectEvent event{};
-    if (!reflection.triggered || !reflection.reflectedStatMask || !source.hp) {
+    if (!statMask || !requestedStages || !recipient.hp) {
         output = event;
         return PokemonStatStageEffectResult::Ok;
     }
-    for (int8_t stage : source.statStages)
+    for (int8_t stage : recipient.statStages)
         if (stage < -6 || stage > 6) return PokemonStatStageEffectResult::InvalidState;
-    event.triggered = true;
-    const int requestedChange = reflection.reflectedStages * sourcePolicy.stageMultiplier;
-    event.processedStatMask = reflection.reflectedStatMask & static_cast<uint8_t>(~sourcePolicy.cancelledStatMask);
-    // Reactions depend on the sign and count of requested changes, even at a cap.
-    event.requestedStages = static_cast<int16_t>(requestedChange);
+    event.processedStatMask = statMask & static_cast<uint8_t>(~policy.cancelledStatMask);
+    const int change = requestedStages * policy.stageMultiplier;
+    event.requestedStages = static_cast<int16_t>(change);
+    event.triggered = event.processedStatMask && change;
     for (uint8_t stat = 0; stat < 7; ++stat) {
         const uint8_t bit = static_cast<uint8_t>(1u << stat);
-        if (!(reflection.reflectedStatMask & bit) || (sourcePolicy.cancelledStatMask & bit)) continue;
-        const int before = source.statStages[stat];
-        const int requested = before + requestedChange;
+        if (!(event.processedStatMask & bit)) continue;
+        const int before = recipient.statStages[stat];
+        const int requested = before + change;
         const int after = requested < -6 ? -6 : requested > 6 ? 6 : requested;
-        source.statStages[stat] = static_cast<int8_t>(after);
+        recipient.statStages[stat] = static_cast<int8_t>(after);
         event.changes[stat] = static_cast<int8_t>(after - before);
         if (after != before) event.changedStatMask |= bit;
     }
     output = event;
     return PokemonStatStageEffectResult::Ok;
+}
+
+// SourceEffectType.MIRROR_ARMOR forbids another reflection. The caller must
+// resolve that phase's policy accordingly before this function can commit.
+inline PokemonStatStageEffectResult applyReflectedPokemonStatStages(
+    PokemonBattleState& source, const PokemonStatStageEffectEvent& reflection,
+    const PokemonStatStageEffectPolicy& sourcePolicy, PokemonStatStageEffectEvent& output) {
+    if (reflection.reflectedStages < -36 || reflection.reflectedStages > 36)
+        return PokemonStatStageEffectResult::InvalidDefinition;
+    return applyResolvedPokemonStatStagePhase(source,
+        reflection.triggered ? reflection.reflectedStatMask : 0,
+        reflection.reflectedStages, sourcePolicy, output);
 }
 
 struct PokemonStatStageReactionRequest {
@@ -178,6 +188,18 @@ inline bool planPokemonStatStageDropReaction(
     }
     output = next;
     return true;
+}
+
+inline PokemonStatStageEffectResult applyPokemonStatStageDropReaction(
+    PokemonBattleState& recipient, const PokerogueContent::AbilityStatStageReaction& reaction,
+    const PokemonStatStageEffectEvent& changes, bool selfTarget,
+    const PokemonStatStageEffectPolicy& reactionPolicy, PokemonStatStageEffectEvent& output) {
+    PokemonStatStageReactionRequest request{};
+    if (!planPokemonStatStageDropReaction(reaction, changes, selfTarget, request))
+        return PokemonStatStageEffectResult::InvalidDefinition;
+    const uint8_t mask = request.stat ? static_cast<uint8_t>(1u << (request.stat - 1)) : 0;
+    return applyResolvedPokemonStatStagePhase(recipient, mask, request.stages,
+        reactionPolicy, output);
 }
 
 struct PokemonStatStageMovePolicy {

@@ -406,6 +406,23 @@ extern "C" int runPokemonBattleStateChecks() {
     requestedDrop.processedStatMask = 0;
     if (!Pokerogue3DS::planPokemonStatStageDropReaction(*defiantReaction, requestedDrop,
             false, reactionRequest) || reactionRequest.stages) return 248;
+    PokemonBattleState reactionActor = state;
+    reactionActor.statStages[0] = -6;
+    requestedDrop.processedStatMask = 3;
+    Pokerogue3DS::PokemonStatStageEffectPolicy boostPolicy{};
+    boostPolicy.resolved = true;
+    if (Pokerogue3DS::applyPokemonStatStageDropReaction(reactionActor, *defiantReaction,
+            requestedDrop, false, boostPolicy, reflectedEvent) !=
+            Pokerogue3DS::PokemonStatStageEffectResult::Ok ||
+        reactionActor.statStages[0] != -2 || reflectedEvent.changes[0] != 4) return 249;
+    boostPolicy.stageMultiplier = 2;
+    if (Pokerogue3DS::applyPokemonStatStageDropReaction(reactionActor, *defiantReaction,
+            requestedDrop, false, boostPolicy, reflectedEvent) !=
+            Pokerogue3DS::PokemonStatStageEffectResult::Ok ||
+        reactionActor.statStages[0] != 6 || reflectedEvent.changes[0] != 8) return 250;
+    if (Pokerogue3DS::applyPokemonStatStageDropReaction(reactionActor, *defiantReaction,
+            requestedDrop, true, boostPolicy, reflectedEvent) !=
+            Pokerogue3DS::PokemonStatStageEffectResult::Ok || reflectedEvent.triggered) return 251;
     PokemonBattleInit actorIdInput = input;
     actorIdInput.pokemonId = 0x12345678u;
     actorIdInput.deriveIvsFromPokemonId = true;
