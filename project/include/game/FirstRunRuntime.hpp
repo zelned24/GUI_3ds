@@ -134,6 +134,8 @@ public:
 
 private:
     bool advanceBattleTurnInPlace();
+    bool claimRewardChoiceInPlace();
+    bool skipVictoryRewardInPlace();
     bool throwPokeballInPlace(PokeballType ball);
     bool switchPlayerPokemonInPlace(uint8_t targetIndex);
     bool selectEnemyMoveSlot(const PokemonBattleState& enemy, const PokemonBattleState& player,

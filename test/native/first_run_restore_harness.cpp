@@ -665,6 +665,16 @@ int main() {
         if (game.switchPlayerPokemon(255) || game.presentation().player.dex != beforeDex ||
             game.presentation().player.battleState.hp != beforeHp ||
             game.pokeballCount(Pokerogue3DS::PokeballType::Pokeball) != 5) return 213;
+        using namespace Pokerogue3DS;
+        NativeRunSave beforeTransition{}, afterTransition{};
+        game.captureNativeRunSave(beforeTransition);
+        if (game.skipVictoryReward() || game.claimRewardChoice()) return 226;
+        game.captureNativeRunSave(afterTransition);
+        uint8_t beforeBytes[kNativeSaveMaxBytes]{}, afterBytes[kNativeSaveMaxBytes]{};
+        size_t beforeLength = 0, afterLength = 0;
+        if (encodeNativeRunSave(beforeTransition, beforeBytes, sizeof(beforeBytes), beforeLength) != NativeSaveResult::Ok ||
+            encodeNativeRunSave(afterTransition, afterBytes, sizeof(afterBytes), afterLength) != NativeSaveResult::Ok ||
+            beforeLength != afterLength || std::memcmp(beforeBytes, afterBytes, beforeLength)) return 227;
         (void)beforeRng; // Invalid command must not publish a party or inventory mutation.
     }
 

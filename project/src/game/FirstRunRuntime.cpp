@@ -659,6 +659,18 @@ bool FirstRunRuntime::selectRewardChoice(int direction) {
 }
 
 bool FirstRunRuntime::claimRewardChoice() {
+    FirstRunRuntime candidate = *this;
+    if (!candidate.claimRewardChoiceInPlace()) {
+        m_battleFeedback = candidate.m_battleFeedback;
+        buildScene();
+        return false;
+    }
+    *this = candidate;
+    buildScene();
+    return true;
+}
+
+bool FirstRunRuntime::claimRewardChoiceInPlace() {
     if (!m_rewardsPending || m_selectedRewardChoice >= m_rewardChoiceCount) return false;
     const auto& choice = m_rewardChoices[m_selectedRewardChoice];
     if (choice.poolEntry && choice.poolEntry->itemId) {
@@ -1659,6 +1671,18 @@ bool FirstRunRuntime::enemyPartyDefeated() const {
 }
 
 bool FirstRunRuntime::skipVictoryReward() {
+    FirstRunRuntime candidate = *this;
+    if (!candidate.skipVictoryRewardInPlace()) {
+        m_battleFeedback = candidate.m_battleFeedback;
+        buildScene();
+        return false;
+    }
+    *this = candidate;
+    buildScene();
+    return true;
+}
+
+bool FirstRunRuntime::skipVictoryRewardInPlace() {
     if (!m_battleFinished || !m_playerWon || !m_experienceGranted ||
         !enemyPartyDefeated() || !m_victoryPlan.contains(ClassicVictoryStep::SelectModifier) ||
         !m_victoryPlan.nextWave || m_victoryPlan.nextWave > PokerogueContent::kClassicFinalWave)
@@ -2140,6 +2164,18 @@ void FirstRunRuntime::resolve(bool carryPlayer) {
     PokerogueSeedOffsetScope waveScope(waveRng, m_seedCodeUnits.data(), m_seedLength, m_run.wave);
     if (!waveScope.valid()) return;
     const ClassicWaveKind waveKind = classifyClassicWave(m_run.wave);
+    // BattleScene.doPostBattleCleanup recalls the player field at these boundaries.
+    // ReturnPhase.resetSummonData removes stat stages while HP/PP/EXP persist.
+    const auto resetPlayerArenaState = [&]() {
+        m_trickRoom = {};
+        resetPokemonStatStages(m_context.player.battleState);
+        for (uint8_t i = 0; i < m_context.playerPartyCount; ++i)
+            resetPokemonStatStages(m_context.playerParty[i].battleState);
+        if (m_context.activePlayerPartyIndex < m_context.playerPartyCount)
+            m_context.playerParty[m_context.activePlayerPartyIndex] = m_context.player;
+    };
+    if (carryPlayer && ((m_run.wave > 1 && (m_run.wave - 1) % 10 == 0) ||
+            m_run.wave == PokerogueContent::kClassicFinalWave)) resetPlayerArenaState();
     if (waveKind == ClassicWaveKind::TrainerChanceRequired) {
         bool offsetGym = false;
         bool isTrainer = false;
@@ -2149,7 +2185,7 @@ void FirstRunRuntime::resolve(bool carryPlayer) {
                 ClassicTrainerDecision::Invalid) return;
         if (isTrainer) {
             m_trainerBattle = true;
-            m_trickRoom = {}; // BattleScene.doPostBattleCleanup resets effects for trainers.
+            resetPlayerArenaState(); // New trainer battle recalls the player field.
             const auto selectedTrainer = PokerogueEncounterResolver::resolveTrainerType(
                 m_run.biomeId, false, false, waveRng);
             if (!selectedTrainer.valid || !selectedTrainer.trainerType) {
@@ -2165,7 +2201,7 @@ void FirstRunRuntime::resolve(bool carryPlayer) {
         }
     } else if (waveKind == ClassicWaveKind::FixedTrainerBattle) {
         m_trainerBattle = true;
-        m_trickRoom = {}; // BattleScene.doPostBattleCleanup resets effects for trainers.
+        resetPlayerArenaState(); // New trainer battle recalls the player field.
         const auto* fixedBattle = PokerogueContent::findClassicFixedBattleWave(m_run.wave);
         const auto* trainer = fixedBattle && fixedBattle->hasStaticTrainerType
             ? PokerogueContent::findTrainerType(fixedBattle->trainerTypeId) : nullptr;
