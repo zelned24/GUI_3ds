@@ -101,6 +101,7 @@ public:
 
 private:
     bool enemyPartyDefeated() const;
+    bool weatherBattleSupported() const;
     void resolve(bool carryPlayer = false);
     bool restoreNativeRunSaveInPlace(const NativeRunSave& save);
     bool grantVictoryExperience();

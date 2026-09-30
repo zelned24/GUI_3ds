@@ -2,6 +2,7 @@
 #include "content/PokerogueRuntimeContent.hpp"
 #include <cstring>
 #include "game/PokemonExperience.hpp"
+#include "game/PokemonWeatherPhase.hpp"
 
 // Standalone host regression for atomic checkpoint application. This requires
 // the standard C++ library; it is not the freestanding WASM parity harness.
@@ -134,6 +135,23 @@ static int checkResolvedActionFieldLifecycle() {
             after.weatherMaxDuration != game.arenaWeather().maxDuration) return 34;
         if (game.presentation().player.battleState.hp && after.playerPp[moveSlot] !=
                 initialPp - (cost < initialPp ? cost : initialPp)) return 32;
+        if (!pokemonWeatherLifecycleSupported(game.presentation().player.battleState.abilityId) ||
+            !pokemonWeatherLifecycleSupported(game.presentation().enemy.battleState.abilityId)) continue;
+        active.weatherType = 2;
+        active.weatherTurnsLeft = active.weatherMaxDuration = 1;
+        active.trickRoomTurnsLeft = active.trickRoomMaxDuration = 0;
+        active.trickRoomSourceMoveId = active.trickRoomSourcePokemonId = 0;
+        if (!game.restoreNativeRunSave(active)) return 37;
+        for (unsigned slot = 0; slot < 4 && !game.battleInputSupported(); ++slot) game.selectBattleMove(1);
+        if (!game.battleInputSupported()) continue;
+        const auto* selected = PokerogueContent::findMoveById(
+            game.presentation().player.battleState.moves[game.selectedBattleMove()].moveId);
+        if (!selected || selected->category == PokerogueContent::MoveStatus) continue;
+        if (!game.advanceBattleTurn()) return 38;
+        NativeRunSave expired{};
+        game.captureNativeRunSave(expired);
+        if (game.arenaWeather().type != PokemonEffectiveWeather::None ||
+            expired.weatherType || expired.weatherTurnsLeft || expired.weatherMaxDuration) return 39;
         return 0;
     }
     return 33; // No supported real encounter: never silently skip integration coverage.
@@ -192,12 +210,18 @@ int main() {
         unsupportedWeather.weatherType = 2;
         unsupportedWeather.weatherTurnsLeft = 3;
         unsupportedWeather.weatherMaxDuration = 5;
-        if (validateNativeRunSave(unsupportedWeather, PokerogueContent::kContentHash) != NativeSaveResult::Ok ||
-            game.restoreNativeRunSave(unsupportedWeather)) return 24;
-        NativeRunSave afterWeatherReject{};
-        game.captureNativeRunSave(afterWeatherReject);
-        if (afterWeatherReject.weatherType || afterWeatherReject.enemyHp != loaded.enemyHp ||
-            afterWeatherReject.playerHp != loaded.playerHp || afterWeatherReject.battleTurn != loaded.battleTurn) return 25;
+        if (validateNativeRunSave(unsupportedWeather, PokerogueContent::kContentHash) != NativeSaveResult::Ok) return 24;
+        const bool weatherEligible = pokemonWeatherLifecycleSupported(game.presentation().player.battleState.abilityId) &&
+            pokemonWeatherLifecycleSupported(game.presentation().enemy.battleState.abilityId);
+        if (game.restoreNativeRunSave(unsupportedWeather) != weatherEligible) return 35;
+        NativeRunSave afterWeatherRestore{};
+        game.captureNativeRunSave(afterWeatherRestore);
+        if (afterWeatherRestore.weatherType != (weatherEligible ? 2 : 0) ||
+            afterWeatherRestore.weatherTurnsLeft != (weatherEligible ? 3 : 0) ||
+            afterWeatherRestore.weatherMaxDuration != (weatherEligible ? 5 : 0) ||
+            afterWeatherRestore.enemyHp != loaded.enemyHp || afterWeatherRestore.playerHp != loaded.playerHp ||
+            afterWeatherRestore.battleTurn != loaded.battleTurn) return 25;
+        if (!game.restoreNativeRunSave(loaded)) return 36;
         NativeRunSave roomCheckpoint = loaded;
         roomCheckpoint.trickRoomTurnsLeft = 3;
         roomCheckpoint.trickRoomMaxDuration = 5;

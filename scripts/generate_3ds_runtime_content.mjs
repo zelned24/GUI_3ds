@@ -967,5 +967,19 @@ const weatherChangeRows = collections.moves.flatMap(move => {
 });
 const weatherChangeHeader = recoilHeader.replace('struct MoveAttribute {',
   `struct MoveWeatherChangeProfile { uint16_t moveId; uint8_t weatherType; const char* sourcePath; const char* sourceSymbol; const char* sourceHash; };\ninline constexpr MoveWeatherChangeProfile kMoveWeatherChangeProfiles[] = {\n${weatherChangeRows.join(',\n')}\n};\nstruct MoveAttribute {`);
-await fs.writeFile(outputPath, weatherChangeHeader, 'utf8');
-console.log(JSON.stringify({ output: path.relative(root, outputPath), bytes: Buffer.byteLength(weatherChangeHeader), hash: report.contentHash }));
+// Fail closed for weather callbacks that do not yet have a native dispatcher.
+// Keep an entry for every canonical ability, so unknown IDs cannot mean "no hooks".
+const weatherLifecycleRows = collections.abilities.map(ability => {
+  const raw = ability.extensions?.upstreamAttributes?.value ?? '';
+  const attrs = [...raw.matchAll(/\.attr\s*\(\s*(?:new\s+)?([A-Za-z_$][\w$]*)/g)].map(m => m[1]);
+  const handled = new Set(['SuppressWeatherEffectAbAttr', 'PreAttackWeatherOverrideAbAttr', 'BlockWeatherDamageAttr']);
+  const unknownHooks = attrs.some(name => (/Weather/.test(name) || name === 'IceFaceFormChangeAbAttr') && !handled.has(name));
+  // Weather conditions on other effects also need a dispatcher. Existing speed
+  // profiles cover their own conditions, but other callbacks cannot be ignored.
+  const weatherCondition = /WeatherType\./.test(raw) && !attrs.some(name => handled.has(name));
+  return `    {${ability.abilityId}, ${unknownHooks || weatherCondition}, "${field(ability.source?.sourcePath ?? '')}", "${field(ability.source?.sourceSymbol ?? '')}", "${field(ability.source?.sourceHash ?? '')}"}`;
+});
+const weatherLifecycleHeader = weatherChangeHeader.replace('struct MoveAttribute {',
+  `struct WeatherLifecycleAbilityProfile { uint16_t abilityId; bool requiresDispatcher; const char* sourcePath; const char* sourceSymbol; const char* sourceHash; };\ninline constexpr WeatherLifecycleAbilityProfile kWeatherLifecycleAbilityProfiles[] = {\n${weatherLifecycleRows.join(',\n')}\n};\nstruct MoveAttribute {`);
+await fs.writeFile(outputPath, weatherLifecycleHeader, 'utf8');
+console.log(JSON.stringify({ output: path.relative(root, outputPath), bytes: Buffer.byteLength(weatherLifecycleHeader), hash: report.contentHash }));

@@ -10,6 +10,7 @@
 #include "game/PokemonStatStageEffect.hpp"
 #include "game/PokemonHealingEffect.hpp"
 #include "game/PokemonRecoilEffect.hpp"
+#include "game/PokemonWeatherPhase.hpp"
 #include "game/PokemonFreshProfile.hpp"
 #include "game/PokemonExperience.hpp"
 #include "game/PokemonStarterMoveset.hpp"
@@ -191,9 +192,6 @@ bool FirstRunRuntime::restoreNativeRunSave(const NativeRunSave& save) {
 }
 
 bool FirstRunRuntime::restoreNativeRunSaveInPlace(const NativeRunSave& save) {
-    // Arena weather save data is supported by the codec. This baseline cannot
-    // yet execute its ability/field effects; never load it as neutral weather.
-    if (save.weatherType || save.weatherTurnsLeft || save.weatherMaxDuration) return false;
     if (validateNativeRunSave(save, PokerogueContent::kContentHash) != NativeSaveResult::Ok ||
         save.stage < NativeSaveStage::RunSetup ||
         save.stage > NativeSaveStage::ExperienceGranted) return false;
@@ -310,6 +308,9 @@ bool FirstRunRuntime::restoreNativeRunSaveInPlace(const NativeRunSave& save) {
     }
     m_trickRoom = {save.trickRoomTurnsLeft, save.trickRoomMaxDuration,
         save.trickRoomSourceMoveId, save.trickRoomSourcePokemonId};
+    m_arenaWeather = {static_cast<PokemonEffectiveWeather>(save.weatherType),
+        save.weatherTurnsLeft, save.weatherMaxDuration};
+    if (m_arenaWeather.type != PokemonEffectiveWeather::None && !weatherBattleSupported()) return false;
     m_turn = save.battleTurn;
     m_enemySwitchCounter = save.enemySwitchCounter;
     if (save.trainerPartyCount) refreshTrainerBaselineMatchups();
@@ -357,7 +358,7 @@ bool supportsSelfStatStageMove(uint16_t moveId) {
     return count == 1;
 }
 bool supportsBaselineBattleMove(uint16_t moveId) {
-    if (supportsPokemonTrickRoomMove(moveId) || supportsSelfStatStageMove(moveId) || selfHealingProfile(moveId) || damageDrainProfile(moveId) || damageRecoilProfile(moveId)) return true;
+    if (pokemonWeatherChangeProfile(moveId) || supportsPokemonTrickRoomMove(moveId) || supportsSelfStatStageMove(moveId) || selfHealingProfile(moveId) || damageDrainProfile(moveId) || damageRecoilProfile(moveId)) return true;
     const auto* move = PokerogueContent::findMoveById(moveId);
     // This first resolver only executes plain, single-target damaging moves.
     // Only plain damage or a single migrated weather/critical attribute is
@@ -375,6 +376,7 @@ double baselineEnemyMoveScore(const PokemonBattleState& user,
                               const PokemonBattleState& target,
                               const PokerogueContent::Move& move) {
     if (move.category == PokerogueContent::MoveStatus) {
+        if (pokemonWeatherChangeProfile(move.id)) return 0.0; // Inherited MoveEffectAttr benefit.
         if (supportsPokemonTrickRoomMove(move.id)) return 0.0; // Inherited MoveAttr benefits.
         double score = 0;
         if (canonicalSelfHealingAiScore(user, move.id, score)) return score;
@@ -433,21 +435,34 @@ bool FirstRunRuntime::resolveActiveMoveCritical(bool enemyAttacks,
     return composePokemonCriticalAbilityPolicy(components, 2, false, output);
 }
 
+bool FirstRunRuntime::weatherBattleSupported() const {
+    return static_cast<uint8_t>(m_arenaWeather.type) <= static_cast<uint8_t>(PokemonEffectiveWeather::Snow) &&
+        !m_doubleBattle && m_context.player.actorIdentityResolved &&
+        m_context.enemy.actorIdentityResolved &&
+        pokemonWeatherLifecycleSupported(m_context.player.battleState.abilityId) &&
+        pokemonWeatherLifecycleSupported(m_context.enemy.battleState.abilityId);
+}
+
 bool FirstRunRuntime::battleInputSupported() const {
     if (!m_encounterResolved || m_trainerBattle || !m_context.player.actorIdentityResolved ||
         !m_context.enemy.actorIdentityResolved || m_doubleBattle || m_battleFinished ||
         !m_context.enemy.battleState.moveCount || m_context.enemy.battleState.moveCount > 4) return false;
+    if (m_arenaWeather.type != PokemonEffectiveWeather::None && !weatherBattleSupported()) return false;
+    const auto weatherMoveAllowed = [&](uint16_t id) {
+        return !pokemonWeatherChangeProfile(id) || weatherBattleSupported();
+    };
     uint8_t enemyUsable = 0;
     for (uint8_t i = 0; i < m_context.enemy.battleState.moveCount; ++i) {
         const auto& move = m_context.enemy.battleState.moves[i];
         if (!move.pp) continue;
-        if (!supportsBaselineBattleMove(move.moveId) ||
+        if (!supportsBaselineBattleMove(move.moveId) || !weatherMoveAllowed(move.moveId) ||
             (damageDrainProfile(move.moveId) && hasCanonicalReverseDrain(m_context.player.battleState.abilityId))) return false;
         ++enemyUsable;
     }
     return enemyUsable && m_selectedBattleMove < m_context.player.battleState.moveCount &&
         m_context.player.battleState.moves[m_selectedBattleMove].pp &&
         supportsBaselineBattleMove(m_context.player.battleState.moves[m_selectedBattleMove].moveId) &&
+        weatherMoveAllowed(m_context.player.battleState.moves[m_selectedBattleMove].moveId) &&
         !(damageDrainProfile(m_context.player.battleState.moves[m_selectedBattleMove].moveId) &&
           hasCanonicalReverseDrain(m_context.enemy.battleState.abilityId));
 }
@@ -764,6 +779,17 @@ bool FirstRunRuntime::executeActiveBattleMove(bool enemyActs, uint8_t moveSlot,
     PokemonPpPolicy pp{};
     pp.resolved = true;
     if (!pokemonSingleOpponentPpCost(opponent.abilityId, pp.cost)) return false;
+    if (pokemonWeatherChangeProfile(move->id)) {
+        PokemonWeatherChangePolicy policy{};
+        policy.resolved = policy.weatherCallbacksResolved = weatherBattleSupported();
+        policy.duration = 5; // Arena.trySetWeather(user): no FieldEffectModifier in fresh run.
+        policy.ppCost = pp.cost; // BOTH_SIDES includes the opponent for Pressure.
+        PokemonWeatherChangeEvent event{};
+        if (usePokemonWeatherChangeCommand(user, m_arenaWeather, moveSlot, policy, event) !=
+                PokemonWeatherChangeResult::Ok) return false;
+        m_battleFeedback = event.changed ? "Weather changed" : "Weather move failed";
+        return true;
+    }
     if (supportsSelfStatStageMove(move->id)) {
         PokemonStatStageCommandPolicy policy{};
         policy.move.hitPolicyResolved = true; // USER bypasses hit checks upstream.
@@ -875,7 +901,19 @@ bool FirstRunRuntime::finishBattleTurn() {
     // Current checkpoint progression ends before the first X0 transition.
     // Resolve both field clocks before committing either. TurnEndPhase lapses
     // weather even during an interlude; arena tags have a separate interlude gate.
-    // Non-neutral weather remains gated until residuals/form changes are connected.
+    // Actors requiring unported weather callbacks remain gated before a command.
+    auto nextPlayer = m_context.player.battleState;
+    auto nextEnemy = m_context.enemy.battleState;
+    PokemonWeatherPhaseEvent residual{};
+    const bool upcomingInterlude = m_run.wave < PokerogueContent::kClassicFinalWave &&
+        m_run.wave % 10 == 0 && nextPlayer.hp &&
+        !nextEnemy.hp && enemyPartyDefeated();
+    if (!applyPokemonSingleWeatherPhase(nextPlayer, nextEnemy, m_arenaWeather,
+            upcomingInterlude, residual)) {
+        m_battleFeedback = "Weather effects require ability dispatcher";
+        buildScene();
+        return false;
+    }
     auto nextRoom = m_trickRoom;
     auto nextWeather = m_arenaWeather;
     PokemonTrickRoomEvent roomEvent{};
@@ -891,11 +929,13 @@ bool FirstRunRuntime::finishBattleTurn() {
         return false;
     }
     // Form reversion must execute before a changed weather state can be committed.
-    if (weatherEvent.requestWeatherFormReversion) {
+    if (weatherEvent.requestWeatherFormReversion && !weatherBattleSupported()) {
         m_battleFeedback = "Weather expiry requires form reversion resolver";
         buildScene();
         return false;
     }
+    m_context.player.battleState = nextPlayer;
+    m_context.enemy.battleState = nextEnemy;
     m_trickRoom = nextRoom;
     m_arenaWeather = nextWeather;
     if (!m_context.enemy.battleState.hp || !m_context.player.battleState.hp) {

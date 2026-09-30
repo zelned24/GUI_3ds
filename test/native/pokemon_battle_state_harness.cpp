@@ -7,6 +7,7 @@
 #include "game/PokemonStatStageEffect.hpp"
 #include "game/PokemonHealingEffect.hpp"
 #include "game/PokemonRecoilEffect.hpp"
+#include "game/PokemonWeatherPhase.hpp"
 #include "game/PokerogueTurnOrder.hpp"
 #include "game/PokemonExperience.hpp"
 #include "game/PokerogueRngAdapter.hpp"
@@ -27,6 +28,41 @@ using Pokerogue3DS::PokemonMoveActionStatus;
 using Pokerogue3DS::PokerogueRngAdapter;
 
 extern "C" int runPokemonBattleStateChecks() {
+    // Canonical neutral-weather actors: residual phase is separate from clock expiry.
+    const PokerogueContent::Species* normalSpecies = nullptr;
+    const PokerogueContent::Species* rockSpecies = nullptr;
+    for (const auto& species : PokerogueContent::kSpecies) {
+        if (!Pokerogue3DS::pokemonWeatherLifecycleSupported(species.ability1)) continue;
+        if (!normalSpecies && std::strcmp(species.type1, "Normal") == 0 &&
+            (!species.type2 || std::strcmp(species.type2, "NONE") == 0)) normalSpecies = &species;
+        if (!rockSpecies && std::strcmp(species.type1, "Rock") == 0) rockSpecies = &species;
+    }
+    if (!normalSpecies || !rockSpecies) return 435;
+    PokemonBattleInit weatherActorInput{};
+    weatherActorInput.speciesDex = normalSpecies->dex;
+    weatherActorInput.level = 50;
+    weatherActorInput.abilityId = normalSpecies->ability1;
+    PokemonBattleState phasePlayer{}, phaseEnemy{};
+    if (Pokerogue3DS::initializePokemonBattleState(weatherActorInput, phasePlayer) != PokemonBattleInitResult::Ok)
+        return 436;
+    weatherActorInput.speciesDex = rockSpecies->dex;
+    weatherActorInput.abilityId = rockSpecies->ability1;
+    if (Pokerogue3DS::initializePokemonBattleState(weatherActorInput, phaseEnemy) != PokemonBattleInitResult::Ok)
+        return 437;
+    Pokerogue3DS::PokemonArenaWeatherState phaseWeather{Pokerogue3DS::PokemonEffectiveWeather::Sandstorm, 3, 5};
+    Pokerogue3DS::PokemonWeatherPhaseEvent phaseEvent{};
+    const uint16_t playerBefore = phasePlayer.hp, enemyBefore = phaseEnemy.hp;
+    if (!Pokerogue3DS::applyPokemonSingleWeatherPhase(phasePlayer, phaseEnemy, phaseWeather, false, phaseEvent) ||
+        phasePlayer.hp >= playerBefore || phaseEnemy.hp != enemyBefore || !phaseEvent.player.damageApplied ||
+        phaseEvent.enemy.damageApplied || phaseWeather.turnsLeft != 3) return 438;
+    const uint16_t afterResidual = phasePlayer.hp;
+    if (!Pokerogue3DS::applyPokemonSingleWeatherPhase(phasePlayer, phaseEnemy, phaseWeather, true, phaseEvent) ||
+        phasePlayer.hp != afterResidual || phaseEvent.player.damageApplied) return 439;
+    PokemonBattleState invalidWeatherActor = phaseEnemy;
+    invalidWeatherActor.abilityId = 65535;
+    if (Pokerogue3DS::applyPokemonSingleWeatherPhase(phasePlayer, invalidWeatherActor, phaseWeather, false, phaseEvent) ||
+        phasePlayer.hp != afterResidual) return 440;
+
     // Real imported WeatherChangeAttr records; no synthetic move catalog.
     if (sizeof(PokerogueContent::kMoveWeatherChangeProfiles) == 0) return 427;
     for (const auto& profile : PokerogueContent::kMoveWeatherChangeProfiles) {
