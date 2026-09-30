@@ -43,6 +43,7 @@ struct PresentationContext {
     const char* trainerPartyTemplateKey = nullptr;
     uint16_t trainerPartyLevels[6]{};
     uint8_t trainerPartyCount = 0;
+    uint8_t activeTrainerPartyIndex = 0xFF;
     bool trainerFemaleVariant = false;
     ResolvedPokemon trainerParty[6]{};
     bool trainerPartySpeciesResolved = false;
@@ -110,6 +111,7 @@ private:
     std::size_t m_seedLength = 0;
     bool m_encounterResolved = false;
     bool m_doubleBattle = false;
+    bool m_trainerBattle = false;
     bool m_secondEncounterResolved = false;
     uint8_t m_selectedBattleMove = 0;
     uint32_t m_turn = 1;

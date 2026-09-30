@@ -114,7 +114,7 @@ void FirstRunRuntime::captureNativeRunSave(NativeRunSave& output) const {
     value.wave = m_run.wave;
     value.playerLevel = m_context.player.level;
     value.playerExperience = m_playerExperience;
-    if (m_runStarted && m_encounterResolved && !m_doubleBattle) {
+    if (m_runStarted && m_encounterResolved && !m_doubleBattle && !m_trainerBattle) {
         value.stage = m_battleFinished
             ? (m_playerWon ? (m_experienceGranted ? NativeSaveStage::ExperienceGranted
                                                 : NativeSaveStage::BattleWon)
@@ -264,7 +264,7 @@ double baselineEnemyMoveScore(const PokemonBattleState& user,
 }
 
 bool FirstRunRuntime::battleInputSupported() const {
-    if (!m_encounterResolved || !m_context.player.actorIdentityResolved ||
+    if (!m_encounterResolved || m_trainerBattle || !m_context.player.actorIdentityResolved ||
         !m_context.enemy.actorIdentityResolved || m_doubleBattle || m_battleFinished ||
         !m_context.enemy.battleState.moveCount || m_context.enemy.battleState.moveCount > 4) return false;
     uint8_t enemyUsable = 0;
@@ -366,7 +366,8 @@ bool FirstRunRuntime::advanceBattleTurn() {
         return false;
     }
     if (!battleInputSupported()) {
-        m_battleFeedback = m_doubleBattle ? "Double battle turn order unsupported" :
+        m_battleFeedback = m_trainerBattle ? "Trainer AI and switching unsupported" :
+            m_doubleBattle ? "Double battle turn order unsupported" :
             "Battle move metadata unsupported; no action taken";
         buildScene();
         return false;
@@ -505,7 +506,7 @@ bool FirstRunRuntime::skipVictoryReward() {
     m_run.wave = m_victoryPlan.nextWave;
     resolve(true);
     if (!m_encounterResolved || m_doubleBattle) m_checkpointAvailable = false;
-    if (m_encounterResolved && !m_doubleBattle)
+    if (m_encounterResolved && !m_doubleBattle && !m_trainerBattle)
         m_battleFeedback = "Reward skipped - next Classic wave";
     buildScene();
     return m_encounterResolved && !m_doubleBattle;
@@ -523,13 +524,16 @@ void FirstRunRuntime::resolve(bool carryPlayer) {
     m_battleFeedback.clear();
     m_encounterResolved = false;
     m_doubleBattle = false;
+    m_trainerBattle = false;
     m_secondEncounterResolved = false;
     m_context.enemy = {};
     m_context.secondEnemy = {};
+    m_run.encounterDex = 0;
     m_context.trainerTypeId = 0;
     m_context.trainerName = nullptr;
     m_context.trainerPartyTemplateKey = nullptr;
     m_context.trainerPartyCount = 0;
+    m_context.activeTrainerPartyIndex = 0xFF;
     m_context.trainerFemaleVariant = false;
     m_context.trainerPartySpeciesResolved = false;
     m_context.trainerPartyConstructorResolved = false;
@@ -642,6 +646,7 @@ void FirstRunRuntime::resolve(bool carryPlayer) {
                 m_seedCodeUnits.data(), m_seedLength, waveRng, isTrainer) ==
                 ClassicTrainerDecision::Invalid) return;
         if (isTrainer) {
+            m_trainerBattle = true;
             const auto selectedTrainer = PokerogueEncounterResolver::resolveTrainerType(
                 m_run.biomeId, false, false, waveRng);
             if (!selectedTrainer.valid || !selectedTrainer.trainerType) {
@@ -656,6 +661,7 @@ void FirstRunRuntime::resolve(bool carryPlayer) {
             return;
         }
     } else if (waveKind == ClassicWaveKind::FixedTrainerBattle) {
+        m_trainerBattle = true;
         const auto* fixedBattle = PokerogueContent::findClassicFixedBattleWave(m_run.wave);
         const auto* trainer = fixedBattle && fixedBattle->hasStaticTrainerType
             ? PokerogueContent::findTrainerType(fixedBattle->trainerTypeId) : nullptr;
@@ -880,10 +886,21 @@ void FirstRunRuntime::resolve(bool carryPlayer) {
                             m_context.trainerPartyMovesetsResolved && allIvsResolved;
                         m_context.trainerPartyBattleStatesResolved =
                             m_context.trainerPartyIvsResolved && allBattleStatesResolved;
+                        if (m_context.trainerPartyBattleStatesResolved && levels.count &&
+                            m_battleRng.initialize(m_seedCodeUnits.data(), m_seedLength,
+                                m_run.wave) && m_battleRng.beginTurn(1)) {
+                            m_context.activeTrainerPartyIndex = 0;
+                            m_context.enemy = m_context.trainerParty[0];
+                            m_run.encounterDex = m_context.enemy.dex;
+                            m_encounterResolved = true;
+                            m_checkpointAvailable = false;
+                        }
                     }
                 }
-                m_battleFeedback = m_context.trainerPartyBattleStatesResolved
-                    ? "Trainer shiny, turns and rewards pending"
+                m_battleFeedback = m_encounterResolved
+                    ? "Trainer active; AI, switching and rewards pending"
+                    : m_context.trainerPartyBattleStatesResolved
+                    ? "Trainer battle RNG unsupported"
                     : m_context.trainerPartyIvsResolved
                     ? "Trainer battle state unsupported"
                     : m_context.trainerPartyMovesetsResolved
@@ -1042,7 +1059,12 @@ void FirstRunRuntime::buildScene() {
     m_text[2] = std::string("Biome: ") + m_context.biomeName;
     m_text[3] = std::string("Starter: ") + starterName();
     if (m_context.trainerName) {
-        std::snprintf(line, sizeof(line), "Trainer class: %s", m_context.trainerName);
+        if (m_encounterResolved)
+            std::snprintf(line, sizeof(line), "Trainer: %s | %s Lv.%u",
+                m_context.trainerName, m_context.enemy.localizedName,
+                static_cast<unsigned>(m_context.enemy.level));
+        else
+            std::snprintf(line, sizeof(line), "Trainer class: %s", m_context.trainerName);
     } else if (m_encounterResolved) {
         std::snprintf(line, sizeof(line), "Encounter: %s Lv. %u", m_context.enemy.localizedName,
                       static_cast<unsigned>(m_context.enemy.level));
@@ -1051,7 +1073,9 @@ void FirstRunRuntime::buildScene() {
                       static_cast<unsigned>(m_run.wave));
     }
     m_text[4] = line;
-    m_text[5] = m_battleFinished
+    m_text[5] = m_trainerBattle
+        ? "Trainer battle pending"
+        : m_battleFinished
         ? (m_playerWon && !m_experienceGranted ? "A: collect experience" :
             m_playerWon ? "B: skip reward  X: save" : "X: save  Y: export")
         : (!m_encounterResolved && m_runStarted ? "Encounter integration pending" :
