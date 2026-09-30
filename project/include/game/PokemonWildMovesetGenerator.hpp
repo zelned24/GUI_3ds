@@ -31,6 +31,13 @@ inline bool buildPokemonWildMoveRuntimeMetadata(
     next.ability = {1.0, ability->accuracyMultiplier, true,
         (ability->flags & PokerogueContent::AbilityMovegenMaxMultiHit) != 0,
         (ability->flags & PokerogueContent::AbilityMovegenInstantCharge) != 0};
+    if ((ability->flags & PokerogueContent::AbilityMovegenHustle) &&
+        move->category == PokerogueContent::MovePhysical) {
+        next.ability.accuracyMultiplier *= 0.8;
+        next.ability.powerMultiplier *= 1.5;
+    }
+    if ((ability->flags & PokerogueContent::AbilityMovegenAnalytic) &&
+        move->priority < 0) next.ability.powerMultiplier *= 1.3;
     next.type = move->type;
     next.usesDefense = (move->upstreamFlags & PokerogueContent::MoveUsesDefense) != 0;
     next.selectsOffensiveCategory = (move->upstreamFlags & PokerogueContent::MoveSelectsOffensiveCategory) != 0;

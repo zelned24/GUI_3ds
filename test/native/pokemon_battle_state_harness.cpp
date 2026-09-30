@@ -656,18 +656,30 @@ extern "C" int runPokemonBattleStateChecks() {
     const auto* skillLink = PokerogueContent::findAbilityMovegenProfile(92);
     const auto* drizzle = PokerogueContent::findAbilityMovegenProfile(2);
     const auto* hustle = PokerogueContent::findAbilityMovegenProfile(55);
+    const auto* analytic = PokerogueContent::findAbilityMovegenProfile(148);
     if (!compoundEyes || compoundEyes->flags != 0 || compoundEyes->accuracyMultiplier != 1.3 ||
         !compoundEyes->sourcePath || !compoundEyes->sourceSymbol || !compoundEyes->sourceHash) return 110;
     if (!skillLink || skillLink->flags != PokerogueContent::AbilityMovegenMaxMultiHit ||
         !skillLink->sourcePath || !skillLink->sourceSymbol || !skillLink->sourceHash) return 111;
     if (!drizzle || !(drizzle->flags & PokerogueContent::AbilityMovegenUnsupported)) return 112;
-    if (!hustle || !(hustle->flags & PokerogueContent::AbilityMovegenUnsupported)) return 116;
+    if (!hustle || hustle->flags != PokerogueContent::AbilityMovegenHustle ||
+        !analytic || analytic->flags != PokerogueContent::AbilityMovegenAnalytic) return 116;
     Pokerogue3DS::PokemonWildMoveRuntimeMetadata moveMetadata{};
     if (!Pokerogue3DS::buildPokemonWildMoveRuntimeMetadata(33, 14, moveMetadata) ||
         moveMetadata.type == nullptr || moveMetadata.power.power != 40 ||
         moveMetadata.ability.accuracyMultiplier != 1.3) return 113;
     if (!Pokerogue3DS::buildPokemonWildMoveRuntimeMetadata(292, 92, moveMetadata) ||
         !moveMetadata.ability.maxMultiHitHolderPresent || !moveMetadata.ability.maxMultiHitValue) return 114;
+    if (!Pokerogue3DS::buildPokemonWildMoveRuntimeMetadata(33, 55, moveMetadata) ||
+        moveMetadata.ability.powerMultiplier != 1.5 ||
+        moveMetadata.ability.accuracyMultiplier != 0.8) return 179;
+    if (!Pokerogue3DS::buildPokemonWildMoveRuntimeMetadata(55, 55, moveMetadata) ||
+        moveMetadata.ability.powerMultiplier != 1.0 ||
+        moveMetadata.ability.accuracyMultiplier != 1.0) return 180;
+    if (!Pokerogue3DS::buildPokemonWildMoveRuntimeMetadata(233, 148, moveMetadata) ||
+        moveMetadata.ability.powerMultiplier != 1.3) return 181;
+    if (!Pokerogue3DS::buildPokemonWildMoveRuntimeMetadata(33, 148, moveMetadata) ||
+        moveMetadata.ability.powerMultiplier != 1.0) return 182;
     if (Pokerogue3DS::buildPokemonWildMoveRuntimeMetadata(33, 2, moveMetadata) ||
         Pokerogue3DS::buildPokemonWildMoveRuntimeMetadata(33, 65535, moveMetadata)) return 115;
     const auto checkRealMoveset = [](uint16_t dex, uint16_t abilityId) {
