@@ -108,12 +108,6 @@ void FirstRunRuntime::captureNativeRunSave(NativeRunSave& output) const {
         output = {};
         return;
     }
-    // Trainer final victory/loss replay remains unsupported. Active checkpoints
-    // can reconstruct per-KO EXP from the saved fainted party members.
-    if (m_trainerBattle && m_runStarted && m_battleFinished) {
-        output = {};
-        return;
-    }
     if (makeNativeRunSetupSave(m_run.seed, m_run.starterDex, value) != NativeSaveResult::Ok) {
         output = {};
         return;
@@ -183,16 +177,22 @@ bool FirstRunRuntime::restoreNativeRunSaveInPlace(const NativeRunSave& save) {
         save.stage < NativeSaveStage::RunSetup ||
         save.stage > NativeSaveStage::ExperienceGranted) return false;
     // Wave five is currently the only complete deterministic trainer party.
-    // Only active checkpoints can be restored here; whole-trainer victory
-    // and subsequent-wave replay remain pending.
-    if (save.trainerPartyCount && (save.wave != 5 ||
-        save.stage != NativeSaveStage::BattleActive)) return false;
+    if (save.trainerPartyCount && save.wave != 5) return false;
     if (!restoreSetup(save.seed, save.starterDex)) return false;
     // A skipped reward adds no modifier or party member. Replay each earlier
-    // supported wild victory from its pinned seed to reconstruct level/EXP;
+    // supported wild/fixed trainer victory to reconstruct level/EXP;
     // saved HP and PP are overlaid only after the target encounter is rebuilt.
     for (uint16_t wave = 1; wave < save.wave; ++wave) {
-        if (!m_encounterResolved || m_doubleBattle || !grantVictoryExperience()) return false;
+        if (!m_encounterResolved || m_doubleBattle) return false;
+        if (m_trainerBattle) {
+            if (wave != 5 || !m_context.trainerPartyBattleStatesResolved ||
+                !m_context.trainerPartyCount) return false;
+            for (uint8_t member = 0; member < m_context.trainerPartyCount; ++member) {
+                m_context.enemy = m_context.trainerParty[member];
+                m_experienceGranted = false;
+                if (!grantVictoryExperience()) return false;
+            }
+        } else if (!grantVictoryExperience()) return false;
         m_run.wave = static_cast<uint16_t>(wave + 1);
         resolve(true);
     }
@@ -220,7 +220,9 @@ bool FirstRunRuntime::restoreNativeRunSaveInPlace(const NativeRunSave& save) {
         // Recompute from canonical definitions rather than trusting saved EXP.
         const ResolvedPokemon initialEnemy = m_context.enemy;
         for (uint8_t member = 0; member < save.trainerPartyCount; ++member) {
-            if (save.trainerParty[member].hp) continue;
+            if (save.trainerParty[member].hp ||
+                (save.stage == NativeSaveStage::BattleWon &&
+                 member == save.activeTrainerMember)) continue;
             m_context.enemy = m_context.trainerParty[member];
             m_experienceGranted = false;
             if (!grantVictoryExperience()) return false;
@@ -231,7 +233,8 @@ bool FirstRunRuntime::restoreNativeRunSaveInPlace(const NativeRunSave& save) {
     const auto& reconstructedEnemy = save.trainerPartyCount
         ? m_context.trainerParty[save.activeTrainerMember] : m_context.enemy;
 
-    if (save.stage == NativeSaveStage::ExperienceGranted && !grantVictoryExperience()) return false;
+    if (!save.trainerPartyCount && save.stage == NativeSaveStage::ExperienceGranted &&
+        !grantVictoryExperience()) return false;
     if (save.playerLevel != m_context.player.level ||
         save.playerExperience != m_playerExperience) return false;
     if (save.stage == NativeSaveStage::RunSetup) return save.wave == 1;

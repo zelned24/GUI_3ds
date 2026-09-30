@@ -72,6 +72,20 @@ static int checkTrainerExperienceReplay() {
         if (restored.playerExperience != checkpoint.playerExperience ||
             restored.activeTrainerMember != 1 || restored.trainerParty[0].hp ||
             restored.battleTurn != 2) return 10;
+        NativeRunSave won = restored;
+        won.stage = NativeSaveStage::BattleWon;
+        won.enemyHp = 0;
+        won.trainerParty[1].hp = 0;
+        if (!game.restoreNativeRunSave(won) || !game.advanceBattleTurn()) return 12;
+        NativeRunSave finalExperience{};
+        game.captureNativeRunSave(finalExperience);
+        if (finalExperience.stage != NativeSaveStage::ExperienceGranted ||
+            !game.restoreNativeRunSave(finalExperience)) return 13;
+        NativeRunSave roundtrip{};
+        game.captureNativeRunSave(roundtrip);
+        if (roundtrip.playerExperience != finalExperience.playerExperience ||
+            roundtrip.playerLevel != finalExperience.playerLevel ||
+            roundtrip.stage != NativeSaveStage::ExperienceGranted) return 14;
         return 0;
     }
     return 11; // No reconstructable pinned party: do not silently skip.
