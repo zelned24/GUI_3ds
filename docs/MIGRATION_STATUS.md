@@ -382,3 +382,9 @@
 1. NativeRunSave v10 incluye hasta seis snapshots explícitos y slot activo, con registros de longitud acotada dentro del envelope checksum existente. V9 migra sin inventar miembros: count=0 conserva el camino legacy. Versiones anteriores y fixtures de migración conservadas.
 2. Valida identidad canónica de cada miembro, IDs duplicados y coherencia de HP/EXP/level/moves/PP/stages del activo con campos anteriores; growth rate corresponde al actor activo. Buffer acotado 8192 cubre hasta seis registros de jugador y seis de entrenador.
 3. Regresiones 287–289 escritas para codec de equipo, slot inválido y discrepancia de HP; no ejecutadas. Runtime aún no emite ni restaura estos arrays: la conexión sin replay y snapshot de contexto de capturas sigue pendiente. No se declara persistencia de capturados completada.
+
+## Equipo capturado conectado a save/restore
+
+1. Runtime captura snapshots explícitos al guardar equipos de varios miembros; activo toma su estado vivo y reservas su estado propio. Restore reconstruye identidad/form/moves/EXP de cada miembro, resuelve el encuentro actual y superpone stages del checkpoint, sin replay de EXP/capturas. Candidato completo continúa publicándose atómicamente.
+2. Camino legacy de un solo miembro se conserva. EXP usa growth del activo y admite niveles capturados inferiores a 5. Reserva no recibe experiencia duplicada al reconstruir. Regresiones 290–294 escritas para captura real, avance wave2 y restore de ambos actores/PP/EXP. No ejecutadas.
+3. Sigue limitado a waves1–9 y bioma inicial, sin dobles/jefes/modifiers completos ni contexto histórico de rewards. Identidades transformadas/auxiliares no soportadas se rechazan; solo actores compatibles con el snapshot actual. No se declara guardado completo ni Classic terminado.

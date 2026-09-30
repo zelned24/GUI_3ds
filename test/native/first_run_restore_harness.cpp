@@ -575,6 +575,30 @@ static int checkPlayerPartyManagementAndSwitching() {
     if (game.playerPartyCount() != 2) return 174;
     if (game.activePlayerPartyIndex() != 0) return 175;
 
+    NativeRunSave capturedPartySave{};
+    game.captureNativeRunSave(capturedPartySave);
+    if (capturedPartySave.playerPartyCount != 2 || capturedPartySave.activePlayerMember != 0 ||
+        validateNativeRunSave(capturedPartySave, PokerogueContent::kContentHash) != NativeSaveResult::Ok)
+        return 290;
+    FirstRunRuntime restoredPartyGame(7);
+    if (!restoredPartyGame.restoreNativeRunSave(capturedPartySave) || restoredPartyGame.playerPartyCount() != 2 ||
+        restoredPartyGame.run().wave != 2) return 291;
+    for (uint8_t member = 0; member < 2; ++member) {
+        const auto* before = game.playerPartyMember(member);
+        const auto* after = restoredPartyGame.playerPartyMember(member);
+        if (!before || !after || before->dex != after->dex || before->level != after->level ||
+            before->totalExperience != after->totalExperience ||
+            before->battleState.hp != after->battleState.hp ||
+            before->actor.pokemonId != after->actor.pokemonId) return 292;
+        for (uint8_t slot = 0; slot < before->battleState.moveCount; ++slot)
+            if (before->battleState.moves[slot].moveId != after->battleState.moves[slot].moveId ||
+                before->battleState.moves[slot].pp != after->battleState.moves[slot].pp) return 293;
+    }
+    NativeRunSave recapturedPartySave{};
+    restoredPartyGame.captureNativeRunSave(recapturedPartySave);
+    if (recapturedPartySave.playerPartyCount != 2 ||
+        recapturedPartySave.playerParty[1].experience != capturedPartySave.playerParty[1].experience)
+        return 294;
     const auto starterExperience = game.presentation().player.totalExperience;
     const auto reserveExperience = game.playerPartyMember(1)->totalExperience;
     const auto* caughtSpecies = PokerogueContent::findSpeciesByDex(caughtDex);

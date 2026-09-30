@@ -493,7 +493,7 @@ NativeSaveResult validateNativeRunSave(const NativeRunSave& save, const char* ex
         ? PokerogueContent::findSpeciesByDex(save.playerParty[save.activePlayerMember].speciesDex) : starter;
     if (!experienceSpecies) return NativeSaveResult::InvalidRecord;
     if (!starterExperienceAtLevelFive(save.starterDex, initialExperience)
-        || save.playerLevel < 5 || save.playerLevel > classicExperienceLevelCap(save.wave)
+        || save.playerLevel < (save.playerPartyCount ? 1 : 5) || save.playerLevel > classicExperienceLevelCap(save.wave)
         || pokemonTotalExperienceForLevel(experienceSpecies->growthRate, save.playerLevel, currentThreshold)
             != PokemonExperienceResult::Ok
         || save.playerExperience < currentThreshold) return NativeSaveResult::InvalidRecord;

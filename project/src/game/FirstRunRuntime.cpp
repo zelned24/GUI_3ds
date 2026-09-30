@@ -131,7 +131,7 @@ void FirstRunRuntime::captureNativeRunSave(NativeRunSave& output) const {
     NativeRunSave value{};
     // v9 preserves ball inventory; doubles, captured party and later trainer history remain unsupported.
     // Never report a setup checkpoint as a successful save of an active double battle.
-    if (m_context.enemy.bossState.segmentCount || m_doubleBattle || m_context.playerPartyCount > 1 || m_pokeballs[5] ||
+    if (m_context.enemy.bossState.segmentCount || m_doubleBattle || m_pokeballs[5] ||
         m_run.wave > 9 || (m_trainerBattle && m_run.wave != 5)) {
         output = {};
         return;
@@ -203,6 +203,19 @@ void FirstRunRuntime::captureNativeRunSave(NativeRunSave& output) const {
             }
         }
     }
+    if (value.stage != NativeSaveStage::RunSetup && m_context.playerPartyCount > 1) {
+        if (m_context.playerPartyCount > 6 ||
+            m_context.activePlayerPartyIndex >= m_context.playerPartyCount) { output = {}; return; }
+        value.playerPartyCount = m_context.playerPartyCount;
+        value.activePlayerMember = m_context.activePlayerPartyIndex;
+        for (uint8_t member = 0; member < value.playerPartyCount; ++member) {
+            const auto& actor = member == value.activePlayerMember
+                ? m_context.player : m_context.playerParty[member];
+            if (!actor.actorIdentityResolved ||
+                !captureNativePokemonActorSave(actor.battleState, actor.actor, actor.totalExperience,
+                    value.playerParty[member])) { output = {}; return; }
+        }
+    }
     output = value;
 }
 
@@ -228,7 +241,41 @@ bool FirstRunRuntime::restoreNativeRunSaveInPlace(const NativeRunSave& save) {
     // A skipped reward adds no modifier or party member. Replay each earlier
     // supported wild/fixed trainer victory to reconstruct level/EXP;
     // saved HP and PP are overlaid only after the target encounter is rebuilt.
-    for (uint16_t wave = 1; wave < save.wave; ++wave) {
+    if (save.playerPartyCount) {
+        // Explicit party state replaces reward/capture replay. The currently
+        // supported frontier has no biome transition or persisted modifiers.
+        if (save.wave > 9 || std::strcmp(save.biomeId, PokerogueContent::kStartingBiomeId)) return false;
+        m_context.playerPartyCount = save.playerPartyCount;
+        m_context.activePlayerPartyIndex = save.activePlayerMember;
+        for (uint8_t member = 0; member < save.playerPartyCount; ++member) {
+            const auto& saved = save.playerParty[member];
+            auto& actor = m_context.playerParty[member];
+            actor = {};
+            if (!restoreNativePokemonActorSave(saved, actor.battleState, actor.actor)) return false;
+            const auto* species = PokerogueContent::findSpeciesByDex(saved.speciesDex);
+            if (!species) return false;
+            actor.dex = saved.speciesDex;
+            actor.level = saved.level;
+            actor.speciesId = species->id;
+            const std::string localeId = std::string("pokemon:") + species->id;
+            actor.localizedName = locale(localeId.c_str(), species->name);
+            actor.formId = actor.battleState.formId;
+            actor.assetSourcePath = species->assetSourcePath;
+            actor.actorIdentityResolved = actor.movesetResolved = true;
+            actor.totalExperience = saved.experience;
+            actor.moveCount = saved.moveCount;
+            for (uint8_t slot = 0; slot < saved.moveCount; ++slot) actor.moveIds[slot] = saved.moveIds[slot];
+        }
+        m_context.player = m_context.playerParty[save.activePlayerMember];
+        m_run.wave = save.wave;
+        resolve(true);
+        // Encounter cleanup can reset stages; overlay the explicit checkpoint.
+        for (uint8_t member = 0; member < save.playerPartyCount; ++member)
+            for (uint8_t stat = 0; stat < 7; ++stat)
+                m_context.playerParty[member].battleState.statStages[stat] = save.playerParty[member].statStages[stat];
+        m_context.player = m_context.playerParty[save.activePlayerMember];
+    }
+    for (uint16_t wave = 1; !save.playerPartyCount && wave < save.wave; ++wave) {
         if (!m_encounterResolved) return false;
         if (m_trainerBattle) {
             if (wave != 5 || !m_context.trainerPartyBattleStatesResolved ||
@@ -260,7 +307,7 @@ bool FirstRunRuntime::restoreNativeRunSaveInPlace(const NativeRunSave& save) {
             }
         }
     }
-    if (save.trainerPartyCount) {
+    if (save.trainerPartyCount && !save.playerPartyCount) {
         // The supported fixed party has no revives, reward modifiers or player
         // switches. Each fainted reserve has already awarded EXP exactly once.
         // Recompute from canonical definitions rather than trusting saved EXP.
@@ -279,7 +326,7 @@ bool FirstRunRuntime::restoreNativeRunSaveInPlace(const NativeRunSave& save) {
     const auto& reconstructedEnemy = save.trainerPartyCount
         ? m_context.trainerParty[save.activeTrainerMember] : m_context.enemy;
 
-    if (!save.trainerPartyCount && save.stage == NativeSaveStage::ExperienceGranted &&
+    if (!save.playerPartyCount && !save.trainerPartyCount && save.stage == NativeSaveStage::ExperienceGranted &&
         !grantVictoryExperience()) return false;
     if (save.playerLevel != m_context.player.level ||
         save.playerExperience != m_context.player.totalExperience) return false;
@@ -340,6 +387,7 @@ bool FirstRunRuntime::restoreNativeRunSaveInPlace(const NativeRunSave& save) {
     if (m_arenaWeather.type != PokemonEffectiveWeather::None && !weatherBattleSupported()) return false;
     for (uint8_t ball = 0; ball < 5; ++ball) m_pokeballs[ball] = save.pokeballCounts[ball];
     m_pokeballs[5] = 0;
+    m_context.playerParty[m_context.activePlayerPartyIndex] = m_context.player;
     m_turn = save.battleTurn;
     m_enemySwitchCounter = save.enemySwitchCounter;
     if (save.trainerPartyCount) refreshTrainerBaselineMatchups();
