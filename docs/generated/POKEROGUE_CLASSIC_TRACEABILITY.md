@@ -219,3 +219,7 @@ Pokemon.getMatchupScore in the pinned source compares active effective SPD again
 ## Self-target stat move gameplay integration
 
 The real move filter and action dispatcher now accept USER status moves with one generated constant StatStageChangeAttr. They execute the existing command transaction with primary ability multipliers and opponent copy-raise policy; AI uses the existing canonical status score. USER bypasses hit checks and has no opposing Pressure target. The status command now accepts resolved PP cost. Opponent-target stat drops remain excluded until move blocking/reflection/ability conditions are migrated. Fresh actors still omit held items, passives and status tags. Tests and compilation deferred.
+
+## Sound/powder primary move immunity
+
+Generated metadata now preserves soundBased/powderMove declarations and primary MoveImmunityAbAttr flag predicates from canonical raw constructor chains. Unknown immunity callbacks remain explicitly dispatcher-required. The actual hit policy composes Soundproof/Overcoat-style opposing immunity before accuracy/critical/damage draws and damage output records abilityBlocked; resolved PP remains consumed. This does not enable opponent-target stat drops yet: reflection, policy assembly and remaining blockers still need integration. Tests/build deferred.

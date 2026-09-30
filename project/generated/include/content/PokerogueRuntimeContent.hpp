@@ -355,6 +355,59 @@ struct PpAbilityProfile { uint16_t abilityId; uint8_t increase; const char* sour
 inline constexpr PpAbilityProfile kPpAbilityProfiles[] = {
     {46, 1, "src/data/abilities/init-abilities.ts", "AbilityId.PRESSURE", "040ccf2ca2e00a2111ef0acf54878ec67c45d98c831e35dda3e0bac52f1ee8e6"}
 };
+struct MoveImmunityFlags { uint16_t moveId; uint8_t mask; };
+inline constexpr MoveImmunityFlags kMoveImmunityFlags[] = {
+    {45, 1},
+    {46, 1},
+    {47, 1},
+    {48, 1},
+    {77, 2},
+    {78, 2},
+    {79, 2},
+    {103, 1},
+    {147, 2},
+    {173, 1},
+    {178, 2},
+    {195, 1},
+    {215, 1},
+    {253, 1},
+    {304, 1},
+    {319, 1},
+    {320, 1},
+    {336, 1},
+    {405, 1},
+    {448, 1},
+    {476, 2},
+    {496, 1},
+    {497, 1},
+    {547, 1},
+    {555, 1},
+    {568, 1},
+    {574, 1},
+    {575, 1},
+    {586, 1},
+    {590, 1},
+    {600, 2},
+    {664, 1},
+    {691, 1},
+    {728, 1},
+    {750, 2},
+    {775, 1},
+    {786, 1},
+    {826, 1},
+    {871, 1},
+    {913, 1},
+    {914, 1},
+    {917, 1}
+};
+struct MoveImmunityAbilityProfile { uint16_t abilityId; uint8_t mask; bool requiresDispatcher; const char* sourcePath; const char* sourceSymbol; const char* sourceHash; };
+inline constexpr MoveImmunityAbilityProfile kMoveImmunityAbilityProfiles[] = {
+    {43, 1, false, "src/data/abilities/init-abilities.ts", "AbilityId.SOUNDPROOF", "040ccf2ca2e00a2111ef0acf54878ec67c45d98c831e35dda3e0bac52f1ee8e6"},
+    {140, 0, true, "src/data/abilities/init-abilities.ts", "AbilityId.TELEPATHY", "040ccf2ca2e00a2111ef0acf54878ec67c45d98c831e35dda3e0bac52f1ee8e6"},
+    {142, 2, false, "src/data/abilities/init-abilities.ts", "AbilityId.OVERCOAT", "040ccf2ca2e00a2111ef0acf54878ec67c45d98c831e35dda3e0bac52f1ee8e6"},
+    {171, 0, true, "src/data/abilities/init-abilities.ts", "AbilityId.BULLETPROOF", "040ccf2ca2e00a2111ef0acf54878ec67c45d98c831e35dda3e0bac52f1ee8e6"},
+    {283, 0, true, "src/data/abilities/init-abilities.ts", "AbilityId.GOOD_AS_GOLD", "040ccf2ca2e00a2111ef0acf54878ec67c45d98c831e35dda3e0bac52f1ee8e6"}
+};
 struct MoveAttribute { const char* id; };
 struct Move { uint16_t id; uint8_t category; int16_t power; int16_t accuracy; int16_t pp; int8_t priority; int16_t upstreamChance; uint8_t generation; uint16_t upstreamFlags; uint8_t multiHitType; uint32_t attributeOffset; uint16_t attributeCount; const char* key; const char* name; const char* type; const char* target; const char* sourcePath; const char* sourceSymbol; const char* sourceHash; };
 struct PokemonSpriteAtlas { uint16_t speciesDex; uint16_t width; uint16_t height; uint32_t frameOffset; uint16_t frameCount; const char* manifestPath; const char* imagePath; const char* manifestHash; }; struct PokemonSpriteFrame { const char* filename; uint16_t x; uint16_t y; uint16_t width; uint16_t height; uint16_t sourceWidth; uint16_t sourceHeight; uint16_t trimX; uint16_t trimY; }; struct SpeciesLevelMove { uint16_t speciesDex; int8_t level; uint16_t moveId; }; struct SpeciesEggMove { uint16_t speciesDex; uint16_t moveId; };

@@ -888,5 +888,20 @@ const ppAbilityRows = collections.abilities.flatMap(ability => {
 });
 const ppHeader = roomHeader.replace('struct MoveAttribute {',
   `struct PpAbilityProfile { uint16_t abilityId; uint8_t increase; const char* sourcePath; const char* sourceSymbol; const char* sourceHash; };\ninline constexpr PpAbilityProfile kPpAbilityProfiles[] = {\n${ppAbilityRows.join(',\n')}\n};\nstruct MoveAttribute {`);
-await fs.writeFile(outputPath, ppHeader, 'utf8');
-console.log(JSON.stringify({ output: path.relative(root, outputPath), bytes: Buffer.byteLength(ppHeader), hash: report.contentHash }));
+const flaggedMoveRows = collections.moves.flatMap(move => {
+  const raw = move.extensions?.upstreamEffectMetadata?.value ?? '';
+  const mask = (/\.soundBased\s*\(\s*\)/.test(raw) ? 1 : 0) |
+    (/\.powderMove\s*\(\s*\)/.test(raw) ? 2 : 0);
+  return mask ? [`    {${move.moveId}, ${mask}}`] : [];
+});
+const immunityRows = collections.abilities.flatMap(ability => {
+  const raw = ability.extensions?.upstreamAttributes?.value ?? '';
+  if (!/\bMoveImmunityAbAttr\b/.test(raw)) return [];
+  const sound = /pokemon\s*!==\s*attacker\s*&&\s*move\.hasFlag\(MoveFlags\.SOUND_BASED\)/.test(raw);
+  const powder = /pokemon\s*!==\s*attacker\s*&&\s*move\.hasFlag\(MoveFlags\.POWDER_MOVE\)/.test(raw);
+  return [`    {${ability.abilityId}, ${(sound ? 1 : 0) | (powder ? 2 : 0)}, ${!sound && !powder}, "${field(ability.source?.sourcePath ?? '')}", "${field(ability.source?.sourceSymbol ?? '')}", "${field(ability.source?.sourceHash ?? '')}"}`];
+});
+const immunityHeader = ppHeader.replace('struct MoveAttribute {',
+  `struct MoveImmunityFlags { uint16_t moveId; uint8_t mask; };\ninline constexpr MoveImmunityFlags kMoveImmunityFlags[] = {\n${flaggedMoveRows.join(',\n')}\n};\nstruct MoveImmunityAbilityProfile { uint16_t abilityId; uint8_t mask; bool requiresDispatcher; const char* sourcePath; const char* sourceSymbol; const char* sourceHash; };\ninline constexpr MoveImmunityAbilityProfile kMoveImmunityAbilityProfiles[] = {\n${immunityRows.join(',\n')}\n};\nstruct MoveAttribute {`);
+await fs.writeFile(outputPath, immunityHeader, 'utf8');
+console.log(JSON.stringify({ output: path.relative(root, outputPath), bytes: Buffer.byteLength(immunityHeader), hash: report.contentHash }));

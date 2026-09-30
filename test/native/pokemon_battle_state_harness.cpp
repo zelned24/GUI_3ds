@@ -1217,6 +1217,28 @@ extern "C" int runPokemonBattleStateChecks() {
     if (Pokerogue3DS::useStandardPokemonMove(ppActor, ppTarget, 0, false, ppRng, ppEvent,
             nullptr, nullptr, nullptr, &ppPolicy) != Pokerogue3DS::PokemonMoveActionStatus::Ok ||
         ppActor.moves[0].pp || ppEvent.ppConsumed) return 392;
+    uint16_t soundproofId = 0;
+    for (const auto& profile : PokerogueContent::kMoveImmunityAbilityProfiles)
+        if (std::strcmp(profile.sourceSymbol, "AbilityId.SOUNDPROOF") == 0) soundproofId = profile.abilityId;
+    if (!soundproofId) return 396;
+    Pokerogue3DS::PokemonWeatherAbilityComponent soundComponents[] = {{soundproofId, true, false}};
+    Pokerogue3DS::PokemonHitPolicy soundPolicy{};
+    if (!Pokerogue3DS::composePokemonAlwaysHitPolicy(soundComponents, 1, soundPolicy, 304) ||
+        !soundPolicy.blockedByAbility) return 397;
+    PokemonBattleState soundActor = state, soundTarget = state;
+    soundActor.moves[0] = {304, 10, 10};
+    PokerogueRngAdapter soundRng;
+    soundRng.sow(damageSeed, sizeof(damageSeed) / sizeof(damageSeed[0]));
+    const auto soundBefore = soundRng.state();
+    Pokerogue3DS::PokemonMoveActionResult soundEvent{};
+    if (Pokerogue3DS::useStandardPokemonMove(soundActor, soundTarget, 0, false, soundRng, soundEvent,
+            nullptr, nullptr, &soundPolicy) != Pokerogue3DS::PokemonMoveActionStatus::Ok ||
+        !soundEvent.damageRoll.abilityBlocked || soundEvent.damageApplied || soundActor.moves[0].pp != 9 ||
+        soundRng.state().s0 != soundBefore.s0 || soundRng.state().s1 != soundBefore.s1 ||
+        soundRng.state().s2 != soundBefore.s2 || soundRng.state().c != soundBefore.c) return 398;
+    soundComponents[0].belongsToAttacker = true;
+    if (!Pokerogue3DS::composePokemonAlwaysHitPolicy(soundComponents, 1, soundPolicy, 304) ||
+        soundPolicy.blockedByAbility) return 399;
     PokemonBattleState noPpActor = state;
     noPpActor.moves[0].pp = 0;
     PokemonBattleState unchangedTarget = state;

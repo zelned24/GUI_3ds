@@ -346,6 +346,7 @@ bool pokemonMoveCriticalDenominator(uint16_t moveId, uint8_t& outputDenominator,
     uint8_t resolvedBonusStages = 0);
 
 struct PokemonHitPolicy {
+    bool blockedByAbility = false;
     bool resolved = false;
     bool bypassAccuracy = false;
     double accuracyMultiplier = 1.0; // Additional resolved multiplier; stages remain separate.
@@ -354,6 +355,7 @@ bool composePokemonAlwaysHitPolicy(const PokemonWeatherAbilityComponent* compone
     std::size_t count, PokemonHitPolicy& output, uint16_t moveId = 0,
     const PokemonMoveWeatherContext* weather = nullptr);
 struct PokemonMoveDamageRoll {
+    bool abilityBlocked = false;
     bool hit = false;
     bool critical = false;
     bool accuracyWasRolled = false;

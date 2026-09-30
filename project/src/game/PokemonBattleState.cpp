@@ -927,6 +927,16 @@ bool composePokemonAlwaysHitPolicy(const PokemonWeatherAbilityComponent* compone
     for (std::size_t i = 0; i < count; ++i) {
         if (!components[i].applies) continue;
         if (!PokerogueContent::findAbilityMovegenProfile(components[i].abilityId)) return false;
+        if (!components[i].belongsToAttacker && moveId) {
+            uint8_t moveMask = 0;
+            for (const auto& row : PokerogueContent::kMoveImmunityFlags)
+                if (row.moveId == moveId) moveMask = row.mask;
+            for (const auto& profile : PokerogueContent::kMoveImmunityAbilityProfiles) {
+                if (profile.abilityId != components[i].abilityId) continue;
+                if (profile.requiresDispatcher) return false;
+                next.blockedByAbility = next.blockedByAbility || (moveMask & profile.mask);
+            }
+        }
         for (const auto& profile : PokerogueContent::kAlwaysHitAbilityProfiles)
             if (profile.abilityId == components[i].abilityId) next.bypassAccuracy = true;
         for (const auto& profile : PokerogueContent::kAccuracyAbilityProfiles) {
@@ -1007,6 +1017,11 @@ PokemonMoveDamageResult resolveStandardPokemonMoveDamage(
         if (!hitPolicy->resolved) return PokemonMoveDamageResult::UnsupportedAbilityCondition;
         if (!(hitPolicy->accuracyMultiplier > 0.0) || hitPolicy->accuracyMultiplier > 256.0)
             return PokemonMoveDamageResult::InvalidAccuracy;
+        if (hitPolicy->blockedByAbility) {
+            next.abilityBlocked = true;
+            output = next;
+            return PokemonMoveDamageResult::Ok;
+        }
         alwaysHits = hitPolicy->bypassAccuracy;
         additionalAccuracyMultiplier = hitPolicy->accuracyMultiplier;
     }
