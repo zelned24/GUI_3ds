@@ -8,6 +8,11 @@ enum class PokemonTrainerMoveFilterResult : uint8_t {
     Ok = 0, InvalidInput, MissingMove, InsufficientCapacity
 };
 
+struct PokemonTrainerBaseWeightedMove {
+    uint16_t moveId = 0;
+    double weight = 0;
+};
+
 // Pinned filterSupercededMoves snapshots the original Map keys before deleting
 // any entry. A replacement still supersedes a move even if that replacement
 // is itself removed later in this pass or has zero weight.
@@ -66,6 +71,31 @@ inline PokemonTrainerMoveFilterResult filterTrainerHardForbiddenLevelMoves(
             return PokemonTrainerMoveFilterResult::InsufficientCapacity;
         }
         output[written++] = input[i];
+    }
+    return PokemonTrainerMoveFilterResult::Ok;
+}
+
+// Pinned adjustWeightsForTrainer, before damage/stat weighting and the 1.6
+// exponent. The strong self-boost flag is derived from each upstream
+// StatStageChangeAttr's stages and selfTarget constructor arguments.
+inline PokemonTrainerMoveFilterResult adjustTrainerLevelMoveBaseWeights(
+    const PokemonLevelMoveCandidate* input, std::size_t count,
+    PokemonTrainerBaseWeightedMove* output, std::size_t capacity,
+    std::size_t& written) {
+    written = 0;
+    if ((!input && count) || (!output && count))
+        return PokemonTrainerMoveFilterResult::InvalidInput;
+    if (capacity < count) return PokemonTrainerMoveFilterResult::InsufficientCapacity;
+    for (std::size_t i = 0; i < count; ++i) {
+        const auto* move = PokerogueContent::findMoveById(input[i].moveId);
+        if (!move) { written = 0; return PokemonTrainerMoveFilterResult::MissingMove; }
+        if (!input[i].weight) { written = 0; return PokemonTrainerMoveFilterResult::InvalidInput; }
+        double weight = input[i].weight;
+        if (move->upstreamFlags & PokerogueContent::MoveHasSacrificialAttr) weight *= 0.5;
+        if (move->upstreamFlags & PokerogueContent::MoveHasStrongSelfStatBoost) weight *= 1.25;
+        if (move->upstreamFlags & (PokerogueContent::MoveIsCharging |
+                                   PokerogueContent::MoveHasRecharge)) weight *= 0.7;
+        output[written++] = {input[i].moveId, weight};
     }
     return PokemonTrainerMoveFilterResult::Ok;
 }

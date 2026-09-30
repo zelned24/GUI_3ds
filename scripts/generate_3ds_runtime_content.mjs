@@ -416,6 +416,11 @@ const moves = collections.moves.map(move => {
     throw new Error(`Canonical move field exceeds compact native representation: ${move.id}`);
   }
   const upstreamRaw = move.extensions?.upstreamEffectMetadata?.value ?? '';
+  const statStageDeclarations = [...upstreamRaw.matchAll(/\.attr\s*\(\s*StatStageChangeAttr\b/g)];
+  const parsedStatStages = [...upstreamRaw.matchAll(/\.attr\s*\(\s*StatStageChangeAttr\s*,\s*\[[^\]]*\]\s*,\s*(-?\d+)(?:\s*,\s*(true|false))?/g)];
+  if (statStageDeclarations.length !== parsedStatStages.length)
+    throw new Error(`Unsupported trainer stat-stage weighting metadata: ${move.id}`);
+  const strongSelfStatBoost = parsedStatStages.some(match => Number(match[1]) > 1 && match[2] === 'true');
   const sourceAttributes = Array.isArray(move.upstreamAttributes)
     ? move.upstreamAttributes
     : [...upstreamRaw.matchAll(/\.attr\s*\(\s*(?:new\s+)?([A-Za-z_$][\w$]*)/g)].map(attribute => attribute[1]);
@@ -436,6 +441,7 @@ const moves = collections.moves.map(move => {
   if (/MultiHitPowerIncrementAttr/.test(upstreamRaw)) upstreamFlags.push('MoveHasMultiHitPowerIncrement');
   if (/DelayedAttackAttr/.test(upstreamRaw)) upstreamFlags.push('MoveHasDelayedAttack');
   if (/RechargeAttr/.test(upstreamRaw)) upstreamFlags.push('MoveHasRecharge');
+  if (strongSelfStatBoost) upstreamFlags.push('MoveHasStrongSelfStatBoost');
   if (/^\s*new\s+Charging\w*Move\s*\(/.test(upstreamRaw)) upstreamFlags.push('MoveIsCharging');
   if (/\.checkAllHits\s*\(/.test(upstreamRaw)) upstreamFlags.push('MoveChecksAccuracyPerHit');
   if (/DefAtkAttr/.test(upstreamRaw)) upstreamFlags.push('MoveUsesDefense');
@@ -543,7 +549,7 @@ const runtimeHeader = expandedHeader
   )
   .replace(
     'enum MoveCategory : uint8_t { MovePhysical = 0, MoveSpecial = 1, MoveStatus = 2 };',
-    'enum MoveCategory : uint8_t { MovePhysical = 0, MoveSpecial = 1, MoveStatus = 2 }; enum MoveUpstreamFlags : uint16_t { MoveIsUnimplemented = 1, MoveHasSacrificialAttrOnHit = 2, MoveHasMultiHit = 4, MoveHasMultiHitPowerIncrement = 8, MoveHasDelayedAttack = 16, MoveHasRecharge = 32, MoveIsCharging = 64, MoveChecksAccuracyPerHit = 128, MoveUsesDefense = 256, MoveSelectsOffensiveCategory = 512, MoveHasSacrificialAttr = 1024, MoveIsStabBlacklisted = 2048 };'
+    'enum MoveCategory : uint8_t { MovePhysical = 0, MoveSpecial = 1, MoveStatus = 2 }; enum MoveUpstreamFlags : uint16_t { MoveIsUnimplemented = 1, MoveHasSacrificialAttrOnHit = 2, MoveHasMultiHit = 4, MoveHasMultiHitPowerIncrement = 8, MoveHasDelayedAttack = 16, MoveHasRecharge = 32, MoveIsCharging = 64, MoveChecksAccuracyPerHit = 128, MoveUsesDefense = 256, MoveSelectsOffensiveCategory = 512, MoveHasSacrificialAttr = 1024, MoveIsStabBlacklisted = 2048, MoveHasStrongSelfStatBoost = 4096 };'
   )
   .replace(
     'struct SpeciesLevelMove { uint16_t speciesDex; uint8_t level; uint16_t moveId; };',

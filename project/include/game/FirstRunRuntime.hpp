@@ -53,6 +53,7 @@ struct PresentationContext {
     bool trainerPartySupercedenceResolved = false;
     uint16_t trainerPartyHardEligibleMoveCounts[6]{};
     bool trainerPartyHardMoveFilterResolved = false;
+    bool trainerPartyBaseWeightsResolved = false;
     ResolvedPokemon player;
     ResolvedPokemon enemy;
     ResolvedPokemon secondEnemy;

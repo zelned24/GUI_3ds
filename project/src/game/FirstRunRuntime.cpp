@@ -535,6 +535,7 @@ void FirstRunRuntime::resolve(bool carryPlayer) {
     m_context.trainerPartyLevelMovesResolved = false;
     m_context.trainerPartySupercedenceResolved = false;
     m_context.trainerPartyHardMoveFilterResolved = false;
+    m_context.trainerPartyBaseWeightsResolved = false;
     for (auto& level : m_context.trainerPartyLevels) level = 0;
     for (auto& member : m_context.trainerParty) member = {};
     for (auto& state : m_trainerConstructorRngStates) state = {};
@@ -676,6 +677,7 @@ void FirstRunRuntime::resolve(bool carryPlayer) {
                         bool allLevelMovesResolved = true;
                         bool allSupercedenceResolved = true;
                         bool allHardMoveFiltersResolved = true;
+                        bool allBaseWeightsResolved = true;
                         for (uint8_t i = 0; i < levels.count; ++i) {
                             uint32_t memberOffset = 0;
                             if (!trainerPartyMemberSeedOffset(*trainer, m_run.wave, i, memberOffset)) {
@@ -750,6 +752,15 @@ void FirstRunRuntime::resolve(bool carryPlayer) {
                             }
                             m_context.trainerPartyHardEligibleMoveCounts[i] =
                                 static_cast<uint16_t>(eligibleCount);
+                            PokemonTrainerBaseWeightedMove adjustedMoves[128]{};
+                            std::size_t adjustedCount = 0;
+                            if (adjustTrainerLevelMoveBaseWeights(eligibleMoves,
+                                    eligibleCount, adjustedMoves, 128, adjustedCount) !=
+                                PokemonTrainerMoveFilterResult::Ok ||
+                                adjustedCount != eligibleCount) {
+                                allBaseWeightsResolved = false;
+                                continue;
+                            }
                         }
                         m_context.trainerPartySpeciesResolved = allSpeciesResolved;
                         m_context.trainerPartyConstructorResolved =
@@ -760,10 +771,14 @@ void FirstRunRuntime::resolve(bool carryPlayer) {
                             m_context.trainerPartyLevelMovesResolved && allSupercedenceResolved;
                         m_context.trainerPartyHardMoveFilterResolved =
                             m_context.trainerPartySupercedenceResolved && allHardMoveFiltersResolved;
+                        m_context.trainerPartyBaseWeightsResolved =
+                            m_context.trainerPartyHardMoveFilterResolved && allBaseWeightsResolved;
                     }
                 }
-                m_battleFeedback = m_context.trainerPartyHardMoveFilterResolved
-                    ? "Trainer move weights, IVs and battle pending"
+                m_battleFeedback = m_context.trainerPartyBaseWeightsResolved
+                    ? "Trainer damage weights, IVs and battle pending"
+                    : m_context.trainerPartyHardMoveFilterResolved
+                    ? "Trainer base move weights unsupported"
                     : m_context.trainerPartyLevelMovesResolved
                     ? "Trainer move-filter metadata unsupported"
                     : m_context.trainerPartyConstructorResolved
