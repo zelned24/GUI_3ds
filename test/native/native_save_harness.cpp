@@ -92,30 +92,36 @@ extern "C" int runNativeSaveChecks() {
     trainerSave.playerMoveCount = trainerSave.enemyMoveCount = 1;
     trainerSave.playerMoveIds[0] = trainerSave.enemyMoveIds[0] = 33;
     trainerSave.playerPp[0] = trainerSave.enemyPp[0] = 25;
+    trainerSave.playerStatStages[0] = -6;
+    trainerSave.enemyStatStages[4] = 6;
     trainerSave.enemySwitchCounter = 2;
     trainerSave.trainerTypeId = 63;
     trainerSave.trainerPartyCount = 2;
     trainerSave.activeTrainerMember = 0;
     trainerSave.trainerParty[0] = {19, 12, 1, {33, 0, 0, 0}, {25, 0, 0, 0}};
     trainerSave.trainerParty[1] = {504, 9, 1, {33, 0, 0, 0}, {17, 0, 0, 0}};
+    trainerSave.trainerParty[0].statStages[4] = 6;
+    trainerSave.trainerParty[1].statStages[5] = -2;
     char partyBytes[kNativeSaveMaxBytes]{};
     size_t partySize = 0;
     if (encodeNativeRunSave(trainerSave, partyBytes, sizeof(partyBytes), partySize) != NativeSaveResult::Ok ||
         decodeNativeRunSave(partyBytes, partySize, PokerogueContent::kContentHash, restored) != NativeSaveResult::Ok ||
-        restored.enemySwitchCounter != 2 || restored.trainerPartyCount != 2 || restored.trainerParty[1].hp != 9 ||
+        restored.playerStatStages[0] != -6 || restored.enemyStatStages[4] != 6 ||
+        restored.trainerParty[1].statStages[5] != -2 || restored.enemySwitchCounter != 2 || restored.trainerPartyCount != 2 || restored.trainerParty[1].hp != 9 ||
         restored.trainerParty[1].pp[0] != 17 || restored.activeTrainerMember != 0) return 13;
     char legacyTrainerBytes[kNativeSaveMaxBytes]{};
     size_t legacyTrainerSize = 0;
     const size_t trainerBodyEnd = partySize - 72;
     for (size_t n = 0; n < trainerBodyEnd;) {
+        if (n + 13 <= trainerBodyEnd && std::memcmp(partyBytes + n, "playerStages=", 13) == 0) break;
         if (n + 28 <= trainerBodyEnd &&
             std::memcmp(partyBytes + n, "enemySwitchCounter=", 19) == 0) { n += 28; continue; }
         legacyTrainerBytes[legacyTrainerSize++] = partyBytes[n++];
     }
     for (size_t n = 0; n < legacyTrainerSize; ++n) {
-        if (n + 16 <= legacyTrainerSize && std::memcmp(legacyTrainerBytes + n, "saveVersion=0005", 16) == 0)
+        if (n + 16 <= legacyTrainerSize && std::memcmp(legacyTrainerBytes + n, "saveVersion=0006", 16) == 0)
             legacyTrainerBytes[n + 15] = '4';
-        if (n + 19 <= legacyTrainerSize && std::memcmp(legacyTrainerBytes + n, "runtimeVersion=0005", 19) == 0)
+        if (n + 19 <= legacyTrainerSize && std::memcmp(legacyTrainerBytes + n, "runtimeVersion=0006", 19) == 0)
             legacyTrainerBytes[n + 18] = '4';
     }
     IntegritySha256::hashHex(legacyTrainerBytes, legacyTrainerSize, digest);
@@ -150,9 +156,9 @@ extern "C" int runNativeSaveChecks() {
         if (n + 19 <= partySize && std::memcmp(partyBytes + n, "enemySwitchCounter=", 19) == 0) {
             legacyBodySize = n; break;
         }
-        if (n + 16 <= partySize && std::memcmp(partyBytes + n, "saveVersion=0005", 16) == 0)
+        if (n + 16 <= partySize && std::memcmp(partyBytes + n, "saveVersion=0006", 16) == 0)
             partyBytes[n + 15] = '3';
-        if (n + 19 <= partySize && std::memcmp(partyBytes + n, "runtimeVersion=0005", 19) == 0)
+        if (n + 19 <= partySize && std::memcmp(partyBytes + n, "runtimeVersion=0006", 19) == 0)
             partyBytes[n + 18] = '3';
     }
     if (!legacyBodySize) return 19;

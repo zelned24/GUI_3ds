@@ -123,6 +123,10 @@ void FirstRunRuntime::captureNativeRunSave(NativeRunSave& output) const {
             : NativeSaveStage::BattleActive;
         value.encounterDex = m_context.enemy.dex;
         value.playerHp = m_context.player.battleState.hp;
+        for (uint8_t stat = 0; stat < 7; ++stat) {
+            value.playerStatStages[stat] = m_context.player.battleState.statStages[stat];
+            value.enemyStatStages[stat] = m_context.enemy.battleState.statStages[stat];
+        }
         value.enemyHp = m_context.enemy.battleState.hp;
         value.battleTurn = m_turn;
         value.playerMoveCount = m_context.player.battleState.moveCount;
@@ -148,6 +152,7 @@ void FirstRunRuntime::captureNativeRunSave(NativeRunSave& output) const {
                 const auto& actor = member == value.activeTrainerMember
                     ? m_context.enemy : m_context.trainerParty[member];
                 auto& saved = value.trainerParty[member];
+                for (uint8_t stat = 0; stat < 7; ++stat) saved.statStages[stat] = actor.battleState.statStages[stat];
                 saved.speciesDex = actor.dex;
                 saved.hp = actor.battleState.hp;
                 saved.moveCount = actor.battleState.moveCount;
@@ -267,6 +272,10 @@ bool FirstRunRuntime::restoreNativeRunSaveInPlace(const NativeRunSave& save) {
         m_run.encounterDex = m_context.enemy.dex;
     }
     m_context.player.battleState.hp = save.playerHp;
+    for (uint8_t stat = 0; stat < 7; ++stat) {
+        m_context.player.battleState.statStages[stat] = save.playerStatStages[stat];
+        m_context.enemy.battleState.statStages[stat] = save.enemyStatStages[stat];
+    }
     m_context.enemy.battleState.hp = save.enemyHp;
     for (uint8_t i = 0; i < save.playerMoveCount; ++i)
         m_context.player.battleState.moves[i].pp = save.playerPp[i];
@@ -277,6 +286,7 @@ bool FirstRunRuntime::restoreNativeRunSaveInPlace(const NativeRunSave& save) {
             auto& actor = m_context.trainerParty[member];
             const auto& saved = save.trainerParty[member];
             actor.battleState.hp = saved.hp;
+            for (uint8_t stat = 0; stat < 7; ++stat) actor.battleState.statStages[stat] = saved.statStages[stat];
             for (uint8_t slot = 0; slot < saved.moveCount; ++slot)
                 actor.battleState.moves[slot].pp = saved.pp[slot];
         }

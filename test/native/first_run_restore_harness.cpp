@@ -117,6 +117,8 @@ int main() {
         }
         if (validateNativeRunSave(active, PokerogueContent::kContentHash) != NativeSaveResult::Ok)
             return 1;
+        active.playerStatStages[0] = -2;
+        active.enemyStatStages[4] = 3;
         NativeRunSave lateInvalid = active;
         lateInvalid.enemyHp = 65535; // Structurally valid, fails reconstructed max HP.
         if (validateNativeRunSave(lateInvalid, PokerogueContent::kContentHash) != NativeSaveResult::Ok ||
@@ -135,7 +137,8 @@ int main() {
         NativeRunSave loaded{};
         game.captureNativeRunSave(loaded);
         if (loaded.stage != NativeSaveStage::BattleActive || loaded.enemyHp != active.enemyHp ||
-            loaded.seed != seed) return 6;
+            loaded.seed != seed || loaded.playerStatStages[0] != -2 ||
+            loaded.enemyStatStages[4] != 3) return 6;
         return checkTrainerExperienceReplay();
     }
     return 7; // No supported canonical encounter found: do not silently skip.
