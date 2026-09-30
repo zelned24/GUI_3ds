@@ -285,7 +285,8 @@ struct PokemonMoveActionResult {
     PokemonMoveDamageResult damageResolutionStatus = PokemonMoveDamageResult::Ok;
 };
 enum class PokemonMoveActionStatus : uint8_t {
-    Ok = 0, InvalidMoveSlot, NoPp, TargetAlreadyFainted, DamageResolutionFailed
+    Ok = 0, InvalidMoveSlot, NoPp, TargetAlreadyFainted, DamageResolutionFailed,
+    UnsupportedAbilityCondition, UnresolvedWeather
 };
 PokemonMoveActionStatus useStandardPokemonMove(
     PokemonBattleState& attacker,
@@ -293,7 +294,8 @@ PokemonMoveActionStatus useStandardPokemonMove(
     uint8_t moveSlot,
     bool moveIsTypeless,
     PokerogueRngAdapter& battleRng,
-    PokemonMoveActionResult& output);
+    PokemonMoveActionResult& output,
+    const PokemonMoveWeatherContext* weatherContext = nullptr);
 
 enum class PokemonAbilitySelectionResult : uint8_t { Ok = 0, MissingSpecies, InvalidHiddenRate };
 PokemonAbilitySelectionResult selectPokemonAbilityIndex(

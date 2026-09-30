@@ -670,6 +670,35 @@ extern "C" int runPokemonBattleStateChecks() {
     if (actualActionState.carry != expectedActionState.carry || actualActionState.s0 != expectedActionState.s0 ||
         actualActionState.s1 != expectedActionState.s1 || actualActionState.s2 != expectedActionState.s2) return 53;
 
+    PokemonBattleState weatherActor = state, weatherTarget = state;
+    weatherActor.abilityId = 0;
+    weatherActor.moves[0] = {55, 25, 25}; // Real Water Gun.
+    PokerogueRngAdapter weatherRng = actionExpectedRng;
+    PokerogueRngAdapter expectedWeatherRng = weatherRng;
+    weatherContext.resolved = true;
+    weatherContext.effectiveWeather = Pokerogue3DS::PokemonEffectiveWeather::Rain;
+    PokemonMoveDamageRoll expectedWeatherRoll{};
+    if (Pokerogue3DS::resolveStandardPokemonMoveDamage(weatherActor, weatherTarget, 55, false,
+            expectedWeatherRng, expectedWeatherRoll, &weatherContext) != PokemonMoveDamageResult::Ok) return 276;
+    PokemonMoveActionResult weatherAction{};
+    if (Pokerogue3DS::useStandardPokemonMove(weatherActor, weatherTarget, 0, false, weatherRng,
+            weatherAction, &weatherContext) != PokemonMoveActionStatus::Ok ||
+        weatherActor.moves[0].pp != 24 || weatherAction.damageRoll.damage != expectedWeatherRoll.damage) return 277;
+    weatherContext.resolved = false;
+    const auto beforeWeatherFailure = weatherRng.state();
+    const uint16_t beforeWeatherHp = weatherTarget.hp;
+    if (beforeWeatherHp == 0) weatherTarget.hp = 1;
+    const uint16_t failureHp = weatherTarget.hp;
+    weatherAction.damageApplied = 123;
+    if (Pokerogue3DS::useStandardPokemonMove(weatherActor, weatherTarget, 0, false, weatherRng,
+            weatherAction, &weatherContext) != PokemonMoveActionStatus::UnresolvedWeather ||
+        weatherActor.moves[0].pp != 24 || weatherTarget.hp != failureHp ||
+        weatherAction.damageApplied != 123) return 278;
+    const auto afterWeatherFailure = weatherRng.state();
+    if (beforeWeatherFailure.carry != afterWeatherFailure.carry ||
+        beforeWeatherFailure.s0 != afterWeatherFailure.s0 || beforeWeatherFailure.s1 != afterWeatherFailure.s1 ||
+        beforeWeatherFailure.s2 != afterWeatherFailure.s2) return 279;
+
     PokemonBattleState noPpActor = state;
     noPpActor.moves[0].pp = 0;
     PokemonBattleState unchangedTarget = state;

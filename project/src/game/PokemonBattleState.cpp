@@ -685,7 +685,8 @@ PokemonMoveActionStatus useStandardPokemonMove(
     uint8_t moveSlot,
     bool moveIsTypeless,
     PokerogueRngAdapter& battleRng,
-    PokemonMoveActionResult& output) {
+    PokemonMoveActionResult& output,
+    const PokemonMoveWeatherContext* weatherContext) {
     if (moveSlot >= attacker.moveCount || moveSlot >= 4 || attacker.moves[moveSlot].moveId == 0) {
         return PokemonMoveActionStatus::InvalidMoveSlot;
     }
@@ -693,8 +694,14 @@ PokemonMoveActionStatus useStandardPokemonMove(
     if (defender.hp == 0) return PokemonMoveActionStatus::TargetAlreadyFainted;
 
     PokemonMoveActionResult next{};
+    // Commit RNG only after a resolved action, just like HP and PP.
+    PokerogueRngAdapter nextRng = battleRng;
     next.damageResolutionStatus = resolveStandardPokemonMoveDamage(
-        attacker, defender, attacker.moves[moveSlot].moveId, moveIsTypeless, battleRng, next.damageRoll);
+        attacker, defender, attacker.moves[moveSlot].moveId, moveIsTypeless, nextRng, next.damageRoll, weatherContext);
+    if (next.damageResolutionStatus == PokemonMoveDamageResult::UnsupportedAbilityCondition)
+        return PokemonMoveActionStatus::UnsupportedAbilityCondition;
+    if (next.damageResolutionStatus == PokemonMoveDamageResult::UnresolvedWeather)
+        return PokemonMoveActionStatus::UnresolvedWeather;
     if (next.damageResolutionStatus != PokemonMoveDamageResult::Ok) {
         return PokemonMoveActionStatus::DamageResolutionFailed;
     }
@@ -708,6 +715,7 @@ PokemonMoveActionStatus useStandardPokemonMove(
         next.damageApplied = applied;
         next.targetFainted = defender.hp == 0;
     }
+    battleRng = nextRng;
     output = next;
     return PokemonMoveActionStatus::Ok;
 }
