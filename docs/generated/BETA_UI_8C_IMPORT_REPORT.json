@@ -24,6 +24,7 @@
     "species": 1084,
     "speciesWithBaseExperience": 1084,
     "trainerConfigs": 272,
+    "trainerMoveSupercedencePairs": 747,
     "trainerPartyTemplates": 54,
     "trainerSpeciesPoolCandidates": 892,
     "trainers": 272,
@@ -31,7 +32,7 @@
     "trainersWithSpeciesPools": 34,
     "trainersWithStaticPartyTemplates": 46
   },
-  "contentHash": "ecbd0f8848b4af43be892e69683a1ba87a83302b496819027511cfd5d1352219",
+  "contentHash": "99a42813c4fb74c03732dac73aebcfeca87b1e60098255ee4856c3f06393ad9b",
   "deterministicReimport": true,
   "provenance": [
     {
@@ -273,6 +274,12 @@
       "repository": "pokerogue",
       "revision": "8555c08c823b856cbec4eb99ca84ea52a955836d",
       "sourcePath": "src/data/balance/moves/moveset-generation.ts"
+    },
+    {
+      "hash": "90239d15bd94b9823ecfdecc6b4733cc4533b052983087f22b48e4954246ac0f",
+      "repository": "pokerogue",
+      "revision": "8555c08c823b856cbec4eb99ca84ea52a955836d",
+      "sourcePath": "src/data/balance/moves/superceded-moves.ts"
     },
     {
       "hash": "a1078adb262ebba59d52642b762a83a0e86627baf9a009caec140a0b01c2c06e",

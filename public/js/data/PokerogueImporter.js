@@ -403,6 +403,58 @@ function parsePokemonSpriteAtlas(source, sourcePath) {
       : { rawMeta: parsed.meta } };
 }
 
+function parseSupercededMovePairs(source, moveEnum) {
+  const aliases = new Map();
+  for (const match of source.matchAll(/\bconst\s+([A-Z][A-Z0-9_]+)\s*:\s*readonly\s+MoveId\[\]\s*=\s*/g)) {
+    const open = source.indexOf('[', match.index + match[0].length);
+    const literal = extractBalancedLiteral(source, open);
+    if (!literal) throw new Error(`Invalid import: unclosed superceded-move alias ${match[1]}`);
+    aliases.set(match[1], literal);
+  }
+  const marker = /\bexport\s+const\s+SUPERCEDED_MOVES\s*:[^=]+?=\s*/.exec(source);
+  if (!marker) throw new Error('Invalid import: SUPERCEDED_MOVES declaration missing');
+  const open = source.indexOf('{', marker.index + marker[0].length);
+  const literal = extractBalancedLiteral(source, open);
+  if (!literal) throw new Error('Invalid import: unclosed SUPERCEDED_MOVES map');
+  const moveId = symbol => {
+    const id = moveEnum.getId(symbol);
+    if (!Number.isInteger(id) || id < 1 || id > 0xFFFF)
+      throw new Error(`Invalid import: unknown superceded MoveId.${symbol}`);
+    return id;
+  };
+  const parseArray = (array, context) => {
+    const result = [];
+    for (const raw of splitTopLevelArguments(array.slice(1, -1))) {
+      const entry = raw.replace(/\/\*[\s\S]*?\*\/|\/\/[^\n]*/g, '').trim();
+      if (!entry) continue;
+      const match = /^MoveId\.([A-Z0-9_]+)$/.exec(entry);
+      if (!match) throw new Error(`Invalid import: unsupported ${context} entry ${entry}`);
+      result.push(moveId(match[1]));
+    }
+    if (!result.length || new Set(result).size !== result.length)
+      throw new Error(`Invalid import: empty or duplicate ${context} replacements`);
+    return result;
+  };
+  const pairs = [];
+  const seen = new Set();
+  for (const raw of splitTopLevelArguments(literal.slice(1, -1))) {
+    const entry = raw.replace(/\/\*[\s\S]*?\*\/|\/\/[^\n]*/g, '').trim();
+    if (!entry) continue;
+    const match = /^\[MoveId\.([A-Z0-9_]+)\]\s*:\s*([\s\S]+)$/.exec(entry);
+    if (!match) throw new Error(`Invalid import: unsupported SUPERCEDED_MOVES entry ${entry}`);
+    const sourceMoveId = moveId(match[1]);
+    if (seen.has(sourceMoveId)) throw new Error(`Invalid import: duplicate superceded MoveId.${match[1]}`);
+    seen.add(sourceMoveId);
+    const replacementLiteral = match[2].startsWith('[') ? match[2] : aliases.get(match[2]);
+    if (!replacementLiteral?.startsWith('[') || !replacementLiteral.endsWith(']'))
+      throw new Error(`Invalid import: unknown superceded alias ${match[2]}`);
+    for (const replacementMoveId of parseArray(replacementLiteral, `MoveId.${match[1]}`))
+      pairs.push({ moveId: sourceMoveId, replacementMoveId });
+  }
+  if (!pairs.length) throw new Error('Invalid import: SUPERCEDED_MOVES map is empty');
+  return pairs;
+}
+
 function parseDerivedTrainerTypes(source, catalog) {
   const marker = /getDerivedType\s*\(/.exec(source);
   // Locate the declaration, excluding constructor calls to this method.
@@ -885,7 +937,8 @@ export class PokerogueImporter {
       'src/data/moves/move.ts', 'src/data/abilities/init-abilities.ts',
       'src/modifier/modifier-type.ts', 'src/modifier/init-modifier-pools.ts', 'src/data/trainers/trainer-config.ts', 'src/data/trainers/trainer-party-template.ts', 'src/data/balance/signature-species.ts',
       'src/enums/party-member-strength.ts', 'src/enums/evo-level-threshold-kind.ts', 'src/enums/trainer-pool-tier.ts', 'src/data/species-data-registry.ts',
-      'src/data/balance/moves/moveset-generation.ts', 'src/data/balance/moves/egg-moves.ts'
+      'src/data/balance/moves/moveset-generation.ts', 'src/data/balance/moves/egg-moves.ts',
+      'src/data/balance/moves/superceded-moves.ts'
     ];
     const requests = [
       ...fixedPaths.map(path => ({ repo: 'pokerogue', path })),
@@ -1143,6 +1196,8 @@ export class PokerogueImporter {
     const unresolvedDefaultStarters = defaultStarterSymbols.filter(id => !canonicalSpeciesById.has(id));
     if (unresolvedDefaultStarters.length) throw new Error(`Pinned default starters are absent from imported species: ${unresolvedDefaultStarters.join(', ')}`);
     const moveFile = byPath.get('pokerogue:src/data/moves/move.ts');
+    const supercededMoveFile = byPath.get('pokerogue:src/data/balance/moves/superceded-moves.ts');
+    const supercededMovePairs = parseSupercededMovePairs(supercededMoveFile.content, enumCatalogs.move);
     const abilityFile = byPath.get('pokerogue:src/data/abilities/init-abilities.ts');
     const parsedMoves = this.parseMoves(moveFile.content, null,
       byPath.get('pokerogue:src/data/balance/moves/moveset-generation.ts')?.content ?? null);
@@ -1292,7 +1347,7 @@ export class PokerogueImporter {
     if (classicFixedBossWaves.some(entry => entry.wave > classicModeDefinition.rules.maxWave)) {
       throw new Error('Pinned Classic fixed-boss wave exceeds the imported Classic final wave');
     }
-    const canonicalContent = new CanonicalContent({ schemaVersion: '1.0.0', contentVersion: '1.0.0', sourceSnapshot: snapshot, provenance, collections: { gameModes, species, forms, moves, abilities, items, trainers, trainerPartyTemplates, locales: localeEntries, assetReferences: [...canonicalAssetBySpecies.values()] }, extensions: { importer: 'PokerogueImporter.importCanonicalContent', unknownFieldPolicy: 'preserve-in-upstreamRawRecord', unsupportedBehavior: 'NOT_IMPORTED', modifierPools: { entries: modifierPools, dynamicWeights: modifierPools.filter(entry => entry.weight === null).length }, freshProfile: { defaultStarterSpecies: defaultStarterSymbols, provenance: { repository: game.url, revision: game.revision, sourcePath: 'src/constants.ts', sourceSymbol: 'defaultStarterSpecies', sourceHash: sourceHash(byPath.get('pokerogue:src/constants.ts')) } }, pokemonExperience: { growthRates: experienceGrowthRates, provenance: { repository: game.url, revision: game.revision, sourcePath: 'src/data/exp.ts', sourceSymbol: 'GrowthRate/expLevels/getLevelTotalExp', sourceHash: sourceHash(experienceSource) } }, classicFixedBossWaves: { entries: classicFixedBossWaves, provenance: { repository: game.url, revision: game.revision, sourcePath: 'src/enums/fixed-boss-waves.ts', sourceSymbol: 'ClassicFixedBossWaves', sourceHash: sourceHash(fixedBossWaveSource) }, finalWave: { wave: classicModeDefinition.rules.maxWave, provenance: { repository: game.url, revision: game.revision, sourcePath: classicModeDefinition.provenance.sourcePath, sourceSymbol: 'GameMode.isWaveFinal:classic', sourceHash: classicModeDefinition.provenance.sourceHash } } }, classicFixedBattleWaves: { entries: classicFixedBattleWaves, provenance: { repository: game.url, revision: game.revision, sourcePath: 'src/data/trainers/fixed-battle-configs.ts', sourceSymbol: 'classicFixedBattles', sourceHash: sourceHash(fixedBattleSource) } }, trainerPartyTemplateCatalog: { provenance: { repository: game.url, revision: game.revision, sourcePath: 'src/data/trainers/trainer-party-template.ts', sourceSymbol: 'trainerPartyTemplates', sourceHash: sourceHash(trainerPartyTemplateSource) }, partyStrengthSource: { sourcePath: 'src/enums/party-member-strength.ts', sourceHash: sourceHash(byPath.get('pokerogue:src/enums/party-member-strength.ts')) }, evolutionThresholdSource: { sourcePath: 'src/enums/evo-level-threshold-kind.ts', sourceHash: sourceHash(evolutionThresholdSource) }, trainerPoolTierSource: { sourcePath: 'src/enums/trainer-pool-tier.ts', sourceHash: sourceHash(byPath.get('pokerogue:src/enums/trainer-pool-tier.ts')) } }, skippedMoveRecords: parsedMoves.filter(move => enumCatalogs.move.getId(move.id.toUpperCase()) === undefined).map(move => ({ sourceSymbol: move.id, raw: move.extensions?.upstreamRawRecord || null })) } });
+    const canonicalContent = new CanonicalContent({ schemaVersion: '1.0.0', contentVersion: '1.0.0', sourceSnapshot: snapshot, provenance, collections: { gameModes, species, forms, moves, abilities, items, trainers, trainerPartyTemplates, locales: localeEntries, assetReferences: [...canonicalAssetBySpecies.values()] }, extensions: { importer: 'PokerogueImporter.importCanonicalContent', unknownFieldPolicy: 'preserve-in-upstreamRawRecord', unsupportedBehavior: 'NOT_IMPORTED', modifierPools: { entries: modifierPools, dynamicWeights: modifierPools.filter(entry => entry.weight === null).length }, trainerMoveSupercedence: { pairs: supercededMovePairs, provenance: { repository: game.url, revision: game.revision, sourcePath: 'src/data/balance/moves/superceded-moves.ts', sourceSymbol: 'SUPERCEDED_MOVES', sourceHash: sourceHash(supercededMoveFile) } }, freshProfile: { defaultStarterSpecies: defaultStarterSymbols, provenance: { repository: game.url, revision: game.revision, sourcePath: 'src/constants.ts', sourceSymbol: 'defaultStarterSpecies', sourceHash: sourceHash(byPath.get('pokerogue:src/constants.ts')) } }, pokemonExperience: { growthRates: experienceGrowthRates, provenance: { repository: game.url, revision: game.revision, sourcePath: 'src/data/exp.ts', sourceSymbol: 'GrowthRate/expLevels/getLevelTotalExp', sourceHash: sourceHash(experienceSource) } }, classicFixedBossWaves: { entries: classicFixedBossWaves, provenance: { repository: game.url, revision: game.revision, sourcePath: 'src/enums/fixed-boss-waves.ts', sourceSymbol: 'ClassicFixedBossWaves', sourceHash: sourceHash(fixedBossWaveSource) }, finalWave: { wave: classicModeDefinition.rules.maxWave, provenance: { repository: game.url, revision: game.revision, sourcePath: classicModeDefinition.provenance.sourcePath, sourceSymbol: 'GameMode.isWaveFinal:classic', sourceHash: classicModeDefinition.provenance.sourceHash } } }, classicFixedBattleWaves: { entries: classicFixedBattleWaves, provenance: { repository: game.url, revision: game.revision, sourcePath: 'src/data/trainers/fixed-battle-configs.ts', sourceSymbol: 'classicFixedBattles', sourceHash: sourceHash(fixedBattleSource) } }, trainerPartyTemplateCatalog: { provenance: { repository: game.url, revision: game.revision, sourcePath: 'src/data/trainers/trainer-party-template.ts', sourceSymbol: 'trainerPartyTemplates', sourceHash: sourceHash(byPath.get('pokerogue:src/data/trainers/trainer-party-template.ts')) }, partyStrengthSource: { sourcePath: 'src/enums/party-member-strength.ts', sourceHash: sourceHash(byPath.get('pokerogue:src/enums/party-member-strength.ts')) }, evolutionThresholdSource: { sourcePath: 'src/enums/evo-level-threshold-kind.ts', sourceHash: sourceHash(byPath.get('pokerogue:src/enums/evo-level-threshold-kind.ts')) }, trainerPoolTierSource: { sourcePath: 'src/enums/trainer-pool-tier.ts', sourceHash: sourceHash(byPath.get('pokerogue:src/enums/trainer-pool-tier.ts')) } }, skippedMoveRecords: parsedMoves.filter(move => enumCatalogs.move.getId(move.id.toUpperCase()) === undefined).map(move => ({ sourceSymbol: move.id, raw: move.extensions?.upstreamRawRecord || null })) } });
     console.log('[canonical-import] hashing canonical snapshot');
     const errors = canonicalContent.validate();
     if (errors.length) throw new Error(`Invalid canonical production import: ${errors.join('; ')}`);
@@ -1361,7 +1416,7 @@ export class PokerogueImporter {
       const raw = record.extensions?.upstreamRawRecord?.value;
       if (typeof raw === 'string') for (const field of raw.matchAll(/\b([A-Za-z_$][\w$]*)\s*:/g)) unknownFieldNames.add(field[1]);
     }
-    const report = { schemaVersion: '1.0.0', sourceRevisions: { pokerogue: game.revision, assets: repos['pokerogue-assets'].revision, locales: repos['pokerogue-locales'].revision }, contentHash: canonicalContent.hash(), catalogCounts: { modes: gameModes.length, species: species.length, speciesWithBaseExperience: species.filter(item => Number.isInteger(item.baseExp)).length, experienceGrowthRates: Object.keys(experienceGrowthRates).length, fixedBossWaves: classicFixedBossWaves.length, fixedBattleWaves: classicFixedBattleWaves.length, trainers: trainers.length, trainerConfigs: trainers.filter(item => item.extensions.configStatus === 'NORMALIZED_SUBSET_WITH_RAW_PRESERVED').length, trainerPartyTemplates: trainerPartyTemplates.length, trainersWithStaticPartyTemplates: trainers.filter(item => item.trainerRules.partyTemplateStatus === 'STATIC_TEMPLATES').length, trainersWithDynamicPartyTemplateFunctions: trainers.filter(item => item.trainerRules.partyTemplateStatus === 'DYNAMIC_FUNCTION_PRESERVED').length, trainersWithSpeciesPools: trainers.filter(item => item.speciesPools.length > 0).length, trainerSpeciesPoolCandidates: trainers.reduce((total, trainer) => total + trainer.speciesPools.reduce((sum, pool) => sum + pool.candidates.length, 0), 0), forms: forms.length, freshProfileStarters: defaultStarterSymbols.length, eggMoveEntries: species.reduce((count, item) => count + (item.eggMoves?.length ?? 0), 0), moves: moves.length, abilities: abilities.length, items: items.length, modifierPoolEntries: modifierPools.length, dynamicModifierWeights: modifierPools.filter(entry => entry.weight === null).length, locales: localeEntries.length }, skippedRecords: skippedMoves, warnings: [...species.filter(item => !Number.isInteger(item.baseExp)).map(item => ({ domain: 'species', id: item.id, classification: 'MISSING_IN_UPSTREAM', field: 'baseExp' })), ...trainers.filter(item => item.extensions.configStatus === 'MISSING_IN_UPSTREAM').map(item => ({ domain: 'trainer', id: item.id, classification: 'MISSING_IN_UPSTREAM', field: 'trainerConfig' })), ...trainers.filter(item => item.extensions.localizationStatus !== 'RESOLVED').map(item => ({ domain: 'trainer', id: item.id, classification: 'MISSING_IN_UPSTREAM', field: 'trainerClassLocale' }))], unknownFields: { observedSourceFieldNames: [...unknownFieldNames].sort(), preservedRawRecordCount: species.length + forms.length + moves.length + abilities.length + items.length + trainers.filter(item => item.extensions.upstreamConfig).length + trainerPartyTemplates.length, trainerConfigSemantics: 'supported declarative subset normalized; all raw records preserved; callbacks remain NOT_IMPORTED', trainerPartyTemplateSemantics: 'unknown constructor behavior retained as raw source; supported declarative fields normalized', abilityAttributeSemantics: 'preserved raw; not interpreted', modifierEffectSemantics: 'preserved raw; not interpreted' }, provenance: sourceRows, assetReferences: { verifiedManifests: assetRefs.length, verifiedImages: 0, pendingMetadataVerification: species.length - assetRefs.length, pendingImageVerification: species.length } };
+    const report = { schemaVersion: '1.0.0', sourceRevisions: { pokerogue: game.revision, assets: repos['pokerogue-assets'].revision, locales: repos['pokerogue-locales'].revision }, contentHash: canonicalContent.hash(), catalogCounts: { modes: gameModes.length, species: species.length, speciesWithBaseExperience: species.filter(item => Number.isInteger(item.baseExp)).length, experienceGrowthRates: Object.keys(experienceGrowthRates).length, fixedBossWaves: classicFixedBossWaves.length, fixedBattleWaves: classicFixedBattleWaves.length, trainers: trainers.length, trainerConfigs: trainers.filter(item => item.extensions.configStatus === 'NORMALIZED_SUBSET_WITH_RAW_PRESERVED').length, trainerPartyTemplates: trainerPartyTemplates.length, trainersWithStaticPartyTemplates: trainers.filter(item => item.trainerRules.partyTemplateStatus === 'STATIC_TEMPLATES').length, trainersWithDynamicPartyTemplateFunctions: trainers.filter(item => item.trainerRules.partyTemplateStatus === 'DYNAMIC_FUNCTION_PRESERVED').length, trainersWithSpeciesPools: trainers.filter(item => item.speciesPools.length > 0).length, trainerSpeciesPoolCandidates: trainers.reduce((total, trainer) => total + trainer.speciesPools.reduce((sum, pool) => sum + pool.candidates.length, 0), 0), forms: forms.length, freshProfileStarters: defaultStarterSymbols.length, eggMoveEntries: species.reduce((count, item) => count + (item.eggMoves?.length ?? 0), 0), moves: moves.length, trainerMoveSupercedencePairs: supercededMovePairs.length, abilities: abilities.length, items: items.length, modifierPoolEntries: modifierPools.length, dynamicModifierWeights: modifierPools.filter(entry => entry.weight === null).length, locales: localeEntries.length }, skippedRecords: skippedMoves, warnings: [...species.filter(item => !Number.isInteger(item.baseExp)).map(item => ({ domain: 'species', id: item.id, classification: 'MISSING_IN_UPSTREAM', field: 'baseExp' })), ...trainers.filter(item => item.extensions.configStatus === 'MISSING_IN_UPSTREAM').map(item => ({ domain: 'trainer', id: item.id, classification: 'MISSING_IN_UPSTREAM', field: 'trainerConfig' })), ...trainers.filter(item => item.extensions.localizationStatus !== 'RESOLVED').map(item => ({ domain: 'trainer', id: item.id, classification: 'MISSING_IN_UPSTREAM', field: 'trainerClassLocale' }))], unknownFields: { observedSourceFieldNames: [...unknownFieldNames].sort(), preservedRawRecordCount: species.length + forms.length + moves.length + abilities.length + items.length + trainers.filter(item => item.extensions.upstreamConfig).length + trainerPartyTemplates.length, trainerConfigSemantics: 'supported declarative subset normalized; all raw records preserved; callbacks remain NOT_IMPORTED', trainerPartyTemplateSemantics: 'unknown constructor behavior retained as raw source; supported declarative fields normalized', abilityAttributeSemantics: 'preserved raw; not interpreted', modifierEffectSemantics: 'preserved raw; not interpreted' }, provenance: sourceRows, assetReferences: { verifiedManifests: assetRefs.length, verifiedImages: 0, pendingMetadataVerification: species.length - assetRefs.length, pendingImageVerification: species.length } };
     const result = { sourceType: CanonicalSourceType.UPSTREAM, sourceSnapshot: snapshot, canonicalContent, runtimeContent: new (await import('./CanonicalDataContract.js')).RuntimeContent({ canonicalContent }), gameModes, species, forms, moves, abilities, items, locales: localeEntries, enums: enumCatalogs, importReport: report, manifest: this.manifest };
     this.canonicalImportCache = { key: cacheKey, result };
     return result;

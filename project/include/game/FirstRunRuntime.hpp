@@ -49,6 +49,8 @@ struct PresentationContext {
     bool trainerPartyConstructorResolved = false;
     uint16_t trainerPartyLevelMoveCounts[6]{};
     bool trainerPartyLevelMovesResolved = false;
+    uint16_t trainerPartySupersededMoveCounts[6]{};
+    bool trainerPartySupercedenceResolved = false;
     uint16_t trainerPartyHardEligibleMoveCounts[6]{};
     bool trainerPartyHardMoveFilterResolved = false;
     ResolvedPokemon player;

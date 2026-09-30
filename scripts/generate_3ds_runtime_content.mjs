@@ -18,6 +18,20 @@ if (!report.contentHash || !report.sourceRevisions?.pokerogue || content.collect
 const field = value => String(value ?? '').replaceAll('\\', '\\\\').replaceAll('"', '\\"').replaceAll('\r', '\\r').replaceAll('\n', '\\n').replaceAll('\t', '\\t');
 const entityRows = records => records.map(item => `    {"${field(item.id)}", "${field(item.name ?? item.names?.en ?? item.extensions?.localeValue ?? item.value?.name ?? (typeof item.value === 'string' ? item.value : ''))}", "${field(item.provenance?.sourcePath ?? item.source?.sourcePath ?? item.metadata?.sourcePath ?? '')}", "${field(item.provenance?.sourceSymbol ?? item.source?.sourceSymbol ?? item.metadata?.sourceSymbol ?? '')}", "${field(item.provenance?.sourceHash ?? item.source?.sourceHash ?? item.metadata?.sourceHash ?? '')}"}`).join(',\n');
 const collections = content.collections;
+const supercedence = content.extensions?.trainerMoveSupercedence;
+if (!Array.isArray(supercedence?.pairs) || !supercedence.pairs.length ||
+    supercedence.provenance?.sourcePath !== 'src/data/balance/moves/superceded-moves.ts' ||
+    supercedence.provenance?.sourceSymbol !== 'SUPERCEDED_MOVES' ||
+    !supercedence.provenance?.sourceHash) {
+  throw new Error('Pinned trainer move supercedence or provenance is missing');
+}
+const catalogMoveIds = new Set(collections.moves.map(move => move.moveId));
+for (const pair of supercedence.pairs) {
+  if (!catalogMoveIds.has(pair.moveId) || !catalogMoveIds.has(pair.replacementMoveId))
+    throw new Error(`Trainer move supercedence references a missing canonical move: ${JSON.stringify(pair)}`);
+}
+const supercedenceRows = supercedence.pairs.map(pair =>
+  `    {${pair.moveId}, ${pair.replacementMoveId}}`).join(',\n');
 const experienceRates = content.extensions?.pokemonExperience?.growthRates;
 const growthRateNames = ['ERRATIC', 'FAST', 'MEDIUM_FAST', 'MEDIUM_SLOW', 'SLOW', 'FLUCTUATING'];
 if (!experienceRates || growthRateNames.some(rate => !Array.isArray(experienceRates[rate]) || experienceRates[rate].length !== 100 || experienceRates[rate].some(value => !Number.isInteger(value) || value < 0 || value > 0xFFFFFFFF))) {
@@ -547,6 +561,12 @@ const atlasHeader = runtimeHeader
   .replace('struct SpeciesLevelMove {', 'struct PokemonSpriteAtlas { uint16_t speciesDex; uint16_t width; uint16_t height; uint32_t frameOffset; uint16_t frameCount; const char* manifestPath; const char* imagePath; const char* manifestHash; }; struct PokemonSpriteFrame { const char* filename; uint16_t x; uint16_t y; uint16_t width; uint16_t height; uint16_t sourceWidth; uint16_t sourceHeight; uint16_t trimX; uint16_t trimY; }; struct SpeciesLevelMove {')
   .replace('inline constexpr Entity kLocales[] = {', `inline constexpr PokemonSpriteFrame kPokemonSpriteFrames[] = {\n${spriteFrameRows}\n};\ninline constexpr PokemonSpriteAtlas kPokemonSpriteAtlases[] = {\n${spriteAtlasRows}\n};\ninline constexpr Entity kLocales[] = {`)
   .replace('inline constexpr std::size_t kLocaleCount = sizeof(kLocales) / sizeof(kLocales[0]);', 'inline constexpr std::size_t kLocaleCount = sizeof(kLocales) / sizeof(kLocales[0]); inline constexpr std::size_t kPokemonSpriteFrameCount = sizeof(kPokemonSpriteFrames) / sizeof(kPokemonSpriteFrames[0]); inline constexpr std::size_t kPokemonSpriteAtlasCount = sizeof(kPokemonSpriteAtlases) / sizeof(kPokemonSpriteAtlases[0]); inline constexpr const PokemonSpriteAtlas* findPokemonSpriteAtlas(uint16_t dex) { for (const auto& atlas : kPokemonSpriteAtlases) if (atlas.speciesDex == dex) return &atlas; return nullptr; }');
+const trainerMoveHeader = atlasHeader
+  .replace('struct MoveAttribute {', 'struct MoveSupercedence { uint16_t moveId; uint16_t replacementMoveId; }; struct MoveAttribute {')
+  .replace('inline constexpr SpeciesLevelMove kSpeciesLevelMoves[] = {',
+    `inline constexpr MoveSupercedence kMoveSupercedence[] = {\n${supercedenceRows}\n};\ninline constexpr char kMoveSupercedenceSourcePath[] = "${field(supercedence.provenance.sourcePath)}";\ninline constexpr char kMoveSupercedenceSourceHash[] = "${field(supercedence.provenance.sourceHash)}";\ninline constexpr SpeciesLevelMove kSpeciesLevelMoves[] = {`)
+  .replace('inline constexpr std::size_t kSpeciesLevelMoveCount =',
+    'inline constexpr std::size_t kMoveSupercedenceCount = sizeof(kMoveSupercedence) / sizeof(kMoveSupercedence[0]);\ninline constexpr std::size_t kSpeciesLevelMoveCount =');
 await fs.mkdir(path.dirname(outputPath), { recursive: true });
-await fs.writeFile(outputPath, atlasHeader, 'utf8');
-console.log(JSON.stringify({ output: path.relative(root, outputPath), bytes: Buffer.byteLength(atlasHeader), hash: report.contentHash }));
+await fs.writeFile(outputPath, trainerMoveHeader, 'utf8');
+console.log(JSON.stringify({ output: path.relative(root, outputPath), bytes: Buffer.byteLength(trainerMoveHeader), hash: report.contentHash }));

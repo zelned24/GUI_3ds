@@ -533,11 +533,13 @@ void FirstRunRuntime::resolve(bool carryPlayer) {
     m_context.trainerPartySpeciesResolved = false;
     m_context.trainerPartyConstructorResolved = false;
     m_context.trainerPartyLevelMovesResolved = false;
+    m_context.trainerPartySupercedenceResolved = false;
     m_context.trainerPartyHardMoveFilterResolved = false;
     for (auto& level : m_context.trainerPartyLevels) level = 0;
     for (auto& member : m_context.trainerParty) member = {};
     for (auto& state : m_trainerConstructorRngStates) state = {};
     for (auto& count : m_context.trainerPartyLevelMoveCounts) count = 0;
+    for (auto& count : m_context.trainerPartySupersededMoveCounts) count = 0;
     for (auto& count : m_context.trainerPartyHardEligibleMoveCounts) count = 0;
     const auto& starter = PokerogueContent::kSpecies[m_starterIndex];
     m_run.starterDex = starter.dex;
@@ -672,6 +674,7 @@ void FirstRunRuntime::resolve(bool carryPlayer) {
                         bool allSpeciesResolved = true;
                         bool allConstructorsResolved = true;
                         bool allLevelMovesResolved = true;
+                        bool allSupercedenceResolved = true;
                         bool allHardMoveFiltersResolved = true;
                         for (uint8_t i = 0; i < levels.count; ++i) {
                             uint32_t memberOffset = 0;
@@ -727,10 +730,20 @@ void FirstRunRuntime::resolve(bool carryPlayer) {
                             }
                             m_context.trainerPartyLevelMoveCounts[i] =
                                 static_cast<uint16_t>(levelMoveCount);
+                            PokemonLevelMoveCandidate nonSupercededMoves[128]{};
+                            std::size_t nonSupercededCount = 0;
+                            if (filterTrainerSupercededLevelMoves(levelMoves,
+                                    levelMoveCount, nonSupercededMoves, 128,
+                                    nonSupercededCount) != PokemonTrainerMoveFilterResult::Ok) {
+                                allSupercedenceResolved = false;
+                                continue;
+                            }
+                            m_context.trainerPartySupersededMoveCounts[i] =
+                                static_cast<uint16_t>(nonSupercededCount);
                             PokemonLevelMoveCandidate eligibleMoves[128]{};
                             std::size_t eligibleCount = 0;
-                            if (filterTrainerHardForbiddenLevelMoves(levelMoves,
-                                    levelMoveCount, eligibleMoves, 128, eligibleCount) !=
+                            if (filterTrainerHardForbiddenLevelMoves(nonSupercededMoves,
+                                    nonSupercededCount, eligibleMoves, 128, eligibleCount) !=
                                 PokemonTrainerMoveFilterResult::Ok) {
                                 allHardMoveFiltersResolved = false;
                                 continue;
@@ -743,14 +756,16 @@ void FirstRunRuntime::resolve(bool carryPlayer) {
                             allSpeciesResolved && allConstructorsResolved;
                         m_context.trainerPartyLevelMovesResolved =
                             m_context.trainerPartyConstructorResolved && allLevelMovesResolved;
+                        m_context.trainerPartySupercedenceResolved =
+                            m_context.trainerPartyLevelMovesResolved && allSupercedenceResolved;
                         m_context.trainerPartyHardMoveFilterResolved =
-                            m_context.trainerPartyLevelMovesResolved && allHardMoveFiltersResolved;
+                            m_context.trainerPartySupercedenceResolved && allHardMoveFiltersResolved;
                     }
                 }
                 m_battleFeedback = m_context.trainerPartyHardMoveFilterResolved
                     ? "Trainer move weights, IVs and battle pending"
                     : m_context.trainerPartyLevelMovesResolved
-                    ? "Trainer hard move filter unsupported"
+                    ? "Trainer move-filter metadata unsupported"
                     : m_context.trainerPartyConstructorResolved
                     ? "Trainer level-move metadata unsupported"
                     : m_context.trainerPartySpeciesResolved
