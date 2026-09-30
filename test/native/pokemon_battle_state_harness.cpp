@@ -4,6 +4,7 @@
 #include "game/PokemonWildMovesetGenerator.hpp"
 #include "game/PokemonStarterMoveset.hpp"
 #include "game/PokemonTrainerAi.hpp"
+#include "game/PokemonStatStageEffect.hpp"
 #include "game/PokerogueTurnOrder.hpp"
 #include "game/PokemonExperience.hpp"
 #include "game/PokerogueRngAdapter.hpp"
@@ -260,6 +261,26 @@ extern "C" int runPokemonBattleStateChecks() {
         }
     }
     if (!sawGrowlEffect || !sawSwordsDanceEffect) return 220;
+    PokemonBattleState effectRecipient = state;
+    Pokerogue3DS::PokemonStatStageEffectPolicy stagePolicy{};
+    Pokerogue3DS::PokemonStatStageEffectEvent stageEvent{};
+    const PokerogueContent::MoveStatStageEffect growlEffect{45, 1, -1, false};
+    if (Pokerogue3DS::applyPokemonStatStageEffect(effectRecipient, growlEffect, stagePolicy,
+            replacementRng, stageEvent) != Pokerogue3DS::PokemonStatStageEffectResult::UnresolvedPolicy ||
+        effectRecipient.statStages[0]) return 221;
+    stagePolicy.resolved = true;
+    if (Pokerogue3DS::applyPokemonStatStageEffect(effectRecipient, growlEffect, stagePolicy,
+            replacementRng, stageEvent) != Pokerogue3DS::PokemonStatStageEffectResult::Ok ||
+        effectRecipient.statStages[0] != -1 || stageEvent.changes[0] != -1 ||
+        stageEvent.changedStatMask != 1) return 222;
+    stagePolicy.stageMultiplier = -1;
+    if (Pokerogue3DS::applyPokemonStatStageEffect(effectRecipient, growlEffect, stagePolicy,
+            replacementRng, stageEvent) != Pokerogue3DS::PokemonStatStageEffectResult::Ok ||
+        effectRecipient.statStages[0] != 0 || stageEvent.changes[0] != 1) return 223;
+    stagePolicy.cancelledStatMask = 1;
+    if (Pokerogue3DS::applyPokemonStatStageEffect(effectRecipient, growlEffect, stagePolicy,
+            replacementRng, stageEvent) != Pokerogue3DS::PokemonStatStageEffectResult::Ok ||
+        stageEvent.changedStatMask || effectRecipient.statStages[0]) return 224;
     PokemonBattleInit actorIdInput = input;
     actorIdInput.pokemonId = 0x12345678u;
     actorIdInput.deriveIvsFromPokemonId = true;
