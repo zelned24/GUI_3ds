@@ -752,6 +752,16 @@ extern "C" int runPokemonBattleStateChecks() {
     weatherContext.effectiveWeather = PokemonEffectiveWeather::None;
     if (!Pokerogue3DS::pokemonMoveWeatherMultiplier(876, weatherContext, weatherMultiplier) ||
         weatherMultiplier != 1.0) return 331;
+    uint8_t criticalDenominator = 0;
+    if (!Pokerogue3DS::pokemonMoveCriticalDenominator(33, criticalDenominator) ||
+        criticalDenominator != 24) return 332;
+    if (!Pokerogue3DS::pokemonMoveCriticalDenominator(2, criticalDenominator) ||
+        criticalDenominator != 8) return 333;
+    if (!Pokerogue3DS::pokemonMoveCriticalDenominator(480, criticalDenominator) ||
+        criticalDenominator != 1) return 334;
+    double highCritAiScore = 0;
+    if (!Pokerogue3DS::calculatePlainAttackAiScore(1.0, 100, 100, 40, 100, false,
+            highCritAiScore, 3.0) || highCritAiScore != 11.0) return 335;
     PokemonBattleInit actorIdInput = input;
     actorIdInput.pokemonId = 0x12345678u;
     actorIdInput.deriveIvsFromPokemonId = true;
@@ -919,6 +929,20 @@ extern "C" int runPokemonBattleStateChecks() {
     if (resolvedWeather.effectiveWeather != PokemonEffectiveWeather::Sunny ||
         resolvedWeather.cancellationWeather != PokemonEffectiveWeather::None) return 290;
 
+    PokerogueRngAdapter guaranteedCritRng = actionRng;
+    PokerogueRngAdapter expectedGuaranteedCritRng = guaranteedCritRng;
+    (void)expectedGuaranteedCritRng.randSeedInt(100); // Storm Throw accuracy100.
+    const auto expectedGuaranteedDamageRoll = expectedGuaranteedCritRng.randSeedIntRange(85, 100);
+    PokemonMoveDamageRoll guaranteedCritRoll{};
+    if (Pokerogue3DS::resolveStandardPokemonMoveDamage(state, state, 480, false,
+            guaranteedCritRng, guaranteedCritRoll) != PokemonMoveDamageResult::Ok ||
+        !guaranteedCritRoll.hit || !guaranteedCritRoll.critical || guaranteedCritRoll.criticalWasRolled ||
+        guaranteedCritRoll.randomDamagePercent != expectedGuaranteedDamageRoll) return 336;
+    const auto actualGuaranteedState = guaranteedCritRng.state();
+    const auto expectedGuaranteedState = expectedGuaranteedCritRng.state();
+    if (actualGuaranteedState.carry != expectedGuaranteedState.carry ||
+        actualGuaranteedState.s0 != expectedGuaranteedState.s0 || actualGuaranteedState.s1 != expectedGuaranteedState.s1 ||
+        actualGuaranteedState.s2 != expectedGuaranteedState.s2) return 337;
     PokemonBattleState noPpActor = state;
     noPpActor.moves[0].pp = 0;
     PokemonBattleState unchangedTarget = state;

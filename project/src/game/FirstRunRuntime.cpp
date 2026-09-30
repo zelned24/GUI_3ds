@@ -336,13 +336,15 @@ namespace {
 bool supportsBaselineBattleMove(uint16_t moveId) {
     const auto* move = PokerogueContent::findMoveById(moveId);
     // This first resolver only executes plain, single-target damaging moves.
-    // Only plain damage and the migrated weather-multiplier attribute are
+    // Only plain damage or a single migrated weather/critical attribute is
     // eligible; other declared attributes/flags still need their own port.
     return move && move->category != PokerogueContent::MoveStatus && move->power > 0 &&
         move->type && move->target && std::strcmp(move->target, "NEAR_OTHER") == 0 &&
         move->upstreamFlags == 0 &&
         (move->attributeCount == 0 || (move->attributeCount == 1 &&
-            PokerogueContent::moveHasAttribute(*move, "OverrideWeatherMultiplierAttr")));
+            (PokerogueContent::moveHasAttribute(*move, "OverrideWeatherMultiplierAttr") ||
+             PokerogueContent::moveHasAttribute(*move, "HighCritAttr") ||
+             PokerogueContent::moveHasAttribute(*move, "CritOnlyAttr"))));
 }
 
 double baselineEnemyMoveScore(const PokemonBattleState& user,
@@ -367,8 +369,10 @@ double baselineEnemyMoveScore(const PokemonBattleState& user,
     const bool stab = sameTrainerMoveType(type1, move.type) ||
         (type2 && !sameTrainerMoveType(type2, "NONE") && sameTrainerMoveType(type2, move.type));
     double score = -20.0;
+    const double critBenefit = PokerogueContent::moveHasAttribute(move, "HighCritAttr") ? 3.0 :
+        PokerogueContent::moveHasAttribute(move, "CritOnlyAttr") ? 5.0 : 0.0;
     if (!calculatePlainAttackAiScore(effectiveness, selectedStat, otherStat,
-            move.power, move.accuracy, stab, score)) return -20.0;
+            move.power, move.accuracy, stab, score, critBenefit)) return -20.0;
     return score;
 }
 

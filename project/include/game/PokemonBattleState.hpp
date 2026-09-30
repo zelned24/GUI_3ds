@@ -326,12 +326,15 @@ PokemonDamageCoreResult calculatePokemonDamageCore(
     uint32_t& outputDamage,
     const PokemonMoveWeatherContext* weatherContext = nullptr);
 
+bool pokemonMoveCriticalDenominator(uint16_t moveId, uint8_t& outputDenominator);
+
 struct PokemonMoveDamageRoll {
     bool hit = false;
     bool critical = false;
     bool accuracyWasRolled = false;
     uint8_t accuracyRoll = 0;
     uint8_t criticalRoll = 0;
+    bool criticalWasRolled = false;
     uint8_t randomDamagePercent = 0;
     double typeEffectiveness = 1.0;
     uint32_t damage = 0;

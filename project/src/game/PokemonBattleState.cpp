@@ -849,6 +849,20 @@ PokemonDamageCoreResult calculatePokemonDamageCore(
     return PokemonDamageCoreResult::Ok;
 }
 
+bool pokemonMoveCriticalDenominator(uint16_t moveId, uint8_t& outputDenominator) {
+    const auto* move = PokerogueContent::findMoveById(moveId);
+    if (!move || move->category == PokerogueContent::MoveStatus || move->power <= 0 ||
+        move->attributeOffset > PokerogueContent::kMoveAttributeCount ||
+        move->attributeCount > PokerogueContent::kMoveAttributeCount - move->attributeOffset) return false;
+    uint8_t stage = 0;
+    for (uint16_t i = 0; i < move->attributeCount; ++i)
+        if (sameText(PokerogueContent::kMoveAttributes[move->attributeOffset + i].id, "HighCritAttr") && stage < 3)
+            ++stage;
+    static constexpr uint8_t denominators[4] = {24, 8, 2, 1};
+    outputDenominator = PokerogueContent::moveHasAttribute(*move, "CritOnlyAttr") ? 1 : denominators[stage];
+    return true;
+}
+
 PokemonMoveDamageResult resolveStandardPokemonMoveDamage(
     const PokemonBattleState& attacker,
     const PokemonBattleState& defender,
@@ -906,9 +920,16 @@ PokemonMoveDamageResult resolveStandardPokemonMoveDamage(
     next.hit = true;
 
     // Baseline hitCheck -> getCriticalHitResult -> damage RNG ordering:
-    // stage 0 is 1/24; the random damage factor is inclusive [85, 100].
-    next.criticalRoll = static_cast<uint8_t>(battleRng.randSeedInt(24));
-    next.critical = next.criticalRoll == 0;
+    // Canonical HighCrit raises the stage; CritOnly skips the critical draw.
+    // Stage0 is1/24; random damage is inclusive [85,100].
+    uint8_t criticalDenominator = 24;
+    if (!pokemonMoveCriticalDenominator(moveId, criticalDenominator)) return PokemonMoveDamageResult::InvalidStats;
+    next.critical = criticalDenominator == 1;
+    if (!next.critical) {
+        next.criticalWasRolled = true;
+        next.criticalRoll = static_cast<uint8_t>(battleRng.randSeedInt(criticalDenominator));
+        next.critical = next.criticalRoll == 0;
+    }
     if (next.critical && calculatePokemonBaseDamage(attacker, defender, moveId,
             baseDamage, true, weatherContext) != PokemonBaseDamageResult::Ok)
         return PokemonMoveDamageResult::InvalidStats;
