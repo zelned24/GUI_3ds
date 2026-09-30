@@ -2,6 +2,8 @@
 
 #include "game/PokemonBattleState.hpp"
 #include "game/PokerogueRngAdapter.hpp"
+#include <cmath>
+#include <cstring>
 
 namespace Pokerogue3DS {
 
@@ -94,6 +96,75 @@ inline PokemonStatStageEffectResult applyPokemonStatStageEffect(
         if (after != before) next.changedStatMask |= bit;
     }
     output = next;
+    return PokemonStatStageEffectResult::Ok;
+}
+
+struct PokemonStatStageMovePolicy {
+    bool hitPolicyResolved = false;
+    bool blockedBeforeAccuracy = false;
+    bool bypassAccuracy = false;
+    double accuracyMultiplier = 1.0;
+    PokemonStatStageEffectPolicy stagePolicy{};
+};
+
+struct PokemonStatStageMoveEvent {
+    bool hit = false;
+    bool accuracyRolled = false;
+    uint8_t accuracyRoll = 0;
+    PokemonStatStageEffectEvent stages{};
+};
+
+// One-target status action with a single constant StatStageChangeAttr.
+// Policy includes resolved immunity/protection/reflection and ability/field
+// interactions. Unsupported definitions do not consume PP or RNG.
+inline PokemonStatStageEffectResult usePokemonStatStageStatusMove(
+    PokemonBattleState& user, PokemonBattleState& target, uint8_t slot,
+    const PokemonStatStageMovePolicy& policy, PokerogueRngAdapter& battleRng,
+    PokemonStatStageMoveEvent& output) {
+    if (!policy.hitPolicyResolved || !policy.stagePolicy.resolved)
+        return PokemonStatStageEffectResult::UnresolvedPolicy;
+    if (slot >= user.moveCount || slot >= 4 || !user.moves[slot].pp || !user.hp)
+        return PokemonStatStageEffectResult::InvalidState;
+    const auto* move = PokerogueContent::findMoveById(user.moves[slot].moveId);
+    if (!move || move->category != PokerogueContent::MoveStatus || move->attributeCount != 1 ||
+        !PokerogueContent::moveHasAttribute(*move, "StatStageChangeAttr") ||
+        !move->target || move->accuracy < -1 || move->accuracy > 100 ||
+        !std::isfinite(policy.accuracyMultiplier) || policy.accuracyMultiplier < 0)
+        return PokemonStatStageEffectResult::InvalidDefinition;
+    const bool self = std::strcmp(move->target, "USER") == 0;
+    if (!self && std::strcmp(move->target, "NEAR_ENEMY") != 0 &&
+        std::strcmp(move->target, "ALL_NEAR_ENEMIES") != 0)
+        return PokemonStatStageEffectResult::InvalidDefinition;
+    if (!self && (!target.hp || &user == &target))
+        return PokemonStatStageEffectResult::InvalidState;
+    const PokerogueContent::MoveStatStageEffect* effect = nullptr;
+    for (const auto& entry : PokerogueContent::kMoveStatStageEffects)
+        if (entry.moveId == move->id) {
+            if (effect) return PokemonStatStageEffectResult::InvalidDefinition;
+            effect = &entry;
+        }
+    if (!effect) return PokemonStatStageEffectResult::InvalidDefinition;
+    PokemonBattleState nextUser = user, nextTarget = target;
+    PokerogueRngAdapter nextRng = battleRng;
+    PokemonStatStageMoveEvent event{};
+    // MoveTarget.USER bypasses all hit checks in MoveEffectPhase.hitCheck.
+    event.hit = self || !policy.blockedBeforeAccuracy;
+    if (event.hit && !self && move->accuracy >= 0 && !policy.bypassAccuracy) {
+        event.accuracyRolled = true;
+        event.accuracyRoll = static_cast<uint8_t>(nextRng.randSeedInt(100));
+        event.hit = event.accuracyRoll < move->accuracy * policy.accuracyMultiplier;
+    }
+    if (event.hit) {
+        auto& recipient = effect->selfTarget ? nextUser : nextTarget;
+        const auto result = applyPokemonStatStageEffect(recipient, *effect,
+            policy.stagePolicy, nextRng, event.stages);
+        if (result != PokemonStatStageEffectResult::Ok) return result;
+    }
+    --nextUser.moves[slot].pp;
+    user = nextUser;
+    if (&user != &target) target = nextTarget;
+    battleRng = nextRng;
+    output = event;
     return PokemonStatStageEffectResult::Ok;
 }
 

@@ -309,6 +309,27 @@ extern "C" int runPokemonBattleStateChecks() {
     if (!Pokerogue3DS::composePokemonStatStageAbilityPolicy(growlEffect,
             contraryAndProtection, 2, true, protectedPolicy) ||
         protectedPolicy.stageMultiplier != 1 || protectedPolicy.cancelledStatMask != 1) return 228;
+    PokemonBattleState growlUser = state, growlTarget = state;
+    growlUser.moves[0].moveId = 45;
+    growlUser.moves[0].pp = 40;
+    Pokerogue3DS::PokemonStatStageMovePolicy supportPolicy{};
+    Pokerogue3DS::PokemonStatStageMoveEvent supportEvent{};
+    if (Pokerogue3DS::usePokemonStatStageStatusMove(growlUser, growlTarget, 0,
+            supportPolicy, replacementRng, supportEvent) !=
+            Pokerogue3DS::PokemonStatStageEffectResult::UnresolvedPolicy ||
+        growlUser.moves[0].pp != 40) return 229;
+    supportPolicy.hitPolicyResolved = supportPolicy.stagePolicy.resolved = true;
+    if (Pokerogue3DS::usePokemonStatStageStatusMove(growlUser, growlTarget, 0,
+            supportPolicy, replacementRng, supportEvent) !=
+            Pokerogue3DS::PokemonStatStageEffectResult::Ok || !supportEvent.hit ||
+        !supportEvent.accuracyRolled || growlUser.moves[0].pp != 39 ||
+        growlTarget.statStages[0] != -1 || growlTarget.hp != state.hp) return 230;
+    supportPolicy.blockedBeforeAccuracy = true;
+    if (Pokerogue3DS::usePokemonStatStageStatusMove(growlUser, growlTarget, 0,
+            supportPolicy, replacementRng, supportEvent) !=
+            Pokerogue3DS::PokemonStatStageEffectResult::Ok || supportEvent.hit ||
+        supportEvent.accuracyRolled || growlUser.moves[0].pp != 38 ||
+        growlTarget.statStages[0] != -1) return 231;
     PokemonBattleInit actorIdInput = input;
     actorIdInput.pokemonId = 0x12345678u;
     actorIdInput.deriveIvsFromPokemonId = true;
