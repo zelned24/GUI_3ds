@@ -9,6 +9,7 @@
 #include "game/PokemonTrainerAi.hpp"
 #include "game/PokemonStatStageEffect.hpp"
 #include "game/PokemonHealingEffect.hpp"
+#include "game/PokemonRecoilEffect.hpp"
 #include "game/PokemonFreshProfile.hpp"
 #include "game/PokemonExperience.hpp"
 #include "game/PokemonStarterMoveset.hpp"
@@ -353,7 +354,7 @@ bool supportsSelfStatStageMove(uint16_t moveId) {
     return count == 1;
 }
 bool supportsBaselineBattleMove(uint16_t moveId) {
-    if (supportsPokemonTrickRoomMove(moveId) || supportsSelfStatStageMove(moveId) || selfHealingProfile(moveId) || damageDrainProfile(moveId)) return true;
+    if (supportsPokemonTrickRoomMove(moveId) || supportsSelfStatStageMove(moveId) || selfHealingProfile(moveId) || damageDrainProfile(moveId) || damageRecoilProfile(moveId)) return true;
     const auto* move = PokerogueContent::findMoveById(moveId);
     // This first resolver only executes plain, single-target damaging moves.
     // Only plain damage or a single migrated weather/critical attribute is
@@ -395,7 +396,7 @@ double baselineEnemyMoveScore(const PokemonBattleState& user,
         PokerogueContent::moveHasAttribute(move, "CritOnlyAttr") ? 5.0 : 0.0;
     if (!calculatePlainAttackAiScore(effectiveness, selectedStat, otherStat,
             move.power, move.accuracy, stab, score, critBenefit)) return -20.0;
-    return score + canonicalDamageDrainAiBenefit(user, move);
+    return score + canonicalDamageDrainAiBenefit(user, move) + canonicalRecoilAiBenefit(move);
 }
 
 }
@@ -813,6 +814,26 @@ bool FirstRunRuntime::executeActiveBattleMove(bool enemyActs, uint8_t moveSlot,
     if (!resolveActiveMoveWeather(enemyActs, weather) ||
         !composePokemonAlwaysHitPolicy(activeAbilities, 2, hit, move->id, &weather) ||
         !resolveActiveMoveCritical(enemyActs, critical)) return false;
+    if (damageRecoilProfile(move->id)) {
+        auto nextUser = user;
+        auto nextOpponent = opponent;
+        auto nextRng = rng;
+        PokemonMoveActionResult attack{};
+        if (useStandardPokemonMove(nextUser, nextOpponent, moveSlot, false, nextRng,
+            attack, &weather, &critical, &hit, &pp) != PokemonMoveActionStatus::Ok) return false;
+        const auto policy = canonicalFreshActorRecoilPolicy(user.abilityId);
+        PokemonRecoilEvent recoil{};
+        if (applyPokemonRecoil(nextUser, move->id, attack.damageApplied,
+            attack.damageRoll.hit && !attack.weatherCancelled, policy, recoil) != PokemonRecoilResult::Ok)
+            return false;
+        user = nextUser;
+        opponent = nextOpponent;
+        rng = nextRng;
+        m_battleFeedback = recoil.damage ? "Attack caused recoil" :
+            attack.weatherCancelled ? "Move blocked by weather" :
+            attack.damageRoll.hit ? "Attack hit" : "Attack missed";
+        return true;
+    }
     if (damageDrainProfile(move->id)) {
         // Liquid Ooze requires post-defend indirect-damage policies not yet in the run.
         if (hasCanonicalReverseDrain(opponent.abilityId)) return false;
@@ -857,7 +878,7 @@ bool FirstRunRuntime::finishBattleTurn() {
     }
     if (!m_context.enemy.battleState.hp || !m_context.player.battleState.hp) {
         m_battleFinished = true;
-        m_playerWon = m_context.enemy.battleState.hp == 0;
+        m_playerWon = m_context.enemy.battleState.hp == 0 && m_context.player.battleState.hp != 0;
         m_victoryPlan = {};
         if (m_playerWon && !planClassicVictory(m_run.wave, m_victoryPlan)) {
             m_battleFeedback = "Classic victory plan unavailable";

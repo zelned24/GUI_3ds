@@ -18,6 +18,9 @@
 4. `HitHealAttr` basado en daño: ratios constantes generados (incluido default 0.5), ataque+drenaje atómicos en el turno y beneficio de IA. Fuente pinned `src/data/moves/move.ts`, `HitHealAttr`; daño aplicado según `src/phases/move-effect-phase.ts`. Mínimo uno/floor, cap de HP y multiplicadores posteriores. No se ejecuta al fallar, inmunidad o daño cero.
 5. Resolver de Liquid Ooze conserva reversión, redondeo negativo de PokemonHealPhase y bloqueo de daño indirecto mediante policy; el flujo real todavía rechaza esta habilidad hasta conectar post-defend/indirect-damage completo. Strength Sap y atributos adicionales no se sustituyen por drain genérico. Regresiones 411–418 escritas, no ejecutadas.
 
+6. `RecoilAttr` constante: ratios/defaults y `useHp/unblockable` generados; resolver C++ + ataques simples conectados atómicamente al turno y score de IA. Rock Head/Magic Guard desde `BlockRecoilDamageAttr`/`BlockNonDirectDamageAbAttr` pinned. Fuente `src/data/moves/move.ts`, `RecoilAttr`, y `src/data/abilities/ab-attrs.ts`. Pruebas 419–426 escritas; sin ejecución. Struggle tiene perfil de retroceso preservado pero su ataque completo (typeless, target, fallback PP) sigue pendiente.
+7. Caída simultánea en el equipo actual de un solo Pokémon no se marca como victoria; `FaintPhase` upstream lleva a GameOver cuando no quedan Pokémon legales. Equipo completo, faint queue y estados de derrota/summary siguen pendientes.
+
 ## No completado
 
 1. Equipos completos, todos los efectos/status/abilities/items, dobles y entrenadores jugables. battleInputSupported mantiene bloqueo de entrenadores.

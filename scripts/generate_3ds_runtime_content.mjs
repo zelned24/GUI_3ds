@@ -934,5 +934,24 @@ const reverseDrainRows = collections.abilities.filter(ability =>
 ).map(ability => `    {${ability.abilityId}}`);
 const drainHeader = healingHeader.replace('struct MoveAttribute {',
   `struct MoveDrainProfile { uint16_t moveId; double ratio; };\ninline constexpr MoveDrainProfile kMoveDrainProfiles[] = {\n${drainRows.join(',\n')}\n};\nstruct ReverseDrainProfile { uint16_t abilityId; };\ninline constexpr ReverseDrainProfile kReverseDrainProfiles[] = {\n${reverseDrainRows.join(',\n')}\n};\nstruct MoveAttribute {`);
-await fs.writeFile(outputPath, drainHeader, 'utf8');
-console.log(JSON.stringify({ output: path.relative(root, outputPath), bytes: Buffer.byteLength(drainHeader), hash: report.contentHash }));
+const recoilRows = collections.moves.flatMap(move => {
+  const raw = move.extensions?.upstreamEffectMetadata?.value ?? '';
+  const declarations = [...raw.matchAll(/\.attr\s*\(\s*RecoilAttr\b/g)];
+  const parsed = [...raw.matchAll(/\.attr\s*\(\s*RecoilAttr(?:\s*,\s*(true|false))?(?:\s*,\s*(\d+(?:\.\d+)?))?(?:\s*,\s*(true|false))?\s*\)/g)];
+  if (!declarations.length || declarations.length !== parsed.length) return [];
+  return parsed.map(m => {
+    const ratio = m[2] === undefined ? 0.25 : Number(m[2]);
+    if (!(ratio > 0 && ratio <= 1)) throw new Error(`Invalid recoil ratio: ${move.id}`);
+    return `    {${move.moveId}, ${m[1] === 'true'}, ${ratio}, ${m[3] === 'true'}}`;
+  });
+});
+const recoilAbilityRows = collections.abilities.flatMap(ability => {
+  const raw = ability.extensions?.upstreamAttributes?.value ?? '';
+  const recoil = /\.attr\s*\(\s*BlockRecoilDamageAttr\s*\)/.test(raw);
+  const indirect = /\.attr\s*\(\s*BlockNonDirectDamageAbAttr\s*\)/.test(raw);
+  return recoil || indirect ? [`    {${ability.abilityId}, ${recoil}, ${indirect}}`] : [];
+});
+const recoilHeader = drainHeader.replace('struct MoveAttribute {',
+  `struct MoveRecoilProfile { uint16_t moveId; bool useMaxHp; double ratio; bool unblockable; };\ninline constexpr MoveRecoilProfile kMoveRecoilProfiles[] = {\n${recoilRows.join(',\n')}\n};\nstruct RecoilAbilityProfile { uint16_t abilityId; bool blocksRecoil; bool blocksIndirectDamage; };\ninline constexpr RecoilAbilityProfile kRecoilAbilityProfiles[] = {\n${recoilAbilityRows.join(',\n')}\n};\nstruct MoveAttribute {`);
+await fs.writeFile(outputPath, recoilHeader, 'utf8');
+console.log(JSON.stringify({ output: path.relative(root, outputPath), bytes: Buffer.byteLength(recoilHeader), hash: report.contentHash }));

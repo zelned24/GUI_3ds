@@ -442,6 +442,28 @@ struct ReverseDrainProfile { uint16_t abilityId; };
 inline constexpr ReverseDrainProfile kReverseDrainProfiles[] = {
     {64}
 };
+struct MoveRecoilProfile { uint16_t moveId; bool useMaxHp; double ratio; bool unblockable; };
+inline constexpr MoveRecoilProfile kMoveRecoilProfiles[] = {
+    {36, false, 0.25, false},
+    {38, false, 0.33, false},
+    {66, false, 0.25, false},
+    {165, true, 0.25, true},
+    {344, false, 0.33, false},
+    {394, false, 0.33, false},
+    {413, false, 0.33, false},
+    {452, false, 0.33, false},
+    {457, false, 0.5, false},
+    {528, false, 0.25, false},
+    {543, false, 0.25, false},
+    {617, false, 0.5, false},
+    {834, false, 0.33, false},
+    {835, true, 0.5, false}
+};
+struct RecoilAbilityProfile { uint16_t abilityId; bool blocksRecoil; bool blocksIndirectDamage; };
+inline constexpr RecoilAbilityProfile kRecoilAbilityProfiles[] = {
+    {69, true, false},
+    {98, false, true}
+};
 struct MoveAttribute { const char* id; };
 struct Move { uint16_t id; uint8_t category; int16_t power; int16_t accuracy; int16_t pp; int8_t priority; int16_t upstreamChance; uint8_t generation; uint16_t upstreamFlags; uint8_t multiHitType; uint32_t attributeOffset; uint16_t attributeCount; const char* key; const char* name; const char* type; const char* target; const char* sourcePath; const char* sourceSymbol; const char* sourceHash; };
 struct PokemonSpriteAtlas { uint16_t speciesDex; uint16_t width; uint16_t height; uint32_t frameOffset; uint16_t frameCount; const char* manifestPath; const char* imagePath; const char* manifestHash; }; struct PokemonSpriteFrame { const char* filename; uint16_t x; uint16_t y; uint16_t width; uint16_t height; uint16_t sourceWidth; uint16_t sourceHeight; uint16_t trimX; uint16_t trimY; }; struct SpeciesLevelMove { uint16_t speciesDex; int8_t level; uint16_t moveId; }; struct SpeciesEggMove { uint16_t speciesDex; uint16_t moveId; };

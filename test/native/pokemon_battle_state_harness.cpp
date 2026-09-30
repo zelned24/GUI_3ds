@@ -6,6 +6,7 @@
 #include "game/PokemonTrainerAi.hpp"
 #include "game/PokemonStatStageEffect.hpp"
 #include "game/PokemonHealingEffect.hpp"
+#include "game/PokemonRecoilEffect.hpp"
 #include "game/PokerogueTurnOrder.hpp"
 #include "game/PokemonExperience.hpp"
 #include "game/PokerogueRngAdapter.hpp"
@@ -97,6 +98,33 @@ extern "C" int runPokemonBattleStateChecks() {
     drainPolicy.reverseDrain = false; drainPolicy.healingMultiplier = 1; drainPolicy.healBlocked = true;
     if (Pokerogue3DS::applyPokemonDamageDrain(healing, absorbId, 3, drainPolicy, drainEvent) !=
         Pokerogue3DS::PokemonHealingResult::Ok || !drainEvent.blocked || healing.hp != 20) return 418;
+    uint16_t takeDownId = 0, struggleId = 0;
+    for (const auto& move : PokerogueContent::kMoves) {
+        if (std::strcmp(move.key, "take_down") == 0) takeDownId = move.id;
+        if (std::strcmp(move.key, "struggle") == 0) struggleId = move.id;
+    }
+    if (!takeDownId || !struggleId || !Pokerogue3DS::damageRecoilProfile(takeDownId) ||
+        !Pokerogue3DS::canonicalRecoilProfile(struggleId)) return 419;
+    healing.maxHp = 101; healing.hp = 80;
+    Pokerogue3DS::PokemonRecoilPolicy recoilPolicy{};
+    Pokerogue3DS::PokemonRecoilEvent recoilEvent{};
+    if (Pokerogue3DS::applyPokemonRecoil(healing, takeDownId, 11, true, recoilPolicy, recoilEvent) !=
+        Pokerogue3DS::PokemonRecoilResult::UnresolvedPolicy || healing.hp != 80) return 420;
+    recoilPolicy.resolved = true;
+    if (Pokerogue3DS::applyPokemonRecoil(healing, takeDownId, 11, true, recoilPolicy, recoilEvent) !=
+        Pokerogue3DS::PokemonRecoilResult::Ok || recoilEvent.damage != 2 || healing.hp != 78) return 421;
+    if (Pokerogue3DS::applyPokemonRecoil(healing, takeDownId, 1, true, recoilPolicy, recoilEvent) !=
+        Pokerogue3DS::PokemonRecoilResult::Ok || recoilEvent.damage != 1) return 422;
+    recoilPolicy.abilityBlocksRecoil = true;
+    if (Pokerogue3DS::applyPokemonRecoil(healing, takeDownId, 11, true, recoilPolicy, recoilEvent) !=
+        Pokerogue3DS::PokemonRecoilResult::Ok || !recoilEvent.blocked || recoilEvent.damage) return 423;
+    if (Pokerogue3DS::applyPokemonRecoil(healing, struggleId, 0, true, recoilPolicy, recoilEvent) !=
+        Pokerogue3DS::PokemonRecoilResult::Ok || recoilEvent.blocked || recoilEvent.damage != 25) return 424;
+    if (Pokerogue3DS::applyPokemonRecoil(healing, struggleId, 0, false, recoilPolicy, recoilEvent) !=
+        Pokerogue3DS::PokemonRecoilResult::Ok || recoilEvent.damage) return 425;
+    recoilPolicy.abilityBlocksRecoil = false; healing.hp = 1;
+    if (Pokerogue3DS::applyPokemonRecoil(healing, takeDownId, 11, true, recoilPolicy, recoilEvent) !=
+        Pokerogue3DS::PokemonRecoilResult::Ok || !recoilEvent.fainted || healing.hp) return 426;
     uint32_t awardedExperience = 99;
     if (Pokerogue3DS::pokemonSingleParticipantExperience(52.2, false, awardedExperience) !=
         Pokerogue3DS::PokemonExperienceResult::Ok || awardedExperience != 52) return 198;
