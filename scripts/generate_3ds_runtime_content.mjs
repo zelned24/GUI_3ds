@@ -431,6 +431,8 @@ const forms = collections.forms.map(form => {
   const learnset = formLearnsetRanges.get(form.id);
   return `    {"${field(form.id)}", "${field(form.speciesId)}", "${field(form.formKey)}", "${field(form.spriteAtlasKey ?? '')}", "${field(form.name)}", ${stats.hp}, ${stats.atk}, ${stats.def}, ${stats.spatk}, ${stats.spdef}, ${stats.spd}, ${abilities[0]}, ${abilities[1]}, ${abilities[2]}, ${learnset.offset}, ${learnset.count}, "${field(form.types[0])}", "${field(form.types[1] ?? '')}", "${field(form.provenance?.sourcePath ?? '')}", "${field(form.provenance?.sourceSymbol ?? '')}", "${field(form.provenance?.sourceHash ?? '')}"}`;
 }).join(',\n');
+const moveStatStageEffects = [];
+const upstreamStatIds = { ATK: 1, DEF: 2, SPATK: 3, SPDEF: 4, SPD: 5, ACC: 6, EVA: 7 };
 const moveAttributes = [];
 const moves = collections.moves.map(move => {
   const category = { Physical: 0, Special: 1, Status: 2 }[move.category];
@@ -446,6 +448,27 @@ const moves = collections.moves.map(move => {
   const parsedStatStages = [...upstreamRaw.matchAll(/\.attr\s*\(\s*StatStageChangeAttr\s*,\s*\[[^\]]*\]\s*,\s*(-?\d+)(?:\s*,\s*(true|false))?/g)];
   if (statStageDeclarations.length !== parsedStatStages.length)
     throw new Error(`Unsupported trainer stat-stage weighting metadata: ${move.id}`);
+  // Only complete constant constructors enter the native effect table.
+  // Options/callbacks remain preserved in canonical raw metadata and unsupported.
+  const constantStageEffects = [...upstreamRaw.matchAll(
+    /\.attr\s*\(\s*StatStageChangeAttr\s*,\s*\[([^\]]*)\]\s*,\s*(-?\d+)\s*(?:,\s*(true|false)\s*)?\)/g
+  )];
+  if (constantStageEffects.length === statStageDeclarations.length) {
+    const parsed = constantStageEffects.map(match => {
+      const names = match[1].split(',').map(name => name.trim()).filter(Boolean);
+      let statMask = 0;
+      for (const name of names) {
+        const id = upstreamStatIds[name.replace(/^Stat\./, '')];
+        if (!/^Stat\.[A-Z]+$/.test(name) || !id) return null;
+        statMask |= 1 << (id - 1);
+      }
+      const stages = Number(match[2]);
+      if (!statMask || !Number.isInteger(stages) || stages < -6 || stages > 6) return null;
+      return { statMask, stages, selfTarget: match[3] === 'true' };
+    });
+    if (parsed.every(Boolean)) for (const effect of parsed)
+      moveStatStageEffects.push(`    {${move.moveId}, ${effect.statMask}, ${effect.stages}, ${effect.selfTarget}}`);
+  }
   const strongSelfStatBoost = parsedStatStages.some(match => Number(match[1]) > 1 && match[2] === 'true');
   const sourceAttributes = Array.isArray(move.upstreamAttributes)
     ? move.upstreamAttributes
@@ -624,5 +647,9 @@ const trainerMoveHeader = atlasHeader
   .replace('inline constexpr SpeciesLevelMove kSpeciesLevelMoves[] = {',
     `inline constexpr uint16_t kForbiddenSinglesMoveIds[] = {\n${moveBlocklistRows('singles')}\n};\ninline constexpr uint16_t kLevelBasedDeniedMoveIds[] = {\n${moveBlocklistRows('levelBased')}\n};\ninline constexpr uint16_t kForbiddenTmMoveIds[] = {\n${moveBlocklistRows('tm')}\n};\ninline constexpr char kMoveBlocklistsSourcePath[] = "${field(moveBlocklists.provenance.sourcePath)}";\ninline constexpr char kMoveBlocklistsSourceHash[] = "${field(moveBlocklists.provenance.sourceHash)}";\ninline constexpr ForcedSignatureMove kForcedSignatureMoves[] = {\n${signatureRows}\n};\ninline constexpr uint8_t kForcedSignatureMoveChance = ${forcedSignatures.chancePercent};\ninline constexpr char kForcedSignatureSourcePath[] = "${field(forcedSignatures.provenance.sourcePath)}";\ninline constexpr char kForcedSignatureSourceHash[] = "${field(forcedSignatures.provenance.sourceHash)}";\ninline constexpr SpeciesLevelMove kSpeciesLevelMoves[] = {`);
 await fs.mkdir(path.dirname(outputPath), { recursive: true });
-await fs.writeFile(outputPath, trainerMoveHeader, 'utf8');
-console.log(JSON.stringify({ output: path.relative(root, outputPath), bytes: Buffer.byteLength(trainerMoveHeader), hash: report.contentHash }));
+const statStageHeader = trainerMoveHeader.replace(
+  'struct MoveAttribute {',
+  `struct MoveStatStageEffect { uint16_t moveId; uint8_t statMask; int8_t stages; bool selfTarget; };\ninline constexpr MoveStatStageEffect kMoveStatStageEffects[] = {\n${moveStatStageEffects.join(',\n')}\n};\ninline constexpr std::size_t kMoveStatStageEffectCount = sizeof(kMoveStatStageEffects) / sizeof(kMoveStatStageEffects[0]);\nstruct MoveAttribute {`
+);
+await fs.writeFile(outputPath, statStageHeader, 'utf8');
+console.log(JSON.stringify({ output: path.relative(root, outputPath), bytes: Buffer.byteLength(statStageHeader), hash: report.contentHash }));

@@ -246,6 +246,20 @@ extern "C" int runPokemonBattleStateChecks() {
     if (!Pokerogue3DS::setPokemonStatStage(fastActor, 5, 6) ||
         !Pokerogue3DS::pokemonBaselineEffectiveStat(fastActor, 5, false, effectiveSpeed) ||
         effectiveSpeed != 262140) return 216;
+    bool sawGrowlEffect = false, sawSwordsDanceEffect = false;
+    for (const auto& effect : PokerogueContent::kMoveStatStageEffects) {
+        if (!PokerogueContent::findMoveById(effect.moveId) || !effect.statMask ||
+            effect.statMask > 127 || effect.stages < -6 || effect.stages > 6) return 217;
+        if (effect.moveId == 45) {
+            if (effect.statMask != 1 || effect.stages != -1 || effect.selfTarget) return 218;
+            sawGrowlEffect = true;
+        }
+        if (effect.moveId == 14) {
+            if (effect.statMask != 1 || effect.stages != 2 || !effect.selfTarget) return 219;
+            sawSwordsDanceEffect = true;
+        }
+    }
+    if (!sawGrowlEffect || !sawSwordsDanceEffect) return 220;
     PokemonBattleInit actorIdInput = input;
     actorIdInput.pokemonId = 0x12345678u;
     actorIdInput.deriveIvsFromPokemonId = true;
