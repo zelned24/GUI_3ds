@@ -70,6 +70,7 @@ bool QuickJSBridge::init(Renderer2D& renderer) {
     const Binding bindings[] = {
         {"_3ds_beginTop", beginTop, 0}, {"_3ds_beginBottom", beginBottom, 0},
         {"_3ds_clear", clear, 1}, {"_3ds_drawImage", drawImage, 6},
+        {"_3ds_getBattleState", getBattleState, 0}, {"_3ds_drawText", drawText, 5},
         {"_3ds_preload", preload, 1}, {"_3ds_saveGame", saveGame, 1}, {"_3ds_loadGame", loadGame, 0}
     };
     bool ok = true;
@@ -127,6 +128,37 @@ void QuickJSBridge::tick(uint32_t keysDown) {
     if (JS_IsException(result)) captureException();
     else JS_FreeValue(m_context, result);
     // Async jobs intentionally not executed: bundle contract is synchronous per frame.
+}
+bool QuickJSBridge::setBattleStateJson(const char* json, size_t length) {
+    // Never truncate a JSON record into an invalid snapshot; preserve the last valid one.
+    if (!json || length >= sizeof(m_battleStateJson) || std::memchr(json, 0, length)) return false;
+    std::memcpy(m_battleStateJson, json, length);
+    m_battleStateJson[length] = 0;
+    return true;
+}
+JSValue QuickJSBridge::getBattleState(JSContext* ctx, JSValueConst, int, JSValueConst*) {
+    auto* bridge = static_cast<QuickJSBridge*>(JS_GetContextOpaque(ctx));
+    if (!bridge) return JS_ThrowInternalError(ctx, "Bridge unavailable");
+    return JS_NewString(ctx, bridge->m_battleStateJson[0] ? bridge->m_battleStateJson : "{}");
+}
+JSValue QuickJSBridge::drawText(JSContext* ctx, JSValueConst, int argc, JSValueConst* argv) {
+    auto* bridge = static_cast<QuickJSBridge*>(JS_GetContextOpaque(ctx));
+    if (!bridge || !bridge->m_inTick || !bridge->m_screenWidth || argc != 5 || !JS_IsString(argv[0]))
+        return JS_ThrowTypeError(ctx, "drawText requires active screen and five arguments");
+    double x, y, scale; uint32_t color;
+    if (!number(ctx, argv[1], x) || !number(ctx, argv[2], y) || !number(ctx, argv[3], scale))
+        return JS_ThrowTypeError(ctx, "Text coordinates and scale must be finite");
+    if (JS_ToUint32(ctx, &color, argv[4]) < 0) return JS_EXCEPTION;
+    if (x < 0 || x >= bridge->m_screenWidth || y < 0 || y >= 240 || scale <= 0 || scale > 2)
+        return JS_ThrowRangeError(ctx, "Text outside screen contract");
+    size_t length;
+    const char* text = JS_ToCStringLen(ctx, &length, argv[0]);
+    if (!text) return JS_EXCEPTION;
+    if (length > 512) { JS_FreeCString(ctx, text); return JS_ThrowRangeError(ctx, "Text exceeds HUD line limit"); }
+    bridge->m_renderer->drawText(text, static_cast<float>(x), static_cast<float>(y),
+        static_cast<float>(scale), color);
+    JS_FreeCString(ctx, text);
+    return JS_UNDEFINED;
 }
 void QuickJSBridge::fini() {
     if (m_context) {

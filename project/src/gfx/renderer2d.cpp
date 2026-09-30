@@ -266,3 +266,12 @@ void Renderer2D::drawText(
         C2D_DrawText(&c2dText, C2D_WithColor, x, y, 0.5f, 1.0f, 1.0f, finalColor);
     }
 }
+
+void Renderer2D::drawText(const char* text, float x, float y, float size, uint32_t color) {
+    if (!m_initialized || !m_frameActive || !m_currentTarget || !m_textBuf || !text || size <= 0) return;
+    C2D_Text value;
+    // beginFrame clears the shared buffer once, preserving all strings until GPU submission.
+    C2D_TextParse(&value, m_textBuf, text);
+    C2D_TextOptimize(&value);
+    C2D_DrawText(&value, C2D_WithColor, x, y, 0.5f, size, size, color);
+}

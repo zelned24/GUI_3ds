@@ -17,6 +17,9 @@ public:
     bool evaluate(const char* source, std::size_t length, const char* sourceName);
     void tick(uint32_t keysDown);
     void fini();
+    bool setBattleStateJson(const char* json, std::size_t length);
+    static JSValue getBattleState(JSContext*, JSValueConst, int, JSValueConst*);
+    static JSValue drawText(JSContext*, JSValueConst, int, JSValueConst*);
     bool healthy() const { return m_healthy; }
     const char* lastError() const { return m_error; }
 private:
@@ -32,6 +35,7 @@ private:
     uint16_t m_screenWidth = 0;
     unsigned m_interruptBudget = 0;
     char m_error[192]{};
+    char m_battleStateJson[2048]{};
     void captureException();
     static int interrupt(JSRuntime*, void*);
     static JSValue beginTop(JSContext*, JSValueConst, int, JSValueConst*);

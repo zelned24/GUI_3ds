@@ -76,6 +76,9 @@ public:
         float opacity = 1.0f
     );
 
+    // Scaled text; reuses the frame buffer without clearing earlier text draws.
+    void drawText(const char* text, float x, float y, float size, uint32_t color);
+
     // Screen target accessors
     C3D_RenderTarget* getTopTarget() const { return m_topTarget; }
     C3D_RenderTarget* getBottomTarget() const { return m_bottomTarget; }

@@ -74,9 +74,6 @@ int main() {
     while (aptMainLoop()) {
         hidScanInput();
         const uint32_t pressed = hidKeysDown();
-#if defined(POKEROGUE_ENABLE_QUICKJS)
-        if (!(bridgeReady && bridge.healthy())) {
-#endif
         bool changed = false;
         if (pressed & KEY_LEFT) changed = game.cycleStarter(-1);
         else if (pressed & KEY_RIGHT) changed = game.cycleStarter(1);
@@ -116,6 +113,28 @@ int main() {
         }
         if (changed) player.load(game.scene());
 #if defined(POKEROGUE_ENABLE_QUICKJS)
+        if (bridgeReady && bridge.healthy()) {
+            Pokerogue3DS::NativeRunSave snapshot{};
+            game.captureNativeRunSave(snapshot);
+            const auto& state = game.presentation();
+            const auto& actor = state.player.battleState;
+            const auto& opponent = state.enemy.battleState;
+            const uint8_t slot = game.selectedBattleMove();
+            const auto* selected = slot < actor.moveCount && slot < 4
+                ? PokerogueContent::findMoveById(actor.moves[slot].moveId) : nullptr;
+            char stateJson[512];
+            const int length = std::snprintf(stateJson, sizeof(stateJson),
+                "{\"wave\":%u,\"playerHp\":%u,\"playerMaxHp\":%u,"
+                "\"enemyHp\":%u,\"enemyMaxHp\":%u,\"playerDex\":%u,"
+                "\"enemyDex\":%u,\"stage\":%u,\"moveId\":%u,\"pp\":%u,"
+                "\"supported\":%s,\"finished\":%s}",
+                unsigned(game.run().wave), unsigned(actor.hp), unsigned(actor.maxHp),
+                unsigned(opponent.hp), unsigned(opponent.maxHp), unsigned(state.player.dex),
+                unsigned(state.enemy.dex), unsigned(snapshot.stage), unsigned(selected ? selected->id : 0),
+                unsigned(selected ? actor.moves[slot].pp : 0),
+                game.battleInputSupported() ? "true" : "false", game.battleFinished() ? "true" : "false");
+            if (length > 0 && static_cast<size_t>(length) < sizeof(stateJson))
+                bridge.setBattleStateJson(stateJson, static_cast<size_t>(length));
         }
 #endif
 
