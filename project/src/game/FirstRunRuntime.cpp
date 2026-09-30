@@ -318,7 +318,7 @@ bool FirstRunRuntime::restoreNativeRunSaveInPlace(const NativeRunSave& save) {
         save.stage == NativeSaveStage::ExperienceGranted;
     m_experienceGranted = save.stage == NativeSaveStage::ExperienceGranted;
     m_victoryPlan = {};
-    if (m_playerWon && !planClassicVictory(m_run.wave, m_victoryPlan)) return false;
+    if (m_playerWon && enemyPartyDefeated() && !planClassicVictory(m_run.wave, m_victoryPlan)) return false;
     m_battleFeedback = m_battleFinished ? (m_playerWon ? "Restored: wild battle won" : "Restored: Pokemon fainted")
                                        : (m_trainerBattle ? "Trainer party restored; battle pending" : "Battle progress restored");
     buildScene();
@@ -880,7 +880,7 @@ bool FirstRunRuntime::finishBattleTurn() {
         m_battleFinished = true;
         m_playerWon = m_context.enemy.battleState.hp == 0 && m_context.player.battleState.hp != 0;
         m_victoryPlan = {};
-        if (m_playerWon && !planClassicVictory(m_run.wave, m_victoryPlan)) {
+        if (m_playerWon && enemyPartyDefeated() && !planClassicVictory(m_run.wave, m_victoryPlan)) {
             m_battleFeedback = "Classic victory plan unavailable";
             buildScene();
             return false;
@@ -900,9 +900,25 @@ bool FirstRunRuntime::finishBattleTurn() {
     return true;
 }
 
+// VictoryPhase queues BattleEnd/rewards only when no enemy party member remains.
+// Source: pinned src/phases/victory-phase.ts, VictoryPhase.start/getEnemyParty.
+bool FirstRunRuntime::enemyPartyDefeated() const {
+    if (!m_encounterResolved || m_doubleBattle || m_context.enemy.battleState.hp) return false;
+    if (!m_trainerBattle) return true;
+    if (!m_context.trainerPartyBattleStatesResolved || !m_context.trainerPartyCount ||
+        m_context.trainerPartyCount > 6 ||
+        m_context.activeTrainerPartyIndex >= m_context.trainerPartyCount) return false;
+    for (uint8_t member = 0; member < m_context.trainerPartyCount; ++member) {
+        // The active actor is authoritative; its stored party copy may precede the KO.
+        if (member != m_context.activeTrainerPartyIndex &&
+            m_context.trainerParty[member].battleState.hp) return false;
+    }
+    return true;
+}
+
 bool FirstRunRuntime::skipVictoryReward() {
     if (!m_battleFinished || !m_playerWon || !m_experienceGranted ||
-        !m_victoryPlan.contains(ClassicVictoryStep::SelectModifier) ||
+        !enemyPartyDefeated() || !m_victoryPlan.contains(ClassicVictoryStep::SelectModifier) ||
         !m_victoryPlan.nextWave || m_victoryPlan.nextWave > PokerogueContent::kClassicFinalWave)
         return false;
     // SelectModifierPhase permits skipping its choice. The one-starter run

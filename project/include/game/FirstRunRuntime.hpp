@@ -100,6 +100,7 @@ public:
     const char* starterName() const;
 
 private:
+    bool enemyPartyDefeated() const;
     void resolve(bool carryPlayer = false);
     bool restoreNativeRunSaveInPlace(const NativeRunSave& save);
     bool grantVictoryExperience();

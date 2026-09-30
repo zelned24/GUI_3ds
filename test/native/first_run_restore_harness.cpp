@@ -39,6 +39,17 @@ static int checkTrainerExperienceReplay() {
         NativeRunSave checkpoint{};
         game.captureNativeRunSave(checkpoint);
         if (checkpoint.stage != NativeSaveStage::BattleActive) continue;
+        NativeRunSave memberWon = checkpoint;
+        memberWon.stage = NativeSaveStage::BattleWon;
+        memberWon.enemyHp = 0;
+        memberWon.trainerParty[memberWon.activeTrainerMember].hp = 0;
+        if (!game.restoreNativeRunSave(memberWon) ||
+            game.victoryPlan().contains(ClassicVictoryStep::SelectModifier) ||
+            game.victoryPlan().contains(ClassicVictoryStep::NewBattle) ||
+            game.skipVictoryReward() || game.run().wave != 5) return 28;
+        if (!game.advanceBattleTurn() || game.battleFinished() ||
+            game.presentation().activeTrainerPartyIndex != 1 || game.run().wave != 5) return 29;
+        if (!game.restoreNativeRunSave(checkpoint)) return 30;
         const auto& context = game.presentation();
         const auto* defeated = PokerogueContent::findSpeciesByDex(context.trainerParty[0].dex);
         const auto* starter = PokerogueContent::findSpeciesByDex(context.player.dex);
