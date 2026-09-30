@@ -7,6 +7,7 @@
 class Renderer2D;
 namespace Pokerogue3DS {
 class FirstRunRuntime;
+class NativeRunSaveStore;
 class QuickJSBridge {
 public:
     QuickJSBridge() = default;
@@ -23,6 +24,15 @@ public:
                                 uint64_t animationTimeMs);
     static JSValue drawPokemon(JSContext*, JSValueConst, int, JSValueConst*);
     void bindRuntime(FirstRunRuntime& game) { m_game = &game; }
+    void bindSaveStore(NativeRunSaveStore& saves) { m_saves = &saves; }
+    void setJournalGeneration(uint32_t generation) { m_journalGeneration = generation; }
+    uint32_t journalGeneration() const { return m_journalGeneration; }
+    uint16_t restartStarterDex() const;
+    static JSValue resetRun(JSContext*, JSValueConst, int, JSValueConst*);
+    static JSValue cycleStarterBinding(JSContext*, JSValueConst, int, JSValueConst*);
+    static JSValue getStarterName(JSContext*, JSValueConst, int, JSValueConst*);
+    static JSValue saveNative(JSContext*, JSValueConst, int, JSValueConst*);
+    static JSValue loadNative(JSContext*, JSValueConst, int, JSValueConst*);
     bool processPendingAction(); // Call before beginFrame; returns whether a command was attempted.
     static JSValue submitAction(JSContext*, JSValueConst, int, JSValueConst*);
     static JSValue skipReward(JSContext*, JSValueConst, int, JSValueConst*);
@@ -52,6 +62,10 @@ private:
     const ResolvedPokemon* m_enemy = nullptr;
     uint64_t m_animationTimeMs = 0;
     FirstRunRuntime* m_game = nullptr; // borrowed, never deleted
+    NativeRunSaveStore* m_saves = nullptr;
+    uint16_t m_restartStarter = 0;
+    uint32_t m_journalGeneration = 0;
+    char m_actionFeedback[128]{};
     int m_pendingAction = -999; // 0..3 attack, -1/100 cursor, 200 reward
     void captureException();
     static int interrupt(JSRuntime*, void*);

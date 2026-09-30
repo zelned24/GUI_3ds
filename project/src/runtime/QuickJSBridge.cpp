@@ -71,6 +71,9 @@ bool QuickJSBridge::init(Renderer2D& renderer) {
     const Binding bindings[] = {
         {"_3ds_beginTop", beginTop, 0}, {"_3ds_beginBottom", beginBottom, 0},
         {"_3ds_clear", clear, 1}, {"_3ds_drawImage", drawImage, 6},
+        {"_3ds_resetRun", resetRun, 0}, {"_3ds_cycleStarter", cycleStarterBinding, 1},
+        {"_3ds_getStarterName", getStarterName, 0},
+        {"_3ds_saveNative", saveNative, 0}, {"_3ds_loadNative", loadNative, 0},
         {"_3ds_submitAction", submitAction, 1}, {"_3ds_skipReward", skipReward, 0},
         {"_3ds_getCombatLog", getCombatLog, 0},
         {"_3ds_drawPokemon", drawPokemon, 5},
@@ -221,13 +224,97 @@ JSValue QuickJSBridge::skipReward(JSContext* ctx, JSValueConst, int argc, JSValu
 }
 JSValue QuickJSBridge::getCombatLog(JSContext* ctx, JSValueConst, int, JSValueConst*) {
     auto* bridge = static_cast<QuickJSBridge*>(JS_GetContextOpaque(ctx));
-    return JS_NewString(ctx, bridge && bridge->m_game ? bridge->m_game->battleFeedback().c_str() : "");
+    return JS_NewString(ctx, bridge && bridge->m_actionFeedback[0] ? bridge->m_actionFeedback :
+        bridge && bridge->m_game ? bridge->m_game->battleFeedback().c_str() : "");
+}
+uint16_t QuickJSBridge::restartStarterDex() const {
+    return m_restartStarter ? m_restartStarter : m_game ? m_game->run().starterDex : 0;
+}
+JSValue QuickJSBridge::resetRun(JSContext* ctx, JSValueConst, int argc, JSValueConst*) {
+    auto* b = static_cast<QuickJSBridge*>(JS_GetContextOpaque(ctx));
+    if (!b || !b->m_game || !b->m_inTick || argc != 0) return JS_FALSE;
+    if (b->m_pendingAction != -999 || !b->m_game->battleFinished() || b->m_game->playerWon()) return JS_FALSE;
+    b->m_pendingAction = 201; return JS_TRUE;
+}
+JSValue QuickJSBridge::cycleStarterBinding(JSContext* ctx, JSValueConst, int argc, JSValueConst* argv) {
+    auto* b = static_cast<QuickJSBridge*>(JS_GetContextOpaque(ctx));
+    double direction;
+    if (!b || !b->m_game || !b->m_inTick || argc != 1) return JS_FALSE;
+    if (!number(ctx, argv[0], direction) || (direction != -1 && direction != 1))
+        return JS_ThrowRangeError(ctx, "Starter direction must be -1 or +1");
+    if (b->m_pendingAction != -999) return JS_FALSE;
+    if (b->m_game->runStarted() && !(b->m_game->battleFinished() && !b->m_game->playerWon())) return JS_FALSE;
+    b->m_pendingAction = direction < 0 ? 202 : 203; return JS_TRUE;
+}
+JSValue QuickJSBridge::getStarterName(JSContext* ctx, JSValueConst, int, JSValueConst*) {
+    auto* b = static_cast<QuickJSBridge*>(JS_GetContextOpaque(ctx));
+    const auto* species = b ? PokerogueContent::findSpeciesByDex(b->restartStarterDex()) : nullptr;
+    return JS_NewString(ctx, species ? species->name : "?");
+}
+JSValue QuickJSBridge::saveNative(JSContext* ctx, JSValueConst, int argc, JSValueConst*) {
+    auto* b = static_cast<QuickJSBridge*>(JS_GetContextOpaque(ctx));
+    if (!b || !b->m_game || !b->m_saves || !b->m_inTick || argc || b->m_pendingAction != -999) return JS_FALSE;
+    b->m_pendingAction = 204; return JS_TRUE;
+}
+JSValue QuickJSBridge::loadNative(JSContext* ctx, JSValueConst, int argc, JSValueConst*) {
+    auto* b = static_cast<QuickJSBridge*>(JS_GetContextOpaque(ctx));
+    if (!b || !b->m_game || !b->m_saves || !b->m_inTick || argc || b->m_pendingAction != -999) return JS_FALSE;
+    b->m_pendingAction = 205; return JS_TRUE;
 }
 bool QuickJSBridge::processPendingAction() {
     const int action = m_pendingAction;
     m_pendingAction = -999;
     if (!m_game || !m_healthy || m_inTick || action == -999) return false;
-    if (action == -1 || action == 100) m_game->selectBattleMove(action == -1 ? -1 : 1);
+    m_actionFeedback[0] = 0;
+    if (action == 201) {
+        auto* stream = m_game->battleRng().currentStream();
+        const auto* species = PokerogueContent::findSpeciesByDex(restartStarterDex());
+        bool ok = false;
+        if (stream && species && species->freshProfileStarter) {
+            auto next = *stream;
+            uint32_t seed = 0;
+            for (unsigned i = 0; i < 8 && !seed; ++i) seed = next.randSeedUint32();
+            if (seed) ok = m_game->restoreSetup(seed, species->dex);
+        }
+        if (ok) { m_restartStarter = 0; m_presenterPlayer.invalidate(); m_presenterEnemy.invalidate(); }
+        std::snprintf(m_actionFeedback, sizeof(m_actionFeedback), "%s", ok ? "New run ready" : "Restart failed: invalid starter/RNG");
+    } else if (action == 202 || action == 203) {
+        if (!m_game->runStarted()) m_game->cycleStarter(action == 202 ? -1 : 1);
+        else if (m_game->battleFinished() && !m_game->playerWon()) {
+            size_t index = 0;
+            for (; index < PokerogueContent::kSpeciesCount; ++index)
+                if (PokerogueContent::kSpecies[index].dex == restartStarterDex()) break;
+            if (index < PokerogueContent::kSpeciesCount) {
+                for (size_t scanned = 0; scanned < PokerogueContent::kSpeciesCount; ++scanned) {
+                    index = action == 202 ? (index + PokerogueContent::kSpeciesCount - 1) % PokerogueContent::kSpeciesCount
+                        : (index + 1) % PokerogueContent::kSpeciesCount;
+                    if (PokerogueContent::kSpecies[index].freshProfileStarter) {
+                        m_restartStarter = PokerogueContent::kSpecies[index].dex; break;
+                    }
+                }
+            }
+        }
+    } else if (action == 204 || action == 205) {
+        NativeSaveResult status = NativeSaveResult::NotFound;
+        NativeRunSave save{};
+        if (m_saves) {
+            if (action == 204) {
+                m_game->captureNativeRunSave(save);
+                status = validateNativeRunSave(save, PokerogueContent::kContentHash);
+                if (status == NativeSaveResult::Ok) status = m_saves->save(save);
+                if (status == NativeSaveResult::Ok) {
+                    NativeRunSave stored{};
+                    if (m_saves->load(PokerogueContent::kContentHash, stored) == NativeSaveResult::Ok)
+                        m_journalGeneration = stored.generation;
+                }
+            } else {
+                status = m_saves->load(PokerogueContent::kContentHash, save);
+                if (status == NativeSaveResult::Ok && !m_game->restoreNativeRunSave(save)) status = NativeSaveResult::InvalidRecord;
+                if (status == NativeSaveResult::Ok) { m_journalGeneration = save.generation; m_restartStarter = 0; }
+            }
+        }
+        std::snprintf(m_actionFeedback, sizeof(m_actionFeedback), "%s: %s", action == 204 ? "Save" : "Load", nativeSaveResultName(status));
+    } else if (action == -1 || action == 100) m_game->selectBattleMove(action == -1 ? -1 : 1);
     else if (action == 200) m_game->skipVictoryReward();
     else if (action >= 0 && action <= 3) {
         if (!m_game->battleFinished()) {
@@ -245,6 +332,10 @@ bool QuickJSBridge::processPendingAction() {
 void QuickJSBridge::fini() {
     m_pendingAction = -999;
     m_game = nullptr;
+    m_saves = nullptr;
+    m_restartStarter = 0;
+    m_journalGeneration = 0;
+    m_actionFeedback[0] = 0;
     m_presenterPlayer.invalidate();
     m_presenterEnemy.invalidate();
     m_player = m_enemy = nullptr;

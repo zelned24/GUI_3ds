@@ -39,18 +39,40 @@ globalThis._3ds_tick = function(input) {
   if (json !== previousJson) { state = JSON.parse(json); previousJson = json; }
   // input contains hidKeysDown pulses already; do not edge-detect it as held keys.
   // Queue one command. Host processes it before the next snapshot/render frame.
-  if (input.start || input.A) {
+  const gameOverScreen = state.finished && !state.playerWon;
+  if (input.L) _3ds_saveNative();
+  else if (input.R) _3ds_loadNative();
+  else if (gameOverScreen) {
+    if (input.left) _3ds_cycleStarter(-1);
+    else if (input.right) _3ds_cycleStarter(1);
+    else if (input.start || input.A) _3ds_resetRun();
+  } else if (!state.runStarted && input.left) _3ds_cycleStarter(-1);
+  else if (!state.runStarted && input.right) _3ds_cycleStarter(1);
+  else if (input.start || input.A) {
     if (state.finished && state.playerWon && state.experienceGranted) _3ds_skipReward();
     else if (!state.finished || state.playerWon) _3ds_submitAction(state.selectedMove || 0);
   } else if (input.up) _3ds_submitAction(-1);
   else if (input.down) _3ds_submitAction(100);
   else if (input.B && state.finished && state.playerWon && state.experienceGranted) _3ds_skipReward();
   const combatLog = _3ds_getCombatLog();
+  if (gameOverScreen) {
+    _3ds_beginTop(); _3ds_clear(0xFF0A0A0A);
+    _3ds_drawText('DERROTA', 135, 72, 1.0, RED);
+    _3ds_drawText('Wave ' + (state.wave || 0) + ' alcanzada', 115, 116, 0.55, WHITE);
+    if (combatLog) _3ds_drawText(combatLog.slice(0, 65), 10, 220, 0.38, WHITE);
+    _3ds_beginBottom(); _3ds_clear(0xFF0D0D1A);
+    _3ds_drawText('Nueva run', 95, 24, 0.75, WHITE);
+    _3ds_drawText('Starter: ' + _3ds_getStarterName(), 30, 83, 0.6, GREEN);
+    _3ds_drawText('Left/Right: cambiar starter', 25, 160, 0.48, WHITE);
+    _3ds_drawText('A/Start: reiniciar  R: cargar save', 15, 194, 0.45, WHITE);
+    return;
+  }
   _3ds_beginTop();
   _3ds_clear(0xFF2D1B4E);
   if (state.enemyDex) _3ds_drawPokemon(state.enemyDex, false, 230, 42, 1.2);
   if (state.playerDex) _3ds_drawPokemon(state.playerDex, true, 30, 100, 1.2);
   _3ds_drawText('Wave ' + (state.wave || 0), 10, 8, 0.55, WHITE);
+  _3ds_drawText('Classic ' + hpBar(state.wave, state.finalWave) + ' ' + (state.wave || 0) + '/' + (state.finalWave || 0), 10, 28, 0.38, WHITE);
   _3ds_drawText('Enemy #' + (state.enemyDex || 0), 222, 12, 0.48, WHITE);
   _3ds_drawText(hpBar(state.enemyHp, state.enemyMaxHp), 222, 29, 0.48, GREEN);
   _3ds_drawText('Player #' + (state.playerDex || 0), 10, 193, 0.48, WHITE);
@@ -67,12 +89,12 @@ globalThis._3ds_tick = function(input) {
   const phaseText = state.finished
     ? state.playerWon
       ? state.experienceGranted ? 'Victory - Start: skip reward / next wave' : 'Victory - Start: collect EXP'
-      : 'Defeat - restart flow still pending'
+      : 'Defeat - Start: restart'
     : state.supported ? 'Start/A: execute selected move' : 'Pending rules block this battle';
   _3ds_drawText(phaseText, 10, 147, 0.43, state.playerWon || state.supported ? GREEN : RED);
   _3ds_drawText('Up/Down: move  Left/Right: starter', 8, 185, 0.43, WHITE);
   _3ds_drawText('Start/A:Confirm  B:Reward  X:Save', 8, 203, 0.43, WHITE);
-  _3ds_drawText('Y:Export  L:Load  R:Import', 8, 219, 0.43, WHITE);
+  _3ds_drawText('L:Save  R:Load  Y:Export', 8, 219, 0.43, WHITE);
 };
 `;
 

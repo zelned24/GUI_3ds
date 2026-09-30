@@ -58,9 +58,15 @@ int main() {
 #endif
     Pokerogue3DS::SdNativeSaveStorage saveStorage;
     Pokerogue3DS::NativeRunSaveStore saves(saveStorage);
+#if defined(POKEROGUE_ENABLE_QUICKJS)
+    bridge.bindSaveStore(saves);
+#endif
     Pokerogue3DS::NativeRunSave restored{};
     const auto loaded = saves.load(PokerogueContent::kContentHash, restored);
     if (loaded == Pokerogue3DS::NativeSaveResult::Ok) {
+#if defined(POKEROGUE_ENABLE_QUICKJS)
+        bridge.setJournalGeneration(restored.generation);
+#endif
         game.setStorageFeedback(game.restoreNativeRunSave(restored)
             ? "Progress restored  X: save  Y: export"
             : "Saved state does not match pinned content");
@@ -92,10 +98,13 @@ int main() {
 #if defined(POKEROGUE_ENABLE_QUICKJS)
         }
         // Starter navigation and SD operations remain host-owned; no duplicate battle input.
-        if (jsCommands && (pressed & KEY_LEFT)) changed = game.cycleStarter(-1) || changed;
-        else if (jsCommands && (pressed & KEY_RIGHT)) changed = game.cycleStarter(1) || changed;
+        // JS queues starter navigation and native save/load outside rendering.
 #endif
-        if (pressed & (KEY_X | KEY_Y | KEY_L | KEY_R)) {
+        uint32_t hostStorageKeys = pressed & (KEY_X | KEY_Y | KEY_L | KEY_R);
+#if defined(POKEROGUE_ENABLE_QUICKJS)
+        if (jsCommands) hostStorageKeys &= KEY_X | KEY_Y; // L/R now belong to bridge save/load.
+#endif
+        if (hostStorageKeys) {
             using namespace Pokerogue3DS;
             NativeSaveResult result = NativeSaveResult::Ok;
             if (pressed & (KEY_X | KEY_Y)) {
@@ -150,7 +159,8 @@ int main() {
                 "\"enemyDex\":%u,\"stage\":%u,\"moveId\":%u,\"pp\":%u,"
                 "\"supported\":%s,\"finished\":%s,\"selectedMove\":%u,"
                 "\"playerMoves\":[%u,%u,%u,%u],\"playerPP\":[%u,%u,%u,%u],"
-                "\"playerWon\":%s,\"experienceGranted\":%s}",
+                "\"playerWon\":%s,\"experienceGranted\":%s,\"runStarted\":%s,"
+                "\"starterDex\":%u,\"generation\":%u,\"finalWave\":%u}",
                 unsigned(game.run().wave), unsigned(actor.hp), unsigned(actor.maxHp),
                 unsigned(opponent.hp), unsigned(opponent.maxHp), unsigned(state.player.dex),
                 unsigned(state.enemy.dex), unsigned(snapshot.stage), unsigned(selected ? selected->id : 0),
@@ -158,7 +168,9 @@ int main() {
                 game.battleInputSupported() ? "true" : "false", game.battleFinished() ? "true" : "false", unsigned(slot),
                 unsigned(moveIds[0]), unsigned(moveIds[1]), unsigned(moveIds[2]), unsigned(moveIds[3]),
                 unsigned(movePp[0]), unsigned(movePp[1]), unsigned(movePp[2]), unsigned(movePp[3]),
-                game.playerWon() ? "true" : "false", game.experienceGranted() ? "true" : "false");
+                game.playerWon() ? "true" : "false", game.experienceGranted() ? "true" : "false",
+                game.runStarted() ? "true" : "false", unsigned(bridge.restartStarterDex()),
+                unsigned(bridge.journalGeneration()), unsigned(PokerogueContent::kClassicFinalWave));
             if (length > 0 && static_cast<size_t>(length) < sizeof(stateJson))
                 bridge.setBattleStateJson(stateJson, static_cast<size_t>(length));
         }
