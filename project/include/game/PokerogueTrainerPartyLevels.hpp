@@ -70,7 +70,6 @@ inline TrainerPartySpeciesChoice resolveSimpleTrainerPoolMember(
     PokerogueRngAdapter& rng) {
   const auto member = trainerPartyMemberTemplate(partyTemplate, memberIndex);
   if (!member.supported || member.balanced ||
-      (member.sameSpecies && partyTemplate.isCompound) ||
       !level || !wave || !trainer.speciesPoolCount ||
       (trainer.signatureCount && memberIndex + trainer.signatureCount >= partyTemplate.totalSize) ||
       previousCount > memberIndex || memberIndex >= 6) return {};
@@ -100,7 +99,7 @@ inline TrainerPartySpeciesChoice resolveSimpleTrainerPoolMember(
       // Trainer.genPartyMember still consumes genNewPartyMemberSpecies first.
       // Then getTrainerSpeciesForLevel(..., false) uses the segment's first actor.
       finalId = PokerogueEncounterResolver::resolveTrainerSpeciesForLevel(
-          previousSpecies[member.segmentStart]->id, level, member.evolutionThresholdKindId,
+          previousSpecies[member.segmentStart]->id, level, partyTemplate.parentEvolutionThresholdKindId,
           wave == 20, rng, true, false);
     } else {
       finalId = PokerogueEncounterResolver::resolveTrainerSpeciesForLevel(

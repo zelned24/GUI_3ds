@@ -234,3 +234,9 @@
 3. Regresión 232–233 recorre plantillas del catálogo real y exige alcanzar al menos un slot sameSpecies resuelto. Comprueba especie según el primer miembro del segmento. Escrita, pendiente de ejecución; parity RNG completo sigue pendiente.
 
 4. sameSpecies compuesto continúa bloqueado: upstream usa el threshold del template padre, que la tabla actual no representa por separado. No sustituirlo por el threshold del segmento.
+
+## Umbral padre de templates compuestos
+
+1. TrainerPartyCompoundTemplate llama super(totalSize, AVERAGE); TrainerPartyTemplate usa NORMAL por defecto. Tabla runtime conserva parentEvolutionThresholdKindId separado de los segmentos, derivando el ID NORMAL del catálogo importado.
+2. sameSpecies compuesto usa el umbral padre y retira su bloqueo temporal. Regresión 232–233 actualizada para consultar este campo.
+3. Generación de contenido permitida; tests y compilación siguen pendientes. Balanced y callbacks especiales aún requieren portado.

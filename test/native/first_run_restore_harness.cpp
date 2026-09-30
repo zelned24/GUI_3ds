@@ -656,7 +656,7 @@ static int checkCanonicalSameSpeciesTrainerMembers() {
             if (metadata.sameSpecies && slot > metadata.segmentStart) {
                 const char* expected = PokerogueEncounterResolver::resolveTrainerSpeciesForLevel(
                     previous[metadata.segmentStart]->id, levels.values[slot],
-                    metadata.evolutionThresholdKindId, false, memberRng, true, false);
+                    choice.value->parentEvolutionThresholdKindId, false, memberRng, true, false);
                 if (!expected || std::strcmp(expected, member.species->id)) return 232;
                 ++checked;
             }
