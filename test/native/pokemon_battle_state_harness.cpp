@@ -80,6 +80,18 @@ extern "C" int runPokemonBattleStateChecks() {
             true, plainAttackScore) || plainAttackScore != -20.0) return 190;
     if (!Pokerogue3DS::calculatePlainAttackAiScore(2.0, 20, 10, 40, 100,
             false, plainAttackScore) || plainAttackScore != 24.0) return 191;
+    const uint8_t koInputSlots[3] = {3, 0, 2};
+    const uint32_t koDamage[3] = {9, 10, 12};
+    uint8_t koSlots[4]{};
+    uint8_t koCount = 0;
+    if (!Pokerogue3DS::filterEnemyKoMoveSlots(koInputSlots, koDamage, 3, 10,
+            koSlots, koCount) || koCount != 2 || koSlots[0] != 0 || koSlots[1] != 2)
+        return 192;
+    if (!Pokerogue3DS::filterEnemyKoMoveSlots(koInputSlots, koDamage, 3, 13,
+            koSlots, koCount) || koCount != 3 || koSlots[0] != 3 || koSlots[2] != 2)
+        return 193;
+    if (Pokerogue3DS::filterEnemyKoMoveSlots(koInputSlots, koDamage, 3, 0,
+            koSlots, koCount) || koCount) return 194;
     uint8_t derivedIvs[6]{};
     Pokerogue3DS::derivePokemonIvsFromId(0xFFFFFFFFu, derivedIvs);
     for (uint8_t iv : derivedIvs) if (iv != 31) return 57;

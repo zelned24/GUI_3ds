@@ -65,6 +65,26 @@ inline bool calculatePlainAttackAiScore(double effectiveness, uint32_t selectedS
     return true;
 }
 
+// EnemyPokemon.getNextMove restricts SMART/SMART_RANDOM to KO moves when
+// any usable move's simulated damage reaches the opposing target's HP.
+// Inputs must come from the resolved damage/conditions layer; no RNG is used.
+inline bool filterEnemyKoMoveSlots(const uint8_t* slots, const uint32_t* damages,
+                                   uint8_t count, uint16_t targetHp,
+                                   uint8_t output[4], uint8_t& written) {
+    written = 0;
+    if (!slots || !damages || !output || !count || count > 4 || !targetHp) return false;
+    bool hasKo = false;
+    for (uint8_t i = 0; i < count; ++i) {
+        if (slots[i] >= 4) return false;
+        for (uint8_t prior = 0; prior < i; ++prior)
+            if (slots[i] == slots[prior]) return false;
+        hasKo |= damages[i] >= targetHp;
+    }
+    for (uint8_t i = 0; i < count; ++i)
+        if (!hasKo || damages[i] >= targetHp) output[written++] = slots[i];
+    return true;
+}
+
 // Resolved inputs to Pokemon.getMatchupScore. The effect/type layer must
 // account for abilities, illusion, effective speed and usable damaging moves.
 // Attack effectiveness entries already include the source's conditional STAB.

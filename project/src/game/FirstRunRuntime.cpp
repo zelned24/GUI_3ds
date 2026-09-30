@@ -442,11 +442,34 @@ bool FirstRunRuntime::advanceBattleTurn() {
 
     // Pinned EnemyPokemon.SMART_RANDOM: score each usable move in moveset order,
     // then advance through the descending pool while randBattleSeedInt(8) >= 5.
+    uint8_t usableSlots[4]{};
+    uint32_t projectedDamage[4]{};
+    uint8_t usableCount = 0;
+    for (uint8_t slot = 0; slot < enemyState.moveCount; ++slot) {
+        if (!enemyState.moves[slot].pp) continue;
+        uint32_t damage = 0;
+        if (calculatePokemonDamageCore(enemyState, playerState,
+                enemyState.moves[slot].moveId, false, damage) != PokemonDamageCoreResult::Ok) {
+            m_battleFeedback = "Enemy simulated damage unsupported";
+            buildScene();
+            return false;
+        }
+        usableSlots[usableCount] = slot;
+        projectedDamage[usableCount++] = damage;
+    }
+    uint8_t filteredSlots[4]{};
+    uint8_t filteredCount = 0;
+    if (!filterEnemyKoMoveSlots(usableSlots, projectedDamage, usableCount,
+            playerState.hp, filteredSlots, filteredCount)) {
+        m_battleFeedback = "Enemy KO move pool unavailable";
+        buildScene();
+        return false;
+    }
     uint8_t candidates[4]{};
     double scores[4]{};
     uint8_t candidateCount = 0;
-    for (uint8_t i = 0; i < enemyState.moveCount; ++i) {
-        if (!enemyState.moves[i].pp) continue;
+    for (uint8_t entry = 0; entry < filteredCount; ++entry) {
+        const uint8_t i = filteredSlots[entry];
         const auto* move = PokerogueContent::findMoveById(enemyState.moves[i].moveId);
         if (!move) {
             m_battleFeedback = "Canonical enemy move reference invalid";
