@@ -448,6 +448,22 @@ extern "C" int runPokemonBattleStateChecks() {
         growlUser.moves[0].pp != 39 || growlTarget.statStages[0] != 1 ||
         commandEvent.move.stages.changes[0] != -1 ||
         commandEvent.recipientReactions[0].changes[0] != 2) return 253;
+    const PokerogueContent::AbilityStatStageProfile* opportunist = nullptr;
+    for (const auto& profile : PokerogueContent::kAbilityStatStageProfiles)
+        if (std::strcmp(profile.sourceSymbol, "AbilityId.OPPORTUNIST") == 0) opportunist = &profile;
+    if (!opportunist || !opportunist->copiesRaises) return 254;
+    PokemonBattleState copyingActor = state;
+    PokemonStatStageEffectEvent requestedRaise{};
+    requestedRaise.triggered = true;
+    requestedRaise.processedStatMask = 1;
+    requestedRaise.requestedStages = 2;
+    boostPolicy.stageMultiplier = 1;
+    if (Pokerogue3DS::applyPokemonCopiedStatStageRaise(copyingActor, requestedRaise,
+            false, boostPolicy, reflectedEvent) != Pokerogue3DS::PokemonStatStageEffectResult::Ok ||
+        copyingActor.statStages[0] != 2) return 255;
+    if (Pokerogue3DS::applyPokemonCopiedStatStageRaise(copyingActor, requestedRaise,
+            true, boostPolicy, reflectedEvent) != Pokerogue3DS::PokemonStatStageEffectResult::Ok ||
+        copyingActor.statStages[0] != 2 || reflectedEvent.triggered) return 256;
     PokemonBattleInit actorIdInput = input;
     actorIdInput.pokemonId = 0x12345678u;
     actorIdInput.deriveIvsFromPokemonId = true;

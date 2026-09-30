@@ -165,6 +165,20 @@ inline PokemonStatStageEffectResult applyReflectedPokemonStatStages(
         reflection.reflectedStages, sourcePolicy, output);
 }
 
+inline PokemonStatStageEffectResult applyPokemonCopiedStatStageRaise(
+    PokemonBattleState& observer, const PokemonStatStageEffectEvent& original,
+    bool originalIsOpportunistPhase, const PokemonStatStageEffectPolicy& copyPolicy,
+    PokemonStatStageEffectEvent& output) {
+    if (originalIsOpportunistPhase || !original.triggered || original.requestedStages <= 0) {
+        output = {};
+        return PokemonStatStageEffectResult::Ok;
+    }
+    // Upstream copies requested phase changes, including a boost at the cap.
+    // The copied phase is self-target and OPPORTUNIST; no recursive copying.
+    return applyResolvedPokemonStatStagePhase(observer, original.processedStatMask,
+        original.requestedStages, copyPolicy, output);
+}
+
 struct PokemonStatStageReactionRequest {
     uint8_t stat = 0;
     uint8_t stages = 0;
@@ -277,6 +291,8 @@ struct PokemonStatStageCommandPolicy {
     PokemonStatStageEffectPolicy reflection{};
     PokemonStatStageEffectPolicy recipientReaction{};
     PokemonStatStageEffectPolicy sourceReaction{};
+    PokemonStatStageEffectPolicy opponentCopy{};
+    const PokerogueContent::AbilityStatStageProfile* opponentCopyProfile = nullptr;
     const PokerogueContent::AbilityStatStageReaction* recipientReactions[2]{};
     const PokerogueContent::AbilityStatStageReaction* sourceReactions[2]{};
 };
@@ -285,6 +301,7 @@ struct PokemonStatStageCommandEvent {
     PokemonStatStageMoveEvent move{};
     PokemonStatStageEffectEvent recipientReactions[2]{};
     PokemonStatStageEffectEvent reflection{};
+    PokemonStatStageEffectEvent opponentCopy{};
     PokemonStatStageEffectEvent sourceReactions[2]{};
 };
 
@@ -307,6 +324,12 @@ inline PokemonStatStageEffectResult usePokemonStatStageStatusCommand(
     const bool self = std::strcmp(move->target, "USER") == 0;
     auto& recipient = self ? nextUser : nextTarget;
     if (event.move.hit && event.move.stages.triggered) {
+        if (policy.opponentCopyProfile && policy.opponentCopyProfile->copiesRaises) {
+            auto& observer = self ? nextTarget : nextUser;
+            result = applyPokemonCopiedStatStageRaise(observer, event.move.stages,
+                false, policy.opponentCopy, event.opponentCopy);
+            if (result != PokemonStatStageEffectResult::Ok) return result;
+        }
         for (uint8_t i = 0; i < 2; ++i) {
             if (!policy.recipientReactions[i]) continue;
             result = applyPokemonStatStageDropReaction(recipient,

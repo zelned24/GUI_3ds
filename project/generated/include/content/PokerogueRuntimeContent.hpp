@@ -185,19 +185,20 @@ inline constexpr MoveStatStageEffect kMoveStatStageEffects[] = {
     {890, 10, -1, true}
 };
 inline constexpr std::size_t kMoveStatStageEffectCount = sizeof(kMoveStatStageEffects) / sizeof(kMoveStatStageEffects[0]);
-struct AbilityStatStageProfile { uint16_t abilityId; int8_t multiplier; uint8_t protectedMask; bool reflectDrops; bool ignorable; const char* sourcePath; const char* sourceSymbol; const char* sourceHash; };
+struct AbilityStatStageProfile { uint16_t abilityId; int8_t multiplier; uint8_t protectedMask; bool reflectDrops; bool copiesRaises; bool ignorable; const char* sourcePath; const char* sourceSymbol; const char* sourceHash; };
 inline constexpr AbilityStatStageProfile kAbilityStatStageProfiles[] = {
-    {29, 1, 127, false, true, "src/data/abilities/init-abilities.ts", "AbilityId.CLEAR_BODY", "040ccf2ca2e00a2111ef0acf54878ec67c45d98c831e35dda3e0bac52f1ee8e6"},
-    {35, 1, 32, false, true, "src/data/abilities/init-abilities.ts", "AbilityId.ILLUMINATE", "040ccf2ca2e00a2111ef0acf54878ec67c45d98c831e35dda3e0bac52f1ee8e6"},
-    {51, 1, 32, false, true, "src/data/abilities/init-abilities.ts", "AbilityId.KEEN_EYE", "040ccf2ca2e00a2111ef0acf54878ec67c45d98c831e35dda3e0bac52f1ee8e6"},
-    {52, 1, 1, false, true, "src/data/abilities/init-abilities.ts", "AbilityId.HYPER_CUTTER", "040ccf2ca2e00a2111ef0acf54878ec67c45d98c831e35dda3e0bac52f1ee8e6"},
-    {73, 1, 127, false, true, "src/data/abilities/init-abilities.ts", "AbilityId.WHITE_SMOKE", "040ccf2ca2e00a2111ef0acf54878ec67c45d98c831e35dda3e0bac52f1ee8e6"},
-    {86, 2, 0, false, true, "src/data/abilities/init-abilities.ts", "AbilityId.SIMPLE", "040ccf2ca2e00a2111ef0acf54878ec67c45d98c831e35dda3e0bac52f1ee8e6"},
-    {126, -1, 0, false, true, "src/data/abilities/init-abilities.ts", "AbilityId.CONTRARY", "040ccf2ca2e00a2111ef0acf54878ec67c45d98c831e35dda3e0bac52f1ee8e6"},
-    {145, 1, 2, false, true, "src/data/abilities/init-abilities.ts", "AbilityId.BIG_PECKS", "040ccf2ca2e00a2111ef0acf54878ec67c45d98c831e35dda3e0bac52f1ee8e6"},
-    {230, 1, 127, false, false, "src/data/abilities/init-abilities.ts", "AbilityId.FULL_METAL_BODY", "040ccf2ca2e00a2111ef0acf54878ec67c45d98c831e35dda3e0bac52f1ee8e6"},
-    {240, 1, 0, true, true, "src/data/abilities/init-abilities.ts", "AbilityId.MIRROR_ARMOR", "040ccf2ca2e00a2111ef0acf54878ec67c45d98c831e35dda3e0bac52f1ee8e6"},
-    {299, 1, 32, false, true, "src/data/abilities/init-abilities.ts", "AbilityId.MINDS_EYE", "040ccf2ca2e00a2111ef0acf54878ec67c45d98c831e35dda3e0bac52f1ee8e6"}
+    {29, 1, 127, false, false, true, "src/data/abilities/init-abilities.ts", "AbilityId.CLEAR_BODY", "040ccf2ca2e00a2111ef0acf54878ec67c45d98c831e35dda3e0bac52f1ee8e6"},
+    {35, 1, 32, false, false, true, "src/data/abilities/init-abilities.ts", "AbilityId.ILLUMINATE", "040ccf2ca2e00a2111ef0acf54878ec67c45d98c831e35dda3e0bac52f1ee8e6"},
+    {51, 1, 32, false, false, true, "src/data/abilities/init-abilities.ts", "AbilityId.KEEN_EYE", "040ccf2ca2e00a2111ef0acf54878ec67c45d98c831e35dda3e0bac52f1ee8e6"},
+    {52, 1, 1, false, false, true, "src/data/abilities/init-abilities.ts", "AbilityId.HYPER_CUTTER", "040ccf2ca2e00a2111ef0acf54878ec67c45d98c831e35dda3e0bac52f1ee8e6"},
+    {73, 1, 127, false, false, true, "src/data/abilities/init-abilities.ts", "AbilityId.WHITE_SMOKE", "040ccf2ca2e00a2111ef0acf54878ec67c45d98c831e35dda3e0bac52f1ee8e6"},
+    {86, 2, 0, false, false, true, "src/data/abilities/init-abilities.ts", "AbilityId.SIMPLE", "040ccf2ca2e00a2111ef0acf54878ec67c45d98c831e35dda3e0bac52f1ee8e6"},
+    {126, -1, 0, false, false, true, "src/data/abilities/init-abilities.ts", "AbilityId.CONTRARY", "040ccf2ca2e00a2111ef0acf54878ec67c45d98c831e35dda3e0bac52f1ee8e6"},
+    {145, 1, 2, false, false, true, "src/data/abilities/init-abilities.ts", "AbilityId.BIG_PECKS", "040ccf2ca2e00a2111ef0acf54878ec67c45d98c831e35dda3e0bac52f1ee8e6"},
+    {230, 1, 127, false, false, false, "src/data/abilities/init-abilities.ts", "AbilityId.FULL_METAL_BODY", "040ccf2ca2e00a2111ef0acf54878ec67c45d98c831e35dda3e0bac52f1ee8e6"},
+    {240, 1, 0, true, false, true, "src/data/abilities/init-abilities.ts", "AbilityId.MIRROR_ARMOR", "040ccf2ca2e00a2111ef0acf54878ec67c45d98c831e35dda3e0bac52f1ee8e6"},
+    {290, 1, 0, false, true, false, "src/data/abilities/init-abilities.ts", "AbilityId.OPPORTUNIST", "040ccf2ca2e00a2111ef0acf54878ec67c45d98c831e35dda3e0bac52f1ee8e6"},
+    {299, 1, 32, false, false, true, "src/data/abilities/init-abilities.ts", "AbilityId.MINDS_EYE", "040ccf2ca2e00a2111ef0acf54878ec67c45d98c831e35dda3e0bac52f1ee8e6"}
 };
 inline constexpr const AbilityStatStageProfile* findAbilityStatStageProfile(uint16_t id) { for (const auto& profile : kAbilityStatStageProfiles) if (profile.abilityId == id) return &profile; return nullptr; }
 struct AbilityStatStageReaction { uint16_t abilityId; uint8_t stat; uint8_t stagesPerRequestedStat; const char* sourceSymbol; };
