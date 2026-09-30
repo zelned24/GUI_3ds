@@ -133,9 +133,9 @@ extern "C" int runNativeSaveChecks() {
         if (n + 18 <= roomSize && std::memcmp(versionSevenBytes + n, "trickRoomTurnsLeft=", 18) == 0) {
             versionSevenSize = n; break;
         }
-        if (n + 16 <= roomSize && std::memcmp(versionSevenBytes + n, "saveVersion=0008", 16) == 0)
+        if (n + 16 <= roomSize && std::memcmp(versionSevenBytes + n, "saveVersion=0009", 16) == 0)
             versionSevenBytes[n + 15] = '7';
-        if (n + 19 <= roomSize && std::memcmp(versionSevenBytes + n, "runtimeVersion=0008", 19) == 0)
+        if (n + 19 <= roomSize && std::memcmp(versionSevenBytes + n, "runtimeVersion=0009", 19) == 0)
             versionSevenBytes[n + 18] = '7';
     }
     if (!versionSevenSize) return 40;
@@ -160,9 +160,9 @@ extern "C" int runNativeSaveChecks() {
         if (n + 12 <= partySize && std::memcmp(versionSixBytes + n, "weatherType=", 12) == 0) {
             versionSixSize = n; break;
         }
-        if (n + 16 <= partySize && std::memcmp(versionSixBytes + n, "saveVersion=0008", 16) == 0)
+        if (n + 16 <= partySize && std::memcmp(versionSixBytes + n, "saveVersion=0009", 16) == 0)
             versionSixBytes[n + 15] = '6';
-        if (n + 19 <= partySize && std::memcmp(versionSixBytes + n, "runtimeVersion=0008", 19) == 0)
+        if (n + 19 <= partySize && std::memcmp(versionSixBytes + n, "runtimeVersion=0009", 19) == 0)
             versionSixBytes[n + 18] = '6';
     }
     if (!versionSixSize) return 36;
@@ -183,9 +183,9 @@ extern "C" int runNativeSaveChecks() {
         legacyTrainerBytes[legacyTrainerSize++] = partyBytes[n++];
     }
     for (size_t n = 0; n < legacyTrainerSize; ++n) {
-        if (n + 16 <= legacyTrainerSize && std::memcmp(legacyTrainerBytes + n, "saveVersion=0008", 16) == 0)
+        if (n + 16 <= legacyTrainerSize && std::memcmp(legacyTrainerBytes + n, "saveVersion=0009", 16) == 0)
             legacyTrainerBytes[n + 15] = '4';
-        if (n + 19 <= legacyTrainerSize && std::memcmp(legacyTrainerBytes + n, "runtimeVersion=0008", 19) == 0)
+        if (n + 19 <= legacyTrainerSize && std::memcmp(legacyTrainerBytes + n, "runtimeVersion=0009", 19) == 0)
             legacyTrainerBytes[n + 18] = '4';
     }
     IntegritySha256::hashHex(legacyTrainerBytes, legacyTrainerSize, digest);
@@ -220,9 +220,9 @@ extern "C" int runNativeSaveChecks() {
         if (n + 19 <= partySize && std::memcmp(partyBytes + n, "enemySwitchCounter=", 19) == 0) {
             legacyBodySize = n; break;
         }
-        if (n + 16 <= partySize && std::memcmp(partyBytes + n, "saveVersion=0008", 16) == 0)
+        if (n + 16 <= partySize && std::memcmp(partyBytes + n, "saveVersion=0009", 16) == 0)
             partyBytes[n + 15] = '3';
-        if (n + 19 <= partySize && std::memcmp(partyBytes + n, "runtimeVersion=0008", 19) == 0)
+        if (n + 19 <= partySize && std::memcmp(partyBytes + n, "runtimeVersion=0009", 19) == 0)
             partyBytes[n + 18] = '3';
     }
     if (!legacyBodySize) return 19;
@@ -233,5 +233,45 @@ extern "C" int runNativeSaveChecks() {
     if (decodeNativeRunSave(partyBytes, legacyBodySize + 72, PokerogueContent::kContentHash, restored) != NativeSaveResult::Ok ||
         restored.saveVersion != kNativeSaveVersion || restored.runtimeVersion != kNativeSaveRuntimeVersion ||
         restored.seed != original.seed || restored.trainerPartyCount || restored.activeTrainerMember != 0xFF) return 20;
+    NativeRunSave inventorySave = trainerSave;
+    inventorySave.pokeballCounts[0] = 0;
+    inventorySave.pokeballCounts[1] = 3;
+    inventorySave.pokeballCounts[2] = 99;
+    inventorySave.pokeballCounts[3] = 1;
+    inventorySave.pokeballCounts[4] = 2;
+    if (encodeNativeRunSave(inventorySave, partyBytes, sizeof(partyBytes), partySize) != NativeSaveResult::Ok ||
+        decodeNativeRunSave(partyBytes, partySize, PokerogueContent::kContentHash, restored) != NativeSaveResult::Ok)
+        return 40;
+    for (uint8_t ball = 0; ball < 5; ++ball)
+        if (inventorySave.pokeballCounts[ball] != restored.pokeballCounts[ball]) return 41;
+    inventorySave.pokeballCounts[2] = 100;
+    if (validateNativeRunSave(inventorySave, PokerogueContent::kContentHash) != NativeSaveResult::InvalidRecord)
+        return 42;
+    // v8 has Trick Room but no inventory; its supported production stock was initial.
+    char versionEightBytes[kNativeSaveMaxBytes]{};
+    std::memcpy(versionEightBytes, roomBytes, roomSize);
+    size_t versionEightSize = 0;
+    for (size_t n = 0; n < roomSize; ++n) {
+        if (n + 14 <= roomSize && std::memcmp(versionEightBytes + n, "pokeballCount=", 14) == 0) {
+            versionEightSize = n; break;
+        }
+        if (n + 16 <= roomSize && std::memcmp(versionEightBytes + n, "saveVersion=0009", 16) == 0)
+            versionEightBytes[n + 15] = '8';
+        if (n + 19 <= roomSize && std::memcmp(versionEightBytes + n, "runtimeVersion=0009", 19) == 0)
+            versionEightBytes[n + 18] = '8';
+    }
+    if (!versionEightSize) return 43;
+    IntegritySha256::hashHex(versionEightBytes, versionEightSize, digest);
+    std::memcpy(versionEightBytes + versionEightSize, "sha256=", 7);
+    std::memcpy(versionEightBytes + versionEightSize + 7, digest, 64);
+    versionEightBytes[versionEightSize + 71] = '\n';
+    if (decodeNativeRunSave(versionEightBytes, versionEightSize + 72, PokerogueContent::kContentHash,
+            restored) != NativeSaveResult::Ok || restored.saveVersion != kNativeSaveVersion ||
+        restored.trickRoomTurnsLeft != 3 || restored.pokeballCounts[0] != 5) return 44;
+    for (uint8_t ball = 1; ball < 5; ++ball) if (restored.pokeballCounts[ball]) return 45;
+    NativeRunSave invalidSetup = original;
+    invalidSetup.pokeballCounts[1] = 1;
+    if (validateNativeRunSave(invalidSetup, PokerogueContent::kContentHash) != NativeSaveResult::InvalidRecord)
+        return 46;
     return 0;
 }

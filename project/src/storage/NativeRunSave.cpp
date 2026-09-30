@@ -7,7 +7,7 @@
 namespace Pokerogue3DS {
 namespace {
 // Stable envelope marker; saveVersion carries the independently migrated
-// payload schema (currently version 8).
+// payload schema (currently version 9).
 constexpr char kMagic[] = "POKEROGUE-3DS-SAVE 1\n";
 constexpr size_t kDigestLineLength = 72;
 
@@ -236,6 +236,11 @@ NativeSaveResult validateNativeRunSave(const NativeRunSave& save, const char* ex
         save.trickRoomSourceMoveId, save.trickRoomSourcePokemonId};
     if (!validPokemonTrickRoomState(room) ||
         (save.stage == NativeSaveStage::RunSetup && room.turnsLeft)) return NativeSaveResult::InvalidRecord;
+    // Pinned src/data/pokeball.ts MAX_PER_TYPE_POKEBALLS = 99.
+    for (uint8_t ball = 0; ball < 5; ++ball)
+        if (save.pokeballCounts[ball] > 99 ||
+            (save.stage == NativeSaveStage::RunSetup && save.pokeballCounts[ball] != (ball ? 0 : 5)))
+            return NativeSaveResult::InvalidRecord;
     const bool immutableWeather = save.weatherType >= 7 && save.weatherType <= 9;
     if (save.weatherType > 9 || save.weatherTurnsLeft > save.weatherMaxDuration ||
         ((save.weatherType == 0 || immutableWeather) && (save.weatherTurnsLeft || save.weatherMaxDuration)) ||
@@ -420,6 +425,9 @@ NativeSaveResult encodeNativeRunSave(const NativeRunSave& save, char* output, si
     writer.text("trickRoomMaxDuration="); writer.hex(save.trickRoomMaxDuration, 4);
     writer.text("trickRoomSourceMoveId="); writer.hex(save.trickRoomSourceMoveId, 4);
     writer.text("trickRoomSourcePokemonId="); writer.hex(save.trickRoomSourcePokemonId, 8);
+    for (uint8_t ball = 0; ball < 5; ++ball) {
+        writer.text("pokeballCount="); writer.hex(save.pokeballCounts[ball], 4);
+    }
     if (!writer.valid) return NativeSaveResult::TooLarge;
     char hash[65];
     IntegritySha256::hashHex(output, writer.position, hash);
@@ -436,7 +444,7 @@ NativeSaveResult decodeNativeRunSave(const char* bytes, size_t length, const cha
     auto status = inspectEnvelope(bytes, length, value, payloadStart);
     if (status != NativeSaveResult::Ok) return status;
     if (value.saveVersion > kNativeSaveVersion) return NativeSaveResult::UnsupportedVersion;
-    if (value.saveVersion != 1 && value.saveVersion != 2 && value.saveVersion != 3 && value.saveVersion != 4 && value.saveVersion != 5 && value.saveVersion != 6 && value.saveVersion != 7 &&
+    if (value.saveVersion != 1 && value.saveVersion != 2 && value.saveVersion != 3 && value.saveVersion != 4 && value.saveVersion != 5 && value.saveVersion != 6 && value.saveVersion != 7 && value.saveVersion != 8 &&
         value.saveVersion != kNativeSaveVersion) return NativeSaveResult::UnsupportedVersion;
     const bool legacySetup = value.saveVersion == 1 && value.runtimeVersion == 1;
     const bool legacyBattle = value.saveVersion == 2 && value.runtimeVersion == 2;
@@ -445,9 +453,10 @@ NativeSaveResult decodeNativeRunSave(const char* bytes, size_t length, const cha
     const bool legacySwitch = value.saveVersion == 5 && value.runtimeVersion == 5;
     const bool legacyStages = value.saveVersion == 6 && value.runtimeVersion == 6;
     const bool legacyWeather = value.saveVersion == 7 && value.runtimeVersion == 7;
+    const bool legacyRoom = value.saveVersion == 8 && value.runtimeVersion == 8;
     const bool currentPayload = value.saveVersion == kNativeSaveVersion &&
         value.runtimeVersion == kNativeSaveRuntimeVersion;
-    if (!currentPayload && !legacySetup && !legacyBattle && !legacyProgress && !legacyTrainer && !legacySwitch && !legacyStages && !legacyWeather)
+    if (!currentPayload && !legacySetup && !legacyBattle && !legacyProgress && !legacyTrainer && !legacySwitch && !legacyStages && !legacyWeather && !legacyRoom)
         return NativeSaveResult::IncompatibleRuntime;
     if (!isHash(expectedContentHash)) return NativeSaveResult::InvalidFormat;
     if (!equal(value.contentHash, expectedContentHash)) return NativeSaveResult::ContentMismatch;
@@ -475,7 +484,7 @@ NativeSaveResult decodeNativeRunSave(const char* bytes, size_t length, const cha
         if (value.stage != NativeSaveStage::RunSetup) return NativeSaveResult::UnsupportedStage;
         if (reader.position != reader.end) return NativeSaveResult::InvalidFormat;
         // Version-one records represented setup only. Upgrade in memory; the
-        // next journal write emits the current version-seven format.
+        // next journal write emits the current payload format.
         value.saveVersion = kNativeSaveVersion;
         value.runtimeVersion = kNativeSaveRuntimeVersion;
     } else {
@@ -556,8 +565,15 @@ NativeSaveResult decodeNativeRunSave(const char* bytes, size_t length, const cha
             if (!reader.literal("trickRoomSourcePokemonId=") || !reader.hex(8, parsed)) return NativeSaveResult::InvalidFormat;
             value.trickRoomSourcePokemonId = parsed;
         }
+        if (value.saveVersion >= 9) {
+            for (uint8_t ball = 0; ball < 5; ++ball) {
+                if (!reader.literal("pokeballCount=") || !reader.hex(4, parsed))
+                    return NativeSaveResult::InvalidFormat;
+                value.pokeballCounts[ball] = static_cast<uint16_t>(parsed);
+            }
+        }
         if (reader.position != reader.end) return NativeSaveResult::InvalidFormat;
-        if (legacyBattle || legacyProgress || legacyTrainer || legacySwitch || legacyStages || legacyWeather) {
+        if (legacyBattle || legacyProgress || legacyTrainer || legacySwitch || legacyStages || legacyWeather || legacyRoom) {
             value.saveVersion = kNativeSaveVersion;
             value.runtimeVersion = kNativeSaveRuntimeVersion;
         }

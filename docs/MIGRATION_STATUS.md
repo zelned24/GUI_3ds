@@ -348,3 +348,12 @@
 3. Esto no implementa la transformación Eternamax ni todos los tags/abilities de clima. Siguen pendientes para Classic completo y validación final.
 
 4. Revision estatica del harness: los casos de shields ahora construyen su actor con movimiento real; antes reutilizaban state, que otra prueba habia reemplazado por un actor sin moves. Asserts conservados, arreglo del setup, pendiente de ejecucion.
+
+## Inventario de bolas persistente — schema v9
+
+1. NativeRunSave v9 conserva las cinco entradas upstream utilizadas de PokeballType (src/enums/pokeball.ts); Luxury Ball está declarada pero excluida del inventario por BattleScene.reset. Valida MAX_PER_TYPE_POKEBALLS=99 (src/data/pokeball.ts). Setup solo admite inventario inicial.
+2. Journal dual/checksum/export existentes se reutilizan. Decoder migra v8 en memoria conservando Trick Room y los campos anteriores; inventario inicial es válido para producción v8 porque el runtime rechazaba stock modificado. Saves de runtime futuro siguen bloqueando fallback.
+3. FirstRunRuntime captura y restaura stock con el candidato atómico; ya no rechaza únicamente por bolas gastadas/recibidas. Regresiones de codec 40–46 y runtime 264–268 escritas para stock, límite, rechazo atómico y v8. Fixtures de versiones previas derivadas del writer ahora parten de encabezado v9; asserts conservados. No ejecutadas.
+4. Equipo capturado, dobles, jefes, historial de modifiers y progresión fuera de la frontera soportada siguen sin persistencia completa. No se declara save completo ni Classic jugable.
+
+5. Capacidad acotada del envelope ampliada a 4096 bytes: etiquetas/hex de seis miembros + stages/campos + stock requieren más que el buffer anterior en el peor caso. Journal y backend usan la constante común. Regresión existente de seis miembros se conserva; memoria/validación final siguen pendientes.

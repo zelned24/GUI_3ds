@@ -965,6 +965,25 @@ int main() {
         if (loaded.stage != NativeSaveStage::BattleActive || loaded.enemyHp != active.enemyHp ||
             loaded.seed != seed || loaded.playerStatStages[0] != -2 ||
             loaded.enemyStatStages[4] != 3) return 6;
+        NativeRunSave inventorySnapshot = loaded;
+        inventorySnapshot.pokeballCounts[0] = 0;
+        inventorySnapshot.pokeballCounts[1] = 3;
+        inventorySnapshot.pokeballCounts[2] = 99;
+        inventorySnapshot.pokeballCounts[3] = 1;
+        inventorySnapshot.pokeballCounts[4] = 2;
+        if (!game.restoreNativeRunSave(inventorySnapshot)) return 264;
+        NativeRunSave inventoryRoundtrip{};
+        game.captureNativeRunSave(inventoryRoundtrip);
+        if (validateNativeRunSave(inventoryRoundtrip, PokerogueContent::kContentHash) != NativeSaveResult::Ok)
+            return 265;
+        for (uint8_t ball = 0; ball < 5; ++ball)
+            if (game.pokeballCount(static_cast<PokeballType>(ball)) != inventorySnapshot.pokeballCounts[ball] ||
+                inventoryRoundtrip.pokeballCounts[ball] != inventorySnapshot.pokeballCounts[ball]) return 266;
+        NativeRunSave invalidInventory = inventorySnapshot;
+        invalidInventory.pokeballCounts[2] = 100;
+        if (game.restoreNativeRunSave(invalidInventory) || game.pokeballCount(PokeballType::UltraBall) != 99)
+            return 267;
+        if (!game.restoreNativeRunSave(loaded)) return 268;
         if (loaded.weatherType || loaded.weatherTurnsLeft || loaded.weatherMaxDuration) return 23;
         NativeRunSave unsupportedWeather = loaded;
         unsupportedWeather.weatherType = 2;

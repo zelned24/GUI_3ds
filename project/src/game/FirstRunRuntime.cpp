@@ -129,10 +129,9 @@ bool FirstRunRuntime::restoreSetup(uint32_t seed, uint16_t starterDex) {
 
 void FirstRunRuntime::captureNativeRunSave(NativeRunSave& output) const {
     NativeRunSave value{};
-    // v8 cannot serialize doubles, captured party, inventory or later trainer history.
+    // v9 preserves ball inventory; doubles, captured party and later trainer history remain unsupported.
     // Never report a setup checkpoint as a successful save of an active double battle.
-    const std::array<uint16_t, 6> initialBalls{5, 0, 0, 0, 0, 0};
-    if (m_context.enemy.bossState.segmentCount || m_doubleBattle || m_context.playerPartyCount > 1 || m_pokeballs != initialBalls ||
+    if (m_context.enemy.bossState.segmentCount || m_doubleBattle || m_context.playerPartyCount > 1 || m_pokeballs[5] ||
         m_run.wave > 9 || (m_trainerBattle && m_run.wave != 5)) {
         output = {};
         return;
@@ -145,6 +144,7 @@ void FirstRunRuntime::captureNativeRunSave(NativeRunSave& output) const {
         output = {};
         return;
     }
+    for (uint8_t ball = 0; ball < 5; ++ball) value.pokeballCounts[ball] = m_pokeballs[ball];
     value.wave = m_run.wave;
     value.playerLevel = m_context.player.level;
     value.playerExperience = m_context.player.totalExperience;
@@ -338,6 +338,8 @@ bool FirstRunRuntime::restoreNativeRunSaveInPlace(const NativeRunSave& save) {
     m_arenaWeather = {static_cast<PokemonEffectiveWeather>(save.weatherType),
         save.weatherTurnsLeft, save.weatherMaxDuration};
     if (m_arenaWeather.type != PokemonEffectiveWeather::None && !weatherBattleSupported()) return false;
+    for (uint8_t ball = 0; ball < 5; ++ball) m_pokeballs[ball] = save.pokeballCounts[ball];
+    m_pokeballs[5] = 0;
     m_turn = save.battleTurn;
     m_enemySwitchCounter = save.enemySwitchCounter;
     if (save.trainerPartyCount) refreshTrainerBaselineMatchups();

@@ -164,7 +164,7 @@
 
 ### 10.1. Estado persistente completo
 
-1. Reutilizar journal dual, checksums, schema v8 y export `sdmc:/3ds/pokerogue/exports/progress.p3save`; no crear un segundo save system.
+1. Reutilizar journal dual, checksums, schema v9 y export `sdmc:/3ds/pokerogue/exports/progress.p3save`; no crear un segundo save system.
 2. Extender estado a equipo completo, status/tags, objetos/modificadores, rewards, perfil/unlocks, bioma/ruta/wave 200, campos y formas.
 3. Guardar estado RNG necesario para cada frontera de fase; dejar claro si se permiten puntos entre turnos o fases y no reconstruir por supuestos inválidos.
 4. Restaurar de forma atómica todos los estados soportados, validar referencias y evitar replay con recompensas/EXP/objetos duplicados.
