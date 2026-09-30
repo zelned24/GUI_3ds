@@ -10,22 +10,30 @@
 namespace Pokerogue3DS {
 
 enum class BaselineFirstMover : uint8_t { Invalid, Player, Enemy };
+struct PokemonTurnOrderFieldPolicy {
+    bool resolved = false;
+    bool speedReversed = false; // Resolved TrickRoomTag application.
+};
+
 
 // Pinned MovePhasePriorityQueue sorts by move priority after
 // sortInSpeedOrder. For a two-Pokemon field, that speed sort shuffles the
 // initial [player, enemy] order with a stream derived from waveSeed and
 // turn * 1000 + 2, then sorts descending by effective speed. This bounded
-// resolver applies canonical speed stages; abilities, held items, terrain,
-// Trick Room and priority modifiers require their own native rules.
+// resolver applies speed stages and resolved weather abilities. Optional field
+// policy reverses speed order; held items/terrain/priority modifiers remain separate.
 inline BaselineFirstMover resolveBaselineFirstMover(
     const PokemonBattleState& player, const PokemonBattleState& enemy,
     uint16_t playerMoveId, uint16_t enemyMoveId,
     const uint16_t* rootSeed, std::size_t seedLength,
     uint16_t wave, uint32_t turn,
-    const PokemonMoveWeatherContext* resolvedArenaWeather = nullptr) {
+    const PokemonMoveWeatherContext* resolvedArenaWeather = nullptr,
+    const PokemonTurnOrderFieldPolicy* fieldPolicy = nullptr) {
   if (!rootSeed || !seedLength || seedLength > PokerogueRngAdapter::kMaxSeedCodeUnits
       || !wave || !turn || turn > (0xffffffffU - 2U) / 1000U
       || !player.stats[5] || !enemy.stats[5]) return BaselineFirstMover::Invalid;
+  if (fieldPolicy && !fieldPolicy->resolved) return BaselineFirstMover::Invalid;
+  const bool reverseSpeed = fieldPolicy && fieldPolicy->speedReversed;
   const auto* playerMove = PokerogueContent::findMoveById(playerMoveId);
   const auto* enemyMove = PokerogueContent::findMoveById(enemyMoveId);
   if (!playerMove || !enemyMove) return BaselineFirstMover::Invalid;
@@ -47,10 +55,13 @@ inline BaselineFirstMover resolveBaselineFirstMover(
   if (playerMove->priority != enemyMove->priority)
     return playerMove->priority > enemyMove->priority
         ? BaselineFirstMover::Player : BaselineFirstMover::Enemy;
-  if (playerSpeed != enemySpeed)
-    return playerSpeed > enemySpeed
-        ? BaselineFirstMover::Player : BaselineFirstMover::Enemy;
-  return enemyWasShuffledFirst ? BaselineFirstMover::Enemy : BaselineFirstMover::Player;
+  if (playerSpeed != enemySpeed) {
+    const bool playerFirst = reverseSpeed ? playerSpeed < enemySpeed : playerSpeed > enemySpeed;
+    return playerFirst ? BaselineFirstMover::Player : BaselineFirstMover::Enemy;
+  }
+  // Upstream reverses the whole stable sorted list, including shuffled ties.
+  const bool enemyFirst = reverseSpeed ? !enemyWasShuffledFirst : enemyWasShuffledFirst;
+  return enemyFirst ? BaselineFirstMover::Enemy : BaselineFirstMover::Player;
 }
 
 } // namespace Pokerogue3DS

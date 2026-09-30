@@ -680,9 +680,11 @@ bool FirstRunRuntime::advanceBattleTurn() {
 
     PokemonMoveWeatherContext turnWeather{};
     if (!resolveActiveMoveWeather(false, turnWeather)) return false;
+    PokemonTurnOrderFieldPolicy turnField{};
+    turnField.resolved = true; // Current eligible moves cannot set field tags.
     const auto firstMover = resolveBaselineFirstMover(playerState, enemyState,
         selected->id, enemyMove->id, m_seedCodeUnits.data(), m_seedLength,
-        m_run.wave, m_turn, &turnWeather);
+        m_run.wave, m_turn, &turnWeather, &turnField);
     if (firstMover == BaselineFirstMover::Invalid) {
         m_battleFeedback = "Turn order inputs unsupported";
         buildScene();

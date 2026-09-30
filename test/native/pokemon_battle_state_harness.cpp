@@ -1119,6 +1119,26 @@ extern "C" int runPokemonBattleStateChecks() {
     speedWeather.cancellationWeather = PokemonEffectiveWeather::None;
     if (!Pokerogue3DS::pokemonWeatherEffectiveSpeed(swimmer, speedWeather, weatherSpeed) ||
         weatherSpeed != 79) return 373;
+    Pokerogue3DS::PokemonTurnOrderFieldPolicy trickRoomPolicy{};
+    trickRoomPolicy.resolved = true;
+    trickRoomPolicy.speedReversed = true;
+    PokemonBattleState trickFast = state, trickSlow = state;
+    trickFast.stats[5] = 100;
+    trickSlow.stats[5] = 50;
+    trickFast.statStages[4] = trickSlow.statStages[4] = 0;
+    if (Pokerogue3DS::resolveBaselineFirstMover(trickFast, trickSlow, 33, 33,
+            weatherSeed, 7, 1, 1, nullptr, &trickRoomPolicy) != Pokerogue3DS::BaselineFirstMover::Enemy) return 374;
+    if (Pokerogue3DS::resolveBaselineFirstMover(trickFast, trickSlow, 98, 33,
+            weatherSeed, 7, 1, 1, nullptr, &trickRoomPolicy) != Pokerogue3DS::BaselineFirstMover::Player) return 375;
+    trickSlow.stats[5] = 100;
+    const auto ordinaryTie = Pokerogue3DS::resolveBaselineFirstMover(trickFast, trickSlow, 33, 33, weatherSeed, 7, 1, 1);
+    const auto reversedTie = Pokerogue3DS::resolveBaselineFirstMover(trickFast, trickSlow, 33, 33,
+        weatherSeed, 7, 1, 1, nullptr, &trickRoomPolicy);
+    if (ordinaryTie == Pokerogue3DS::BaselineFirstMover::Invalid || reversedTie == ordinaryTie ||
+        reversedTie == Pokerogue3DS::BaselineFirstMover::Invalid) return 376;
+    trickRoomPolicy.resolved = false;
+    if (Pokerogue3DS::resolveBaselineFirstMover(trickFast, trickSlow, 33, 33,
+            weatherSeed, 7, 1, 1, nullptr, &trickRoomPolicy) != Pokerogue3DS::BaselineFirstMover::Invalid) return 377;
     PokemonBattleState noPpActor = state;
     noPpActor.moves[0].pp = 0;
     PokemonBattleState unchangedTarget = state;
