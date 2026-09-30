@@ -38,6 +38,8 @@ struct ResolvedPokemon {
 struct PresentationContext {
     const char* modeName;
     const char* biomeName;
+    uint16_t trainerTypeId = 0;
+    const char* trainerName = nullptr;
     ResolvedPokemon player;
     ResolvedPokemon enemy;
     ResolvedPokemon secondEnemy;

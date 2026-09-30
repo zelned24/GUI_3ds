@@ -523,6 +523,8 @@ void FirstRunRuntime::resolve(bool carryPlayer) {
     m_secondEncounterResolved = false;
     m_context.enemy = {};
     m_context.secondEnemy = {};
+    m_context.trainerTypeId = 0;
+    m_context.trainerName = nullptr;
     const auto& starter = PokerogueContent::kSpecies[m_starterIndex];
     m_run.starterDex = starter.dex;
     m_context.modeName = locale("gameMode:classic", "Classic");
@@ -614,7 +616,16 @@ void FirstRunRuntime::resolve(bool carryPlayer) {
                 m_seedCodeUnits.data(), m_seedLength, waveRng, isTrainer) ==
                 ClassicTrainerDecision::Invalid) return;
         if (isTrainer) {
-            m_battleFeedback = "Classic trainer encounter is not ported yet";
+            const auto selectedTrainer = PokerogueEncounterResolver::resolveTrainerType(
+                m_run.biomeId, false, false, waveRng);
+            if (!selectedTrainer.valid || !selectedTrainer.trainerType) {
+                m_battleFeedback = "Canonical trainer pool could not resolve";
+                buildScene();
+                return;
+            }
+            m_context.trainerTypeId = selectedTrainer.trainerType->id;
+            m_context.trainerName = selectedTrainer.trainerType->name;
+            m_battleFeedback = "Trainer party construction pending";
             buildScene();
             return;
         }
@@ -746,7 +757,9 @@ void FirstRunRuntime::buildScene() {
     m_text[1] = std::string("Mode: ") + m_context.modeName;
     m_text[2] = std::string("Biome: ") + m_context.biomeName;
     m_text[3] = std::string("Starter: ") + starterName();
-    if (m_encounterResolved) {
+    if (m_context.trainerName) {
+        std::snprintf(line, sizeof(line), "Trainer: %s", m_context.trainerName);
+    } else if (m_encounterResolved) {
         std::snprintf(line, sizeof(line), "Encounter: %s Lv. %u", m_context.enemy.localizedName,
                       static_cast<unsigned>(m_context.enemy.level));
     } else {
