@@ -58,6 +58,34 @@ inline uint16_t trainerPartyRootDex(const PokerogueContent::Species& species) {
   return current->prevolutionDex ? 0 : current->dex;
 }
 
+// Trainer.checkDuplicateSpecies also reserves every root from signatureSpecies.
+// This lookup consumes no random draws; malformed references fail explicitly.
+inline bool trainerReservedSpeciesDuplicate(const PokerogueContent::TrainerType& trainer,
+    uint16_t baseSpeciesDex, bool& duplicate) {
+  if (!PokerogueContent::findSpeciesByDex(baseSpeciesDex) ||
+      trainer.signatureOffset > PokerogueContent::kTrainerSignatureChoiceCount ||
+      trainer.signatureCount > PokerogueContent::kTrainerSignatureChoiceCount - trainer.signatureOffset)
+    return false;
+  bool result = false;
+  for (uint8_t slot = 0; slot < trainer.signatureCount; ++slot) {
+    const auto& choice = PokerogueContent::kTrainerSignatureChoices[trainer.signatureOffset + slot];
+    if (choice.trainerId != trainer.id || !choice.speciesCount ||
+        choice.speciesOffset > PokerogueContent::kTrainerSignatureSpeciesCount ||
+        choice.speciesCount > PokerogueContent::kTrainerSignatureSpeciesCount - choice.speciesOffset)
+      return false;
+    for (uint8_t i = 0; i < choice.speciesCount; ++i) {
+      const auto* species = trainerPartySpeciesById(
+          PokerogueContent::kTrainerSignatureSpecies[choice.speciesOffset + i].speciesId);
+      if (!species) return false;
+      const uint16_t root = trainerPartyRootDex(*species);
+      if (!root) return false;
+      result |= root == baseSpeciesDex;
+    }
+  }
+  duplicate = result;
+  return true;
+}
+
 // Source order for a simple trainer pool member: tier roll, candidate roll,
 // level evolution and duplicate rerolls (up to ten). Ordinary pool members
 // retain that species; sameSpecies overrides it after consuming those draws.
@@ -91,6 +119,9 @@ inline TrainerPartySpeciesChoice resolveSimpleTrainerPoolMember(
       if (!priorRoot) return {};
       retry |= priorRoot == base->dex;
     }
+    bool reservedDuplicate = false;
+    if (!trainerReservedSpeciesDuplicate(trainer, base->dex, reservedDuplicate)) return {};
+    retry |= reservedDuplicate;
     if (retry && attempt < 10) continue;
     const char* finalId = nullptr;
     if (member.sameSpecies && memberIndex > member.segmentStart) {

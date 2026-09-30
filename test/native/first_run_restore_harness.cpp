@@ -634,6 +634,30 @@ static int checkLevelUpMoveLearningAndEvolution() {
     return 0;
 }
 
+static int checkReservedTrainerSpecies() {
+    using namespace Pokerogue3DS;
+    unsigned checked = 0;
+    for (const auto& trainer : PokerogueContent::kTrainerTypes) {
+        if (!trainer.signatureCount) continue;
+        if (trainer.signatureOffset + trainer.signatureCount > PokerogueContent::kTrainerSignatureChoiceCount) return 237;
+        for (uint8_t slot = 0; slot < trainer.signatureCount; ++slot) {
+            const auto& choice = PokerogueContent::kTrainerSignatureChoices[trainer.signatureOffset + slot];
+            for (uint8_t i = 0; i < choice.speciesCount; ++i) {
+                const auto* species = trainerPartySpeciesById(
+                    PokerogueContent::kTrainerSignatureSpecies[choice.speciesOffset + i].speciesId);
+                if (!species) return 238;
+                bool duplicate = false;
+                if (!trainerReservedSpeciesDuplicate(trainer, trainerPartyRootDex(*species), duplicate) ||
+                    !duplicate) return 239;
+                ++checked;
+            }
+        }
+        bool sentinel = true;
+        if (trainerReservedSpeciesDuplicate(trainer, 65535, sentinel) || !sentinel) return 240;
+    }
+    return checked ? 0 : 241;
+}
+
 static int checkTrainerPoolEvolutionDraws() {
     using namespace Pokerogue3DS;
     unsigned checked = 0;
@@ -726,6 +750,8 @@ static int checkCanonicalTrainerSignatureSlots() {
 }
 
 int main() {
+    const int reservedSpeciesCheck = checkReservedTrainerSpecies();
+    if (reservedSpeciesCheck) return reservedSpeciesCheck;
     const int poolDrawCheck = checkTrainerPoolEvolutionDraws();
     if (poolDrawCheck) return poolDrawCheck;
     const int sameSpeciesCheck = checkCanonicalSameSpeciesTrainerMembers();

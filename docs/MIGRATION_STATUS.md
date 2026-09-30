@@ -246,3 +246,9 @@
 1. Trainer.genNewPartyMemberSpecies retorna ret tras evolución y rerolls. Trainer.genPartyMember no vuelve a evolucionar el pool ordinario; la segunda transformación solo corresponde a newSpeciesPool. Retirado sorteo adicional local.
 2. sameSpecies conserva su sustitución posterior explícita. Corrección afecta especies y estado RNG consumido antes de crear actor, movimientos e IVs.
 3. Regresión 234–236 recorre trainers reales simples sin signature y compara especie y carry/s0/s1/s2 con la secuencia explícita del pool upstream. Escrita, pendiente de ejecución. Specialty filters, tipos balanced y firmas reservadas para evitar duplicados siguen pendientes.
+
+## Especies reservadas del entrenador
+
+1. Trainer.checkDuplicateSpecies pinned incluye raíces de signatureSpecies además de las especies presentes en el equipo. Resolver de pool consulta todas las opciones canónicas de signature sin consumir RNG y suma esa causa de reroll hasta el límite upstream de diez.
+2. Referencias/rangos inválidos fallan; no se ignoran firmas desconocidas. Comparación usa la especie base candidata frente a las raíces reservadas, como upstream.
+3. Regresión 237–241 recorre opciones signature reales, verifica reserva por raíz y rechazo de especie inválida sin publicar salida. Escrita, pendiente de ejecución. No demuestra todavía todos los equipos de entrenador jugables.
