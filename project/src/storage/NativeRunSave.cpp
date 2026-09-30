@@ -8,7 +8,7 @@
 namespace Pokerogue3DS {
 namespace {
 // Stable envelope marker; saveVersion carries the independently migrated
-// payload schema (currently version 9).
+// payload schema (currently version 10).
 constexpr char kMagic[] = "POKEROGUE-3DS-SAVE 1\n";
 constexpr size_t kDigestLineLength = 72;
 
@@ -449,6 +449,29 @@ NativeSaveResult validateNativeRunSave(const NativeRunSave& save, const char* ex
         if (save.pokeballCounts[ball] > 99 ||
             (save.stage == NativeSaveStage::RunSetup && save.pokeballCounts[ball] != (ball ? 0 : 5)))
             return NativeSaveResult::InvalidRecord;
+    if (save.playerPartyCount > 6 ||
+        (!save.playerPartyCount && save.activePlayerMember != 0xFF) ||
+        (save.playerPartyCount && (save.stage == NativeSaveStage::RunSetup ||
+            save.activePlayerMember >= save.playerPartyCount))) return NativeSaveResult::InvalidRecord;
+    for (uint8_t member = 0; member < save.playerPartyCount; ++member) {
+        PokemonBattleState actor{};
+        PokemonActorIdentity identity{};
+        if (!restoreNativePokemonActorSave(save.playerParty[member], actor, identity))
+            return NativeSaveResult::InvalidRecord;
+        for (uint8_t prior = 0; prior < member; ++prior)
+            if (save.playerParty[prior].pokemonId == actor.pokemonId) return NativeSaveResult::InvalidRecord;
+    }
+    if (save.playerPartyCount) {
+        const auto& active = save.playerParty[save.activePlayerMember];
+        if (active.level != save.playerLevel || active.experience != save.playerExperience ||
+            active.hp != save.playerHp || active.moveCount != save.playerMoveCount)
+            return NativeSaveResult::InvalidRecord;
+        for (uint8_t slot = 0; slot < 4; ++slot)
+            if (active.moveIds[slot] != save.playerMoveIds[slot] || active.pp[slot] != save.playerPp[slot])
+                return NativeSaveResult::InvalidRecord;
+        for (uint8_t stat = 0; stat < 7; ++stat)
+            if (active.statStages[stat] != save.playerStatStages[stat]) return NativeSaveResult::InvalidRecord;
+    }
     const bool immutableWeather = save.weatherType >= 7 && save.weatherType <= 9;
     if (save.weatherType > 9 || save.weatherTurnsLeft > save.weatherMaxDuration ||
         ((save.weatherType == 0 || immutableWeather) && (save.weatherTurnsLeft || save.weatherMaxDuration)) ||
@@ -466,14 +489,17 @@ NativeSaveResult validateNativeRunSave(const NativeRunSave& save, const char* ex
     const auto* starter = freshStarter(save.starterDex);
     if (!starter) return NativeSaveResult::InvalidRecord;
     uint32_t initialExperience = 0, currentThreshold = 0;
+    const auto* experienceSpecies = save.playerPartyCount
+        ? PokerogueContent::findSpeciesByDex(save.playerParty[save.activePlayerMember].speciesDex) : starter;
+    if (!experienceSpecies) return NativeSaveResult::InvalidRecord;
     if (!starterExperienceAtLevelFive(save.starterDex, initialExperience)
         || save.playerLevel < 5 || save.playerLevel > classicExperienceLevelCap(save.wave)
-        || pokemonTotalExperienceForLevel(starter->growthRate, save.playerLevel, currentThreshold)
+        || pokemonTotalExperienceForLevel(experienceSpecies->growthRate, save.playerLevel, currentThreshold)
             != PokemonExperienceResult::Ok
         || save.playerExperience < currentThreshold) return NativeSaveResult::InvalidRecord;
     if (save.playerLevel < classicExperienceLevelCap(save.wave)) {
         uint32_t nextThreshold = 0;
-        if (pokemonTotalExperienceForLevel(starter->growthRate,
+        if (pokemonTotalExperienceForLevel(experienceSpecies->growthRate,
                 static_cast<uint16_t>(save.playerLevel + 1), nextThreshold) != PokemonExperienceResult::Ok
             || save.playerExperience >= nextThreshold) return NativeSaveResult::InvalidRecord;
     }
@@ -636,6 +662,16 @@ NativeSaveResult encodeNativeRunSave(const NativeRunSave& save, char* output, si
     for (uint8_t ball = 0; ball < 5; ++ball) {
         writer.text("pokeballCount="); writer.hex(save.pokeballCounts[ball], 4);
     }
+    writer.text("playerPartyCount="); writer.hex(save.playerPartyCount, 2);
+    writer.text("activePlayerMember="); writer.hex(save.activePlayerMember, 2);
+    for (uint8_t member = 0; member < save.playerPartyCount; ++member) {
+        char payload[512]{};
+        size_t payloadSize = 0;
+        const auto status = encodeNativePokemonSave(save.playerParty[member], payload, sizeof(payload), payloadSize);
+        if (status != NativeSaveResult::Ok) return status;
+        writer.text("playerMemberBytes="); writer.hex(static_cast<uint32_t>(payloadSize), 4);
+        for (size_t byte = 0; byte < payloadSize; ++byte) writer.character(payload[byte]);
+    }
     if (!writer.valid) return NativeSaveResult::TooLarge;
     char hash[65];
     IntegritySha256::hashHex(output, writer.position, hash);
@@ -652,7 +688,7 @@ NativeSaveResult decodeNativeRunSave(const char* bytes, size_t length, const cha
     auto status = inspectEnvelope(bytes, length, value, payloadStart);
     if (status != NativeSaveResult::Ok) return status;
     if (value.saveVersion > kNativeSaveVersion) return NativeSaveResult::UnsupportedVersion;
-    if (value.saveVersion != 1 && value.saveVersion != 2 && value.saveVersion != 3 && value.saveVersion != 4 && value.saveVersion != 5 && value.saveVersion != 6 && value.saveVersion != 7 && value.saveVersion != 8 &&
+    if (value.saveVersion != 1 && value.saveVersion != 2 && value.saveVersion != 3 && value.saveVersion != 4 && value.saveVersion != 5 && value.saveVersion != 6 && value.saveVersion != 7 && value.saveVersion != 8 && value.saveVersion != 9 &&
         value.saveVersion != kNativeSaveVersion) return NativeSaveResult::UnsupportedVersion;
     const bool legacySetup = value.saveVersion == 1 && value.runtimeVersion == 1;
     const bool legacyBattle = value.saveVersion == 2 && value.runtimeVersion == 2;
@@ -662,9 +698,10 @@ NativeSaveResult decodeNativeRunSave(const char* bytes, size_t length, const cha
     const bool legacyStages = value.saveVersion == 6 && value.runtimeVersion == 6;
     const bool legacyWeather = value.saveVersion == 7 && value.runtimeVersion == 7;
     const bool legacyRoom = value.saveVersion == 8 && value.runtimeVersion == 8;
+    const bool legacyInventory = value.saveVersion == 9 && value.runtimeVersion == 9;
     const bool currentPayload = value.saveVersion == kNativeSaveVersion &&
         value.runtimeVersion == kNativeSaveRuntimeVersion;
-    if (!currentPayload && !legacySetup && !legacyBattle && !legacyProgress && !legacyTrainer && !legacySwitch && !legacyStages && !legacyWeather && !legacyRoom)
+    if (!currentPayload && !legacySetup && !legacyBattle && !legacyProgress && !legacyTrainer && !legacySwitch && !legacyStages && !legacyWeather && !legacyRoom && !legacyInventory)
         return NativeSaveResult::IncompatibleRuntime;
     if (!isHash(expectedContentHash)) return NativeSaveResult::InvalidFormat;
     if (!equal(value.contentHash, expectedContentHash)) return NativeSaveResult::ContentMismatch;
@@ -780,8 +817,23 @@ NativeSaveResult decodeNativeRunSave(const char* bytes, size_t length, const cha
                 value.pokeballCounts[ball] = static_cast<uint16_t>(parsed);
             }
         }
+        if (value.saveVersion >= 10) {
+            if (!reader.literal("playerPartyCount=") || !reader.hex(2, parsed)) return NativeSaveResult::InvalidFormat;
+            value.playerPartyCount = static_cast<uint8_t>(parsed);
+            if (value.playerPartyCount > 6) return NativeSaveResult::InvalidRecord;
+            if (!reader.literal("activePlayerMember=") || !reader.hex(2, parsed)) return NativeSaveResult::InvalidFormat;
+            value.activePlayerMember = static_cast<uint8_t>(parsed);
+            for (uint8_t member = 0; member < value.playerPartyCount; ++member) {
+                if (!reader.literal("playerMemberBytes=") || !reader.hex(4, parsed) ||
+                    parsed > reader.end - reader.position) return NativeSaveResult::InvalidFormat;
+                const auto memberStatus = decodeNativePokemonSave(reader.bytes + reader.position, parsed,
+                    value.playerParty[member]);
+                if (memberStatus != NativeSaveResult::Ok) return memberStatus;
+                reader.position += parsed;
+            }
+        }
         if (reader.position != reader.end) return NativeSaveResult::InvalidFormat;
-        if (legacyBattle || legacyProgress || legacyTrainer || legacySwitch || legacyStages || legacyWeather || legacyRoom) {
+        if (legacyBattle || legacyProgress || legacyTrainer || legacySwitch || legacyStages || legacyWeather || legacyRoom || legacyInventory) {
             value.saveVersion = kNativeSaveVersion;
             value.runtimeVersion = kNativeSaveRuntimeVersion;
         }

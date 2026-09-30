@@ -5,10 +5,10 @@
 
 namespace Pokerogue3DS {
 
-inline constexpr uint16_t kNativeSaveVersion = 9;
-inline constexpr uint16_t kNativeSaveRuntimeVersion = 9;
+inline constexpr uint16_t kNativeSaveVersion = 10;
+inline constexpr uint16_t kNativeSaveRuntimeVersion = 10;
 // Bounded text envelope including six trainer members and field/inventory state.
-inline constexpr size_t kNativeSaveMaxBytes = 4096;
+inline constexpr size_t kNativeSaveMaxBytes = 8192;
 
 enum class NativeSaveStage : uint16_t {
     RunSetup = 1,
@@ -100,6 +100,9 @@ struct NativeRunSave {
     NativeTrainerMemberSave trainerParty[6]{};
     // src/enums/pokeball.ts: IDs 0..4; unused LUXURY_BALL is not inventory.
     uint16_t pokeballCounts[5]{5, 0, 0, 0, 0};
+    uint8_t playerPartyCount = 0; // Zero retains the legacy seed-replayed actor path.
+    uint8_t activePlayerMember = 0xFF;
+    NativePokemonSave playerParty[6]{};
     char modeId[32]{};
     char biomeId[48]{};
 };

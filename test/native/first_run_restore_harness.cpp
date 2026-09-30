@@ -1030,6 +1030,25 @@ int main() {
         size_t rejectedSize = 99;
         if (encodeNativePokemonSave(actorSnapshot, actorBytesAgain, 1, rejectedSize) != NativeSaveResult::TooLarge ||
             rejectedSize) return 286;
+        NativeRunSave explicitParty = loaded;
+        explicitParty.playerPartyCount = 1;
+        explicitParty.activePlayerMember = 0;
+        explicitParty.playerParty[0] = actorSnapshot;
+        char partyPayload[kNativeSaveMaxBytes]{};
+        size_t partyPayloadSize = 0;
+        NativeRunSave decodedParty{};
+        if (encodeNativeRunSave(explicitParty, partyPayload, sizeof(partyPayload), partyPayloadSize) !=
+                NativeSaveResult::Ok || decodeNativeRunSave(partyPayload, partyPayloadSize,
+                PokerogueContent::kContentHash, decodedParty) != NativeSaveResult::Ok ||
+            decodedParty.playerPartyCount != 1 || decodedParty.activePlayerMember ||
+            decodedParty.playerParty[0].pokemonId != actorSnapshot.pokemonId) return 287;
+        explicitParty.activePlayerMember = 1;
+        if (validateNativeRunSave(explicitParty, PokerogueContent::kContentHash) !=
+                NativeSaveResult::InvalidRecord) return 288;
+        explicitParty.activePlayerMember = 0;
+        ++explicitParty.playerParty[0].hp;
+        if (validateNativeRunSave(explicitParty, PokerogueContent::kContentHash) !=
+                NativeSaveResult::InvalidRecord) return 289;
         NativeRunSave inventorySnapshot = loaded;
         inventorySnapshot.pokeballCounts[0] = 0;
         inventorySnapshot.pokeballCounts[1] = 3;

@@ -376,3 +376,9 @@
 1. encode/decodeNativePokemonSave reutilizan Writer/Reader del journal para un payload determinista de actor. IDs canónicos y campos mutables se escriben sin punteros/stats calculados; referencias e identidad se validan antes de aceptar el registro. Decoder limita a 512 bytes y rechaza bytes extra/truncados y flags inválidos.
 2. El envelope de run será responsable de versión/hash/checksum; este payload no es por sí solo un archivo de progreso importable. Regresiones 281–286 escritas para roundtrip byte a byte, truncamiento sin mutar salida y capacidad insuficiente. No ejecutadas.
 3. Pendiente inmediato: arrays de miembros y active slot en schema de run, migración v9 y conexión de capture/restore sin replay de capturas. Persistencia completa y objetivo jugable siguen sin demostración.
+
+## Equipo en payload v10
+
+1. NativeRunSave v10 incluye hasta seis snapshots explícitos y slot activo, con registros de longitud acotada dentro del envelope checksum existente. V9 migra sin inventar miembros: count=0 conserva el camino legacy. Versiones anteriores y fixtures de migración conservadas.
+2. Valida identidad canónica de cada miembro, IDs duplicados y coherencia de HP/EXP/level/moves/PP/stages del activo con campos anteriores; growth rate corresponde al actor activo. Buffer acotado 8192 cubre hasta seis registros de jugador y seis de entrenador.
+3. Regresiones 287–289 escritas para codec de equipo, slot inválido y discrepancia de HP; no ejecutadas. Runtime aún no emite ni restaura estos arrays: la conexión sin replay y snapshot de contexto de capturas sigue pendiente. No se declara persistencia de capturados completada.
