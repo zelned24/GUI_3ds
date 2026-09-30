@@ -232,15 +232,29 @@ PokemonTypeEffectivenessResult calculatePokemonTypeEffectiveness(
     const PokemonBattleState& defender,
     double& outputMultiplier);
 
+// Pinned src/enums/weather-type.ts IDs. Caller resolves suppression and
+// PreAttackWeatherOverrideAbAttr before supplying the effective weather.
+enum class PokemonEffectiveWeather : uint8_t {
+    None = 0, Sunny = 1, Rain = 2, Sandstorm = 3, Hail = 4,
+    Snow = 5, Fog = 6, HeavyRain = 7, HarshSun = 8, StrongWinds = 9
+};
+struct PokemonMoveWeatherContext {
+    bool resolved = false;
+    PokemonEffectiveWeather effectiveWeather = PokemonEffectiveWeather::None;
+};
+bool pokemonMoveWeatherMultiplier(uint16_t moveId,
+    const PokemonMoveWeatherContext& context, double& outputMultiplier);
+
 enum class PokemonDamageCoreResult : uint8_t {
-    Ok = 0, MissingMove, MissingSpecies, NonDamagingMove, InvalidStats, InvalidType, UnsupportedAbilityCondition
+    Ok = 0, MissingMove, MissingSpecies, NonDamagingMove, InvalidStats, InvalidType, UnsupportedAbilityCondition, UnresolvedWeather
 };
 PokemonDamageCoreResult calculatePokemonDamageCore(
     const PokemonBattleState& attacker,
     const PokemonBattleState& defender,
     uint16_t moveId,
     bool moveIsTypeless,
-    uint32_t& outputDamage);
+    uint32_t& outputDamage,
+    const PokemonMoveWeatherContext* weatherContext = nullptr);
 
 struct PokemonMoveDamageRoll {
     bool hit = false;
@@ -253,7 +267,7 @@ struct PokemonMoveDamageRoll {
     uint32_t damage = 0;
 };
 enum class PokemonMoveDamageResult : uint8_t {
-    Ok = 0, MissingMove, MissingSpecies, NonDamagingMove, InvalidAccuracy, InvalidStats, InvalidType, UnsupportedAbilityCondition
+    Ok = 0, MissingMove, MissingSpecies, NonDamagingMove, InvalidAccuracy, InvalidStats, InvalidType, UnsupportedAbilityCondition, UnresolvedWeather
 };
 PokemonMoveDamageResult resolveStandardPokemonMoveDamage(
     const PokemonBattleState& attacker,
@@ -261,7 +275,8 @@ PokemonMoveDamageResult resolveStandardPokemonMoveDamage(
     uint16_t moveId,
     bool moveIsTypeless,
     PokerogueRngAdapter& battleRng,
-    PokemonMoveDamageRoll& output);
+    PokemonMoveDamageRoll& output,
+    const PokemonMoveWeatherContext* weatherContext = nullptr);
 
 struct PokemonMoveActionResult {
     PokemonMoveDamageRoll damageRoll{};

@@ -519,12 +519,35 @@ PokemonTypeEffectivenessResult calculatePokemonTypeEffectiveness(
     return calculatePokemonAttackTypeEffectiveness(move->type, defender, outputMultiplier);
 }
 
+bool pokemonMoveWeatherMultiplier(uint16_t moveId,
+    const PokemonMoveWeatherContext& context, double& outputMultiplier) {
+    const auto* move = PokerogueContent::findMoveById(moveId);
+    if (!move || !context.resolved ||
+        static_cast<uint8_t>(context.effectiveWeather) > 9) return false;
+    // OverrideWeatherMultiplierAttr and variable move types need their
+    // canonical effect resolver; never substitute a plain type calculation.
+    if (move->upstreamFlags & PokerogueContent::MoveHasVariableMovegenType) return false;
+    if (PokerogueContent::moveHasAttribute(*move, "OverrideWeatherMultiplierAttr")) return false;
+    double multiplier = 1.0;
+    const auto weather = context.effectiveWeather;
+    if (weather == PokemonEffectiveWeather::Sunny || weather == PokemonEffectiveWeather::HarshSun) {
+        if (sameText(move->type, "FIRE")) multiplier = 1.5;
+        else if (sameText(move->type, "WATER")) multiplier = 0.5;
+    } else if (weather == PokemonEffectiveWeather::Rain || weather == PokemonEffectiveWeather::HeavyRain) {
+        if (sameText(move->type, "FIRE")) multiplier = 0.5;
+        else if (sameText(move->type, "WATER")) multiplier = 1.5;
+    }
+    outputMultiplier = multiplier;
+    return true;
+}
+
 PokemonDamageCoreResult calculatePokemonDamageCore(
     const PokemonBattleState& attacker,
     const PokemonBattleState& defender,
     uint16_t moveId,
     bool moveIsTypeless,
-    uint32_t& outputDamage) {
+    uint32_t& outputDamage,
+    const PokemonMoveWeatherContext* weatherContext) {
     const auto* move = PokerogueContent::findMoveById(moveId);
     if (!move) return PokemonDamageCoreResult::MissingMove;
     if (move->category == PokerogueContent::MoveStatus || move->power <= 0) {
@@ -537,6 +560,9 @@ PokemonDamageCoreResult calculatePokemonDamageCore(
     if (attacker.formId && !attackerForm) return PokemonDamageCoreResult::InvalidType;
 
     double baseDamage = 0.0;
+    double weatherMultiplier = 1.0;
+    if (weatherContext && !pokemonMoveWeatherMultiplier(moveId, *weatherContext, weatherMultiplier))
+        return PokemonDamageCoreResult::UnresolvedWeather;
     const auto baseStatus = calculatePokemonBaseDamage(attacker, defender, moveId, baseDamage);
     if (baseStatus == PokemonBaseDamageResult::UnsupportedAbilityCondition)
         return PokemonDamageCoreResult::UnsupportedAbilityCondition;
@@ -562,8 +588,9 @@ PokemonDamageCoreResult calculatePokemonDamageCore(
     }
 
     // Mirrors the pinned deterministic/simulated core: critical=1, random=1,
-    // weather/field/status/ability/item modifiers=1; toDmgValue floors with min 1.
-    const double adjusted = baseDamage * stabMultiplier * typeMultiplier;
+    // Optional resolved weather is applied; remaining field/status/item
+    // modifiers are neutral in this baseline. toDmgValue floors with min 1.
+    const double adjusted = baseDamage * weatherMultiplier * stabMultiplier * typeMultiplier;
     if (adjusted > 4294967295.0) return PokemonDamageCoreResult::InvalidStats;
     const uint32_t rounded = static_cast<uint32_t>(adjusted);
     outputDamage = rounded ? rounded : 1;
@@ -576,7 +603,8 @@ PokemonMoveDamageResult resolveStandardPokemonMoveDamage(
     uint16_t moveId,
     bool moveIsTypeless,
     PokerogueRngAdapter& battleRng,
-    PokemonMoveDamageRoll& output) {
+    PokemonMoveDamageRoll& output,
+    const PokemonMoveWeatherContext* weatherContext) {
     const auto* move = PokerogueContent::findMoveById(moveId);
     if (!move) return PokemonMoveDamageResult::MissingMove;
     if (move->category == PokerogueContent::MoveStatus || move->power <= 0) {
@@ -599,6 +627,9 @@ PokemonMoveDamageResult resolveStandardPokemonMoveDamage(
     }
 
     double baseDamage = 0.0;
+    double weatherMultiplier = 1.0;
+    if (weatherContext && !pokemonMoveWeatherMultiplier(moveId, *weatherContext, weatherMultiplier))
+        return PokemonMoveDamageResult::UnresolvedWeather;
     const auto baseStatus = calculatePokemonBaseDamage(attacker, defender, moveId, baseDamage);
     if (baseStatus == PokemonBaseDamageResult::UnsupportedAbilityCondition)
         return PokemonMoveDamageResult::UnsupportedAbilityCondition;
@@ -638,7 +669,7 @@ PokemonMoveDamageResult resolveStandardPokemonMoveDamage(
     }
 
     const double criticalMultiplier = next.critical ? 1.5 : 1.0;
-    const double damage = baseDamage * criticalMultiplier
+    const double damage = baseDamage * weatherMultiplier * criticalMultiplier
         * (static_cast<double>(next.randomDamagePercent) / 100.0)
         * stabMultiplier * next.typeEffectiveness;
     if (damage > 4294967295.0) return PokemonMoveDamageResult::InvalidStats;

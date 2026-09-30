@@ -523,6 +523,29 @@ extern "C" int runPokemonBattleStateChecks() {
     if (Pokerogue3DS::calculatePokemonDamageCore(typePowerActor, state, 232, false,
             unresolvedDamage) != Pokerogue3DS::PokemonDamageCoreResult::UnsupportedAbilityCondition ||
         unresolvedDamage != 777) return 267;
+    Pokerogue3DS::PokemonMoveWeatherContext weatherContext{};
+    double weatherMultiplier = 17.0;
+    if (Pokerogue3DS::pokemonMoveWeatherMultiplier(52, weatherContext, weatherMultiplier) ||
+        weatherMultiplier != 17.0) return 268;
+    weatherContext.resolved = true;
+    weatherContext.effectiveWeather = Pokerogue3DS::PokemonEffectiveWeather::Sunny;
+    if (!Pokerogue3DS::pokemonMoveWeatherMultiplier(52, weatherContext, weatherMultiplier) ||
+        weatherMultiplier != 1.5) return 269;
+    if (!Pokerogue3DS::pokemonMoveWeatherMultiplier(55, weatherContext, weatherMultiplier) ||
+        weatherMultiplier != 0.5) return 270;
+    weatherContext.effectiveWeather = Pokerogue3DS::PokemonEffectiveWeather::HeavyRain;
+    if (!Pokerogue3DS::pokemonMoveWeatherMultiplier(55, weatherContext, weatherMultiplier) ||
+        weatherMultiplier != 1.5) return 271;
+    if (!Pokerogue3DS::pokemonMoveWeatherMultiplier(52, weatherContext, weatherMultiplier) ||
+        weatherMultiplier != 0.5) return 272;
+    if (!Pokerogue3DS::pokemonMoveWeatherMultiplier(33, weatherContext, weatherMultiplier) ||
+        weatherMultiplier != 1.0) return 273;
+    if (Pokerogue3DS::pokemonMoveWeatherMultiplier(311, weatherContext, weatherMultiplier)) return 274;
+    weatherContext.resolved = false;
+    unresolvedDamage = 777;
+    if (Pokerogue3DS::calculatePokemonDamageCore(state, state, 33, false,
+            unresolvedDamage, &weatherContext) != Pokerogue3DS::PokemonDamageCoreResult::UnresolvedWeather ||
+        unresolvedDamage != 777) return 275;
     PokemonBattleInit actorIdInput = input;
     actorIdInput.pokemonId = 0x12345678u;
     actorIdInput.deriveIvsFromPokemonId = true;
