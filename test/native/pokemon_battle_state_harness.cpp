@@ -291,6 +291,24 @@ extern "C" int runPokemonBattleStateChecks() {
         !clearBodyStageProfile->ignorable || !metalBodyStageProfile ||
         metalBodyStageProfile->protectedMask != 127 || metalBodyStageProfile->ignorable)
         return 225;
+    const Pokerogue3DS::ResolvedStatStageAbilityComponent clearBodyComponent[] = {
+        {clearBodyStageProfile, true}
+    };
+    Pokerogue3DS::PokemonStatStageEffectPolicy protectedPolicy{};
+    if (!Pokerogue3DS::composePokemonStatStageAbilityPolicy(growlEffect,
+            clearBodyComponent, 1, false, protectedPolicy) ||
+        protectedPolicy.cancelledStatMask != 1 || protectedPolicy.resolved) return 226;
+    const Pokerogue3DS::ResolvedStatStageAbilityComponent contraryAndProtection[] = {
+        {contraryStageProfile, true}, {clearBodyStageProfile, true}
+    };
+    protectedPolicy = {};
+    if (!Pokerogue3DS::composePokemonStatStageAbilityPolicy(growlEffect,
+            contraryAndProtection, 2, false, protectedPolicy) ||
+        protectedPolicy.stageMultiplier != -1 || protectedPolicy.cancelledStatMask) return 227;
+    protectedPolicy = {};
+    if (!Pokerogue3DS::composePokemonStatStageAbilityPolicy(growlEffect,
+            contraryAndProtection, 2, true, protectedPolicy) ||
+        protectedPolicy.stageMultiplier != 1 || protectedPolicy.cancelledStatMask != 1) return 228;
     PokemonBattleInit actorIdInput = input;
     actorIdInput.pokemonId = 0x12345678u;
     actorIdInput.deriveIvsFromPokemonId = true;

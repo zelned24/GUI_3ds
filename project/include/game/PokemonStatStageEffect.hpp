@@ -18,6 +18,41 @@ struct PokemonStatStageEffectPolicy {
     int16_t chance = -1;
 };
 
+struct ResolvedStatStageAbilityComponent {
+    const PokerogueContent::AbilityStatStageProfile* profile = nullptr;
+    bool applies = false; // Ability/passive suppression and bypass resolved upstream.
+};
+
+// Compose constant ability components without treating them as a complete
+// ability dispatcher. The caller's resolved flag and chance are preserved;
+// field protection, reflection and post-change triggers remain separate.
+inline bool composePokemonStatStageAbilityPolicy(
+    const PokerogueContent::MoveStatStageEffect& effect,
+    const ResolvedStatStageAbilityComponent* components, uint8_t count,
+    bool ignoreMultiplierAbilities, PokemonStatStageEffectPolicy& policy) {
+    if (count > 2 || (count && !components) || !effect.statMask || effect.statMask > 127)
+        return false;
+    int multiplier = policy.stageMultiplier;
+    for (uint8_t i = 0; i < count; ++i) {
+        if (!components[i].applies) continue;
+        const auto* profile = components[i].profile;
+        if (!profile || profile->multiplier < -6 || profile->multiplier > 6 ||
+            profile->protectedMask > 127) return false;
+        if (!ignoreMultiplierAbilities) multiplier *= profile->multiplier;
+    }
+    if (multiplier < -6 || multiplier > 6) return false;
+    uint8_t cancelled = policy.cancelledStatMask;
+    // Stage multipliers precede drop protection in StatStageChangePhase.
+    // A Contrary-converted raise is therefore not blocked as a drop.
+    if (!effect.selfTarget && effect.stages * multiplier < 0)
+        for (uint8_t i = 0; i < count; ++i)
+            if (components[i].applies)
+                cancelled |= components[i].profile->protectedMask & effect.statMask;
+    policy.stageMultiplier = static_cast<int8_t>(multiplier);
+    policy.cancelledStatMask = cancelled;
+    return true;
+}
+
 struct PokemonStatStageEffectEvent {
     bool triggered = false;
     uint8_t changedStatMask = 0;
