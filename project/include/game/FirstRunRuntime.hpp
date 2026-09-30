@@ -99,6 +99,7 @@ public:
     bool selectRewardChoice(int direction);
     bool claimRewardChoice();
     bool selectBattleMove(int direction);
+    bool evolutionPending() const { return m_pendingEvolutionSpeciesId != nullptr; }
     bool moveLearningPending() const { return m_pendingLevelMoves.count != 0; }
     uint16_t pendingLearnMoveId() const { return m_pendingLevelMoves.count ? m_pendingLevelMoves.moveIds[0] : 0; }
     bool resolvePendingLearnMove(int selectedSlot); // -1 rejects; 0..3 replaces.
@@ -140,7 +141,7 @@ private:
     bool advanceBattleTurnInPlace();
     bool claimRewardChoiceInPlace();
     bool resolvePendingLearnMoveInPlace(int selectedSlot);
-    bool finishPendingEvolution();
+    bool finishPendingEvolution(bool accepted = false);
     bool skipVictoryRewardInPlace();
     bool throwPokeballInPlace(PokeballType ball);
     bool switchPlayerPokemonInPlace(uint8_t targetIndex);

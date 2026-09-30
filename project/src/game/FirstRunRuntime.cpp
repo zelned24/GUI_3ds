@@ -721,7 +721,7 @@ bool FirstRunRuntime::claimRewardChoice() {
 }
 
 bool FirstRunRuntime::claimRewardChoiceInPlace() {
-    if (moveLearningPending()) return false;
+    if (moveLearningPending() || evolutionPending()) return false;
     if (!m_rewardsPending || m_selectedRewardChoice >= m_rewardChoiceCount) return false;
     const auto& choice = m_rewardChoices[m_selectedRewardChoice];
     if (choice.poolEntry && choice.poolEntry->itemId) {
@@ -810,8 +810,12 @@ bool FirstRunRuntime::claimRewardChoiceInPlace() {
     return m_encounterResolved;
 }
 
-bool FirstRunRuntime::finishPendingEvolution() {
+bool FirstRunRuntime::finishPendingEvolution(bool accepted) {
     if (!m_pendingEvolutionSpeciesId) return true;
+    if (!accepted) {
+        m_battleFeedback = "Evolution ready: A continue, B cancel";
+        return true;
+    }
     auto next = m_context.player;
     EvolutionResult event{};
     std::string feedback;
@@ -1101,6 +1105,11 @@ bool FirstRunRuntime::advanceBattleTurn() {
 
 bool FirstRunRuntime::advanceBattleTurnInPlace() {
     if (moveLearningPending()) return resolvePendingLearnMove(m_selectedBattleMove);
+    if (evolutionPending()) {
+        if (!finishPendingEvolution(true)) return false;
+        buildScene();
+        return true;
+    }
     if (m_rewardsPending) {
         return claimRewardChoice();
     }
@@ -1110,8 +1119,9 @@ bool FirstRunRuntime::advanceBattleTurnInPlace() {
             buildScene();
             return false;
         }
-        if (moveLearningPending()) {
-            m_battleFeedback = "Choose move to replace: UP/DOWN, A learn, B reject";
+        if (moveLearningPending() || evolutionPending()) {
+            m_battleFeedback = moveLearningPending() ? "Choose move to replace: UP/DOWN, A learn, B reject"
+                : "Evolution ready: A continue, B cancel";
             buildScene();
             return true;
         }
@@ -1834,6 +1844,12 @@ bool FirstRunRuntime::skipVictoryReward() {
 
 bool FirstRunRuntime::skipVictoryRewardInPlace() {
     if (moveLearningPending()) return resolvePendingLearnMove(-1);
+    if (evolutionPending()) {
+        m_pendingEvolutionSpeciesId = nullptr;
+        m_battleFeedback = "Evolution cancelled";
+        buildScene();
+        return true;
+    }
     if (!m_battleFinished || !m_playerWon || !m_experienceGranted ||
         !enemyPartyDefeated() || !m_victoryPlan.contains(ClassicVictoryStep::SelectModifier) ||
         !m_victoryPlan.nextWave || m_victoryPlan.nextWave > PokerogueContent::kClassicFinalWave)
@@ -1952,7 +1968,7 @@ bool FirstRunRuntime::throwPokeball(PokeballType ball) {
 }
 
 bool FirstRunRuntime::throwPokeballInPlace(PokeballType ball) {
-    if (moveLearningPending()) return false;
+    if (moveLearningPending() || evolutionPending()) return false;
     if (m_battleFinished) {
         m_battleFeedback = "Battle is already finished";
         buildScene();
@@ -2095,7 +2111,7 @@ bool FirstRunRuntime::switchPlayerPokemon(uint8_t targetIndex) {
 }
 
 bool FirstRunRuntime::switchPlayerPokemonInPlace(uint8_t targetIndex) {
-    if (moveLearningPending()) return false;
+    if (moveLearningPending() || evolutionPending()) return false;
     if (m_battleFinished) return false;
     if (targetIndex >= m_context.playerPartyCount || targetIndex == m_context.activePlayerPartyIndex) {
         m_battleFeedback = "Invalid party member selected";
@@ -2972,6 +2988,14 @@ void FirstRunRuntime::buildScene() {
             const std::string key = std::string("move:") + proposed->key;
             m_text[6] = std::string("Learn ") + locale(key.c_str(), proposed->name) + "?";
             m_text[5] = "UP/DOWN slot - A replace - B reject";
+        }
+    }
+    if (!moveLearningPending() && evolutionPending()) {
+        const auto* target = findSpeciesById(m_pendingEvolutionSpeciesId);
+        if (target) {
+            const std::string key = std::string("pokemon:") + target->id;
+            m_text[6] = std::string("Evolve into ") + locale(key.c_str(), target->name) + "?";
+            m_text[5] = "A continue - B cancel evolution";
         }
     }
     if (!m_battleFeedback.empty()) m_text[7] = m_battleFeedback;

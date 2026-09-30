@@ -430,3 +430,8 @@
 
 1. finishPendingEvolution solicita filas EVOLVE_MOVE=0 después de cambiar especie, como EvolutionPhase.postEvolve pinned. Combina especie/forma; aprende huecos o encola reemplazos, sin duplicados ni moves upstream no implementados. Actor/cola se publican conjuntamente.
 2. Regresiones 313–316 escritas con movimiento real marcado EVOLVE_MOVE del catálogo. No ejecutadas. Cancelación/pausa de evolución, callbacks y secuencia completa de UI siguen pendientes.
+
+## Cancelación del intento de evolución
+
+1. Tras aprendizaje, runtime conserva target canónico hasta A (aplicar) o B (cancelar intento). Cancelar no revierte EXP ni moves aprendidos; no concede reward ni avanza wave. Nombre destino usa locales. Otros comandos y save quedan bloqueados mientras la decisión no serializada esté pendiente.
+2. Esto adapta la cancelación de EvolutionPhase a una frontera antes de animación. No implementa pauseEvolutions persistente, animación cancelable temporal ni diálogo/configuración upstream completo. Regresiones del helper conservadas; prueba end-to-end del prompt aún pendiente. Tests/compilación siguen aplazados.
