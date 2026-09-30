@@ -247,6 +247,7 @@ bool FirstRunRuntime::restoreNativeRunSave(const NativeRunSave& save) {
         m_context.activeTrainerPartyIndex = save.activeTrainerMember;
         m_context.trainerParty[save.activeTrainerMember] = m_context.enemy;
     }
+    if (save.trainerPartyCount) refreshTrainerBaselineMatchups();
     m_turn = save.battleTurn;
     m_runStarted = true;
     m_checkpointAvailable = true;
@@ -587,6 +588,27 @@ bool FirstRunRuntime::skipVictoryReward() {
     return m_encounterResolved && !m_doubleBattle;
 }
 
+void FirstRunRuntime::refreshTrainerBaselineMatchups() {
+    m_context.trainerPartyBaselineMatchupResolved = false;
+    for (auto& score : m_context.trainerPartyBaselineMatchupScores) score = 0;
+    if (!m_trainerBattle || !m_context.trainerPartyBattleStatesResolved ||
+        !m_context.trainerPartyCount || m_context.trainerPartyCount > 6 ||
+        m_context.activeTrainerPartyIndex >= m_context.trainerPartyCount) return;
+    double scores[6]{};
+    for (uint8_t member = 0; member < m_context.trainerPartyCount; ++member) {
+        const bool active = member == m_context.activeTrainerPartyIndex;
+        const auto& state = active ? m_context.enemy.battleState
+            : m_context.trainerParty[member].battleState;
+        PokemonTrainerMatchupInput matchup{};
+        if (!buildBaselineTrainerMatchupInput(state, m_context.player.battleState,
+                state.stats[5], m_context.player.battleState.stats[5], active, matchup) ||
+            !calculateTrainerMatchupScore(matchup, scores[member])) return;
+    }
+    for (uint8_t member = 0; member < m_context.trainerPartyCount; ++member)
+        m_context.trainerPartyBaselineMatchupScores[member] = scores[member];
+    m_context.trainerPartyBaselineMatchupResolved = true;
+}
+
 void FirstRunRuntime::resolve(bool carryPlayer) {
     m_selectedBattleMove = 0;
     m_turn = 1;
@@ -621,6 +643,8 @@ void FirstRunRuntime::resolve(bool carryPlayer) {
     m_context.trainerPartyMovesetsResolved = false;
     m_context.trainerPartyIvsResolved = false;
     m_context.trainerPartyBattleStatesResolved = false;
+    m_context.trainerPartyBaselineMatchupResolved = false;
+    for (auto& score : m_context.trainerPartyBaselineMatchupScores) score = 0;
     for (auto& level : m_context.trainerPartyLevels) level = 0;
     for (auto& member : m_context.trainerParty) member = {};
     for (auto& state : m_trainerConstructorRngStates) state = {};
@@ -969,6 +993,7 @@ void FirstRunRuntime::resolve(bool carryPlayer) {
                             m_run.encounterDex = m_context.enemy.dex;
                             m_encounterResolved = true;
                             m_checkpointAvailable = true;
+                            refreshTrainerBaselineMatchups();
                         }
                     }
                 }

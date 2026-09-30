@@ -145,6 +145,26 @@ extern "C" int runPokemonBattleStateChecks() {
     if (!state.statsAreBaseFormulaOnly) return 4;
     for (uint8_t iv : state.ivs) if (iv != 0) return 60;
 
+    PokemonBattleInit matchupOpponentInput{};
+    matchupOpponentInput.speciesDex = 7;
+    matchupOpponentInput.level = 5;
+    matchupOpponentInput.abilityId = 67;
+    matchupOpponentInput.gender = PokemonGender::Male;
+    PokemonBattleState matchupOpponent{};
+    if (Pokerogue3DS::initializePokemonBattleState(matchupOpponentInput, matchupOpponent) !=
+        PokemonBattleInitResult::Ok) return 195;
+    PokemonBattleState matchupActor = state;
+    matchupActor.moves[0].moveId = 22; // Canonical Vine Whip against Squirtle.
+    Pokerogue3DS::PokemonTrainerMatchupInput resolvedMatchup{};
+    if (!Pokerogue3DS::buildBaselineTrainerMatchupInput(matchupActor, matchupOpponent,
+            10, 9, true, resolvedMatchup) || resolvedMatchup.usableAttackCount != 1 ||
+        resolvedMatchup.attackEffectiveness[0] != 3.0 ||
+        resolvedMatchup.defensiveEffectiveness[0] != 0.5 || !resolvedMatchup.outspeeds)
+        return 196;
+    matchupActor.moves[0].pp = 0;
+    if (!Pokerogue3DS::buildBaselineTrainerMatchupInput(matchupActor, matchupOpponent,
+            9, 10, false, resolvedMatchup) || resolvedMatchup.usableAttackCount != 0 ||
+        resolvedMatchup.outspeeds || resolvedMatchup.active) return 197;
     PokemonBattleInit actorIdInput = input;
     actorIdInput.pokemonId = 0x12345678u;
     actorIdInput.deriveIvsFromPokemonId = true;

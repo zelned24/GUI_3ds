@@ -1,6 +1,7 @@
 #pragma once
 
 #include "game/PokerogueRngAdapter.hpp"
+#include "game/PokemonBattleState.hpp"
 #include <cmath>
 #include <cstdint>
 
@@ -98,6 +99,61 @@ struct PokemonTrainerMatchupInput {
     bool outspeeds = false;
     bool active = false;
 };
+
+// Canonical-state bridge for the neutral field baseline. Resolved speed is
+// explicit so effective active speed and unmodified reserve speed can differ.
+// Type-changing abilities/illusion/field effects require the full effect layer.
+inline bool buildBaselineTrainerMatchupInput(const PokemonBattleState& actor,
+    const PokemonBattleState& opponent, uint32_t actorSpeed, uint32_t opponentSpeed,
+    bool active, PokemonTrainerMatchupInput& output) {
+    if (!actor.maxHp || !opponent.maxHp || actor.hp > actor.maxHp ||
+        opponent.hp > opponent.maxHp || actor.moveCount > 4) return false;
+    const auto* species = PokerogueContent::findSpeciesByDex(actor.speciesDex);
+    const auto* other = PokerogueContent::findSpeciesByDex(opponent.speciesDex);
+    const auto* form = actor.formId ? PokerogueContent::findFormById(actor.formId) : nullptr;
+    const auto* otherForm = opponent.formId ? PokerogueContent::findFormById(opponent.formId) : nullptr;
+    if (!species || !other || (actor.formId && !form) || (opponent.formId && !otherForm))
+        return false;
+    const auto sameType = [](const char* a, const char* b) {
+        if (!a || !b) return false;
+        while (*a && *b) {
+            char left = *a++, right = *b++;
+            if (left >= 'a' && left <= 'z') left = static_cast<char>(left - 'a' + 'A');
+            if (right >= 'a' && right <= 'z') right = static_cast<char>(right - 'a' + 'A');
+            if (left != right) return false;
+        }
+        return *a == *b;
+    };
+    const char* actorTypes[2] = {form ? form->type1 : species->type1,
+        form ? form->type2 : species->type2};
+    const char* opponentTypes[2] = {otherForm ? otherForm->type1 : other->type1,
+        otherForm ? otherForm->type2 : other->type2};
+    if (!actorTypes[0] || !opponentTypes[0]) return false;
+    PokemonTrainerMatchupInput next{};
+    next.opponentTypeCount = opponentTypes[1] && *opponentTypes[1] &&
+        !sameType(opponentTypes[1], "NONE") ? 2 : 1;
+    for (uint8_t type = 0; type < next.opponentTypeCount; ++type)
+        if (calculatePokemonAttackTypeEffectiveness(opponentTypes[type], actor,
+                next.defensiveEffectiveness[type]) != PokemonTypeEffectivenessResult::Ok) return false;
+    for (uint8_t slot = 0; slot < actor.moveCount; ++slot) {
+        const auto* move = PokerogueContent::findMoveById(actor.moves[slot].moveId);
+        if (!move) return false;
+        if (!actor.moves[slot].pp || move->category == PokerogueContent::MoveStatus) continue;
+        if (move->upstreamFlags & PokerogueContent::MoveHasVariableMovegenType) return false;
+        double effectiveness = 0;
+        if (calculatePokemonAttackTypeEffectiveness(move->type, opponent, effectiveness) !=
+            PokemonTypeEffectivenessResult::Ok) return false;
+        if (sameType(move->type, actorTypes[0]) || sameType(move->type, actorTypes[1]))
+            effectiveness *= 1.5;
+        next.attackEffectiveness[next.usableAttackCount++] = effectiveness;
+    }
+    next.hpRatio = static_cast<double>(actor.hp) / actor.maxHp;
+    next.opponentHpRatio = static_cast<double>(opponent.hp) / opponent.maxHp;
+    next.active = active;
+    next.outspeeds = actorSpeed >= opponentSpeed;
+    output = next;
+    return true;
+}
 
 inline bool calculateTrainerMatchupScore(const PokemonTrainerMatchupInput& input,
                                          double& output) {

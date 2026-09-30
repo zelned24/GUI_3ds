@@ -463,12 +463,11 @@ PokemonBaseDamageResult calculatePokemonBaseDamage(
     return PokemonBaseDamageResult::Ok;
 }
 
-PokemonTypeEffectivenessResult calculatePokemonTypeEffectiveness(
-    uint16_t moveId,
+PokemonTypeEffectivenessResult calculatePokemonAttackTypeEffectiveness(
+    const char* attackType,
     const PokemonBattleState& defender,
     double& outputMultiplier) {
-    const auto* move = PokerogueContent::findMoveById(moveId);
-    if (!move) return PokemonTypeEffectivenessResult::MissingMove;
+    if (!attackType || !*attackType) return PokemonTypeEffectivenessResult::InvalidType;
     const auto* species = PokerogueContent::findSpeciesByDex(defender.speciesDex);
     if (!species) return PokemonTypeEffectivenessResult::MissingSpecies;
     const auto* form = defender.formId ? PokerogueContent::findFormById(defender.formId) : nullptr;
@@ -479,12 +478,19 @@ PokemonTypeEffectivenessResult calculatePokemonTypeEffectiveness(
     double first = 1.0;
     double second = 1.0;
     const bool hasSecondType = type2 && *type2 && !sameText(type2, "NONE");
-    if (!oneTypeEffectiveness(move->type, type1, first) ||
-        (hasSecondType && !oneTypeEffectiveness(move->type, type2, second))) {
+    if (!oneTypeEffectiveness(attackType, type1, first) ||
+        (hasSecondType && !oneTypeEffectiveness(attackType, type2, second))) {
         return PokemonTypeEffectivenessResult::InvalidType;
     }
     outputMultiplier = first * second;
     return PokemonTypeEffectivenessResult::Ok;
+}
+
+PokemonTypeEffectivenessResult calculatePokemonTypeEffectiveness(
+    uint16_t moveId, const PokemonBattleState& defender, double& outputMultiplier) {
+    const auto* move = PokerogueContent::findMoveById(moveId);
+    if (!move) return PokemonTypeEffectivenessResult::MissingMove;
+    return calculatePokemonAttackTypeEffectiveness(move->type, defender, outputMultiplier);
 }
 
 PokemonDamageCoreResult calculatePokemonDamageCore(

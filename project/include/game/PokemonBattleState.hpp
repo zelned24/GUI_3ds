@@ -174,6 +174,10 @@ PokemonBaseDamageResult calculatePokemonBaseDamage(
     double& outputBaseDamage);
 
 enum class PokemonTypeEffectivenessResult : uint8_t { Ok = 0, MissingSpecies, MissingMove, InvalidType };
+// Baseline chart lookup for an attack type independent of a move ID.
+// Ability/field effects are handled by their own resolved effect layer.
+PokemonTypeEffectivenessResult calculatePokemonAttackTypeEffectiveness(
+    const char* attackType, const PokemonBattleState& defender, double& outputMultiplier);
 PokemonTypeEffectivenessResult calculatePokemonTypeEffectiveness(
     uint16_t moveId,
     const PokemonBattleState& defender,

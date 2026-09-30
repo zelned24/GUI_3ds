@@ -61,6 +61,8 @@ struct PresentationContext {
     bool trainerPartyMovesetsResolved = false;
     bool trainerPartyIvsResolved = false;
     bool trainerPartyBattleStatesResolved = false;
+    bool trainerPartyBaselineMatchupResolved = false;
+    double trainerPartyBaselineMatchupScores[6]{};
     ResolvedPokemon player;
     ResolvedPokemon enemy;
     ResolvedPokemon secondEnemy;
@@ -94,6 +96,7 @@ public:
 private:
     void resolve(bool carryPlayer = false);
     bool grantVictoryExperience();
+    void refreshTrainerBaselineMatchups();
     void buildScene();
     static const char* locale(const char* canonicalId, const char* fallback);
 
