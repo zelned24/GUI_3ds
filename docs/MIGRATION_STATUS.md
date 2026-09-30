@@ -394,3 +394,9 @@
 1. Validador de run aplica level cap y umbral de EXP a todos los miembros explícitos, incluidos suplentes; conserva EXP excedente únicamente al cap. Rechaza BattleLost si queda un miembro vivo y partidas no perdidas sin ningún vivo.
 2. Regresiones 295–297 escritas: restaurar capturado como activo conserva su especie/EXP independiente; EXP incoherente de reserva se rechaza sin reemplazar runtime. Pendientes de ejecución.
 3. Estos controles complementan el snapshot y no completan historial de modifiers, RNG de fases, dobles, transformaciones ni waves posteriores. Validación final y Classic completo siguen pendientes.
+
+## Slot de habilidad de evolución conectado
+
+1. applySpeciesEvolution acepta identidad real y preserva abilityIndex frente a IDs duplicados; porta PlayerPokemon.evolve/getAbilityCount pinned: slot oculto pasa a slot1 si destino no tiene hidden. Runtime conecta identidad a evolución y preserva flag IVs derivados al recalcular nivel/stats.
+2. Regresiones 298–299 escritas para forma/slot de evolución y snapshot de Ivysaur real. Setup previo completado con habilidad/género/naturaleza explícitos; asserts conservados. No ejecutadas.
+3. Tera tras cambio de tipos sigue requiriendo identidad de tipo explícita; transformaciones, condiciones y evolución cancelable siguen pendientes. No se declara evolución completa.

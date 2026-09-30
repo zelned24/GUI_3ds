@@ -668,6 +668,9 @@ static int checkLevelUpMoveLearningAndEvolution() {
     PokemonBattleInit bulbaInit{};
     bulbaInit.speciesDex = 1;
     bulbaInit.level = 16;
+    bulbaInit.abilityId = PokerogueContent::findSpeciesByDex(1)->ability1;
+    bulbaInit.gender = PokemonGender::Male;
+    bulbaInit.nature = PokemonNature::Hardy;
     bulbaInit.moveCount = 1;
     bulbaInit.moveIds[0] = 33; // Tackle
     for (uint8_t i = 0; i < 6; ++i) bulbaInit.ivs[i] = 15;
@@ -678,7 +681,22 @@ static int checkLevelUpMoveLearningAndEvolution() {
     const uint16_t bulbaMaxHp = bulbaState.maxHp;
     EvolutionResult evoRes{};
     std::string evoFb;
-    if (!applySpeciesEvolution(1, "ivysaur", bulbaState, evoRes, &evoFb)) return 195;
+    PokemonActorIdentity evolutionIdentity{};
+    evolutionIdentity.pokemonId = bulbaState.pokemonId;
+    evolutionIdentity.gender = bulbaState.gender;
+    evolutionIdentity.nature = bulbaState.nature;
+    evolutionIdentity.formId = bulbaState.formId;
+    evolutionIdentity.initialTeraTypeResolved = true;
+    for (uint8_t i = 0; i < 6; ++i) evolutionIdentity.ivs[i] = bulbaState.ivs[i];
+    if (!applySpeciesEvolution(1, "ivysaur", bulbaState, evoRes, &evoFb, &evolutionIdentity)) return 195;
+    if (!evolutionIdentity.formId || std::strcmp(evolutionIdentity.formId, bulbaState.formId) ||
+        evolutionIdentity.abilityIndex != 0) return 298;
+    uint32_t evolvedExperience = 0;
+    const auto* evolvedSpecies = PokerogueContent::findSpeciesByDex(2);
+    NativePokemonSave evolvedSnapshot{};
+    if (!evolvedSpecies || pokemonTotalExperienceForLevel(evolvedSpecies->growthRate, 16, evolvedExperience) !=
+            PokemonExperienceResult::Ok || !captureNativePokemonActorSave(bulbaState, evolutionIdentity,
+                evolvedExperience, evolvedSnapshot)) return 299;
     if (!evoRes.evolved || evoRes.newDex != 2 || std::strcmp(evoRes.newSpeciesId, "ivysaur") != 0) return 196;
     if (bulbaState.speciesDex != 2) return 197;
     // Ivysaur has higher base stats and max HP than Bulbasaur

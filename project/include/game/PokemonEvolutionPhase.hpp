@@ -112,7 +112,7 @@ struct EvolutionResult {
 inline bool applySpeciesEvolution(
     uint16_t oldDex, const char* targetSpeciesId,
     PokemonBattleState& battleState, EvolutionResult& result,
-    std::string* feedback = nullptr) {
+    std::string* feedback = nullptr, PokemonActorIdentity* identity = nullptr) {
     const auto* target = findSpeciesById(targetSpeciesId);
     if (!target) return false;
 
@@ -133,12 +133,23 @@ inline bool applySpeciesEvolution(
     const uint16_t nextAbilities[] = {targetForm ? targetForm->ability1 : target->ability1,
         targetForm ? targetForm->ability2 : target->ability2,
         targetForm ? targetForm->abilityHidden : target->abilityHidden};
-    uint8_t abilitySlot = 0;
-    while (abilitySlot < 3 && oldAbilities[abilitySlot] != battleState.abilityId) ++abilitySlot;
-    if (abilitySlot == 3) return false;
+    uint8_t abilitySlot = identity ? identity->abilityIndex : 0;
+    if (identity) {
+        if (abilitySlot > 2 || identity->pokemonId != battleState.pokemonId ||
+            identity->gender != battleState.gender || identity->nature != battleState.nature ||
+            (oldAbilities[abilitySlot] ? oldAbilities[abilitySlot] : oldAbilities[0]) != battleState.abilityId)
+            return false;
+    } else {
+        while (abilitySlot < 3 && oldAbilities[abilitySlot] != battleState.abilityId) ++abilitySlot;
+        if (abilitySlot == 3) return false;
+    }
+    // PlayerPokemon.evolve: hidden slot changes to slot one when the target
+    // has no hidden ability (getAbilityCount changes from three to two).
+    if (abilitySlot == 2 && oldAbilities[2] && !nextAbilities[2]) abilitySlot = 1;
     const uint16_t evolvedAbility = nextAbilities[abilitySlot] ? nextAbilities[abilitySlot] : nextAbilities[0];
     input.level = battleState.level;
     input.pokemonId = battleState.pokemonId;
+    input.deriveIvsFromPokemonId = battleState.ivsWereDerivedFromPokemonId;
     input.nature = battleState.nature;
     input.gender = battleState.gender;
     input.abilityId = evolvedAbility;
@@ -165,6 +176,10 @@ inline bool applySpeciesEvolution(
     }
 
     battleState = evolvedState;
+    if (identity) {
+        identity->abilityIndex = abilitySlot;
+        identity->formId = evolvedState.formId;
+    }
 
     result.evolved = true;
     result.newDex = target->dex;

@@ -895,6 +895,7 @@ bool FirstRunRuntime::grantVictoryExperience() {
         input.formId = next.formId;
         input.level = progress.level;
         input.pokemonId = next.pokemonId;
+        input.deriveIvsFromPokemonId = next.ivsWereDerivedFromPokemonId;
         input.nature = next.nature;
         input.gender = next.gender;
         input.abilityId = next.abilityId;
@@ -923,7 +924,8 @@ bool FirstRunRuntime::grantVictoryExperience() {
         if (evo) {
             EvolutionResult evoResult{};
             std::string evoFeedback;
-            if (applySpeciesEvolution(m_context.player.dex, evo->targetSpeciesId, next, evoResult, &evoFeedback)) {
+            if (applySpeciesEvolution(m_context.player.dex, evo->targetSpeciesId, next, evoResult, &evoFeedback,
+                    &m_context.player.actor)) {
                 m_context.player.dex = evoResult.newDex;
                 m_context.player.speciesId = evoResult.newSpeciesId;
                 m_context.player.localizedName = evoResult.newName;
