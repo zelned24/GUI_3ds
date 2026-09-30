@@ -498,6 +498,27 @@ extern "C" int runPokemonBattleStateChecks() {
     if (Pokerogue3DS::calculatePokemonBaseDamage(lowHpAttacker, state, 22,
             lowHpDamage) != Pokerogue3DS::PokemonBaseDamageResult::Ok ||
         lowHpDamage != aboveThresholdDamage) return 262;
+    const PokerogueContent::TypePowerAbility* steelworker = nullptr;
+    const PokerogueContent::TypePowerAbility* sandForce = nullptr;
+    for (const auto& profile : PokerogueContent::kTypePowerAbilities) {
+        if (std::strcmp(profile.sourceSymbol, "AbilityId.STEELWORKER") == 0) steelworker = &profile;
+        if (std::strcmp(profile.sourceSymbol, "AbilityId.SAND_FORCE") == 0 &&
+            std::strcmp(profile.type, "STEEL") == 0) sandForce = &profile;
+    }
+    if (!steelworker || steelworker->multiplier != 1.5 || steelworker->requiresCondition ||
+        !sandForce || !sandForce->requiresCondition) return 263;
+    PokemonBattleState typePowerActor = state;
+    typePowerActor.abilityId = 0;
+    double neutralSteelDamage = 0, boostedSteelDamage = 0;
+    if (Pokerogue3DS::calculatePokemonBaseDamage(typePowerActor, state, 232,
+            neutralSteelDamage) != Pokerogue3DS::PokemonBaseDamageResult::Ok) return 264;
+    typePowerActor.abilityId = steelworker->abilityId;
+    if (Pokerogue3DS::calculatePokemonBaseDamage(typePowerActor, state, 232,
+            boostedSteelDamage) != Pokerogue3DS::PokemonBaseDamageResult::Ok ||
+        boostedSteelDamage != (neutralSteelDamage - 2.0) * 1.5 + 2.0) return 265;
+    typePowerActor.abilityId = sandForce->abilityId;
+    if (Pokerogue3DS::calculatePokemonBaseDamage(typePowerActor, state, 232,
+            boostedSteelDamage) != Pokerogue3DS::PokemonBaseDamageResult::InvalidStats) return 266;
     PokemonBattleInit actorIdInput = input;
     actorIdInput.pokemonId = 0x12345678u;
     actorIdInput.deriveIvsFromPokemonId = true;

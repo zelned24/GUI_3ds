@@ -558,6 +558,18 @@ const lowHpTypePowerRows = collections.abilities.flatMap(ability => {
   if (!declarations.length || declarations.length !== matches.length) return [];
   return matches.map(match => `    {${ability.abilityId}, "${field(match[1])}", "${field(ability.source?.sourcePath ?? '')}", "${field(ability.source?.sourceSymbol ?? '')}", "${field(ability.source?.sourceHash ?? '')}"}`);
 });
+const typePowerAbilityRows = collections.abilities.flatMap(ability => {
+  const raw = ability.extensions?.upstreamAttributes?.value ?? '';
+  const declarations = [...raw.matchAll(/\.attr\s*\(\s*MoveTypePowerBoostAbAttr\b/g)];
+  const matches = [...raw.matchAll(/\.attr\s*\(\s*MoveTypePowerBoostAbAttr\s*,\s*PokemonType\.([A-Z]+)\s*(?:,\s*(\d+(?:\.\d+)?)\s*(?:,\s*(?:true|false)\s*)?)?\)/g)];
+  if (!declarations.length || declarations.length !== matches.length) return [];
+  const requiresCondition = /\.condition\s*\(/.test(raw);
+  return matches.map(match => {
+    const multiplier = match[2] == null || Number(match[2]) === 0 ? 1.5 : Number(match[2]);
+    if (!Number.isFinite(multiplier) || multiplier <= 0 || multiplier > 16) throw new Error(`Invalid type-power ability: ${ability.id}`);
+    return `    {${ability.abilityId}, "${field(match[1])}", ${multiplier}, ${requiresCondition}, "${field(ability.source?.sourcePath ?? '')}", "${field(ability.source?.sourceSymbol ?? '')}", "${field(ability.source?.sourceHash ?? '')}"}`;
+  });
+});
 const abilities = entityRows(collections.abilities);
 const abilityMovegenProfiles = collections.abilities.map(ability => {
   const raw = ability.extensions?.upstreamAttributes?.value ?? '';
@@ -701,5 +713,7 @@ const itemStageHeader = reactionHeader.replace('struct MoveAttribute {',
   `struct NegativeStageResetItemProfile { const char* itemId; const char* sourcePath; const char* sourceSymbol; const char* sourceHash; };\ninline constexpr NegativeStageResetItemProfile kNegativeStageResetItemProfiles[] = {\n${negativeStageResetItemRows.join(',\n')}\n};\nstruct MoveAttribute {`);
 const damageAbilityHeader = itemStageHeader.replace('struct MoveAttribute {',
   `struct LowHpTypePowerAbility { uint16_t abilityId; const char* type; const char* sourcePath; const char* sourceSymbol; const char* sourceHash; };\ninline constexpr LowHpTypePowerAbility kLowHpTypePowerAbilities[] = {\n${lowHpTypePowerRows.join(',\n')}\n};\nstruct MoveAttribute {`);
-await fs.writeFile(outputPath, damageAbilityHeader, 'utf8');
-console.log(JSON.stringify({ output: path.relative(root, outputPath), bytes: Buffer.byteLength(damageAbilityHeader), hash: report.contentHash }));
+const typePowerHeader = damageAbilityHeader.replace('struct MoveAttribute {',
+  `struct TypePowerAbility { uint16_t abilityId; const char* type; double multiplier; bool requiresCondition; const char* sourcePath; const char* sourceSymbol; const char* sourceHash; };\ninline constexpr TypePowerAbility kTypePowerAbilities[] = {\n${typePowerAbilityRows.join(',\n')}\n};\nstruct MoveAttribute {`);
+await fs.writeFile(outputPath, typePowerHeader, 'utf8');
+console.log(JSON.stringify({ output: path.relative(root, outputPath), bytes: Buffer.byteLength(typePowerHeader), hash: report.contentHash }));

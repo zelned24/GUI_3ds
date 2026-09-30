@@ -477,6 +477,13 @@ PokemonBaseDamageResult calculatePokemonBaseDamage(
             if (profile.abilityId == attacker.abilityId && sameText(profile.type, move->type))
                 power *= 1.5;
     }
+    for (const auto& profile : PokerogueContent::kTypePowerAbilities) {
+        if (profile.abilityId != attacker.abilityId || !sameText(profile.type, move->type)) continue;
+        // A field-gated component needs the field resolver; never pretend it
+        // is unconditional. Current baseline has no weather context to supply.
+        if (profile.requiresCondition) return PokemonBaseDamageResult::InvalidStats;
+        if (attacker.hp) power *= profile.multiplier;
+    }
     const double baseDamage = (levelMultiplier * power * attack) / defense / 50.0 + 2.0;
     outputBaseDamage = baseDamage;
     return PokemonBaseDamageResult::Ok;
