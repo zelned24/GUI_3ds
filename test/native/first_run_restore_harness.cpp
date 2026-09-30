@@ -634,6 +634,25 @@ static int checkLevelUpMoveLearningAndEvolution() {
     return 0;
 }
 
+static int checkTrainerParentEvolutionThresholds() {
+    const PokerogueContent::TrainerPartySegment* normal = nullptr;
+    for (const auto& segment : PokerogueContent::kTrainerPartySegments)
+        if (segment.evolutionThresholdKind && std::strcmp(segment.evolutionThresholdKind, "NORMAL") == 0)
+            normal = &segment;
+    if (!normal) return 252;
+    unsigned compounds = 0;
+    for (const auto& party : PokerogueContent::kTrainerPartyTemplates) {
+        if (party.isCompound) {
+            if (party.parentEvolutionThresholdKindId != normal->evolutionThresholdKindId) return 253;
+            ++compounds;
+        } else {
+            const auto* segments = PokerogueContent::trainerPartySegmentsFor(party);
+            if (!segments || party.parentEvolutionThresholdKindId != segments[0].evolutionThresholdKindId) return 254;
+        }
+    }
+    return compounds ? 0 : 255;
+}
+
 static int checkCanonicalTrainerSpecialtyTypes() {
     unsigned inspected = 0;
     for (const auto& trainer : PokerogueContent::kTrainerTypes) {
@@ -729,7 +748,7 @@ static int checkTrainerPoolEvolutionDraws() {
             const auto* base = trainerPartySpeciesById(pool.speciesId);
             if (!base) break;
             expected = PokerogueEncounterResolver::resolveTrainerSpeciesForLevel(base->id,
-                25, slot.evolutionThresholdKindId, false, expectedRng);
+                25, choice.value->parentEvolutionThresholdKindId, false, expectedRng);
             if (!expected) break;
             if (base->prevolutionDex && std::strcmp(expected, base->id) && attempt < 10) continue;
             break;
@@ -798,6 +817,8 @@ static int checkCanonicalTrainerSignatureSlots() {
 }
 
 int main() {
+    const int parentThresholdCheck = checkTrainerParentEvolutionThresholds();
+    if (parentThresholdCheck) return parentThresholdCheck;
     const int specialtyCheck = checkCanonicalTrainerSpecialtyTypes();
     if (specialtyCheck) return specialtyCheck;
     const int balancedTypesCheck = checkTrainerBalancedTypes();

@@ -131,7 +131,7 @@ inline TrainerPartySpeciesChoice resolveSimpleTrainerPoolMember(
     const auto* base = trainerPartySpeciesById(pool.speciesId);
     if (!base) return {};
     const char* firstId = PokerogueEncounterResolver::resolveTrainerSpeciesForLevel(
-        base->id, level, member.evolutionThresholdKindId, wave == 20, rng);
+        base->id, level, partyTemplate.parentEvolutionThresholdKindId, wave == 20, rng);
     const auto* first = trainerPartySpeciesById(firstId);
     if (!first) return {};
     bool retry = base->prevolutionDex && std::strcmp(first->id, base->id) != 0;

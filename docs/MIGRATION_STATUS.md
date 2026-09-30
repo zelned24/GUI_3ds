@@ -267,3 +267,9 @@
 4. Pinned import regenerado; el hash cambia por los nuevos campos normalizados. Guardados ligados al hash anterior no se aceptan automáticamente; migración de saves sigue pendiente. Filtros speciesFilter generales y parity completo de entrenadores siguen pendientes.
 
 5. Resultado del reimport: 126 entrenadores con especialidad; 272 trainerRules con specialtyTypeStatus RESOLVED. Dos importaciones pinned producen hash 9475c38f55fde778b84ea3c0d3b454c7c2ef3be4e1f61203efbd66b0392df611. Se conserva catálogo 1084 especies/609 formas/920 movimientos/320 habilidades.
+
+## Primera evolución del pool compuesto
+
+1. Trainer.genNewPartyMemberSpecies pinned llama baseSpecies.getTrainerSpeciesForLevel con template.evoLevelThresholdKind, no getEvoThresholdKind del segmento. Primera resolución del pool usa ahora parentEvolutionThresholdKindId, igual que el reroll specialty. Los callbacks signature conservan el umbral del slot que sí reciben upstream.
+2. Regresión de secuencia RNG actualizada para el umbral padre. Regresión 252–255 verifica NORMAL canónico en todos los templates compuestos y umbral propio en templates simples. Escritas, no ejecutadas.
+3. Falta aún portar el efecto de PartyMemberStrength en la evolución y comprobar la construcción completa contra upstream. No se declara fidelidad completa de equipos.
