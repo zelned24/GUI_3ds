@@ -2,6 +2,7 @@
 
 #include "content/PokerogueRuntimeContent.hpp"
 #include <cstdint>
+#include <cstddef>
 
 namespace Pokerogue3DS {
 
@@ -270,6 +271,14 @@ struct PokemonWeatherResolutionPolicy {
     bool suppressesImmutableWeather = false;
     PokemonEffectiveWeather attackerOverride = PokemonEffectiveWeather::None;
 };
+struct PokemonWeatherAbilityComponent {
+    uint16_t abilityId = 0;
+    bool applies = false;
+    bool belongsToAttacker = false;
+};
+// Caller supplies field membership and resolved primary/passive applicability.
+bool composePokemonWeatherResolutionPolicy(const PokemonWeatherAbilityComponent* components,
+    std::size_t count, PokemonWeatherResolutionPolicy& output);
 struct PokemonMoveWeatherContext {
     bool resolved = false;
     PokemonEffectiveWeather effectiveWeather = PokemonEffectiveWeather::None;

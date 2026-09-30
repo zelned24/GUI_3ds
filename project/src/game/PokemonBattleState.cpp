@@ -613,6 +613,31 @@ bool advancePokemonArenaWeatherTurnEnd(PokemonArenaWeatherState& state,
     return true;
 }
 
+bool composePokemonWeatherResolutionPolicy(const PokemonWeatherAbilityComponent* components,
+    std::size_t count, PokemonWeatherResolutionPolicy& output) {
+    if (count && !components) return false;
+    PokemonWeatherResolutionPolicy next{};
+    next.resolved = true;
+    for (std::size_t i = 0; i < count; ++i) {
+        const auto& component = components[i];
+        if (!component.applies) continue;
+        if (!PokerogueContent::findAbilityMovegenProfile(component.abilityId)) return false;
+        for (const auto& profile : PokerogueContent::kWeatherAbilityProfiles) {
+            if (profile.abilityId != component.abilityId) continue;
+            if (profile.suppressesWeather) {
+                next.suppressesOrdinaryWeather = true;
+                next.suppressesImmutableWeather = next.suppressesImmutableWeather || profile.affectsImmutable;
+            }
+            if (component.belongsToAttacker && profile.overrideWeatherSymbol && *profile.overrideWeatherSymbol) {
+                if (!sameText(profile.overrideWeatherSymbol, "SUNNY")) return false;
+                next.attackerOverride = PokemonEffectiveWeather::Sunny;
+            }
+        }
+    }
+    output = next;
+    return true;
+}
+
 bool resolvePokemonMoveWeatherContext(const PokemonArenaWeatherState& arena,
     const PokemonWeatherResolutionPolicy& policy, PokemonMoveWeatherContext& output) {
     if (!policy.resolved || static_cast<uint8_t>(arena.type) > 9 ||

@@ -555,6 +555,26 @@ extern "C" int runPokemonBattleStateChecks() {
     if (!Pokerogue3DS::selectPokemonBiomeWeather("plains", true, biomeWeatherRng, selectedWeather, sunOnlyEvent) ||
         selectedWeather != Pokerogue3DS::PokemonEffectiveWeather::None) return 296;
     if (Pokerogue3DS::selectPokemonBiomeWeather("missing-biome", false, biomeWeatherRng, selectedWeather)) return 297;
+    uint16_t cloudNineId = 0, megaSolId = 0;
+    for (const auto& profile : PokerogueContent::kWeatherAbilityProfiles) {
+        if (std::strcmp(profile.sourceSymbol, "AbilityId.CLOUD_NINE") == 0 &&
+            profile.suppressesWeather && profile.affectsImmutable) cloudNineId = profile.abilityId;
+        if (std::strcmp(profile.sourceSymbol, "AbilityId.MEGA_SOL") == 0 &&
+            std::strcmp(profile.overrideWeatherSymbol, "SUNNY") == 0) megaSolId = profile.abilityId;
+    }
+    if (!cloudNineId || !megaSolId) return 302;
+    Pokerogue3DS::PokemonWeatherAbilityComponent weatherComponents[2] = {
+        {cloudNineId, true, false}, {megaSolId, true, true}
+    };
+    Pokerogue3DS::PokemonWeatherResolutionPolicy composedWeatherPolicy{};
+    if (!Pokerogue3DS::composePokemonWeatherResolutionPolicy(weatherComponents, 2, composedWeatherPolicy) ||
+        !composedWeatherPolicy.resolved || !composedWeatherPolicy.suppressesImmutableWeather ||
+        composedWeatherPolicy.attackerOverride != Pokerogue3DS::PokemonEffectiveWeather::Sunny) return 303;
+    weatherComponents[0].applies = false;
+    weatherComponents[1].belongsToAttacker = false;
+    if (!Pokerogue3DS::composePokemonWeatherResolutionPolicy(weatherComponents, 2, composedWeatherPolicy) ||
+        composedWeatherPolicy.suppressesOrdinaryWeather ||
+        composedWeatherPolicy.attackerOverride != Pokerogue3DS::PokemonEffectiveWeather::None) return 304;
     Pokerogue3DS::PokemonArenaWeatherState arenaWeather{};
     using Pokerogue3DS::PokemonEffectiveWeather;
     if (!Pokerogue3DS::setPokemonArenaWeather(arenaWeather, PokemonEffectiveWeather::Rain, 2) ||

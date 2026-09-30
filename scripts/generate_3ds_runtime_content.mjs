@@ -737,5 +737,17 @@ for (const biome of [...collections.biomes].sort((a, b) => a.id.localeCompare(b.
 }
 const weatherHeader = typePowerHeader.replace('struct MoveAttribute {',
   `struct BiomeWeatherPoolEntry { const char* biomeId; const char* weatherSymbol; uint16_t weight; const char* sourcePath; const char* sourceSymbol; const char* sourceHash; };\ninline constexpr BiomeWeatherPoolEntry kBiomeWeatherPools[] = {\n${biomeWeatherRows.join(',\n')}\n};\nstruct MoveAttribute {`);
-await fs.writeFile(outputPath, weatherHeader, 'utf8');
-console.log(JSON.stringify({ output: path.relative(root, outputPath), bytes: Buffer.byteLength(weatherHeader), hash: report.contentHash }));
+const weatherAbilityRows = collections.abilities.flatMap(ability => {
+  const raw = ability.extensions?.upstreamAttributes?.value ?? '';
+  const suppress = [...raw.matchAll(/\.attr\s*\(\s*SuppressWeatherEffectAbAttr\s*(?:,\s*(true|false)\s*)?\)/g)];
+  const override = [...raw.matchAll(/\.attr\s*\(\s*PreAttackWeatherOverrideAbAttr\s*,\s*WeatherType\.([A-Z_]+)\s*\)/g)];
+  const declarations = [...raw.matchAll(/\.attr\s*\(\s*(?:SuppressWeatherEffectAbAttr|PreAttackWeatherOverrideAbAttr)\b/g)];
+  if (declarations.length !== suppress.length + override.length || override.length > 1)
+    throw new Error(`Unsupported weather ability component: ${ability.id}`);
+  if (!declarations.length) return [];
+  return [`    {${ability.abilityId}, ${suppress.length > 0}, ${suppress.some(match => match[1] === 'true')}, "${field(override[0]?.[1] ?? '')}", "${field(ability.source?.sourcePath ?? '')}", "${field(ability.source?.sourceSymbol ?? '')}", "${field(ability.source?.sourceHash ?? '')}"}`];
+});
+const resolvedWeatherHeader = weatherHeader.replace('struct MoveAttribute {',
+  `struct WeatherAbilityProfile { uint16_t abilityId; bool suppressesWeather; bool affectsImmutable; const char* overrideWeatherSymbol; const char* sourcePath; const char* sourceSymbol; const char* sourceHash; };\ninline constexpr WeatherAbilityProfile kWeatherAbilityProfiles[] = {\n${weatherAbilityRows.join(',\n')}\n};\nstruct MoveAttribute {`);
+await fs.writeFile(outputPath, resolvedWeatherHeader, 'utf8');
+console.log(JSON.stringify({ output: path.relative(root, outputPath), bytes: Buffer.byteLength(resolvedWeatherHeader), hash: report.contentHash }));
