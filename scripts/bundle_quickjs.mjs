@@ -63,6 +63,16 @@ globalThis._3ds_tick = function(input) {
   else if (input.B && state.finished && state.playerWon && state.experienceGranted) _3ds_skipReward();
   const combatLog = _3ds_getCombatLog();
   const presentation = _3ds_getPresentationInfo() || {};
+  if (presentation.classicClearPending) {
+    _3ds_beginTop(); _3ds_clear(0xFF2D1B4E);
+    _3ds_drawText('Final battle won', 80, 70, 0.8, GREEN);
+    _3ds_drawText('GameClear plan detected', 70, 110, 0.55, WHITE);
+    _3ds_drawText('Clear/save/profile phases still pending', 35, 155, 0.45, WHITE);
+    _3ds_beginBottom(); _3ds_clear(0xFF16213E);
+    _3ds_drawText('Classic completion is not verified', 20, 80, 0.5, WHITE);
+    _3ds_drawText('R: load a compatible save', 25, 130, 0.5, WHITE);
+    return;
+  }
   if (gameOverScreen) {
     _3ds_beginTop(); _3ds_clear(0xFF0A0A0A);
     _3ds_drawText('DERROTA', 135, 72, 1.0, RED);
