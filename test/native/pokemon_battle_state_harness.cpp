@@ -187,6 +187,22 @@ extern "C" int runPokemonBattleStateChecks() {
     replacementParty[2].hp = 0;
     if (Pokerogue3DS::selectBaselineTrainerReplacement(replacementParty, 3, 0,
             matchupOpponent, replacementRng, replacementIndex)) return 203;
+    const double reserveScores[] = {6.0};
+    const uint8_t reserveIndexes[] = {1};
+    Pokerogue3DS::TrainerSwitchDecision switchDecision{};
+    if (!Pokerogue3DS::resolveTrainerSwitchDecision(2.0, reserveScores, reserveIndexes,
+            1, 0, false, false, false, replacementRng, switchDecision) ||
+        !switchDecision.switchPokemon || switchDecision.partyIndex != 1 ||
+        switchDecision.nextSwitchCounter != 1) return 204;
+    if (!Pokerogue3DS::resolveTrainerSwitchDecision(2.0, reserveScores, reserveIndexes,
+            1, 1, false, false, false, replacementRng, switchDecision) ||
+        switchDecision.switchPokemon || switchDecision.nextSwitchCounter) return 205;
+    if (!Pokerogue3DS::resolveTrainerSwitchDecision(2.0, reserveScores, reserveIndexes,
+            1, 2, true, true, false, replacementRng, switchDecision) ||
+        switchDecision.switchPokemon || switchDecision.nextSwitchCounter != 1) return 206;
+    if (!Pokerogue3DS::resolveTrainerSwitchDecision(2.0, reserveScores, reserveIndexes,
+            1, 2, true, false, true, replacementRng, switchDecision) ||
+        switchDecision.switchPokemon || switchDecision.nextSwitchCounter != 1) return 207;
     PokemonBattleInit actorIdInput = input;
     actorIdInput.pokemonId = 0x12345678u;
     actorIdInput.deriveIvsFromPokemonId = true;

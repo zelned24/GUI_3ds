@@ -249,4 +249,44 @@ inline bool selectBaselineTrainerReplacement(
     return selectTrainerSummonIndex(scores, indexes, eligible, scopedRng, output);
 }
 
+struct TrainerSwitchDecision {
+    bool switchPokemon = false;
+    uint8_t partyIndex = 0xFF;
+    uint32_t nextSwitchCounter = 0;
+};
+
+// EnemyCommandPhase's decision after the caller resolves trap/queue state and
+// reserve scores including entry hazards. A move command decays the counter;
+// a switch increments it. Reserve selection uses the separately scoped RNG.
+inline bool resolveTrainerSwitchDecision(
+    double activeScore, const double* reserveScores, const uint8_t* reserveIndexes,
+    uint8_t reserveCount, uint32_t switchCounter, bool boss, bool trapped,
+    bool hasQueuedMove, PokerogueRngAdapter& scopedRng, TrainerSwitchDecision& output) {
+    TrainerSwitchDecision next{};
+    next.nextSwitchCounter = switchCounter ? switchCounter - 1 : 0;
+    if (!std::isfinite(activeScore) || activeScore < 0 || reserveCount > 6) return false;
+    if (!trapped && !hasQueuedMove && reserveCount) {
+        if (!reserveScores || !reserveIndexes) return false;
+        double best = 0;
+        for (uint8_t member = 0; member < reserveCount; ++member) {
+            if (!std::isfinite(reserveScores[member]) || reserveScores[member] < 0 ||
+                reserveIndexes[member] >= 6) return false;
+            for (uint8_t earlier = 0; earlier < member; ++earlier)
+                if (reserveIndexes[earlier] == reserveIndexes[member]) return false;
+            if (reserveScores[member] > best) best = reserveScores[member];
+        }
+        bool shouldSwitch = false;
+        if (!shouldTrainerSwitch(activeScore, best, switchCounter, boss, shouldSwitch)) return false;
+        if (shouldSwitch) {
+            if (switchCounter == 0xFFFFFFFFu ||
+                !selectTrainerSummonIndex(reserveScores, reserveIndexes, reserveCount,
+                    scopedRng, next.partyIndex)) return false;
+            next.switchPokemon = true;
+            next.nextSwitchCounter = switchCounter + 1;
+        }
+    }
+    output = next;
+    return true;
+}
+
 } // namespace Pokerogue3DS
