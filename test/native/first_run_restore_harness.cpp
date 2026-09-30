@@ -509,6 +509,8 @@ static int checkPokeballCaptureMechanics() {
     if (!wildGame.battleFinished() || !wildGame.playerWon()) return 154;
     if (wildGame.playerPartyCount() != 2) return 155;
     if (wildGame.playerPartyMember(1)->dex != wildSave.encounterDex) return 156;
+    if (wildGame.playerPartyMember(1)->battleState.hp != 1) return 224;
+    if (wildGame.presentation().enemy.battleState.hp != 0) return 225;
 
     return 0;
 }

@@ -196,3 +196,10 @@
 2. Concesión de EXP, replay y guardado del actor activo leen el valor individual. Captura inicializa EXP desde growthRate y nivel canónicos; datos inválidos rechazan la captura completa sin publicar el candidato.
 3. Regresiones 221–223 comprueban EXP de capturado, cambio y retorno al starter. Escritas, pendientes de ejecución.
 4. Distribución de EXP entre participantes/EXP Share y persistencia del equipo completo siguen pendientes. La corrección no declara esas capas completas.
+
+## Captura: HP y fallos de progresión
+
+1. Fuente pinned inspeccionada: AttemptCapturePhase.addToParty/removePokemon y EnemyPokemon.addToParty; constructor Pokemon copia dataSource.hp. Capturado conserva HP y PP; retirada del enemigo ocurre después de copiarlo. Eliminada curación a máximo inventada.
+2. Captura comprueba concesión de EXP y plan de victoria. Un fallo rechaza el candidato entero: no publica balón gastado, equipo ni victoria parciales.
+3. EXP de dobles rechaza segunda especie/forma inválida, cálculo no soportado y suma fuera de uint32_t, sin omitir silenciosamente al segundo enemigo.
+4. Regresiones 224–225 escritas para captura a 1 HP y retirada del enemigo. Pendientes de ejecución. Estado/efectos de captura, EXP por participante y equipo lleno siguen pendientes.

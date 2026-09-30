@@ -808,16 +808,15 @@ bool FirstRunRuntime::grantVictoryExperience() {
         const auto* defeated2 = PokerogueContent::findSpeciesByDex(m_context.secondEnemy.dex);
         const auto* defeatedForm2 = m_context.secondEnemy.formId
             ? PokerogueContent::findFormById(m_context.secondEnemy.formId) : nullptr;
-        if (defeated2 && (!m_context.secondEnemy.formId || defeatedForm2)) {
-            double rawExperience2 = 0.0;
-            uint32_t award2 = 0;
-            if (pokemonExperienceForDefeat(*defeated2, m_context.secondEnemy.level, rawExperience2,
-                                          defeatedForm2) == PokemonExperienceResult::Ok &&
-                rawExperience2 >= 0.0 && rawExperience2 <= 4294967295.0 &&
-                pokemonSingleParticipantExperience(rawExperience2, false, award2) == PokemonExperienceResult::Ok) {
-                awardedExperience += award2;
-            }
-        }
+        if (!defeated2 || (m_context.secondEnemy.formId && !defeatedForm2)) return false;
+        double rawExperience2 = 0.0;
+        uint32_t award2 = 0;
+        if (pokemonExperienceForDefeat(*defeated2, m_context.secondEnemy.level, rawExperience2,
+                defeatedForm2) != PokemonExperienceResult::Ok ||
+            rawExperience2 < 0.0 || rawExperience2 > 4294967295.0 ||
+            pokemonSingleParticipantExperience(rawExperience2, false, award2) != PokemonExperienceResult::Ok ||
+            award2 > 0xffffffffU - awardedExperience) return false;
+        awardedExperience += award2;
     }
 
     PokemonExperienceProgress progress{};
@@ -1836,7 +1835,6 @@ bool FirstRunRuntime::throwPokeballInPlace(PokeballType ball) {
     }
 
     if (captureEvent.caught) {
-        target->battleState.hp = 0;
         if (m_context.playerPartyCount < 6) {
             ResolvedPokemon caughtMon = *target;
             const auto* caughtSpecies = PokerogueContent::findSpeciesByDex(caughtMon.dex);
@@ -1845,19 +1843,23 @@ bool FirstRunRuntime::throwPokeballInPlace(PokeballType ball) {
                 m_battleFeedback = "Captured Pokemon experience could not resolve";
                 return false;
             }
-            caughtMon.battleState.hp = caughtMon.battleState.maxHp;
+            // EnemyPokemon.addToParty passes the source into PlayerPokemon:
+            // preserve capture HP/PP; remove the enemy only after copying it.
             resetPokemonStatStages(caughtMon.battleState);
             m_context.playerParty[m_context.playerPartyCount++] = caughtMon;
         }
+        target->battleState.hp = 0;
 
         m_checkpointAvailable = false;
         m_runStarted = true;
 
         if (enemyPartyDefeated()) {
-            grantVictoryExperience();
+            if (!grantVictoryExperience() || !planClassicVictory(m_run.wave, m_victoryPlan)) {
+                m_battleFeedback = "Capture victory could not resolve";
+                return false;
+            }
             m_playerWon = true;
             m_battleFinished = true;
-            planClassicVictory(m_run.wave, m_victoryPlan);
             m_battleFeedback = std::string("Gotcha! ") + (target->localizedName ? target->localizedName : "Pokémon") + " was caught!";
         } else {
             m_battleFeedback = std::string("Caught ") + (target->localizedName ? target->localizedName : "Pokémon") + "! Defeat remaining foe.";
