@@ -46,6 +46,27 @@ inline const PokerogueContent::SpeciesEvolution* checkSpeciesLevelEvolution(
     return nullptr;
 }
 
+enum class PokemonLearnMoveResult : uint8_t {
+    Learned = 0, AlreadyKnown, InvalidSlot, MissingMove, UpstreamUnimplemented, InvalidState
+};
+// LearnMovePhase.learnMove -> Pokemon.setMove. UI owns replace/reject choice;
+// this operation replaces exactly its selected slot and starts with full PP.
+inline PokemonLearnMoveResult learnPokemonMoveAtSlot(PokemonBattleState& state,
+    uint16_t moveId, uint8_t selectedSlot) {
+    if (state.moveCount > 4) return PokemonLearnMoveResult::InvalidState;
+    const auto* move = PokerogueContent::findMoveById(moveId);
+    if (!move || !moveId) return PokemonLearnMoveResult::MissingMove;
+    if (move->upstreamFlags & PokerogueContent::MoveIsUnimplemented)
+        return PokemonLearnMoveResult::UpstreamUnimplemented;
+    if (move->pp < 1 || move->pp > 255) return PokemonLearnMoveResult::InvalidState;
+    if (selectedSlot >= 4 || selectedSlot > state.moveCount) return PokemonLearnMoveResult::InvalidSlot;
+    for (uint8_t slot = 0; slot < state.moveCount; ++slot)
+        if (state.moves[slot].moveId == moveId) return PokemonLearnMoveResult::AlreadyKnown;
+    state.moves[selectedSlot] = {moveId, static_cast<uint8_t>(move->pp), static_cast<uint8_t>(move->pp)};
+    if (selectedSlot == state.moveCount) ++state.moveCount;
+    return PokemonLearnMoveResult::Learned;
+}
+
 // Checks learnset moves for a species between oldLevel and newLevel, learning moves
 // into unoccupied move slots (< 4). Returns count of moves newly learned.
 inline uint8_t learnNewLevelMoves(
@@ -86,38 +107,36 @@ inline uint8_t learnNewLevelMoves(
                 const auto& lm = levelMoves[i];
                 if (lm.level != selectedLevel) continue;
 
-        // Check if move is already known
-        bool alreadyKnown = false;
-        for (uint8_t slot = 0; slot < battleState.moveCount; ++slot) {
-            if (battleState.moves[slot].moveId == lm.moveId) {
-                alreadyKnown = true;
-                break;
-            }
-        }
-        if (alreadyKnown) continue;
+                // Check if move is already known
+                bool alreadyKnown = false;
+                for (uint8_t slot = 0; slot < battleState.moveCount; ++slot) {
+                    if (battleState.moves[slot].moveId == lm.moveId) {
+                        alreadyKnown = true;
+                        break;
+                    }
+                }
+                if (alreadyKnown) continue;
 
-        // Learn move if slot available (< 4)
-        if (battleState.moveCount < 4) {
-            const auto* moveDef = PokerogueContent::findMoveById(lm.moveId);
-            if (!moveDef) continue;
+                // Learn move if slot available (< 4)
+                if (battleState.moveCount < 4) {
+                    const auto* moveDef = PokerogueContent::findMoveById(lm.moveId);
+                    if (!moveDef) continue;
 
-            const uint8_t slot = battleState.moveCount;
-            battleState.moves[slot].moveId = lm.moveId;
-            battleState.moves[slot].pp = moveDef->pp;
-            battleState.moves[slot].maxPp = moveDef->pp;
-            ++battleState.moveCount;
+                    const uint8_t slot = battleState.moveCount;
+                    if (learnPokemonMoveAtSlot(battleState, lm.moveId, slot) != PokemonLearnMoveResult::Learned)
+                        continue;
 
-            if (moveIdsOutput && slot < 4) {
-                moveIdsOutput[slot] = lm.moveId;
-            }
-            moveCountOutput = battleState.moveCount;
-            ++learnedCount;
+                    if (moveIdsOutput && slot < 4) {
+                        moveIdsOutput[slot] = lm.moveId;
+                    }
+                    moveCountOutput = battleState.moveCount;
+                    ++learnedCount;
 
-            if (feedback) {
-                if (!feedback->empty()) *feedback += " ";
-                *feedback += "Learned " + std::string(moveDef->name) + "!";
-            }
-        }
+                    if (feedback) {
+                        if (!feedback->empty()) *feedback += " ";
+                        *feedback += "Learned " + std::string(moveDef->name) + "!";
+                    }
+                }
             }
         }
     }

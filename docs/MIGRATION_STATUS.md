@@ -405,3 +405,9 @@
 
 1. learnNewLevelMoves combina learnset de especie y forma seleccionada, conforme SpeciesDataRegistry.getLevelMoves y Pokemon.getLevelMoves pinned; orden ascendente estable por nivel, species antes de form en empates, sin pool dinámico. Rechaza forma de otra especie y evita moves duplicados.
 2. Regresiones 300–302 escritas buscan una forma real con move exclusivo y comprueban aprendizaje en su nivel. No ejecutadas. Reemplazo de cuatro slots y diálogo de rechazo/aceptación siguen pendientes; el helper todavía solo llena huecos.
+
+## Operación de aprendizaje/reemplazo de movimiento
+
+1. learnPokemonMoveAtSlot en el módulo existente porta LearnMovePhase.learnMove/Pokemon.setMove: slot seleccionado se reemplaza con PP completos, otros slots conservan PP. Duplicados, slot inválido y MoveIsUnimplemented se rechazan sin mutar; aprender en huecos reutiliza la operación.
+2. Regresiones 303–306 escritas para reemplazo, duplicado, slot inválido y movimiento upstream no implementado. No ejecutadas.
+3. Falta cola de decisiones por nivel y conexión UI de aceptar/rechazar/reemplazar; esta operación no declara ese flujo completo.

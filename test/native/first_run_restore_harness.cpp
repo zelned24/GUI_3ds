@@ -702,6 +702,26 @@ static int checkLevelUpMoveLearningAndEvolution() {
     // Ivysaur has higher base stats and max HP than Bulbasaur
     if (bulbaState.maxHp <= bulbaMaxHp || bulbaState.hp <= bulbaHp) return 198;
 
+    auto replacementActor = bulbaState;
+    replacementActor.moveCount = 4;
+    replacementActor.moves[0] = {33, 1, 35};
+    replacementActor.moves[1] = {45, 1, 40};
+    replacementActor.moves[2] = {22, 1, 25};
+    replacementActor.moves[3] = {73, 1, 10};
+    const auto* newMove = PokerogueContent::findMoveById(75);
+    if (!newMove || learnPokemonMoveAtSlot(replacementActor, 75, 2) !=
+            PokemonLearnMoveResult::Learned || replacementActor.moveCount != 4 ||
+        replacementActor.moves[2].moveId != 75 || replacementActor.moves[2].pp != newMove->pp ||
+        replacementActor.moves[0].pp != 1 || replacementActor.moves[3].pp != 1) return 303;
+    if (learnPokemonMoveAtSlot(replacementActor, 75, 0) != PokemonLearnMoveResult::AlreadyKnown ||
+        replacementActor.moves[0].moveId != 33) return 304;
+    if (learnPokemonMoveAtSlot(replacementActor, 14, 4) != PokemonLearnMoveResult::InvalidSlot ||
+        replacementActor.moves[2].moveId != 75) return 305;
+    const PokerogueContent::Move* unimplementedMove = nullptr;
+    for (const auto& move : PokerogueContent::kMoves)
+        if (move.upstreamFlags & PokerogueContent::MoveIsUnimplemented) { unimplementedMove = &move; break; }
+    if (!unimplementedMove || learnPokemonMoveAtSlot(replacementActor, unimplementedMove->id, 0) != PokemonLearnMoveResult::UpstreamUnimplemented ||
+        replacementActor.moves[0].moveId != 33) return 306;
     // 3. Check learnNewLevelMoves
     // Bulbasaur learns Vine Whip (id 22) or Leech Seed at early levels
     PokemonBattleState learnState = bulbaState;
