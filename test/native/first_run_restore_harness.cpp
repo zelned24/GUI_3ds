@@ -15,6 +15,16 @@ static int checkTrainerExperienceReplay() {
         bool eligible = true;
         for (uint16_t wave = 1; wave <= 4; ++wave) {
             const auto& context = game.presentation();
+            if (classifyClassicWave(wave) == ClassicWaveKind::TrainerChanceRequired &&
+                    context.trainerPartyCount && context.enemy.actorIdentityResolved) {
+                if (!context.trainerPartyBattleStatesResolved ||
+                    !context.trainerPartyMovesetsResolved || !context.trainerPartyIvsResolved ||
+                    context.activeTrainerPartyIndex >= context.trainerPartyCount ||
+                    context.enemy.dex != context.trainerParty[context.activeTrainerPartyIndex].dex) return 228;
+                for (uint8_t member = 0; member < context.trainerPartyCount; ++member)
+                    if (!context.trainerParty[member].actorIdentityResolved ||
+                        !context.trainerParty[member].battleState.moveCount) return 229;
+            }
             if (!context.enemy.actorIdentityResolved || context.secondEnemy.dex ||
                 context.trainerPartyCount) { eligible = false; break; }
             NativeRunSave won{};

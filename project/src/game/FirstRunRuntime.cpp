@@ -2176,6 +2176,7 @@ void FirstRunRuntime::resolve(bool carryPlayer) {
     };
     if (carryPlayer && ((m_run.wave > 1 && (m_run.wave - 1) % 10 == 0) ||
             m_run.wave == PokerogueContent::kClassicFinalWave)) resetPlayerArenaState();
+    const PokerogueContent::TrainerType* randomTrainer = nullptr;
     if (waveKind == ClassicWaveKind::TrainerChanceRequired) {
         bool offsetGym = false;
         bool isTrainer = false;
@@ -2193,17 +2194,22 @@ void FirstRunRuntime::resolve(bool carryPlayer) {
                 buildScene();
                 return;
             }
-            m_context.trainerTypeId = selectedTrainer.trainerType->id;
-            m_context.trainerName = selectedTrainer.trainerType->name;
-            m_battleFeedback = "Trainer party construction pending";
-            buildScene();
-            return;
+            randomTrainer = selectedTrainer.trainerType;
+            // generateNewBattleTrainer draws double variant before gender/template.
+            // Double-capable configs require their complete chance/variant resolver.
+            if (randomTrainer->flags & (2U | 4U)) {
+                m_battleFeedback = "Random trainer double variant requires resolver";
+                buildScene();
+                return;
+            }
         }
-    } else if (waveKind == ClassicWaveKind::FixedTrainerBattle) {
+    }
+    if (randomTrainer || waveKind == ClassicWaveKind::FixedTrainerBattle) {
         m_trainerBattle = true;
         resetPlayerArenaState(); // New trainer battle recalls the player field.
         const auto* fixedBattle = PokerogueContent::findClassicFixedBattleWave(m_run.wave);
-        const auto* trainer = fixedBattle && fixedBattle->hasStaticTrainerType
+        const auto* trainer = randomTrainer ? randomTrainer :
+            fixedBattle && fixedBattle->hasStaticTrainerType
             ? PokerogueContent::findTrainerType(fixedBattle->trainerTypeId) : nullptr;
         if (trainer) {
             m_context.trainerTypeId = trainer->id;
@@ -2213,7 +2219,11 @@ void FirstRunRuntime::resolve(bool carryPlayer) {
                 m_seedCodeUnits.data(), m_seedLength,
                 static_cast<uint32_t>(m_run.wave) << 8);
             if (!trainerScope.valid()) return;
-            if (fixedBattle->seededBinaryGenderVariant) {
+            if (randomTrainer) {
+                // Non-fixed generation continues the wave RNG after trainer pool selection.
+                trainerRng = waveRng;
+                m_context.trainerFemaleVariant = trainerRng.randSeedInt(2) != 0;
+            } else if (fixedBattle->seededBinaryGenderVariant) {
                 // handleFixedBattle invokes getTrainer under rootSeed + (wave << 8).
                 // TOWN_YOUNGSTER draws its gender before Trainer.constructor
                 // chooses a party template. The callback is source-normalized.
@@ -2472,6 +2482,7 @@ void FirstRunRuntime::resolve(bool carryPlayer) {
         buildScene();
         return;
     } else if (waveKind != ClassicWaveKind::RegularWild &&
+               waveKind != ClassicWaveKind::TrainerChanceRequired &&
                waveKind != ClassicWaveKind::MajorBoss &&
                waveKind != ClassicWaveKind::FinalBoss) {
         m_battleFeedback = waveKind == ClassicWaveKind::Invalid
@@ -2479,7 +2490,8 @@ void FirstRunRuntime::resolve(bool carryPlayer) {
         buildScene();
         return;
     }
-    m_doubleBattle = (waveKind == ClassicWaveKind::RegularWild) && (waveRng.randSeedInt(8) == 0);
+    m_doubleBattle = (waveKind == ClassicWaveKind::RegularWild ||
+        waveKind == ClassicWaveKind::TrainerChanceRequired) && (waveRng.randSeedInt(8) == 0);
     // newBattle has already reset the global seed to rootSeed + waveIndex;
     // Battle construction then applies waveIndex<<3 to that wave seed. The
     // constructor's seeded 16-character battleSeed consumes the first draws

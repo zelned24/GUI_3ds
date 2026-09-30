@@ -210,3 +210,12 @@
 2. BattleScene.doPostBattleCleanup y ReturnPhase.resetSummonData pinned justifican reinicio de stat stages y Trick Room al entrar en entrenador, nuevo bioma o jefe final. Se sincroniza la copia del miembro activo; HP/PP/EXP persisten.
 3. Regresiones 226–227 escritas para rechazo de transición fuera de victoria sin alterar snapshot. No cubren aún fallo inyectado de generación en una transición válida. Tests/compilación pendientes.
 4. Callbacks PostBattleInit, tags, Tera, formas y biomas/clima completos siguen pendientes; no se declara limpieza upstream completa.
+
+## Entrenadores aleatorios: construcción compartida
+
+1. Fuente pinned: BattleScene.handleNonFixedBattle/generateNewBattleTrainer. Tras seleccionar trainer pool, género y plantilla continúan en el RNG de wave; fixed getTrainer usa scope wave<<8.
+2. Selección aleatoria simple conecta con la construcción canónica existente de equipos/actores/moves/IVs, en lugar de detenerse incondicionalmente antes de construir. No duplica catálogo ni crea especies ficticias.
+3. Configs hasDouble/doubleOnly siguen rechazadas explícitamente: falta el resolver completo de variantes. Capacidades de constructor y movimientos continúan validándose por miembro; esta conexión no prueba todos los entrenadores jugables.
+4. Si la decisión de entrenador es negativa, la wave sigue la ruta wild y su selección de dobles. Validación dinámica/tests/compilación pendientes.
+
+5. Regresión 228–229 añadida al recorrido de seeds/encuentros: si alcanza un entrenador aleatorio resuelto, comprueba equipo/IVs/moves y actor activo. Pendiente de ejecución; no demuestra cobertura de entrenador aleatorio si el recorrido no lo alcanza.
