@@ -801,5 +801,10 @@ const criticalAbilityRows = collections.abilities.flatMap(ability => {
 });
 const criticalHeader = moveWeatherHeader.replace('struct MoveAttribute {',
   `struct CriticalAbilityProfile { uint16_t abilityId; uint8_t bonusStages; bool blocksCritical; double criticalMultiplier; bool ignorable; const char* sourcePath; const char* sourceSymbol; const char* sourceHash; };\ninline constexpr CriticalAbilityProfile kCriticalAbilityProfiles[] = {\n${criticalAbilityRows.join(',\n')}\n};\nstruct MoveAttribute {`);
-await fs.writeFile(outputPath, criticalHeader, 'utf8');
-console.log(JSON.stringify({ output: path.relative(root, outputPath), bytes: Buffer.byteLength(criticalHeader), hash: report.contentHash }));
+const alwaysHitRows = collections.abilities.filter(ability =>
+  /\.attr\s*\(\s*AlwaysHitAbAttr\s*\)/.test(ability.extensions?.upstreamAttributes?.value ?? '')
+).map(ability => `    {${ability.abilityId}, "${field(ability.source?.sourcePath ?? '')}", "${field(ability.source?.sourceSymbol ?? '')}", "${field(ability.source?.sourceHash ?? '')}"}`);
+const hitHeader = criticalHeader.replace('struct MoveAttribute {',
+  `struct AlwaysHitAbilityProfile { uint16_t abilityId; const char* sourcePath; const char* sourceSymbol; const char* sourceHash; };\ninline constexpr AlwaysHitAbilityProfile kAlwaysHitAbilityProfiles[] = {\n${alwaysHitRows.join(',\n')}\n};\nstruct MoveAttribute {`);
+await fs.writeFile(outputPath, hitHeader, 'utf8');
+console.log(JSON.stringify({ output: path.relative(root, outputPath), bytes: Buffer.byteLength(hitHeader), hash: report.contentHash }));

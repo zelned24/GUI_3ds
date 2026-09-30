@@ -1022,6 +1022,19 @@ extern "C" int runPokemonBattleStateChecks() {
     const uint32_t expectedSniperDamage = static_cast<uint32_t>(sniperBase * 2.25 *
         (static_cast<double>(sniperPercent) / 100.0) * sniperType);
     if (sniperRoll.damage != (expectedSniperDamage ? expectedSniperDamage : 1)) return 351;
+    uint16_t noGuardId = 0;
+    for (const auto& profile : PokerogueContent::kAlwaysHitAbilityProfiles)
+        if (std::strcmp(profile.sourceSymbol, "AbilityId.NO_GUARD") == 0) noGuardId = profile.abilityId;
+    if (!noGuardId) return 352;
+    PokemonBattleState guardedTarget = state;
+    guardedTarget.abilityId = noGuardId;
+    PokerogueRngAdapter noGuardRng = actionRng, expectedNoGuardRng = actionRng;
+    const uint8_t expectedNoGuardCritical = static_cast<uint8_t>(expectedNoGuardRng.randSeedInt(24));
+    const uint8_t expectedNoGuardDamage = static_cast<uint8_t>(expectedNoGuardRng.randSeedIntRange(85, 100));
+    PokemonMoveDamageRoll noGuardRoll{};
+    if (Pokerogue3DS::resolveStandardPokemonMoveDamage(state, guardedTarget, 33, false, noGuardRng,
+            noGuardRoll) != PokemonMoveDamageResult::Ok || !noGuardRoll.hit || noGuardRoll.accuracyWasRolled ||
+        noGuardRoll.criticalRoll != expectedNoGuardCritical || noGuardRoll.randomDamagePercent != expectedNoGuardDamage) return 353;
     PokemonBattleState noPpActor = state;
     noPpActor.moves[0].pp = 0;
     PokemonBattleState unchangedTarget = state;

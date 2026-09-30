@@ -932,7 +932,13 @@ PokemonMoveDamageResult resolveStandardPokemonMoveDamage(
     int16_t weatherAccuracy = move->accuracy;
     if (!pokemonWeatherMoveAccuracy(moveId, weatherContext, weatherAccuracy))
         return PokemonMoveDamageResult::UnresolvedWeather;
-    if (weatherAccuracy >= 0) {
+    bool alwaysHits = false;
+    // Unsuppressed primary abilities in the current baseline. Type immunity
+    // was already checked above; No Guard does not bypass that check.
+    for (const auto& profile : PokerogueContent::kAlwaysHitAbilityProfiles)
+        if (profile.abilityId == attacker.abilityId || profile.abilityId == defender.abilityId)
+            alwaysHits = true;
+    if (weatherAccuracy >= 0 && !alwaysHits) {
         double accuracyStage = 1.0;
         if (!pokemonAccuracyStageMultiplier(attacker, defender, accuracyStage))
             return PokemonMoveDamageResult::InvalidAccuracy;
