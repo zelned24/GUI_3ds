@@ -417,3 +417,11 @@
 1. Cuando se llena el moveset, movimientos nuevos elegibles se conservan en cola acotada de 128 IDs, deduplicada y ordenada por nivel/fuente. Overflow hace fallar el comando; no se descarta silenciosamente. Regresiones 307–310 escritas para catálogo real y aislamiento de moves conocidos/no implementados. No ejecutadas.
 2. Runtime pausa rewards/reemplazo de rival tras EXP: UP/DOWN selecciona cualquier slot, A reemplaza, B rechaza; bridge de acciones 0–3 acepta selección directa. Presentación muestra nombre localizado del movimiento propuesto. Siguiente decisión continúa hasta vaciar la cola.
 3. Save rechaza decisiones pendientes porque no están serializadas. Evolución todavía ocurre antes de resolver la cola y faltan confirmación de rechazo/configuración upstream y triggers form-change por move aprendido. No se declara secuencia de fases completa.
+
+## Aprendizaje antes de evolución
+
+1. LevelUpPhase.end pinned encola LearnMovePhase antes de EvolutionPhase; PhaseManager.unshiftPhase documenta FIFO. Runtime difiere la evolución simple hasta resolver la última decisión de aprendizaje. Sin decisiones, evoluciona tras aprender los huecos.
+2. Resolución de decisión copia el runtime y publica solo al completar aprendizaje/evolución; fallo conserva cola, actor y EXP. Evolución actualiza nombre localizado y referencias de forma/assets desde catálogo. Save rechaza evolución pendiente no serializada.
+3. Falta aprendizaje de EVOLVE_MOVE tras evolución, cancelación/pausa de evolución y callbacks. Regresiones existentes siguen pendientes de ejecución; no se declara secuencia completa.
+
+4. Regresiones 311-312 escritas para reemplazo elegido seguido de evolucion real y preservacion de move/PP. Prueba del flujo interactivo completo y ejecucion siguen pendientes.

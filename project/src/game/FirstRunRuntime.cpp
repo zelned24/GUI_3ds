@@ -136,7 +136,7 @@ void FirstRunRuntime::captureNativeRunSave(NativeRunSave& output) const {
         output = {};
         return;
     }
-    if (moveLearningPending() || (m_runStarted && !m_checkpointAvailable)) {
+    if (moveLearningPending() || m_pendingEvolutionSpeciesId || (m_runStarted && !m_checkpointAvailable)) {
         output = {};
         return;
     }
@@ -810,7 +810,37 @@ bool FirstRunRuntime::claimRewardChoiceInPlace() {
     return m_encounterResolved;
 }
 
+bool FirstRunRuntime::finishPendingEvolution() {
+    if (!m_pendingEvolutionSpeciesId) return true;
+    auto next = m_context.player;
+    EvolutionResult event{};
+    std::string feedback;
+    if (!applySpeciesEvolution(next.dex, m_pendingEvolutionSpeciesId, next.battleState,
+            event, &feedback, &next.actor)) return false;
+    const auto* species = PokerogueContent::findSpeciesByDex(event.newDex);
+    if (!species) return false;
+    next.dex = event.newDex;
+    next.speciesId = species->id;
+    const std::string key = std::string("pokemon:") + species->id;
+    next.localizedName = locale(key.c_str(), species->name);
+    next.formId = next.battleState.formId;
+    next.assetSourcePath = species->assetSourcePath;
+    m_context.player = next;
+    m_context.playerParty[m_context.activePlayerPartyIndex] = next;
+    m_pendingEvolutionSpeciesId = nullptr;
+    m_battleFeedback = feedback;
+    return true;
+}
+
 bool FirstRunRuntime::resolvePendingLearnMove(int selectedSlot) {
+    FirstRunRuntime candidate = *this;
+    if (!candidate.resolvePendingLearnMoveInPlace(selectedSlot)) return false;
+    *this = candidate;
+    buildScene();
+    return true;
+}
+
+bool FirstRunRuntime::resolvePendingLearnMoveInPlace(int selectedSlot) {
     if (!moveLearningPending() || selectedSlot < -1 || selectedSlot > 3) return false;
     if (selectedSlot >= 0) {
         auto next = m_context.player.battleState;
@@ -824,6 +854,7 @@ bool FirstRunRuntime::resolvePendingLearnMove(int selectedSlot) {
     for (uint16_t i = 1; i < m_pendingLevelMoves.count; ++i)
         m_pendingLevelMoves.moveIds[i - 1] = m_pendingLevelMoves.moveIds[i];
     m_pendingLevelMoves.moveIds[--m_pendingLevelMoves.count] = 0;
+    if (!moveLearningPending() && !finishPendingEvolution()) return false;
     m_battleFeedback = moveLearningPending() ? "Choose move to replace: UP/DOWN, A learn, B reject"
         : selectedSlot < 0 ? "Move not learned" : "Move learned";
     buildScene();
@@ -948,28 +979,13 @@ bool FirstRunRuntime::grantVictoryExperience() {
                            m_context.player.moveIds, m_context.player.moveCount, &moveFeedback, &m_pendingLevelMoves);
         if (m_pendingLevelMoves.overflow) return false;
 
-        // Check for level-based evolution
         const auto* evo = checkSpeciesLevelEvolution(m_context.player.speciesId, oldLevel, progress.level);
-        if (evo) {
-            EvolutionResult evoResult{};
-            std::string evoFeedback;
-            if (applySpeciesEvolution(m_context.player.dex, evo->targetSpeciesId, next, evoResult, &evoFeedback,
-                    &m_context.player.actor)) {
-                m_context.player.dex = evoResult.newDex;
-                m_context.player.speciesId = evoResult.newSpeciesId;
-                m_context.player.localizedName = evoResult.newName;
-                const auto* evolvedSpecies = PokerogueContent::findSpeciesByDex(evoResult.newDex);
-                m_context.player.formId = next.formId;
-                m_context.player.actor.formId = next.formId;
-                m_context.player.assetSourcePath = evolvedSpecies ? evolvedSpecies->assetSourcePath : nullptr;
-
-                m_battleFeedback = evoFeedback;
-            }
-        }
+        if (evo) m_pendingEvolutionSpeciesId = evo->targetSpeciesId;
     }
     m_context.player.battleState = next;
     m_context.player.level = progress.level;
     m_context.player.totalExperience = progress.totalExperience;
+    if (!moveLearningPending() && !finishPendingEvolution()) return false;
     m_context.playerParty[m_context.activePlayerPartyIndex] = m_context.player;
     m_experienceGranted = true;
     return true;
@@ -1860,6 +1876,7 @@ bool FirstRunRuntime::advanceTrainerAfterDefeat() {
     m_playerWon = false;
     m_experienceGranted = false;
     m_pendingLevelMoves = {};
+    m_pendingEvolutionSpeciesId = nullptr;
     m_victoryPlan = {};
     m_checkpointAvailable = true;
     refreshTrainerBaselineMatchups();
@@ -2164,6 +2181,7 @@ void FirstRunRuntime::resolve(bool carryPlayer) {
     m_playerWon = false;
     m_experienceGranted = false;
     m_pendingLevelMoves = {};
+    m_pendingEvolutionSpeciesId = nullptr;
     m_victoryPlan = {};
     m_rewardChoices = {};
     m_rewardChoiceCount = 0;

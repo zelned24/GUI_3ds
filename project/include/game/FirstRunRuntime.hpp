@@ -139,6 +139,8 @@ public:
 private:
     bool advanceBattleTurnInPlace();
     bool claimRewardChoiceInPlace();
+    bool resolvePendingLearnMoveInPlace(int selectedSlot);
+    bool finishPendingEvolution();
     bool skipVictoryRewardInPlace();
     bool throwPokeballInPlace(PokeballType ball);
     bool switchPlayerPokemonInPlace(uint8_t targetIndex);
@@ -192,6 +194,7 @@ private:
     bool m_playerWon = false;
     bool m_experienceGranted = false;
     PokemonPendingLevelMoves m_pendingLevelMoves{};
+    const char* m_pendingEvolutionSpeciesId = nullptr;
     ClassicVictoryPlan m_victoryPlan{};
     std::array<ModifierRewardRoll, 3> m_rewardChoices{};
     uint8_t m_rewardChoiceCount = 0;

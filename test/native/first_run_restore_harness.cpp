@@ -736,6 +736,22 @@ static int checkLevelUpMoveLearningAndEvolution() {
         for (uint8_t slot = 0; slot < replacementActor.moveCount; ++slot)
             if (replacementActor.moves[slot].moveId == pendingMoves.moveIds[index]) return 310;
     }
+    // A chosen replacement survives the subsequent evolution phase.
+    PokemonBattleInit sequenceInput = bulbaInit;
+    sequenceInput.moveCount = 4;
+    sequenceInput.moveIds[0] = 33;
+    sequenceInput.moveIds[1] = 45;
+    sequenceInput.moveIds[2] = 22;
+    sequenceInput.moveIds[3] = 73;
+    PokemonBattleState sequenceActor{};
+    if (initializePokemonBattleState(sequenceInput, sequenceActor) != PokemonBattleInitResult::Ok ||
+        learnPokemonMoveAtSlot(sequenceActor, 75, 2) != PokemonLearnMoveResult::Learned) return 311;
+    auto sequenceIdentity = evolutionIdentity;
+    sequenceIdentity.formId = sequenceActor.formId;
+    EvolutionResult sequenceEvolution{};
+    if (!applySpeciesEvolution(1, "ivysaur", sequenceActor, sequenceEvolution, nullptr, &sequenceIdentity) ||
+        sequenceActor.speciesDex != 2 || sequenceActor.moves[2].moveId != 75 ||
+        sequenceActor.moves[2].pp != newMove->pp) return 312;
     // 3. Check learnNewLevelMoves
     // Bulbasaur learns Vine Whip (id 22) or Leech Seed at early levels
     PokemonBattleState learnState = bulbaState;
