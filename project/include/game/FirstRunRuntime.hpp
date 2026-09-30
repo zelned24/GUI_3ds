@@ -102,6 +102,7 @@ private:
     bool finishBattleTurn();
     void refreshTrainerBaselineMatchups();
     bool resolveActiveMoveWeather(bool enemyAttacks, PokemonMoveWeatherContext& output) const;
+    bool resolveActiveMoveCritical(bool enemyAttacks, PokemonCriticalPolicy& output) const;
     void buildScene();
     static const char* locale(const char* canonicalId, const char* fallback);
 

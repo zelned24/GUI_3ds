@@ -393,6 +393,20 @@ bool FirstRunRuntime::resolveActiveMoveWeather(bool enemyAttacks,
         resolvePokemonMoveWeatherContext(m_arenaWeather, policy, output);
 }
 
+bool FirstRunRuntime::resolveActiveMoveCritical(bool enemyAttacks,
+    PokemonCriticalPolicy& output) const {
+    // Current fresh-profile singles have no unlocked passive, crit items,
+    // crit tags, suppression or ability-bypass effects. Their future presence
+    // must extend this eligibility/resolution boundary before executing moves.
+    if (m_doubleBattle || !m_context.player.actorIdentityResolved ||
+        !m_context.enemy.actorIdentityResolved) return false;
+    const PokemonCriticalAbilityComponent components[2] = {
+        {m_context.player.battleState.abilityId, true, !enemyAttacks},
+        {m_context.enemy.battleState.abilityId, true, enemyAttacks}
+    };
+    return composePokemonCriticalAbilityPolicy(components, 2, false, output);
+}
+
 bool FirstRunRuntime::battleInputSupported() const {
     if (!m_encounterResolved || m_trainerBattle || !m_context.player.actorIdentityResolved ||
         !m_context.enemy.actorIdentityResolved || m_doubleBattle || m_battleFinished ||
@@ -678,18 +692,20 @@ bool FirstRunRuntime::advanceBattleTurn() {
     const auto act = [&](bool enemyActs) -> bool {
         PokemonMoveActionResult result{};
         PokemonMoveWeatherContext weather{};
-        if (!resolveActiveMoveWeather(enemyActs, weather)) return false;
+        PokemonCriticalPolicy critical{};
+        if (!resolveActiveMoveWeather(enemyActs, weather) ||
+            !resolveActiveMoveCritical(enemyActs, critical)) return false;
         if (enemyActs) {
             if (!m_context.player.battleState.hp) return true;
             const auto status = useStandardPokemonMove(m_context.enemy.battleState,
-                m_context.player.battleState, enemyMoveSlot, false, *rng, result, &weather);
+                m_context.player.battleState, enemyMoveSlot, false, *rng, result, &weather, &critical);
             if (status != PokemonMoveActionStatus::Ok) return false;
             m_battleFeedback = result.weatherCancelled ? "Enemy move blocked by weather" : result.damageRoll.hit
                 ? "Enemy move hit" : "Enemy move missed";
         } else {
             if (!m_context.enemy.battleState.hp) return true;
             const auto status = useStandardPokemonMove(m_context.player.battleState,
-                m_context.enemy.battleState, m_selectedBattleMove, false, *rng, result, &weather);
+                m_context.enemy.battleState, m_selectedBattleMove, false, *rng, result, &weather, &critical);
             if (status != PokemonMoveActionStatus::Ok) return false;
             m_battleFeedback = result.weatherCancelled ? "Your move blocked by weather" :
                 result.damageRoll.hit ? "Your move hit" : "Your move missed";

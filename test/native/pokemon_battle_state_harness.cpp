@@ -984,6 +984,19 @@ extern "C" int runPokemonBattleStateChecks() {
             armorRng, unresolvedCritAction, nullptr, &resolvedCritPolicy) !=
             PokemonMoveActionStatus::UnsupportedAbilityCondition ||
         unresolvedCritActor.moves[0].pp != state.moves[0].pp || unresolvedCritTarget.hp != state.hp) return 345;
+    resolvedCritPolicy.resolved = true;
+    resolvedCritPolicy.blocked = false;
+    resolvedCritPolicy.bonusStages = 1;
+    PokerogueRngAdapter luckRng = actionRng, expectedLuckRng = actionRng;
+    (void)expectedLuckRng.randSeedInt(100);
+    const uint8_t expectedLuckCritical = static_cast<uint8_t>(expectedLuckRng.randSeedInt(8));
+    const uint8_t expectedLuckDamage = static_cast<uint8_t>(expectedLuckRng.randSeedIntRange(85, 100));
+    PokemonMoveDamageRoll luckRoll{};
+    if (Pokerogue3DS::resolveStandardPokemonMoveDamage(state, state, 33, false, luckRng,
+            luckRoll, nullptr, &resolvedCritPolicy) != PokemonMoveDamageResult::Ok ||
+        !luckRoll.criticalWasRolled || luckRoll.criticalRoll != expectedLuckCritical ||
+        luckRoll.critical != (expectedLuckCritical == 0) ||
+        luckRoll.randomDamagePercent != expectedLuckDamage) return 346;
     PokemonBattleState noPpActor = state;
     noPpActor.moves[0].pp = 0;
     PokemonBattleState unchangedTarget = state;
