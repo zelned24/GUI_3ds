@@ -161,6 +161,18 @@ void FirstRunRuntime::captureNativeRunSave(NativeRunSave& output) const {
 }
 
 bool FirstRunRuntime::restoreNativeRunSave(const NativeRunSave& save) {
+    if (validateNativeRunSave(save, PokerogueContent::kContentHash) != NativeSaveResult::Ok)
+        return false;
+    FirstRunRuntime candidate(save.seed);
+    if (!candidate.restoreNativeRunSaveInPlace(save)) return false;
+    *this = candidate;
+    // Scene nodes and text pointers belong to their runtime instance. Rebuild
+    // after committing so none point at the temporary candidate's storage.
+    buildScene();
+    return true;
+}
+
+bool FirstRunRuntime::restoreNativeRunSaveInPlace(const NativeRunSave& save) {
     if (validateNativeRunSave(save, PokerogueContent::kContentHash) != NativeSaveResult::Ok ||
         save.stage < NativeSaveStage::RunSetup ||
         save.stage > NativeSaveStage::ExperienceGranted) return false;

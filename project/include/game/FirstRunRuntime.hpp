@@ -95,6 +95,7 @@ public:
 
 private:
     void resolve(bool carryPlayer = false);
+    bool restoreNativeRunSaveInPlace(const NativeRunSave& save);
     bool grantVictoryExperience();
     void refreshTrainerBaselineMatchups();
     void buildScene();
