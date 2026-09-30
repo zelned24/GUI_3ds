@@ -271,4 +271,68 @@ inline PokemonStatStageEffectResult usePokemonStatStageStatusMove(
     return PokemonStatStageEffectResult::Ok;
 }
 
+struct PokemonStatStageCommandPolicy {
+    PokemonStatStageMovePolicy move{};
+    bool postChangePoliciesResolved = false;
+    PokemonStatStageEffectPolicy reflection{};
+    PokemonStatStageEffectPolicy recipientReaction{};
+    PokemonStatStageEffectPolicy sourceReaction{};
+    const PokerogueContent::AbilityStatStageReaction* recipientReactions[2]{};
+    const PokerogueContent::AbilityStatStageReaction* sourceReactions[2]{};
+};
+
+struct PokemonStatStageCommandEvent {
+    PokemonStatStageMoveEvent move{};
+    PokemonStatStageEffectEvent recipientReactions[2]{};
+    PokemonStatStageEffectEvent reflection{};
+    PokemonStatStageEffectEvent sourceReactions[2]{};
+};
+
+// Bounded one-target command transaction. Reaction phases queued by the
+// recipient precede a reflected phase (source unshift ordering). No state or
+// RNG commits if a later required phase policy is unresolved.
+inline PokemonStatStageEffectResult usePokemonStatStageStatusCommand(
+    PokemonBattleState& user, PokemonBattleState& target, uint8_t slot,
+    const PokemonStatStageCommandPolicy& policy, PokerogueRngAdapter& battleRng,
+    PokemonStatStageCommandEvent& output) {
+    if (!policy.postChangePoliciesResolved)
+        return PokemonStatStageEffectResult::UnresolvedPolicy;
+    PokemonBattleState nextUser = user, nextTarget = target;
+    PokerogueRngAdapter nextRng = battleRng;
+    PokemonStatStageCommandEvent event{};
+    auto result = usePokemonStatStageStatusMove(nextUser, nextTarget, slot,
+        policy.move, nextRng, event.move);
+    if (result != PokemonStatStageEffectResult::Ok) return result;
+    const auto* move = PokerogueContent::findMoveById(nextUser.moves[slot].moveId);
+    const bool self = std::strcmp(move->target, "USER") == 0;
+    auto& recipient = self ? nextUser : nextTarget;
+    if (event.move.hit && event.move.stages.triggered) {
+        for (uint8_t i = 0; i < 2; ++i) {
+            if (!policy.recipientReactions[i]) continue;
+            result = applyPokemonStatStageDropReaction(recipient,
+                *policy.recipientReactions[i], event.move.stages, self,
+                policy.recipientReaction, event.recipientReactions[i]);
+            if (result != PokemonStatStageEffectResult::Ok) return result;
+        }
+        if (event.move.stages.reflectedStatMask) {
+            if (self) return PokemonStatStageEffectResult::InvalidDefinition;
+            result = applyReflectedPokemonStatStages(nextUser, event.move.stages,
+                policy.reflection, event.reflection);
+            if (result != PokemonStatStageEffectResult::Ok) return result;
+            for (uint8_t i = 0; i < 2; ++i) {
+                if (!policy.sourceReactions[i]) continue;
+                result = applyPokemonStatStageDropReaction(nextUser,
+                    *policy.sourceReactions[i], event.reflection, false,
+                    policy.sourceReaction, event.sourceReactions[i]);
+                if (result != PokemonStatStageEffectResult::Ok) return result;
+            }
+        }
+    }
+    user = nextUser;
+    if (&user != &target) target = nextTarget;
+    battleRng = nextRng;
+    output = event;
+    return PokemonStatStageEffectResult::Ok;
+}
+
 } // namespace Pokerogue3DS

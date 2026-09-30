@@ -423,6 +423,31 @@ extern "C" int runPokemonBattleStateChecks() {
     if (Pokerogue3DS::applyPokemonStatStageDropReaction(reactionActor, *defiantReaction,
             requestedDrop, true, boostPolicy, reflectedEvent) !=
             Pokerogue3DS::PokemonStatStageEffectResult::Ok || reflectedEvent.triggered) return 251;
+    growlUser = state;
+    growlTarget = state;
+    growlUser.moves[0].moveId = 45;
+    growlUser.moves[0].pp = 40;
+    Pokerogue3DS::PokemonStatStageCommandPolicy commandPolicy{};
+    commandPolicy.postChangePoliciesResolved = true;
+    commandPolicy.move.hitPolicyResolved = true;
+    commandPolicy.move.stagePolicy.resolved = true;
+    commandPolicy.recipientReactions[0] = defiantReaction;
+    Pokerogue3DS::PokemonStatStageCommandEvent commandEvent{};
+    const auto beforeCommandRng = replacementRng.state();
+    if (Pokerogue3DS::usePokemonStatStageStatusCommand(growlUser, growlTarget, 0,
+            commandPolicy, replacementRng, commandEvent) !=
+            Pokerogue3DS::PokemonStatStageEffectResult::UnresolvedPolicy ||
+        growlUser.moves[0].pp != 40 || growlTarget.statStages[0] ||
+        replacementRng.state().s0 != beforeCommandRng.s0 ||
+        replacementRng.state().s1 != beforeCommandRng.s1 ||
+        replacementRng.state().s2 != beforeCommandRng.s2) return 252;
+    commandPolicy.recipientReaction.resolved = true;
+    if (Pokerogue3DS::usePokemonStatStageStatusCommand(growlUser, growlTarget, 0,
+            commandPolicy, replacementRng, commandEvent) !=
+            Pokerogue3DS::PokemonStatStageEffectResult::Ok ||
+        growlUser.moves[0].pp != 39 || growlTarget.statStages[0] != 1 ||
+        commandEvent.move.stages.changes[0] != -1 ||
+        commandEvent.recipientReactions[0].changes[0] != 2) return 253;
     PokemonBattleInit actorIdInput = input;
     actorIdInput.pokemonId = 0x12345678u;
     actorIdInput.deriveIvsFromPokemonId = true;
