@@ -749,5 +749,27 @@ const weatherAbilityRows = collections.abilities.flatMap(ability => {
 });
 const resolvedWeatherHeader = weatherHeader.replace('struct MoveAttribute {',
   `struct WeatherAbilityProfile { uint16_t abilityId; bool suppressesWeather; bool affectsImmutable; const char* overrideWeatherSymbol; const char* sourcePath; const char* sourceSymbol; const char* sourceHash; };\ninline constexpr WeatherAbilityProfile kWeatherAbilityProfiles[] = {\n${weatherAbilityRows.join(',\n')}\n};\nstruct MoveAttribute {`);
-await fs.writeFile(outputPath, resolvedWeatherHeader, 'utf8');
-console.log(JSON.stringify({ output: path.relative(root, outputPath), bytes: Buffer.byteLength(resolvedWeatherHeader), hash: report.contentHash }));
+const weatherNames = ['NONE', 'SUNNY', 'RAIN', 'SANDSTORM', 'HAIL', 'SNOW', 'FOG', 'HEAVY_RAIN', 'HARSH_SUN', 'STRONG_WINDS'];
+const weatherDamageAbilityRows = collections.abilities.flatMap(ability => {
+  const raw = ability.extensions?.upstreamAttributes?.value ?? '';
+  const blocksIndirect = /\.attr\s*\(\s*BlockNonDirectDamageAbAttr\s*\)/.test(raw);
+  const declarations = [...raw.matchAll(/\.attr\s*\(\s*BlockWeatherDamageAttr\b/g)];
+  const matches = [...raw.matchAll(/\.attr\s*\(\s*BlockWeatherDamageAttr\s*((?:,\s*WeatherType\.[A-Z_]+\s*)*)\)/g)];
+  if (declarations.length !== matches.length) throw new Error(`Unsupported weather blocker: ${ability.id}`);
+  if (!blocksIndirect && !matches.length) return [];
+  let mask = 0;
+  for (const match of matches) {
+    const names = [...match[1].matchAll(/WeatherType\.([A-Z_]+)/g)].map(entry => entry[1]);
+    if (!names.length) mask = 1023;
+    for (const name of names) {
+      const index = weatherNames.indexOf(name);
+      if (index < 0) throw new Error(`Unknown weather blocker enum: ${name}`);
+      mask |= 1 << index;
+    }
+  }
+  return [`    {${ability.abilityId}, ${blocksIndirect}, ${mask}, "${field(ability.source?.sourcePath ?? '')}", "${field(ability.source?.sourceSymbol ?? '')}", "${field(ability.source?.sourceHash ?? '')}"}`];
+});
+const weatherDamageHeader = resolvedWeatherHeader.replace('struct MoveAttribute {',
+  `struct WeatherDamageAbilityProfile { uint16_t abilityId; bool blocksIndirectDamage; uint16_t weatherMask; const char* sourcePath; const char* sourceSymbol; const char* sourceHash; };\ninline constexpr WeatherDamageAbilityProfile kWeatherDamageAbilityProfiles[] = {\n${weatherDamageAbilityRows.join(',\n')}\n};\nstruct MoveAttribute {`);
+await fs.writeFile(outputPath, weatherDamageHeader, 'utf8');
+console.log(JSON.stringify({ output: path.relative(root, outputPath), bytes: Buffer.byteLength(weatherDamageHeader), hash: report.contentHash }));

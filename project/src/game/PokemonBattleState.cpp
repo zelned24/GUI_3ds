@@ -594,6 +594,19 @@ bool lapsePokemonArenaWeather(PokemonArenaWeatherState& state) {
     return state.turnsLeft != 0;
 }
 
+bool pokemonAbilityBlocksWeatherDamage(uint16_t abilityId,
+    PokemonEffectiveWeather weather, bool& outputBlocked) {
+    if (static_cast<uint8_t>(weather) > 9 ||
+        !PokerogueContent::findAbilityMovegenProfile(abilityId)) return false;
+    bool blocked = false;
+    for (const auto& profile : PokerogueContent::kWeatherDamageAbilityProfiles)
+        if (profile.abilityId == abilityId)
+            blocked = blocked || profile.blocksIndirectDamage ||
+                (profile.weatherMask & (1u << static_cast<uint8_t>(weather)));
+    outputBlocked = blocked;
+    return true;
+}
+
 bool applyPokemonWeatherResidualDamage(PokemonBattleState& target,
     const PokemonArenaWeatherState& arena, const PokemonWeatherDamagePolicy& policy,
     PokemonWeatherDamageEvent& output) {

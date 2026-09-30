@@ -615,6 +615,21 @@ extern "C" int runPokemonBattleStateChecks() {
     weatherEnd.expired = true;
     if (Pokerogue3DS::advancePokemonArenaWeatherTurnEnd(arenaWeather, weatherEnd) ||
         arenaWeather.turnsLeft != 2 || !weatherEnd.expired) return 301;
+    uint16_t magicGuardId = 0, sandVeilId = 0;
+    for (const auto& profile : PokerogueContent::kWeatherDamageAbilityProfiles) {
+        if (std::strcmp(profile.sourceSymbol, "AbilityId.MAGIC_GUARD") == 0 &&
+            profile.blocksIndirectDamage) magicGuardId = profile.abilityId;
+        if (std::strcmp(profile.sourceSymbol, "AbilityId.SAND_VEIL") == 0 &&
+            profile.weatherMask == (1u << 3)) sandVeilId = profile.abilityId;
+    }
+    if (!magicGuardId || !sandVeilId) return 311;
+    bool abilityWeatherBlocked = false;
+    if (!Pokerogue3DS::pokemonAbilityBlocksWeatherDamage(magicGuardId, PokemonEffectiveWeather::Hail,
+            abilityWeatherBlocked) || !abilityWeatherBlocked) return 312;
+    if (!Pokerogue3DS::pokemonAbilityBlocksWeatherDamage(sandVeilId, PokemonEffectiveWeather::Sandstorm,
+            abilityWeatherBlocked) || !abilityWeatherBlocked) return 313;
+    if (!Pokerogue3DS::pokemonAbilityBlocksWeatherDamage(sandVeilId, PokemonEffectiveWeather::Hail,
+            abilityWeatherBlocked) || abilityWeatherBlocked) return 314;
     PokemonBattleState weatherVictim = state;
     weatherVictim.maxHp = weatherVictim.hp = 100;
     Pokerogue3DS::PokemonArenaWeatherState damageWeather{};

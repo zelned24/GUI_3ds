@@ -266,6 +266,9 @@ struct PokemonWeatherDamagePolicy {
     const char* type1 = nullptr;
     const char* type2 = nullptr;
 };
+// Call only after ability applicability is resolved, including suppression.
+bool pokemonAbilityBlocksWeatherDamage(uint16_t abilityId,
+    PokemonEffectiveWeather weather, bool& outputBlocked);
 struct PokemonWeatherDamageEvent {
     uint16_t damageApplied = 0;
     bool fainted = false;
