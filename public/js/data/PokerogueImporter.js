@@ -142,7 +142,8 @@ function parseClassicFixedBattleWaves(source, fixedBossWaves, trainerTypes) {
     const trainerTypeId = trainerTypeSymbol ? trainerTypes.getId(trainerTypeSymbol) : null;
     if (trainerTypeSymbol && !Number.isSafeInteger(trainerTypeId))
       throw new Error(`Pinned fixed battle ${key[1]} references unknown TrainerType.${trainerTypeSymbol}`);
-    entries.push({ wave, symbol: key[1], trainerTypeSymbol, trainerTypeId, raw });
+    const seededBinaryGenderVariant = /new Trainer\(\s*TrainerType\.[A-Z][A-Z0-9_]*\s*,\s*randSeedInt\(2\)\s*\?\s*TrainerVariant\.FEMALE\s*:\s*TrainerVariant\.DEFAULT\s*\)/.test(raw);
+    entries.push({ wave, symbol: key[1], trainerTypeSymbol, trainerTypeId, seededBinaryGenderVariant, raw });
   }
   if (!entries.length) throw new Error('Pinned classicFixedBattles configuration produced no wave keys');
   if (new Set(entries.map(entry => entry.wave)).size !== entries.length) throw new Error('Pinned classicFixedBattles contains duplicate wave keys');

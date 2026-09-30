@@ -3,7 +3,7 @@
 #include <cstddef>
 #include <cstdint>
 namespace PokerogueContent {
-inline constexpr char kContentHash[] = "db11302cb1b596fddc0a1c7d57ece2e42266f348aa5f6531e79b64c632d09728";
+inline constexpr char kContentHash[] = "ecbd0f8848b4af43be892e69683a1ba87a83302b496819027511cfd5d1352219";
 inline constexpr char kPokerogueRevision[] = "8555c08c823b856cbec4eb99ca84ea52a955836d";
 inline constexpr char kAssetsRevision[] = "056a1f408f26a3be4fef243f7462cb43608c7928";
 inline constexpr char kLocalesRevision[] = "23aea1cb0da5a0b15b836f3c243791591cc42303";
@@ -35973,29 +35973,29 @@ inline constexpr ClassicFixedBossWave kClassicFixedBossWaves[] = {
 };
 inline constexpr std::size_t kClassicFixedBossWaveCount = sizeof(kClassicFixedBossWaves) / sizeof(kClassicFixedBossWaves[0]);
 inline constexpr const ClassicFixedBossWave* findClassicFixedBossWave(uint16_t wave) { for (const auto& entry : kClassicFixedBossWaves) if (entry.wave == wave) return &entry; return nullptr; }
-struct ClassicFixedBattleWave { uint16_t wave; uint16_t trainerTypeId; bool hasStaticTrainerType; const char* upstreamSymbol; const char* sourcePath; const char* sourceSymbol; const char* sourceHash; };
+struct ClassicFixedBattleWave { uint16_t wave; uint16_t trainerTypeId; bool hasStaticTrainerType; bool seededBinaryGenderVariant; const char* upstreamSymbol; const char* sourcePath; const char* sourceSymbol; const char* sourceHash; };
 inline constexpr ClassicFixedBattleWave kClassicFixedBattleWaves[] = {
-    {5, 63, true, "TOWN_YOUNGSTER", "src/data/trainers/fixed-battle-configs.ts", "classicFixedBattles[ClassicFixedBossWaves.TOWN_YOUNGSTER]", "f08097fe3a9cbf7f038b10a56fe73afd4756d23915896d56a8a100f470d50239"},
-    {8, 375, true, "RIVAL_1", "src/data/trainers/fixed-battle-configs.ts", "classicFixedBattles[ClassicFixedBossWaves.RIVAL_1]", "f08097fe3a9cbf7f038b10a56fe73afd4756d23915896d56a8a100f470d50239"},
-    {25, 376, true, "RIVAL_2", "src/data/trainers/fixed-battle-configs.ts", "classicFixedBattles[ClassicFixedBossWaves.RIVAL_2]", "f08097fe3a9cbf7f038b10a56fe73afd4756d23915896d56a8a100f470d50239"},
-    {35, 0, false, "EVIL_GRUNT_1", "src/data/trainers/fixed-battle-configs.ts", "classicFixedBattles[ClassicFixedBossWaves.EVIL_GRUNT_1]", "f08097fe3a9cbf7f038b10a56fe73afd4756d23915896d56a8a100f470d50239"},
-    {55, 377, true, "RIVAL_3", "src/data/trainers/fixed-battle-configs.ts", "classicFixedBattles[ClassicFixedBossWaves.RIVAL_3]", "f08097fe3a9cbf7f038b10a56fe73afd4756d23915896d56a8a100f470d50239"},
-    {62, 0, false, "EVIL_GRUNT_2", "src/data/trainers/fixed-battle-configs.ts", "classicFixedBattles[ClassicFixedBossWaves.EVIL_GRUNT_2]", "f08097fe3a9cbf7f038b10a56fe73afd4756d23915896d56a8a100f470d50239"},
-    {64, 0, false, "EVIL_GRUNT_3", "src/data/trainers/fixed-battle-configs.ts", "classicFixedBattles[ClassicFixedBossWaves.EVIL_GRUNT_3]", "f08097fe3a9cbf7f038b10a56fe73afd4756d23915896d56a8a100f470d50239"},
-    {66, 0, false, "EVIL_ADMIN_1", "src/data/trainers/fixed-battle-configs.ts", "classicFixedBattles[ClassicFixedBossWaves.EVIL_ADMIN_1]", "f08097fe3a9cbf7f038b10a56fe73afd4756d23915896d56a8a100f470d50239"},
-    {95, 378, true, "RIVAL_4", "src/data/trainers/fixed-battle-configs.ts", "classicFixedBattles[ClassicFixedBossWaves.RIVAL_4]", "f08097fe3a9cbf7f038b10a56fe73afd4756d23915896d56a8a100f470d50239"},
-    {112, 0, false, "EVIL_GRUNT_4", "src/data/trainers/fixed-battle-configs.ts", "classicFixedBattles[ClassicFixedBossWaves.EVIL_GRUNT_4]", "f08097fe3a9cbf7f038b10a56fe73afd4756d23915896d56a8a100f470d50239"},
-    {114, 0, false, "EVIL_ADMIN_2", "src/data/trainers/fixed-battle-configs.ts", "classicFixedBattles[ClassicFixedBossWaves.EVIL_ADMIN_2]", "f08097fe3a9cbf7f038b10a56fe73afd4756d23915896d56a8a100f470d50239"},
-    {115, 0, false, "EVIL_BOSS_1", "src/data/trainers/fixed-battle-configs.ts", "classicFixedBattles[ClassicFixedBossWaves.EVIL_BOSS_1]", "f08097fe3a9cbf7f038b10a56fe73afd4756d23915896d56a8a100f470d50239"},
-    {145, 379, true, "RIVAL_5", "src/data/trainers/fixed-battle-configs.ts", "classicFixedBattles[ClassicFixedBossWaves.RIVAL_5]", "f08097fe3a9cbf7f038b10a56fe73afd4756d23915896d56a8a100f470d50239"},
-    {164, 0, false, "EVIL_ADMIN_3", "src/data/trainers/fixed-battle-configs.ts", "classicFixedBattles[ClassicFixedBossWaves.EVIL_ADMIN_3]", "f08097fe3a9cbf7f038b10a56fe73afd4756d23915896d56a8a100f470d50239"},
-    {165, 0, false, "EVIL_BOSS_2", "src/data/trainers/fixed-battle-configs.ts", "classicFixedBattles[ClassicFixedBossWaves.EVIL_BOSS_2]", "f08097fe3a9cbf7f038b10a56fe73afd4756d23915896d56a8a100f470d50239"},
-    {182, 0, false, "ELITE_FOUR_1", "src/data/trainers/fixed-battle-configs.ts", "classicFixedBattles[ClassicFixedBossWaves.ELITE_FOUR_1]", "f08097fe3a9cbf7f038b10a56fe73afd4756d23915896d56a8a100f470d50239"},
-    {184, 0, false, "ELITE_FOUR_2", "src/data/trainers/fixed-battle-configs.ts", "classicFixedBattles[ClassicFixedBossWaves.ELITE_FOUR_2]", "f08097fe3a9cbf7f038b10a56fe73afd4756d23915896d56a8a100f470d50239"},
-    {186, 0, false, "ELITE_FOUR_3", "src/data/trainers/fixed-battle-configs.ts", "classicFixedBattles[ClassicFixedBossWaves.ELITE_FOUR_3]", "f08097fe3a9cbf7f038b10a56fe73afd4756d23915896d56a8a100f470d50239"},
-    {188, 0, false, "ELITE_FOUR_4", "src/data/trainers/fixed-battle-configs.ts", "classicFixedBattles[ClassicFixedBossWaves.ELITE_FOUR_4]", "f08097fe3a9cbf7f038b10a56fe73afd4756d23915896d56a8a100f470d50239"},
-    {190, 0, false, "CHAMPION", "src/data/trainers/fixed-battle-configs.ts", "classicFixedBattles[ClassicFixedBossWaves.CHAMPION]", "f08097fe3a9cbf7f038b10a56fe73afd4756d23915896d56a8a100f470d50239"},
-    {195, 380, true, "RIVAL_6", "src/data/trainers/fixed-battle-configs.ts", "classicFixedBattles[ClassicFixedBossWaves.RIVAL_6]", "f08097fe3a9cbf7f038b10a56fe73afd4756d23915896d56a8a100f470d50239"}
+    {5, 63, true, true, "TOWN_YOUNGSTER", "src/data/trainers/fixed-battle-configs.ts", "classicFixedBattles[ClassicFixedBossWaves.TOWN_YOUNGSTER]", "f08097fe3a9cbf7f038b10a56fe73afd4756d23915896d56a8a100f470d50239"},
+    {8, 375, true, false, "RIVAL_1", "src/data/trainers/fixed-battle-configs.ts", "classicFixedBattles[ClassicFixedBossWaves.RIVAL_1]", "f08097fe3a9cbf7f038b10a56fe73afd4756d23915896d56a8a100f470d50239"},
+    {25, 376, true, false, "RIVAL_2", "src/data/trainers/fixed-battle-configs.ts", "classicFixedBattles[ClassicFixedBossWaves.RIVAL_2]", "f08097fe3a9cbf7f038b10a56fe73afd4756d23915896d56a8a100f470d50239"},
+    {35, 0, false, false, "EVIL_GRUNT_1", "src/data/trainers/fixed-battle-configs.ts", "classicFixedBattles[ClassicFixedBossWaves.EVIL_GRUNT_1]", "f08097fe3a9cbf7f038b10a56fe73afd4756d23915896d56a8a100f470d50239"},
+    {55, 377, true, false, "RIVAL_3", "src/data/trainers/fixed-battle-configs.ts", "classicFixedBattles[ClassicFixedBossWaves.RIVAL_3]", "f08097fe3a9cbf7f038b10a56fe73afd4756d23915896d56a8a100f470d50239"},
+    {62, 0, false, false, "EVIL_GRUNT_2", "src/data/trainers/fixed-battle-configs.ts", "classicFixedBattles[ClassicFixedBossWaves.EVIL_GRUNT_2]", "f08097fe3a9cbf7f038b10a56fe73afd4756d23915896d56a8a100f470d50239"},
+    {64, 0, false, false, "EVIL_GRUNT_3", "src/data/trainers/fixed-battle-configs.ts", "classicFixedBattles[ClassicFixedBossWaves.EVIL_GRUNT_3]", "f08097fe3a9cbf7f038b10a56fe73afd4756d23915896d56a8a100f470d50239"},
+    {66, 0, false, false, "EVIL_ADMIN_1", "src/data/trainers/fixed-battle-configs.ts", "classicFixedBattles[ClassicFixedBossWaves.EVIL_ADMIN_1]", "f08097fe3a9cbf7f038b10a56fe73afd4756d23915896d56a8a100f470d50239"},
+    {95, 378, true, false, "RIVAL_4", "src/data/trainers/fixed-battle-configs.ts", "classicFixedBattles[ClassicFixedBossWaves.RIVAL_4]", "f08097fe3a9cbf7f038b10a56fe73afd4756d23915896d56a8a100f470d50239"},
+    {112, 0, false, false, "EVIL_GRUNT_4", "src/data/trainers/fixed-battle-configs.ts", "classicFixedBattles[ClassicFixedBossWaves.EVIL_GRUNT_4]", "f08097fe3a9cbf7f038b10a56fe73afd4756d23915896d56a8a100f470d50239"},
+    {114, 0, false, false, "EVIL_ADMIN_2", "src/data/trainers/fixed-battle-configs.ts", "classicFixedBattles[ClassicFixedBossWaves.EVIL_ADMIN_2]", "f08097fe3a9cbf7f038b10a56fe73afd4756d23915896d56a8a100f470d50239"},
+    {115, 0, false, false, "EVIL_BOSS_1", "src/data/trainers/fixed-battle-configs.ts", "classicFixedBattles[ClassicFixedBossWaves.EVIL_BOSS_1]", "f08097fe3a9cbf7f038b10a56fe73afd4756d23915896d56a8a100f470d50239"},
+    {145, 379, true, false, "RIVAL_5", "src/data/trainers/fixed-battle-configs.ts", "classicFixedBattles[ClassicFixedBossWaves.RIVAL_5]", "f08097fe3a9cbf7f038b10a56fe73afd4756d23915896d56a8a100f470d50239"},
+    {164, 0, false, false, "EVIL_ADMIN_3", "src/data/trainers/fixed-battle-configs.ts", "classicFixedBattles[ClassicFixedBossWaves.EVIL_ADMIN_3]", "f08097fe3a9cbf7f038b10a56fe73afd4756d23915896d56a8a100f470d50239"},
+    {165, 0, false, false, "EVIL_BOSS_2", "src/data/trainers/fixed-battle-configs.ts", "classicFixedBattles[ClassicFixedBossWaves.EVIL_BOSS_2]", "f08097fe3a9cbf7f038b10a56fe73afd4756d23915896d56a8a100f470d50239"},
+    {182, 0, false, false, "ELITE_FOUR_1", "src/data/trainers/fixed-battle-configs.ts", "classicFixedBattles[ClassicFixedBossWaves.ELITE_FOUR_1]", "f08097fe3a9cbf7f038b10a56fe73afd4756d23915896d56a8a100f470d50239"},
+    {184, 0, false, false, "ELITE_FOUR_2", "src/data/trainers/fixed-battle-configs.ts", "classicFixedBattles[ClassicFixedBossWaves.ELITE_FOUR_2]", "f08097fe3a9cbf7f038b10a56fe73afd4756d23915896d56a8a100f470d50239"},
+    {186, 0, false, false, "ELITE_FOUR_3", "src/data/trainers/fixed-battle-configs.ts", "classicFixedBattles[ClassicFixedBossWaves.ELITE_FOUR_3]", "f08097fe3a9cbf7f038b10a56fe73afd4756d23915896d56a8a100f470d50239"},
+    {188, 0, false, false, "ELITE_FOUR_4", "src/data/trainers/fixed-battle-configs.ts", "classicFixedBattles[ClassicFixedBossWaves.ELITE_FOUR_4]", "f08097fe3a9cbf7f038b10a56fe73afd4756d23915896d56a8a100f470d50239"},
+    {190, 0, false, false, "CHAMPION", "src/data/trainers/fixed-battle-configs.ts", "classicFixedBattles[ClassicFixedBossWaves.CHAMPION]", "f08097fe3a9cbf7f038b10a56fe73afd4756d23915896d56a8a100f470d50239"},
+    {195, 380, true, false, "RIVAL_6", "src/data/trainers/fixed-battle-configs.ts", "classicFixedBattles[ClassicFixedBossWaves.RIVAL_6]", "f08097fe3a9cbf7f038b10a56fe73afd4756d23915896d56a8a100f470d50239"}
 };
 inline constexpr std::size_t kClassicFixedBattleWaveCount = sizeof(kClassicFixedBattleWaves) / sizeof(kClassicFixedBattleWaves[0]);
 inline constexpr const ClassicFixedBattleWave* findClassicFixedBattleWave(uint16_t wave) { for (const auto& entry : kClassicFixedBattleWaves) if (entry.wave == wave) return &entry; return nullptr; }

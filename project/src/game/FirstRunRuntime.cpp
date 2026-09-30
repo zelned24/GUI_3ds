@@ -8,6 +8,7 @@
 #include "game/PokemonExperience.hpp"
 #include "game/PokemonStarterMoveset.hpp"
 #include "game/PokemonWildMovesetGenerator.hpp"
+#include "game/PokerogueTrainerPartyLevels.hpp"
 #include "content/PokerogueRuntimeContent.hpp"
 #include <algorithm>
 #include <cstdio>
@@ -525,6 +526,10 @@ void FirstRunRuntime::resolve(bool carryPlayer) {
     m_context.secondEnemy = {};
     m_context.trainerTypeId = 0;
     m_context.trainerName = nullptr;
+    m_context.trainerPartyTemplateKey = nullptr;
+    m_context.trainerPartyCount = 0;
+    m_context.trainerFemaleVariant = false;
+    for (auto& level : m_context.trainerPartyLevels) level = 0;
     const auto& starter = PokerogueContent::kSpecies[m_starterIndex];
     m_run.starterDex = starter.dex;
     m_context.modeName = locale("gameMode:classic", "Classic");
@@ -636,7 +641,32 @@ void FirstRunRuntime::resolve(bool carryPlayer) {
         if (trainer) {
             m_context.trainerTypeId = trainer->id;
             m_context.trainerName = trainer->name;
-            m_battleFeedback = "Fixed trainer party construction pending";
+            if (fixedBattle->seededBinaryGenderVariant) {
+                // handleFixedBattle invokes getTrainer under rootSeed + (wave << 8).
+                // TOWN_YOUNGSTER draws its gender before Trainer.constructor
+                // chooses a party template. The callback is source-normalized.
+                PokerogueRngAdapter trainerRng;
+                PokerogueSeedOffsetScope trainerScope(trainerRng,
+                    m_seedCodeUnits.data(), m_seedLength,
+                    static_cast<uint32_t>(m_run.wave) << 8);
+                if (!trainerScope.valid()) return;
+                m_context.trainerFemaleVariant = trainerRng.randSeedInt(2) != 0;
+                const auto chosen = selectTrainerPartyTemplate(*trainer, m_run.wave, trainerRng);
+                if (chosen.supported && chosen.value) {
+                    const auto levels = resolveClassicTrainerPartyLevels(*chosen.value, m_run.wave, false);
+                    if (levels.supported) {
+                        m_context.trainerPartyTemplateKey = chosen.value->key;
+                        m_context.trainerPartyCount = levels.count;
+                        for (uint8_t i = 0; i < levels.count; ++i)
+                            m_context.trainerPartyLevels[i] = levels.values[i];
+                    }
+                }
+                m_battleFeedback = m_context.trainerPartyCount
+                    ? "Trainer species and battle pending"
+                    : "Canonical trainer party template could not resolve";
+            } else {
+                m_battleFeedback = "Fixed trainer variant callback is not ported yet";
+            }
         } else {
             m_battleFeedback = "Fixed trainer selection callback is not ported yet";
         }
@@ -771,7 +801,7 @@ void FirstRunRuntime::buildScene() {
     m_text[2] = std::string("Biome: ") + m_context.biomeName;
     m_text[3] = std::string("Starter: ") + starterName();
     if (m_context.trainerName) {
-        std::snprintf(line, sizeof(line), "Trainer: %s", m_context.trainerName);
+        std::snprintf(line, sizeof(line), "Trainer class: %s", m_context.trainerName);
     } else if (m_encounterResolved) {
         std::snprintf(line, sizeof(line), "Encounter: %s Lv. %u", m_context.enemy.localizedName,
                       static_cast<unsigned>(m_context.enemy.level));
@@ -783,9 +813,16 @@ void FirstRunRuntime::buildScene() {
     m_text[5] = m_battleFinished
         ? (m_playerWon && !m_experienceGranted ? "A: collect experience" :
             m_playerWon ? "B: skip reward  X: save" : "X: save  Y: export")
-        : (m_runStarted ? "A: fight  UP/DOWN: move" :
+        : (!m_encounterResolved && m_runStarted ? "Encounter integration pending" :
+            m_runStarted ? "A: fight  UP/DOWN: move" :
             "A: fight  UP/DOWN: move  LEFT/RIGHT: starter");
-    if (m_doubleBattle && m_secondEncounterResolved) {
+    if (m_context.trainerPartyCount) {
+        std::snprintf(line, sizeof(line), "Party: %s | %u members, first Lv. %u",
+            m_context.trainerPartyTemplateKey,
+            static_cast<unsigned>(m_context.trainerPartyCount),
+            static_cast<unsigned>(m_context.trainerPartyLevels[0]));
+        m_text[6] = line;
+    } else if (m_doubleBattle && m_secondEncounterResolved) {
         std::snprintf(line, sizeof(line), "2nd: %s Lv. %u", m_context.secondEnemy.localizedName,
                       static_cast<unsigned>(m_context.secondEnemy.level));
         m_text[6] = line;

@@ -40,6 +40,10 @@ struct PresentationContext {
     const char* biomeName;
     uint16_t trainerTypeId = 0;
     const char* trainerName = nullptr;
+    const char* trainerPartyTemplateKey = nullptr;
+    uint16_t trainerPartyLevels[6]{};
+    uint8_t trainerPartyCount = 0;
+    bool trainerFemaleVariant = false;
     ResolvedPokemon player;
     ResolvedPokemon enemy;
     ResolvedPokemon secondEnemy;
