@@ -207,3 +207,7 @@ The native single-wild battle filter now accepts the canonical Trick Room profil
 ## Resolved PP for native damage actions
 
 The existing damage command accepts an explicit resolved PP policy, rejects unresolved policies before mutation and reports consumed PP. Cost is capped to the slot remaining PP, and zero cost supports resolved ignore-PP modes. The actual single-wild action dispatcher composes opponent Pressure cost from canonical generated profiles. Misses, immunities and primal-weather cancellation consume the resolved cost; move cancellation/pre-move failure phases remain a separate requirement. The PP resolver now belongs to PokemonBattleState instead of the turn-order header. Regression cases written for unresolved policy, final PP and ignore-PP; execution/compilation deferred.
+
+## Incoming trainer actor command integration
+
+Trainer switch reactions and normal turn actions now use the same FirstRunRuntime::executeActiveBattleMove dispatcher. Incoming identity/ability/form are installed before composing weather, accuracy, critical and PP policies; rejected commands restore the outgoing actor without committing RNG or party selection. Trick Room dispatch is also shared. This removes the old bare damage action from the trainer switch route. Trainer gameplay remains gated pending full summon/AI/party effect integration; no complete trainer encounter claim. Static diff review only; tests and compilation deferred.

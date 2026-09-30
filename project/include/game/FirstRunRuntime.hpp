@@ -101,6 +101,7 @@ private:
     bool grantVictoryExperience();
     bool advanceTrainerAfterDefeat();
     bool finishBattleTurn();
+    bool executeActiveBattleMove(bool enemyActs, uint8_t moveSlot, PokerogueRngAdapter& rng);
     void refreshTrainerBaselineMatchups();
     bool resolveActiveMoveWeather(bool enemyAttacks, PokemonMoveWeatherContext& output) const;
     bool resolveActiveMoveCritical(bool enemyAttacks, PokemonCriticalPolicy& output) const;

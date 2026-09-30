@@ -582,25 +582,25 @@ bool FirstRunRuntime::advanceBattleTurn() {
         if (decision.switchPokemon) {
             // Switch commands precede FIGHT. The player attacks the incoming
             // actor; the trainer consumes its command by switching, not attacking.
-            PokemonBattleState playerAfter = playerState;
+            const ResolvedPokemon outgoing = m_context.enemy;
             ResolvedPokemon incoming = m_context.trainerParty[decision.partyIndex];
             resetPokemonStatStages(incoming.battleState);
             PokerogueRngAdapter actionRng = *rng;
-            PokemonMoveActionResult result{};
-            if (useStandardPokemonMove(playerAfter, incoming.battleState,
-                    m_selectedBattleMove, false, actionRng, result) !=
-                    PokemonMoveActionStatus::Ok) return false;
-            m_context.trainerParty[m_context.activeTrainerPartyIndex] = m_context.enemy;
-            m_context.activeTrainerPartyIndex = decision.partyIndex;
+            // Resolve abilities against the incoming actor. A rejected command
+            // leaves player HP/PP, field state and RNG untouched.
             m_context.enemy = incoming;
-            m_context.player.battleState = playerAfter;
+            if (!executeActiveBattleMove(false, m_selectedBattleMove, actionRng)) {
+                m_context.enemy = outgoing;
+                return false;
+            }
+            m_context.trainerParty[m_context.activeTrainerPartyIndex] = outgoing;
+            m_context.activeTrainerPartyIndex = decision.partyIndex;
             m_run.encounterDex = incoming.dex;
             *rng = actionRng;
             m_enemySwitchCounter = decision.nextSwitchCounter;
             m_runStarted = true;
             m_checkpointAvailable = false;
-            m_battleFeedback = result.damageRoll.hit
-                ? "Trainer switched; your move hit" : "Trainer switched; your move missed";
+            m_battleFeedback = std::string("Trainer switched; ") + m_battleFeedback;
             return finishBattleTurn();
         }
         m_enemySwitchCounter = decision.nextSwitchCounter;
@@ -702,55 +702,8 @@ bool FirstRunRuntime::advanceBattleTurn() {
     m_checkpointAvailable = false;
 
     const auto act = [&](bool enemyActs) -> bool {
-        const auto* actingMove = enemyActs ? enemyMove : selected;
-        if (supportsPokemonTrickRoomMove(actingMove->id)) {
-            auto& user = enemyActs ? m_context.enemy.battleState : m_context.player.battleState;
-            const auto& opponent = enemyActs ? m_context.player.battleState : m_context.enemy.battleState;
-            if (!user.hp || !opponent.hp) return true;
-            PokemonTrickRoomCommandPolicy policy{};
-            // Fresh single actors currently have no status, held items, passives or move-blocking tags.
-            policy.resolved = true;
-            if (!pokemonSingleOpponentPpCost(opponent.abilityId, policy.ppCost)) return false;
-            PokemonTrickRoomCommandEvent event{};
-            if (usePokemonTrickRoomCommand(user, m_trickRoom,
-                    enemyActs ? enemyMoveSlot : m_selectedBattleMove, policy, event) !=
-                    PokemonTrickRoomCommandResult::Ok) return false;
-            m_battleFeedback = event.field.activated ? "Trick Room activated" : "Trick Room removed";
-            return true;
-        }
-        PokemonPpPolicy pp{};
-        pp.resolved = true;
-        const auto& ppOpponent = enemyActs ? m_context.player.battleState : m_context.enemy.battleState;
-        if (!pokemonSingleOpponentPpCost(ppOpponent.abilityId, pp.cost)) return false;
-        PokemonMoveActionResult result{};
-        PokemonMoveWeatherContext weather{};
-        PokemonHitPolicy hit{};
-        const PokemonWeatherAbilityComponent activeAbilities[2] = {
-            {m_context.player.battleState.abilityId, true, !enemyActs},
-            {m_context.enemy.battleState.abilityId, true, enemyActs}
-        };
-        if (!resolveActiveMoveWeather(enemyActs, weather) ||
-            !composePokemonAlwaysHitPolicy(activeAbilities, 2, hit,
-                enemyActs ? enemyMove->id : selected->id, &weather)) return false;
-        PokemonCriticalPolicy critical{};
-        if (!resolveActiveMoveWeather(enemyActs, weather) ||
-            !resolveActiveMoveCritical(enemyActs, critical)) return false;
-        if (enemyActs) {
-            if (!m_context.player.battleState.hp) return true;
-            const auto status = useStandardPokemonMove(m_context.enemy.battleState,
-                m_context.player.battleState, enemyMoveSlot, false, *rng, result, &weather, &critical, &hit, &pp);
-            if (status != PokemonMoveActionStatus::Ok) return false;
-            m_battleFeedback = result.weatherCancelled ? "Enemy move blocked by weather" : result.damageRoll.hit
-                ? "Enemy move hit" : "Enemy move missed";
-        } else {
-            if (!m_context.enemy.battleState.hp) return true;
-            const auto status = useStandardPokemonMove(m_context.player.battleState,
-                m_context.enemy.battleState, m_selectedBattleMove, false, *rng, result, &weather, &critical, &hit, &pp);
-            if (status != PokemonMoveActionStatus::Ok) return false;
-            m_battleFeedback = result.weatherCancelled ? "Your move blocked by weather" :
-                result.damageRoll.hit ? "Your move hit" : "Your move missed";
-        }
-        return true;
+        return executeActiveBattleMove(enemyActs,
+            enemyActs ? enemyMoveSlot : m_selectedBattleMove, *rng);
     };
     const bool enemyFirst = firstMover == BaselineFirstMover::Enemy;
     if (!act(enemyFirst)) {
@@ -765,6 +718,48 @@ bool FirstRunRuntime::advanceBattleTurn() {
     }
 
     return finishBattleTurn();
+}
+
+bool FirstRunRuntime::executeActiveBattleMove(bool enemyActs, uint8_t moveSlot,
+    PokerogueRngAdapter& rng) {
+    auto& user = enemyActs ? m_context.enemy.battleState : m_context.player.battleState;
+    auto& opponent = enemyActs ? m_context.player.battleState : m_context.enemy.battleState;
+    if (!user.hp || !opponent.hp) return true;
+    if (moveSlot >= user.moveCount || moveSlot >= 4) return false;
+    const auto* move = PokerogueContent::findMoveById(user.moves[moveSlot].moveId);
+    if (!move || !supportsBaselineBattleMove(move->id)) return false;
+    PokemonPpPolicy pp{};
+    pp.resolved = true;
+    if (!pokemonSingleOpponentPpCost(opponent.abilityId, pp.cost)) return false;
+    if (supportsPokemonTrickRoomMove(move->id)) {
+        PokemonTrickRoomCommandPolicy policy{};
+        // Fresh actors have no status, held items, passives or move-blocking tags.
+        policy.resolved = true;
+        policy.ppCost = pp.cost;
+        PokemonTrickRoomCommandEvent event{};
+        if (usePokemonTrickRoomCommand(user, m_trickRoom, moveSlot, policy, event) !=
+                PokemonTrickRoomCommandResult::Ok) return false;
+        m_battleFeedback = event.field.activated ? "Trick Room activated" : "Trick Room removed";
+        return true;
+    }
+    PokemonMoveWeatherContext weather{};
+    PokemonHitPolicy hit{};
+    PokemonCriticalPolicy critical{};
+    const PokemonWeatherAbilityComponent activeAbilities[2] = {
+        {m_context.player.battleState.abilityId, true, !enemyActs},
+        {m_context.enemy.battleState.abilityId, true, enemyActs}
+    };
+    if (!resolveActiveMoveWeather(enemyActs, weather) ||
+        !composePokemonAlwaysHitPolicy(activeAbilities, 2, hit, move->id, &weather) ||
+        !resolveActiveMoveCritical(enemyActs, critical)) return false;
+    PokemonMoveActionResult result{};
+    if (useStandardPokemonMove(user, opponent, moveSlot, false, rng, result,
+            &weather, &critical, &hit, &pp) != PokemonMoveActionStatus::Ok) return false;
+    m_battleFeedback = result.weatherCancelled
+        ? (enemyActs ? "Enemy move blocked by weather" : "Your move blocked by weather")
+        : result.damageRoll.hit ? (enemyActs ? "Enemy move hit" : "Your move hit")
+                               : (enemyActs ? "Enemy move missed" : "Your move missed");
+    return true;
 }
 
 bool FirstRunRuntime::finishBattleTurn() {

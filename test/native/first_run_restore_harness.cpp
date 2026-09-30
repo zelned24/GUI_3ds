@@ -91,6 +91,40 @@ static int checkTrainerExperienceReplay() {
     return 11; // No reconstructable pinned party: do not silently skip.
 }
 
+static int checkResolvedActionFieldLifecycle() {
+    using namespace Pokerogue3DS;
+    for (uint32_t seed = 1; seed <= 512; ++seed) {
+        FirstRunRuntime game(seed);
+        for (unsigned slot = 0; slot < 4 && !game.battleInputSupported(); ++slot)
+            game.selectBattleMove(1);
+        if (!game.battleInputSupported() || !game.advanceBattleTurn()) continue;
+        NativeRunSave active{};
+        game.captureNativeRunSave(active);
+        if (active.stage != NativeSaveStage::BattleActive) continue;
+        active.trickRoomTurnsLeft = 3;
+        active.trickRoomMaxDuration = 5;
+        active.trickRoomSourceMoveId = 433;
+        active.trickRoomSourcePokemonId = game.presentation().player.battleState.pokemonId;
+        if (!game.restoreNativeRunSave(active)) return 28;
+        for (unsigned slot = 0; slot < 4 && !game.battleInputSupported(); ++slot)
+            game.selectBattleMove(1);
+        if (!game.battleInputSupported()) continue;
+        const uint8_t moveSlot = game.selectedBattleMove();
+        const auto& player = game.presentation().player.battleState;
+        uint8_t cost = 0;
+        if (!pokemonSingleOpponentPpCost(game.presentation().enemy.battleState.abilityId, cost)) return 29;
+        const uint8_t initialPp = player.moves[moveSlot].pp;
+        if (!game.advanceBattleTurn()) return 30;
+        NativeRunSave after{};
+        game.captureNativeRunSave(after);
+        if (after.trickRoomTurnsLeft != 2 || after.trickRoomSourceMoveId != 433) return 31;
+        if (game.presentation().player.battleState.hp && after.playerPp[moveSlot] !=
+                initialPp - (cost < initialPp ? cost : initialPp)) return 32;
+        return 0;
+    }
+    return 33; // No supported real encounter: never silently skip integration coverage.
+}
+
 int main() {
     using namespace Pokerogue3DS;
     for (uint32_t seed = 1; seed <= 64; ++seed) {
@@ -161,7 +195,8 @@ int main() {
         if (roomRestored.trickRoomTurnsLeft != 3 || roomRestored.trickRoomMaxDuration != 5 ||
             roomRestored.trickRoomSourceMoveId != 433 ||
             roomRestored.trickRoomSourcePokemonId != roomCheckpoint.trickRoomSourcePokemonId) return 27;
-        return checkTrainerExperienceReplay();
+        const int fieldCheck = checkResolvedActionFieldLifecycle();
+        return fieldCheck ? fieldCheck : checkTrainerExperienceReplay();
     }
     return 7; // No supported canonical encounter found: do not silently skip.
 }
