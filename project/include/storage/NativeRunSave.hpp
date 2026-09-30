@@ -29,6 +29,31 @@ struct NativeTrainerMemberSave {
     int8_t statStages[7]{};
 };
 
+// Explicit actor snapshot: canonical IDs only; computed stats are reconstructed.
+// Kept separate from seed-replayed trainer records for captured/evolved players.
+struct NativePokemonSave {
+    uint16_t speciesDex = 0;
+    char formId[96]{};
+    uint16_t level = 0;
+    uint32_t pokemonId = 0;
+    uint16_t abilityId = 0;
+    uint8_t gender = 0;
+    uint8_t nature = 255;
+    uint8_t ivs[6]{};
+    uint16_t hp = 0;
+    uint32_t experience = 0;
+    uint8_t moveCount = 0;
+    uint16_t moveIds[4]{};
+    uint8_t pp[4]{};
+    int8_t statStages[7]{};
+    bool ivsDerivedFromId = false;
+};
+struct PokemonBattleState;
+// Output is published only after full canonical validation succeeds.
+bool captureNativePokemonSave(const PokemonBattleState& state, uint32_t experience,
+    NativePokemonSave& output);
+bool restoreNativePokemonSave(const NativePokemonSave& saved, PokemonBattleState& output);
+
 struct NativeRunSave {
     uint32_t generation = 0;
     uint16_t saveVersion = kNativeSaveVersion;

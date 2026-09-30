@@ -965,6 +965,36 @@ int main() {
         if (loaded.stage != NativeSaveStage::BattleActive || loaded.enemyHp != active.enemyHp ||
             loaded.seed != seed || loaded.playerStatStages[0] != -2 ||
             loaded.enemyStatStages[4] != 3) return 6;
+        NativePokemonSave actorSnapshot{};
+        const auto& currentActor = game.presentation().player;
+        if (!captureNativePokemonSave(currentActor.battleState, currentActor.totalExperience,
+                actorSnapshot)) return 269;
+        PokemonBattleState restoredActor{};
+        if (!restoreNativePokemonSave(actorSnapshot, restoredActor) ||
+            restoredActor.pokemonId != currentActor.battleState.pokemonId ||
+            restoredActor.hp != currentActor.battleState.hp ||
+            restoredActor.formId == actorSnapshot.formId ||
+            std::strcmp(restoredActor.formId, actorSnapshot.formId)) return 270;
+        for (uint8_t stat = 0; stat < 6; ++stat)
+            if (restoredActor.stats[stat] != currentActor.battleState.stats[stat] ||
+                restoredActor.ivs[stat] != currentActor.battleState.ivs[stat]) return 271;
+        for (uint8_t slot = 0; slot < restoredActor.moveCount; ++slot)
+            if (restoredActor.moves[slot].moveId != currentActor.battleState.moves[slot].moveId ||
+                restoredActor.moves[slot].pp != currentActor.battleState.moves[slot].pp) return 272;
+        auto invalidActor = actorSnapshot;
+        invalidActor.hp = 65535;
+        const uint16_t beforeInvalidHp = restoredActor.hp;
+        if (restoreNativePokemonSave(invalidActor, restoredActor) || restoredActor.hp != beforeInvalidHp)
+            return 273;
+        invalidActor = actorSnapshot;
+        invalidActor.nature = 255;
+        if (restoreNativePokemonSave(invalidActor, restoredActor)) return 274;
+        invalidActor = actorSnapshot;
+        invalidActor.ivs[0] = 32;
+        if (restoreNativePokemonSave(invalidActor, restoredActor)) return 275;
+        invalidActor = actorSnapshot;
+        for (auto& ch : invalidActor.formId) ch = 'a';
+        if (restoreNativePokemonSave(invalidActor, restoredActor)) return 276;
         NativeRunSave inventorySnapshot = loaded;
         inventorySnapshot.pokeballCounts[0] = 0;
         inventorySnapshot.pokeballCounts[1] = 3;

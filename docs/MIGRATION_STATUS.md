@@ -357,3 +357,10 @@
 4. Equipo capturado, dobles, jefes, historial de modifiers y progresión fuera de la frontera soportada siguen sin persistencia completa. No se declara save completo ni Classic jugable.
 
 5. Capacidad acotada del envelope ampliada a 4096 bytes: etiquetas/hex de seis miembros + stages/campos + stock requieren más que el buffer anterior en el peor caso. Journal y backend usan la constante común. Regresión existente de seis miembros se conserva; memoria/validación final siguen pendientes.
+
+## Snapshot portable de Pokémon — preparación del equipo persistente
+
+1. NativePokemonSave en el módulo de storage existente conserva species/form IDs, nivel, ID/IVs, habilidad, género/naturaleza, EXP, HP, moves/PP y stages. No serializa punteros ni stats calculados.
+2. Capture/restore reconstruyen stats desde catálogo canónico y validan referencias, forma/especie, habilidad, IVs derivados, naturaleza, EXP mínima, PP, HP y stages antes de publicar salida. Form pointer pertenece al catálogo, no al buffer de save. Rechaza stats fuera del modelo base soportado; el validador de run debe resolver cap de EXP.
+3. Regresiones 269–276 escritas para roundtrip de actor real y rechazo atómico de HP/naturaleza/IV/form inválidos. No ejecutadas.
+4. Esta representación todavía no entra en el payload v9: faltan codec de equipo, identidad auxiliar del actor (abilityIndex/Tera), active slot, validación de contexto y restauración sin replay. El guardado de capturados continúa rechazado explícitamente hasta integrar esas capas.

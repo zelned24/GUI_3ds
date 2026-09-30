@@ -1,6 +1,7 @@
 #include "storage/NativeRunSave.hpp"
 #include "storage/IntegritySha256.hpp"
 #include "game/PokemonExperience.hpp"
+#include "game/PokemonBattleState.hpp"
 #include "game/PokerogueTurnOrder.hpp"
 #include "content/PokerogueRuntimeContent.hpp"
 
@@ -227,6 +228,84 @@ NativeSaveResult makeNativeRunSetupSave(uint32_t seed, uint16_t starterDex, Nati
     const auto status = validateNativeRunSave(value, PokerogueContent::kContentHash);
     if (status == NativeSaveResult::Ok) output = value;
     return status;
+}
+
+bool restoreNativePokemonSave(const NativePokemonSave& saved, PokemonBattleState& output) {
+    if (saved.nature > 24 || saved.gender > static_cast<uint8_t>(PokemonGender::Female) ||
+        !saved.moveCount || saved.moveCount > 4 || !saved.formId[0]) return false;
+    bool terminated = false;
+    for (size_t i = 0; i < sizeof(saved.formId); ++i)
+        if (!saved.formId[i]) { terminated = true; break; }
+    if (!terminated) return false;
+    const auto* form = PokerogueContent::findFormById(saved.formId);
+    const auto* species = PokerogueContent::findSpeciesByDex(saved.speciesDex);
+    if (!form || !species) return false;
+    PokemonBattleInit input{};
+    input.speciesDex = saved.speciesDex;
+    input.formId = form->id; // Catalog owns the pointer, never the save buffer.
+    input.level = saved.level;
+    input.pokemonId = saved.pokemonId;
+    input.abilityId = saved.abilityId;
+    input.gender = static_cast<PokemonGender>(saved.gender);
+    input.nature = static_cast<PokemonNature>(saved.nature);
+    input.deriveIvsFromPokemonId = saved.ivsDerivedFromId;
+    input.moveCount = saved.moveCount;
+    for (uint8_t i = 0; i < 6; ++i) input.ivs[i] = saved.ivs[i];
+    for (uint8_t i = 0; i < 4; ++i) {
+        if (i >= saved.moveCount && (saved.moveIds[i] || saved.pp[i])) return false;
+        input.moveIds[i] = saved.moveIds[i];
+        for (uint8_t prior = 0; prior < i && i < saved.moveCount; ++prior)
+            if (saved.moveIds[prior] == saved.moveIds[i]) return false;
+    }
+    PokemonBattleState actor{};
+    if (initializePokemonBattleState(input, actor) != PokemonBattleInitResult::Ok ||
+        saved.hp > actor.maxHp) return false;
+    for (uint8_t i = 0; i < 6; ++i)
+        if (saved.ivs[i] != actor.ivs[i]) return false;
+    uint32_t threshold = 0;
+    if (pokemonTotalExperienceForLevel(species->growthRate, saved.level, threshold) !=
+            PokemonExperienceResult::Ok || saved.experience < threshold) return false;
+    // Experience may exceed the next threshold while the wave level cap is active.
+    // The enclosing run validator must resolve that cap, rather than truncate EXP.
+    actor.hp = saved.hp;
+    for (uint8_t i = 0; i < saved.moveCount; ++i) {
+        if (saved.pp[i] > actor.moves[i].maxPp) return false;
+        actor.moves[i].pp = saved.pp[i];
+    }
+    for (uint8_t i = 0; i < 7; ++i) {
+        if (saved.statStages[i] < -6 || saved.statStages[i] > 6) return false;
+        actor.statStages[i] = saved.statStages[i];
+    }
+    output = actor;
+    return true;
+}
+
+bool captureNativePokemonSave(const PokemonBattleState& state, uint32_t experience,
+    NativePokemonSave& output) {
+    if (!state.statsAreBaseFormulaOnly || !state.formId) return false;
+    NativePokemonSave saved{};
+    if (!copyText(saved.formId, sizeof(saved.formId), state.formId)) return false;
+    saved.speciesDex = state.speciesDex;
+    saved.level = state.level;
+    saved.pokemonId = state.pokemonId;
+    saved.abilityId = state.abilityId;
+    saved.gender = static_cast<uint8_t>(state.gender);
+    saved.nature = static_cast<uint8_t>(state.nature);
+    saved.ivsDerivedFromId = state.ivsWereDerivedFromPokemonId;
+    saved.hp = state.hp;
+    saved.experience = experience;
+    saved.moveCount = state.moveCount;
+    for (uint8_t i = 0; i < 6; ++i) saved.ivs[i] = state.ivs[i];
+    for (uint8_t i = 0; i < 4; ++i) {
+        saved.moveIds[i] = state.moves[i].moveId;
+        saved.pp[i] = state.moves[i].pp;
+    }
+    for (uint8_t i = 0; i < 7; ++i) saved.statStages[i] = state.statStages[i];
+    PokemonBattleState restored{};
+    if (!restoreNativePokemonSave(saved, restored) || restored.maxHp != state.maxHp) return false;
+    for (uint8_t i = 0; i < 6; ++i) if (restored.stats[i] != state.stats[i]) return false;
+    output = saved;
+    return true;
 }
 
 NativeSaveResult validateNativeRunSave(const NativeRunSave& save, const char* expectedContentHash) {
