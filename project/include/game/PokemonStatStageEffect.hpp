@@ -217,6 +217,7 @@ inline PokemonStatStageEffectResult applyPokemonStatStageDropReaction(
 }
 
 struct PokemonStatStageMovePolicy {
+    uint8_t ppCost = 1;
     bool hitPolicyResolved = false;
     bool blockedBeforeAccuracy = false;
     bool bypassAccuracy = false;
@@ -240,7 +241,7 @@ inline PokemonStatStageEffectResult usePokemonStatStageStatusMove(
     PokemonStatStageMoveEvent& output) {
     if (!policy.hitPolicyResolved || !policy.stagePolicy.resolved)
         return PokemonStatStageEffectResult::UnresolvedPolicy;
-    if (slot >= user.moveCount || slot >= 4 || !user.moves[slot].pp || !user.hp)
+    if (slot >= user.moveCount || slot >= 4 || (!user.moves[slot].pp && policy.ppCost) || !user.hp)
         return PokemonStatStageEffectResult::InvalidState;
     const auto* move = PokerogueContent::findMoveById(user.moves[slot].moveId);
     if (!move || move->category != PokerogueContent::MoveStatus || move->attributeCount != 1 ||
@@ -277,7 +278,8 @@ inline PokemonStatStageEffectResult usePokemonStatStageStatusMove(
             policy.stagePolicy, nextRng, event.stages);
         if (result != PokemonStatStageEffectResult::Ok) return result;
     }
-    --nextUser.moves[slot].pp;
+    const uint8_t consumed = policy.ppCost < nextUser.moves[slot].pp ? policy.ppCost : nextUser.moves[slot].pp;
+    nextUser.moves[slot].pp = static_cast<uint8_t>(nextUser.moves[slot].pp - consumed);
     user = nextUser;
     if (&user != &target) target = nextTarget;
     battleRng = nextRng;

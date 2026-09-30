@@ -7,6 +7,7 @@
 #include "game/PokemonTrainerMoveFilter.hpp"
 #include "game/PokemonTrainerMovesetGenerator.hpp"
 #include "game/PokemonTrainerAi.hpp"
+#include "game/PokemonStatStageEffect.hpp"
 #include "game/PokemonFreshProfile.hpp"
 #include "game/PokemonExperience.hpp"
 #include "game/PokemonStarterMoveset.hpp"
@@ -340,8 +341,18 @@ const char* FirstRunRuntime::locale(const char* canonicalId, const char* fallbac
 }
 
 namespace {
+bool supportsSelfStatStageMove(uint16_t moveId) {
+    const auto* move = PokerogueContent::findMoveById(moveId);
+    if (!move || move->category != PokerogueContent::MoveStatus || !move->target ||
+        std::strcmp(move->target, "USER") || move->attributeCount != 1 ||
+        !PokerogueContent::moveHasAttribute(*move, "StatStageChangeAttr")) return false;
+    unsigned count = 0;
+    for (const auto& effect : PokerogueContent::kMoveStatStageEffects)
+        if (effect.moveId == moveId && effect.selfTarget) ++count;
+    return count == 1;
+}
 bool supportsBaselineBattleMove(uint16_t moveId) {
-    if (supportsPokemonTrickRoomMove(moveId)) return true;
+    if (supportsPokemonTrickRoomMove(moveId) || supportsSelfStatStageMove(moveId)) return true;
     const auto* move = PokerogueContent::findMoveById(moveId);
     // This first resolver only executes plain, single-target damaging moves.
     // Only plain damage or a single migrated weather/critical attribute is
@@ -733,6 +744,38 @@ bool FirstRunRuntime::executeActiveBattleMove(bool enemyActs, uint8_t moveSlot,
     PokemonPpPolicy pp{};
     pp.resolved = true;
     if (!pokemonSingleOpponentPpCost(opponent.abilityId, pp.cost)) return false;
+    if (supportsSelfStatStageMove(move->id)) {
+        PokemonStatStageCommandPolicy policy{};
+        policy.move.hitPolicyResolved = true; // USER bypasses hit checks upstream.
+        policy.move.ppCost = 1; // USER targets no opponent: Pressure cannot apply.
+        policy.move.stagePolicy.resolved = true;
+        policy.postChangePoliciesResolved = true;
+        const auto* ownProfile = PokerogueContent::findAbilityStatStageProfile(user.abilityId);
+        const auto* observerProfile = PokerogueContent::findAbilityStatStageProfile(opponent.abilityId);
+        const ResolvedStatStageAbilityComponent own[] = {{ownProfile, ownProfile != nullptr}};
+        const ResolvedStatStageAbilityComponent observer[] = {{observerProfile, observerProfile != nullptr}};
+        const PokerogueContent::MoveStatStageEffect* effect = nullptr;
+        for (const auto& row : PokerogueContent::kMoveStatStageEffects)
+            if (row.moveId == move->id) effect = &row;
+        if (!effect || !composePokemonStatStageAbilityPolicy(*effect, own, 1, false,
+                policy.move.stagePolicy)) return false;
+        // Reaction phases apply their own stat multiplier; protection does not
+        // block self-originated changes. No items/passives/tags in fresh actors.
+        const PokerogueContent::MoveStatStageEffect reaction{move->id, 127, 1, true};
+        policy.recipientReaction.resolved = policy.sourceReaction.resolved =
+            policy.reflection.resolved = policy.opponentCopy.resolved = true;
+        if (!composePokemonStatStageAbilityPolicy(reaction, own, 1, false, policy.recipientReaction) ||
+            !composePokemonStatStageAbilityPolicy(reaction, observer, 1, false, policy.opponentCopy)) return false;
+        policy.opponentCopyProfile = observerProfile;
+        uint8_t count = 0;
+        for (const auto& row : PokerogueContent::kAbilityStatStageReactions)
+            if (row.abilityId == user.abilityId && count < 2) policy.recipientReactions[count++] = &row;
+        PokemonStatStageCommandEvent event{};
+        if (usePokemonStatStageStatusCommand(user, opponent, moveSlot, policy, rng, event) !=
+                PokemonStatStageEffectResult::Ok) return false;
+        m_battleFeedback = event.move.stages.changedStatMask ? "Stats changed" : "Stats unchanged";
+        return true;
+    }
     if (supportsPokemonTrickRoomMove(move->id)) {
         PokemonTrickRoomCommandPolicy policy{};
         // Fresh actors have no status, held items, passives or move-blocking tags.

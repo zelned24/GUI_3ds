@@ -462,6 +462,13 @@ extern "C" int runPokemonBattleStateChecks() {
         growlUser.moves[0].pp != 39 || growlTarget.statStages[0] != 1 ||
         commandEvent.move.stages.changes[0] != -1 ||
         commandEvent.recipientReactions[0].changes[0] != 2) return 253;
+    auto noCostStagePolicy = commandPolicy;
+    noCostStagePolicy.move.ppCost = 0;
+    PokemonBattleState noCostStageUser = growlUser, noCostStageTarget = growlTarget;
+    noCostStageUser.moves[0].pp = 0;
+    if (Pokerogue3DS::usePokemonStatStageStatusCommand(noCostStageUser, noCostStageTarget, 0,
+            noCostStagePolicy, replacementRng, commandEvent) !=
+            Pokerogue3DS::PokemonStatStageEffectResult::Ok || noCostStageUser.moves[0].pp) return 395;
     const PokerogueContent::AbilityStatStageProfile* opportunist = nullptr;
     for (const auto& profile : PokerogueContent::kAbilityStatStageProfiles)
         if (std::strcmp(profile.sourceSymbol, "AbilityId.OPPORTUNIST") == 0) opportunist = &profile;

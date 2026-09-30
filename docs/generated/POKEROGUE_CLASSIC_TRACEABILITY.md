@@ -215,3 +215,7 @@ Trainer switch reactions and normal turn actions now use the same FirstRunRuntim
 ## Trainer effective speed and resolved KO simulation
 
 Pokemon.getMatchupScore in the pinned source compares active effective SPD against opponent effective SPD, while reserve actors use getStat(SPD, false). Native runtime now uses weather-resolved active/opponent speed and unmodified reserve SPD. Replacement selection reuses those resolved matchup scores rather than rebuilding a second neutral-field score set. The neutral replacement helper also excludes reserve stat stages. Trick Room does not invert matchup outspeed: upstream getMatchupScore compares numerical speeds directly. Enemy KO simulation now receives resolved attacking weather. Full ability-aware matchup effectiveness and simulated visibility rules remain pending; trainer gate unchanged. No tests or program compilation executed.
+
+## Self-target stat move gameplay integration
+
+The real move filter and action dispatcher now accept USER status moves with one generated constant StatStageChangeAttr. They execute the existing command transaction with primary ability multipliers and opponent copy-raise policy; AI uses the existing canonical status score. USER bypasses hit checks and has no opposing Pressure target. The status command now accepts resolved PP cost. Opponent-target stat drops remain excluded until move blocking/reflection/ability conditions are migrated. Fresh actors still omit held items, passives and status tags. Tests and compilation deferred.
