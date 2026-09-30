@@ -388,3 +388,9 @@
 1. Runtime captura snapshots explícitos al guardar equipos de varios miembros; activo toma su estado vivo y reservas su estado propio. Restore reconstruye identidad/form/moves/EXP de cada miembro, resuelve el encuentro actual y superpone stages del checkpoint, sin replay de EXP/capturas. Candidato completo continúa publicándose atómicamente.
 2. Camino legacy de un solo miembro se conserva. EXP usa growth del activo y admite niveles capturados inferiores a 5. Reserva no recibe experiencia duplicada al reconstruir. Regresiones 290–294 escritas para captura real, avance wave2 y restore de ambos actores/PP/EXP. No ejecutadas.
 3. Sigue limitado a waves1–9 y bioma inicial, sin dobles/jefes/modifiers completos ni contexto histórico de rewards. Identidades transformadas/auxiliares no soportadas se rechazan; solo actores compatibles con el snapshot actual. No se declara guardado completo ni Classic terminado.
+
+## Validación de reservas y miembro capturado activo
+
+1. Validador de run aplica level cap y umbral de EXP a todos los miembros explícitos, incluidos suplentes; conserva EXP excedente únicamente al cap. Rechaza BattleLost si queda un miembro vivo y partidas no perdidas sin ningún vivo.
+2. Regresiones 295–297 escritas: restaurar capturado como activo conserva su especie/EXP independiente; EXP incoherente de reserva se rechaza sin reemplazar runtime. Pendientes de ejecución.
+3. Estos controles complementan el snapshot y no completan historial de modifiers, RNG de fases, dobles, transformaciones ni waves posteriores. Validación final y Classic completo siguen pendientes.

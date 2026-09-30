@@ -599,6 +599,32 @@ static int checkPlayerPartyManagementAndSwitching() {
     if (recapturedPartySave.playerPartyCount != 2 ||
         recapturedPartySave.playerParty[1].experience != capturedPartySave.playerParty[1].experience)
         return 294;
+    // Restore a captured actor as active without granting it the starter's EXP.
+    NativeRunSave reserveActiveSave = capturedPartySave;
+    reserveActiveSave.activePlayerMember = 1;
+    const auto& activeReserve = reserveActiveSave.playerParty[1];
+    reserveActiveSave.playerLevel = activeReserve.level;
+    reserveActiveSave.playerExperience = activeReserve.experience;
+    reserveActiveSave.playerHp = activeReserve.hp;
+    reserveActiveSave.playerMoveCount = activeReserve.moveCount;
+    for (uint8_t slot = 0; slot < 4; ++slot) {
+        reserveActiveSave.playerMoveIds[slot] = activeReserve.moveIds[slot];
+        reserveActiveSave.playerPp[slot] = activeReserve.pp[slot];
+    }
+    for (uint8_t stat = 0; stat < 7; ++stat)
+        reserveActiveSave.playerStatStages[stat] = activeReserve.statStages[stat];
+    if (!restoredPartyGame.restoreNativeRunSave(reserveActiveSave) ||
+        restoredPartyGame.activePlayerPartyIndex() != 1 ||
+        restoredPartyGame.presentation().player.dex != caughtDex ||
+        restoredPartyGame.presentation().player.totalExperience != activeReserve.experience) return 295;
+    auto invalidReserveSave = reserveActiveSave;
+    const auto* reserveSpecies = PokerogueContent::findSpeciesByDex(invalidReserveSave.playerParty[0].speciesDex);
+    if (!reserveSpecies || pokemonTotalExperienceForLevel(reserveSpecies->growthRate,
+            invalidReserveSave.playerParty[0].level + 1, invalidReserveSave.playerParty[0].experience) !=
+            PokemonExperienceResult::Ok) return 296;
+    if (validateNativeRunSave(invalidReserveSave, PokerogueContent::kContentHash) !=
+            NativeSaveResult::InvalidRecord || restoredPartyGame.restoreNativeRunSave(invalidReserveSave) ||
+        restoredPartyGame.presentation().player.dex != caughtDex) return 297;
     const auto starterExperience = game.presentation().player.totalExperience;
     const auto reserveExperience = game.playerPartyMember(1)->totalExperience;
     const auto* caughtSpecies = PokerogueContent::findSpeciesByDex(caughtDex);

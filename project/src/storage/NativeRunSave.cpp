@@ -453,15 +453,29 @@ NativeSaveResult validateNativeRunSave(const NativeRunSave& save, const char* ex
         (!save.playerPartyCount && save.activePlayerMember != 0xFF) ||
         (save.playerPartyCount && (save.stage == NativeSaveStage::RunSetup ||
             save.activePlayerMember >= save.playerPartyCount))) return NativeSaveResult::InvalidRecord;
+    bool livingPlayerMember = false;
     for (uint8_t member = 0; member < save.playerPartyCount; ++member) {
         PokemonBattleState actor{};
         PokemonActorIdentity identity{};
         if (!restoreNativePokemonActorSave(save.playerParty[member], actor, identity))
             return NativeSaveResult::InvalidRecord;
+        livingPlayerMember |= actor.hp != 0;
+        const auto* memberSpecies = PokerogueContent::findSpeciesByDex(actor.speciesDex);
+        const uint16_t cap = classicExperienceLevelCap(save.wave);
+        if (!memberSpecies || !cap || actor.level > cap) return NativeSaveResult::InvalidRecord;
+        if (actor.level < cap) {
+            uint32_t nextExperience = 0;
+            if (pokemonTotalExperienceForLevel(memberSpecies->growthRate, actor.level + 1, nextExperience) !=
+                    PokemonExperienceResult::Ok || save.playerParty[member].experience >= nextExperience)
+                return NativeSaveResult::InvalidRecord;
+        }
         for (uint8_t prior = 0; prior < member; ++prior)
             if (save.playerParty[prior].pokemonId == actor.pokemonId) return NativeSaveResult::InvalidRecord;
     }
     if (save.playerPartyCount) {
+        if ((save.stage == NativeSaveStage::BattleLost && livingPlayerMember) ||
+            (save.stage != NativeSaveStage::BattleLost && !livingPlayerMember))
+            return NativeSaveResult::InvalidRecord;
         const auto& active = save.playerParty[save.activePlayerMember];
         if (active.level != save.playerLevel || active.experience != save.playerExperience ||
             active.hp != save.playerHp || active.moveCount != save.playerMoveCount)
