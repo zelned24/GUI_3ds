@@ -468,7 +468,16 @@ PokemonBaseDamageResult calculatePokemonBaseDamage(
     // Pinned Pokemon.getBaseDamage formula before modifiers (STAB, type,
     // weather, random factor, abilities, items and move attributes).
     const double levelMultiplier = (2.0 * attacker.level) / 5.0 + 2.0;
-    const double baseDamage = (levelMultiplier * move->power * attack) / defense / 50.0 + 2.0;
+    double power = move->power;
+    // LowHpMoveTypePowerBoostAbAttr inherits the 1.5 power multiplier and
+    // checks getHpRatio() <= 0.33 (not one-third) before the base-damage +2.
+    if (attacker.hp && attacker.maxHp &&
+        static_cast<uint32_t>(attacker.hp) * 100u <= static_cast<uint32_t>(attacker.maxHp) * 33u) {
+        for (const auto& profile : PokerogueContent::kLowHpTypePowerAbilities)
+            if (profile.abilityId == attacker.abilityId && sameText(profile.type, move->type))
+                power *= 1.5;
+    }
+    const double baseDamage = (levelMultiplier * power * attack) / defense / 50.0 + 2.0;
     outputBaseDamage = baseDamage;
     return PokemonBaseDamageResult::Ok;
 }

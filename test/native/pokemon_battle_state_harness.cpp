@@ -482,6 +482,22 @@ extern "C" int runPokemonBattleStateChecks() {
             herbHolder.pokemonId, herbStack, false, herbEvent) !=
             Pokerogue3DS::PokemonStatStageEffectResult::Ok || herbEvent.consumed || herbStack != 1)
         return 259;
+    PokemonBattleState lowHpAttacker = state;
+    lowHpAttacker.abilityId = 65; // Imported Overgrow.
+    lowHpAttacker.maxHp = 100;
+    lowHpAttacker.hp = 34;
+    double aboveThresholdDamage = 0, lowHpDamage = 0;
+    if (Pokerogue3DS::calculatePokemonBaseDamage(lowHpAttacker, state, 22,
+            aboveThresholdDamage) != Pokerogue3DS::PokemonBaseDamageResult::Ok) return 260;
+    lowHpAttacker.hp = 33;
+    if (Pokerogue3DS::calculatePokemonBaseDamage(lowHpAttacker, state, 22,
+            lowHpDamage) != Pokerogue3DS::PokemonBaseDamageResult::Ok ||
+        lowHpDamage != (aboveThresholdDamage - 2.0) * 1.5 + 2.0) return 261;
+    lowHpAttacker.maxHp = 3;
+    lowHpAttacker.hp = 1;
+    if (Pokerogue3DS::calculatePokemonBaseDamage(lowHpAttacker, state, 22,
+            lowHpDamage) != Pokerogue3DS::PokemonBaseDamageResult::Ok ||
+        lowHpDamage != aboveThresholdDamage) return 262;
     PokemonBattleInit actorIdInput = input;
     actorIdInput.pokemonId = 0x12345678u;
     actorIdInput.deriveIvsFromPokemonId = true;

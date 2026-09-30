@@ -210,6 +210,13 @@ struct NegativeStageResetItemProfile { const char* itemId; const char* sourcePat
 inline constexpr NegativeStageResetItemProfile kNegativeStageResetItemProfiles[] = {
     {"WHITE_HERB", "src/modifier/modifier-type.ts", "modifierTypeInitObj.WHITE_HERB", "2d2bcbf71adec1fc80fc6a097e47118f5c9da87a22cbef4723141bbb17fd7968"}
 };
+struct LowHpTypePowerAbility { uint16_t abilityId; const char* type; const char* sourcePath; const char* sourceSymbol; const char* sourceHash; };
+inline constexpr LowHpTypePowerAbility kLowHpTypePowerAbilities[] = {
+    {65, "GRASS", "src/data/abilities/init-abilities.ts", "AbilityId.OVERGROW", "040ccf2ca2e00a2111ef0acf54878ec67c45d98c831e35dda3e0bac52f1ee8e6"},
+    {66, "FIRE", "src/data/abilities/init-abilities.ts", "AbilityId.BLAZE", "040ccf2ca2e00a2111ef0acf54878ec67c45d98c831e35dda3e0bac52f1ee8e6"},
+    {67, "WATER", "src/data/abilities/init-abilities.ts", "AbilityId.TORRENT", "040ccf2ca2e00a2111ef0acf54878ec67c45d98c831e35dda3e0bac52f1ee8e6"},
+    {68, "BUG", "src/data/abilities/init-abilities.ts", "AbilityId.SWARM", "040ccf2ca2e00a2111ef0acf54878ec67c45d98c831e35dda3e0bac52f1ee8e6"}
+};
 struct MoveAttribute { const char* id; };
 struct Move { uint16_t id; uint8_t category; int16_t power; int16_t accuracy; int16_t pp; int8_t priority; int16_t upstreamChance; uint8_t generation; uint16_t upstreamFlags; uint8_t multiHitType; uint32_t attributeOffset; uint16_t attributeCount; const char* key; const char* name; const char* type; const char* target; const char* sourcePath; const char* sourceSymbol; const char* sourceHash; };
 struct PokemonSpriteAtlas { uint16_t speciesDex; uint16_t width; uint16_t height; uint32_t frameOffset; uint16_t frameCount; const char* manifestPath; const char* imagePath; const char* manifestHash; }; struct PokemonSpriteFrame { const char* filename; uint16_t x; uint16_t y; uint16_t width; uint16_t height; uint16_t sourceWidth; uint16_t sourceHeight; uint16_t trimX; uint16_t trimY; }; struct SpeciesLevelMove { uint16_t speciesDex; int8_t level; uint16_t moveId; }; struct SpeciesEggMove { uint16_t speciesDex; uint16_t moveId; };
