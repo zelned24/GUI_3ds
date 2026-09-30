@@ -5,6 +5,11 @@
 #include "storage/NativeRunSave.hpp"
 #include "content/PokerogueRuntimeContent.hpp"
 #include <3ds.h>
+#if defined(POKEROGUE_ENABLE_QUICKJS)
+#include "runtime/QuickJSBridge.hpp"
+#include <cstdio>
+#include <new>
+#endif
 
 namespace {
 bool canReplaySave(const Pokerogue3DS::NativeRunSave& save) {
@@ -23,6 +28,30 @@ int main() {
         return 1;
     }
 
+#if defined(POKEROGUE_ENABLE_QUICKJS)
+    Pokerogue3DS::QuickJSBridge bridge;
+    bool bridgeReady = false;
+    if (romfsReady && bridge.init(renderer)) {
+        FILE* file = std::fopen("romfs:/js/bundle.js", "rb");
+        if (file) {
+            if (std::fseek(file, 0, SEEK_END) == 0) {
+                const long size = std::ftell(file);
+                if (size > 0 && size < 4 * 1024 * 1024 && std::fseek(file, 0, SEEK_SET) == 0) {
+                    char* bytes = new (std::nothrow) char[static_cast<size_t>(size) + 1];
+                    if (bytes) {
+                        const size_t read = std::fread(bytes, 1, static_cast<size_t>(size), file);
+                        const bool complete = read == static_cast<size_t>(size) && !std::ferror(file);
+                        bytes[read] = 0;
+                        if (complete) bridgeReady = bridge.evaluate(bytes, read, "bundle.js");
+                        delete[] bytes;
+                    }
+                }
+            }
+            std::fclose(file);
+        }
+    }
+    // An unavailable/invalid bundle retains the existing native path.
+#endif
     Pokerogue3DS::FirstRunRuntime game(0x3D5C0DEu);
     Pokerogue3DS::SdNativeSaveStorage saveStorage;
     Pokerogue3DS::NativeRunSaveStore saves(saveStorage);
@@ -45,6 +74,9 @@ int main() {
     while (aptMainLoop()) {
         hidScanInput();
         const uint32_t pressed = hidKeysDown();
+#if defined(POKEROGUE_ENABLE_QUICKJS)
+        if (!(bridgeReady && bridge.healthy())) {
+#endif
         bool changed = false;
         if (pressed & KEY_LEFT) changed = game.cycleStarter(-1);
         else if (pressed & KEY_RIGHT) changed = game.cycleStarter(1);
@@ -83,8 +115,19 @@ int main() {
             changed = true;
         }
         if (changed) player.load(game.scene());
+#if defined(POKEROGUE_ENABLE_QUICKJS)
+        }
+#endif
 
         renderer.beginFrame();
+#if defined(POKEROGUE_ENABLE_QUICKJS)
+        if (bridgeReady && bridge.healthy()) {
+            bridge.tick(pressed);
+            renderer.endFrame();
+            gspWaitForVBlank();
+            continue; // Native drawing must not overwrite the JS diagnostic frame.
+        }
+#endif
         renderer.beginTop();
         if (romfsReady) {
             const uint64_t animationTimeMs = osGetTime();
@@ -102,6 +145,9 @@ int main() {
 
     player.exit();
     pokemonSprites.invalidate();
+#if defined(POKEROGUE_ENABLE_QUICKJS)
+    bridge.fini();
+#endif
     renderer.fini();
     if (romfsReady) romfsExit();
     gfxExit();

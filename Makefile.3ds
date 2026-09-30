@@ -13,14 +13,14 @@ include $(DEVKITARM)/3ds_rules
 
 TARGET      := GUI_3DS
 BUILD       := build
-SOURCES     := project/src project/src/game project/src/gfx project/src/runtime project/src/storage project/src/content project/generated/src/screens
-INCLUDES    := project/include project/generated/include $(CTRULIB)/include $(DEVKITPRO)/libctru/include $(DEVKITPRO)/portlibs/3ds/include
+SOURCES     := project/src project/src/game project/src/gfx project/src/runtime project/src/storage project/src/content project/generated/src/screens project/vendor/quickjs
+INCLUDES    := project/include project/vendor/quickjs project/generated/include $(CTRULIB)/include $(DEVKITPRO)/libctru/include $(DEVKITPRO)/portlibs/3ds/include
 ROMFS       := build/romfs
 
 ARCH        := -march=armv6k -mtune=mpcore -mfloat-abi=hard -mtp=cp15
 CFLAGS      := -g -Wall -O2 -MMD -MP -mword-relocations \
                -fomit-frame-pointer -ffunction-sections \
-               $(ARCH) -D__3DS__ -D_3DS -DARM11
+               $(ARCH) -D__3DS__ -D_3DS -DARM11 -DPOKEROGUE_ENABLE_QUICKJS
 
 CXXFLAGS    := $(CFLAGS) -fno-rtti -fno-exceptions -std=gnu++17
 
@@ -68,6 +68,25 @@ $(BUILD)/%.o: %.cpp
 	@mkdir -p $(dir $@)
 	@echo "Compiling $<..."
 	@$(CXX) $(CXXFLAGS) $(foreach inc,$(INCLUDES),-I$(inc)) -c $< -o $@
+
+# Official 2024-01-13 archive SHA256:
+# 3c4bf8f895bfa54beb486c8d1218112771ecfc5ac3be1036851ef41568212e03
+# CONFIG_BIGNUM is tested with #ifdef: leave undefined, never define it as 0.
+# Vendor stays byte-for-byte original. Disable its internal Atomics define only
+# in a generated compilation copy; retain CONFIG_STACK_CHECK for ARM11.
+$(BUILD)/project/vendor/quickjs/quickjs.o: project/vendor/quickjs/quickjs.c
+	@mkdir -p $(dir $@)
+	@sed '/^#define CONFIG_ATOMICS$$/d' $< > $(dir $@)quickjs-no-atomics.c
+	@$(CC) $(ARCH) -O2 -MMD -MP -mword-relocations -fomit-frame-pointer -ffunction-sections \
+	       -D__3DS__ -D_3DS -DARM11 -UCONFIG_BIGNUM -UCONFIG_ATOMICS \
+	       -DCONFIG_VERSION=\"2024-01-13\" -Iproject/vendor/quickjs \
+	       -c $(dir $@)quickjs-no-atomics.c -o $@
+
+$(BUILD)/project/vendor/quickjs/%.o: project/vendor/quickjs/%.c
+	@mkdir -p $(dir $@)
+	@$(CC) $(ARCH) -O2 -MMD -MP -mword-relocations -fomit-frame-pointer -ffunction-sections \
+	       -D__3DS__ -D_3DS -DARM11 -UCONFIG_BIGNUM -UCONFIG_ATOMICS \
+	       -DCONFIG_VERSION=\"2024-01-13\" -Iproject/vendor/quickjs -c $< -o $@
 
 $(BUILD)/%.o: %.c
 	@mkdir -p $(dir $@)
