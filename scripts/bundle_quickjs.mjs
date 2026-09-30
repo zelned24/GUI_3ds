@@ -93,10 +93,14 @@ globalThis._3ds_tick = function(input) {
   if (state.playerDex) _3ds_drawPokemon(state.playerDex, true, 30, 100, 1.2);
   _3ds_drawText('Wave ' + (state.wave || 0) + ' - ' + (presentation.biomeName || presentation.biomeId || ''), 10, 8, 0.48, WHITE);
   _3ds_drawText('Classic ' + hpBar(state.wave, state.finalWave) + ' ' + (state.wave || 0) + '/' + (state.finalWave || 0), 10, 28, 0.38, WHITE);
-  _3ds_drawText('Enemy #' + (state.enemyDex || 0), 222, 12, 0.48, WHITE);
-  _3ds_drawText(hpBar(state.enemyHp, state.enemyMaxHp), 222, 29, 0.48, GREEN);
+  _3ds_drawText((presentation.enemyName || 'Enemy #' + (state.enemyDex || 0)).slice(0, 23), 222, 64, 0.4, WHITE);
+  _3ds_drawText(hpBar(state.enemyHp, state.enemyMaxHp), 222, 79, 0.4, GREEN);
+  if (presentation.doubleBattle && presentation.secondEnemyDex) {
+    _3ds_drawText((presentation.secondEnemyName || 'Enemy #' + presentation.secondEnemyDex).slice(0, 23), 222, 174, 0.4, WHITE);
+    _3ds_drawText(hpBar(presentation.secondEnemyHp, presentation.secondEnemyMaxHp), 222, 189, 0.4, GREEN);
+  }
   _3ds_drawText('Weather: ' + (presentation.weatherName || 'NONE'), 10, 52, 0.4, WHITE);
-  _3ds_drawText('Player #' + (state.playerDex || 0), 10, 193, 0.48, WHITE);
+  _3ds_drawText((presentation.playerName || 'Player #' + (state.playerDex || 0)).slice(0, 23), 10, 193, 0.48, WHITE);
   _3ds_drawText(hpBar(state.playerHp, state.playerMaxHp), 10, 208, 0.48, GREEN);
   if (combatLog) _3ds_drawText(combatLog.slice(0, 65), 10, 225, 0.38, 0xFFFFDD44);
   _3ds_beginBottom();

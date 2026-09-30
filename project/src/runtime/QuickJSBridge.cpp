@@ -274,6 +274,11 @@ JSValue QuickJSBridge::getPresentationInfo(JSContext* ctx, JSValueConst, int, JS
             b->m_game->experienceGranted() && b->m_game->run().wave == PokerogueContent::kClassicFinalWave &&
             b->m_game->victoryPlan().completedWave == b->m_game->run().wave &&
             b->m_game->victoryPlan().contains(ClassicVictoryStep::GameClear))) ||
+        !set("playerName", JS_NewString(ctx, view.player.localizedName ? view.player.localizedName : "")) ||
+        !set("enemyName", JS_NewString(ctx, view.enemy.localizedName ? view.enemy.localizedName : "")) ||
+        !set("secondEnemyName", JS_NewString(ctx, view.secondEnemy.localizedName ? view.secondEnemy.localizedName : "")) ||
+        !set("secondEnemyHp", JS_NewUint32(ctx, view.secondEnemy.battleState.hp)) ||
+        !set("secondEnemyMaxHp", JS_NewUint32(ctx, view.secondEnemy.battleState.maxHp)) ||
         !set("trainerTypeId", JS_NewUint32(ctx, view.trainerTypeId)) ||
         !set("trainerName", JS_NewString(ctx, view.trainerName ? view.trainerName : "")) ||
         !set("trainerPartyCount", JS_NewUint32(ctx, view.trainerPartyCount)) ||
