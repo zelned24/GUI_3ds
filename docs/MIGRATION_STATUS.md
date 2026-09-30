@@ -435,3 +435,9 @@
 
 1. Tras aprendizaje, runtime conserva target canónico hasta A (aplicar) o B (cancelar intento). Cancelar no revierte EXP ni moves aprendidos; no concede reward ni avanza wave. Nombre destino usa locales. Otros comandos y save quedan bloqueados mientras la decisión no serializada esté pendiente.
 2. Esto adapta la cancelación de EvolutionPhase a una frontera antes de animación. No implementa pauseEvolutions persistente, animación cancelable temporal ni diálogo/configuración upstream completo. Regresiones del helper conservadas; prueba end-to-end del prompt aún pendiente. Tests/compilación siguen aplazados.
+
+## Decisiones del jugador y restauración legacy
+
+1. Replay legacy falla si EXP requiere aprendizaje o evolución pendiente; no borra decisiones ni inventa respuestas al reconstruir waves.
+2. Resolver aprendizaje, aceptar/cancelar evolución o restaurar un equipo explícito obliga a mantener snapshots incluso con un solo miembro. La marca se conserva entre waves y se reinicia con un nuevo starter. Guardar decisiones pendientes sigue bloqueado.
+3. Regresiones 317–319 escritas para restore/recapture de un actor explícito, identidad, especie, EXP, moves y PP. Tests y compilación aplazados; límite de restore wave 9 y otras restricciones permanecen.

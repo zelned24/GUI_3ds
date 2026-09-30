@@ -194,6 +194,7 @@ private:
     bool m_battleFinished = false;
     bool m_playerWon = false;
     bool m_experienceGranted = false;
+    bool m_playerHistoryRequiresSnapshot = false; // Player choices cannot be replayed from seed.
     PokemonPendingLevelMoves m_pendingLevelMoves{};
     const char* m_pendingEvolutionSpeciesId = nullptr;
     ClassicVictoryPlan m_victoryPlan{};

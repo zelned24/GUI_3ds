@@ -203,7 +203,8 @@ void FirstRunRuntime::captureNativeRunSave(NativeRunSave& output) const {
             }
         }
     }
-    if (value.stage != NativeSaveStage::RunSetup && m_context.playerPartyCount > 1) {
+    if (value.stage != NativeSaveStage::RunSetup &&
+        (m_context.playerPartyCount > 1 || m_playerHistoryRequiresSnapshot)) {
         if (m_context.playerPartyCount > 6 ||
             m_context.activePlayerPartyIndex >= m_context.playerPartyCount) { output = {}; return; }
         value.playerPartyCount = m_context.playerPartyCount;
@@ -242,6 +243,7 @@ bool FirstRunRuntime::restoreNativeRunSaveInPlace(const NativeRunSave& save) {
     // supported wild/fixed trainer victory to reconstruct level/EXP;
     // saved HP and PP are overlaid only after the target encounter is rebuilt.
     if (save.playerPartyCount) {
+        m_playerHistoryRequiresSnapshot = true;
         // Explicit party state replaces reward/capture replay. The currently
         // supported frontier has no biome transition or persisted modifiers.
         if (save.wave > 9 || std::strcmp(save.biomeId, PokerogueContent::kStartingBiomeId)) return false;
@@ -283,9 +285,9 @@ bool FirstRunRuntime::restoreNativeRunSaveInPlace(const NativeRunSave& save) {
             for (uint8_t member = 0; member < m_context.trainerPartyCount; ++member) {
                 m_context.enemy = m_context.trainerParty[member];
                 m_experienceGranted = false;
-                if (!grantVictoryExperience()) return false;
+                if (!grantVictoryExperience() || moveLearningPending() || evolutionPending()) return false;
             }
-        } else if (!grantVictoryExperience()) return false;
+        } else if (!grantVictoryExperience() || moveLearningPending() || evolutionPending()) return false;
         m_run.wave = static_cast<uint16_t>(wave + 1);
         resolve(true);
     }
@@ -318,7 +320,7 @@ bool FirstRunRuntime::restoreNativeRunSaveInPlace(const NativeRunSave& save) {
                  member == save.activeTrainerMember)) continue;
             m_context.enemy = m_context.trainerParty[member];
             m_experienceGranted = false;
-            if (!grantVictoryExperience()) return false;
+            if (!grantVictoryExperience() || moveLearningPending() || evolutionPending()) return false;
         }
         m_context.enemy = initialEnemy;
         m_experienceGranted = false;
@@ -327,7 +329,7 @@ bool FirstRunRuntime::restoreNativeRunSaveInPlace(const NativeRunSave& save) {
         ? m_context.trainerParty[save.activeTrainerMember] : m_context.enemy;
 
     if (!save.playerPartyCount && !save.trainerPartyCount && save.stage == NativeSaveStage::ExperienceGranted &&
-        !grantVictoryExperience()) return false;
+        (!grantVictoryExperience() || moveLearningPending() || evolutionPending())) return false;
     if (save.playerLevel != m_context.player.level ||
         save.playerExperience != m_context.player.totalExperience) return false;
     if (save.stage == NativeSaveStage::RunSetup) return save.wave == 1;
@@ -835,6 +837,7 @@ bool FirstRunRuntime::finishPendingEvolution(bool accepted) {
     for (uint8_t slot = 0; slot < next.moveCount; ++slot) next.moveIds[slot] = next.battleState.moves[slot].moveId;
     m_pendingLevelMoves = pending;
     m_context.player = next;
+    m_playerHistoryRequiresSnapshot = true;
     m_context.playerParty[m_context.activePlayerPartyIndex] = next;
     m_pendingEvolutionSpeciesId = nullptr;
     m_battleFeedback = feedback;
@@ -860,6 +863,7 @@ bool FirstRunRuntime::resolvePendingLearnMoveInPlace(int selectedSlot) {
         for (uint8_t slot = 0; slot < next.moveCount; ++slot) m_context.player.moveIds[slot] = next.moves[slot].moveId;
         m_context.playerParty[m_context.activePlayerPartyIndex] = m_context.player;
     }
+    m_playerHistoryRequiresSnapshot = true;
     for (uint16_t i = 1; i < m_pendingLevelMoves.count; ++i)
         m_pendingLevelMoves.moveIds[i - 1] = m_pendingLevelMoves.moveIds[i];
     m_pendingLevelMoves.moveIds[--m_pendingLevelMoves.count] = 0;
@@ -1845,6 +1849,7 @@ bool FirstRunRuntime::skipVictoryReward() {
 bool FirstRunRuntime::skipVictoryRewardInPlace() {
     if (moveLearningPending()) return resolvePendingLearnMove(-1);
     if (evolutionPending()) {
+        m_playerHistoryRequiresSnapshot = true;
         m_pendingEvolutionSpeciesId = nullptr;
         m_battleFeedback = "Evolution cancelled";
         buildScene();
@@ -2264,6 +2269,7 @@ void FirstRunRuntime::resolve(bool carryPlayer) {
     m_context.biomeName = locale(biomeLocaleId.c_str(), biomeEntry ? biomeEntry->name : m_run.biomeId);
     const std::string starterLocaleId = std::string("pokemon:") + starter.id;
     if (!carryPlayer) {
+        m_playerHistoryRequiresSnapshot = false;
         m_context.player = {starter.dex, 5, starter.id, locale(starterLocaleId.c_str(), starter.name), starter.firstFormId, starter.assetSourcePath};
         if (pokemonTotalExperienceForLevel(starter.growthRate, 5, m_context.player.totalExperience)
             != PokemonExperienceResult::Ok) return;

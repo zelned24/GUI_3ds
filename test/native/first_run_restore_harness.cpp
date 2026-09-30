@@ -1209,6 +1209,17 @@ int main() {
                 PokerogueContent::kContentHash, decodedParty) != NativeSaveResult::Ok ||
             decodedParty.playerPartyCount != 1 || decodedParty.activePlayerMember ||
             decodedParty.playerParty[0].pokemonId != actorSnapshot.pokemonId) return 287;
+        FirstRunRuntime singleSnapshotRuntime(7);
+        if (!singleSnapshotRuntime.restoreNativeRunSave(decodedParty)) return 317;
+        NativeRunSave singleRecaptured{};
+        singleSnapshotRuntime.captureNativeRunSave(singleRecaptured);
+        if (singleRecaptured.playerPartyCount != 1 || singleRecaptured.activePlayerMember ||
+            singleRecaptured.playerParty[0].pokemonId != actorSnapshot.pokemonId ||
+            singleRecaptured.playerParty[0].experience != actorSnapshot.experience ||
+            singleRecaptured.playerParty[0].speciesDex != actorSnapshot.speciesDex) return 318;
+        for (uint8_t slot = 0; slot < actorSnapshot.moveCount; ++slot)
+            if (singleRecaptured.playerParty[0].moveIds[slot] != actorSnapshot.moveIds[slot] ||
+                singleRecaptured.playerParty[0].pp[slot] != actorSnapshot.pp[slot]) return 319;
         explicitParty.activePlayerMember = 1;
         if (validateNativeRunSave(explicitParty, PokerogueContent::kContentHash) !=
                 NativeSaveResult::InvalidRecord) return 288;
