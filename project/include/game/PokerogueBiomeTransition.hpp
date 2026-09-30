@@ -24,7 +24,8 @@ enum class ClassicBiomeTransitionResult : uint8_t {
 
 // Resolves the data and RNG part of upstream SelectBiomePhase for Classic.
 // The caller must pass nextWaveIndex (current wave + 1) and the run's root seed;
-// SelectBiomePhase calls resetSeed() before evaluating biomeLinks.
+// SelectBiomePhase calls resetSeed() with the completed wave before evaluating
+// biomeLinks; the route stream is rootSeed shifted by (nextWaveIndex - 1).
 // MapModifier ownership/UI is external: when it is present and several links
 // survive their exclusion rolls, the caller receives AwaitingMapChoice and
 // calls again with a selected destination from that eligible set.
@@ -38,12 +39,14 @@ inline ClassicBiomeTransitionResult resolveClassicNextBiome(
     const char* selectedDestination,
     const char*& outputBiomeId) {
     outputBiomeId = nullptr;
-    if (!currentBiomeId || !*currentBiomeId || seedLength > PokerogueRngAdapter::kMaxSeedCodeUnits ||
+    if (!currentBiomeId || !*currentBiomeId || !nextWaveIndex ||
+        seedLength > PokerogueRngAdapter::kMaxSeedCodeUnits ||
         (seedLength && !rootSeed)) return ClassicBiomeTransitionResult::InvalidInput;
     if (!isClassic) return ClassicBiomeTransitionResult::UnsupportedMode;
 
     // SelectBiomePhase routes to END ten waves before the Classic final boss.
-    if (nextWaveIndex <= 200 && nextWaveIndex + 9 == 200) {
+    if (nextWaveIndex <= PokerogueContent::kClassicFinalWave &&
+        PokerogueContent::kClassicFinalWave - nextWaveIndex == 9) {
         for (const auto& biome : PokerogueContent::kBiomes) {
             if (sameBiomeId(biome.id, "end")) {
                 outputBiomeId = biome.id;
@@ -64,7 +67,12 @@ inline ClassicBiomeTransitionResult resolveClassicNextBiome(
     }
 
     PokerogueRngAdapter rng;
-    rng.sow(rootSeed, seedLength);
+    uint16_t completedWaveSeed[PokerogueRngAdapter::kMaxSeedCodeUnits]{};
+    if (!PokerogueRngAdapter::shiftCharCodes(rootSeed, seedLength,
+            nextWaveIndex - 1, completedWaveSeed,
+            PokerogueRngAdapter::kMaxSeedCodeUnits))
+        return ClassicBiomeTransitionResult::InvalidInput;
+    rng.sow(completedWaveSeed, seedLength);
     const PokerogueContent::Route* eligible[PokerogueContent::kRouteCount]{};
     size_t eligibleCount = 0;
     for (size_t ordinal = 0; ordinal < PokerogueContent::kRouteCount; ++ordinal) {
