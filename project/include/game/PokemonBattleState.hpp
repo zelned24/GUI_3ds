@@ -178,6 +178,16 @@ inline bool pokemonStatStageMultiplier(const PokemonBattleState& state, uint8_t 
     return true;
 }
 
+inline bool pokemonBaselineEffectiveStat(const PokemonBattleState& state, uint8_t stat,
+                                         bool critical, uint32_t& output) {
+    double multiplier = 1.0;
+    if (!stat || stat > 5 || !state.stats[stat] ||
+        !pokemonStatStageMultiplier(state, stat, critical, multiplier)) return false;
+    const uint32_t effective = static_cast<uint32_t>(state.stats[stat] * multiplier);
+    output = effective ? effective : 1;
+    return true;
+}
+
 inline bool pokemonAccuracyStageMultiplier(const PokemonBattleState& user,
     const PokemonBattleState& target, double& output) {
     const int accuracy = user.statStages[5];

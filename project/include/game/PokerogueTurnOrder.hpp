@@ -15,7 +15,7 @@ enum class BaselineFirstMover : uint8_t { Invalid, Player, Enemy };
 // sortInSpeedOrder. For a two-Pokemon field, that speed sort shuffles the
 // initial [player, enemy] order with a stream derived from waveSeed and
 // turn * 1000 + 2, then sorts descending by effective speed. This bounded
-// resolver uses unmodified stats and moves; abilities, held items, terrain,
+// resolver applies canonical speed stages; abilities, held items, terrain,
 // Trick Room and priority modifiers require their own native rules.
 inline BaselineFirstMover resolveBaselineFirstMover(
     const PokemonBattleState& player, const PokemonBattleState& enemy,
@@ -29,6 +29,9 @@ inline BaselineFirstMover resolveBaselineFirstMover(
   const auto* enemyMove = PokerogueContent::findMoveById(enemyMoveId);
   if (!playerMove || !enemyMove) return BaselineFirstMover::Invalid;
 
+  uint32_t playerSpeed = 0, enemySpeed = 0;
+  if (!pokemonBaselineEffectiveStat(player, 5, false, playerSpeed) ||
+      !pokemonBaselineEffectiveStat(enemy, 5, false, enemySpeed)) return BaselineFirstMover::Invalid;
   uint16_t waveSeed[PokerogueRngAdapter::kMaxSeedCodeUnits]{};
   if (!PokerogueRngAdapter::shiftCharCodes(rootSeed, seedLength, wave,
           waveSeed, PokerogueRngAdapter::kMaxSeedCodeUnits)) return BaselineFirstMover::Invalid;
@@ -40,8 +43,8 @@ inline BaselineFirstMover resolveBaselineFirstMover(
   if (playerMove->priority != enemyMove->priority)
     return playerMove->priority > enemyMove->priority
         ? BaselineFirstMover::Player : BaselineFirstMover::Enemy;
-  if (player.stats[5] != enemy.stats[5])
-    return player.stats[5] > enemy.stats[5]
+  if (playerSpeed != enemySpeed)
+    return playerSpeed > enemySpeed
         ? BaselineFirstMover::Player : BaselineFirstMover::Enemy;
   return enemyWasShuffledFirst ? BaselineFirstMover::Enemy : BaselineFirstMover::Player;
 }

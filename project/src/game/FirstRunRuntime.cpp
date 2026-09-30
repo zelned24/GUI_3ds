@@ -754,8 +754,11 @@ void FirstRunRuntime::refreshTrainerBaselineMatchups() {
         const auto& state = active ? m_context.enemy.battleState
             : m_context.trainerParty[member].battleState;
         PokemonTrainerMatchupInput matchup{};
-        if (!buildBaselineTrainerMatchupInput(state, m_context.player.battleState,
-                state.stats[5], m_context.player.battleState.stats[5], active, matchup) ||
+        uint32_t actorSpeed = 0, opponentSpeed = 0;
+        if (!pokemonBaselineEffectiveStat(state, 5, false, actorSpeed) ||
+            !pokemonBaselineEffectiveStat(m_context.player.battleState, 5, false, opponentSpeed) ||
+            !buildBaselineTrainerMatchupInput(state, m_context.player.battleState,
+                actorSpeed, opponentSpeed, active, matchup) ||
             !calculateTrainerMatchupScore(matchup, scores[member])) return;
     }
     for (uint8_t member = 0; member < m_context.trainerPartyCount; ++member)

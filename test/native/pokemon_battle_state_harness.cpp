@@ -4,6 +4,7 @@
 #include "game/PokemonWildMovesetGenerator.hpp"
 #include "game/PokemonStarterMoveset.hpp"
 #include "game/PokemonTrainerAi.hpp"
+#include "game/PokerogueTurnOrder.hpp"
 #include "game/PokemonExperience.hpp"
 #include "game/PokerogueRngAdapter.hpp"
 
@@ -233,6 +234,18 @@ extern "C" int runPokemonBattleStateChecks() {
         Pokerogue3DS::calculatePokemonBaseDamage(staged, stagedDefender, 33,
             criticalStageDamage, true) != Pokerogue3DS::PokemonBaseDamageResult::Ok ||
         criticalStageDamage != neutralStageDamage) return 214;
+    PokemonBattleState fastActor = state, slowActor = state;
+    fastActor.stats[5] = 20;
+    slowActor.stats[5] = 10;
+    if (!Pokerogue3DS::setPokemonStatStage(fastActor, 5, -6) ||
+        Pokerogue3DS::resolveBaselineFirstMover(fastActor, slowActor, 33, 33,
+            trainerAiSeed, sizeof(trainerAiSeed) / sizeof(trainerAiSeed[0]), 5, 1) !=
+            Pokerogue3DS::BaselineFirstMover::Enemy) return 215;
+    uint32_t effectiveSpeed = 0;
+    fastActor.stats[5] = 65535;
+    if (!Pokerogue3DS::setPokemonStatStage(fastActor, 5, 6) ||
+        !Pokerogue3DS::pokemonBaselineEffectiveStat(fastActor, 5, false, effectiveSpeed) ||
+        effectiveSpeed != 262140) return 216;
     PokemonBattleInit actorIdInput = input;
     actorIdInput.pokemonId = 0x12345678u;
     actorIdInput.deriveIvsFromPokemonId = true;
