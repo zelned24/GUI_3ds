@@ -46,6 +46,30 @@ public:
     virtual uint64_t freeBytes() = 0;
 };
 
+// Indexed catalog reads reuse ContentStorage. Paths must be locally resolved
+// from a verified release; these helpers do not authenticate a package.
+inline bool contentRangeValid(uint32_t fileBytes, uint32_t offset, uint32_t size) {
+    return offset <= fileBytes && size <= fileBytes - offset;
+}
+inline bool contentTableRecordOffset(uint32_t fileBytes, uint32_t tableOffset,
+    uint32_t recordCount, uint32_t stride, uint32_t index, uint32_t& output) {
+    if (!stride || index >= recordCount || tableOffset > fileBytes ||
+        recordCount > (fileBytes - tableOffset) / stride) return false;
+    // Full table bounds prove both multiplication and addition are safe.
+    output = tableOffset + index * stride;
+    return true;
+}
+inline bool readContentTableRecord(ContentStorage& storage, const char* trustedPath,
+    uint32_t fileBytes, uint32_t tableOffset, uint32_t recordCount, uint32_t stride,
+    uint32_t index, void* output, uint32_t capacity) {
+    uint32_t offset = 0, actual = 0;
+    if (!trustedPath || !*trustedPath || !output || capacity < stride ||
+        !contentTableRecordOffset(fileBytes, tableOffset, recordCount, stride, index, offset))
+        return false;
+    // Caller discards output on failure: a backend may partially fill it.
+    return storage.read(trustedPath, offset, output, stride, actual) && actual == stride;
+}
+
 using ContentSignatureVerifier = bool (*)(const uint8_t digest[32], const uint8_t signature[256], void* context);
 // Transport is restricted to a configured HTTPS origin by the platform backend.
 // Download must close/flush the file, enforce the byte limit and report failures.

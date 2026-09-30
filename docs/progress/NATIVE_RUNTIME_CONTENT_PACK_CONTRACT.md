@@ -73,3 +73,10 @@
 5. UI de actualización podrá desarrollarse por la IA de presentación mediante eventos/estado de progreso; no mostrar instalación exitosa mientras la cadena anterior falte.
 6. Pruebas a escribir: offset/count overflow, truncado, IDs duplicados, referencias rotas, firma incorrecta, capabilities faltantes, hashes, interrupción, rollback y export compatible. Ejecutarlas en la etapa final acordada, junto a compilación y hardware.
 7. Evidencia final: nueva entidad importada → paquete firmado → descarga real en consola → activación → consumidor de catálogo/asset → save/load/export, sin reinstalar el ejecutable cuando no cambian capabilities.
+
+## 6. Primer código del lector: límites de tablas
+
+1. ContentUpdateStore.hpp expone contentRangeValid, contentTableRecordOffset y readContentTableRecord sobre ContentStorage existente. Validan rango, tabla completa, stride/count/index, multiplicación sin overflow, capacidad de salida y lectura exacta, sin cargar el índice completo.
+2. El caller aporta la ruta local confiable y tamaño verificado; estas funciones no autentican archivos ni interpretan catálogos. Un backend puede llenar parcialmente el buffer antes de fallar; el caller descarta el resultado en ese caso.
+3. Se añadió test/native/content_index_bounds_harness.cpp para límites, overflow, capacidad y lecturas truncadas. Es un harness host pendiente de incluir/ejecutar en la validación final. No se compiló.
+4. El formato binario concreto, decodificación de cabeceras/records, generador, lookup canónico y consumidores siguen pendientes; esto no habilita OTA.
