@@ -216,9 +216,9 @@ NativeSaveResult validateNativeRunSave(const NativeRunSave& save, const char* ex
     if (save.runtimeVersion != kNativeSaveRuntimeVersion) return NativeSaveResult::IncompatibleRuntime;
     if (!isHash(save.contentHash) || !isHash(expectedContentHash)) return NativeSaveResult::InvalidFormat;
     if (!equal(save.contentHash, expectedContentHash)) return NativeSaveResult::ContentMismatch;
-    // Multi-wave restore remains unavailable in FirstRunRuntime. Keep the
-    // journal boundary honest until party, rewards and RNG state are encoded.
-    if (!save.seed || save.wave != 1
+    // Only the initial one-Pokemon, reward-skipping biome segment can be
+    // replayed without a serialized party, modifier and biome history.
+    if (!save.seed || !save.wave || save.wave > 9
         || !isId(save.modeId, sizeof(save.modeId))
         || !isId(save.biomeId, sizeof(save.biomeId)) || !equal(save.modeId, "classic"))
         return NativeSaveResult::InvalidRecord;

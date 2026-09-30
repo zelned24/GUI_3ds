@@ -140,11 +140,19 @@ bool FirstRunRuntime::restoreNativeRunSave(const NativeRunSave& save) {
         save.stage < NativeSaveStage::RunSetup ||
         save.stage > NativeSaveStage::ExperienceGranted) return false;
     if (!restoreSetup(save.seed, save.starterDex)) return false;
+    // A skipped reward adds no modifier or party member. Replay each earlier
+    // supported wild victory from its pinned seed to reconstruct level/EXP;
+    // saved HP and PP are overlaid only after the target encounter is rebuilt.
+    for (uint16_t wave = 1; wave < save.wave; ++wave) {
+        if (!m_encounterResolved || m_doubleBattle || !grantVictoryExperience()) return false;
+        m_run.wave = static_cast<uint16_t>(wave + 1);
+        resolve(true);
+    }
     if (save.wave != m_run.wave) return false;
     if (save.stage == NativeSaveStage::ExperienceGranted && !grantVictoryExperience()) return false;
     if (save.playerLevel != m_context.player.level ||
         save.playerExperience != m_playerExperience) return false;
-    if (save.stage == NativeSaveStage::RunSetup) return true;
+    if (save.stage == NativeSaveStage::RunSetup) return save.wave == 1;
     if (!m_encounterResolved || m_doubleBattle || save.encounterDex != m_run.encounterDex ||
         !save.battleTurn || !save.playerMoveCount || save.playerMoveCount > 4 ||
         !save.enemyMoveCount || save.enemyMoveCount > 4 ||
@@ -484,15 +492,31 @@ bool FirstRunRuntime::advanceBattleTurn() {
     return true;
 }
 
-void FirstRunRuntime::resolve() {
+bool FirstRunRuntime::skipVictoryReward() {
+    if (!m_battleFinished || !m_playerWon || !m_experienceGranted ||
+        !m_victoryPlan.contains(ClassicVictoryStep::SelectModifier) ||
+        !m_victoryPlan.nextWave || m_victoryPlan.nextWave > PokerogueContent::kClassicFinalWave)
+        return false;
+    // SelectModifierPhase permits skipping its choice. The one-starter run
+    // has no reward modifier to carry into the next wave in this branch.
+    m_run.wave = m_victoryPlan.nextWave;
+    resolve(true);
+    if (!m_encounterResolved || m_doubleBattle) m_checkpointAvailable = false;
+    if (m_encounterResolved && !m_doubleBattle)
+        m_battleFeedback = "Reward skipped - next Classic wave";
+    buildScene();
+    return m_encounterResolved && !m_doubleBattle;
+}
+
+void FirstRunRuntime::resolve(bool carryPlayer) {
     m_selectedBattleMove = 0;
     m_turn = 1;
     m_battleFinished = false;
     m_playerWon = false;
     m_experienceGranted = false;
     m_victoryPlan = {};
-    m_runStarted = false;
-    m_checkpointAvailable = true;
+    m_runStarted = carryPlayer;
+    m_checkpointAvailable = !carryPlayer;
     m_battleFeedback.clear();
     m_encounterResolved = false;
     m_doubleBattle = false;
@@ -505,17 +529,20 @@ void FirstRunRuntime::resolve() {
     const std::string biomeLocaleId = std::string("biomes:") + PokerogueContent::kStartingBiomeId;
     m_context.biomeName = locale(biomeLocaleId.c_str(), "Town");
     const std::string starterLocaleId = std::string("pokemon:") + starter.id;
-    m_context.player = {starter.dex, 5, starter.id, locale(starterLocaleId.c_str(), starter.name), starter.firstFormId, starter.assetSourcePath};
-    if (pokemonTotalExperienceForLevel(starter.growthRate, 5, m_playerExperience)
-        != PokemonExperienceResult::Ok) return;
+    if (!carryPlayer) {
+        m_context.player = {starter.dex, 5, starter.id, locale(starterLocaleId.c_str(), starter.name), starter.firstFormId, starter.assetSourcePath};
+        if (pokemonTotalExperienceForLevel(starter.growthRate, 5, m_playerExperience)
+            != PokemonExperienceResult::Ok) return;
+    }
     // Fresh-profile save data starts with no unlocked egg moves and no saved
     // move preferences. Resolve its actual level-1-to-5 learnset through the
     // same canonical catalog as the wild actor; do not invent a starter list.
-    m_context.player.movesetResolved = selectPokemonStarterMoveset(
-        starter.dex, starter.firstFormId, 0, nullptr, 0,
-        m_context.player.moveIds, m_context.player.moveCount) ==
-        PokemonStarterMovesetResult::Ok;
-    if (m_context.player.movesetResolved) {
+    if (!carryPlayer) {
+      m_context.player.movesetResolved = selectPokemonStarterMoveset(
+          starter.dex, starter.firstFormId, 0, nullptr, 0,
+          m_context.player.moveIds, m_context.player.moveCount) ==
+          PokemonStarterMovesetResult::Ok;
+      if (m_context.player.movesetResolved) {
         PokemonActorIdentity starterActor{};
         PokemonNature starterNature = PokemonNature::Unspecified;
         if (pokemonFreshProfileNature(starter.dex, starterNature) != PokemonFreshProfileResult::Ok)
@@ -565,14 +592,16 @@ void FirstRunRuntime::resolve() {
         m_context.player.actor = starterActor;
         m_context.player.actorIdentityResolved = true;
         m_context.player.formId = starterActor.formId;
+      }
     }
 
     uint8_t cycleOffset = 0;
     if (!PokerogueWaveClock::deriveCycleOffset(m_seedCodeUnits.data(), m_seedLength, cycleOffset)) return;
     const auto time = PokerogueWaveClock::timeOfDay(m_run.wave, cycleOffset);
 
-    // BattleScene.resetSeed(1) establishes a fresh wave stream. Classic's
-    // wave-1 checkIsDouble consumes its first draw before Arena.randomSpecies.
+    // BattleScene.resetSeed(waveIndex) establishes a fresh wave stream.
+    // checkIsDouble consumes its draw before Arena.randomSpecies, after any
+    // ordinary trainer-chance decision for that wave.
     PokerogueRngAdapter waveRng;
     PokerogueSeedOffsetScope waveScope(waveRng, m_seedCodeUnits.data(), m_seedLength, m_run.wave);
     if (!waveScope.valid()) return;
@@ -706,11 +735,14 @@ void FirstRunRuntime::resolve() {
         m_secondEncounterResolved = true;
     }
     m_encounterResolved = true;
+    m_checkpointAvailable = !m_doubleBattle;
 }
 
 void FirstRunRuntime::buildScene() {
     char line[96];
-    m_text[0] = "POKEROGUE 3DS - RUN SETUP";
+    std::snprintf(line, sizeof(line), "POKEROGUE 3DS - CLASSIC %u",
+                  static_cast<unsigned>(m_run.wave));
+    m_text[0] = line;
     m_text[1] = std::string("Mode: ") + m_context.modeName;
     m_text[2] = std::string("Biome: ") + m_context.biomeName;
     m_text[3] = std::string("Starter: ") + starterName();
@@ -718,11 +750,13 @@ void FirstRunRuntime::buildScene() {
         std::snprintf(line, sizeof(line), "Encounter: %s Lv. %u", m_context.enemy.localizedName,
                       static_cast<unsigned>(m_context.enemy.level));
     } else {
-        std::snprintf(line, sizeof(line), "Wave 1 encounter: UNSUPPORTED");
+        std::snprintf(line, sizeof(line), "Wave %u encounter: UNSUPPORTED",
+                      static_cast<unsigned>(m_run.wave));
     }
     m_text[4] = line;
     m_text[5] = m_battleFinished
-        ? (m_playerWon && !m_experienceGranted ? "A: collect experience" : "X: save  Y: export")
+        ? (m_playerWon && !m_experienceGranted ? "A: collect experience" :
+            m_playerWon ? "B: skip reward  X: save" : "X: save  Y: export")
         : (m_runStarted ? "A: fight  UP/DOWN: move" :
             "A: fight  UP/DOWN: move  LEFT/RIGHT: starter");
     if (m_doubleBattle && m_secondEncounterResolved) {

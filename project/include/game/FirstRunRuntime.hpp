@@ -55,6 +55,7 @@ public:
     bool battleInputSupported() const;
     bool selectBattleMove(int direction);
     bool advanceBattleTurn();
+    bool skipVictoryReward();
     uint8_t selectedBattleMove() const { return m_selectedBattleMove; }
     bool battleFinished() const { return m_battleFinished; }
     bool experienceGranted() const { return m_experienceGranted; }
@@ -68,7 +69,7 @@ public:
     const char* starterName() const;
 
 private:
-    void resolve();
+    void resolve(bool carryPlayer = false);
     bool grantVictoryExperience();
     void buildScene();
     static const char* locale(const char* canonicalId, const char* fallback);

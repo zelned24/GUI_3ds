@@ -51,6 +51,7 @@ int main() {
         else if (pressed & KEY_UP) { game.selectBattleMove(-1); changed = true; }
         else if (pressed & KEY_DOWN) { game.selectBattleMove(1); changed = true; }
         else if (pressed & KEY_A) { game.advanceBattleTurn(); changed = true; }
+        else if (pressed & KEY_B) { game.skipVictoryReward(); changed = true; }
         if (pressed & (KEY_X | KEY_Y | KEY_L | KEY_R)) {
             using namespace Pokerogue3DS;
             NativeSaveResult result = NativeSaveResult::Ok;
