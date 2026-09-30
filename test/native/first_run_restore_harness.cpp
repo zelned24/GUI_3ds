@@ -650,6 +650,21 @@ static int checkLevelUpMoveLearningAndEvolution() {
     return 0;
 }
 
+static int checkBossDamageAbilityCapabilities() {
+    unsigned inspected = 0;
+    for (const auto& profile : PokerogueContent::kAbilityMovegenProfiles) {
+        if (std::strcmp(profile.sourceSymbol, "AbilityId.PRESSURE") == 0) {
+            if (!profile.bossDamageCallbacksResolved) return 261;
+            ++inspected;
+        }
+        if (std::strcmp(profile.sourceSymbol, "AbilityId.STURDY") == 0) {
+            if (profile.bossDamageCallbacksResolved) return 262;
+            ++inspected;
+        }
+    }
+    return inspected == 2 ? 0 : 263;
+}
+
 static int checkTrainerParentEvolutionThresholds() {
     const PokerogueContent::TrainerPartySegment* normal = nullptr;
     for (const auto& segment : PokerogueContent::kTrainerPartySegments)
@@ -833,6 +848,8 @@ static int checkCanonicalTrainerSignatureSlots() {
 }
 
 int main() {
+    const int bossCapabilitiesCheck = checkBossDamageAbilityCapabilities();
+    if (bossCapabilitiesCheck) return bossCapabilitiesCheck;
     const int parentThresholdCheck = checkTrainerParentEvolutionThresholds();
     if (parentThresholdCheck) return parentThresholdCheck;
     const int specialtyCheck = checkCanonicalTrainerSpecialtyTypes();

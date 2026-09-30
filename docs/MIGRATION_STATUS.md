@@ -318,3 +318,10 @@
 1. CommandPhase.handleBallCommand pinned: boss con segmentIndex>=1 bloquea bolas normales, con excepciones Master Ball y hasAbility(WONDER_GUARD,false,true). Runtime consulta estado real de segmentos antes de gastar bolas o RNG. Referencia Wonder Guard se resuelve mediante metadata de perfil canónico, sin ID numérico paralelo.
 2. executeCaptureAttempt también permite Master Ball frente a shields ordinarios. Regresiones 256–260 escritas para bloqueo, Master, Wonder Guard, último segmento y captura garantizada. No ejecutadas.
 3. El jefe final conserva bloqueo temporal porque falta perfil/dex completo que permite su captura upstream; no se declara esa regla terminada. Shields aún deben avanzar mediante daño del runtime y callbacks completos.
+
+## Contexto de jefe conectado al runtime
+
+1. AbilityMovegenProfile conserva bossDamageCallbacksResolved generado desde raw upstream y provenance. Solo attrs inspeccionados sin callbacks de daño (Pressure y NonSuperEffectiveImmunity, o declaración vacía) se aceptan; atributos/conditions desconocidos/unimplemented quedan sin capacidad.
+2. FirstRunRuntime pasa bossState y política al comando estándar de daño para ataques plain/recoil/drain. Las rutas de recoil/drain publican estado de segmentos después de resolver su efecto; fallo se rechaza sin publicación parcial del comando completo.
+3. Regresión 261–263 comprueba Pressure soportada y Sturdy bloqueada por callbacks aún no portados. Escrita, pendiente de ejecución.
+4. Jefes aún incompletos: daño residual, callbacks adicionales, forma Eternamax, asignación de segmentos en dobles y guardado. No se declara Classic completo.

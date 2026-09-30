@@ -1497,13 +1497,26 @@ bool FirstRunRuntime::executeActiveBattleMove(uint8_t userIndex, uint8_t targetI
     if (!resolveActiveMoveWeather(user, opponent, weather) ||
         !composePokemonAlwaysHitPolicy(activeAbilities, 2, hit, move->id, &weather) ||
         !resolveActiveMoveCritical(user, opponent, critical)) return false;
+    ResolvedPokemon* resolvedActors[] = {&m_context.player, &m_context.enemy, &m_context.secondEnemy};
+    auto* targetBossState = &resolvedActors[targetIndex]->bossState;
+    auto nextBossState = *targetBossState;
+    const bool targetIsBoss = nextBossState.segmentCount != 0;
+    PokemonBossDamagePolicy bossPolicy{};
+    const auto* bossAbility = PokerogueContent::findAbilityMovegenProfile(opponent.abilityId);
+    bossPolicy.resolved = bossPolicy.damageCallbacksResolved =
+        bossAbility && bossAbility->bossDamageCallbacksResolved;
+    if (targetIsBoss && !bossPolicy.resolved) {
+        m_battleFeedback = "Boss damage callbacks require dispatcher";
+        return false;
+    }
     if (damageRecoilProfile(move->id)) {
         auto nextUser = user;
         auto nextOpponent = opponent;
         auto nextRng = rng;
         PokemonMoveActionResult attack{};
         if (useStandardPokemonMove(nextUser, nextOpponent, moveSlot, false, nextRng,
-            attack, &weather, &critical, &hit, &pp) != PokemonMoveActionStatus::Ok) return false;
+            attack, &weather, &critical, &hit, &pp, targetIsBoss ? &nextBossState : nullptr,
+            targetIsBoss ? &bossPolicy : nullptr) != PokemonMoveActionStatus::Ok) return false;
         const auto policy = canonicalFreshActorRecoilPolicy(user.abilityId);
         PokemonRecoilEvent recoil{};
         if (applyPokemonRecoil(nextUser, move->id, attack.damageApplied,
@@ -1512,6 +1525,7 @@ bool FirstRunRuntime::executeActiveBattleMove(uint8_t userIndex, uint8_t targetI
         user = nextUser;
         opponent = nextOpponent;
         rng = nextRng;
+        if (targetIsBoss) *targetBossState = nextBossState;
         m_battleFeedback = recoil.damage ? "Attack caused recoil" :
             attack.weatherCancelled ? "Move blocked by weather" :
             attack.damageRoll.hit ? "Attack hit" : "Attack missed";
@@ -1524,7 +1538,8 @@ bool FirstRunRuntime::executeActiveBattleMove(uint8_t userIndex, uint8_t targetI
         auto nextRng = rng;
         PokemonMoveActionResult attack{};
         if (useStandardPokemonMove(nextUser, nextOpponent, moveSlot, false, nextRng,
-            attack, &weather, &critical, &hit, &pp) != PokemonMoveActionStatus::Ok) return false;
+            attack, &weather, &critical, &hit, &pp, targetIsBoss ? &nextBossState : nullptr,
+            targetIsBoss ? &bossPolicy : nullptr) != PokemonMoveActionStatus::Ok) return false;
         PokemonDrainPolicy policy{};
         policy.resolved = true;
         PokemonDrainEvent event{};
@@ -1534,6 +1549,7 @@ bool FirstRunRuntime::executeActiveBattleMove(uint8_t userIndex, uint8_t targetI
         user = nextUser;
         opponent = nextOpponent;
         rng = nextRng;
+        if (targetIsBoss) *targetBossState = nextBossState;
         m_battleFeedback = event.healed ? "Attack drained HP" :
             attack.weatherCancelled ? "Move blocked by weather" :
             attack.damageRoll.hit ? "Attack hit" : "Attack missed";
@@ -1541,7 +1557,9 @@ bool FirstRunRuntime::executeActiveBattleMove(uint8_t userIndex, uint8_t targetI
     }
     PokemonMoveActionResult result{};
     if (useStandardPokemonMove(user, opponent, moveSlot, false, rng, result,
-            &weather, &critical, &hit, &pp) != PokemonMoveActionStatus::Ok) return false;
+            &weather, &critical, &hit, &pp, targetIsBoss ? &nextBossState : nullptr,
+            targetIsBoss ? &bossPolicy : nullptr) != PokemonMoveActionStatus::Ok) return false;
+    if (targetIsBoss) *targetBossState = nextBossState;
     const bool enemyActs = userIndex != 0;
     m_battleFeedback = result.weatherCancelled
         ? (enemyActs ? "Enemy move blocked by weather" : "Your move blocked by weather")
