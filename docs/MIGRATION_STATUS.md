@@ -411,3 +411,9 @@
 1. learnPokemonMoveAtSlot en el módulo existente porta LearnMovePhase.learnMove/Pokemon.setMove: slot seleccionado se reemplaza con PP completos, otros slots conservan PP. Duplicados, slot inválido y MoveIsUnimplemented se rechazan sin mutar; aprender en huecos reutiliza la operación.
 2. Regresiones 303–306 escritas para reemplazo, duplicado, slot inválido y movimiento upstream no implementado. No ejecutadas.
 3. Falta cola de decisiones por nivel y conexión UI de aceptar/rechazar/reemplazar; esta operación no declara ese flujo completo.
+
+## Cola interactiva de aprendizaje conectada
+
+1. Cuando se llena el moveset, movimientos nuevos elegibles se conservan en cola acotada de 128 IDs, deduplicada y ordenada por nivel/fuente. Overflow hace fallar el comando; no se descarta silenciosamente. Regresiones 307–310 escritas para catálogo real y aislamiento de moves conocidos/no implementados. No ejecutadas.
+2. Runtime pausa rewards/reemplazo de rival tras EXP: UP/DOWN selecciona cualquier slot, A reemplaza, B rechaza; bridge de acciones 0–3 acepta selección directa. Presentación muestra nombre localizado del movimiento propuesto. Siguiente decisión continúa hasta vaciar la cola.
+3. Save rechaza decisiones pendientes porque no están serializadas. Evolución todavía ocurre antes de resolver la cola y faltan confirmación de rechazo/configuración upstream y triggers form-change por move aprendido. No se declara secuencia de fases completa.

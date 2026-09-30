@@ -99,6 +99,9 @@ public:
     bool selectRewardChoice(int direction);
     bool claimRewardChoice();
     bool selectBattleMove(int direction);
+    bool moveLearningPending() const { return m_pendingLevelMoves.count != 0; }
+    uint16_t pendingLearnMoveId() const { return m_pendingLevelMoves.count ? m_pendingLevelMoves.moveIds[0] : 0; }
+    bool resolvePendingLearnMove(int selectedSlot); // -1 rejects; 0..3 replaces.
     bool advanceBattleTurn();
     bool skipVictoryReward();
     uint8_t selectedBattleMove() const { return m_selectedBattleMove; }
@@ -188,6 +191,7 @@ private:
     bool m_battleFinished = false;
     bool m_playerWon = false;
     bool m_experienceGranted = false;
+    PokemonPendingLevelMoves m_pendingLevelMoves{};
     ClassicVictoryPlan m_victoryPlan{};
     std::array<ModifierRewardRoll, 3> m_rewardChoices{};
     uint8_t m_rewardChoiceCount = 0;

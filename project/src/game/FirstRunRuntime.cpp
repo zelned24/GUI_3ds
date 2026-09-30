@@ -136,7 +136,7 @@ void FirstRunRuntime::captureNativeRunSave(NativeRunSave& output) const {
         output = {};
         return;
     }
-    if (m_runStarted && !m_checkpointAvailable) {
+    if (moveLearningPending() || (m_runStarted && !m_checkpointAvailable)) {
         output = {};
         return;
     }
@@ -721,6 +721,7 @@ bool FirstRunRuntime::claimRewardChoice() {
 }
 
 bool FirstRunRuntime::claimRewardChoiceInPlace() {
+    if (moveLearningPending()) return false;
     if (!m_rewardsPending || m_selectedRewardChoice >= m_rewardChoiceCount) return false;
     const auto& choice = m_rewardChoices[m_selectedRewardChoice];
     if (choice.poolEntry && choice.poolEntry->itemId) {
@@ -809,7 +810,34 @@ bool FirstRunRuntime::claimRewardChoiceInPlace() {
     return m_encounterResolved;
 }
 
+bool FirstRunRuntime::resolvePendingLearnMove(int selectedSlot) {
+    if (!moveLearningPending() || selectedSlot < -1 || selectedSlot > 3) return false;
+    if (selectedSlot >= 0) {
+        auto next = m_context.player.battleState;
+        const auto result = learnPokemonMoveAtSlot(next, pendingLearnMoveId(), static_cast<uint8_t>(selectedSlot));
+        if (result != PokemonLearnMoveResult::Learned && result != PokemonLearnMoveResult::AlreadyKnown) return false;
+        m_context.player.battleState = next;
+        m_context.player.moveCount = next.moveCount;
+        for (uint8_t slot = 0; slot < next.moveCount; ++slot) m_context.player.moveIds[slot] = next.moves[slot].moveId;
+        m_context.playerParty[m_context.activePlayerPartyIndex] = m_context.player;
+    }
+    for (uint16_t i = 1; i < m_pendingLevelMoves.count; ++i)
+        m_pendingLevelMoves.moveIds[i - 1] = m_pendingLevelMoves.moveIds[i];
+    m_pendingLevelMoves.moveIds[--m_pendingLevelMoves.count] = 0;
+    m_battleFeedback = moveLearningPending() ? "Choose move to replace: UP/DOWN, A learn, B reject"
+        : selectedSlot < 0 ? "Move not learned" : "Move learned";
+    buildScene();
+    return true;
+}
+
 bool FirstRunRuntime::selectBattleMove(int direction) {
+    if (moveLearningPending()) {
+        if (!direction) return false;
+        m_selectedBattleMove = static_cast<uint8_t>((m_selectedBattleMove + (direction > 0 ? 1 : 3)) % 4);
+        m_battleFeedback = "Choose move to replace: UP/DOWN, A learn, B reject";
+        buildScene();
+        return true;
+    }
     if (m_rewardsPending) {
         return selectRewardChoice(direction);
     }
@@ -917,7 +945,8 @@ bool FirstRunRuntime::grantVictoryExperience() {
         // Learn newly available level moves if there is space in the moveset (< 4)
         std::string moveFeedback;
         learnNewLevelMoves(next.speciesDex, oldLevel, progress.level, next,
-                           m_context.player.moveIds, m_context.player.moveCount, &moveFeedback);
+                           m_context.player.moveIds, m_context.player.moveCount, &moveFeedback, &m_pendingLevelMoves);
+        if (m_pendingLevelMoves.overflow) return false;
 
         // Check for level-based evolution
         const auto* evo = checkSpeciesLevelEvolution(m_context.player.speciesId, oldLevel, progress.level);
@@ -1050,6 +1079,7 @@ bool FirstRunRuntime::advanceBattleTurn() {
 }
 
 bool FirstRunRuntime::advanceBattleTurnInPlace() {
+    if (moveLearningPending()) return resolvePendingLearnMove(m_selectedBattleMove);
     if (m_rewardsPending) {
         return claimRewardChoice();
     }
@@ -1058,6 +1088,11 @@ bool FirstRunRuntime::advanceBattleTurnInPlace() {
             m_battleFeedback = "Victory experience could not be resolved";
             buildScene();
             return false;
+        }
+        if (moveLearningPending()) {
+            m_battleFeedback = "Choose move to replace: UP/DOWN, A learn, B reject";
+            buildScene();
+            return true;
         }
         if (m_trainerBattle && !advanceTrainerAfterDefeat()) {
             m_battleFeedback = "Trainer replacement could not be resolved";
@@ -1777,6 +1812,7 @@ bool FirstRunRuntime::skipVictoryReward() {
 }
 
 bool FirstRunRuntime::skipVictoryRewardInPlace() {
+    if (moveLearningPending()) return resolvePendingLearnMove(-1);
     if (!m_battleFinished || !m_playerWon || !m_experienceGranted ||
         !enemyPartyDefeated() || !m_victoryPlan.contains(ClassicVictoryStep::SelectModifier) ||
         !m_victoryPlan.nextWave || m_victoryPlan.nextWave > PokerogueContent::kClassicFinalWave)
@@ -1823,6 +1859,7 @@ bool FirstRunRuntime::advanceTrainerAfterDefeat() {
     m_battleFinished = false;
     m_playerWon = false;
     m_experienceGranted = false;
+    m_pendingLevelMoves = {};
     m_victoryPlan = {};
     m_checkpointAvailable = true;
     refreshTrainerBaselineMatchups();
@@ -1893,6 +1930,7 @@ bool FirstRunRuntime::throwPokeball(PokeballType ball) {
 }
 
 bool FirstRunRuntime::throwPokeballInPlace(PokeballType ball) {
+    if (moveLearningPending()) return false;
     if (m_battleFinished) {
         m_battleFeedback = "Battle is already finished";
         buildScene();
@@ -2035,6 +2073,7 @@ bool FirstRunRuntime::switchPlayerPokemon(uint8_t targetIndex) {
 }
 
 bool FirstRunRuntime::switchPlayerPokemonInPlace(uint8_t targetIndex) {
+    if (moveLearningPending()) return false;
     if (m_battleFinished) return false;
     if (targetIndex >= m_context.playerPartyCount || targetIndex == m_context.activePlayerPartyIndex) {
         m_battleFeedback = "Invalid party member selected";
@@ -2124,6 +2163,7 @@ void FirstRunRuntime::resolve(bool carryPlayer) {
     m_battleFinished = false;
     m_playerWon = false;
     m_experienceGranted = false;
+    m_pendingLevelMoves = {};
     m_victoryPlan = {};
     m_rewardChoices = {};
     m_rewardChoiceCount = 0;
@@ -2902,6 +2942,14 @@ void FirstRunRuntime::buildScene() {
         }
     } else {
         m_text[8] = "Starter moves unavailable: canonical data error";
+    }
+    if (moveLearningPending()) {
+        const auto* proposed = PokerogueContent::findMoveById(pendingLearnMoveId());
+        if (proposed) {
+            const std::string key = std::string("move:") + proposed->key;
+            m_text[6] = std::string("Learn ") + locale(key.c_str(), proposed->name) + "?";
+            m_text[5] = "UP/DOWN slot - A replace - B reject";
+        }
     }
     if (!m_battleFeedback.empty()) m_text[7] = m_battleFeedback;
     m_text[12] = std::string("Pinned data: ") + PokerogueContent::kPokerogueRevision;

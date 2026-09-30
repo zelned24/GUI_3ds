@@ -67,12 +67,18 @@ inline PokemonLearnMoveResult learnPokemonMoveAtSlot(PokemonBattleState& state,
     return PokemonLearnMoveResult::Learned;
 }
 
+struct PokemonPendingLevelMoves {
+    uint16_t moveIds[128]{};
+    uint16_t count = 0;
+    bool overflow = false;
+};
+
 // Checks learnset moves for a species between oldLevel and newLevel, learning moves
 // into unoccupied move slots (< 4). Returns count of moves newly learned.
 inline uint8_t learnNewLevelMoves(
     uint16_t speciesDex, uint16_t oldLevel, uint16_t newLevel,
     PokemonBattleState& battleState, uint16_t* moveIdsOutput, uint8_t& moveCountOutput,
-    std::string* feedback = nullptr) {
+    std::string* feedback = nullptr, PokemonPendingLevelMoves* pending = nullptr) {
     const auto* species = PokerogueContent::findSpeciesByDex(speciesDex);
     if (!species || oldLevel >= newLevel) return 0;
 
@@ -116,6 +122,16 @@ inline uint8_t learnNewLevelMoves(
                     }
                 }
                 if (alreadyKnown) continue;
+                if (battleState.moveCount == 4 && pending) {
+                    const auto* candidate = PokerogueContent::findMoveById(lm.moveId);
+                    if (!candidate || (candidate->upstreamFlags & PokerogueContent::MoveIsUnimplemented)) continue;
+                    bool queued = false;
+                    for (uint16_t q = 0; q < pending->count; ++q) queued |= pending->moveIds[q] == lm.moveId;
+                    if (!queued) {
+                        if (pending->count == 128) pending->overflow = true;
+                        else pending->moveIds[pending->count++] = lm.moveId;
+                    }
+                }
 
                 // Learn move if slot available (< 4)
                 if (battleState.moveCount < 4) {

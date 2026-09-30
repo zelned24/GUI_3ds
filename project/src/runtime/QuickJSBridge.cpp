@@ -406,6 +406,7 @@ bool QuickJSBridge::processPendingAction() {
             ? "Reward skipped; no item granted" : "Reward transition blocked");
     }
     else if (action >= 0 && action <= 3) {
+        if (m_game->moveLearningPending()) return m_game->resolvePendingLearnMove(action);
         if (!m_game->battleFinished()) {
             const auto count = m_game->presentation().player.battleState.moveCount;
             if (action >= count) return false;
