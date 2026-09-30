@@ -142,6 +142,9 @@ bool FirstRunRuntime::restoreNativeRunSave(const NativeRunSave& save) {
     if (validateNativeRunSave(save, PokerogueContent::kContentHash) != NativeSaveResult::Ok ||
         save.stage < NativeSaveStage::RunSetup ||
         save.stage > NativeSaveStage::ExperienceGranted) return false;
+    // Party codec is available, but trainer-turn restoration is not connected
+    // yet. Reject explicitly before mutating the live run.
+    if (save.trainerPartyCount) return false;
     if (!restoreSetup(save.seed, save.starterDex)) return false;
     // A skipped reward adds no modifier or party member. Replay each earlier
     // supported wild victory from its pinned seed to reconstruct level/EXP;

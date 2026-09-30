@@ -82,5 +82,63 @@ extern "C" int runNativeSaveChecks() {
     if (imported.load(PokerogueContent::kContentHash, restored) != NativeSaveResult::Ok || restored.seed != 456) return 9;
     char wrongHash[65]; std::memcpy(wrongHash, PokerogueContent::kContentHash, 65); wrongHash[0] = wrongHash[0] == '0' ? '1' : '0';
     if (imported.load(wrongHash, restored) != NativeSaveResult::ContentMismatch) return 10;
+    NativeRunSave trainerSave = original;
+    trainerSave.wave = 5;
+    trainerSave.stage = NativeSaveStage::BattleActive;
+    trainerSave.battleTurn = 1;
+    trainerSave.playerHp = 20;
+    trainerSave.encounterDex = 19;
+    trainerSave.enemyHp = 12;
+    trainerSave.playerMoveCount = trainerSave.enemyMoveCount = 1;
+    trainerSave.playerMoveIds[0] = trainerSave.enemyMoveIds[0] = 33;
+    trainerSave.playerPp[0] = trainerSave.enemyPp[0] = 25;
+    trainerSave.trainerTypeId = 63;
+    trainerSave.trainerPartyCount = 2;
+    trainerSave.activeTrainerMember = 0;
+    trainerSave.trainerParty[0] = {19, 12, 1, {33, 0, 0, 0}, {25, 0, 0, 0}};
+    trainerSave.trainerParty[1] = {504, 9, 1, {33, 0, 0, 0}, {17, 0, 0, 0}};
+    char partyBytes[kNativeSaveMaxBytes]{};
+    size_t partySize = 0;
+    if (encodeNativeRunSave(trainerSave, partyBytes, sizeof(partyBytes), partySize) != NativeSaveResult::Ok ||
+        decodeNativeRunSave(partyBytes, partySize, PokerogueContent::kContentHash, restored) != NativeSaveResult::Ok ||
+        restored.trainerPartyCount != 2 || restored.trainerParty[1].hp != 9 ||
+        restored.trainerParty[1].pp[0] != 17 || restored.activeTrainerMember != 0) return 13;
+    trainerSave.trainerPartyCount = 6;
+    for (uint8_t member = 2; member < 6; ++member)
+        trainerSave.trainerParty[member] = trainerSave.trainerParty[1];
+    if (encodeNativeRunSave(trainerSave, partyBytes, sizeof(partyBytes), partySize) != NativeSaveResult::Ok ||
+        decodeNativeRunSave(partyBytes, partySize, PokerogueContent::kContentHash, restored) != NativeSaveResult::Ok ||
+        restored.trainerPartyCount != 6 || restored.trainerParty[5].pp[0] != 17) return 21;
+    trainerSave.trainerPartyCount = 2;
+    for (uint8_t member = 2; member < 6; ++member) trainerSave.trainerParty[member] = {};
+    trainerSave.activeTrainerMember = 2;
+    if (validateNativeRunSave(trainerSave, PokerogueContent::kContentHash) != NativeSaveResult::InvalidRecord) return 14;
+    trainerSave.activeTrainerMember = 0;
+    trainerSave.trainerParty[0].hp = 11;
+    if (validateNativeRunSave(trainerSave, PokerogueContent::kContentHash) != NativeSaveResult::InvalidRecord) return 15;
+    trainerSave.trainerParty[0].hp = trainerSave.enemyHp = 0;
+    trainerSave.stage = NativeSaveStage::BattleWon;
+    if (validateNativeRunSave(trainerSave, PokerogueContent::kContentHash) != NativeSaveResult::InvalidRecord) return 16;
+    trainerSave.trainerParty[1].hp = 0;
+    if (validateNativeRunSave(trainerSave, PokerogueContent::kContentHash) != NativeSaveResult::Ok) return 17;
+    if (encodeNativeRunSave(original, partyBytes, sizeof(partyBytes), partySize) != NativeSaveResult::Ok) return 18;
+    size_t legacyBodySize = 0;
+    for (size_t n = 0; n < partySize; ++n) {
+        if (n + 12 <= partySize && std::memcmp(partyBytes + n, "trainerType=", 12) == 0) {
+            legacyBodySize = n; break;
+        }
+        if (n + 16 <= partySize && std::memcmp(partyBytes + n, "saveVersion=0004", 16) == 0)
+            partyBytes[n + 15] = '3';
+        if (n + 19 <= partySize && std::memcmp(partyBytes + n, "runtimeVersion=0004", 19) == 0)
+            partyBytes[n + 18] = '3';
+    }
+    if (!legacyBodySize) return 19;
+    IntegritySha256::hashHex(partyBytes, legacyBodySize, digest);
+    std::memcpy(partyBytes + legacyBodySize, "sha256=", 7);
+    std::memcpy(partyBytes + legacyBodySize + 7, digest, 64);
+    partyBytes[legacyBodySize + 71] = '\n';
+    if (decodeNativeRunSave(partyBytes, legacyBodySize + 72, PokerogueContent::kContentHash, restored) != NativeSaveResult::Ok ||
+        restored.saveVersion != 4 || restored.runtimeVersion != 4 ||
+        restored.seed != original.seed || restored.trainerPartyCount || restored.activeTrainerMember != 0xFF) return 20;
     return 0;
 }

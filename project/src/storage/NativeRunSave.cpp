@@ -6,7 +6,7 @@
 namespace Pokerogue3DS {
 namespace {
 // Stable envelope marker; saveVersion carries the independently migrated
-// payload schema (currently version 3).
+// payload schema (currently version 4).
 constexpr char kMagic[] = "POKEROGUE-3DS-SAVE 1\n";
 constexpr size_t kDigestLineLength = 72;
 
@@ -238,6 +238,46 @@ NativeSaveResult validateNativeRunSave(const NativeRunSave& save, const char* ex
                 static_cast<uint16_t>(save.playerLevel + 1), nextThreshold) != PokemonExperienceResult::Ok
             || save.playerExperience >= nextThreshold) return NativeSaveResult::InvalidRecord;
     }
+    if (save.trainerPartyCount > 6) return NativeSaveResult::InvalidRecord;
+    if (!save.trainerPartyCount) {
+        if (save.trainerTypeId || save.activeTrainerMember != 0xFF)
+            return NativeSaveResult::InvalidRecord;
+    } else {
+        if (save.stage == NativeSaveStage::RunSetup ||
+            save.activeTrainerMember >= save.trainerPartyCount ||
+            !PokerogueContent::findTrainerType(save.trainerTypeId))
+            return NativeSaveResult::InvalidRecord;
+        const auto& active = save.trainerParty[save.activeTrainerMember];
+        if (active.speciesDex != save.encounterDex || active.hp != save.enemyHp ||
+            active.moveCount != save.enemyMoveCount) return NativeSaveResult::InvalidRecord;
+        for (uint8_t i = 0; i < 4; ++i)
+            if (active.moveIds[i] != save.enemyMoveIds[i] || active.pp[i] != save.enemyPp[i])
+                return NativeSaveResult::InvalidRecord;
+    }
+    bool hasLivingTrainerMember = false;
+    for (uint8_t member = 0; member < 6; ++member) {
+        const auto& record = save.trainerParty[member];
+        if (member >= save.trainerPartyCount) {
+            if (record.speciesDex || record.hp || record.moveCount)
+                return NativeSaveResult::InvalidRecord;
+        } else {
+            if (!PokerogueContent::findSpeciesByDex(record.speciesDex) ||
+                !record.moveCount || record.moveCount > 4) return NativeSaveResult::InvalidRecord;
+            hasLivingTrainerMember |= record.hp != 0;
+        }
+        for (uint8_t slot = 0; slot < 4; ++slot) {
+            if (member >= save.trainerPartyCount || slot >= record.moveCount) {
+                if (record.moveIds[slot] || record.pp[slot]) return NativeSaveResult::InvalidRecord;
+            } else {
+                const auto* move = PokerogueContent::findMoveById(record.moveIds[slot]);
+                if (!move || move->pp < 1 || record.pp[slot] > move->pp)
+                    return NativeSaveResult::InvalidRecord;
+            }
+        }
+    }
+    if (save.trainerPartyCount &&
+        ((save.stage == NativeSaveStage::BattleWon || save.stage == NativeSaveStage::ExperienceGranted)
+            ? hasLivingTrainerMember : !hasLivingTrainerMember)) return NativeSaveResult::InvalidRecord;
     if (save.stage == NativeSaveStage::RunSetup) {
         if (save.wave != 1 || !equal(save.biomeId, PokerogueContent::kStartingBiomeId)
             || save.playerLevel != 5 || save.playerExperience != initialExperience)
@@ -315,6 +355,19 @@ NativeSaveResult encodeNativeRunSave(const NativeRunSave& save, char* output, si
         writer.text("enemyMove="); writer.hex(save.enemyMoveIds[i], 4);
         writer.text("enemyPp="); writer.hex(save.enemyPp[i], 2);
     }
+    writer.text("trainerType="); writer.hex(save.trainerTypeId, 4);
+    writer.text("trainerPartyCount="); writer.hex(save.trainerPartyCount, 2);
+    writer.text("activeTrainerMember="); writer.hex(save.activeTrainerMember, 2);
+    for (uint8_t member = 0; member < save.trainerPartyCount; ++member) {
+        const auto& record = save.trainerParty[member];
+        writer.text("memberSpecies="); writer.hex(record.speciesDex, 4);
+        writer.text("memberHp="); writer.hex(record.hp, 4);
+        writer.text("memberMoveCount="); writer.hex(record.moveCount, 2);
+        for (uint8_t slot = 0; slot < 4; ++slot) {
+            writer.text("memberMove="); writer.hex(record.moveIds[slot], 4);
+            writer.text("memberPp="); writer.hex(record.pp[slot], 2);
+        }
+    }
     if (!writer.valid) return NativeSaveResult::TooLarge;
     char hash[65];
     IntegritySha256::hashHex(output, writer.position, hash);
@@ -331,11 +384,14 @@ NativeSaveResult decodeNativeRunSave(const char* bytes, size_t length, const cha
     auto status = inspectEnvelope(bytes, length, value, payloadStart);
     if (status != NativeSaveResult::Ok) return status;
     if (value.saveVersion > kNativeSaveVersion) return NativeSaveResult::UnsupportedVersion;
-    if (value.saveVersion != 1 && value.saveVersion != 2 &&
+    if (value.saveVersion != 1 && value.saveVersion != 2 && value.saveVersion != 3 &&
         value.saveVersion != kNativeSaveVersion) return NativeSaveResult::UnsupportedVersion;
     const bool legacySetup = value.saveVersion == 1 && value.runtimeVersion == 1;
     const bool legacyBattle = value.saveVersion == 2 && value.runtimeVersion == 2;
-    if (value.runtimeVersion != kNativeSaveRuntimeVersion && !legacySetup && !legacyBattle)
+    const bool legacyProgress = value.saveVersion == 3 && value.runtimeVersion == 3;
+    const bool currentPayload = value.saveVersion == kNativeSaveVersion &&
+        value.runtimeVersion == kNativeSaveRuntimeVersion;
+    if (!currentPayload && !legacySetup && !legacyBattle && !legacyProgress)
         return NativeSaveResult::IncompatibleRuntime;
     if (!isHash(expectedContentHash)) return NativeSaveResult::InvalidFormat;
     if (!equal(value.contentHash, expectedContentHash)) return NativeSaveResult::ContentMismatch;
@@ -363,7 +419,7 @@ NativeSaveResult decodeNativeRunSave(const char* bytes, size_t length, const cha
         if (value.stage != NativeSaveStage::RunSetup) return NativeSaveResult::UnsupportedStage;
         if (reader.position != reader.end) return NativeSaveResult::InvalidFormat;
         // Version-one records represented setup only. Upgrade in memory; the
-        // next journal write emits the current version-three format.
+        // next journal write emits the current version-four format.
         value.saveVersion = kNativeSaveVersion;
         value.runtimeVersion = kNativeSaveRuntimeVersion;
     } else {
@@ -390,8 +446,32 @@ NativeSaveResult decodeNativeRunSave(const char* bytes, size_t length, const cha
             if (!reader.literal("enemyPp=") || !reader.hex(2, parsed)) return NativeSaveResult::InvalidFormat;
             value.enemyPp[i] = static_cast<uint8_t>(parsed);
         }
+        if (value.saveVersion >= 4) {
+            if (!reader.literal("trainerType=") || !reader.hex(4, parsed)) return NativeSaveResult::InvalidFormat;
+            value.trainerTypeId = static_cast<uint16_t>(parsed);
+            if (!reader.literal("trainerPartyCount=") || !reader.hex(2, parsed)) return NativeSaveResult::InvalidFormat;
+            value.trainerPartyCount = static_cast<uint8_t>(parsed);
+            if (value.trainerPartyCount > 6) return NativeSaveResult::InvalidRecord;
+            if (!reader.literal("activeTrainerMember=") || !reader.hex(2, parsed)) return NativeSaveResult::InvalidFormat;
+            value.activeTrainerMember = static_cast<uint8_t>(parsed);
+            for (uint8_t member = 0; member < value.trainerPartyCount; ++member) {
+                auto& record = value.trainerParty[member];
+                if (!reader.literal("memberSpecies=") || !reader.hex(4, parsed)) return NativeSaveResult::InvalidFormat;
+                record.speciesDex = static_cast<uint16_t>(parsed);
+                if (!reader.literal("memberHp=") || !reader.hex(4, parsed)) return NativeSaveResult::InvalidFormat;
+                record.hp = static_cast<uint16_t>(parsed);
+                if (!reader.literal("memberMoveCount=") || !reader.hex(2, parsed)) return NativeSaveResult::InvalidFormat;
+                record.moveCount = static_cast<uint8_t>(parsed);
+                for (uint8_t slot = 0; slot < 4; ++slot) {
+                    if (!reader.literal("memberMove=") || !reader.hex(4, parsed)) return NativeSaveResult::InvalidFormat;
+                    record.moveIds[slot] = static_cast<uint16_t>(parsed);
+                    if (!reader.literal("memberPp=") || !reader.hex(2, parsed)) return NativeSaveResult::InvalidFormat;
+                    record.pp[slot] = static_cast<uint8_t>(parsed);
+                }
+            }
+        }
         if (reader.position != reader.end) return NativeSaveResult::InvalidFormat;
-        if (legacyBattle) {
+        if (legacyBattle || legacyProgress) {
             value.saveVersion = kNativeSaveVersion;
             value.runtimeVersion = kNativeSaveRuntimeVersion;
         }

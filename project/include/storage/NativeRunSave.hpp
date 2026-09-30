@@ -5,9 +5,9 @@
 
 namespace Pokerogue3DS {
 
-inline constexpr uint16_t kNativeSaveVersion = 3;
-inline constexpr uint16_t kNativeSaveRuntimeVersion = 3;
-inline constexpr size_t kNativeSaveMaxBytes = 1024;
+inline constexpr uint16_t kNativeSaveVersion = 4;
+inline constexpr uint16_t kNativeSaveRuntimeVersion = 4;
+inline constexpr size_t kNativeSaveMaxBytes = 2048;
 
 enum class NativeSaveStage : uint16_t {
     RunSetup = 1,
@@ -15,6 +15,16 @@ enum class NativeSaveStage : uint16_t {
     BattleWon = 3,
     BattleLost = 4,
     ExperienceGranted = 5,
+};
+
+// Identity, form and IVs are reconstructed from the pinned seed. Mutable
+// per-member state must survive switches and cannot be inferred from that seed.
+struct NativeTrainerMemberSave {
+    uint16_t speciesDex = 0;
+    uint16_t hp = 0;
+    uint8_t moveCount = 0;
+    uint16_t moveIds[4]{};
+    uint8_t pp[4]{};
 };
 
 struct NativeRunSave {
@@ -38,6 +48,10 @@ struct NativeRunSave {
     uint16_t enemyMoveIds[4]{};
     uint8_t playerPp[4]{};
     uint8_t enemyPp[4]{};
+    uint16_t trainerTypeId = 0;
+    uint8_t trainerPartyCount = 0;
+    uint8_t activeTrainerMember = 0xFF;
+    NativeTrainerMemberSave trainerParty[6]{};
     char modeId[32]{};
     char biomeId[48]{};
 };
