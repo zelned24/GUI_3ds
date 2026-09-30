@@ -121,6 +121,7 @@ private:
     bool m_secondEncounterResolved = false;
     uint8_t m_selectedBattleMove = 0;
     uint32_t m_turn = 1;
+    uint32_t m_enemySwitchCounter = 0;
     uint32_t m_playerExperience = 0;
     bool m_battleFinished = false;
     bool m_playerWon = false;

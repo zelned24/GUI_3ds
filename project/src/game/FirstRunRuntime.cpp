@@ -140,6 +140,7 @@ void FirstRunRuntime::captureNativeRunSave(NativeRunSave& output) const {
                 m_context.activeTrainerPartyIndex >= m_context.trainerPartyCount) {
                 output = {}; return;
             }
+            value.enemySwitchCounter = m_enemySwitchCounter;
             value.trainerTypeId = m_context.trainerTypeId;
             value.trainerPartyCount = m_context.trainerPartyCount;
             value.activeTrainerMember = m_context.activeTrainerPartyIndex;
@@ -283,6 +284,7 @@ bool FirstRunRuntime::restoreNativeRunSaveInPlace(const NativeRunSave& save) {
         m_context.trainerParty[save.activeTrainerMember] = m_context.enemy;
     }
     m_turn = save.battleTurn;
+    m_enemySwitchCounter = save.enemySwitchCounter;
     if (save.trainerPartyCount) refreshTrainerBaselineMatchups();
     m_runStarted = true;
     m_checkpointAvailable = true;
@@ -717,6 +719,7 @@ void FirstRunRuntime::refreshTrainerBaselineMatchups() {
 void FirstRunRuntime::resolve(bool carryPlayer) {
     m_selectedBattleMove = 0;
     m_turn = 1;
+    m_enemySwitchCounter = 0;
     m_battleFinished = false;
     m_playerWon = false;
     m_experienceGranted = false;

@@ -6,7 +6,7 @@
 namespace Pokerogue3DS {
 namespace {
 // Stable envelope marker; saveVersion carries the independently migrated
-// payload schema (currently version 4).
+// payload schema (currently version 5).
 constexpr char kMagic[] = "POKEROGUE-3DS-SAVE 1\n";
 constexpr size_t kDigestLineLength = 72;
 
@@ -240,7 +240,7 @@ NativeSaveResult validateNativeRunSave(const NativeRunSave& save, const char* ex
     }
     if (save.trainerPartyCount > 6) return NativeSaveResult::InvalidRecord;
     if (!save.trainerPartyCount) {
-        if (save.trainerTypeId || save.activeTrainerMember != 0xFF)
+        if (save.enemySwitchCounter || save.trainerTypeId || save.activeTrainerMember != 0xFF)
             return NativeSaveResult::InvalidRecord;
     } else {
         if (save.stage == NativeSaveStage::RunSetup ||
@@ -355,6 +355,7 @@ NativeSaveResult encodeNativeRunSave(const NativeRunSave& save, char* output, si
         writer.text("enemyMove="); writer.hex(save.enemyMoveIds[i], 4);
         writer.text("enemyPp="); writer.hex(save.enemyPp[i], 2);
     }
+    writer.text("enemySwitchCounter="); writer.hex(save.enemySwitchCounter, 8);
     writer.text("trainerType="); writer.hex(save.trainerTypeId, 4);
     writer.text("trainerPartyCount="); writer.hex(save.trainerPartyCount, 2);
     writer.text("activeTrainerMember="); writer.hex(save.activeTrainerMember, 2);
@@ -384,14 +385,15 @@ NativeSaveResult decodeNativeRunSave(const char* bytes, size_t length, const cha
     auto status = inspectEnvelope(bytes, length, value, payloadStart);
     if (status != NativeSaveResult::Ok) return status;
     if (value.saveVersion > kNativeSaveVersion) return NativeSaveResult::UnsupportedVersion;
-    if (value.saveVersion != 1 && value.saveVersion != 2 && value.saveVersion != 3 &&
+    if (value.saveVersion != 1 && value.saveVersion != 2 && value.saveVersion != 3 && value.saveVersion != 4 &&
         value.saveVersion != kNativeSaveVersion) return NativeSaveResult::UnsupportedVersion;
     const bool legacySetup = value.saveVersion == 1 && value.runtimeVersion == 1;
     const bool legacyBattle = value.saveVersion == 2 && value.runtimeVersion == 2;
     const bool legacyProgress = value.saveVersion == 3 && value.runtimeVersion == 3;
+    const bool legacyTrainer = value.saveVersion == 4 && value.runtimeVersion == 4;
     const bool currentPayload = value.saveVersion == kNativeSaveVersion &&
         value.runtimeVersion == kNativeSaveRuntimeVersion;
-    if (!currentPayload && !legacySetup && !legacyBattle && !legacyProgress)
+    if (!currentPayload && !legacySetup && !legacyBattle && !legacyProgress && !legacyTrainer)
         return NativeSaveResult::IncompatibleRuntime;
     if (!isHash(expectedContentHash)) return NativeSaveResult::InvalidFormat;
     if (!equal(value.contentHash, expectedContentHash)) return NativeSaveResult::ContentMismatch;
@@ -419,7 +421,7 @@ NativeSaveResult decodeNativeRunSave(const char* bytes, size_t length, const cha
         if (value.stage != NativeSaveStage::RunSetup) return NativeSaveResult::UnsupportedStage;
         if (reader.position != reader.end) return NativeSaveResult::InvalidFormat;
         // Version-one records represented setup only. Upgrade in memory; the
-        // next journal write emits the current version-four format.
+        // next journal write emits the current version-five format.
         value.saveVersion = kNativeSaveVersion;
         value.runtimeVersion = kNativeSaveRuntimeVersion;
     } else {
@@ -446,6 +448,8 @@ NativeSaveResult decodeNativeRunSave(const char* bytes, size_t length, const cha
             if (!reader.literal("enemyPp=") || !reader.hex(2, parsed)) return NativeSaveResult::InvalidFormat;
             value.enemyPp[i] = static_cast<uint8_t>(parsed);
         }
+        if (value.saveVersion >= 5 && (!reader.literal("enemySwitchCounter=") ||
+            !reader.hex(8, value.enemySwitchCounter))) return NativeSaveResult::InvalidFormat;
         if (value.saveVersion >= 4) {
             if (!reader.literal("trainerType=") || !reader.hex(4, parsed)) return NativeSaveResult::InvalidFormat;
             value.trainerTypeId = static_cast<uint16_t>(parsed);
@@ -471,7 +475,7 @@ NativeSaveResult decodeNativeRunSave(const char* bytes, size_t length, const cha
             }
         }
         if (reader.position != reader.end) return NativeSaveResult::InvalidFormat;
-        if (legacyBattle || legacyProgress) {
+        if (legacyBattle || legacyProgress || legacyTrainer) {
             value.saveVersion = kNativeSaveVersion;
             value.runtimeVersion = kNativeSaveRuntimeVersion;
         }
