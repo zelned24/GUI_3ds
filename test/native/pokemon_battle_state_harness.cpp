@@ -1139,6 +1139,18 @@ extern "C" int runPokemonBattleStateChecks() {
     trickRoomPolicy.resolved = false;
     if (Pokerogue3DS::resolveBaselineFirstMover(trickFast, trickSlow, 33, 33,
             weatherSeed, 7, 1, 1, nullptr, &trickRoomPolicy) != Pokerogue3DS::BaselineFirstMover::Invalid) return 377;
+    Pokerogue3DS::PokemonTrickRoomState roomState{};
+    Pokerogue3DS::PokemonTrickRoomEvent roomEvent{};
+    if (!Pokerogue3DS::applyPokemonTrickRoomMove(roomState, 433, 123, roomEvent) ||
+        !roomEvent.activated || roomState.turnsLeft != 5 || roomState.sourcePokemonId != 123) return 378;
+    if (!Pokerogue3DS::pokemonTrickRoomOrderPolicy(roomState).speedReversed) return 379;
+    if (!Pokerogue3DS::applyPokemonTrickRoomMove(roomState, 433, 456, roomEvent) ||
+        !roomEvent.removed || roomEvent.activated || roomState.turnsLeft) return 380;
+    if (!Pokerogue3DS::applyPokemonTrickRoomMove(roomState, 433, 123, roomEvent)) return 381;
+    for (unsigned i = 0; i < 4; ++i)
+        if (!Pokerogue3DS::advancePokemonTrickRoomTurnEnd(roomState, roomEvent) || roomEvent.expired) return 382;
+    if (!Pokerogue3DS::advancePokemonTrickRoomTurnEnd(roomState, roomEvent) ||
+        !roomEvent.expired || !roomEvent.removed || roomState.sourceMoveId || roomState.turnsLeft) return 383;
     PokemonBattleState noPpActor = state;
     noPpActor.moves[0].pp = 0;
     PokemonBattleState unchangedTarget = state;

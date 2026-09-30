@@ -16,6 +16,58 @@ struct PokemonTurnOrderFieldPolicy {
 };
 
 
+struct PokemonTrickRoomState {
+    uint16_t turnsLeft = 0;
+    uint16_t maxDuration = 0;
+    uint16_t sourceMoveId = 0;
+    uint32_t sourcePokemonId = 0;
+};
+struct PokemonTrickRoomEvent {
+    bool activated = false;
+    bool removed = false;
+    bool expired = false;
+};
+inline bool applyPokemonTrickRoomMove(PokemonTrickRoomState& state, uint16_t moveId,
+    uint32_t sourcePokemonId, PokemonTrickRoomEvent& output) {
+    if (state.turnsLeft > state.maxDuration || (!state.turnsLeft &&
+        (state.maxDuration || state.sourceMoveId || state.sourcePokemonId))) return false;
+    const auto* move = PokerogueContent::findMoveById(moveId);
+    if (!move || move->category != PokerogueContent::MoveStatus) return false;
+    for (const auto& profile : PokerogueContent::kTrickRoomMoveProfiles) {
+        if (profile.moveId != moveId) continue;
+        PokemonTrickRoomEvent event{};
+        if (state.turnsLeft) {
+            state = {};
+            event.removed = true; // RoomArenaTag.onOverlap removes, not refreshes.
+        } else {
+            state = {profile.duration, profile.duration, moveId, sourcePokemonId};
+            event.activated = true;
+        }
+        output = event;
+        return true;
+    }
+    return false;
+}
+inline bool advancePokemonTrickRoomTurnEnd(PokemonTrickRoomState& state,
+    PokemonTrickRoomEvent& output) {
+    if (state.turnsLeft > state.maxDuration || (!state.turnsLeft &&
+        (state.maxDuration || state.sourceMoveId || state.sourcePokemonId))) return false;
+    PokemonTrickRoomEvent event{};
+    if (state.turnsLeft && --state.turnsLeft == 0) {
+        state = {};
+        event.removed = event.expired = true;
+    }
+    output = event;
+    return true;
+}
+inline PokemonTurnOrderFieldPolicy pokemonTrickRoomOrderPolicy(const PokemonTrickRoomState& state) {
+    PokemonTurnOrderFieldPolicy policy{};
+    policy.resolved = state.turnsLeft <= state.maxDuration &&
+        (state.turnsLeft || (!state.maxDuration && !state.sourceMoveId && !state.sourcePokemonId));
+    policy.speedReversed = state.turnsLeft != 0;
+    return policy;
+}
+
 // Pinned MovePhasePriorityQueue sorts by move priority after
 // sortInSpeedOrder. For a two-Pokemon field, that speed sort shuffles the
 // initial [player, enemy] order with a stream derived from waveSeed and

@@ -862,5 +862,18 @@ const speedAbilityRows = collections.abilities.flatMap(ability => {
 });
 const speedHeader = statHeader.replace('struct MoveAttribute {',
   `struct SpeedAbilityProfile { uint16_t abilityId; double multiplier; bool requiresCondition; uint16_t weatherMask; const char* sourcePath; const char* sourceSymbol; const char* sourceHash; };\ninline constexpr SpeedAbilityProfile kSpeedAbilityProfiles[] = {\n${speedAbilityRows.join(',\n')}\n};\nstruct MoveAttribute {`);
-await fs.writeFile(outputPath, speedHeader, 'utf8');
-console.log(JSON.stringify({ output: path.relative(root, outputPath), bytes: Buffer.byteLength(speedHeader), hash: report.contentHash }));
+const trickRoomRows = collections.moves.flatMap(move => {
+  const raw = move.extensions?.upstreamEffectMetadata?.value ?? '';
+  const declarations = [...raw.matchAll(/\.attr\s*\(\s*AddArenaTagAttr\s*,\s*ArenaTagType\.TRICK_ROOM\b/g)];
+  const matches = [...raw.matchAll(/\.attr\s*\(\s*AddArenaTagAttr\s*,\s*ArenaTagType\.TRICK_ROOM\s*,\s*(\d+)\s*\)/g)];
+  if (declarations.length !== matches.length) throw new Error(`Unsupported Trick Room constructor: ${move.id}`);
+  return matches.map(match => {
+    const duration = Number(match[1]);
+    if (!Number.isInteger(duration) || duration < 1 || duration > 65535) throw new Error(`Invalid Trick Room duration: ${move.id}`);
+    return `    {${move.moveId}, ${duration}}`;
+  });
+});
+const roomHeader = speedHeader.replace('struct MoveAttribute {',
+  `struct TrickRoomMoveProfile { uint16_t moveId; uint16_t duration; };\ninline constexpr TrickRoomMoveProfile kTrickRoomMoveProfiles[] = {\n${trickRoomRows.join(',\n')}\n};\nstruct MoveAttribute {`);
+await fs.writeFile(outputPath, roomHeader, 'utf8');
+console.log(JSON.stringify({ output: path.relative(root, outputPath), bytes: Buffer.byteLength(roomHeader), hash: report.contentHash }));
