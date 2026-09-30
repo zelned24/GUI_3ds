@@ -99,6 +99,7 @@ private:
     bool restoreNativeRunSaveInPlace(const NativeRunSave& save);
     bool grantVictoryExperience();
     bool advanceTrainerAfterDefeat();
+    bool finishBattleTurn();
     void refreshTrainerBaselineMatchups();
     void buildScene();
     static const char* locale(const char* canonicalId, const char* fallback);

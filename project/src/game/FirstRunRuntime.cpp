@@ -485,6 +485,62 @@ bool FirstRunRuntime::advanceBattleTurn() {
         return false;
     }
 
+    if (m_trainerBattle) {
+        // Restricted to the complete fixed two-member party. The current plain
+        // battle gate represents no queue/trap/hazard state; broader effects
+        // must resolve those inputs before trainer eligibility is enabled.
+        if (m_context.trainerPartyCount != 2 ||
+            !m_context.trainerPartyBattleStatesResolved) return false;
+        refreshTrainerBaselineMatchups();
+        if (!m_context.trainerPartyBaselineMatchupResolved) return false;
+        double reserveScores[6]{};
+        uint8_t reserveIndexes[6]{};
+        uint8_t reserveCount = 0;
+        const auto* opponentSpecies = PokerogueContent::findSpeciesByDex(playerState.speciesDex);
+        if (!opponentSpecies || opponentSpecies->legendary < 0) return false;
+        for (uint8_t member = 0; member < m_context.trainerPartyCount; ++member) {
+            if (member == m_context.activeTrainerPartyIndex ||
+                !m_context.trainerParty[member].battleState.hp) continue;
+            reserveIndexes[reserveCount] = member;
+            reserveScores[reserveCount++] = m_context.trainerPartyBaselineMatchupScores[member]
+                / (opponentSpecies->legendary ? 2.0 : 1.0);
+        }
+        uint16_t waveSeed[PokerogueRngAdapter::kMaxSeedCodeUnits]{};
+        if (!PokerogueRngAdapter::shiftCharCodes(m_seedCodeUnits.data(), m_seedLength,
+                m_run.wave, waveSeed, PokerogueRngAdapter::kMaxSeedCodeUnits)) return false;
+        PokerogueRngAdapter switchRng;
+        PokerogueSeedOffsetScope scope(switchRng, waveSeed, m_seedLength, m_turn << 2);
+        TrainerSwitchDecision decision{};
+        if (!scope.valid() || !resolveTrainerSwitchDecision(
+                m_context.trainerPartyBaselineMatchupScores[m_context.activeTrainerPartyIndex],
+                reserveScores, reserveIndexes, reserveCount, m_enemySwitchCounter,
+                false, false, false, switchRng, decision)) return false;
+        if (decision.switchPokemon) {
+            // Switch commands precede FIGHT. The player attacks the incoming
+            // actor; the trainer consumes its command by switching, not attacking.
+            PokemonBattleState playerAfter = playerState;
+            ResolvedPokemon incoming = m_context.trainerParty[decision.partyIndex];
+            PokerogueRngAdapter actionRng = *rng;
+            PokemonMoveActionResult result{};
+            if (useStandardPokemonMove(playerAfter, incoming.battleState,
+                    m_selectedBattleMove, false, actionRng, result) !=
+                    PokemonMoveActionStatus::Ok) return false;
+            m_context.trainerParty[m_context.activeTrainerPartyIndex] = m_context.enemy;
+            m_context.activeTrainerPartyIndex = decision.partyIndex;
+            m_context.enemy = incoming;
+            m_context.player.battleState = playerAfter;
+            m_run.encounterDex = incoming.dex;
+            *rng = actionRng;
+            m_enemySwitchCounter = decision.nextSwitchCounter;
+            m_runStarted = true;
+            m_checkpointAvailable = false;
+            m_battleFeedback = result.damageRoll.hit
+                ? "Trainer switched; your move hit" : "Trainer switched; your move missed";
+            return finishBattleTurn();
+        }
+        m_enemySwitchCounter = decision.nextSwitchCounter;
+    }
+
     // Pinned EnemyPokemon.SMART_RANDOM: score each usable move in moveset order,
     // then advance through the descending pool while randBattleSeedInt(8) >= 5.
     uint8_t usableSlots[4]{};
@@ -603,6 +659,10 @@ bool FirstRunRuntime::advanceBattleTurn() {
         return false;
     }
 
+    return finishBattleTurn();
+}
+
+bool FirstRunRuntime::finishBattleTurn() {
     if (!m_context.enemy.battleState.hp || !m_context.player.battleState.hp) {
         m_battleFinished = true;
         m_playerWon = m_context.enemy.battleState.hp == 0;
