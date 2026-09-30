@@ -345,6 +345,17 @@ extern "C" int runPokemonBattleStateChecks() {
     const PokerogueContent::MoveStatStageEffect specialBoostEffect{417, 4, 2, true};
     if (!Pokerogue3DS::calculateStatStageTargetBenefit(specialOnly, specialOnly,
             specialBoostEffect, supportBenefit) || supportBenefit != 0) return 235;
+    if (!Pokerogue3DS::calculateCanonicalStatStageStatusAiScore(state, state, 45,
+            supportBenefit) || supportBenefit != 2 ||
+        !Pokerogue3DS::calculateCanonicalStatStageStatusAiScore(state, state, 14,
+            supportBenefit) || supportBenefit != 6) return 236;
+    const uint8_t mixedSlots[] = {0, 1};
+    const uint32_t mixedDamage[] = {0, 10};
+    uint8_t mixedFiltered[4]{}, mixedCount = 0;
+    if (!Pokerogue3DS::filterEnemyKoMoveSlots(mixedSlots, mixedDamage, 2, 10,
+            mixedFiltered, mixedCount) || mixedCount != 1 || mixedFiltered[0] != 1) return 237;
+    if (!Pokerogue3DS::filterEnemyKoMoveSlots(mixedSlots, mixedDamage, 2, 11,
+            mixedFiltered, mixedCount) || mixedCount != 2 || mixedFiltered[0] != 0) return 238;
     PokemonBattleInit actorIdInput = input;
     actorIdInput.pokemonId = 0x12345678u;
     actorIdInput.deriveIvsFromPokemonId = true;

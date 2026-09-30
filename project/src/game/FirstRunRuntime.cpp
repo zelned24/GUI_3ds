@@ -342,6 +342,11 @@ bool supportsBaselineBattleMove(uint16_t moveId) {
 double baselineEnemyMoveScore(const PokemonBattleState& user,
                               const PokemonBattleState& target,
                               const PokerogueContent::Move& move) {
+    if (move.category == PokerogueContent::MoveStatus) {
+        double score = 0;
+        return calculateCanonicalStatStageStatusAiScore(user, target, move.id, score)
+            ? score : -20.0;
+    }
     double effectiveness = 1.0;
     if (calculatePokemonTypeEffectiveness(move.id, target, effectiveness) !=
         PokemonTypeEffectivenessResult::Ok) return -20.0;
@@ -561,7 +566,11 @@ bool FirstRunRuntime::advanceBattleTurn() {
     for (uint8_t slot = 0; slot < enemyState.moveCount; ++slot) {
         if (!enemyState.moves[slot].pp) continue;
         uint32_t damage = 0;
-        if (calculatePokemonDamageCore(enemyState, playerState,
+        const auto* candidateMove = PokerogueContent::findMoveById(enemyState.moves[slot].moveId);
+        if (!candidateMove) return false;
+        // Status moves cannot KO and remain eligible only when no attack can KO.
+        if (candidateMove->category != PokerogueContent::MoveStatus &&
+            calculatePokemonDamageCore(enemyState, playerState,
                 enemyState.moves[slot].moveId, false, damage) != PokemonDamageCoreResult::Ok) {
             m_battleFeedback = "Enemy simulated damage unsupported";
             buildScene();

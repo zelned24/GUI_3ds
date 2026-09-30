@@ -3,6 +3,7 @@
 #include "game/PokerogueRngAdapter.hpp"
 #include "game/PokemonBattleState.hpp"
 #include <cmath>
+#include <cstring>
 #include <cstdint>
 
 namespace Pokerogue3DS {
@@ -322,6 +323,32 @@ inline bool calculateStatStageTargetBenefit(
         score += levels * 4 + (levels > 0 ? -2 : 2);
     }
     output = score;
+    return true;
+}
+
+inline bool calculateCanonicalStatStageStatusAiScore(
+    const PokemonBattleState& user, const PokemonBattleState& opponent,
+    uint16_t moveId, double& output) {
+    const auto* move = PokerogueContent::findMoveById(moveId);
+    if (!move || move->category != PokerogueContent::MoveStatus || move->attributeCount != 1 ||
+        !PokerogueContent::moveHasAttribute(*move, "StatStageChangeAttr") || !move->target)
+        return false;
+    const bool selfTarget = std::strcmp(move->target, "USER") == 0;
+    if (!selfTarget && std::strcmp(move->target, "NEAR_ENEMY") != 0 &&
+        std::strcmp(move->target, "ALL_NEAR_ENEMIES") != 0) return false;
+    const PokerogueContent::MoveStatStageEffect* effect = nullptr;
+    for (const auto& entry : PokerogueContent::kMoveStatStageEffects)
+        if (entry.moveId == moveId) {
+            if (effect) return false;
+            effect = &entry;
+        }
+    if (!effect) return false;
+    double targetBenefit = 0;
+    if (!calculateStatStageTargetBenefit(user, selfTarget ? user : opponent,
+            *effect, targetBenefit)) return false;
+    // EnemyPokemon.getNextMove: opposing target benefit is negated; own
+    // benefit is positive. Status scores do not receive STAB/type multipliers.
+    output = targetBenefit * (selfTarget ? 1.0 : -1.0);
     return true;
 }
 
