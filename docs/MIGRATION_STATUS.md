@@ -441,3 +441,10 @@
 1. Replay legacy falla si EXP requiere aprendizaje o evolución pendiente; no borra decisiones ni inventa respuestas al reconstruir waves.
 2. Resolver aprendizaje, aceptar/cancelar evolución o restaurar un equipo explícito obliga a mantener snapshots incluso con un solo miembro. La marca se conserva entre waves y se reinicia con un nuevo starter. Guardar decisiones pendientes sigue bloqueado.
 3. Regresiones 317–319 escritas para restore/recapture de un actor explícito, identidad, especie, EXP, moves y PP. Tests y compilación aplazados; límite de restore wave 9 y otras restricciones permanecen.
+
+## Pausa persistente de evoluciones
+
+1. Referencia pinned 8555c08c823b856cbec4eb99ca84ea52a955836d: src/phases/evolution-phase.ts showPauseEvolutionConfirmation y src/phases/level-up-phase.ts end. Cancelar ahora pregunta si se deben pausar futuros intentos: A sí, B no. No avanza wave ni concede rewards mientras la confirmación está pendiente; guardar queda bloqueado.
+2. PokemonBattleState conserva pauseEvolutions al recalcular nivel/cambiar especie; LevelUp no propone evolución mientras esté activo. Se sincroniza al miembro del equipo y se conserva mediante snapshot explícito.
+3. Codec de actor pokemon=2 añade bool validado; lector acepta pokemon=1 con false. El contenedor de run mantiene v10 y su checksum; lectores antiguos rechazan el nuevo miembro en vez de descartar el campo. Regresiones 320–323 escritas para captura, codec/restore, migración v1 y flag inválido sin mutación.
+4. Falta control de reactivación en el menú del Pokémon y animación cancelable con fidelidad temporal. Tests y compilación aplazados; no se declara Classic completo.

@@ -151,6 +151,7 @@ struct PokemonBattleState {
     uint8_t moveCount = 0;
     BattleMoveState moves[4]{};
     bool ivsWereDerivedFromPokemonId = false;
+    bool pauseEvolutions = false; // Persistent Pokemon option, independent of battle stages.
     bool statsAreBaseFormulaOnly = true;
 };
 

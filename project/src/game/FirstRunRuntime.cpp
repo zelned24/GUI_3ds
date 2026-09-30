@@ -136,7 +136,7 @@ void FirstRunRuntime::captureNativeRunSave(NativeRunSave& output) const {
         output = {};
         return;
     }
-    if (moveLearningPending() || m_pendingEvolutionSpeciesId || (m_runStarted && !m_checkpointAvailable)) {
+    if (moveLearningPending() || evolutionPending() || (m_runStarted && !m_checkpointAvailable)) {
         output = {};
         return;
     }
@@ -984,6 +984,7 @@ bool FirstRunRuntime::grantVictoryExperience() {
         else leveled.hp = next.hp;
         for (uint8_t i = 0; i < next.moveCount; ++i) leveled.moves[i].pp = next.moves[i].pp;
         for (uint8_t stat = 0; stat < 7; ++stat) leveled.statStages[stat] = next.statStages[stat];
+        leveled.pauseEvolutions = next.pauseEvolutions;
         next = leveled;
 
         // Learn newly available level moves if there is space in the moveset (< 4)
@@ -993,7 +994,7 @@ bool FirstRunRuntime::grantVictoryExperience() {
         if (m_pendingLevelMoves.overflow) return false;
 
         const auto* evo = checkSpeciesLevelEvolution(m_context.player.speciesId, oldLevel, progress.level);
-        if (evo) m_pendingEvolutionSpeciesId = evo->targetSpeciesId;
+        if (evo && !next.pauseEvolutions) m_pendingEvolutionSpeciesId = evo->targetSpeciesId;
     }
     m_context.player.battleState = next;
     m_context.player.level = progress.level;
@@ -1109,6 +1110,14 @@ bool FirstRunRuntime::advanceBattleTurn() {
 
 bool FirstRunRuntime::advanceBattleTurnInPlace() {
     if (moveLearningPending()) return resolvePendingLearnMove(m_selectedBattleMove);
+    if (m_evolutionPauseConfirmation) {
+        m_context.player.battleState.pauseEvolutions = true;
+        m_context.playerParty[m_context.activePlayerPartyIndex] = m_context.player;
+        m_evolutionPauseConfirmation = false;
+        m_battleFeedback = "Future evolutions paused";
+        buildScene();
+        return true;
+    }
     if (evolutionPending()) {
         if (!finishPendingEvolution(true)) return false;
         buildScene();
@@ -1848,10 +1857,17 @@ bool FirstRunRuntime::skipVictoryReward() {
 
 bool FirstRunRuntime::skipVictoryRewardInPlace() {
     if (moveLearningPending()) return resolvePendingLearnMove(-1);
+    if (m_evolutionPauseConfirmation) {
+        m_evolutionPauseConfirmation = false;
+        m_battleFeedback = "Future evolutions remain enabled";
+        buildScene();
+        return true;
+    }
     if (evolutionPending()) {
         m_playerHistoryRequiresSnapshot = true;
         m_pendingEvolutionSpeciesId = nullptr;
-        m_battleFeedback = "Evolution cancelled";
+        m_evolutionPauseConfirmation = true;
+        m_battleFeedback = "Evolution cancelled: pause future evolutions?";
         buildScene();
         return true;
     }
@@ -1903,6 +1919,7 @@ bool FirstRunRuntime::advanceTrainerAfterDefeat() {
     m_experienceGranted = false;
     m_pendingLevelMoves = {};
     m_pendingEvolutionSpeciesId = nullptr;
+    m_evolutionPauseConfirmation = false;
     m_victoryPlan = {};
     m_checkpointAvailable = true;
     refreshTrainerBaselineMatchups();
@@ -2208,6 +2225,7 @@ void FirstRunRuntime::resolve(bool carryPlayer) {
     m_experienceGranted = false;
     m_pendingLevelMoves = {};
     m_pendingEvolutionSpeciesId = nullptr;
+    m_evolutionPauseConfirmation = false;
     m_victoryPlan = {};
     m_rewardChoices = {};
     m_rewardChoiceCount = 0;
@@ -2997,12 +3015,16 @@ void FirstRunRuntime::buildScene() {
         }
     }
     if (!moveLearningPending() && evolutionPending()) {
-        const auto* target = findSpeciesById(m_pendingEvolutionSpeciesId);
+        const auto* target = m_pendingEvolutionSpeciesId ? findSpeciesById(m_pendingEvolutionSpeciesId) : nullptr;
         if (target) {
             const std::string key = std::string("pokemon:") + target->id;
             m_text[6] = std::string("Evolve into ") + locale(key.c_str(), target->name) + "?";
             m_text[5] = "A continue - B cancel evolution";
         }
+    }
+    if (m_evolutionPauseConfirmation) {
+        m_text[6] = "Pause future evolutions?";
+        m_text[5] = "A yes - B no";
     }
     if (!m_battleFeedback.empty()) m_text[7] = m_battleFeedback;
     m_text[12] = std::string("Pinned data: ") + PokerogueContent::kPokerogueRevision;

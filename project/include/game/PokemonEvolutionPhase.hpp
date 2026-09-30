@@ -268,6 +268,7 @@ inline bool applySpeciesEvolution(
         evolvedState.statStages[stat] = battleState.statStages[stat];
     }
 
+    evolvedState.pauseEvolutions = battleState.pauseEvolutions;
     battleState = evolvedState;
     if (identity) {
         identity->abilityIndex = abilitySlot;

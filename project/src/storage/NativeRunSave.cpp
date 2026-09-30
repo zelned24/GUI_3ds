@@ -267,6 +267,7 @@ bool restoreNativePokemonSave(const NativePokemonSave& saved, PokemonBattleState
             PokemonExperienceResult::Ok || saved.experience < threshold) return false;
     // Experience may exceed the next threshold while the wave level cap is active.
     // The enclosing run validator must resolve that cap, rather than truncate EXP.
+    actor.pauseEvolutions = saved.pauseEvolutions;
     actor.hp = saved.hp;
     for (uint8_t i = 0; i < saved.moveCount; ++i) {
         if (saved.pp[i] > actor.moves[i].maxPp) return false;
@@ -292,6 +293,7 @@ bool captureNativePokemonSave(const PokemonBattleState& state, uint32_t experien
     saved.gender = static_cast<uint8_t>(state.gender);
     saved.nature = static_cast<uint8_t>(state.nature);
     saved.ivsDerivedFromId = state.ivsWereDerivedFromPokemonId;
+    saved.pauseEvolutions = state.pauseEvolutions;
     saved.hp = state.hp;
     saved.experience = experience;
     saved.moveCount = state.moveCount;
@@ -365,7 +367,7 @@ NativeSaveResult encodeNativePokemonSave(const NativePokemonSave& saved, char* o
     if (!restoreNativePokemonActorSave(saved, state, identity)) return NativeSaveResult::InvalidRecord;
     if (!output) return NativeSaveResult::InvalidFormat;
     Writer writer{output, capacity};
-    writer.text("pokemon=1\n");
+    writer.text("pokemon=2\n");
     writer.hex(saved.speciesDex, 4);
     writer.text(saved.formId); writer.character('\n');
     writer.hex(saved.level, 4);
@@ -385,6 +387,7 @@ NativeSaveResult encodeNativePokemonSave(const NativePokemonSave& saved, char* o
     writer.hex(saved.ivsDerivedFromId ? 1 : 0, 2);
     writer.hex(saved.abilityIndex, 2);
     writer.hex(saved.initialTeraTypeIndex, 2);
+    writer.hex(saved.pauseEvolutions ? 1 : 0, 2);
     if (!writer.valid) return NativeSaveResult::TooLarge;
     written = writer.position;
     return NativeSaveResult::Ok;
@@ -396,7 +399,10 @@ NativeSaveResult decodeNativePokemonSave(const char* bytes, size_t length,
     Reader reader{bytes, length};
     NativePokemonSave saved{};
     uint32_t value = 0;
-    if (!reader.literal("pokemon=1\n") || !reader.hex(4, value)) return NativeSaveResult::InvalidFormat;
+    if (!reader.literal("pokemon=") || !reader.hex(1, value) || (value != 1 && value != 2))
+        return NativeSaveResult::InvalidFormat;
+    const bool hasEvolutionPause = value == 2;
+    if (!reader.hex(4, value)) return NativeSaveResult::InvalidFormat;
     saved.speciesDex = static_cast<uint16_t>(value);
     if (!reader.line(saved.formId, sizeof(saved.formId)) || !reader.hex(4, value))
         return NativeSaveResult::InvalidFormat;
@@ -428,6 +434,10 @@ NativeSaveResult decodeNativePokemonSave(const char* bytes, size_t length,
     saved.abilityIndex = static_cast<uint8_t>(value);
     if (!reader.hex(2, value)) return NativeSaveResult::InvalidFormat;
     saved.initialTeraTypeIndex = static_cast<uint8_t>(value);
+    if (hasEvolutionPause) {
+        if (!reader.hex(2, value) || value > 1) return NativeSaveResult::InvalidFormat;
+        saved.pauseEvolutions = value != 0;
+    }
     saved.actorIdentityResolved = saved.initialTeraTypeResolved = true;
     if (reader.position != reader.end) return NativeSaveResult::InvalidFormat;
     PokemonBattleState state{};

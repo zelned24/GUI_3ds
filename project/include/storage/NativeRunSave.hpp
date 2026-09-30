@@ -47,6 +47,7 @@ struct NativePokemonSave {
     uint8_t pp[4]{};
     int8_t statStages[7]{};
     bool ivsDerivedFromId = false;
+    bool pauseEvolutions = false;
     bool actorIdentityResolved = false;
     uint8_t abilityIndex = 0;
     uint8_t initialTeraTypeIndex = 0;

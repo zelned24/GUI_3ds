@@ -99,7 +99,7 @@ public:
     bool selectRewardChoice(int direction);
     bool claimRewardChoice();
     bool selectBattleMove(int direction);
-    bool evolutionPending() const { return m_pendingEvolutionSpeciesId != nullptr; }
+    bool evolutionPending() const { return m_pendingEvolutionSpeciesId != nullptr || m_evolutionPauseConfirmation; }
     bool moveLearningPending() const { return m_pendingLevelMoves.count != 0; }
     uint16_t pendingLearnMoveId() const { return m_pendingLevelMoves.count ? m_pendingLevelMoves.moveIds[0] : 0; }
     bool resolvePendingLearnMove(int selectedSlot); // -1 rejects; 0..3 replaces.
@@ -197,6 +197,7 @@ private:
     bool m_playerHistoryRequiresSnapshot = false; // Player choices cannot be replayed from seed.
     PokemonPendingLevelMoves m_pendingLevelMoves{};
     const char* m_pendingEvolutionSpeciesId = nullptr;
+    bool m_evolutionPauseConfirmation = false;
     ClassicVictoryPlan m_victoryPlan{};
     std::array<ModifierRewardRoll, 3> m_rewardChoices{};
     uint8_t m_rewardChoiceCount = 0;

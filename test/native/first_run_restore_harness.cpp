@@ -1197,6 +1197,26 @@ int main() {
         size_t rejectedSize = 99;
         if (encodeNativePokemonSave(actorSnapshot, actorBytesAgain, 1, rejectedSize) != NativeSaveResult::TooLarge ||
             rejectedSize) return 286;
+        auto pausedState = currentActor.battleState;
+        pausedState.pauseEvolutions = true;
+        NativePokemonSave pausedActor{};
+        if (!captureNativePokemonActorSave(pausedState, currentActor.actor,
+                currentActor.totalExperience, pausedActor) || !pausedActor.pauseEvolutions) return 320;
+        char pauseBytes[512]{};
+        size_t pauseSize = 0;
+        if (encodeNativePokemonSave(pausedActor, pauseBytes, sizeof(pauseBytes), pauseSize) !=
+                NativeSaveResult::Ok || decodeNativePokemonSave(pauseBytes, pauseSize, decodedActor) !=
+                NativeSaveResult::Ok || !decodedActor.pauseEvolutions ||
+            !restoreNativePokemonActorSave(decodedActor, restoredActor, restoredIdentity) ||
+            !restoredActor.pauseEvolutions) return 321;
+        // Member schema 1 has no pause field: preserve its exact former layout.
+        pauseBytes[8] = '1';
+        if (pauseSize < 3 || decodeNativePokemonSave(pauseBytes, pauseSize - 3, decodedActor) !=
+                NativeSaveResult::Ok || decodedActor.pauseEvolutions) return 322;
+        pauseBytes[8] = '2';
+        pauseBytes[pauseSize - 2] = '2';
+        if (decodeNativePokemonSave(pauseBytes, pauseSize, decodedActor) !=
+                NativeSaveResult::InvalidFormat || decodedActor.pauseEvolutions) return 323;
         NativeRunSave explicitParty = loaded;
         explicitParty.playerPartyCount = 1;
         explicitParty.activePlayerMember = 0;
