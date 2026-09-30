@@ -326,6 +326,19 @@ PokemonDamageCoreResult calculatePokemonDamageCore(
     uint32_t& outputDamage,
     const PokemonMoveWeatherContext* weatherContext = nullptr);
 
+struct PokemonCriticalPolicy {
+    bool resolved = false;
+    uint8_t bonusStages = 0;
+    bool alwaysCritical = false;
+    bool blocked = false;
+};
+struct PokemonCriticalAbilityComponent {
+    uint16_t abilityId = 0;
+    bool applies = false;
+    bool belongsToAttacker = false;
+};
+bool composePokemonCriticalAbilityPolicy(const PokemonCriticalAbilityComponent* components,
+    std::size_t count, bool ignoreDefenderAbilities, PokemonCriticalPolicy& output);
 bool pokemonMoveCriticalDenominator(uint16_t moveId, uint8_t& outputDenominator,
     uint8_t resolvedBonusStages = 0);
 
@@ -350,7 +363,8 @@ PokemonMoveDamageResult resolveStandardPokemonMoveDamage(
     bool moveIsTypeless,
     PokerogueRngAdapter& battleRng,
     PokemonMoveDamageRoll& output,
-    const PokemonMoveWeatherContext* weatherContext = nullptr);
+    const PokemonMoveWeatherContext* weatherContext = nullptr,
+    const PokemonCriticalPolicy* criticalPolicy = nullptr);
 
 struct PokemonMoveActionResult {
     PokemonMoveDamageRoll damageRoll{};
@@ -370,7 +384,8 @@ PokemonMoveActionStatus useStandardPokemonMove(
     bool moveIsTypeless,
     PokerogueRngAdapter& battleRng,
     PokemonMoveActionResult& output,
-    const PokemonMoveWeatherContext* weatherContext = nullptr);
+    const PokemonMoveWeatherContext* weatherContext = nullptr,
+    const PokemonCriticalPolicy* criticalPolicy = nullptr);
 
 enum class PokemonAbilitySelectionResult : uint8_t { Ok = 0, MissingSpecies, InvalidHiddenRate };
 PokemonAbilitySelectionResult selectPokemonAbilityIndex(

@@ -966,6 +966,24 @@ extern "C" int runPokemonBattleStateChecks() {
     const auto armorActual = armorRng.state(), armorExpected = expectedArmorRng.state();
     if (armorActual.carry != armorExpected.carry || armorActual.s0 != armorExpected.s0 ||
         armorActual.s1 != armorExpected.s1 || armorActual.s2 != armorExpected.s2) return 341;
+    Pokerogue3DS::PokemonCriticalAbilityComponent critComponents[2] = {
+        {superLuckId, true, true}, {battleArmorId, true, false}
+    };
+    Pokerogue3DS::PokemonCriticalPolicy resolvedCritPolicy{};
+    if (!Pokerogue3DS::composePokemonCriticalAbilityPolicy(critComponents, 2, false, resolvedCritPolicy) ||
+        !resolvedCritPolicy.resolved || resolvedCritPolicy.bonusStages != 1 || !resolvedCritPolicy.blocked) return 342;
+    if (!Pokerogue3DS::composePokemonCriticalAbilityPolicy(critComponents, 2, true, resolvedCritPolicy) ||
+        resolvedCritPolicy.blocked || resolvedCritPolicy.bonusStages != 1) return 343;
+    critComponents[0].applies = false;
+    if (!Pokerogue3DS::composePokemonCriticalAbilityPolicy(critComponents, 2, true, resolvedCritPolicy) ||
+        resolvedCritPolicy.bonusStages) return 344;
+    resolvedCritPolicy.resolved = false;
+    PokemonMoveActionResult unresolvedCritAction{};
+    PokemonBattleState unresolvedCritActor = state, unresolvedCritTarget = state;
+    if (Pokerogue3DS::useStandardPokemonMove(unresolvedCritActor, unresolvedCritTarget, 0, false,
+            armorRng, unresolvedCritAction, nullptr, &resolvedCritPolicy) !=
+            PokemonMoveActionStatus::UnsupportedAbilityCondition ||
+        unresolvedCritActor.moves[0].pp != state.moves[0].pp || unresolvedCritTarget.hp != state.hp) return 345;
     PokemonBattleState noPpActor = state;
     noPpActor.moves[0].pp = 0;
     PokemonBattleState unchangedTarget = state;

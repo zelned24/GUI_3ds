@@ -849,6 +849,29 @@ PokemonDamageCoreResult calculatePokemonDamageCore(
     return PokemonDamageCoreResult::Ok;
 }
 
+bool composePokemonCriticalAbilityPolicy(const PokemonCriticalAbilityComponent* components,
+    std::size_t count, bool ignoreDefenderAbilities, PokemonCriticalPolicy& output) {
+    if (count && !components) return false;
+    PokemonCriticalPolicy next{};
+    next.resolved = true;
+    for (std::size_t i = 0; i < count; ++i) {
+        const auto& component = components[i];
+        if (!component.applies) continue;
+        if (!PokerogueContent::findAbilityMovegenProfile(component.abilityId)) return false;
+        for (const auto& profile : PokerogueContent::kCriticalAbilityProfiles) {
+            if (profile.abilityId != component.abilityId) continue;
+            if (component.belongsToAttacker) {
+                const unsigned sum = next.bonusStages + profile.bonusStages;
+                next.bonusStages = static_cast<uint8_t>(sum > 3 ? 3 : sum);
+            } else if (!(ignoreDefenderAbilities && profile.ignorable)) {
+                next.blocked = next.blocked || profile.blocksCritical;
+            }
+        }
+    }
+    output = next;
+    return true;
+}
+
 bool pokemonMoveCriticalDenominator(uint16_t moveId, uint8_t& outputDenominator,
     uint8_t resolvedBonusStages) {
     const auto* move = PokerogueContent::findMoveById(moveId);
@@ -871,7 +894,8 @@ PokemonMoveDamageResult resolveStandardPokemonMoveDamage(
     bool moveIsTypeless,
     PokerogueRngAdapter& battleRng,
     PokemonMoveDamageRoll& output,
-    const PokemonMoveWeatherContext* weatherContext) {
+    const PokemonMoveWeatherContext* weatherContext,
+    const PokemonCriticalPolicy* criticalPolicy) {
     const auto* move = PokerogueContent::findMoveById(moveId);
     if (!move) return PokemonMoveDamageResult::MissingMove;
     if (move->category == PokerogueContent::MoveStatus || move->power <= 0) {
@@ -931,9 +955,14 @@ PokemonMoveDamageResult resolveStandardPokemonMoveDamage(
         if (profile.abilityId == attacker.abilityId) bonusCriticalStages = profile.bonusStages;
         if (profile.abilityId == defender.abilityId) abilityBlocksCritical = profile.blocksCritical;
     }
+    if (criticalPolicy) {
+        if (!criticalPolicy->resolved) return PokemonMoveDamageResult::UnsupportedAbilityCondition;
+        bonusCriticalStages = criticalPolicy->bonusStages;
+        abilityBlocksCritical = criticalPolicy->blocked;
+    }
     uint8_t criticalDenominator = 24;
     if (!pokemonMoveCriticalDenominator(moveId, criticalDenominator, bonusCriticalStages)) return PokemonMoveDamageResult::InvalidStats;
-    next.critical = criticalDenominator == 1;
+    next.critical = criticalDenominator == 1 || (criticalPolicy && criticalPolicy->alwaysCritical);
     if (!next.critical) {
         next.criticalWasRolled = true;
         next.criticalRoll = static_cast<uint8_t>(battleRng.randSeedInt(criticalDenominator));
@@ -975,7 +1004,8 @@ PokemonMoveActionStatus useStandardPokemonMove(
     bool moveIsTypeless,
     PokerogueRngAdapter& battleRng,
     PokemonMoveActionResult& output,
-    const PokemonMoveWeatherContext* weatherContext) {
+    const PokemonMoveWeatherContext* weatherContext,
+    const PokemonCriticalPolicy* criticalPolicy) {
     if (moveSlot >= attacker.moveCount || moveSlot >= 4 || attacker.moves[moveSlot].moveId == 0) {
         return PokemonMoveActionStatus::InvalidMoveSlot;
     }
@@ -1007,7 +1037,7 @@ PokemonMoveActionStatus useStandardPokemonMove(
     // Commit RNG only after a resolved action, just like HP and PP.
     PokerogueRngAdapter nextRng = battleRng;
     next.damageResolutionStatus = resolveStandardPokemonMoveDamage(
-        attacker, defender, attacker.moves[moveSlot].moveId, moveIsTypeless, nextRng, next.damageRoll, weatherContext);
+        attacker, defender, attacker.moves[moveSlot].moveId, moveIsTypeless, nextRng, next.damageRoll, weatherContext, criticalPolicy);
     if (next.damageResolutionStatus == PokemonMoveDamageResult::UnsupportedAbilityCondition)
         return PokemonMoveActionStatus::UnsupportedAbilityCondition;
     if (next.damageResolutionStatus == PokemonMoveDamageResult::UnresolvedWeather)
