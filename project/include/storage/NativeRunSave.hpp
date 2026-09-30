@@ -111,6 +111,12 @@ enum class NativeSaveResult : uint8_t {
 };
 
 const char* nativeSaveResultName(NativeSaveResult result);
+// Bounded member payload; enclosing run journal supplies version/hash/checksum.
+NativeSaveResult encodeNativePokemonSave(const NativePokemonSave& saved, char* output,
+    size_t capacity, size_t& written);
+NativeSaveResult decodeNativePokemonSave(const char* bytes, size_t length,
+    NativePokemonSave& output);
+
 
 // Construct a bounded snapshot from canonical IDs. No UI or pointer data enters
 // the file. Loading replays the supported setup deterministically from its seed.

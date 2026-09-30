@@ -357,6 +357,86 @@ bool captureNativePokemonActorSave(const PokemonBattleState& state,
     return true;
 }
 
+NativeSaveResult encodeNativePokemonSave(const NativePokemonSave& saved, char* output,
+    size_t capacity, size_t& written) {
+    written = 0;
+    PokemonBattleState state{};
+    PokemonActorIdentity identity{};
+    if (!restoreNativePokemonActorSave(saved, state, identity)) return NativeSaveResult::InvalidRecord;
+    if (!output) return NativeSaveResult::InvalidFormat;
+    Writer writer{output, capacity};
+    writer.text("pokemon=1\n");
+    writer.hex(saved.speciesDex, 4);
+    writer.text(saved.formId); writer.character('\n');
+    writer.hex(saved.level, 4);
+    writer.hex(saved.pokemonId, 8);
+    writer.hex(saved.abilityId, 4);
+    writer.hex(saved.gender, 2);
+    writer.hex(saved.nature, 2);
+    for (uint8_t iv : saved.ivs) writer.hex(iv, 2);
+    writer.hex(saved.hp, 4);
+    writer.hex(saved.experience, 8);
+    writer.hex(saved.moveCount, 2);
+    for (uint8_t slot = 0; slot < 4; ++slot) {
+        writer.hex(saved.moveIds[slot], 4);
+        writer.hex(saved.pp[slot], 2);
+    }
+    writer.hex(packStages(saved.statStages), 8);
+    writer.hex(saved.ivsDerivedFromId ? 1 : 0, 2);
+    writer.hex(saved.abilityIndex, 2);
+    writer.hex(saved.initialTeraTypeIndex, 2);
+    if (!writer.valid) return NativeSaveResult::TooLarge;
+    written = writer.position;
+    return NativeSaveResult::Ok;
+}
+
+NativeSaveResult decodeNativePokemonSave(const char* bytes, size_t length,
+    NativePokemonSave& output) {
+    if (!bytes || !length || length > 512) return NativeSaveResult::InvalidFormat;
+    Reader reader{bytes, length};
+    NativePokemonSave saved{};
+    uint32_t value = 0;
+    if (!reader.literal("pokemon=1\n") || !reader.hex(4, value)) return NativeSaveResult::InvalidFormat;
+    saved.speciesDex = static_cast<uint16_t>(value);
+    if (!reader.line(saved.formId, sizeof(saved.formId)) || !reader.hex(4, value))
+        return NativeSaveResult::InvalidFormat;
+    saved.level = static_cast<uint16_t>(value);
+    if (!reader.hex(8, saved.pokemonId) || !reader.hex(4, value)) return NativeSaveResult::InvalidFormat;
+    saved.abilityId = static_cast<uint16_t>(value);
+    if (!reader.hex(2, value)) return NativeSaveResult::InvalidFormat;
+    saved.gender = static_cast<uint8_t>(value);
+    if (!reader.hex(2, value)) return NativeSaveResult::InvalidFormat;
+    saved.nature = static_cast<uint8_t>(value);
+    for (auto& iv : saved.ivs) {
+        if (!reader.hex(2, value)) return NativeSaveResult::InvalidFormat;
+        iv = static_cast<uint8_t>(value);
+    }
+    if (!reader.hex(4, value)) return NativeSaveResult::InvalidFormat;
+    saved.hp = static_cast<uint16_t>(value);
+    if (!reader.hex(8, saved.experience) || !reader.hex(2, value)) return NativeSaveResult::InvalidFormat;
+    saved.moveCount = static_cast<uint8_t>(value);
+    for (uint8_t slot = 0; slot < 4; ++slot) {
+        if (!reader.hex(4, value)) return NativeSaveResult::InvalidFormat;
+        saved.moveIds[slot] = static_cast<uint16_t>(value);
+        if (!reader.hex(2, value)) return NativeSaveResult::InvalidFormat;
+        saved.pp[slot] = static_cast<uint8_t>(value);
+    }
+    if (!reader.hex(8, value) || !unpackStages(value, saved.statStages)) return NativeSaveResult::InvalidFormat;
+    if (!reader.hex(2, value) || value > 1) return NativeSaveResult::InvalidFormat;
+    saved.ivsDerivedFromId = value != 0;
+    if (!reader.hex(2, value)) return NativeSaveResult::InvalidFormat;
+    saved.abilityIndex = static_cast<uint8_t>(value);
+    if (!reader.hex(2, value)) return NativeSaveResult::InvalidFormat;
+    saved.initialTeraTypeIndex = static_cast<uint8_t>(value);
+    saved.actorIdentityResolved = saved.initialTeraTypeResolved = true;
+    if (reader.position != reader.end) return NativeSaveResult::InvalidFormat;
+    PokemonBattleState state{};
+    PokemonActorIdentity identity{};
+    if (!restoreNativePokemonActorSave(saved, state, identity)) return NativeSaveResult::InvalidRecord;
+    output = saved;
+    return NativeSaveResult::Ok;
+}
+
 NativeSaveResult validateNativeRunSave(const NativeRunSave& save, const char* expectedContentHash) {
     if (save.saveVersion != kNativeSaveVersion) return NativeSaveResult::UnsupportedVersion;
     if (save.runtimeVersion != kNativeSaveRuntimeVersion) return NativeSaveResult::IncompatibleRuntime;

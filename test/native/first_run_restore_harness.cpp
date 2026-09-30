@@ -1010,6 +1010,26 @@ int main() {
         invalidIdentity = actorSnapshot;
         invalidIdentity.initialTeraTypeResolved = false;
         if (restoreNativePokemonActorSave(invalidIdentity, restoredActor, restoredIdentity)) return 280;
+        char actorBytes[512]{};
+        size_t actorSize = 0;
+        if (encodeNativePokemonSave(actorSnapshot, actorBytes, sizeof(actorBytes), actorSize) !=
+                NativeSaveResult::Ok) return 281;
+        NativePokemonSave decodedActor{};
+        if (decodeNativePokemonSave(actorBytes, actorSize, decodedActor) != NativeSaveResult::Ok ||
+            decodedActor.pokemonId != actorSnapshot.pokemonId || decodedActor.experience != actorSnapshot.experience ||
+            std::strcmp(decodedActor.formId, actorSnapshot.formId)) return 282;
+        char actorBytesAgain[512]{};
+        size_t actorSizeAgain = 0;
+        if (encodeNativePokemonSave(decodedActor, actorBytesAgain, sizeof(actorBytesAgain), actorSizeAgain) !=
+                NativeSaveResult::Ok || actorSizeAgain != actorSize ||
+            std::memcmp(actorBytes, actorBytesAgain, actorSize)) return 283;
+        const uint32_t preservedActorId = decodedActor.pokemonId;
+        if (decodeNativePokemonSave(actorBytes, actorSize - 1, decodedActor) != NativeSaveResult::InvalidFormat ||
+            decodedActor.pokemonId != preservedActorId) return 284;
+        if (decodeNativePokemonSave(actorBytes, 513, decodedActor) != NativeSaveResult::InvalidFormat) return 285;
+        size_t rejectedSize = 99;
+        if (encodeNativePokemonSave(actorSnapshot, actorBytesAgain, 1, rejectedSize) != NativeSaveResult::TooLarge ||
+            rejectedSize) return 286;
         NativeRunSave inventorySnapshot = loaded;
         inventorySnapshot.pokeballCounts[0] = 0;
         inventorySnapshot.pokeballCounts[1] = 3;

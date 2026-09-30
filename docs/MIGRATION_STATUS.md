@@ -370,3 +370,9 @@
 1. Snapshot de actor conserva abilityIndex y ordinal initialTeraTypeIndex/resolved además del BattleState. Capture verifica coherencia entre identidad y estado; restore valida slot de habilidad contra forma/especie y publica ambos juntos con referencias al catálogo.
 2. Regresiones 277–280 escritas para actor real y rechazo de índice de habilidad/Tera no resuelto. No ejecutadas. Esta capacidad cubre actores actuales sin transformaciones; Tera real persistente tras evolución necesita identidad de tipo explícita, no ordinal recalculado.
 3. Codec de equipo y restauración de partidas capturadas siguen pendientes; no se cambia payload v9 ni se retira su bloqueo de equipo.
+
+## Codec acotado del miembro persistente
+
+1. encode/decodeNativePokemonSave reutilizan Writer/Reader del journal para un payload determinista de actor. IDs canónicos y campos mutables se escriben sin punteros/stats calculados; referencias e identidad se validan antes de aceptar el registro. Decoder limita a 512 bytes y rechaza bytes extra/truncados y flags inválidos.
+2. El envelope de run será responsable de versión/hash/checksum; este payload no es por sí solo un archivo de progreso importable. Regresiones 281–286 escritas para roundtrip byte a byte, truncamiento sin mutar salida y capacidad insuficiente. No ejecutadas.
+3. Pendiente inmediato: arrays de miembros y active slot en schema de run, migración v9 y conexión de capture/restore sin replay de capturas. Persistencia completa y objetivo jugable siguen sin demostración.
