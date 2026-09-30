@@ -5,8 +5,8 @@
 
 namespace Pokerogue3DS {
 
-inline constexpr uint16_t kNativeSaveVersion = 6;
-inline constexpr uint16_t kNativeSaveRuntimeVersion = 6;
+inline constexpr uint16_t kNativeSaveVersion = 7;
+inline constexpr uint16_t kNativeSaveRuntimeVersion = 7;
 inline constexpr size_t kNativeSaveMaxBytes = 2048;
 
 enum class NativeSaveStage : uint16_t {
@@ -52,6 +52,9 @@ struct NativeRunSave {
     int8_t playerStatStages[7]{};
     int8_t enemyStatStages[7]{};
     uint32_t enemySwitchCounter = 0;
+    uint8_t weatherType = 0; // Pinned WeatherType ID; zero is NONE.
+    uint16_t weatherTurnsLeft = 0;
+    uint16_t weatherMaxDuration = 0;
     uint16_t trainerTypeId = 0;
     uint8_t trainerPartyCount = 0;
     uint8_t activeTrainerMember = 0xFF;

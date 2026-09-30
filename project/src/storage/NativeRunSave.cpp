@@ -231,6 +231,11 @@ NativeSaveResult makeNativeRunSetupSave(uint32_t seed, uint16_t starterDex, Nati
 NativeSaveResult validateNativeRunSave(const NativeRunSave& save, const char* expectedContentHash) {
     if (save.saveVersion != kNativeSaveVersion) return NativeSaveResult::UnsupportedVersion;
     if (save.runtimeVersion != kNativeSaveRuntimeVersion) return NativeSaveResult::IncompatibleRuntime;
+    const bool immutableWeather = save.weatherType >= 7 && save.weatherType <= 9;
+    if (save.weatherType > 9 || save.weatherTurnsLeft > save.weatherMaxDuration ||
+        ((save.weatherType == 0 || immutableWeather) && (save.weatherTurnsLeft || save.weatherMaxDuration)) ||
+        (save.stage == NativeSaveStage::RunSetup && save.weatherType != 0))
+        return NativeSaveResult::InvalidRecord;
     if (!isHash(save.contentHash) || !isHash(expectedContentHash)) return NativeSaveResult::InvalidFormat;
     if (!equal(save.contentHash, expectedContentHash)) return NativeSaveResult::ContentMismatch;
     // Only the initial one-Pokemon, reward-skipping biome segment can be
@@ -404,6 +409,9 @@ NativeSaveResult encodeNativeRunSave(const NativeRunSave& save, char* output, si
     for (uint8_t member = 0; member < save.trainerPartyCount; ++member) {
         writer.text("memberStages="); writer.hex(packStages(save.trainerParty[member].statStages), 8);
     }
+    writer.text("weatherType="); writer.hex(save.weatherType, 2);
+    writer.text("weatherTurnsLeft="); writer.hex(save.weatherTurnsLeft, 4);
+    writer.text("weatherMaxDuration="); writer.hex(save.weatherMaxDuration, 4);
     if (!writer.valid) return NativeSaveResult::TooLarge;
     char hash[65];
     IntegritySha256::hashHex(output, writer.position, hash);
@@ -420,16 +428,17 @@ NativeSaveResult decodeNativeRunSave(const char* bytes, size_t length, const cha
     auto status = inspectEnvelope(bytes, length, value, payloadStart);
     if (status != NativeSaveResult::Ok) return status;
     if (value.saveVersion > kNativeSaveVersion) return NativeSaveResult::UnsupportedVersion;
-    if (value.saveVersion != 1 && value.saveVersion != 2 && value.saveVersion != 3 && value.saveVersion != 4 && value.saveVersion != 5 &&
+    if (value.saveVersion != 1 && value.saveVersion != 2 && value.saveVersion != 3 && value.saveVersion != 4 && value.saveVersion != 5 && value.saveVersion != 6 &&
         value.saveVersion != kNativeSaveVersion) return NativeSaveResult::UnsupportedVersion;
     const bool legacySetup = value.saveVersion == 1 && value.runtimeVersion == 1;
     const bool legacyBattle = value.saveVersion == 2 && value.runtimeVersion == 2;
     const bool legacyProgress = value.saveVersion == 3 && value.runtimeVersion == 3;
     const bool legacyTrainer = value.saveVersion == 4 && value.runtimeVersion == 4;
     const bool legacySwitch = value.saveVersion == 5 && value.runtimeVersion == 5;
+    const bool legacyStages = value.saveVersion == 6 && value.runtimeVersion == 6;
     const bool currentPayload = value.saveVersion == kNativeSaveVersion &&
         value.runtimeVersion == kNativeSaveRuntimeVersion;
-    if (!currentPayload && !legacySetup && !legacyBattle && !legacyProgress && !legacyTrainer && !legacySwitch)
+    if (!currentPayload && !legacySetup && !legacyBattle && !legacyProgress && !legacyTrainer && !legacySwitch && !legacyStages)
         return NativeSaveResult::IncompatibleRuntime;
     if (!isHash(expectedContentHash)) return NativeSaveResult::InvalidFormat;
     if (!equal(value.contentHash, expectedContentHash)) return NativeSaveResult::ContentMismatch;
@@ -457,7 +466,7 @@ NativeSaveResult decodeNativeRunSave(const char* bytes, size_t length, const cha
         if (value.stage != NativeSaveStage::RunSetup) return NativeSaveResult::UnsupportedStage;
         if (reader.position != reader.end) return NativeSaveResult::InvalidFormat;
         // Version-one records represented setup only. Upgrade in memory; the
-        // next journal write emits the current version-six format.
+        // next journal write emits the current version-seven format.
         value.saveVersion = kNativeSaveVersion;
         value.runtimeVersion = kNativeSaveRuntimeVersion;
     } else {
@@ -520,8 +529,16 @@ NativeSaveResult decodeNativeRunSave(const char* bytes, size_t length, const cha
                     !unpackStages(parsed, value.trainerParty[member].statStages))
                     return NativeSaveResult::InvalidFormat;
         }
+        if (value.saveVersion >= 7) {
+            if (!reader.literal("weatherType=") || !reader.hex(2, parsed)) return NativeSaveResult::InvalidFormat;
+            value.weatherType = static_cast<uint8_t>(parsed);
+            if (!reader.literal("weatherTurnsLeft=") || !reader.hex(4, parsed)) return NativeSaveResult::InvalidFormat;
+            value.weatherTurnsLeft = static_cast<uint16_t>(parsed);
+            if (!reader.literal("weatherMaxDuration=") || !reader.hex(4, parsed)) return NativeSaveResult::InvalidFormat;
+            value.weatherMaxDuration = static_cast<uint16_t>(parsed);
+        }
         if (reader.position != reader.end) return NativeSaveResult::InvalidFormat;
-        if (legacyBattle || legacyProgress || legacyTrainer || legacySwitch) {
+        if (legacyBattle || legacyProgress || legacyTrainer || legacySwitch || legacyStages) {
             value.saveVersion = kNativeSaveVersion;
             value.runtimeVersion = kNativeSaveRuntimeVersion;
         }

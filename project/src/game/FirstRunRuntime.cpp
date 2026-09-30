@@ -179,6 +179,9 @@ bool FirstRunRuntime::restoreNativeRunSave(const NativeRunSave& save) {
 }
 
 bool FirstRunRuntime::restoreNativeRunSaveInPlace(const NativeRunSave& save) {
+    // Arena weather save data is supported by the codec. This baseline cannot
+    // yet execute its ability/field effects; never load it as neutral weather.
+    if (save.weatherType || save.weatherTurnsLeft || save.weatherMaxDuration) return false;
     if (validateNativeRunSave(save, PokerogueContent::kContentHash) != NativeSaveResult::Ok ||
         save.stage < NativeSaveStage::RunSetup ||
         save.stage > NativeSaveStage::ExperienceGranted) return false;
