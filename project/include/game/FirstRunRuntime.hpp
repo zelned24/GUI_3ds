@@ -58,6 +58,8 @@ struct PresentationContext {
     bool trainerPartyBaseWeightsResolved = false;
     bool trainerPartyDamageWeightsResolved = false;
     bool trainerPartyMovesetsResolved = false;
+    bool trainerPartyIvsResolved = false;
+    bool trainerPartyBattleStatesResolved = false;
     ResolvedPokemon player;
     ResolvedPokemon enemy;
     ResolvedPokemon secondEnemy;
@@ -104,6 +106,7 @@ private:
     PokerogueBattleRng m_battleRng{};
     PokerogueRngState m_trainerConstructorRngStates[6]{};
     PokerogueRngState m_trainerPostMovesetRngStates[6]{};
+    PokerogueRngState m_trainerPostIvRngStates[6]{};
     std::size_t m_seedLength = 0;
     bool m_encounterResolved = false;
     bool m_doubleBattle = false;

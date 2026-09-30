@@ -540,10 +540,13 @@ void FirstRunRuntime::resolve(bool carryPlayer) {
     m_context.trainerPartyBaseWeightsResolved = false;
     m_context.trainerPartyDamageWeightsResolved = false;
     m_context.trainerPartyMovesetsResolved = false;
+    m_context.trainerPartyIvsResolved = false;
+    m_context.trainerPartyBattleStatesResolved = false;
     for (auto& level : m_context.trainerPartyLevels) level = 0;
     for (auto& member : m_context.trainerParty) member = {};
     for (auto& state : m_trainerConstructorRngStates) state = {};
     for (auto& state : m_trainerPostMovesetRngStates) state = {};
+    for (auto& state : m_trainerPostIvRngStates) state = {};
     for (auto& count : m_context.trainerPartyLevelMoveCounts) count = 0;
     for (auto& count : m_context.trainerPartySupersededMoveCounts) count = 0;
     for (auto& count : m_context.trainerPartyHardEligibleMoveCounts) count = 0;
@@ -687,6 +690,8 @@ void FirstRunRuntime::resolve(bool carryPlayer) {
                         bool allBaseWeightsResolved = true;
                         bool allDamageWeightsResolved = true;
                         bool allMovesetsResolved = true;
+                        bool allIvsResolved = true;
+                        bool allBattleStatesResolved = true;
                         for (uint8_t i = 0; i < levels.count; ++i) {
                             uint32_t memberOffset = 0;
                             if (!trainerPartyMemberSeedOffset(*trainer, m_run.wave, i, memberOffset)) {
@@ -822,6 +827,37 @@ void FirstRunRuntime::resolve(bool carryPlayer) {
                             for (uint8_t slot = 0; slot < moveCount; ++slot)
                                 partyMember.moveIds[slot] = moveIds[slot];
                             m_trainerPostMovesetRngStates[i] = memberRng.state();
+                            uint8_t trainerIvs[6]{};
+                            if (!generateClassicTrainerIvs(m_run.wave, memberRng,
+                                    trainerIvs)) {
+                                allIvsResolved = false;
+                                continue;
+                            }
+                            for (uint8_t stat = 0; stat < 6; ++stat)
+                                actor.ivs[stat] = trainerIvs[stat];
+                            m_trainerPostIvRngStates[i] = memberRng.state();
+                            partyMember.actor = actor;
+                            PokemonBattleInit trainerBattleInput{};
+                            trainerBattleInput.speciesDex = member.species->dex;
+                            trainerBattleInput.formId = actor.formId;
+                            trainerBattleInput.level = levels.values[i];
+                            trainerBattleInput.pokemonId = actor.pokemonId;
+                            trainerBattleInput.nature = actor.nature;
+                            trainerBattleInput.abilityId = preMovegenState.abilityId;
+                            trainerBattleInput.gender = actor.gender;
+                            trainerBattleInput.moveCount = moveCount;
+                            for (uint8_t stat = 0; stat < 6; ++stat)
+                                trainerBattleInput.ivs[stat] = trainerIvs[stat];
+                            for (uint8_t slot = 0; slot < moveCount; ++slot)
+                                trainerBattleInput.moveIds[slot] = moveIds[slot];
+                            PokemonBattleState trainerBattleState{};
+                            if (initializePokemonBattleState(trainerBattleInput,
+                                    trainerBattleState) != PokemonBattleInitResult::Ok) {
+                                allBattleStatesResolved = false;
+                                continue;
+                            }
+                            partyMember.actorIdentityResolved = true;
+                            partyMember.battleState = trainerBattleState;
                         }
                         m_context.trainerPartySpeciesResolved = allSpeciesResolved;
                         m_context.trainerPartyConstructorResolved =
@@ -840,10 +876,18 @@ void FirstRunRuntime::resolve(bool carryPlayer) {
                             m_context.trainerPartyBaseWeightsResolved && allDamageWeightsResolved;
                         m_context.trainerPartyMovesetsResolved =
                             m_context.trainerPartyDamageWeightsResolved && allMovesetsResolved;
+                        m_context.trainerPartyIvsResolved =
+                            m_context.trainerPartyMovesetsResolved && allIvsResolved;
+                        m_context.trainerPartyBattleStatesResolved =
+                            m_context.trainerPartyIvsResolved && allBattleStatesResolved;
                     }
                 }
-                m_battleFeedback = m_context.trainerPartyMovesetsResolved
-                    ? "Trainer shiny, IVs and battle pending"
+                m_battleFeedback = m_context.trainerPartyBattleStatesResolved
+                    ? "Trainer shiny, turns and rewards pending"
+                    : m_context.trainerPartyIvsResolved
+                    ? "Trainer battle state unsupported"
+                    : m_context.trainerPartyMovesetsResolved
+                    ? "Trainer IV draws unsupported"
                     : m_context.trainerPartyDamageWeightsResolved
                     ? "Trainer move selection unsupported"
                     : m_context.trainerPartyBaseWeightsResolved

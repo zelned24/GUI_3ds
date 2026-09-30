@@ -279,4 +279,17 @@ inline TrainerPartyLevels resolveClassicTrainerPartyLevels(const char* templateK
   return partyTemplate ? resolveClassicTrainerPartyLevels(*partyTemplate, wave, isDouble) : TrainerPartyLevels{};
 }
 
+// Pinned EnemyPokemon constructor: after moveset/shiny handling, trainer
+// members replace the ID-derived IVs with six draws in permanent stat order.
+// trySetShiny compares IDs without consuming the member RNG; shiny variant
+// selection runs in a scoped seed and restores that RNG.
+inline bool generateClassicTrainerIvs(uint16_t wave, PokerogueRngAdapter& rng,
+                                      uint8_t output[6]) {
+  if (!wave || !output || wave / 10 > 31) return false;
+  const int32_t minimum = wave / 10;
+  for (uint8_t stat = 0; stat < 6; ++stat)
+    output[stat] = static_cast<uint8_t>(rng.randSeedIntRange(minimum, 31));
+  return true;
+}
+
 }  // namespace Pokerogue3DS
