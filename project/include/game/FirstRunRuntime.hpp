@@ -132,6 +132,7 @@ public:
     bool throwPokeball(PokeballType type = PokeballType::Pokeball);
 
 private:
+    bool advanceBattleTurnInPlace();
     bool throwPokeballInPlace(PokeballType ball);
     bool switchPlayerPokemonInPlace(uint8_t targetIndex);
     bool selectEnemyMoveSlot(const PokemonBattleState& enemy, const PokemonBattleState& player,

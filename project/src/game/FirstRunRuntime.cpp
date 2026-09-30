@@ -439,12 +439,23 @@ double baselineEnemyMoveScore(const PokemonBattleState& user,
 
 bool FirstRunRuntime::resolveActiveMoveWeather(const PokemonBattleState& user,
     const PokemonBattleState& opponent, PokemonMoveWeatherContext& output) const {
-    const PokemonWeatherAbilityComponent components[2] = {
-        {user.abilityId, true, true},
-        {opponent.abilityId, true, false}
+    PokemonWeatherAbilityComponent components[3] = {
+        {user.abilityId, user.hp != 0, true},
+        {opponent.abilityId, opponent.hp != 0, false},
+        {0, false, false}
     };
+    uint8_t count = 2;
+    if (m_doubleBattle) {
+        const PokemonBattleState* field[] = {&m_context.player.battleState,
+            &m_context.enemy.battleState, &m_context.secondEnemy.battleState};
+        for (const auto* actor : field) {
+            if (actor->pokemonId == user.pokemonId || actor->pokemonId == opponent.pokemonId) continue;
+            components[count++] = {actor->abilityId, actor->hp != 0, false};
+            break;
+        }
+    }
     PokemonWeatherResolutionPolicy policy{};
-    return composePokemonWeatherResolutionPolicy(components, 2, policy) &&
+    return composePokemonWeatherResolutionPolicy(components, count, policy) &&
         resolvePokemonMoveWeatherContext(m_arenaWeather, policy, output);
 }
 
@@ -963,6 +974,19 @@ bool FirstRunRuntime::executeEnemyResponse(uint8_t userIndex, PokerogueRngAdapte
 }
 
 bool FirstRunRuntime::advanceBattleTurn() {
+    // Host processes commands before rendering; a failed phase cannot publish half a turn.
+    FirstRunRuntime candidate = *this;
+    if (!candidate.advanceBattleTurnInPlace()) {
+        m_battleFeedback = candidate.m_battleFeedback;
+        buildScene();
+        return false;
+    }
+    *this = candidate;
+    buildScene();
+    return true;
+}
+
+bool FirstRunRuntime::advanceBattleTurnInPlace() {
     if (m_rewardsPending) {
         return claimRewardChoice();
     }
@@ -1209,17 +1233,24 @@ bool FirstRunRuntime::advanceBattleTurn() {
             m_context.secondEnemy.battleState.moves[enemy1MoveSlot].moveId
         };
         for (uint8_t i = 0; i < 3; ++i) {
-            pokemonBaselineEffectiveStat(*states[i], 5, false, speeds[i]);
+            if (!states[i]->hp) continue;
+            PokemonMoveWeatherContext speedWeather{};
+            const auto& speedOpponent = i == 0 ? m_context.enemy.battleState : playerState;
+            if (!resolveActiveMoveWeather(*states[i], speedOpponent, speedWeather) ||
+                !pokemonWeatherEffectiveSpeed(*states[i], speedWeather, speeds[i])) return false;
             const auto* m = PokerogueContent::findMoveById(moveIds[i]);
-            priorities[i] = m ? m->priority : 0;
+            if (!m) return false;
+            priorities[i] = m->priority;
         }
 
         uint16_t waveSeed[PokerogueRngAdapter::kMaxSeedCodeUnits]{};
         if (!PokerogueRngAdapter::shiftCharCodes(m_seedCodeUnits.data(), m_seedLength,
                 m_run.wave, waveSeed, PokerogueRngAdapter::kMaxSeedCodeUnits)) return false;
         PokerogueRngAdapter tieRng;
+        if (m_turn > (0xffffffffU - activeCount) / 1000U) return false;
         PokerogueSeedOffsetScope tieScope(tieRng, waveSeed, m_seedLength, m_turn * 1000U + activeCount);
-        if (tieScope.valid() && activeCount > 1) {
+        if (!tieScope.valid()) return false;
+        if (activeCount > 1) {
             for (int i = static_cast<int>(activeCount) - 1; i > 0; --i) {
                 const int j = tieRng.integerInRange(0, i);
                 std::swap(activeBattlers[i], activeBattlers[j]);
@@ -1248,10 +1279,10 @@ bool FirstRunRuntime::advanceBattleTurn() {
                      std::strcmp(pMove->target, "ALL_OTHERS") == 0);
                 if (isSpread) {
                     if (m_context.enemy.battleState.hp > 0) {
-                        executeActiveBattleMove(0, 1, m_selectedBattleMove, *rng);
+                        if (!executeActiveBattleMove(0, 1, m_selectedBattleMove, *rng)) { m_battleFeedback = "Double battle action failed"; return false; }
                     }
                     if (m_context.secondEnemy.battleState.hp > 0) {
-                        executeActiveBattleMove(0, 2, m_selectedBattleMove, *rng);
+                        if (!executeActiveBattleMove(0, 2, m_selectedBattleMove, *rng)) { m_battleFeedback = "Double battle action failed"; return false; }
                     }
                 } else {
                     uint8_t target = m_selectedTarget == 0 ? 1 : 2;
@@ -1259,15 +1290,15 @@ bool FirstRunRuntime::advanceBattleTurn() {
                     else if (target == 2 && m_context.secondEnemy.battleState.hp == 0) target = 1;
                     if ((target == 1 && m_context.enemy.battleState.hp > 0) ||
                         (target == 2 && m_context.secondEnemy.battleState.hp > 0)) {
-                        executeActiveBattleMove(0, target, m_selectedBattleMove, *rng);
+                        if (!executeActiveBattleMove(0, target, m_selectedBattleMove, *rng)) { m_battleFeedback = "Double battle action failed"; return false; }
                     }
                 }
             } else if (battler == 1) {
                 if (!m_context.enemy.battleState.hp || !m_context.player.battleState.hp) continue;
-                executeActiveBattleMove(1, 0, enemy0MoveSlot, *rng);
+                if (!executeActiveBattleMove(1, 0, enemy0MoveSlot, *rng)) { m_battleFeedback = "Double battle action failed"; return false; }
             } else if (battler == 2) {
                 if (!m_context.secondEnemy.battleState.hp || !m_context.player.battleState.hp) continue;
-                executeActiveBattleMove(2, 0, enemy1MoveSlot, *rng);
+                if (!executeActiveBattleMove(2, 0, enemy1MoveSlot, *rng)) { m_battleFeedback = "Double battle action failed"; return false; }
             }
         }
 

@@ -173,3 +173,11 @@
 2. Cálculos de stats usan uint32_t antes de publicar uint16_t. Stats fuera del rango de almacenamiento fallan con InvalidStatRange, sin overflow silencioso. No es una limitación de catálogo ni un cap de gameplay de 100.
 3. Regresiones 460–463: actor real nivel 200, HP según fórmula, EXP 199→200 y rechazo atómico de stats demasiado grandes. Pendientes de ejecución.
 4. La progresión/save completa sigue pendiente; aceptar nivel 200 no demuestra combate final, fases Eternamax ni Classic completo.
+
+## Turnos dobles: errores y clima
+
+1. advanceBattleTurn publica el candidato solo si el turno completo tiene éxito. Un fallo conserva estado de combate y RNG; solo cambia feedback.
+2. Las cinco rutas de ataque doble comprueban el resultado. Velocidad usa pokemonWeatherEffectiveSpeed; política de clima incluye al tercer actor vivo, además de atacante y objetivo.
+3. Scope RNG inválido y overflow del offset de turno fallan explícitamente.
+4. Regresión 217–220 recorre encuentros reales y comprueba HP/PP/RNG de turnos rechazados. Escrita, pendiente de ejecución. No demuestra fallos inyectados a mitad del turno.
+5. Pendientes: dobles 2vs2 completos, semántica de ataques de área/PP, orden de respuestas tras captura/cambio, save extendido y fases Eternamax. Classic sigue incompleto.

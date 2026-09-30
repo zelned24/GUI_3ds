@@ -241,6 +241,30 @@ static int checkTrainerInteractiveBattle() {
 
 static int checkModifierRewardGenerationAndClaim() {
     using namespace Pokerogue3DS;
+    // Rejected real encounters must not publish partial combat state or RNG draws.
+    unsigned rejectedTurns = 0;
+    for (uint32_t seed = 1; seed <= 64; ++seed) {
+        FirstRunRuntime game(seed);
+        const auto beforePlayer = game.presentation().player.battleState;
+        const auto beforeEnemy = game.presentation().enemy.battleState;
+        const auto beforeSecond = game.presentation().secondEnemy.battleState;
+        const auto beforeRng = game.battleRng().state();
+        if (game.advanceBattleTurn()) continue;
+        ++rejectedTurns;
+        const auto afterRng = game.battleRng().state();
+        if (beforeRng.carry != afterRng.carry || beforeRng.s0 != afterRng.s0 ||
+            beforeRng.s1 != afterRng.s1 || beforeRng.s2 != afterRng.s2) return 217;
+        const PokemonBattleState* before[] = {&beforePlayer, &beforeEnemy, &beforeSecond};
+        const PokemonBattleState* after[] = {&game.presentation().player.battleState,
+            &game.presentation().enemy.battleState, &game.presentation().secondEnemy.battleState};
+        for (unsigned actor = 0; actor < 3; ++actor) {
+            if (before[actor]->hp != after[actor]->hp ||
+                before[actor]->moveCount != after[actor]->moveCount) return 218;
+            for (unsigned slot = 0; slot < before[actor]->moveCount; ++slot)
+                if (before[actor]->moves[slot].pp != after[actor]->moves[slot].pp) return 219;
+        }
+    }
+    if (!rejectedTurns) return 220; // The capability boundary must be exercised.
     for (uint32_t seed = 1; seed <= 64; ++seed) {
         FirstRunRuntime game(seed);
         const auto& context = game.presentation();
