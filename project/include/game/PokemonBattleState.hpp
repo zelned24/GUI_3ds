@@ -476,6 +476,10 @@ struct PokemonBossState {
 };
 bool initializeClassicPokemonBossState(uint16_t speciesDex, uint16_t level, uint32_t wave,
     bool forceBoss, bool finalBossFirstPhase, PokemonBossState& output);
+// EncounterPhase: proportional shields when both freshly generated enemies are bosses.
+// Base totals belong to the resolved species forms, not calculated battle stats.
+bool distributePokemonDoubleBossSegments(PokemonBossState& first, uint16_t firstBaseTotal,
+    PokemonBossState& second, uint16_t secondBaseTotal);
 struct PokemonBossDamagePolicy {
     bool resolved = false;
     bool damageCallbacksResolved = false;

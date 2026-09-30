@@ -325,3 +325,9 @@
 2. FirstRunRuntime pasa bossState y política al comando estándar de daño para ataques plain/recoil/drain. Las rutas de recoil/drain publican estado de segmentos después de resolver su efecto; fallo se rechaza sin publicación parcial del comando completo.
 3. Regresión 261–263 comprueba Pressure soportada y Sturdy bloqueada por callbacks aún no portados. Escrita, pendiente de ejecución.
 4. Jefes aún incompletos: daño residual, callbacks adicionales, forma Eternamax, asignación de segmentos en dobles y guardado. No se declara Classic completo.
+
+## Reparto de segmentos en encuentros dobles
+
+1. EncounterPhase pinned (src/phases/encounter-phase.ts) reduce segmentos únicamente cuando existen varios jefes generados: ceil(segmentos * BST de forma / BST total). Runtime aplica esa proporción con aritmética entera y referencias a formas canónicas; no usa stats de combate.
+2. Regresiones 497–500 escritas para proporciones desiguales, redondeo, entrada inválida sin mutación y encuentro con un solo jefe. Pendientes de ejecución por instrucción del usuario.
+3. Continúan pendientes dobles 2vs2, callbacks completos, daño residual de jefes, Eternamax y persistencia. No se declara Classic completo.

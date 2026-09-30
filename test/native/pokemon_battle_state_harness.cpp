@@ -2137,6 +2137,20 @@ extern "C" int runPokemonBattleStateChecks() {
         !initializedBoss.classicFinalBossFirstPhase) return 495;
     if (Pokerogue3DS::initializeClassicPokemonBossState(65535, 5, 1, false, false, initializedBoss) ||
         initializedBoss.segmentCount != 4) return 496;
+    Pokerogue3DS::PokemonBossState firstDoubleBoss{3, 2, false, false};
+    Pokerogue3DS::PokemonBossState secondDoubleBoss{4, 3, false, false};
+    if (!Pokerogue3DS::distributePokemonDoubleBossSegments(firstDoubleBoss, 300, secondDoubleBoss, 700) ||
+        firstDoubleBoss.segmentCount != 1 || firstDoubleBoss.segmentIndex != 0 ||
+        secondDoubleBoss.segmentCount != 3 || secondDoubleBoss.segmentIndex != 2) return 497;
+    firstDoubleBoss = {3, 2, false, false};
+    secondDoubleBoss = {3, 2, false, false};
+    if (!Pokerogue3DS::distributePokemonDoubleBossSegments(firstDoubleBoss, 500, secondDoubleBoss, 500) ||
+        firstDoubleBoss.segmentCount != 2 || secondDoubleBoss.segmentCount != 2) return 498;
+    if (Pokerogue3DS::distributePokemonDoubleBossSegments(firstDoubleBoss, 0, secondDoubleBoss, 500) ||
+        firstDoubleBoss.segmentCount != 2 || secondDoubleBoss.segmentCount != 2) return 499;
+    secondDoubleBoss = {};
+    if (!Pokerogue3DS::distributePokemonDoubleBossSegments(firstDoubleBoss, 500, secondDoubleBoss, 500) ||
+        firstDoubleBoss.segmentCount != 2 || secondDoubleBoss.segmentCount) return 500;
     Pokerogue3DS::PokemonBossSegmentDamage bossDamage{};
     if (!Pokerogue3DS::calculatePokemonBossSegmentDamage(99, 300, 300, 3, 2, 0, bossDamage) ||
         bossDamage.adjustedDamage != 99 || bossDamage.clearedSegmentIndex != 3) return 468;

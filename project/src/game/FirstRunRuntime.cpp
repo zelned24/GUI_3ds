@@ -2663,6 +2663,17 @@ void FirstRunRuntime::resolve(bool carryPlayer) {
         if (!resolveEnemyActor(secondSpecies, m_context.secondEnemy)) return;
         if (!initializeClassicPokemonBossState(secondSpecies.dex, secondLevel, m_run.wave, false,
                 false, m_context.secondEnemy.bossState)) return;
+        if (m_context.enemy.bossState.segmentCount && m_context.secondEnemy.bossState.segmentCount) {
+            const auto* firstForm = PokerogueContent::findFormById(m_context.enemy.formId);
+            const auto* secondForm = PokerogueContent::findFormById(m_context.secondEnemy.formId);
+            if (!firstForm || !secondForm) return;
+            const uint16_t firstTotal = firstForm->hp + firstForm->atk + firstForm->def +
+                firstForm->spatk + firstForm->spdef + firstForm->speed;
+            const uint16_t secondTotal = secondForm->hp + secondForm->atk + secondForm->def +
+                secondForm->spatk + secondForm->spdef + secondForm->speed;
+            if (!distributePokemonDoubleBossSegments(m_context.enemy.bossState, firstTotal,
+                    m_context.secondEnemy.bossState, secondTotal)) return;
+        }
         m_secondEncounterResolved = true;
     }
     if (m_run.wave == 1 || (m_run.wave > 1 && (m_run.wave - 1) % 10 == 0)) {

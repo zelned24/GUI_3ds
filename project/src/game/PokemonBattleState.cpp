@@ -1387,6 +1387,24 @@ bool initializeClassicPokemonBossState(uint16_t speciesDex, uint16_t level, uint
     return true;
 }
 
+bool distributePokemonDoubleBossSegments(PokemonBossState& first, uint16_t firstBaseTotal,
+    PokemonBossState& second, uint16_t secondBaseTotal) {
+    if (!first.segmentCount || !second.segmentCount) return true;
+    if (!firstBaseTotal || !secondBaseTotal || first.segmentIndex >= first.segmentCount ||
+        second.segmentIndex >= second.segmentCount || first.classicFinalBossFirstPhase ||
+        second.classicFinalBossFirstPhase) return false;
+    const uint32_t total = static_cast<uint32_t>(firstBaseTotal) + secondBaseTotal;
+    const uint16_t firstCount = static_cast<uint16_t>(
+        (static_cast<uint32_t>(first.segmentCount) * firstBaseTotal + total - 1) / total);
+    const uint16_t secondCount = static_cast<uint16_t>(
+        (static_cast<uint32_t>(second.segmentCount) * secondBaseTotal + total - 1) / total);
+    first.segmentCount = firstCount;
+    first.segmentIndex = firstCount - 1;
+    second.segmentCount = secondCount;
+    second.segmentIndex = secondCount - 1;
+    return true;
+}
+
 bool applyPokemonBossDamage(PokemonBattleState& boss, PokemonBossState& state,
     uint32_t damage, const PokemonBossDamagePolicy& policy, PokerogueRngAdapter& rng,
     PokemonBossDamageEvent& output) {
