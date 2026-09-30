@@ -389,6 +389,23 @@ extern "C" int runPokemonBattleStateChecks() {
     if (Pokerogue3DS::applyReflectedPokemonStatStages(reflectedSource, stageEvent,
             reflectedPolicy, reflectedEvent) != Pokerogue3DS::PokemonStatStageEffectResult::Ok ||
         reflectedSource.statStages[0] != -1 || reflectedEvent.changes[0] != 1) return 244;
+    const PokerogueContent::AbilityStatStageReaction* defiantReaction = nullptr;
+    for (const auto& reaction : PokerogueContent::kAbilityStatStageReactions)
+        if (std::strcmp(reaction.sourceSymbol, "AbilityId.DEFIANT") == 0) defiantReaction = &reaction;
+    if (!defiantReaction || defiantReaction->stat != 1) return 245;
+    Pokerogue3DS::PokemonStatStageEffectEvent requestedDrop{};
+    requestedDrop.triggered = true;
+    requestedDrop.processedStatMask = 3;
+    requestedDrop.requestedStages = -1;
+    Pokerogue3DS::PokemonStatStageReactionRequest reactionRequest{};
+    if (!Pokerogue3DS::planPokemonStatStageDropReaction(*defiantReaction, requestedDrop,
+            false, reactionRequest) || reactionRequest.stat != 1 || reactionRequest.stages != 4)
+        return 246; // Source uses requested changes, even if applied changes are capped.
+    if (!Pokerogue3DS::planPokemonStatStageDropReaction(*defiantReaction, requestedDrop,
+            true, reactionRequest) || reactionRequest.stages) return 247;
+    requestedDrop.processedStatMask = 0;
+    if (!Pokerogue3DS::planPokemonStatStageDropReaction(*defiantReaction, requestedDrop,
+            false, reactionRequest) || reactionRequest.stages) return 248;
     PokemonBattleInit actorIdInput = input;
     actorIdInput.pokemonId = 0x12345678u;
     actorIdInput.deriveIvsFromPokemonId = true;

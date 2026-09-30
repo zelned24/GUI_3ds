@@ -67,6 +67,8 @@ inline bool composePokemonStatStageAbilityPolicy(
 struct PokemonStatStageEffectEvent {
     bool triggered = false;
     uint8_t changedStatMask = 0;
+    uint8_t processedStatMask = 0;
+    int16_t requestedStages = 0;
     uint8_t reflectedStatMask = 0;
     int8_t reflectedStages = 0;
     int8_t changes[7]{};
@@ -97,6 +99,8 @@ inline PokemonStatStageEffectResult applyPokemonStatStageEffect(
         return PokemonStatStageEffectResult::Ok;
     }
     next.triggered = true;
+    next.processedStatMask = effect.statMask & static_cast<uint8_t>(~policy.cancelledStatMask);
+    next.requestedStages = static_cast<int8_t>(effect.stages * policy.stageMultiplier);
     next.reflectedStatMask = policy.reflectedStatMask & effect.statMask;
     next.reflectedStages = next.reflectedStatMask
         ? static_cast<int8_t>(effect.stages * policy.stageMultiplier) : 0;
@@ -134,6 +138,9 @@ inline PokemonStatStageEffectResult applyReflectedPokemonStatStages(
         if (stage < -6 || stage > 6) return PokemonStatStageEffectResult::InvalidState;
     event.triggered = true;
     const int requestedChange = reflection.reflectedStages * sourcePolicy.stageMultiplier;
+    event.processedStatMask = reflection.reflectedStatMask & static_cast<uint8_t>(~sourcePolicy.cancelledStatMask);
+    // Reactions depend on the sign and count of requested changes, even at a cap.
+    event.requestedStages = static_cast<int16_t>(requestedChange);
     for (uint8_t stat = 0; stat < 7; ++stat) {
         const uint8_t bit = static_cast<uint8_t>(1u << stat);
         if (!(reflection.reflectedStatMask & bit) || (sourcePolicy.cancelledStatMask & bit)) continue;
@@ -146,6 +153,31 @@ inline PokemonStatStageEffectResult applyReflectedPokemonStatStages(
     }
     output = event;
     return PokemonStatStageEffectResult::Ok;
+}
+
+struct PokemonStatStageReactionRequest {
+    uint8_t stat = 0;
+    uint8_t stages = 0;
+};
+
+inline bool planPokemonStatStageDropReaction(
+    const PokerogueContent::AbilityStatStageReaction& reaction,
+    const PokemonStatStageEffectEvent& event, bool selfTarget,
+    PokemonStatStageReactionRequest& output) {
+    if (!reaction.stat || reaction.stat > 7 || !reaction.stagesPerRequestedStat ||
+        reaction.stagesPerRequestedStat > 6 || event.processedStatMask > 127) return false;
+    PokemonStatStageReactionRequest next{};
+    if (!selfTarget && event.triggered && event.requestedStages < 0) {
+        uint8_t count = 0;
+        for (uint8_t stat = 0; stat < 7; ++stat)
+            if (event.processedStatMask & (1u << stat)) ++count;
+        if (count) {
+            next.stat = reaction.stat;
+            next.stages = static_cast<uint8_t>(count * reaction.stagesPerRequestedStat);
+        }
+    }
+    output = next;
+    return true;
 }
 
 struct PokemonStatStageMovePolicy {
