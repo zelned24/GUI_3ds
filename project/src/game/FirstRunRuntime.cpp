@@ -539,9 +539,20 @@ bool FirstRunRuntime::advanceBattleTurn() {
         candidates[position] = candidate;
         scores[position] = score;
     }
-    uint8_t chosenIndex = 0;
-    while (chosenIndex + 1 < candidateCount && rng->randSeedInt(8) >= 5) ++chosenIndex;
-    const uint8_t enemyMoveSlot = candidates[chosenIndex];
+    uint8_t enemyMoveSlot = 0;
+    if (m_trainerBattle) {
+        // EnemyPokemon constructor selects SMART whenever hasTrainer() is true.
+        if (!selectSmartTrainerMoveSlot(scores, candidates, candidateCount, *rng,
+                enemyMoveSlot)) {
+            m_battleFeedback = "Trainer SMART move selection failed";
+            buildScene();
+            return false;
+        }
+    } else {
+        uint8_t chosenIndex = 0;
+        while (chosenIndex + 1 < candidateCount && rng->randSeedInt(8) >= 5) ++chosenIndex;
+        enemyMoveSlot = candidates[chosenIndex];
+    }
     const auto* enemyMove = PokerogueContent::findMoveById(enemyState.moves[enemyMoveSlot].moveId);
     if (!enemyMove) {
         m_battleFeedback = "Canonical enemy move reference invalid";
@@ -568,7 +579,7 @@ bool FirstRunRuntime::advanceBattleTurn() {
                 m_context.player.battleState, enemyMoveSlot, false, *rng, result);
             if (status != PokemonMoveActionStatus::Ok) return false;
             m_battleFeedback = result.damageRoll.hit
-                ? "Wild move hit" : "Wild move missed";
+                ? "Enemy move hit" : "Enemy move missed";
         } else {
             if (!m_context.enemy.battleState.hp) return true;
             const auto status = useStandardPokemonMove(m_context.player.battleState,
@@ -580,12 +591,12 @@ bool FirstRunRuntime::advanceBattleTurn() {
     };
     const bool enemyFirst = firstMover == BaselineFirstMover::Enemy;
     if (!act(enemyFirst)) {
-        m_battleFeedback = enemyFirst ? "Wild move resolution failed" : "Player move resolution failed";
+        m_battleFeedback = enemyFirst ? "Enemy move resolution failed" : "Player move resolution failed";
         buildScene();
         return false;
     }
     if (m_context.player.battleState.hp && m_context.enemy.battleState.hp && !act(!enemyFirst)) {
-        m_battleFeedback = enemyFirst ? "Player move resolution failed" : "Wild move resolution failed";
+        m_battleFeedback = enemyFirst ? "Player move resolution failed" : "Enemy move resolution failed";
         buildScene();
         return false;
     }
@@ -599,7 +610,7 @@ bool FirstRunRuntime::advanceBattleTurn() {
             buildScene();
             return false;
         }
-        m_battleFeedback = m_playerWon ? "Wild battle won - rewards pending" : "Pokemon fainted - run end pending";
+        m_battleFeedback = m_playerWon ? "Enemy defeated - experience pending" : "Pokemon fainted - run end pending";
         m_checkpointAvailable = true;
     } else {
         ++m_turn;
