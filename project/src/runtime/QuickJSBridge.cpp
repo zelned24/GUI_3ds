@@ -177,8 +177,8 @@ void QuickJSBridge::setPokemonPresentation(const ResolvedPokemon& player,
 }
 JSValue QuickJSBridge::drawPokemon(JSContext* ctx, JSValueConst, int argc, JSValueConst* argv) {
     auto* bridge = static_cast<QuickJSBridge*>(JS_GetContextOpaque(ctx));
-    if (!bridge || !bridge->m_inTick || bridge->m_screenWidth != 400 || argc != 5)
-        return JS_ThrowTypeError(ctx, "drawPokemon requires top screen and five arguments");
+    if (!bridge || !bridge->m_inTick || bridge->m_screenWidth != 400 || (argc != 5 && argc != 6))
+        return JS_ThrowTypeError(ctx, "drawPokemon requires top screen and five or six arguments");
     double dexNumber, x, y, scale;
     if (!number(ctx, argv[0], dexNumber) || !number(ctx, argv[2], x) ||
         !number(ctx, argv[3], y) || !number(ctx, argv[4], scale))
@@ -188,11 +188,20 @@ JSValue QuickJSBridge::drawPokemon(JSContext* ctx, JSValueConst, int argc, JSVal
         return JS_ThrowRangeError(ctx, "Invalid Pokemon draw parameters");
     const int back = JS_ToBool(ctx, argv[1]);
     if (back < 0) return JS_EXCEPTION;
-    const auto* pokemon = back ? bridge->m_player : bridge->m_enemy;
+    bool second = false;
+    if (argc == 6) {
+        double slot;
+        if (!number(ctx, argv[5], slot) || slot != 2 || back || !bridge->m_game || !bridge->m_game->doubleBattle())
+            return JS_ThrowRangeError(ctx, "Sixth argument selects active second enemy slot 2 only");
+        second = true;
+    }
+    const auto* pokemon = second ? &bridge->m_game->presentation().secondEnemy
+        : back ? bridge->m_player : bridge->m_enemy;
     if (!pokemon || pokemon->dex != static_cast<uint16_t>(dexNumber) ||
         !PokerogueContent::findSpeciesByDex(pokemon->dex))
         return JS_ThrowRangeError(ctx, "Sprite must reference the resolved active actor");
-    auto& presenter = back ? bridge->m_presenterPlayer : bridge->m_presenterEnemy;
+    auto& presenter = second ? bridge->m_presenterSecondEnemy
+        : back ? bridge->m_presenterPlayer : bridge->m_presenterEnemy;
     // Presenter owns metadata/cache/pages. It loads on key/page changes, not every frame.
     // Internal filesystem/texture operations may allocate; callback has no explicit new/malloc.
     presenter.draw(*bridge->m_renderer, *pokemon, back, static_cast<float>(x),
@@ -260,6 +269,8 @@ JSValue QuickJSBridge::getPresentationInfo(JSContext* ctx, JSValueConst, int, JS
     if (!set("trainerTypeId", JS_NewUint32(ctx, view.trainerTypeId)) ||
         !set("trainerName", JS_NewString(ctx, view.trainerName ? view.trainerName : "")) ||
         !set("trainerPartyCount", JS_NewUint32(ctx, view.trainerPartyCount)) ||
+        !set("doubleBattle", JS_NewBool(ctx, b->m_game->doubleBattle())) ||
+        !set("secondEnemyDex", JS_NewUint32(ctx, b->m_game->doubleBattle() ? view.secondEnemy.dex : 0)) ||
         !set("activeTrainerMember", JS_NewUint32(ctx, view.activeTrainerPartyIndex)) ||
         !set("biomeId", JS_NewString(ctx, b->m_game->run().biomeId ? b->m_game->run().biomeId : "")) ||
         !set("biomeName", JS_NewString(ctx, view.biomeName ? view.biomeName : ""))) {
@@ -312,7 +323,7 @@ bool QuickJSBridge::processPendingAction() {
             for (unsigned i = 0; i < 8 && !seed; ++i) seed = next.randSeedUint32();
             if (seed) ok = m_game->restoreSetup(seed, species->dex);
         }
-        if (ok) { m_restartStarter = 0; m_presenterPlayer.invalidate(); m_presenterEnemy.invalidate(); }
+        if (ok) { m_restartStarter = 0; m_presenterPlayer.invalidate(); m_presenterEnemy.invalidate(); m_presenterSecondEnemy.invalidate(); }
         std::snprintf(m_actionFeedback, sizeof(m_actionFeedback), "%s", ok ? "New run ready" : "Restart failed: invalid starter/RNG");
     } else if (action == 202 || action == 203) {
         if (!m_game->runStarted()) m_game->cycleStarter(action == 202 ? -1 : 1);
@@ -378,6 +389,7 @@ void QuickJSBridge::fini() {
     m_actionFeedback[0] = 0;
     m_presenterPlayer.invalidate();
     m_presenterEnemy.invalidate();
+    m_presenterSecondEnemy.invalidate();
     m_player = m_enemy = nullptr;
     m_animationTimeMs = 0;
     if (m_context) {

@@ -60,6 +60,7 @@ private:
     char m_battleStateJson[2048]{};
     PokemonAtlasPresenter m_presenterPlayer;
     PokemonAtlasPresenter m_presenterEnemy;
+    PokemonAtlasPresenter m_presenterSecondEnemy;
     const ResolvedPokemon* m_player = nullptr;
     const ResolvedPokemon* m_enemy = nullptr;
     uint64_t m_animationTimeMs = 0;
