@@ -73,6 +73,7 @@ bool QuickJSBridge::init(Renderer2D& renderer) {
         {"_3ds_clear", clear, 1}, {"_3ds_drawImage", drawImage, 6},
         {"_3ds_resetRun", resetRun, 0}, {"_3ds_cycleStarter", cycleStarterBinding, 1},
         {"_3ds_getStarterName", getStarterName, 0}, {"_3ds_getMoveName", getMoveName, 1},
+        {"_3ds_getPresentationInfo", getPresentationInfo, 0},
         {"_3ds_saveNative", saveNative, 0}, {"_3ds_loadNative", loadNative, 0},
         {"_3ds_submitAction", submitAction, 1}, {"_3ds_skipReward", skipReward, 0},
         {"_3ds_getCombatLog", getCombatLog, 0},
@@ -245,6 +246,34 @@ JSValue QuickJSBridge::cycleStarterBinding(JSContext* ctx, JSValueConst, int arg
     if (b->m_pendingAction != -999) return JS_FALSE;
     if (b->m_game->runStarted() && !(b->m_game->battleFinished() && !b->m_game->playerWon())) return JS_FALSE;
     b->m_pendingAction = direction < 0 ? 202 : 203; return JS_TRUE;
+}
+JSValue QuickJSBridge::getPresentationInfo(JSContext* ctx, JSValueConst, int, JSValueConst*) {
+    auto* b = static_cast<QuickJSBridge*>(JS_GetContextOpaque(ctx));
+    if (!b || !b->m_game) return JS_NULL;
+    const auto& view = b->m_game->presentation();
+    JSValue info = JS_NewObject(ctx);
+    if (JS_IsException(info)) return JS_EXCEPTION;
+    auto set = [&](const char* key, JSValue value) {
+        if (JS_IsException(value)) return false;
+        return JS_SetPropertyStr(ctx, info, key, value) >= 0;
+    };
+    if (!set("trainerTypeId", JS_NewUint32(ctx, view.trainerTypeId)) ||
+        !set("trainerName", JS_NewString(ctx, view.trainerName ? view.trainerName : "")) ||
+        !set("trainerPartyCount", JS_NewUint32(ctx, view.trainerPartyCount)) ||
+        !set("activeTrainerMember", JS_NewUint32(ctx, view.activeTrainerPartyIndex)) ||
+        !set("biomeId", JS_NewString(ctx, b->m_game->run().biomeId ? b->m_game->run().biomeId : "")) ||
+        !set("biomeName", JS_NewString(ctx, view.biomeName ? view.biomeName : ""))) {
+        JS_FreeValue(ctx, info); return JS_EXCEPTION;
+    }
+    JSValue party = JS_NewArray(ctx);
+    if (JS_IsException(party)) { JS_FreeValue(ctx, info); return JS_EXCEPTION; }
+    for (unsigned i = 0; i < view.trainerPartyCount && i < 6; ++i) {
+        if (JS_SetPropertyUint32(ctx, party, i, JS_NewUint32(ctx, view.trainerParty[i].dex)) < 0) {
+            JS_FreeValue(ctx, party); JS_FreeValue(ctx, info); return JS_EXCEPTION;
+        }
+    }
+    if (!set("trainerParty", party)) { JS_FreeValue(ctx, info); return JS_EXCEPTION; }
+    return info;
 }
 JSValue QuickJSBridge::getMoveName(JSContext* ctx, JSValueConst, int argc, JSValueConst* argv) {
     double id;

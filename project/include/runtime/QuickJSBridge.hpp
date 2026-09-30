@@ -30,6 +30,7 @@ public:
     uint16_t restartStarterDex() const;
     static JSValue resetRun(JSContext*, JSValueConst, int, JSValueConst*);
     static JSValue cycleStarterBinding(JSContext*, JSValueConst, int, JSValueConst*);
+    static JSValue getPresentationInfo(JSContext*, JSValueConst, int, JSValueConst*);
     static JSValue getMoveName(JSContext*, JSValueConst, int, JSValueConst*);
     static JSValue getStarterName(JSContext*, JSValueConst, int, JSValueConst*);
     static JSValue saveNative(JSContext*, JSValueConst, int, JSValueConst*);

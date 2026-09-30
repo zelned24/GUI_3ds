@@ -55,6 +55,7 @@ globalThis._3ds_tick = function(input) {
   else if (input.down) _3ds_submitAction(100);
   else if (input.B && state.finished && state.playerWon && state.experienceGranted) _3ds_skipReward();
   const combatLog = _3ds_getCombatLog();
+  const presentation = _3ds_getPresentationInfo() || {};
   if (gameOverScreen) {
     _3ds_beginTop(); _3ds_clear(0xFF0A0A0A);
     _3ds_drawText('DERROTA', 135, 72, 1.0, RED);
@@ -92,7 +93,10 @@ globalThis._3ds_tick = function(input) {
       : 'Defeat - Start: restart'
     : state.supported ? 'Start/A: execute selected move' : 'Pending rules block this battle';
   _3ds_drawText(phaseText, 10, 147, 0.43, state.playerWon || state.supported ? GREEN : RED);
-  _3ds_drawText('Up/Down: move  Left/Right: starter', 8, 185, 0.43, WHITE);
+  if (presentation.trainerTypeId) {
+    _3ds_drawText((presentation.trainerName || 'Trainer') + ' (' + (presentation.trainerPartyCount || 0) + ' Pokemon)', 8, 166, 0.4, WHITE);
+    _3ds_drawText('Party: ' + (presentation.trainerParty || []).join(' / '), 8, 183, 0.4, WHITE);
+  } else _3ds_drawText('Up/Down: move  Left/Right: starter', 8, 185, 0.43, WHITE);
   _3ds_drawText('Start/A:Confirm  B:Reward  X:Save', 8, 203, 0.43, WHITE);
   _3ds_drawText('L:Save  R:Load  Y:Export', 8, 219, 0.43, WHITE);
 };
