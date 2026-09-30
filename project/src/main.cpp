@@ -100,6 +100,8 @@ int main() {
         // Starter navigation and SD operations remain host-owned; no duplicate battle input.
         // JS queues starter navigation and native save/load outside rendering.
 #endif
+        if (pressed & KEY_SELECT)
+            changed = game.togglePlayerEvolutionPause(game.activePlayerPartyIndex()) || changed;
         uint32_t hostStorageKeys = pressed & (KEY_X | KEY_Y | KEY_L | KEY_R);
 #if defined(POKEROGUE_ENABLE_QUICKJS)
         if (jsCommands) hostStorageKeys &= KEY_X | KEY_Y; // L/R now belong to bridge save/load.

@@ -215,8 +215,8 @@ JSValue QuickJSBridge::submitAction(JSContext* ctx, JSValueConst, int argc, JSVa
         return JS_ThrowTypeError(ctx, "submitAction requires runtime and one command");
     double value;
     if (!number(ctx, argv[0], value) || std::floor(value) != value ||
-        !((value >= 0 && value <= 3) || value == -1 || value == 100 || (value >= 210 && value <= 216)))
-        return JS_ThrowRangeError(ctx, "Use slots 0..3, cursor -1/+100, capture 210 or party 211..216");
+        !((value >= 0 && value <= 3) || value == -1 || value == 100 || (value >= 210 && value <= 216) || (value >= 220 && value <= 225)))
+        return JS_ThrowRangeError(ctx, "Use slots 0..3, cursor -1/+100, capture 210, party 211..216 or evolution pause 220..225");
     if (bridge->m_pendingAction != -999) return JS_FALSE;
     if (value >= 0 && value <= 3 && !bridge->m_game->battleFinished() &&
         value >= bridge->m_game->presentation().player.battleState.moveCount) return JS_FALSE;
@@ -420,6 +420,8 @@ bool QuickJSBridge::processPendingAction() {
         m_game->throwPokeball(PokeballType::Pokeball);
     } else if (action >= 211 && action <= 216) {
         m_game->switchPlayerPokemon(static_cast<uint8_t>(action - 211));
+    } else if (action >= 220 && action <= 225) {
+        return m_game->togglePlayerEvolutionPause(static_cast<uint8_t>(action - 220));
     }
     return true;
 }

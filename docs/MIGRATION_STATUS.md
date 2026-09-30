@@ -448,3 +448,9 @@
 2. PokemonBattleState conserva pauseEvolutions al recalcular nivel/cambiar especie; LevelUp no propone evolución mientras esté activo. Se sincroniza al miembro del equipo y se conserva mediante snapshot explícito.
 3. Codec de actor pokemon=2 añade bool validado; lector acepta pokemon=1 con false. El contenedor de run mantiene v10 y su checksum; lectores antiguos rechazan el nuevo miembro en vez de descartar el campo. Regresiones 320–323 escritas para captura, codec/restore, migración v1 y flag inválido sin mutación.
 4. Falta control de reactivación en el menú del Pokémon y animación cancelable con fidelidad temporal. Tests y compilación aplazados; no se declara Classic completo.
+
+## Control de pausa/reactivación por miembro
+
+1. Porta src/ui/handlers/party-ui-handler.ts processUnpauseEvolutionOption y elegibilidad hasEvolutions del upstream pinned. Comando togglePlayerEvolutionPause opera sobre miembro activo o reserva, bloquea decisiones pendientes/índice inválido/especie sin evoluciones y sincroniza actor activo.
+2. SELECT alterna el actor activo desde el host nativo; bridge admite acciones 220–225 para los seis miembros. No consume turnos, concede EXP ni inicia evolución inmediata. El cambio obliga a snapshot explícito y conserva la opción en restore.
+3. Regresiones 324–327 escritas para índice inválido, elegibilidad real, pausa/restore/reactivación y ausencia de avance de wave/turno/EXP/HP. Tests y compilación aplazados. Menú visual completo de equipo y animación de evolución siguen pendientes.

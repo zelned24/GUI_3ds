@@ -1240,6 +1240,25 @@ int main() {
         for (uint8_t slot = 0; slot < actorSnapshot.moveCount; ++slot)
             if (singleRecaptured.playerParty[0].moveIds[slot] != actorSnapshot.moveIds[slot] ||
                 singleRecaptured.playerParty[0].pp[slot] != actorSnapshot.pp[slot]) return 319;
+        bool actorHasEvolutions = false;
+        for (const auto& edge : PokerogueContent::kSpeciesEvolutions)
+            actorHasEvolutions |= pokemonEvolutionTextEqual(edge.sourceSpeciesId,
+                singleSnapshotRuntime.presentation().player.speciesId);
+        if (singleSnapshotRuntime.togglePlayerEvolutionPause(6) ||
+            singleSnapshotRuntime.togglePlayerEvolutionPause(0) != actorHasEvolutions) return 324;
+        NativeRunSave toggledPauseSave{};
+        singleSnapshotRuntime.captureNativeRunSave(toggledPauseSave);
+        if (toggledPauseSave.playerPartyCount != 1 ||
+            toggledPauseSave.playerParty[0].pauseEvolutions != actorHasEvolutions ||
+            toggledPauseSave.battleTurn != singleRecaptured.battleTurn ||
+            toggledPauseSave.wave != singleRecaptured.wave ||
+            toggledPauseSave.playerHp != singleRecaptured.playerHp ||
+            toggledPauseSave.playerExperience != singleRecaptured.playerExperience) return 325;
+        if (!singleSnapshotRuntime.restoreNativeRunSave(toggledPauseSave) ||
+            singleSnapshotRuntime.presentation().player.battleState.pauseEvolutions != actorHasEvolutions)
+            return 326;
+        if (actorHasEvolutions && (!singleSnapshotRuntime.togglePlayerEvolutionPause(0) ||
+            singleSnapshotRuntime.presentation().player.battleState.pauseEvolutions)) return 327;
         explicitParty.activePlayerMember = 1;
         if (validateNativeRunSave(explicitParty, PokerogueContent::kContentHash) !=
                 NativeSaveResult::InvalidRecord) return 288;

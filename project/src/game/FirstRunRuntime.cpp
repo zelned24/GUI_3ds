@@ -2119,6 +2119,31 @@ bool FirstRunRuntime::throwPokeballInPlace(PokeballType ball) {
     }
 }
 
+bool FirstRunRuntime::togglePlayerEvolutionPause(uint8_t memberIndex) {
+    if (!m_runStarted || moveLearningPending() || evolutionPending() ||
+        memberIndex >= m_context.playerPartyCount) return false;
+    auto& member = memberIndex == m_context.activePlayerPartyIndex
+        ? m_context.player : m_context.playerParty[memberIndex];
+    if (!member.actorIdentityResolved || !member.speciesId) return false;
+    bool hasEvolutions = false;
+    for (const auto& edge : PokerogueContent::kSpeciesEvolutions)
+        if (pokemonEvolutionTextEqual(edge.sourceSpeciesId, member.speciesId)) {
+            hasEvolutions = true;
+            break;
+        }
+    if (!hasEvolutions) return false;
+    // PartyUiHandler.processUnpauseEvolutionOption changes an actor option;
+    // it neither consumes a battle turn nor initiates evolution immediately.
+    member.battleState.pauseEvolutions = !member.battleState.pauseEvolutions;
+    if (memberIndex == m_context.activePlayerPartyIndex)
+        m_context.playerParty[memberIndex] = m_context.player;
+    m_playerHistoryRequiresSnapshot = true;
+    m_battleFeedback = member.battleState.pauseEvolutions
+        ? "Future evolutions paused" : "Future evolutions enabled";
+    buildScene();
+    return true;
+}
+
 bool FirstRunRuntime::switchPlayerPokemon(uint8_t targetIndex) {
     // Commands run before render. Commit the complete action only on success.
     FirstRunRuntime candidate = *this;

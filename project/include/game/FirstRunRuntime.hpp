@@ -129,6 +129,7 @@ public:
         return index < m_context.playerPartyCount ? &m_context.playerParty[index] : nullptr;
     }
     bool switchPlayerPokemon(uint8_t targetIndex);
+    bool togglePlayerEvolutionPause(uint8_t memberIndex);
     bool advancePlayerAfterDefeat();
     bool playerPartyDefeated() const;
     uint16_t pokeballCount(PokeballType type) const {
