@@ -554,6 +554,9 @@ bool resolvePokemonMoveWeatherContext(const PokemonArenaWeatherState& arena,
         static_cast<uint8_t>(policy.attackerOverride) > 9) return false;
     PokemonMoveWeatherContext next{};
     next.resolved = true;
+    const bool arenaSuppressed = pokemonWeatherIsImmutable(arena.type)
+        ? policy.suppressesImmutableWeather : policy.suppressesOrdinaryWeather;
+    next.cancellationWeather = arenaSuppressed ? PokemonEffectiveWeather::None : arena.type;
     // PreAttackWeatherOverrideAbAttr takes precedence over field suppression.
     if (policy.attackerOverride != PokemonEffectiveWeather::None) {
         next.effectiveWeather = policy.attackerOverride;
@@ -741,6 +744,27 @@ PokemonMoveActionStatus useStandardPokemonMove(
     if (defender.hp == 0) return PokemonMoveActionStatus::TargetAlreadyFainted;
 
     PokemonMoveActionResult next{};
+    if (weatherContext) {
+        const auto* move = PokerogueContent::findMoveById(attacker.moves[moveSlot].moveId);
+        if (!weatherContext->resolved || static_cast<uint8_t>(weatherContext->effectiveWeather) > 9 ||
+            static_cast<uint8_t>(weatherContext->cancellationWeather) > 9)
+            return PokemonMoveActionStatus::UnresolvedWeather;
+        if (!move) return PokemonMoveActionStatus::DamageResolutionFailed;
+        if (move->upstreamFlags & PokerogueContent::MoveHasVariableMovegenType)
+            return PokemonMoveActionStatus::UnresolvedWeather;
+        const bool cancelled = move->category != PokerogueContent::MoveStatus &&
+            ((weatherContext->cancellationWeather == PokemonEffectiveWeather::HarshSun &&
+                sameText(move->type, "WATER")) ||
+             (weatherContext->cancellationWeather == PokemonEffectiveWeather::HeavyRain &&
+                sameText(move->type, "FIRE")));
+        if (cancelled) {
+            // MovePhase.usePP precedes secondFailureCheck (primal weather).
+            --attacker.moves[moveSlot].pp;
+            next.weatherCancelled = true;
+            output = next;
+            return PokemonMoveActionStatus::Ok;
+        }
+    }
     // Commit RNG only after a resolved action, just like HP and PP.
     PokerogueRngAdapter nextRng = battleRng;
     next.damageResolutionStatus = resolveStandardPokemonMoveDamage(

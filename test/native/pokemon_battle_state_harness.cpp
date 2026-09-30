@@ -724,6 +724,20 @@ extern "C" int runPokemonBattleStateChecks() {
         beforeWeatherFailure.s0 != afterWeatherFailure.s0 || beforeWeatherFailure.s1 != afterWeatherFailure.s1 ||
         beforeWeatherFailure.s2 != afterWeatherFailure.s2) return 279;
 
+    weatherContext.resolved = true;
+    weatherContext.effectiveWeather = PokemonEffectiveWeather::Rain;
+    weatherContext.cancellationWeather = PokemonEffectiveWeather::HarshSun;
+    const auto beforeCancelledRng = weatherRng.state();
+    if (Pokerogue3DS::useStandardPokemonMove(weatherActor, weatherTarget, 0, false, weatherRng,
+            weatherAction, &weatherContext) != PokemonMoveActionStatus::Ok ||
+        !weatherAction.weatherCancelled || weatherActor.moves[0].pp != 23 ||
+        weatherAction.damageApplied != 0 || weatherTarget.hp != failureHp) return 288;
+    const auto afterCancelledRng = weatherRng.state();
+    if (beforeCancelledRng.carry != afterCancelledRng.carry || beforeCancelledRng.s0 != afterCancelledRng.s0 ||
+        beforeCancelledRng.s1 != afterCancelledRng.s1 || beforeCancelledRng.s2 != afterCancelledRng.s2) return 289;
+    if (resolvedWeather.effectiveWeather != PokemonEffectiveWeather::Sunny ||
+        resolvedWeather.cancellationWeather != PokemonEffectiveWeather::None) return 290;
+
     PokemonBattleState noPpActor = state;
     noPpActor.moves[0].pp = 0;
     PokemonBattleState unchangedTarget = state;

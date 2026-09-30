@@ -258,6 +258,8 @@ struct PokemonWeatherResolutionPolicy {
 struct PokemonMoveWeatherContext {
     bool resolved = false;
     PokemonEffectiveWeather effectiveWeather = PokemonEffectiveWeather::None;
+    // Arena weather after suppression, independent of attacker overrides.
+    PokemonEffectiveWeather cancellationWeather = PokemonEffectiveWeather::None;
 };
 bool resolvePokemonMoveWeatherContext(const PokemonArenaWeatherState& arena,
     const PokemonWeatherResolutionPolicy& policy, PokemonMoveWeatherContext& output);
@@ -301,6 +303,7 @@ struct PokemonMoveActionResult {
     PokemonMoveDamageRoll damageRoll{};
     uint16_t damageApplied = 0;
     bool targetFainted = false;
+    bool weatherCancelled = false;
     PokemonMoveDamageResult damageResolutionStatus = PokemonMoveDamageResult::Ok;
 };
 enum class PokemonMoveActionStatus : uint8_t {
