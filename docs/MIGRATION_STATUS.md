@@ -991,3 +991,9 @@
 2. Runtime C++ conserva el actor capturado, decide mediante comandos y termina Victory/EXP una sola vez. QuickJS proyecta nombres/HP y selección nativa; no decide gameplay. Guardado rechaza este estado intermedio; cambio, captura adicional y mutación de held/evolution pause quedan bloqueados.
 3. Regresiones nativas 586–588 y 591–593 y routing JS escritas, sin ejecutar. Fuente pinned: AttemptCapturePhase / addToPartyMenuConfig / PartyUiMode.RELEASE y PartyUiHandler.processReleaseOption.
 4. Captura con equipo lleno y held modifiers sigue bloqueada hasta implementar eliminación/transferencia por propietario. Estadísticas, shiny/unlocks y callback completo de captura siguen pendientes. No se declara Classic completo.
+
+## Objetos durante captura y liberación — pendiente de ejecución
+
+1. Extiende la decisión de equipo lleno al frontier de held modifiers soportado. Retiene los propietarios del equipo final, elimina objetos del miembro liberado y conserva los del capturado con PID/stack/raw metadata originales. Rechazar incorporación elimina los objetos del enemigo sin tocar los del equipo.
+2. Reutiliza retainPartyHeldInventory. Fuente pinned: AttemptCapturePhase.addToParty/removePokemon y PartyUiHandler.doRelease/removePartyMemberModifiers.
+3. Modifiers sin dispatcher y limpieza de otros enemigos siguen rechazados explícitamente; callbacks de captura/profile completos aún pendientes. Tests y compilación aplazados.

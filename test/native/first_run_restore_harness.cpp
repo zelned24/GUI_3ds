@@ -1334,6 +1334,25 @@ static int checkPlayerPartyManagementAndSwitching() {
     for (uint8_t member = 0; member < 6; ++member)
         if (declinedCapture.playerPartyMember(member)->battleState.pokemonId !=
             fullPartySave.playerParty[member].pokemonId) return 593;
+    // Replacement removes outgoing held items and retains captured-owner items.
+    FirstRunRuntime heldReplacement(1);
+    if (!heldReplacement.restoreNativeRunSave(fullPartySave)) return 594;
+    NativeHeldModifierInstance replacementItems[2]{};
+    const auto capturedOwner = heldReplacement.presentation().enemy.battleState.pokemonId;
+    if (initializeHeldModifierInstance("LEFTOVERS", fullPartySave.playerParty[1].pokemonId, 1, true,
+            nullptr, replacementItems[0]) != HeldModifierStorageResult::Ok ||
+        initializeHeldModifierInstance("LEFTOVERS", capturedOwner, 1, true,
+            nullptr, replacementItems[1]) != HeldModifierStorageResult::Ok ||
+        !heldReplacement.restoreHeldModifierInventory(replacementItems, 2) ||
+        !heldReplacement.throwPokeball(PokeballType::MasterBall) ||
+        !heldReplacement.resolveCapturePartyChoice(1) || heldReplacement.heldModifierCount() != 1 ||
+        heldReplacement.heldModifier(0)->ownerPokemonId != capturedOwner) return 595;
+    FirstRunRuntime heldDecline(1);
+    if (!heldDecline.restoreNativeRunSave(fullPartySave) ||
+        !heldDecline.restoreHeldModifierInventory(replacementItems, 2) ||
+        !heldDecline.throwPokeball(PokeballType::MasterBall) ||
+        !heldDecline.resolveCapturePartyChoice(-1) || heldDecline.heldModifierCount() != 1 ||
+        heldDecline.heldModifier(0)->ownerPokemonId != fullPartySave.playerParty[1].pokemonId) return 596;
     // Real reconstructed enemy and captured party: both identities share EXP.
     NativeRunSave sharedVictory = capturedPartySave;
     sharedVictory.stage = NativeSaveStage::BattleWon;

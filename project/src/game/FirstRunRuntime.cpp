@@ -2335,10 +2335,6 @@ bool FirstRunRuntime::throwPokeballInPlace(PokeballType ball) {
     }
 
     if (m_heldModifierCount) {
-        if (m_context.playerPartyCount >= 6) {
-            m_battleFeedback = "Capture with held inventory requires party replacement policy";
-            return false;
-        }
         for (size_t i = 0; i < m_heldModifierCount; ++i) {
             const uint32_t owner = m_heldModifiers[i].ownerPokemonId;
             bool retained = owner == target->battleState.pokemonId;
@@ -2461,6 +2457,13 @@ bool FirstRunRuntime::restoreHeldModifierInventory(const NativeHeldModifierInsta
 }
 
 bool FirstRunRuntime::finishSuccessfulCapture(ResolvedPokemon& target) {
+    // Capture retains the source PID. Release discards outgoing held items;
+    // incorporation keeps captured items without rewriting their metadata.
+    uint32_t retainedOwners[6]{};
+    for (uint8_t member = 0; member < m_context.playerPartyCount; ++member)
+        retainedOwners[member] = m_context.playerParty[member].battleState.pokemonId;
+    if (!retainPartyHeldInventory(m_heldModifiers.data(), m_heldModifiers.size(), m_heldModifierCount,
+            retainedOwners, m_context.playerPartyCount)) return false;
     target.battleState.hp = 0;
 
     m_checkpointAvailable = false;
@@ -2496,7 +2499,7 @@ bool FirstRunRuntime::resolveCapturePartyChoice(int member) {
 
 bool FirstRunRuntime::resolveCapturePartyChoiceInPlace(int member) {
     if (!m_capturePartyChoicePending || m_context.playerPartyCount != 6 || member < -1 || member >= 6 ||
-        m_heldModifierCount) return false; // Full-party held transfer remains explicitly gated.
+        !heldHealingInventorySupported(m_heldModifiers.data(), m_heldModifierCount)) return false;
     uint32_t releasedId = 0;
     if (member >= 0) {
         releasedId = m_context.playerParty[member].battleState.pokemonId;
