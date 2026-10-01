@@ -2987,8 +2987,31 @@ int main() {
             return 9046;
         tagState.pendingStatus = PokemonStatusEffect::None;
         tagState.confusion = {3, true};
-        if (captureNativePokemonActorSave(tagState, currentActor.actor, currentActor.totalExperience, tagSnapshot))
+        if (!captureNativePokemonActorSave(tagState, currentActor.actor, currentActor.totalExperience, tagSnapshot))
             return 9161;
+        char confusionBytes[512]{};
+        size_t confusionSize = 0;
+        NativePokemonSave confusionDecoded{};
+        PokemonBattleState confusionRestored{};
+        PokemonActorIdentity confusionIdentity{};
+        if (encodeNativePokemonSave(tagSnapshot, confusionBytes, sizeof(confusionBytes), confusionSize) !=
+                NativeSaveResult::Ok || confusionBytes[8] != '8' ||
+            decodeNativePokemonSave(confusionBytes, confusionSize, confusionDecoded) != NativeSaveResult::Ok ||
+            !restoreNativePokemonActorSave(confusionDecoded, confusionRestored, confusionIdentity) ||
+            !confusionRestored.confusion.present || confusionRestored.confusion.turns != 3) return 9170;
+        if (decodeNativePokemonSave(confusionBytes, confusionSize - 1, confusionDecoded) == NativeSaveResult::Ok)
+            return 9171;
+        tagSnapshot.status.present = true;
+        tagSnapshot.status.effect = PokemonStatusEffect::Toxic;
+        tagSnapshot.status.toxicTurnCount = 17;
+        if (encodeNativePokemonSave(tagSnapshot, confusionBytes, sizeof(confusionBytes), confusionSize) !=
+                NativeSaveResult::Ok ||
+            decodeNativePokemonSave(confusionBytes, confusionSize, confusionDecoded) != NativeSaveResult::Ok ||
+            confusionDecoded.status.effect != PokemonStatusEffect::Toxic ||
+            confusionDecoded.status.toxicTurnCount != 17 || confusionDecoded.confusion.turns != 3) return 9172;
+        tagSnapshot.confusion.turns = 0;
+        if (encodeNativePokemonSave(tagSnapshot, confusionBytes, sizeof(confusionBytes), confusionSize) !=
+                NativeSaveResult::InvalidRecord) return 9173;
         tagState.confusion = {};
 
         tagState.friendship = 173;

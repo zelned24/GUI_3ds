@@ -268,7 +268,8 @@ NativeSaveResult makeNativeRunSetupSave(uint32_t seed, uint16_t starterDex, Nati
 }
 
 bool restoreNativePokemonSave(const NativePokemonSave& saved, PokemonBattleState& output) {
-    if (!pokemonStatusStateValid(saved.status)) return false;
+    if (!pokemonStatusStateValid(saved.status) ||
+        (saved.confusion.present != (saved.confusion.turns != 0))) return false;
     if (saved.nature > 24 || saved.gender > static_cast<uint8_t>(PokemonGender::Female) ||
         !saved.moveCount || saved.moveCount > 4 || !saved.formId[0]) return false;
     bool terminated = false;
@@ -312,6 +313,7 @@ bool restoreNativePokemonSave(const NativePokemonSave& saved, PokemonBattleState
     actor.heldItemLostTags.unburden = saved.unburdenTag;
     actor.hp = saved.hp;
     actor.status = saved.status;
+    actor.confusion = saved.confusion;
     for (uint8_t i = 0; i < saved.moveCount; ++i) {
         if (saved.maxPpResolved) {
             if (!pokemonPermanentMaxPpSupported(saved.moveIds[i], saved.maxPp[i])) return false;
@@ -332,8 +334,8 @@ bool captureNativePokemonSave(const PokemonBattleState& state, uint32_t experien
     NativePokemonSave& output) {
     // Mid-turn snapshots require turnData serialization; checkpoints reset it.
     if (!state.statsAreBaseFormulaOnly || !state.formId || state.turnDamageDealt ||
-        state.pendingStatus != PokemonStatusEffect::None || state.confusion.present ||
-        state.confusion.turns) return false;
+        state.pendingStatus != PokemonStatusEffect::None ||
+        (state.confusion.present != (state.confusion.turns != 0))) return false;
     NativePokemonSave saved{};
     if (!copyText(saved.formId, sizeof(saved.formId), state.formId)) return false;
     saved.speciesDex = state.speciesDex;
@@ -351,6 +353,7 @@ bool captureNativePokemonSave(const PokemonBattleState& state, uint32_t experien
     saved.unburdenTag = state.heldItemLostTags.unburden;
     saved.hp = state.hp;
     saved.status = state.status;
+    saved.confusion = state.confusion;
     saved.experience = experience;
     saved.moveCount = state.moveCount;
     for (uint8_t i = 0; i < 6; ++i) saved.ivs[i] = state.ivs[i];
@@ -479,7 +482,7 @@ NativeSaveResult encodeNativePokemonSave(const NativePokemonSave& saved, char* o
     if (!restoreNativePokemonActorSave(saved, state, identity)) return NativeSaveResult::InvalidRecord;
     if (!output) return NativeSaveResult::InvalidFormat;
     Writer writer{output, capacity};
-    writer.text(saved.status.present ? "pokemon=7\n" : "pokemon=6\n");
+    writer.text(saved.confusion.present ? "pokemon=8\n" : saved.status.present ? "pokemon=7\n" : "pokemon=6\n");
     writer.hex(saved.speciesDex, 4);
     writer.text(saved.formId); writer.character('\n');
     writer.hex(saved.level, 4);
@@ -504,7 +507,10 @@ NativeSaveResult encodeNativePokemonSave(const NativePokemonSave& saved, char* o
     writer.hex(saved.unburdenTag ? 1 : 0, 2);
     writer.hex(state.friendship, 2);
     for (uint8_t slot = 0; slot < 4; ++slot) writer.hex(state.moves[slot].maxPp, 2);
-    if (saved.status.present) {
+    if (saved.confusion.present) {
+        writeStatus(writer, saved.status);
+        writer.hex(saved.confusion.turns, 8);
+    } else if (saved.status.present) {
         writer.hex(static_cast<uint8_t>(saved.status.effect), 2);
         writer.hex((saved.status.hasSleepTurnsRemaining ? 1 : 0) |
             (saved.status.hasFreezeTurnsRemaining ? 2 : 0), 2);
@@ -523,8 +529,9 @@ NativeSaveResult decodeNativePokemonSave(const char* bytes, size_t length,
     Reader reader{bytes, length};
     NativePokemonSave saved{};
     uint32_t value = 0;
-    if (!reader.literal("pokemon=") || !reader.hex(1, value) || (value < 1 || value > 7))
+    if (!reader.literal("pokemon=") || !reader.hex(1, value) || (value < 1 || value > 8))
         return NativeSaveResult::InvalidFormat;
+    const bool hasConfusion = value >= 8;
     const bool hasStatus = value >= 7;
     const bool hasMaxPp = value >= 6;
     const bool hasFriendship = value >= 5;
@@ -585,7 +592,11 @@ NativeSaveResult decodeNativePokemonSave(const char* bytes, size_t length,
         }
         saved.maxPpResolved = true;
     }
-    if (hasStatus) {
+    if (hasConfusion) {
+        if (!readStatus(reader, saved.status) || !reader.hex(8, saved.confusion.turns) ||
+            !saved.confusion.turns) return NativeSaveResult::InvalidFormat;
+        saved.confusion.present = true;
+    } else if (hasStatus) {
         if (!reader.hex(2, value) || value > 7) return NativeSaveResult::InvalidFormat;
         saved.status.effect = static_cast<PokemonStatusEffect>(value);
         saved.status.present = true;
@@ -607,6 +618,11 @@ NativeSaveResult decodeNativePokemonSave(const char* bytes, size_t length,
 
 NativeSaveResult validateNativeRunSave(const NativeRunSave& save, const char* expectedContentHash) {
     if (save.playerPartyCount > 6 || save.trainerPartyCount > 6) return NativeSaveResult::InvalidRecord;
+    // Run v15 has no active/enemy/trainer confusion fields: actor v8 is supported
+    // independently, but must not be embedded into an incomplete run checkpoint.
+    for (const auto& member : save.playerParty)
+        if (member.confusion.present || member.confusion.turns) return NativeSaveResult::UnsupportedStage;
+
     if (!pokemonStatusStateValid(save.playerStatus) || !pokemonStatusStateValid(save.enemyStatus) ||
         (save.stage == NativeSaveStage::RunSetup && (save.playerStatus.present || save.enemyStatus.present)))
         return NativeSaveResult::InvalidRecord;

@@ -1547,3 +1547,9 @@
 1. PokemonBattleState conserva el tag de confusión en summon data; resetPokemonSummonState lo elimina al retirar el actor. Cambio de forma conserva status, pendingStatus y confusión en vez de perderlos al reconstruir estadísticas.
 2. Snapshots de actor y run rechazan tags de confusión activos/inválidos hasta implementar serialización, evitando pérdida silenciosa. Esta frontera es temporal; no declara resuelta la continuidad de tags.
 3. Regresión de recall escrita sin ejecutar. Dispatcher de movimiento/status y serialización siguen pendientes; tests/compilación aplazados.
+
+## Snapshot de actor con confusión
+
+1. Payload pokemon=8 guarda status opcional y contador de confusión presente; formatos 1–7 conservan su lectura y ausencia explícita de tag. Restore valida presencia/contador, y encode sigue usando v6/v7 cuando no hay confusión.
+2. Run v15 continúa rechazando confusión porque aún faltan campos activos/enemigos/entrenadores; también rechaza un actor v8 con tag embebido para evitar pérdida al restaurar run. No se declara completo save/continue de confusión.
+3. Regresiones de roundtrip v8 y truncamiento escritas sin ejecutar. Tests/compilación aplazados.
