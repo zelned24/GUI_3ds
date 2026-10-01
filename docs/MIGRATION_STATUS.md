@@ -1398,3 +1398,8 @@
 1. Generador extrae atributos constantes BypassBurnDamageReductionAbAttr desde raw real de abilities; catálogo actual declara GUTS. La clase upstream hereda CancelInteractionAbAttr sin condición propia. Otras condiciones de Guts siguen separadas.
 2. resolvePokemonBurnDamagePolicy consulta IDs canónicos y tabla generada, exige callbacks/suppression resueltos y distingue habilidad activa de ignoreSourceAbility. No declara resueltas pasivas ni dispatchers desconocidos. Conexión desde FirstRunRuntime pendiente.
 3. Datos regenerados sin cambiar snapshot/hash; tests/compilación aplazados.
+
+## Política de quemadura conectada al turno estándar
+
+1. FirstRunRuntime resuelve policy de quemadura para físico BURN antes de damage/recoil/drain y la transmite al comando común. Callbacks constantes se identifican por tabla de todas las habilidades; referencias condicionales/no interpretadas quedan no resueltas y bloquean claramente.
+2. Camino soportado usa habilidad primaria activa sin supresión/passive/ignore flags adicionales. No habilita moves con status todavía; aplicación, residual queue y save siguen pendientes. Datos C++ regenerados; tests/compilación aplazados.

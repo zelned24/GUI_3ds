@@ -2255,6 +2255,19 @@ bool FirstRunRuntime::executeActiveBattleMove(uint8_t userIndex, uint8_t targetI
         m_battleFeedback = "Boss damage callbacks require dispatcher";
         return false;
     }
+    PokemonBurnDamagePolicy burn{};
+    if (user.status.present && user.status.effect == PokemonStatusEffect::Burn &&
+        move->category == PokerogueContent::MovePhysical) {
+        bool callbacksResolved = false;
+        for (const auto& profile : PokerogueContent::kBurnAbilityCallbacks)
+            if (profile.abilityId == user.abilityId) { callbacksResolved = profile.resolved; break; }
+        // Current native actors use unsuppressed primary abilities; passive and
+        // ability-ignore move flags remain outside this supported move path.
+        if (!resolvePokemonBurnDamagePolicy(user.abilityId, callbacksResolved, true, false, burn)) {
+            m_battleFeedback = "Burn ability callbacks require dispatcher";
+            return false;
+        }
+    }
     if (damageRecoilProfile(move->id)) {
         auto nextUser = user;
         auto nextOpponent = opponent;
@@ -2263,7 +2276,7 @@ bool FirstRunRuntime::executeActiveBattleMove(uint8_t userIndex, uint8_t targetI
         if (useStandardPokemonMove(nextUser, nextOpponent, moveSlot, false, nextRng,
             attack, &weather, &critical, &hit, &pp, targetIsBoss ? &nextBossState : nullptr,
             targetIsBoss ? &bossPolicy : nullptr,
-            targetIsBoss ? &nextGlobalRng : nullptr) != PokemonMoveActionStatus::Ok) return false;
+            targetIsBoss ? &nextGlobalRng : nullptr, &burn) != PokemonMoveActionStatus::Ok) return false;
         const auto policy = canonicalFreshActorRecoilPolicy(user.abilityId);
         PokemonRecoilEvent recoil{};
         if (applyPokemonRecoil(nextUser, move->id, attack.damageApplied,
@@ -2291,7 +2304,7 @@ bool FirstRunRuntime::executeActiveBattleMove(uint8_t userIndex, uint8_t targetI
         if (useStandardPokemonMove(nextUser, nextOpponent, moveSlot, false, nextRng,
             attack, &weather, &critical, &hit, &pp, targetIsBoss ? &nextBossState : nullptr,
             targetIsBoss ? &bossPolicy : nullptr,
-            targetIsBoss ? &nextGlobalRng : nullptr) != PokemonMoveActionStatus::Ok) return false;
+            targetIsBoss ? &nextGlobalRng : nullptr, &burn) != PokemonMoveActionStatus::Ok) return false;
         PokemonDrainPolicy policy{};
         policy.resolved = true;
         PokemonDrainEvent event{};
@@ -2318,7 +2331,7 @@ bool FirstRunRuntime::executeActiveBattleMove(uint8_t userIndex, uint8_t targetI
     if (useStandardPokemonMove(nextUser, nextOpponent, moveSlot, false, nextRng, result,
             &weather, &critical, &hit, &pp, targetIsBoss ? &nextBossState : nullptr,
             targetIsBoss ? &bossPolicy : nullptr,
-            targetIsBoss ? &nextGlobalRng : nullptr) != PokemonMoveActionStatus::Ok) return false;
+            targetIsBoss ? &nextGlobalRng : nullptr, &burn) != PokemonMoveActionStatus::Ok) return false;
     if (!result.weatherCancelled && !applyMoveHeldHealing(nextUser)) return false;
     user = nextUser;
     opponent = nextOpponent;
