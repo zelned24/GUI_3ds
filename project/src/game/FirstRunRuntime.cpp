@@ -565,8 +565,11 @@ bool FirstRunRuntime::restoreNativeRunSave(const NativeRunSave& save,
     if (policy && !candidate.restoreStarterCandyProfile(records, count, save.starterProfileGeneration, *policy))
         return false;
     if (!policy && (records || count)) return false;
-    if (save.setupStarterCount && !candidate.restoreStarterTeamSetup(
-            save.seed, save.setupStarterDexes, save.setupStarterCount)) return false;
+    if (save.stage == NativeSaveStage::RunSetup) {
+        const uint16_t* dexes = save.setupStarterCount ? save.setupStarterDexes : &save.starterDex;
+        const size_t starterCount = save.setupStarterCount ? save.setupStarterCount : 1;
+        if (!candidate.restoreStarterTeamSetup(save.seed, dexes, starterCount)) return false;
+    }
     *this = candidate;
     // Scene nodes and text pointers belong to their runtime instance. Rebuild
     // after committing so none point at the temporary candidate's storage.
@@ -3014,6 +3017,17 @@ bool FirstRunRuntime::resolveFreshStarter(uint16_t dex, PokerogueRngAdapter& rng
         starterActor.nature = starterNature;
         starterActor.formId = starterFormId;
         for (uint8_t& iv : starterActor.ivs) iv = 15;
+        // Default starters already own the canonical 15-IV baseline. Preserve
+        // improvements accumulated in their durable Pokédex, without RNG draws.
+        if (m_starterProfileReady) {
+            for (size_t record = 0; record < m_starterProfileCount; ++record) {
+                const auto& dexEntry = m_starterProfileRecords[record];
+                if (dexEntry.speciesDex != starter.dex) continue;
+                for (uint8_t stat = 0; stat < 6; ++stat)
+                    starterActor.ivs[stat] = std::max(starterActor.ivs[stat], dexEntry.dexIvs[stat]);
+                break;
+            }
+        }
 
         const auto* starterForm = PokerogueContent::findFormById(starterFormId);
         const char* starterType1 = starterForm ? starterForm->type1 : starter.type1;

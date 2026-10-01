@@ -1194,3 +1194,9 @@
 1. `seedNativeFreshStarterDexMetadata` usa naturaleza canónica reproducible de `PokemonFreshProfile`, IV mínimos 15, ABILITY_1 y ambos bits MALE/FEMALE, tal como `GameData.initDexData`/`initStarterData` pinned. Solo acepta especies default; no infiere atributos de otros iniciales.
 2. `initializeFreshStarterProfile` guarda esa metadata en el ledger real. Capturar una especie default combina ese baseline conocido antes de agregar atributos capturados: OR de unlocks y máximos IV, sin perder progreso previo ni bajar IV superiores. No modifica un perfil legacy por el mero hecho de cargarlo.
 3. Regresiones de todo el catálogo default, naturaleza exacta, IV/flags y combinación idempotente escritas; sin ejecutar. Formas/shiny/variantes y consumo del perfil por el resolver todavía pendientes; tests y compilación aplazados.
+
+## IV de Pokédex conectados al inicial default
+
+1. `resolveFreshStarter` conserva mejoras del ledger para las especies default: parte del baseline canónico IV 15 y aplica los máximos persistidos por estadística antes de `initializePokemonBattleState`. Stats del actor se calculan con esos IV; no consume draws adicionales ni modifica el perfil. No habilita todavía especies no default ni preferencias de naturaleza/habilidad.
+2. Restauración de setup reconstruye también el caso de un solo inicial después de cargar su perfil referenciado; antes se reconstruía solo la selección múltiple en esa etapa. Así conserva los IV mejorados tanto en setup simple como múltiple. Los checkpoints de combate mantienen sus propios snapshots de actor.
+3. Regresiones escritas de IV 31/27, baseline de estadísticas restantes y restauración de stats/identidad; pendientes de ejecución. Tests y compilación siguen aplazados.

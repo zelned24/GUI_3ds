@@ -126,6 +126,22 @@ static int checkInitialStarterTeamSetup() {
         if (!first.browseSetupStarter(1)) return 658;
     if (first.toggleSetupStarter() || first.playerPartyCount() != 1 || first.run().starterDex != dexes[0]) return 659;
     if (!sceneNodesOwnedBy(first) || !first.restoreSetup(1, dexes[0]) || !sceneNodesOwnedBy(first)) return 661;
+    NativeStarterCandyRecord improved{dexes[0], 0, 0, true};
+    if (!seedNativeFreshStarterDexMetadata(improved)) return 676;
+    improved.dexIvs[0] = 31;
+    improved.dexIvs[3] = 27;
+    PokemonFriendshipPolicy profilePolicy{};
+    profilePolicy.resolved = true;
+    profilePolicy.candyMultiplier = PokerogueContent::kClassicCandyFriendshipMultiplier;
+    if (!first.restoreStarterCandyProfile(&improved, 1, 0, profilePolicy) || !first.restoreSetup(1, dexes[0]) ||
+        first.presentation().player.actor.ivs[0] != 31 || first.presentation().player.battleState.ivs[3] != 27 ||
+        first.presentation().player.actor.ivs[1] != 15) return 677;
+    NativeRunSave improvedSetup{};
+    if (first.captureNativeRunSave(improvedSetup) != NativeSaveResult::Ok ||
+        !reloaded.restoreNativeRunSave(improvedSetup, &improved, 1, &profilePolicy) ||
+        reloaded.presentation().player.actor.ivs[0] != 31 || reloaded.presentation().player.battleState.ivs[3] != 27 ||
+        reloaded.presentation().player.battleState.stats[0] != first.presentation().player.battleState.stats[0]) return 678;
+
     return 0;
 }
 
