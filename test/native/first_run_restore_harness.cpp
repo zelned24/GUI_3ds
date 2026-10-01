@@ -1,3 +1,4 @@
+#include "game/PokemonStarterMoveset.hpp"
 #include "game/FirstRunRuntime.hpp"
 #include "content/PokerogueRuntimeContent.hpp"
 #include <cstring>
