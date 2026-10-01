@@ -1002,3 +1002,8 @@
 
 1. Retira la identidad liberada después del reparto de EXP y antes del registro del activo al cerrar el turno. Evita exigir siete slots temporales cuando ya participaron los seis miembros.
 2. El capturado no recibe EXP por participación anterior a su incorporación. Regresiones 597–598 escritas con historial completo ordenado y reemplazo del activo; sin ejecutar. Tests/compilación permanecen aplazados.
+
+## Checkpoint posterior a reemplazo por captura — pendiente de ejecución
+
+1. Regresiones 599–602 escriben y restauran el checkpoint posterior a una captura con equipo lleno. Comprueban PID, HP, PP, coste único de Master Ball y ausencia del participante liberado.
+2. El estado de selección sigue sin ser serializable; se guarda únicamente después de resolver la decisión. Suite sin ejecutar por aplazamiento del usuario; no se declara compatibilidad verificada.

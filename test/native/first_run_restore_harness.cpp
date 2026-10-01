@@ -1326,6 +1326,25 @@ static int checkPlayerPartyManagementAndSwitching() {
         fullPartyGame.playerPartyMember(1)->battleState.pokemonId != pendingActor.battleState.pokemonId ||
         fullPartyGame.playerPartyMember(1)->dex != pendingActor.dex ||
         !fullPartyGame.playerWon() || fullPartyGame.resolveCapturePartyChoice(1)) return 591;
+    // Replacement checkpoint must be restorable without a released identity
+    // leaking into participation or an extra capture consuming another ball.
+    NativeRunSave replacementCheckpoint{};
+    fullPartyGame.captureNativeRunSave(replacementCheckpoint);
+    if (validateNativeRunSave(replacementCheckpoint, PokerogueContent::kContentHash) != NativeSaveResult::Ok ||
+        replacementCheckpoint.playerParty[1].pokemonId != pendingActor.battleState.pokemonId ||
+        replacementCheckpoint.playerParty[1].hp != pendingActor.battleState.hp ||
+        replacementCheckpoint.pokeballCounts[static_cast<uint8_t>(PokeballType::MasterBall)] != 0) return 599;
+    for (uint8_t slot = 0; slot < pendingActor.battleState.moveCount; ++slot)
+        if (fullPartyGame.playerPartyMember(1)->battleState.moves[slot].pp !=
+                pendingActor.battleState.moves[slot].pp) return 600;
+    for (uint8_t participant = 0; participant < replacementCheckpoint.participantCount; ++participant)
+        if (replacementCheckpoint.participantIds[participant] == fullPartySave.playerParty[1].pokemonId)
+            return 601;
+    FirstRunRuntime replacementRestored(1);
+    if (!replacementRestored.restoreNativeRunSave(replacementCheckpoint) ||
+        replacementRestored.playerPartyCount() != 6 ||
+        replacementRestored.playerPartyMember(1)->battleState.pokemonId != pendingActor.battleState.pokemonId)
+        return 602;
     FirstRunRuntime declinedCapture(1);
     if (!declinedCapture.restoreNativeRunSave(fullPartySave) ||
         !declinedCapture.throwPokeball(PokeballType::MasterBall) ||
