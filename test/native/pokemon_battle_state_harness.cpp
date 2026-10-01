@@ -2582,5 +2582,18 @@ extern "C" int runPokemonBattleStateChecks() {
     paralyzedSpeed.stats[5] = 1;
     paralyzedSpeed.statStages[4] = 0;
     if (!Pokerogue3DS::pokemonBaselineEffectiveStat(paralyzedSpeed, 5, false, statusSpeed) || statusSpeed != 1) return 601;
+    Pokerogue3DS::PokemonStatusCureEvent cureEvent{};
+    checkStatus = {};
+    checkStatus.present = true;
+    checkStatus.effect = Effect::Sleep;
+    if (Pokerogue3DS::curePokemonStatusState(checkStatus, true, true, true, true, true, false, cureEvent) !=
+            Pokerogue3DS::PokemonStatusCureResult::UnsupportedReactions || !checkStatus.present) return 602;
+    if (Pokerogue3DS::curePokemonStatusState(checkStatus, true, true, true, true, true, true, cureEvent) !=
+            Pokerogue3DS::PokemonStatusCureResult::Cleared || checkStatus.present || !cureEvent.lapseNightmare ||
+        !cureEvent.lapseConfusion || !cureEvent.reloadAssets || cureEvent.animationFrameRate != 10) return 603;
+    checkStatus.present = true;
+    checkStatus.effect = Effect::Faint;
+    if (Pokerogue3DS::curePokemonStatusState(checkStatus, false, true, true, false, true, true, cureEvent) !=
+            Pokerogue3DS::PokemonStatusCureResult::NoEffect || !checkStatus.present) return 604;
     return 0;
 }

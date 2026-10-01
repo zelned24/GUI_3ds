@@ -1375,3 +1375,8 @@
 
 1. Pokemon.getStat(SPD) pinned aplica ret >>= 1 después de stages y antes de Unburden. pokemonWeatherEffectiveSpeed y pokemonBaselineEffectiveStat(SPD) ahora respetan ese truncado/mitad y mínimo uno. Tipos de status inválidos fallan sin publicar output.
 2. Turn order ya consume estos resolvers; no se habilitan todavía moves de status ni se inventan inmunidades. Speed de reservas sin getStat efectivo permanece sin penalización, siguiendo el caller upstream. Regresiones de valor impar, stage positivo y mínimo uno escritas, sin ejecutar. Tests/compilación aplazados.
+
+## Curación nativa de metadata de estados
+
+1. curePokemonStatusState porta clearStatus/resetStatus: revive=false conserva FAINT; curación solicita Nightmare si salía de sleep, Confused si pedido, recarga visual opcional y FPS diez. Actor se limpia solamente tras política de reacciones resuelta.
+2. Evento conserva tareas pendientes para dispatcher; no elimina tags inexistentes del modelo ni inventa callbacks. Conexión a items, heal phases, pre-move cure y save aún pendiente. Regresiones de bloqueo/flags/FAINT escritas, sin ejecutar. Tests/compilación aplazados.

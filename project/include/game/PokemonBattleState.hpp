@@ -326,6 +326,36 @@ enum class PokemonStatusMoveCheckResult : uint8_t { Ok, InvalidStatus, Unsupport
 PokemonStatusMoveCheckResult checkPokemonStatusBeforeMove(PokemonStatusState& status,
     const PokemonStatusMoveCheckPolicy& policy, PokerogueRngAdapter& rng, PokemonStatusMoveCheckEvent& output);
 
+struct PokemonStatusCureEvent {
+    PokemonStatusEffect previousEffect = PokemonStatusEffect::None;
+    bool cleared = false;
+    bool lapseNightmare = false;
+    bool lapseConfusion = false;
+    bool reloadAssets = false;
+    uint8_t animationFrameRate = 10;
+};
+enum class PokemonStatusCureResult : uint8_t { Cleared, NoEffect, InvalidStatus, UnsupportedReactions };
+// Actor portion of clearStatus/resetStatus. Tag/asset dispatch is required by
+// the caller; returned flags describe work, never silently remove unknown tags.
+inline PokemonStatusCureResult curePokemonStatusState(PokemonStatusState& status,
+    bool revive, bool clearConfusion, bool reloadAssets, bool hasNightmare, bool hasConfusion,
+    bool reactionsResolved, PokemonStatusCureEvent& output) {
+    if (!pokemonStatusStateValid(status)) return PokemonStatusCureResult::InvalidStatus;
+    if (!revive && status.present && status.effect == PokemonStatusEffect::Faint)
+        return PokemonStatusCureResult::NoEffect;
+    if (!reactionsResolved) return PokemonStatusCureResult::UnsupportedReactions;
+    PokemonStatusCureEvent event{};
+    event.previousEffect = status.effect;
+    event.cleared = status.present;
+    event.lapseNightmare = status.present && status.effect == PokemonStatusEffect::Sleep && hasNightmare;
+    event.lapseConfusion = clearConfusion && hasConfusion;
+    event.reloadAssets = reloadAssets;
+    status = {};
+    output = event;
+    return event.cleared || event.lapseConfusion || event.reloadAssets ?
+        PokemonStatusCureResult::Cleared : PokemonStatusCureResult::NoEffect;
+}
+
 struct PokemonStatusResidualPolicy {
     bool resolved = false; // Both block attributes and post-damage callbacks resolved.
     bool active = true;
