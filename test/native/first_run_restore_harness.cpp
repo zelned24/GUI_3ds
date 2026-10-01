@@ -629,6 +629,29 @@ static int checkWave200FinalBossAndGameClear() {
     if (resolveTurnHeldItemTransferMatchPolicy(otherHolder, nullptr, 0, 1234, true, true,
             canonicalTheftPolicy) != HeldItemMatchPolicyResult::Resolved || !canonicalTheftPolicy.blockedByAbility)
         return 393;
+    uint16_t blockingTheftAbility = 0, pendingLostAbility = 0;
+    for (const auto& profile : PokerogueContent::kHeldItemTheftAbilityProfiles) {
+        if (profile.blocksTheft && !profile.conditionalCallbacks) blockingTheftAbility = profile.abilityId;
+        if (profile.requiresPostLostDispatcher && !profile.blocksTheft && !profile.conditionalCallbacks)
+            pendingLostAbility = profile.abilityId;
+    }
+    if (!blockingTheftAbility || !pendingLostAbility) return 394;
+    bool canonicalBlocked = false;
+    if (resolveHeldItemTheftAbilityPolicy(&blockingTheftAbility, 1, false, canonicalBlocked) !=
+            HeldItemTheftAbilityPolicyResult::UnresolvedApplicability || canonicalBlocked) return 395;
+    if (resolveHeldItemTheftAbilityPolicy(&blockingTheftAbility, 1, true, canonicalBlocked) !=
+            HeldItemTheftAbilityPolicyResult::Resolved || !canonicalBlocked) return 396;
+    if (resolveHeldItemTheftAbilityPolicy(&pendingLostAbility, 1, true, canonicalBlocked) !=
+            HeldItemTheftAbilityPolicyResult::UnresolvedCallbacks || !canonicalBlocked) return 397;
+    const uint16_t combinedTheftAbilities[] = {blockingTheftAbility, pendingLostAbility};
+    if (resolveHeldItemTheftAbilityPolicy(combinedTheftAbilities, 2, true, canonicalBlocked) !=
+            HeldItemTheftAbilityPolicyResult::Resolved || !canonicalBlocked) return 398;
+    const uint16_t pressureTheftAbility = 46;
+    if (resolveHeldItemTheftAbilityPolicy(&pressureTheftAbility, 1, true, canonicalBlocked) !=
+            HeldItemTheftAbilityPolicyResult::Resolved || canonicalBlocked) return 399;
+    const uint16_t unknownTheftAbility = 65535;
+    if (resolveHeldItemTheftAbilityPolicy(&unknownTheftAbility, 1, true, canonicalBlocked) !=
+            HeldItemTheftAbilityPolicyResult::UnknownAbility || canonicalBlocked) return 400;
     const auto preservedBoss = bossActor;
     if (applyPokemonFixedEnemyMovePp(*firstPhase, bossActor) ||
         bossActor.moves[3].maxPp != preservedBoss.moves[3].maxPp) return 338;

@@ -113,6 +113,32 @@ struct HeldItemTheftPolicy {
     size_t matchingTargetIndex = static_cast<size_t>(-1);
     uint16_t targetMaxStack = 0;
 };
+enum class HeldItemTheftAbilityPolicyResult : uint8_t {
+    Resolved, InvalidState, UnknownAbility, UnresolvedApplicability, UnresolvedCallbacks
+};
+
+// IDs are the source actor's currently applicable abilities/passives, after
+// suppression/ignorable/fainted/fusion rules. This resolver does not invent that set.
+inline HeldItemTheftAbilityPolicyResult resolveHeldItemTheftAbilityPolicy(
+    const uint16_t* activeAbilityIds, size_t count, bool applicabilityResolved, bool& theftBlocked) {
+    if (count && !activeAbilityIds) return HeldItemTheftAbilityPolicyResult::InvalidState;
+    if (!applicabilityResolved) return HeldItemTheftAbilityPolicyResult::UnresolvedApplicability;
+    bool blocked = false, pending = false;
+    for (size_t i = 0; i < count; ++i) {
+        const PokerogueContent::HeldItemTheftAbilityProfile* selected = nullptr;
+        for (const auto& profile : PokerogueContent::kHeldItemTheftAbilityProfiles)
+            if (profile.abilityId == activeAbilityIds[i]) { selected = &profile; break; }
+        if (!selected) return HeldItemTheftAbilityPolicyResult::UnknownAbility;
+        if (selected->conditionalCallbacks) return HeldItemTheftAbilityPolicyResult::UnresolvedCallbacks;
+        blocked |= selected->blocksTheft;
+        pending |= selected->requiresPostLostDispatcher;
+    }
+    // CancelInteractionAbAttr cancels before inventory mutation/PostItemLost.
+    if (!blocked && pending) return HeldItemTheftAbilityPolicyResult::UnresolvedCallbacks;
+    theftBlocked = blocked;
+    return HeldItemTheftAbilityPolicyResult::Resolved;
+}
+
 enum class HeldItemMatchPolicyResult : uint8_t {
     Resolved, UnresolvedAbilities, UnsupportedModifierClass, UnresolvedArguments, InvalidState
 };

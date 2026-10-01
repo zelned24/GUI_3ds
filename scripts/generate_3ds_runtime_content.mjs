@@ -1026,5 +1026,15 @@ const heldClassRows = collections.items.map(item => {
 });
 const heldClassHeader = fixedMovesetHeader.replace('struct MoveAttribute {',
   `struct HeldModifierClassProfile { const char* itemId; bool isTurnHeldItemTransfer; const char* sourcePath; const char* sourceSymbol; const char* sourceHash; };\ninline constexpr HeldModifierClassProfile kHeldModifierClassProfiles[] = {\n${heldClassRows.join(',\n')}\n};\nstruct MoveAttribute {`);
-await fs.writeFile(outputPath, heldClassHeader, 'utf8');
-console.log(JSON.stringify({ output: path.relative(root, outputPath), bytes: Buffer.byteLength(heldClassHeader), hash: report.contentHash }));
+const theftAbilityRows = collections.abilities.map(ability => {
+  const raw = ability.extensions?.upstreamAttributes?.value ?? '';
+  const attrs = [...new Set([...raw.matchAll(/\b([A-Za-z_$][\w$]*(?:ItemTheft|ItemLost)[\w$]*AbAttr)\b/g)].map(match => match[1]))];
+  const blocks = attrs.includes('BlockItemTheftAbAttr');
+  const pending = attrs.some(attr => attr !== 'BlockItemTheftAbAttr' && attr !== 'PostItemLostAbAttr');
+  const conditional = attrs.length > 0 && /\.(?:condition|conditionalAttr)\s*\(/.test(raw);
+  return `    {${ability.abilityId}, ${blocks}, ${pending}, ${conditional}, "${field(ability.source?.sourcePath)}", "${field(ability.source?.sourceSymbol)}", "${field(ability.source?.sourceHash)}"}`;
+});
+const theftAbilityHeader = heldClassHeader.replace('struct MoveAttribute {',
+  `struct HeldItemTheftAbilityProfile { uint16_t abilityId; bool blocksTheft; bool requiresPostLostDispatcher; bool conditionalCallbacks; const char* sourcePath; const char* sourceSymbol; const char* sourceHash; };\ninline constexpr HeldItemTheftAbilityProfile kHeldItemTheftAbilityProfiles[] = {\n${theftAbilityRows.join(',\n')}\n};\nstruct MoveAttribute {`);
+await fs.writeFile(outputPath, theftAbilityHeader, 'utf8');
+console.log(JSON.stringify({ output: path.relative(root, outputPath), bytes: Buffer.byteLength(theftAbilityHeader), hash: report.contentHash }));
