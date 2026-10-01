@@ -1019,3 +1019,9 @@
 1. Sustituye llamada inexistente intInRange por randSeedInt(65536), API existente correspondiente al draw upstream. Revisión estática; sin compilación.
 2. Elimina mínimo artificial de tasa 1 y clamp de probabilidad a 65535. La fórmula upstream permite tasa cero y reporta probabilidad superior al dominio RNG en captura garantizada.
 3. Species sin perfil canónico, HP superior al máximo y tipo de ball inválido fallan antes de consumir RNG. Regresiones 604–605 escritas, sin ejecutar. Status/shiny/critical profile continúan pendientes.
+
+## Resolvedor de captura crítica — conexión al perfil pendiente
+
+1. executeCaptureAttempt acepta política explícita resuelta de caught-species, Daily/fresh-start y stacks de Catching Charm. Porta umbrales estrictos, clamp de tasa 255 y multiplicadores 2/2.5/3 del upstream pinned.
+2. Captura crítica consume una tirada de sacudida después del draw de selección, incluyendo probabilidad garantizada. Regresiones 606–610 escritas para umbrales, fresh-start, charm y secuencia RNG; sin ejecutar.
+3. FirstRunRuntime todavía no suministra esta política: el perfil candy/friendship carece de caughtAttr. Persistir Pokédex real y conectar los modifiers/profile sigue pendiente; no se declara captura crítica integrada en partidas.

@@ -1187,6 +1187,40 @@ static int checkPokeballCaptureMechanics() {
     if (executeCaptureAttempt(invalidCaptureTarget, PokeballType::Pokeball, false, false, false, false,
             rng, invalidCaptureEvent) || invalidCaptureEvent.blocker != CaptureBlocker::InvalidInput) return 605;
 
+    PokemonCaptureCriticalPolicy criticalPolicy{};
+    criticalPolicy.resolved = true;
+    uint32_t criticalChance = 999;
+    const uint32_t dexBoundaries[] = {100, 101, 200, 201, 400, 401, 600, 601, 800, 801};
+    const uint32_t expectedChances[] = {0, 21, 21, 42, 42, 63, 63, 85, 85, 106};
+    for (uint8_t i = 0; i < 10; ++i) {
+        criticalPolicy.caughtSpeciesCount = dexBoundaries[i];
+        if (!pokemonCriticalCaptureChance(255, criticalPolicy, criticalChance) ||
+            criticalChance != expectedChances[i]) return 606;
+    }
+    criticalPolicy.catchingCharmStacks = 3;
+    if (!pokemonCriticalCaptureChance(300, criticalPolicy, criticalChance) || criticalChance != 318) return 607;
+    criticalPolicy.freshStartChallenge = true;
+    if (!pokemonCriticalCaptureChance(255, criticalPolicy, criticalChance) || criticalChance != 0) return 608;
+    criticalPolicy.freshStartChallenge = false;
+    auto criticalRng = rng;
+    auto expectedCriticalRng = rng;
+    expectedCriticalRng.randSeedInt(256);
+    expectedCriticalRng.randSeedInt(65536);
+    PokemonCaptureEvent criticalEvent{};
+    auto unresolvedCriticalPolicy = criticalPolicy;
+    unresolvedCriticalPolicy.resolved = false;
+    if (pokemonCriticalCaptureChance(255, unresolvedCriticalPolicy, criticalChance)) return 609;
+    // Chance 318/256 guarantees selecting the single-check branch.
+    // Choose a real high-rate species explicitly for guaranteed critical branch.
+    auto highRateTarget = targetState;
+    for (const auto& row : PokerogueContent::kSpeciesCatchProfiles)
+        if (row.catchRate == 255) { highRateTarget.speciesDex = row.speciesDex; break; }
+    highRateTarget.hp = 1;
+    criticalRng = rng;
+    if (!executeCaptureAttempt(highRateTarget, PokeballType::RogueBall, false, false, false, false,
+            criticalRng, criticalEvent, &criticalPolicy) || !criticalEvent.isCritical ||
+        criticalEvent.shakeCount != 1 || criticalRng.randSeedUint32() != expectedCriticalRng.randSeedUint32()) return 610;
+
     // Master ball guaranteed catch
     if (!executeCaptureAttempt(targetState, PokeballType::MasterBall, false, false, false, false, rng, outEvent) ||
         !outEvent.caught || outEvent.shakeCount != 3) return 143;

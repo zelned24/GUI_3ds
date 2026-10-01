@@ -109,6 +109,28 @@ inline bool pokemonBossShieldCaptureBlocked(const PokemonBossState& boss,
     return true;
 }
 
+// Pinned getCriticalCaptureChance and CriticalCatchChanceBoosterModifier.
+// caughtSpeciesCount must come from caughtAttr records, never candy/profile rows.
+struct PokemonCaptureCriticalPolicy {
+    bool resolved = false;
+    bool freshStartChallenge = false;
+    bool dailyMode = false;
+    uint32_t caughtSpeciesCount = 0;
+    uint8_t catchingCharmStacks = 0;
+};
+inline bool pokemonCriticalCaptureChance(uint32_t modifiedRate,
+    const PokemonCaptureCriticalPolicy& policy, uint32_t& output) {
+    if (!policy.resolved || policy.catchingCharmStacks > 3) return false;
+    if (policy.freshStartChallenge) { output = 0; return true; }
+    const double dexMultiplier = policy.dailyMode || policy.caughtSpeciesCount > 800 ? 2.5
+        : policy.caughtSpeciesCount > 600 ? 2.0 : policy.caughtSpeciesCount > 400 ? 1.5
+        : policy.caughtSpeciesCount > 200 ? 1.0 : policy.caughtSpeciesCount > 100 ? 0.5 : 0.0;
+    const double charmMultiplier = policy.catchingCharmStacks ? 1.5 + policy.catchingCharmStacks / 2.0 : 1.0;
+    output = static_cast<uint32_t>(std::floor(charmMultiplier * dexMultiplier *
+        (modifiedRate > 255 ? 255 : modifiedRate) / 6.0));
+    return true;
+}
+
 // Calculates modified catch rate matching upstream AttemptCapturePhase:
 // modifiedCatchRate = round((((3*maxHp - 2*hp) * catchRate * pokeballMultiplier) / (3*maxHp)) * statusMultiplier)
 // shakeProbability = round(65536 / ((255 / modifiedCatchRate) ^ 0.1875))
@@ -120,7 +142,8 @@ inline bool executeCaptureAttempt(
     bool isBossShieldActive,
     bool isWave200FinalBoss,
     PokerogueRngAdapter& rng,
-    PokemonCaptureEvent& output)
+    PokemonCaptureEvent& output,
+    const PokemonCaptureCriticalPolicy* criticalPolicy = nullptr)
 {
     PokemonCaptureEvent event{};
     if (isTrainerBattle) {
@@ -162,12 +185,17 @@ inline bool executeCaptureAttempt(
         output = event;
         return false;
     }
+    if (criticalPolicy && (!criticalPolicy->resolved || criticalPolicy->catchingCharmStacks > 3)) {
+        event.blocker = CaptureBlocker::InvalidInput;
+        output = event;
+        return false;
+    }
     const double ballMultiplier = getPokeballCatchMultiplier(ballType);
     // AttemptCapturePhase.start always requests randBattleSeedInt(256),
     // including a zero critical chance and guaranteed Master Ball. Current
-    // runtime has no caught-dex/charm policy yet, so critical probability stays
-    // explicitly unsupported, but the ordinary-capture draw must not disappear.
-    rng.randSeedInt(256);
+    // host must provide a resolved caught-dex/charm policy for nonzero
+    // probability; the legacy diagnostic path does not infer one from candy data.
+    const uint32_t criticalRoll = static_cast<uint32_t>(rng.randSeedInt(256));
     if (ballMultiplier < 0.0) {
         // Master Ball guarantees capture immediately.
         event.caught = true;
@@ -196,6 +224,17 @@ inline bool executeCaptureAttempt(
     const uint32_t shakeProb = modifiedRate ? static_cast<uint32_t>(std::round(
         65536.0 / std::pow(255.0 / static_cast<double>(modifiedRate), 0.1875))) : 0;
     event.shakeProbability = shakeProb;
+    uint32_t criticalChance = 0;
+    if (criticalPolicy && !pokemonCriticalCaptureChance(modifiedRate, *criticalPolicy, criticalChance)) return false;
+    event.isCritical = criticalRoll < criticalChance;
+    if (event.isCritical) {
+        // Upstream skips the visual shake's RNG, then performs one check.
+        event.shakeCount = 1;
+        event.caught = static_cast<uint32_t>(rng.randSeedInt(65536)) < shakeProb;
+        output = event;
+        return true;
+    }
+
 
     // Upstream 3 shake checks:
     uint8_t shakes = 0;
