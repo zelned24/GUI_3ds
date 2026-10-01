@@ -1096,3 +1096,9 @@
 1. captureNativeRunSave devuelve NativeSaveResult, distinguiendo fase no soportada, referencias inválidas y memoria insuficiente. SaveNativeProgress consume el resultado antes de tocar journals; llamadas antiguas como statement siguen válidas.
 2. Envelopes de captura/load/save y candidato del inventario held pasan a heap comprobado RAII. Fallos mantienen output inválido/estado previo y no publican candidato parcial.
 3. Regresión 626 escrita para estado intermedio de captura no guardable, sin ejecutar. Host/bridge que aún ignoran resultado pueden mostrar error genérico y requieren conexión posterior; mediciones ARM11 pendientes.
+
+## Snapshot de presentación sin checkpoint por frame — pendiente de ejecución
+
+1. Host usa presentationStage del estado vivo en lugar de construir NativeRunSave cada frame. Evita copias/asignaciones de almacenamiento en el loop visual; no afirma que la fase mostrada sea serializable.
+2. Save QuickJS con progress delega directamente en saveNativeProgress; fallback propaga resultado captureNativeRunSave antes de validar/escribir. Ya no duplica captura de checkpoint ni transforma falta de memoria/fase no soportada en referencia inválida.
+3. Regresión nativa 627 y comprobación estática JS del bloque de proyección escritas, sin ejecutar. Rendimiento real y consumo de memoria requieren etapa final en Old 3DS.

@@ -1322,6 +1322,8 @@ static int checkPlayerPartyManagementAndSwitching() {
         }
     }
     if (!expectedFreshCaught || freshProfileGame.caughtSpeciesCount() != expectedFreshCaught) return 615;
+    if (freshProfileGame.presentationStage() != NativeSaveStage::RunSetup ||
+        game.presentationStage() != NativeSaveStage::BattleActive) return 627;
     const auto friendshipBeforeCapture = game.presentation().player.battleState.friendship;
     if (!game.throwPokeball(PokeballType::Pokeball)) return 168;
     const auto* captureParticipantRoot = pokemonRootSpecies(game.presentation().player.dex);

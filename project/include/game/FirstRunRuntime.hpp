@@ -90,6 +90,13 @@ public:
     bool restoreSetup(uint32_t seed, uint16_t starterDex);
     bool starterUnlocked(uint16_t dex) const;
     bool starterSelectionAllowed(const uint16_t* dexes, size_t count) const;
+    // Live presentation phase; this does not claim the state is saveable.
+    NativeSaveStage presentationStage() const {
+        if (!m_runStarted) return NativeSaveStage::RunSetup;
+        if (!m_battleFinished) return NativeSaveStage::BattleActive;
+        if (!m_playerWon) return NativeSaveStage::BattleLost;
+        return m_experienceGranted ? NativeSaveStage::ExperienceGranted : NativeSaveStage::BattleWon;
+    }
     NativeSaveResult captureNativeRunSave(NativeRunSave& output) const;
     bool restoreNativeRunSave(const NativeRunSave& save, const NativeStarterCandyRecord* records = nullptr,
         size_t count = 0, const PokemonFriendshipPolicy* policy = nullptr);

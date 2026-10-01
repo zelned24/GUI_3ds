@@ -174,4 +174,15 @@ export function registerQuickJsStorageTests(register) {
     assert.deepEqual(commands, [-1, 100, 342, 346]);
   });
 
+  register('QuickJS snapshot: render loop does not construct save checkpoints', () => {
+    const host = readFileSync(new URL('../project/src/main.cpp', import.meta.url), 'utf8');
+    const start = host.indexOf('const auto& state = game.presentation();');
+    const end = host.indexOf('bridge.setBattleStateJson', start);
+    assert.ok(start >= 0 && end > start);
+    const projection = host.slice(start, end);
+    assert.ok(projection.includes('game.presentationStage()'));
+    assert.ok(!projection.includes('captureNativeRunSave'));
+    assert.ok(!projection.includes('NativeRunSave snapshot'));
+  });
+
 }

@@ -514,10 +514,13 @@ bool QuickJSBridge::processPendingAction() {
         NativeRunSave save{};
         if (m_saves) {
             if (action == 204) {
-                m_game->captureNativeRunSave(save);
-                status = validateNativeRunSave(save, PokerogueContent::kContentHash);
-                if (status == NativeSaveResult::Ok)
-                    status = m_progress ? m_game->saveNativeProgress(*m_progress) : m_saves->save(save);
+                if (m_progress) status = m_game->saveNativeProgress(*m_progress);
+                else {
+                    status = m_game->captureNativeRunSave(save);
+                    if (status == NativeSaveResult::Ok)
+                        status = validateNativeRunSave(save, PokerogueContent::kContentHash);
+                    if (status == NativeSaveResult::Ok) status = m_saves->save(save);
+                }
                 if (status == NativeSaveResult::Ok) {
                     NativeRunSave stored{};
                     if (m_saves->load(PokerogueContent::kContentHash, stored) == NativeSaveResult::Ok)

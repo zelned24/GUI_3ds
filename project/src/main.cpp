@@ -166,8 +166,7 @@ int main() {
         if (changed) player.load(game.scene());
 #if defined(POKEROGUE_ENABLE_QUICKJS)
         if (bridgeReady && bridge.healthy()) {
-            Pokerogue3DS::NativeRunSave snapshot{};
-            game.captureNativeRunSave(snapshot);
+            // Presentation reads live state; checkpoint construction belongs to storage commands.
             const auto& state = game.presentation();
             bridge.setPokemonPresentation(state.player, state.enemy, osGetTime());
             const auto& actor = state.player.battleState;
@@ -193,7 +192,7 @@ int main() {
                 "\"starterDex\":%u,\"generation\":%u,\"finalWave\":%u,\"rewardPending\":%s}",
                 unsigned(game.run().wave), unsigned(actor.hp), unsigned(actor.maxHp),
                 unsigned(opponent.hp), unsigned(opponent.maxHp), unsigned(state.player.dex),
-                unsigned(state.enemy.dex), unsigned(snapshot.stage), unsigned(selected ? selected->id : 0),
+                unsigned(state.enemy.dex), unsigned(game.presentationStage()), unsigned(selected ? selected->id : 0),
                 unsigned(selected ? moveActor.moves[slot].pp : 0),
                 game.battleInputSupported() ? "true" : "false", game.battleFinished() ? "true" : "false", unsigned(slot),
                 unsigned(moveIds[0]), unsigned(moveIds[1]), unsigned(moveIds[2]), unsigned(moveIds[3]),
