@@ -1277,3 +1277,10 @@
 
 1. Revisión estática detectó código duplicado dentro del bloque v1 de inspectNativeStarterCandyProfile: referencia a species sin declaración y retornos bool incompatibles con NativeSaveResult. Retirado únicamente ese duplicado.
 2. Se conserva la restricción v1 a especies raíz y la validación común StarterCandyProfileCodec::valid para IDs, atributos y formas. No se modifica el formato ni se relajan checksums/hash. Regresiones legacy existentes permanecen; ejecución y compilación aplazadas.
+
+## Perfil v7: formas desbloqueadas separadas
+
+1. P3CANDY7 añade unlockedFormAttr de 64 bits, separado de observedFormAttr. Registro de 37 bytes, capacidades derivadas; SHA-256 y content hash mantienen su protección. Validator revisa bits reservados y existencia de formas para ambos atributos.
+2. Lectura v1–v6 conserva campos conocidos y deja unlockedFormAttr en cero; no transforma observaciones legacy en desbloqueos. Nuevos perfiles default reciben DEFAULT_FORM (128) siguiendo GameData.initDexData.
+3. Capturas todavía no rellenan este campo: pendientes reglas especiales de battle forms, preevoluciones y registro de form changes. Preferencias/selector aún no conectados. El formato permite persistir la próxima integración sin confundir permiso con observación.
+4. Regresiones v7 roundtrip, v6 conserva observación pero no inventa unlock y bits reservados escritas. Tests/compilación aplazados; memoria/rendimiento Old 3DS siguen sin medir.

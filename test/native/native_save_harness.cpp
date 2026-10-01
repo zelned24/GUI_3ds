@@ -639,6 +639,7 @@ extern "C" int runNativeSaveChecks() {
         purchased.costReduction != 2 || purchased.candyCount !=
             999 - starterPrice->costReduction[0] - starterPrice->costReduction[1]) return 118;
     purchased.observedFormAttr = 128;
+    purchased.unlockedFormAttr = 128;
     purchased.abilityAttr = 5;
     purchased.genderAttr = 12;
     purchased.natureAttr = (1u << 1) | (1u << 25);
@@ -652,7 +653,7 @@ extern "C" int runNativeSaveChecks() {
         poor.candyCount || poor.costReduction || poor.friendship != 42 || !poor.caught) return 120;
     if (encodeNativeStarterCandyProfile(&purchased, 1, 1, PokerogueContent::kContentHash,
             PokerogueContent::kMaxStarterCandyCount, caughtEncoded, sizeof(caughtEncoded), caughtWritten) !=
-            NativeSaveResult::Ok || std::memcmp(caughtEncoded, "P3CANDY6", 8) ||
+            NativeSaveResult::Ok || std::memcmp(caughtEncoded, "P3CANDY7", 8) ||
         decodeNativeStarterCandyProfile(caughtEncoded, caughtWritten, PokerogueContent::kContentHash,
             PokerogueContent::kMaxStarterCandyCount, caughtDecoded, 1, caughtCount, caughtGeneration) !=
             NativeSaveResult::Ok || caughtDecoded[0].costReduction != 2 || !caughtDecoded[0].caught ||
@@ -703,6 +704,21 @@ extern "C" int runNativeSaveChecks() {
             NativeSaveResult::Ok || v5Decoded[0].abilityAttr != 5 || v5Decoded[0].genderAttr != 12 ||
         v5Decoded[0].natureAttr != purchased.natureAttr || v5Decoded[0].observedFormAttr) return 149;
     auto invalidObserved = purchased;
+    char v6Bytes[256]{};
+    const size_t v6Size = kStarterCandyProfileOverhead + 29;
+    std::memcpy(v6Bytes, caughtEncoded, 109);
+    std::memcpy(v6Bytes, "P3CANDY6", 8);
+    char v6Digest[65]{};
+    IntegritySha256::hashHex(v6Bytes, v6Size - 64, v6Digest);
+    std::memcpy(v6Bytes + v6Size - 64, v6Digest, 64);
+    NativeStarterCandyRecord v6Decoded[1]{};
+    if (decodeNativeStarterCandyProfile(v6Bytes, v6Size, PokerogueContent::kContentHash,
+            PokerogueContent::kMaxStarterCandyCount, v6Decoded, 1, caughtCount, caughtGeneration) != NativeSaveResult::Ok ||
+        v6Decoded[0].observedFormAttr != purchased.observedFormAttr || v6Decoded[0].unlockedFormAttr) return 161;
+    if (caughtDecoded[0].unlockedFormAttr != purchased.unlockedFormAttr) return 162;
+    auto invalidUnlock = purchased;
+    invalidUnlock.unlockedFormAttr = 1;
+    if (StarterCandyProfileCodec::valid(invalidUnlock, 0, PokerogueContent::kMaxStarterCandyCount)) return 163;
     invalidObserved.observedFormAttr = 1;
     if (StarterCandyProfileCodec::valid(invalidObserved, 0, PokerogueContent::kMaxStarterCandyCount)) return 150;
     invalidObserved.observedFormAttr = uint64_t(1) << 63;
