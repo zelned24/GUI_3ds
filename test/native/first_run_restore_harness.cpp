@@ -128,6 +128,7 @@ static int checkInitialStarterTeamSetup() {
     if (!sceneNodesOwnedBy(first) || !first.restoreSetup(1, dexes[0]) || !sceneNodesOwnedBy(first)) return 661;
     NativeStarterCandyRecord improved{dexes[0], 0, 0, true};
     if (!seedNativeFreshStarterDexMetadata(improved)) return 676;
+    improved.genderAttr = 8; // Female-only unlock policy.
     improved.natureAttr |= 1u << 1; // Hardy is the first enum nature unlocked.
     improved.dexIvs[0] = 31;
     improved.dexIvs[3] = 27;
@@ -138,7 +139,9 @@ static int checkInitialStarterTeamSetup() {
         first.presentation().player.actor.ivs[0] != 31 || first.presentation().player.battleState.ivs[3] != 27 ||
         first.presentation().player.actor.ivs[1] != 15 ||
         first.presentation().player.actor.nature != PokemonNature::Hardy ||
-        first.presentation().player.battleState.nature != PokemonNature::Hardy) return 677;
+        first.presentation().player.battleState.nature != PokemonNature::Hardy ||
+        first.presentation().player.actor.gender != PokemonGender::Female ||
+        first.presentation().player.battleState.gender != PokemonGender::Female) return 677;
     NativeRunSave improvedSetup{};
     if (first.captureNativeRunSave(improvedSetup) != NativeSaveResult::Ok ||
         !reloaded.restoreNativeRunSave(improvedSetup, &improved, 1, &profilePolicy) ||

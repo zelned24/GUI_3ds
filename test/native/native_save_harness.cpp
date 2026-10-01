@@ -713,6 +713,23 @@ extern "C" int runNativeSaveChecks() {
     const uint16_t retainedAbility = defaultAbility;
     if (nativeStarterDefaultAbility(hiddenOnly, defaultAbilityIndex, defaultAbility) ||
         defaultAbilityIndex != retainedIndex || defaultAbility != retainedAbility) return 138;
+    PokemonGender defaultGender = PokemonGender::Unspecified;
+    if (!nativeStarterDefaultGender(purchased, defaultGender) || defaultGender != PokemonGender::Male) return 139;
+    auto femaleOnly = purchased;
+    femaleOnly.genderAttr = 8;
+    if (!nativeStarterDefaultGender(femaleOnly, defaultGender) || defaultGender != PokemonGender::Female) return 140;
+    femaleOnly.genderAttr = 0;
+    if (nativeStarterDefaultGender(femaleOnly, defaultGender) || defaultGender != PokemonGender::Female) return 141;
+    bool checkedGenderless = false;
+    for (const auto& species : PokerogueContent::kSpecies) {
+        if (species.malePercentTenths != 65534) continue;
+        NativeStarterCandyRecord genderless{};
+        genderless.speciesDex = species.dex;
+        if (!nativeStarterDefaultGender(genderless, defaultGender) || defaultGender != PokemonGender::Genderless) return 142;
+        checkedGenderless = true;
+        break;
+    }
+    if (!checkedGenderless) return 143;
     purchased.costReduction = 3;
     size_t invalidWritten = 999;
     if (encodeNativeStarterCandyProfile(&purchased, 1, 1, PokerogueContent::kContentHash,

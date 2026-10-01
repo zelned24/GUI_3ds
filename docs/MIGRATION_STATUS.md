@@ -1212,3 +1212,9 @@
 1. `nativeStarterDefaultAbility` sigue `getStarterDefaultAbilityIndex` de `src/ui/utils/starter-select-ui-utils.ts` pinned: primera habilidad si está desbloqueada, segunda cuando corresponde, oculta en slot uno sin segunda regular o slot dos con ella. Resuelve IDs canónicos reales y falla sin modificar output cuando falta metadata/definición.
 2. Resolver fresh usa habilidad/slot del perfil y atributos de la forma canónica cuando existen; fallback legacy conserva la primera habilidad conocida del baseline default. Sin draws RNG nuevos. No habilita todavía especies no default ni triggers de habilidad pendientes.
 3. Regresiones escritas de prioridad de primera habilidad, hidden-only, índice upstream y metadata ausente; sin ejecutar. Tests/compilación siguen aplazados.
+
+## Género default resuelto desde desbloqueos
+
+1. `nativeStarterDefaultGender` sigue selección default de `src/ui/utils/starter-select-ui-utils.ts` pinned: femenino si solo FEMALE está desbloqueado, masculino con MALE; especies canónicas genderless usan Genderless. Rechaza metadata ausente para especies con género, bits ajenos y selección imposible por ratio. Fallo no modifica output.
+2. Resolver fresh aplica género del ledger antes de inicializar actor/stats; legacy sin datos mantiene baseline default conocido. No consume draws RNG ni habilita todavía especies no default. Preferencias explícitas siguen pendientes.
+3. Regresiones de ambos géneros, female-only, metadata ausente, genderless real y género efectivo del inicial escritas; sin ejecutar. Tests/compilación aplazados.

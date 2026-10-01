@@ -3033,6 +3033,14 @@ bool FirstRunRuntime::resolveFreshStarter(uint16_t dex, PokerogueRngAdapter& rng
 
         starterActor.gender = starter.malePercentTenths == 65534
             ? PokemonGender::Genderless : PokemonGender::Male;
+        if (m_starterProfileReady) {
+            for (size_t record = 0; record < m_starterProfileCount; ++record) {
+                const auto& entry = m_starterProfileRecords[record];
+                if (entry.speciesDex != starter.dex) continue;
+                if (entry.genderAttr && !nativeStarterDefaultGender(entry, starterActor.gender)) return false;
+                break;
+            }
+        }
         starterActor.nature = starterNature;
         starterActor.formId = starterFormId;
         for (uint8_t& iv : starterActor.ivs) iv = 15;

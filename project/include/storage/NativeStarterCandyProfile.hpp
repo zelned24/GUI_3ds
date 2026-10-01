@@ -63,6 +63,21 @@ inline bool nativeStarterDefaultAbility(const NativeStarterCandyRecord& record,
     return true;
 }
 
+// Pinned starter-select-ui-utils.ts: female only when female is unlocked
+// and male is not, unless a future explicit preference selects otherwise.
+inline bool nativeStarterDefaultGender(const NativeStarterCandyRecord& record, PokemonGender& output) {
+    const auto* species = PokerogueContent::findSpeciesByDex(record.speciesDex);
+    if (!species || (record.genderAttr & ~12u)) return false;
+    if (species->malePercentTenths == 65534) { output = PokemonGender::Genderless; return true; }
+    if (!record.genderAttr || species->malePercentTenths > 1000) return false;
+    const auto selected = (record.genderAttr & 8u) && !(record.genderAttr & 4u) ?
+        PokemonGender::Female : PokemonGender::Male;
+    if ((selected == PokemonGender::Male && !species->malePercentTenths) ||
+        (selected == PokemonGender::Female && species->malePercentTenths == 1000)) return false;
+    output = selected;
+    return true;
+}
+
 enum class StarterCandyApplyResult : uint8_t {
     Applied = 0, InvalidRootSpecies, MissingStarterCost, InvalidCandyCount, Overflow
 };
