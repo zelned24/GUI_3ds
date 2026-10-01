@@ -2719,5 +2719,27 @@ extern "C" int runPokemonBattleStateChecks() {
             resolvedBurn.abilityBypassesReduction) return 610;
         if (Pokerogue3DS::resolvePokemonBurnDamagePolicy(ability, false, true, false, resolvedBurn)) return 611;
     }
+    // The runtime residual gate uses this complete absence-of-callback proof.
+    bool foundResidualCapability = false;
+    for (const auto& profile : PokerogueContent::kAbilityMovegenProfiles) {
+        if (!profile.bossDamageCallbacksResolved) continue;
+        foundResidualCapability = true;
+        PokemonBattleState residualActor{};
+        residualActor.abilityId = profile.abilityId;
+        residualActor.hp = residualActor.maxHp = 160;
+        residualActor.status.present = true;
+        residualActor.status.effect = Effect::Toxic;
+        Pokerogue3DS::PokemonStatusResidualPolicy residualPolicy{};
+        residualPolicy.resolved = profile.bossDamageCallbacksResolved;
+        Pokerogue3DS::PokemonStatusResidualEvent residualEvent{};
+        if (Pokerogue3DS::applyPokemonStatusResidual(residualActor, residualPolicy, residualEvent) !=
+                Pokerogue3DS::PokemonStatusResidualResult::Applied || residualActor.hp != 150 ||
+            residualActor.status.toxicTurnCount != 1) return 9011;
+        residualPolicy.bossDamageNeedsDispatcher = true;
+        if (Pokerogue3DS::applyPokemonStatusResidual(residualActor, residualPolicy, residualEvent) !=
+                Pokerogue3DS::PokemonStatusResidualResult::UnsupportedPolicy || residualActor.hp != 150 ||
+            residualActor.status.toxicTurnCount != 1) return 9012;
+    }
+    if (!foundResidualCapability) return 9013;
     return 0;
 }

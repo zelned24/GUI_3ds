@@ -2446,6 +2446,34 @@ bool FirstRunRuntime::finishBattleTurn() {
         buildScene();
         return false;
     }
+    // phase-manager.ts: WeatherEffect -> CheckStatusEffect -> TurnEnd.
+    // Positional tags and berry dispatch remain outside the gated frontier.
+    if (!upcomingInterlude) {
+        PokemonBattleState* statusActors[] = {&nextPlayer, &nextEnemy, &nextSecondEnemy};
+        const uint8_t actorCount = m_doubleBattle ? 3 : 2;
+        for (uint8_t i = 0; i < actorCount; ++i) {
+            auto& actor = *statusActors[i];
+            if (!actor.hp || !pokemonStatusIsPostTurn(actor.status)) continue;
+            const auto* capability = PokerogueContent::findAbilityMovegenProfile(actor.abilityId);
+            PokemonStatusResidualPolicy policy{};
+            // Existing damage capability proves absence of unported block,
+            // reduction and post-damage callbacks for this primary ability.
+            policy.resolved = capability && capability->bossDamageCallbacksResolved;
+            // PostDamage can affect other actors; doubles need phase ordering
+            // and the shared callback dispatcher before enabling residuals.
+            policy.bossDamageNeedsDispatcher = m_doubleBattle ||
+                (i == 1 && nextEnemyBoss.segmentCount) ||
+                (i == 2 && nextSecondEnemyBoss.segmentCount) ||
+                m_run.wave == PokerogueContent::kClassicFinalWave;
+            PokemonStatusResidualEvent statusEvent{};
+            const auto result = applyPokemonStatusResidual(actor, policy, statusEvent);
+            if (result != PokemonStatusResidualResult::Applied && result != PokemonStatusResidualResult::Blocked &&
+                result != PokemonStatusResidualResult::NoEffect) {
+                m_battleFeedback = "Status residual damage requires ability dispatcher";
+                return false;
+            }
+        }
+    }
     auto nextRoom = m_trickRoom;
     auto nextWeather = m_arenaWeather;
     PokemonTrickRoomEvent roomEvent{};

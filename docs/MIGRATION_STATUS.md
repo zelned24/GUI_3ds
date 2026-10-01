@@ -1433,3 +1433,9 @@
 1. executeActiveBattleMove aplica checkPokemonStatusBeforeMove antes del comando/PP; cancelación sleep/freeze/paralysis conserva PP y permite continuar el turno rival. La transacción externa advanceBattleTurn descarta mutaciones si otra fase falla.
 2. Reducción de sueño se obtiene de declaraciones constantes ReduceStatusEffectDurationAbAttr de abilities canónicas; parámetros desconocidos fallan. Source pinned ab-attrs.ts reduce duración en uno. No se habilitan doubles, modos indirectos ni movimientos con bypass/curación de estado en esta ruta.
 3. Catálogo regenerado con hash unchanged; regresión de reducción canónica escrita, sin ejecutar. Residuales, aplicación de estados por move, callbacks/tags completos y UI localizada aún pendientes. Tests/compilación aplazados.
+
+## Residuales conectados al cierre del turno
+
+1. finishBattleTurn aplica residual poison/toxic/burn después de WeatherEffect y antes del cierre/held turn healing, conforme phase-manager.ts. Interlude omite estados. HP/contador se publican junto con la transacción del turno y KO pasa por la conclusión existente.
+2. Capacidad damageCallbacks existente prueba ausencia de callbacks pendientes para habilidades admitidas. Otras habilidades, bosses, final boss y doubles con residual fallan explícitamente; faltan políticas de bloqueos/reducción/PostDamage y orden compartido de campo. No se asume inmunidad ni se omiten callbacks.
+3. Regresión de toxic con capacidad canónica y rollback de policy boss escrita, sin ejecutar. Aplicación de estados por moves/berries y callbacks completos pendientes; tests/compilación aplazados.
