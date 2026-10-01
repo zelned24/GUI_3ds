@@ -1617,3 +1617,9 @@
 1. resolvePokemonStatusRecipientPolicies une actor/fuente/campo vivo con composición canónica de inmunidades/bypass y confusión. Publica ambas políticas juntas; componente pendiente conserva output completo.
 2. No aplica ignoreField a ConfusedTag.canAdd: Misty sigue bloqueando confusión aunque canSetStatus ignore campo. Tipos efectivos/grounding/terrain y activación siguen requiriendo contexto explícito del runtime.
 3. Regresiones de diferencia ignoreField/Misty y fallo atómico escritas sin ejecutar. Conexión al comando activo y tests/compilación siguen pendientes.
+
+## Capacidad de forms tras aplicación de estados
+
+1. Generador deriva StatusFormChangeProfile del registro canónico por especie: resolved/hasStatusTrigger. Snapshot pinned no declara SpeciesFormChangeStatusEffectTrigger; ausencia se obtiene del contenido y no de un boolean permanente del runtime.
+2. Trigger desconocido/registro incompleto no se considera ausencia. pokemonStatusFormCallbacksAbsent exige especie conocida y registro resuelto sin trigger de estado; no implementa futuros triggers ni declara forms completas.
+3. Regresiones Bulbasaur/Shaymin y ID desconocido escritas sin ejecutar. Tests/compilación aplazados.

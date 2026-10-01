@@ -3274,6 +3274,9 @@ extern "C" int runPokemonBattleStateChecks() {
         reactionsEvent.synchronize.reaction.abilityActivates || reactionsEvent.confusion.tagAttempted ||
         reactionSource.status.present || reactionRecipient.confusion.present ||
         statusApplicationRng.randSeedUint32() != expectedApplicationRng.randSeedUint32()) return 9250;
+    if (!Pokerogue3DS::pokemonStatusFormCallbacksAbsent(1) ||
+        !Pokerogue3DS::pokemonStatusFormCallbacksAbsent(492) ||
+        Pokerogue3DS::pokemonStatusFormCallbacksAbsent(65535)) return 9290;
     bool foundStatusConfusion = false;
     for (const auto& profile : PokerogueContent::kStatusConfusionAbilityProfiles) {
         if (!profile.resolved || !(profile.statusMask & 2)) continue;

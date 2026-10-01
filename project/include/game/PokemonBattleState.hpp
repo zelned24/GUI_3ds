@@ -667,6 +667,11 @@ PokemonStatusImmunityResult executePokemonStatusConfusionReaction(const PokemonB
     PokemonConfusionTagState& tag, PokerogueRngAdapter& sourceRng,
     PokemonStatusConfusionCommandEvent& output);
 
+inline bool pokemonStatusFormCallbacksAbsent(uint16_t speciesDex) {
+    for (const auto& profile : PokerogueContent::kStatusFormChangeProfiles)
+        if (profile.speciesDex == speciesDex) return profile.resolved && !profile.hasStatusTrigger;
+    return false;
+}
 struct PokemonPostSetStatusPolicy {
     bool formsResolved = false;
     bool recipientAbilityActive = false;
