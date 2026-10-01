@@ -656,3 +656,8 @@
 
 1. Generador extrae points/allMoves de PokemonPpRestoreModifierType/PokemonAllMovePpRestoreModifierType con provenance. Adapter valida slots/PP antes de mutar, usa -1 para restauracion completa y conserva otros slots de Ether. Claim reutiliza perfiles en vez de listas de constantes.
 2. Regresiones 451-454 escritas; generacion permitida, tests/compilacion aplazados. Selector de destinatario/movimiento en presentacion y PP Ups persistentes pendientes.
+
+## Destinatario y slot de recuperacion
+
+1. claimRecoveryRewardChoice(member,move) agrega comando atomico para HP/PP restore canonico; reserva se modifica por referencia a su actor y activo conserva alias correcto. Ether usa slot explicito; Elixir aplica todos. Otras clases se rechazan sin consumir reward.
+2. Regresion 455 escrita para comando fuera de fase/indice invalido. Selector visual y demostracion end-to-end con reward real pendientes; tests/compilacion aplazados.
