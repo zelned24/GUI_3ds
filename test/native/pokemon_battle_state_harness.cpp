@@ -3277,6 +3277,22 @@ extern "C" int runPokemonBattleStateChecks() {
     if (!Pokerogue3DS::pokemonStatusFormCallbacksAbsent(1) ||
         !Pokerogue3DS::pokemonStatusFormCallbacksAbsent(492) ||
         Pokerogue3DS::pokemonStatusFormCallbacksAbsent(65535)) return 9290;
+    policyRecipient.speciesDex = 1;
+    policyRecipient.abilityId = 28;
+    policySource.speciesDex = 492;
+    policySource.abilityId = 310;
+    recipientPolicies.status.resolved = recipientPolicies.confusion.resolved = true;
+    Pokerogue3DS::PokemonPostSetStatusPolicy derivedPostStatus{};
+    if (!Pokerogue3DS::resolvePokemonPostSetStatusPolicy(policyRecipient, policySource, Effect::Poison,
+            recipientPolicies, recipientPolicies, true, true, false, derivedPostStatus) ||
+        !derivedPostStatus.formsResolved || !derivedPostStatus.recipientCallbacksResolved ||
+        !derivedPostStatus.recipientAbilityActive || !derivedPostStatus.sourceAbilityActive ||
+        derivedPostStatus.reflectedReactionsResolved) return 9300;
+    policyRecipient.speciesDex = 65535;
+    derivedPostStatus.formsResolved = false;
+    if (Pokerogue3DS::resolvePokemonPostSetStatusPolicy(policyRecipient, policySource, Effect::Poison,
+            recipientPolicies, recipientPolicies, true, true, false, derivedPostStatus) ||
+        derivedPostStatus.formsResolved) return 9301;
     bool foundStatusConfusion = false;
     for (const auto& profile : PokerogueContent::kStatusConfusionAbilityProfiles) {
         if (!profile.resolved || !(profile.statusMask & 2)) continue;

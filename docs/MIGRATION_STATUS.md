@@ -1623,3 +1623,9 @@
 1. Generador deriva StatusFormChangeProfile del registro canónico por especie: resolved/hasStatusTrigger. Snapshot pinned no declara SpeciesFormChangeStatusEffectTrigger; ausencia se obtiene del contenido y no de un boolean permanente del runtime.
 2. Trigger desconocido/registro incompleto no se considera ausencia. pokemonStatusFormCallbacksAbsent exige especie conocida y registro resuelto sin trigger de estado; no implementa futuros triggers ni declara forms completas.
 3. Regresiones Bulbasaur/Shaymin y ID desconocido escritas sin ejecutar. Tests/compilación aplazados.
+
+## Proveedor canónico de política posterior a estados
+
+1. resolvePokemonPostSetStatusPolicy conecta políticas compuestas de receptor/fuente con perfiles Synchronize/Confusion y capacidad de forms de la especie. Publica policy solo con perfiles conocidos/resueltos; no infiere reflectedReactionsResolved.
+2. Proveedor actual es de habilidad primaria con activación explícita; pasivas/suppression y callbacks distintos entre probe simulated/aplicación real requieren el dispatcher completo. FirstRunRuntime sigue pendiente de conexión del contexto vivo.
+3. Regresiones de perfiles reales y especie desconocida con output preservado escritas sin ejecutar. Tests/compilación aplazados.

@@ -683,6 +683,39 @@ struct PokemonPostSetStatusPolicy {
     PokemonConfusionTagPolicy confusionProbe{};
     PokemonConfusionTagPolicy confusionApplication{};
 };
+// Primary-ability provider; callers with passives/suppression need the complete
+// component dispatcher. Reflected callbacks remain an explicit phase boundary.
+inline bool resolvePokemonPostSetStatusPolicy(const PokemonBattleState& recipient,
+    const PokemonBattleState& source, PokemonStatusEffect effect,
+    const PokemonStatusRecipientPolicies& recipientPolicies,
+    const PokemonStatusRecipientPolicies& sourcePolicies,
+    bool recipientAbilityActive, bool sourceAbilityActive, bool reflectedReactionsResolved,
+    PokemonPostSetStatusPolicy& output) {
+    if (static_cast<uint8_t>(effect) > 7 || !recipientPolicies.status.resolved ||
+        !sourcePolicies.status.resolved || !recipientPolicies.confusion.resolved) return false;
+    bool synchronizeKnown = false, confusionKnown = false;
+    for (const auto& profile : PokerogueContent::kSynchronizeAbilityProfiles)
+        if (profile.abilityId == recipient.abilityId) {
+            synchronizeKnown = !recipientAbilityActive || profile.resolved;
+            break;
+        }
+    for (const auto& profile : PokerogueContent::kStatusConfusionAbilityProfiles)
+        if (profile.abilityId == source.abilityId) {
+            confusionKnown = !sourceAbilityActive || profile.resolved;
+            break;
+        }
+    if (!synchronizeKnown || !confusionKnown || !pokemonStatusFormCallbacksAbsent(recipient.speciesDex))
+        return false;
+    PokemonPostSetStatusPolicy policy{};
+    policy.formsResolved = policy.recipientCallbacksResolved = true;
+    policy.recipientAbilityActive = recipientAbilityActive;
+    policy.sourceAbilityActive = sourceAbilityActive;
+    policy.reflectedApplication = sourcePolicies.status;
+    policy.reflectedReactionsResolved = reflectedReactionsResolved;
+    policy.confusionProbe = policy.confusionApplication = recipientPolicies.confusion;
+    output = policy;
+    return true;
+}
 struct PokemonPostSetStatusEvent {
     PokemonSynchronizeCommandEvent synchronize{};
     PokemonStatusConfusionCommandEvent confusion{};
