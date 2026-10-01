@@ -886,6 +886,7 @@ extern "C" int runNativeSaveChecks() {
     const FormCaptureCase cases[] = {
         {"venusaur", "venusaur", 1, 128}, {"pikachu", "pichu", 1, 128},
         {"urshifu", "urshifu", 2, 128}, {"urshifu", "urshifu", 3, 256},
+        {"urshifu", "kubfu", 3, 256},
         {"zygarde", "zygarde", 4, 512}, {"zygarde", "zygarde", 5, 1024}
     };
     for (const auto& sample : cases) {
@@ -902,6 +903,25 @@ extern "C" int runNativeSaveChecks() {
         if (pokemonObtainableFormMask(recipient, allowed) != PokemonFormUnlockMaskResult::Ok ||
             pokemonCaptureFormUnlocks(original, actor, recipient, unlocked) != PokemonCaptureFormUnlockResult::Ok ||
             unlocked != (((uint64_t(128) << sample.index) & allowed) | sample.extra)) return 165;
+        NativeStarterCandyRecord durable{};
+        durable.speciesDex = recipient;
+        durable.caught = true;
+        durable.unlockedFormAttr = unlocked;
+        char bytes[256]{};
+        size_t length = 0, count = 0;
+        uint32_t generation = 0;
+        NativeStarterCandyRecord restored[1]{};
+        if (encodeNativeStarterCandyProfile(&durable, 1, 1, PokerogueContent::kContentHash,
+                PokerogueContent::kMaxStarterCandyCount, bytes, sizeof(bytes), length) != NativeSaveResult::Ok ||
+            decodeNativeStarterCandyProfile(bytes, length, PokerogueContent::kContentHash,
+                PokerogueContent::kMaxStarterCandyCount, restored, 1, count, generation) != NativeSaveResult::Ok ||
+            restored[0].unlockedFormAttr != unlocked) return 168;
+        if (!std::strcmp(sample.recipient, "kubfu")) {
+            durable.observedFormAttr = 256;
+            if (StarterCandyProfileCodec::valid(durable, 0, PokerogueContent::kMaxStarterCandyCount) ||
+                pokemonValidateStarterForm(recipient, 1, unlocked) != PokemonStarterFormResult::MissingForm) return 169;
+        }
+
     }
     uint64_t failedUnlock = 123;
     PokemonActorIdentity noActor{};

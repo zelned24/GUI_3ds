@@ -1303,3 +1303,9 @@
 1. Inspección de getStarterDexAttrPropsFromPreferences confirmó que usa GameData.getSpeciesDefaultDexAttrProps: female es malePercent === 0. No usa getDexAttrProps(caughtAttr) para elegir el género por defecto. La implementación anterior confundía esas dos rutas y daba preferencia a FEMALE-only capturado.
 2. nativeStarterDefaultGender y fallback del actor ahora usan la proporción canónica de la especie; genderless se conserva. Bits capturados permanecen intactos para futuras preferencias explícitas. Metadata incompleta legacy y ratios no resueltos continúan rechazados.
 3. Regresiones corregidas según la fuente inspeccionada y ampliadas a todo el catálogo; ninguna fue ejecutada. Tests/compilación aplazados. FormIndex upstream por defecto es cero; selección alternativa requiere preferencia explícita todavía pendiente.
+
+## Metadata recursiva Urshifu → Kubfu preservada
+
+1. SetPokemonSpeciesCaught upstream aplica la rama Urshifu formIndex 3 → getFormAttr(1) también durante la recursión de Kubfu. Ahora se conserva ese bit en unlockedFormAttr aunque Kubfu no tenga una forma física en índice uno.
+2. Codec permite exclusivamente esta excepción de metadata desbloqueada; observedFormAttr todavía exige forma real. PokemonValidateStarterForm sigue rechazando índice uno de Kubfu, sin inventar sprites, stats ni formas seleccionables. Otras referencias desconocidas permanecen explícitas.
+3. Regresión Urshifu → Kubfu, roundtrip durable y rechazo de observación/selección ficticia añadidas; sin ejecución. Formato v7 y hash actual sin cambios. Tests/compilación aplazados.

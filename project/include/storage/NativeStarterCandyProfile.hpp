@@ -252,7 +252,11 @@ inline bool valid(const NativeStarterCandyRecord& value, uint16_t previous, uint
     if (species) for (uint8_t index = 0; index <= 56; ++index) {
         if (!((value.observedFormAttr | value.unlockedFormAttr) & (uint64_t(128) << index))) continue;
         if (PokerogueContent::findFormByUpstreamIndex(value.speciesDex, index)) continue;
-        if (index || (species->firstFormId && *species->firstFormId)) return false;
+        if (!index && (!species->firstFormId || !*species->firstFormId)) continue;
+        const uint64_t bit = uint64_t(128) << index;
+        if (!(value.observedFormAttr & bit) && (value.unlockedFormAttr & bit) &&
+            pokemonRecursiveFormUnlockMetadata(*species, index)) continue;
+        return false;
     }
     const auto* root = pokemonRootSpecies(value.speciesDex);
     return species && root && value.speciesDex > previous && value.candyCount <= candyLimit && value.costReduction <= 2 &&

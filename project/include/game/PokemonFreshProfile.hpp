@@ -80,6 +80,11 @@ inline bool pokemonFormTextEquals(const char* left, const char* right) {
     while (*left && *right && *left == *right) { ++left; ++right; }
     return !*left && !*right;
 }
+// setPokemonSpeciesCaught applies Urshifu's index-3 -> index-1 unlock
+// recursively to Kubfu as well. This is upstream metadata, not a physical form.
+inline bool pokemonRecursiveFormUnlockMetadata(const PokerogueContent::Species& recipient, uint16_t index) {
+    return index == 1 && pokemonFormTextEquals(recipient.id, "kubfu");
+}
 // GameData.setPokemonSpeciesCaught form component, for each recursive recipient.
 inline PokemonCaptureFormUnlockResult pokemonCaptureFormUnlocks(uint16_t capturedDex,
     const PokemonActorIdentity& actor, uint16_t recipientDex, uint64_t& output) {
@@ -113,12 +118,14 @@ inline PokemonCaptureFormUnlockResult pokemonCaptureFormUnlocks(uint16_t capture
                 }
         }
     }
-    // The current durable schema requires concrete form references. Report the
-    // upstream recursive exceptions explicitly until that schema supports them.
+    // Preserve the known recursive metadata exception without inventing a
+    // physical form. Other unknown references remain explicitly unsupported.
     for (uint8_t i = 0; i <= 56; ++i) {
         if (!(unlocked & (uint64_t(128) << i))) continue;
         if (PokerogueContent::findFormByUpstreamIndex(recipientDex, i)) continue;
         if (!i && (!recipient->firstFormId || !*recipient->firstFormId)) continue;
+        if (pokemonRecursiveFormUnlockMetadata(*recipient, i) &&
+            pokemonFormTextEquals(original->id, "urshifu") && index == 3) continue;
         return PokemonCaptureFormUnlockResult::UnsupportedReference;
     }
     output = unlocked;
