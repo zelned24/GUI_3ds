@@ -2,6 +2,43 @@
 #include "game/PokerogueRngAdapter.hpp"
 
 namespace Pokerogue3DS {
+PokemonStatusMoveCheckResult checkPokemonStatusBeforeMove(PokemonStatusState& status,
+    const PokemonStatusMoveCheckPolicy& policy, PokerogueRngAdapter& rng, PokemonStatusMoveCheckEvent& output) {
+    if (!pokemonStatusStateValid(status)) return PokemonStatusMoveCheckResult::InvalidStatus;
+    if (!policy.resolved) return PokemonStatusMoveCheckResult::UnsupportedPolicy;
+    auto next = status;
+    auto nextRng = rng;
+    PokemonStatusMoveCheckEvent event{};
+    event.effect = status.effect;
+    if (status.present && (status.effect == PokemonStatusEffect::Sleep || status.effect == PokemonStatusEffect::Freeze)) {
+        if (status.effect == PokemonStatusEffect::Sleep && policy.indirectSleepWake) event.cured = true;
+        else {
+            if (incrementPokemonStatusTurn(next) == PokemonStatusTickResult::CounterOverflow)
+                return PokemonStatusMoveCheckResult::CounterOverflow;
+            if (status.effect == PokemonStatusEffect::Sleep) {
+                const uint32_t remaining = next.hasSleepTurnsRemaining ? next.sleepTurnsRemaining : 0;
+                next.hasSleepTurnsRemaining = true;
+                next.sleepTurnsRemaining = remaining > policy.sleepDurationReduction ?
+                    remaining - policy.sleepDurationReduction : 0;
+                event.cured = !next.sleepTurnsRemaining;
+                event.cancelled = !event.cured && !policy.bypassSleep;
+            } else {
+                // JS evaluates randBattleSeedInt(4) before the expired-counter test.
+                event.cured = policy.immediateFreezeCureMove || nextRng.randSeedInt(4) == 0 ||
+                    !next.hasFreezeTurnsRemaining || !next.freezeTurnsRemaining;
+                event.cancelled = !event.cured;
+            }
+        }
+    } else if (status.present && status.effect == PokemonStatusEffect::Paralysis) {
+        event.cancelled = nextRng.randSeedInt(8) == 0;
+    }
+    if (event.cured) next = {};
+    status = next;
+    rng = nextRng;
+    output = event;
+    return PokemonStatusMoveCheckResult::Ok;
+}
+
 PokemonStatusObtainResult obtainPokemonStatus(PokemonBattleState& actor, PokemonStatusEffect effect,
     const PokemonStatusApplicationPolicy& policy, bool reactionsResolved, PokerogueRngAdapter& rng,
     bool explicitSleepDuration, uint32_t sleepDuration) {

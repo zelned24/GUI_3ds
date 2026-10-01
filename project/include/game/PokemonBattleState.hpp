@@ -310,6 +310,22 @@ PokemonStatusObtainResult obtainPokemonStatus(PokemonBattleState& actor, Pokemon
     const PokemonStatusApplicationPolicy& policy, bool reactionsResolved, PokerogueRngAdapter& rng,
     bool explicitSleepDuration = false, uint32_t sleepDuration = 0);
 
+struct PokemonStatusMoveCheckPolicy {
+    bool resolved = false;
+    bool bypassSleep = false;
+    bool indirectSleepWake = false;
+    bool immediateFreezeCureMove = false;
+    uint32_t sleepDurationReduction = 0; // Resolved ReduceStatusEffectDurationAbAttr result.
+};
+struct PokemonStatusMoveCheckEvent {
+    bool cancelled = false;
+    bool cured = false;
+    PokemonStatusEffect effect = PokemonStatusEffect::None;
+};
+enum class PokemonStatusMoveCheckResult : uint8_t { Ok, InvalidStatus, UnsupportedPolicy, CounterOverflow };
+PokemonStatusMoveCheckResult checkPokemonStatusBeforeMove(PokemonStatusState& status,
+    const PokemonStatusMoveCheckPolicy& policy, PokerogueRngAdapter& rng, PokemonStatusMoveCheckEvent& output);
+
 struct PokemonStatusResidualPolicy {
     bool resolved = false; // Both block attributes and post-damage callbacks resolved.
     bool active = true;

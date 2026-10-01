@@ -1359,3 +1359,9 @@
 1. obtainPokemonStatus porta componente de actor de Pokemon.doSetStatus: contador toxic cero, sleep sin duración explícita consume randBattleSeedInt(3) y elige 2/3, freeze recibe tres. Optional sleep conserva cero presente para otros estados como el constructor upstream.
 2. Elegibilidad, faint y reactionsResolved se comprueban antes del draw; RNG y actor se publican conjuntamente. Tags/queue/callbacks requieren resolución explícita y no se simulan. Dispatcher del turno y save status siguen pendientes.
 3. Regresiones de duración/RNG, reacción no resuelta y freeze escritas, sin ejecutar. Tests/compilación aplazados.
+
+## Chequeo de estados previo al movimiento
+
+1. checkPokemonStatusBeforeMove porta actor/RNG de MovePhase.checkSleep/checkFreeze/checkPara: sleep decrementa contador y aplica reducción resuelta, indirect despierta, bypass no cancela; freeze consume randBattleSeedInt(4) antes de comprobar expiración salvo movimiento de curación inmediata; paralysis usa randBattleSeedInt(8), no probabilidad inventada de generaciones anteriores.
+2. Política requiere atributos y modo de uso resueltos. Actor, RNG y evento se publican conjuntamente; overflow/metadata inválida no mutan. Overrides de debug no se exponen como regla de producción.
+3. Resolver todavía no conectado al dispatcher real; cola/cancelación/PP/mensajes y estado durable siguen pendientes. Tests/compilación aplazados.
