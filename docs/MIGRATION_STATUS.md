@@ -540,3 +540,8 @@
 1. Generador deriva perfiles de todos los abilities desde upstreamAttributes canónicos, con provenance: BlockItemTheftAbAttr bloquea, PostItemLostApplyBattlerTagAbAttr requiere dispatcher pendiente y condiciones desconocidas hacen fallar. Adapter porta CancelInteractionAbAttr y orden previo a PostItemLost, según ab-attrs.ts/BattleScene.tryTransferHeldItemModifier pinned.
 2. Resolver exige conjunto de abilities/passives aplicables ya resuelto (supresión, ignorable, faint y fusión pertenecen al dispatcher); no confunde ID desconocido con ausencia de hooks. Sticky Hold cancela transferencia, incluso si otro callback post-loss estaría pendiente, porque no ocurre pérdida. Unburden sin bloqueo queda explícitamente pendiente hasta portar su tag.
 3. Regresiones 394–400 escritas para aplicación pendiente, bloqueo real, callback pendiente, combinación, Pressure sin hooks de robo e ID desconocido. Regeneración permitida; tests/compilación aplazados. Falta conexión del efecto en turnos y lifecycle Unburden; Classic sigue incompleto.
+
+## Callback nativo PostItemLost para Unburden
+
+1. Perfil generado reconoce el atributo y argumento UNBURDEN desde raw canónico. Dispatcher del módulo de modifiers valida todos los IDs antes de publicar el tag, respeta simulated y no repite un tag existente. Callbacks/condiciones desconocidos fallan explícitamente.
+2. Regresiones 401–404 escritas; tests/compilación aplazados. Estado transitorio separado: falta conexión al turno, reset/serialización de tags y multiplicador de velocidad; no se habilita todavía la policy de transferencia con Unburden.

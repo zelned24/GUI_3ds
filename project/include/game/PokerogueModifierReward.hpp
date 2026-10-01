@@ -139,6 +139,33 @@ inline HeldItemTheftAbilityPolicyResult resolveHeldItemTheftAbilityPolicy(
     return HeldItemTheftAbilityPolicyResult::Resolved;
 }
 
+// Transient summon tag; the caller owns reset/serialization with other battle tags.
+struct HeldItemLostTagState { bool unburden = false; };
+enum class HeldItemLostCallbackResult : uint8_t {
+    Applied, NoChange, InvalidState, UnknownAbility, UnresolvedApplicability, UnsupportedCallback
+};
+inline HeldItemLostCallbackResult applyHeldItemLostCallbacks(
+    const uint16_t* activeAbilityIds, size_t count, bool applicabilityResolved,
+    bool simulated, HeldItemLostTagState& tags) {
+    if (count && !activeAbilityIds) return HeldItemLostCallbackResult::InvalidState;
+    if (!applicabilityResolved) return HeldItemLostCallbackResult::UnresolvedApplicability;
+    bool applyUnburden = false;
+    for (size_t i = 0; i < count; ++i) {
+        const PokerogueContent::HeldItemTheftAbilityProfile* selected = nullptr;
+        for (const auto& profile : PokerogueContent::kHeldItemTheftAbilityProfiles)
+            if (profile.abilityId == activeAbilityIds[i]) { selected = &profile; break; }
+        if (!selected) return HeldItemLostCallbackResult::UnknownAbility;
+        if (selected->conditionalCallbacks ||
+            (selected->requiresPostLostDispatcher && !selected->appliesUnburden))
+            return HeldItemLostCallbackResult::UnsupportedCallback;
+        applyUnburden |= selected->appliesUnburden;
+    }
+    // PostItemLostApplyBattlerTagAbAttr.canApply: absent tag and !simulated.
+    if (!applyUnburden || simulated || tags.unburden) return HeldItemLostCallbackResult::NoChange;
+    tags.unburden = true;
+    return HeldItemLostCallbackResult::Applied;
+}
+
 enum class HeldItemMatchPolicyResult : uint8_t {
     Resolved, UnresolvedAbilities, UnsupportedModifierClass, UnresolvedArguments, InvalidState
 };

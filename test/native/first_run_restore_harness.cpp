@@ -652,6 +652,17 @@ static int checkWave200FinalBossAndGameClear() {
     const uint16_t unknownTheftAbility = 65535;
     if (resolveHeldItemTheftAbilityPolicy(&unknownTheftAbility, 1, true, canonicalBlocked) !=
             HeldItemTheftAbilityPolicyResult::UnknownAbility || canonicalBlocked) return 400;
+    HeldItemLostTagState lostTags{};
+    if (applyHeldItemLostCallbacks(&pendingLostAbility, 1, true, true, lostTags) !=
+            HeldItemLostCallbackResult::NoChange || lostTags.unburden) return 401;
+    if (applyHeldItemLostCallbacks(&pendingLostAbility, 1, true, false, lostTags) !=
+            HeldItemLostCallbackResult::Applied || !lostTags.unburden) return 402;
+    if (applyHeldItemLostCallbacks(&pendingLostAbility, 1, true, false, lostTags) !=
+            HeldItemLostCallbackResult::NoChange) return 403;
+    const uint16_t invalidLostSet[] = {pendingLostAbility, 65535};
+    lostTags = {};
+    if (applyHeldItemLostCallbacks(invalidLostSet, 2, true, false, lostTags) !=
+            HeldItemLostCallbackResult::UnknownAbility || lostTags.unburden) return 404;
     const auto preservedBoss = bossActor;
     if (applyPokemonFixedEnemyMovePp(*firstPhase, bossActor) ||
         bossActor.moves[3].maxPp != preservedBoss.moves[3].maxPp) return 338;
