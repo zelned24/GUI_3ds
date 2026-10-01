@@ -419,6 +419,25 @@ static int checkWave200FinalBossAndGameClear() {
         if (phaseOneActor.moves[slot].moveId != secondPhase->moveIds[slot]) return 344;
     if (preparePokemonFinalBossSecondPhase(200, phaseOneActor, phaseOneBoss) ||
         phaseOneBoss.segmentIndex != 4) return 345;
+    HeldItemStackTransferEvent transfer{};
+    if (calculateHeldItemStackTransfer(3, true, 2, 5, 1, transfer) !=
+            HeldItemStackTransferResult::Transferred || transfer.transferred != 1 ||
+        transfer.sourceRemaining != 2 || transfer.targetStack != 3 || transfer.removeSource) return 346;
+    if (calculateHeldItemStackTransfer(3, true, 4, 5, 3, transfer) !=
+            HeldItemStackTransferResult::Transferred || transfer.transferred != 1 ||
+        transfer.sourceRemaining != 2 || transfer.targetStack != 5) return 347;
+    const auto unchangedTransfer = transfer;
+    if (calculateHeldItemStackTransfer(1, true, 5, 5, 1, transfer) !=
+            HeldItemStackTransferResult::NoCapacity || transfer.targetStack != unchangedTransfer.targetStack ||
+        transfer.transferred != unchangedTransfer.transferred) return 348;
+    if (calculateHeldItemStackTransfer(1, false, 0, 1, 1, transfer) !=
+            HeldItemStackTransferResult::Transferred || transfer.sourceRemaining ||
+        transfer.targetStack != 1 || !transfer.removeSource) return 349;
+    const auto successfulTransfer = transfer;
+    if (calculateHeldItemStackTransfer(0, false, 0, 1, 1, transfer) !=
+            HeldItemStackTransferResult::InvalidState || transfer.targetStack != successfulTransfer.targetStack ||
+        calculateHeldItemStackTransfer(1, false, 1, 2, 1, transfer) !=
+            HeldItemStackTransferResult::InvalidState) return 350;
     const auto preservedBoss = bossActor;
     if (applyPokemonFixedEnemyMovePp(*firstPhase, bossActor) ||
         bossActor.moves[3].maxPp != preservedBoss.moves[3].maxPp) return 338;

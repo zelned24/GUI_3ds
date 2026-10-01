@@ -480,3 +480,9 @@
 1. preparePokemonFinalBossSecondPhase porta condición de wave final, actor vivo, primera forma/boss y último segmento despejado. Reutiliza forma y moveset canónicos, restaura HP/PP, conserva identidad/stages y fija cinco segmentos/index cuatro como QuietFormChangePhase.end. Validación fallida no publica actor ni boss.
 2. Regresiones 339–345 escritas para trigger prematuro, wave incorrecta, Eternamax real, ambos movesets/Recover, cinco segmentos y rechazo de repetición. No ejecutadas.
 3. Helper todavía no entra en el turno nativo: Mini Black Hole, status/tags, cancelación del move pendiente y segunda posición del jugador deben conectarse antes de declarar initFinalBossPhaseTwo completo. Tests y compilación aplazados; Classic sigue incompleto.
+
+## Transferencia de stacks de objetos sostenidos
+
+1. Catalog contiene MINI_BLACK_HOLE y provenance reales. No existe todavía inventario nativo de held modifiers; no se sustituye por una lista UI ni se afirma que el objeto funciona en batalla.
+2. calculateHeldItemStackTransfer en el módulo existente de modifiers porta cantidades/remoción de BattleScene.tryTransferHeldItemModifier: cantidad predeterminada del caller uno, límite del receptor con modifier coincidente y remoción del stack agotado. Capacidad ausente/estado incoherente se distinguen de receptor lleno; evento solo se publica al resolver.
+3. Regresiones 346–350 escritas para unidad transferida, límite, lleno sin mutación, agotamiento e inválidos. Falta inventario/matchType, selección seeded de oponente/item, BlockItemTheftAbAttr/PostItemLostAbAttr y conexión TurnEndPhase; Mini Black Hole/Eternamax siguen incompletos. Tests/compilación aplazados.

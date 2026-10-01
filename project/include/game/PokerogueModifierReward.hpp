@@ -8,6 +8,40 @@
 
 namespace Pokerogue3DS {
 
+enum class HeldItemStackTransferResult : uint8_t { Transferred, NoCapacity, InvalidState };
+struct HeldItemStackTransferEvent {
+    uint16_t transferred = 0;
+    uint16_t sourceRemaining = 0;
+    uint16_t targetStack = 0;
+    bool removeSource = false;
+};
+
+// BattleScene.tryTransferHeldItemModifier stack portion. Type matching and
+// BlockItemTheft/PostItemLost ability dispatch must resolve before applying it.
+inline HeldItemStackTransferResult calculateHeldItemStackTransfer(uint16_t sourceStack,
+    bool targetHasMatchingModifier, uint16_t targetStack, uint16_t targetMaxStack,
+    uint16_t quantity, HeldItemStackTransferEvent& output) {
+    if (!sourceStack || !quantity || !targetMaxStack ||
+        (!targetHasMatchingModifier && targetStack) || targetStack > targetMaxStack)
+        return HeldItemStackTransferResult::InvalidState;
+    if (targetHasMatchingModifier && targetStack == targetMaxStack)
+        return HeldItemStackTransferResult::NoCapacity;
+    uint16_t taken = quantity < sourceStack ? quantity : sourceStack;
+    if (targetHasMatchingModifier && taken > targetMaxStack - targetStack)
+        taken = targetMaxStack - targetStack;
+    // A new modifier is added through the inventory's normal add policy;
+    // upstream only checks matching-stack capacity in this method.
+    if (!targetHasMatchingModifier && taken > targetMaxStack)
+        return HeldItemStackTransferResult::InvalidState;
+    HeldItemStackTransferEvent event{};
+    event.transferred = taken;
+    event.sourceRemaining = sourceStack - taken;
+    event.targetStack = targetStack + taken;
+    event.removeSource = event.sourceRemaining == 0;
+    output = event;
+    return HeldItemStackTransferResult::Transferred;
+}
+
 enum class ModifierRewardRollResult : uint8_t {
     Ok, InvalidLuck, MissingWeight, InvalidWeight, EmptyPool, MissingItem
 };
