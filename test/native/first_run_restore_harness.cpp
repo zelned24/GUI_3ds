@@ -993,6 +993,15 @@ static int checkPokeballCaptureMechanics() {
     if (!wildGame.restoreNativeRunSave(wildSave)) return 150;
     const uint8_t initialPartyCount = wildGame.playerPartyCount();
     if (initialPartyCount != 1) return 151;
+    auto heldCaptureGame = wildGame;
+    NativeHeldModifierInstance captureHeld{};
+    const uint32_t capturePid = wildGame.presentation().enemy.battleState.pokemonId;
+    if (initializeHeldModifierInstance("LEFTOVERS", capturePid, 1, true, nullptr, captureHeld) !=
+            HeldModifierStorageResult::Ok || !heldCaptureGame.restoreHeldModifierInventory(&captureHeld, 1) ||
+        !heldCaptureGame.throwPokeball(PokeballType::Pokeball) || heldCaptureGame.playerPartyCount() != 2 ||
+        heldCaptureGame.playerPartyMember(1)->battleState.pokemonId != capturePid ||
+        heldCaptureGame.heldModifierCount() != 1 || heldCaptureGame.heldModifier(0)->ownerPokemonId != capturePid)
+        return 441;
     if (!wildGame.throwPokeball(PokeballType::Pokeball)) return 152;
     if (wildGame.pokeballCount(PokeballType::Pokeball) != 4) return 153;
     if (!wildGame.battleFinished() || !wildGame.playerWon()) return 154;

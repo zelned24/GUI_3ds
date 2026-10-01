@@ -620,3 +620,9 @@
 
 1. switchPlayerPokemon permite clases curativas ya conectadas; mantiene owner PID y ejecuta respuesta enemiga y fin de turno por fases existentes. Limpia summon tag/turnDamageDealt de actor saliente/entrante. Clases desconocidas siguen rechazadas.
 2. Regresiones 439-440 escritas para cambio con objetos de ambos miembros y ownership estable. Tests/compilacion aplazados; capture/reward y efectos restantes pendientes.
+
+## Captura con inventario curativo
+
+1. Captura admite clases curativas portadas con registros ligados al jugador o target. Conserva PID del capturado y sus objetos; limpia summon tags/turnData del nuevo miembro. Antes de consumir ball rechaza equipo lleno y objetos de otros enemigos hasta politica de reemplazo/cleanup.
+2. Semantica inspeccionada en attempt-capture-phase.addToParty y EnemyPokemon.addToParty pinned. Tests/compilacion aplazados; no afirma captura completa de todos los casos.
+3. Regresion 441 escrita para captura real seeded con Leftovers del enemigo y PID conservado; pendiente de ejecucion.

@@ -2049,7 +2049,7 @@ bool FirstRunRuntime::throwPokeball(PokeballType ball) {
 }
 
 bool FirstRunRuntime::throwPokeballInPlace(PokeballType ball) {
-    if (m_heldModifierCount) {
+    if (!heldHealingInventorySupported(m_heldModifiers.data(), m_heldModifierCount)) {
         m_battleFeedback = "Held modifier effects require native dispatch";
         return false;
     }
@@ -2097,6 +2097,23 @@ bool FirstRunRuntime::throwPokeballInPlace(PokeballType ball) {
         }
     }
 
+    if (m_heldModifierCount) {
+        if (m_context.playerPartyCount >= 6) {
+            m_battleFeedback = "Capture with held inventory requires party replacement policy";
+            return false;
+        }
+        for (size_t i = 0; i < m_heldModifierCount; ++i) {
+            const uint32_t owner = m_heldModifiers[i].ownerPokemonId;
+            bool retained = owner == target->battleState.pokemonId;
+            for (uint8_t member = 0; member < m_context.playerPartyCount; ++member)
+                retained |= owner == m_context.playerParty[member].battleState.pokemonId;
+            if (!retained) {
+                m_battleFeedback = "Capture requires other enemy held-item cleanup policy";
+                return false;
+            }
+        }
+    }
+
     if (target->battleState.hp == 0) {
         m_battleFeedback = "Target is already fainted!";
         buildScene();
@@ -2135,6 +2152,8 @@ bool FirstRunRuntime::throwPokeballInPlace(PokeballType ball) {
             // EnemyPokemon.addToParty passes the source into PlayerPokemon:
             // preserve capture HP/PP; remove the enemy only after copying it.
             resetPokemonStatStages(caughtMon.battleState);
+            caughtMon.battleState.heldItemLostTags = {};
+            caughtMon.battleState.turnDamageDealt = 0;
             m_context.playerParty[m_context.playerPartyCount++] = caughtMon;
         }
         target->battleState.hp = 0;
