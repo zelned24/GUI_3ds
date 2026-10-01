@@ -607,6 +607,28 @@ static int checkWave200FinalBossAndGameClear() {
     size_t tooSmallHeldSize = 99;
     if (encodeNativeHeldModifier(heldForCodec, repeatedHeldPayload, 1, tooSmallHeldSize) !=
             NativeSaveResult::TooLarge || tooSmallHeldSize) return 383;
+    HeldItemTheftPolicy canonicalTheftPolicy{};
+    if (resolveTurnHeldItemTransferMatchPolicy(otherHolder, nullptr, 0, 1234, false, false,
+            canonicalTheftPolicy) != HeldItemMatchPolicyResult::UnresolvedAbilities || canonicalTheftPolicy.resolved)
+        return 389;
+    if (resolveTurnHeldItemTransferMatchPolicy(otherHolder, nullptr, 0, 1234, true, false,
+            canonicalTheftPolicy) != HeldItemMatchPolicyResult::Resolved || !canonicalTheftPolicy.resolved ||
+        canonicalTheftPolicy.targetMaxStack != 1 || canonicalTheftPolicy.matchingTargetIndex != static_cast<size_t>(-1))
+        return 390;
+    NativeHeldModifierInstance matchingBlackHole = blackHoleInstance;
+    matchingBlackHole.ownerPokemonId = 1234;
+    if (resolveTurnHeldItemTransferMatchPolicy(otherHolder, &matchingBlackHole, 1, 1234, true, false,
+            canonicalTheftPolicy) != HeldItemMatchPolicyResult::Resolved || canonicalTheftPolicy.matchingTargetIndex != 0)
+        return 391;
+    auto opaqueSource = otherHolder;
+    std::strcpy(opaqueSource.rawArguments, "{\"future\":true}");
+    const auto policyBeforeOpaque = canonicalTheftPolicy;
+    if (resolveTurnHeldItemTransferMatchPolicy(opaqueSource, nullptr, 0, 1234, true, false,
+            canonicalTheftPolicy) != HeldItemMatchPolicyResult::UnresolvedArguments ||
+        canonicalTheftPolicy.matchingTargetIndex != policyBeforeOpaque.matchingTargetIndex) return 392;
+    if (resolveTurnHeldItemTransferMatchPolicy(otherHolder, nullptr, 0, 1234, true, true,
+            canonicalTheftPolicy) != HeldItemMatchPolicyResult::Resolved || !canonicalTheftPolicy.blockedByAbility)
+        return 393;
     const auto preservedBoss = bossActor;
     if (applyPokemonFixedEnemyMovePp(*firstPhase, bossActor) ||
         bossActor.moves[3].maxPp != preservedBoss.moves[3].maxPp) return 338;

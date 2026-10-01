@@ -1019,5 +1019,12 @@ const fixedRows = fixedMovesets.entries.map(profile => {
 });
 const fixedMovesetHeader = evolutionCapabilityHeader.replace('struct MoveAttribute {',
   `struct FixedEnemyMoveset { uint16_t speciesDex; uint8_t formIndex; uint16_t moveIds[4]; uint8_t ppUsed[4]; int8_t ppUp[4]; };\ninline constexpr FixedEnemyMoveset kFixedEnemyMovesets[] = {\n${fixedRows.join(',\n')}\n};\ninline constexpr Entity kFixedEnemyMovesetSource = {"fixed-enemy-movesets", "EnemyPokemon.generateAndPopulateMoveset", "${field(fixedMovesets.provenance.sourcePath)}", "${field(fixedMovesets.provenance.sourceSymbol)}", "${field(fixedMovesets.provenance.sourceHash)}"};\nstruct MoveAttribute {`);
-await fs.writeFile(outputPath, fixedMovesetHeader, 'utf8');
-console.log(JSON.stringify({ output: path.relative(root, outputPath), bytes: Buffer.byteLength(fixedMovesetHeader), hash: report.contentHash }));
+const heldClassRows = collections.items.map(item => {
+  const raw = item.extensions?.upstreamRawRecord?.value ?? '';
+  const supported = /new\s+TurnHeldItemTransferModifierType\s*\(/.test(raw);
+  return `    {"${field(item.id)}", ${supported}, "${field(item.source?.sourcePath)}", "${field(item.source?.sourceSymbol)}", "${field(item.source?.sourceHash)}"}`;
+});
+const heldClassHeader = fixedMovesetHeader.replace('struct MoveAttribute {',
+  `struct HeldModifierClassProfile { const char* itemId; bool isTurnHeldItemTransfer; const char* sourcePath; const char* sourceSymbol; const char* sourceHash; };\ninline constexpr HeldModifierClassProfile kHeldModifierClassProfiles[] = {\n${heldClassRows.join(',\n')}\n};\nstruct MoveAttribute {`);
+await fs.writeFile(outputPath, heldClassHeader, 'utf8');
+console.log(JSON.stringify({ output: path.relative(root, outputPath), bytes: Buffer.byteLength(heldClassHeader), hash: report.contentHash }));

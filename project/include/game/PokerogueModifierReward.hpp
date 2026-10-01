@@ -113,6 +113,50 @@ struct HeldItemTheftPolicy {
     size_t matchingTargetIndex = static_cast<size_t>(-1);
     uint16_t targetMaxStack = 0;
 };
+enum class HeldItemMatchPolicyResult : uint8_t {
+    Resolved, UnresolvedAbilities, UnsupportedModifierClass, UnresolvedArguments, InvalidState
+};
+
+inline bool isTurnHeldItemTransferInstance(const NativeHeldModifierInstance& instance) {
+    const auto* definition = heldModifierDefinition(instance);
+    if (!definition) return false;
+    for (const auto& profile : PokerogueContent::kHeldModifierClassProfiles)
+        if (!std::strcmp(profile.itemId, definition->id)) return profile.isTurnHeldItemTransfer;
+    return false;
+}
+
+// TurnHeldItemTransferModifier.matchType/getMaxHeldItemCount pinned: class
+// match, cap one. Ability dispatch must be independently resolved by the caller.
+inline HeldItemMatchPolicyResult resolveTurnHeldItemTransferMatchPolicy(
+    const NativeHeldModifierInstance& source, const NativeHeldModifierInstance* records, size_t count,
+    uint32_t targetPokemonId, bool abilityPolicyResolved, bool theftBlocked, HeldItemTheftPolicy& output) {
+    if (!validateHeldModifierInstance(source) || (count && !records) || source.ownerPokemonId == targetPokemonId)
+        return HeldItemMatchPolicyResult::InvalidState;
+    if (!isTurnHeldItemTransferInstance(source)) return HeldItemMatchPolicyResult::UnsupportedModifierClass;
+    if (source.rawArguments[0] && std::strcmp(source.rawArguments, "[]"))
+        return HeldItemMatchPolicyResult::UnresolvedArguments;
+    if (source.stackCount != 1) return HeldItemMatchPolicyResult::InvalidState;
+    if (!abilityPolicyResolved) return HeldItemMatchPolicyResult::UnresolvedAbilities;
+    HeldItemTheftPolicy policy{};
+    policy.resolved = true;
+    policy.blockedByAbility = theftBlocked;
+    policy.targetMaxStack = 1;
+    // An ability cancellation precedes matchType/capacity lookup upstream.
+    if (!theftBlocked) for (size_t i = 0; i < count; ++i) {
+        if (!validateHeldModifierInstance(records[i])) return HeldItemMatchPolicyResult::InvalidState;
+        if (records[i].ownerPokemonId != targetPokemonId) continue;
+        if (!isTurnHeldItemTransferInstance(records[i]))
+            return HeldItemMatchPolicyResult::UnsupportedModifierClass;
+        if (records[i].rawArguments[0] && std::strcmp(records[i].rawArguments, "[]"))
+            return HeldItemMatchPolicyResult::UnresolvedArguments;
+        if (records[i].stackCount != 1 || policy.matchingTargetIndex != static_cast<size_t>(-1))
+            return HeldItemMatchPolicyResult::InvalidState;
+        policy.matchingTargetIndex = i;
+    }
+    output = policy;
+    return HeldItemMatchPolicyResult::Resolved;
+}
+
 struct HeldItemInventoryTransferEvent {
     HeldItemStackTransferEvent stacks{};
     uint32_t sourcePokemonId = 0;

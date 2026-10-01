@@ -528,3 +528,9 @@
 1. NativeRunSave v11 añade count y componentes held=1 dentro del payload protegido por SHA-256/content hash. IDs canónicos se resuelven al decodificar; límite 32 registros y envelope 8192 bytes fallan explícitamente por capacidad. No se aumentó silenciosamente el presupuesto de stack del journal; su perfil de memoria sigue pendiente de hardware.
 2. Migración v10 preserva actores explícitos y añade inventario vacío; rutas v1–v9 se conservan. Runtime capture fuerza snapshot de equipo cuando hay objetos, restore valida propietarios contra actores reconstruidos antes de publicar y setup no admite inventario. Efectos no soportados siguen bloqueados al jugar.
 3. Regresiones 384–388 escritas para run roundtrip, restauración de owner/metadata y fixture histórica v10 con checksum válido. Fixtures de versiones anteriores identifican ahora el writer v11 antes de construir su layout histórico. Tests/compilación aplazados; dispatcher y Classic completo siguen pendientes.
+
+## MatchType y capacidad de Mini Black Hole
+
+1. Generador obtiene constructor TurnHeldItemTransferModifierType desde raw canónico de items y publica perfil con provenance. Adapter del módulo existente porta matchType de TurnHeldItemTransferModifier y getMaxHeldItemCount=1, según src/modifier/modifier.ts pinned. No usa nombres UI ni supone que clases desconocidas tengan el mismo comportamiento.
+2. resolveTurnHeldItemTransferMatchPolicy exige capacidad del dispatcher de habilidades resuelta, respeta cancelación previa a matching y rechaza argumentos/clases pendientes o stacks incoherentes sin publicar policy. Perfil false significa clase sin adapter, no certeza de ausencia de hooks.
+3. Regresiones 389–393 escritas para policy pendiente, cap/matching real, metadata desconocida y bloqueo. Regeneración del header permitida; tests/compilación aplazados. Falta dispatcher de habilidades y conexión del efecto en turnos; Classic sigue incompleto.
