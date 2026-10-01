@@ -1511,6 +1511,27 @@ int main() {
             return 326;
         if (actorHasEvolutions && (!singleSnapshotRuntime.togglePlayerEvolutionPause(0) ||
             singleSnapshotRuntime.presentation().player.battleState.pauseEvolutions)) return 327;
+        NativeHeldModifierInstance runtimeHeld{};
+        if (initializeHeldModifierInstance("MINI_BLACK_HOLE",
+                singleSnapshotRuntime.presentation().player.battleState.pokemonId, 1, false, "[]", runtimeHeld) !=
+                HeldModifierStorageResult::Ok || !singleSnapshotRuntime.restoreHeldModifierInventory(&runtimeHeld, 1) ||
+            singleSnapshotRuntime.heldModifierCount() != 1 || !singleSnapshotRuntime.heldModifier(0) ||
+            singleSnapshotRuntime.heldModifier(1)) return 374;
+        auto invalidRuntimeHeld = runtimeHeld;
+        invalidRuntimeHeld.canonicalItemIndex = PokerogueContent::kItemCount;
+        if (singleSnapshotRuntime.restoreHeldModifierInventory(&invalidRuntimeHeld, 1) ||
+            singleSnapshotRuntime.heldModifierCount() != 1 ||
+            singleSnapshotRuntime.restoreHeldModifierInventory(&runtimeHeld,
+                FirstRunRuntime::kHeldModifierStorageCapacity + 1)) return 375;
+        const auto beforeUnsupportedHeldTurn = singleSnapshotRuntime.presentation().player.battleState.hp;
+        if (singleSnapshotRuntime.advanceBattleTurn() ||
+            singleSnapshotRuntime.presentation().player.battleState.hp != beforeUnsupportedHeldTurn) return 376;
+        NativeRunSave unsupportedHeldSave{};
+        singleSnapshotRuntime.captureNativeRunSave(unsupportedHeldSave);
+        if (validateNativeRunSave(unsupportedHeldSave, PokerogueContent::kContentHash) == NativeSaveResult::Ok)
+            return 377;
+        if (!singleSnapshotRuntime.restoreSetup(singleRecaptured.seed, singleRecaptured.starterDex) ||
+            singleSnapshotRuntime.heldModifierCount()) return 378;
         explicitParty.activePlayerMember = 1;
         if (validateNativeRunSave(explicitParty, PokerogueContent::kContentHash) !=
                 NativeSaveResult::InvalidRecord) return 288;

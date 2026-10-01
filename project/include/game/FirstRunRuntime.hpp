@@ -128,6 +128,13 @@ public:
     const ResolvedPokemon* playerPartyMember(uint8_t index) const {
         return index < m_context.playerPartyCount ? &m_context.playerParty[index] : nullptr;
     }
+    // Provisional Old 3DS storage budget; exceeding it fails explicitly.
+    static constexpr size_t kHeldModifierStorageCapacity = 32;
+    size_t heldModifierCount() const { return m_heldModifierCount; }
+    const NativeHeldModifierInstance* heldModifier(size_t index) const {
+        return index < m_heldModifierCount ? &m_heldModifiers[index] : nullptr;
+    }
+    bool restoreHeldModifierInventory(const NativeHeldModifierInstance* records, size_t count);
     bool switchPlayerPokemon(uint8_t targetIndex);
     bool togglePlayerEvolutionPause(uint8_t memberIndex);
     bool advancePlayerAfterDefeat();
@@ -208,6 +215,8 @@ private:
     bool m_checkpointAvailable = true;
     std::string m_battleFeedback;
     std::array<uint16_t, 6> m_pokeballs{ 5, 0, 0, 0, 0, 0 };
+    std::array<NativeHeldModifierInstance, kHeldModifierStorageCapacity> m_heldModifiers{};
+    size_t m_heldModifierCount = 0;
 };
 
 } // namespace Pokerogue3DS

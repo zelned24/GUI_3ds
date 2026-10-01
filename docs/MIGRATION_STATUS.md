@@ -510,3 +510,9 @@
 1. selectNativeHeldItemTransferAttempt conecta registros reales al selector ya existente mediante acceso sin pool temporal/heap. Conserva índices y orden de inventario, owner PID y bandera transferible; las dos interfaces comparten el mismo algoritmo RNG.
 2. Valida capacidad, referencias canónicas, stacks y raw metadata antes de consumir RNG. Mini Black Hole no transferible del boss queda excluido por la misma bandera almacenada.
 3. Regresiones 371–373 escritas para selección por propietario, exclusión de copia protegida, estado completo RNG e inventario inválido sin consumo. Falta ownership del inventario en FirstRunRuntime/serialización, policies de habilidades y TurnEndPhase. Tests/compilación aplazados.
+
+## Ownership del inventario en FirstRunRuntime
+
+1. FirstRunRuntime conserva buffer de held modifiers y consulta read-only; hidratación valida catálogo/raw/stacks y owner PID entre actores resueltos del equipo/enemigos, con publicación atómica. Reiniciar setup elimina inventario del run anterior. Presupuesto provisional 32 registros (~4.6 KiB) falla explícitamente al excederse; requiere revisión de memoria y ampliación para catálogo completo.
+2. Guardados rechazan inventario no serializado. Comandos de combate/captura/cambio/rewards rechazan efectos todavía sin dispatcher; no ejecutan turnos ignorando los objetos. La hidratación no concede un reward ni afirma que un efecto ya funciona.
+3. Regresiones 374–378 escritas para ownership, índice/capacidad inválidos, aislamiento del turno, frontera de save y reset. Faltan codec, policies matchType/abilities y conexión Mini Black Hole/TurnEndPhase. Tests/compilación aplazados; Classic sigue incompleto.

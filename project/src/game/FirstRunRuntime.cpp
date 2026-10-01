@@ -131,7 +131,7 @@ void FirstRunRuntime::captureNativeRunSave(NativeRunSave& output) const {
     NativeRunSave value{};
     // v9 preserves ball inventory; doubles, captured party and later trainer history remain unsupported.
     // Never report a setup checkpoint as a successful save of an active double battle.
-    if (m_context.enemy.bossState.segmentCount || m_doubleBattle || m_pokeballs[5] ||
+    if (m_heldModifierCount || m_context.enemy.bossState.segmentCount || m_doubleBattle || m_pokeballs[5] ||
         m_run.wave > 9 || (m_trainerBattle && m_run.wave != 5)) {
         output = {};
         return;
@@ -723,6 +723,10 @@ bool FirstRunRuntime::claimRewardChoice() {
 }
 
 bool FirstRunRuntime::claimRewardChoiceInPlace() {
+    if (m_heldModifierCount) {
+        m_battleFeedback = "Held modifier effects require native dispatch";
+        return false;
+    }
     if (moveLearningPending() || evolutionPending()) return false;
     if (!m_rewardsPending || m_selectedRewardChoice >= m_rewardChoiceCount) return false;
     const auto& choice = m_rewardChoices[m_selectedRewardChoice];
@@ -1109,6 +1113,10 @@ bool FirstRunRuntime::advanceBattleTurn() {
 }
 
 bool FirstRunRuntime::advanceBattleTurnInPlace() {
+    if (m_heldModifierCount) {
+        m_battleFeedback = "Held modifier effects require native dispatch";
+        return false;
+    }
     if (moveLearningPending()) return resolvePendingLearnMove(m_selectedBattleMove);
     if (m_evolutionPauseConfirmation) {
         m_context.player.battleState.pauseEvolutions = true;
@@ -1856,6 +1864,10 @@ bool FirstRunRuntime::skipVictoryReward() {
 }
 
 bool FirstRunRuntime::skipVictoryRewardInPlace() {
+    if (m_heldModifierCount) {
+        m_battleFeedback = "Held modifier effects require native dispatch";
+        return false;
+    }
     if (moveLearningPending()) return resolvePendingLearnMove(-1);
     if (m_evolutionPauseConfirmation) {
         m_evolutionPauseConfirmation = false;
@@ -1990,6 +2002,10 @@ bool FirstRunRuntime::throwPokeball(PokeballType ball) {
 }
 
 bool FirstRunRuntime::throwPokeballInPlace(PokeballType ball) {
+    if (m_heldModifierCount) {
+        m_battleFeedback = "Held modifier effects require native dispatch";
+        return false;
+    }
     if (moveLearningPending() || evolutionPending()) return false;
     if (m_battleFinished) {
         m_battleFeedback = "Battle is already finished";
@@ -2119,6 +2135,32 @@ bool FirstRunRuntime::throwPokeballInPlace(PokeballType ball) {
     }
 }
 
+bool FirstRunRuntime::restoreHeldModifierInventory(const NativeHeldModifierInstance* records, size_t count) {
+    if ((count && !records) || count > m_heldModifiers.size() || moveLearningPending() || evolutionPending())
+        return false;
+    for (size_t i = 0; i < count; ++i) {
+        if (!validateHeldModifierInstance(records[i])) return false;
+        const uint32_t owner = records[i].ownerPokemonId;
+        bool found = m_context.player.actorIdentityResolved && m_context.player.battleState.pokemonId == owner;
+        found |= m_context.enemy.actorIdentityResolved && m_context.enemy.battleState.pokemonId == owner;
+        found |= m_secondEncounterResolved && m_context.secondEnemy.actorIdentityResolved &&
+            m_context.secondEnemy.battleState.pokemonId == owner;
+        for (uint8_t member = 0; member < m_context.playerPartyCount; ++member)
+            found |= m_context.playerParty[member].actorIdentityResolved &&
+                m_context.playerParty[member].battleState.pokemonId == owner;
+        for (uint8_t member = 0; member < m_context.trainerPartyCount; ++member)
+            found |= m_context.trainerParty[member].actorIdentityResolved &&
+                m_context.trainerParty[member].battleState.pokemonId == owner;
+        if (!found) return false;
+    }
+    // Copy before publication also supports source slices of this inventory.
+    std::array<NativeHeldModifierInstance, kHeldModifierStorageCapacity> next{};
+    for (size_t i = 0; i < count; ++i) next[i] = records[i];
+    m_heldModifiers = next;
+    m_heldModifierCount = count;
+    return true;
+}
+
 bool FirstRunRuntime::togglePlayerEvolutionPause(uint8_t memberIndex) {
     if (!m_runStarted || moveLearningPending() || evolutionPending() ||
         memberIndex >= m_context.playerPartyCount) return false;
@@ -2158,6 +2200,10 @@ bool FirstRunRuntime::switchPlayerPokemon(uint8_t targetIndex) {
 }
 
 bool FirstRunRuntime::switchPlayerPokemonInPlace(uint8_t targetIndex) {
+    if (m_heldModifierCount) {
+        m_battleFeedback = "Held modifier effects require native dispatch";
+        return false;
+    }
     if (moveLearningPending() || evolutionPending()) return false;
     if (m_battleFinished) return false;
     if (targetIndex >= m_context.playerPartyCount || targetIndex == m_context.activePlayerPartyIndex) {
@@ -2313,6 +2359,8 @@ void FirstRunRuntime::resolve(bool carryPlayer) {
     const std::string starterLocaleId = std::string("pokemon:") + starter.id;
     if (!carryPlayer) {
         m_playerHistoryRequiresSnapshot = false;
+        m_heldModifiers = {};
+        m_heldModifierCount = 0;
         m_context.player = {starter.dex, 5, starter.id, locale(starterLocaleId.c_str(), starter.name), starter.firstFormId, starter.assetSourcePath};
         if (pokemonTotalExperienceForLevel(starter.growthRate, 5, m_context.player.totalExperience)
             != PokemonExperienceResult::Ok) return;
