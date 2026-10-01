@@ -869,3 +869,10 @@
 1. El runtime vivo, el envelope usado por el host y el runtime de preflight se mantienen en almacenamiento estático; el preflight es serial en el loop principal. El ledger derivado del catálogo no queda ocupado permanentemente en la pila de main.
 2. NativeProgressStore.commit reutiliza un solo envelope para estado previo, candidato y readback; conserva el orden perfil → run → readback y la publicación de referencia solo tras éxito. No añade heap ni modifica el formato de SD.
 3. Siguen existiendo snapshots, actores candidatos y buffers de journal temporales; este cambio no prueba el máximo real de pila. Las regresiones de commit/interrupción escritas anteriormente cubren la semántica que debe conservarse; ejecución, compilación y medición Old 3DS siguen aplazadas.
+
+## Formato portable conjunto de run y perfil
+
+1. `NativeProgressBundle.hpp` define P3PROG01: longitudes acotadas, payloads existentes de run/perfil y SHA-256 exterior que vincula ambos. Conserva los checksums internos, exige content hash esperado y generación de perfil coincidente con la run; no usa reloj, heap ni IDs alternativos.
+2. El inspector devuelve vistas prestadas solo después de validar toda la pareja; el envelope de scratch es workspace mutable, no estado vivo. El encoder rechaza solapamientos y escribe bytes deterministas con buffers del caller. Límite total deriva de los límites de ambos componentes.
+3. Regresiones 95–102 escritas: pareja real codificada, inspección, reproducibilidad byte a byte, corrupción sin publicar vistas, hash incompatible, generaciones distintas, versión desconocida y longitud fuera de rango. Sin ejecutar/compilar.
+4. El formato todavía no está conectado a SD/export/import del host. Falta archivo portable único, readback, preflight de reconstrucción de run, rebase a generación local y commit conjunto. No se declara importación portable completa por la existencia del codec.

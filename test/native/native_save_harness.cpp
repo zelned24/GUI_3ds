@@ -2,6 +2,7 @@
 #include "storage/NativeStarterCandyProfile.hpp"
 #include "storage/NativeStarterCandyStore.hpp"
 #include "storage/NativeProgressStore.hpp"
+#include "storage/NativeProgressBundle.hpp"
 #include "storage/IntegritySha256.hpp"
 #include "content/PokerogueRuntimeContent.hpp"
 #include <cstring>
@@ -504,5 +505,43 @@ extern "C" int runNativeSaveChecks() {
     if (decodeNativeRunSave(partyBytes, profilePayloadSize + 72, PokerogueContent::kContentHash, restored) !=
             NativeSaveResult::Ok || restored.participantHistoryResolved || restored.participantCount ||
         restored.saveVersion != kNativeSaveVersion) return 94;
+    static char bundleProfile[kStarterCandyProfileMaxBytes]{};
+    static char bundleBytes[kNativeProgressBundleMaxBytes]{};
+    static char repeatedBundle[kNativeProgressBundleMaxBytes]{};
+    original.starterProfileGeneration = 17;
+    size_t bundleRunSize = 0, bundleProfileSize = 0, bundleSize = 0, repeatedSize = 0;
+    if (encodeNativeRunSave(original, partyBytes, sizeof(partyBytes), bundleRunSize) != NativeSaveResult::Ok ||
+        encodeNativeStarterCandyProfile(candyRecords, 2, 17, PokerogueContent::kContentHash,
+            PokerogueContent::kMaxStarterCandyCount, bundleProfile, sizeof(bundleProfile), bundleProfileSize) !=
+            NativeSaveResult::Ok || encodeNativeProgressBundle(partyBytes, bundleRunSize, bundleProfile,
+            bundleProfileSize, PokerogueContent::kContentHash, restored, bundleBytes, sizeof(bundleBytes), bundleSize) !=
+            NativeSaveResult::Ok) return 95;
+    NativeProgressBundleView bundleView{};
+    if (inspectNativeProgressBundle(bundleBytes, bundleSize, PokerogueContent::kContentHash,
+            restored, bundleView) != NativeSaveResult::Ok || bundleView.sourceProfileGeneration != 17 ||
+        bundleView.runSize != bundleRunSize || bundleView.profileSize != bundleProfileSize) return 96;
+    if (encodeNativeProgressBundle(partyBytes, bundleRunSize, bundleProfile, bundleProfileSize,
+            PokerogueContent::kContentHash, restored, repeatedBundle, sizeof(repeatedBundle), repeatedSize) !=
+            NativeSaveResult::Ok || bundleSize != repeatedSize || std::memcmp(bundleBytes, repeatedBundle, bundleSize))
+        return 97;
+    bundleBytes[16 + bundleRunSize + 80] ^= 1;
+    if (inspectNativeProgressBundle(bundleBytes, bundleSize, PokerogueContent::kContentHash, restored,
+            bundleView) != NativeSaveResult::ChecksumMismatch || bundleView.sourceProfileGeneration != 17)
+        return 98;
+    bundleBytes[16 + bundleRunSize + 80] ^= 1;
+    if (inspectNativeProgressBundle(bundleBytes, bundleSize, wrongHash, restored, bundleView) !=
+            NativeSaveResult::ContentMismatch) return 99;
+    if (encodeNativeStarterCandyProfile(candyRecords, 2, 18, PokerogueContent::kContentHash,
+            PokerogueContent::kMaxStarterCandyCount, bundleProfile, sizeof(bundleProfile), bundleProfileSize) !=
+            NativeSaveResult::Ok || encodeNativeProgressBundle(partyBytes, bundleRunSize, bundleProfile,
+            bundleProfileSize, PokerogueContent::kContentHash, restored, repeatedBundle, sizeof(repeatedBundle), repeatedSize) !=
+            NativeSaveResult::InvalidRecord || repeatedSize) return 100;
+    bundleBytes[7] = '2';
+    if (inspectNativeProgressBundle(bundleBytes, bundleSize, PokerogueContent::kContentHash, restored,
+            bundleView) != NativeSaveResult::UnsupportedVersion) return 101;
+    bundleBytes[7] = '1';
+    StarterCandyProfileCodec::put(0xffffffffU, bundleBytes + 8, 4);
+    if (inspectNativeProgressBundle(bundleBytes, bundleSize, PokerogueContent::kContentHash, restored,
+            bundleView) != NativeSaveResult::InvalidFormat) return 102;
     return 0;
 }
