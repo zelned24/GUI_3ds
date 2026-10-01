@@ -75,6 +75,31 @@ public:
             ? m_storage.writeExport(slot(selected), m_sizes[selected]) : status;
     }
 
+    // Staging is caller-owned workspace, never the live gameplay profile.
+    // Import reassigns the local journal generation; the source sequence is not authority.
+    NativeSaveResult importExport(const char* hash, NativeStarterCandyRecord* staging,
+        size_t capacity, size_t& importedCount, uint32_t& generation) {
+        if (!m_scratch || m_capacity < 2 * kStarterCandyProfileMaxBytes) return NativeSaveResult::TooLarge;
+        if (!StarterCandyProfileCodec::validHash(hash) ||
+            StarterCandyProfileCodec::overlaps(hash, 65, m_scratch, 2 * kStarterCandyProfileMaxBytes))
+            return NativeSaveResult::InvalidRecord;
+        if (staging && capacity && StarterCandyProfileCodec::overlaps(staging,
+                (capacity < PokerogueContent::kSpeciesCount ? capacity : PokerogueContent::kSpeciesCount) * sizeof(*staging),
+                m_scratch, 2 * kStarterCandyProfileMaxBytes)) return NativeSaveResult::InvalidRecord;
+        size_t read = 0;
+        auto status = m_storage.readExport(slot(0), kStarterCandyProfileMaxBytes, read);
+        if (status != NativeSaveResult::Ok) return status;
+        size_t count = 0;
+        uint32_t sourceGeneration = 0;
+        status = decodeNativeStarterCandyProfile(slot(0), read, hash, PokerogueContent::kMaxStarterCandyCount,
+            staging, capacity, count, sourceGeneration);
+        if (status != NativeSaveResult::Ok) return status;
+        status = save(staging, count, hash, generation);
+        if (status != NativeSaveResult::Ok) return status;
+        importedCount = count;
+        return NativeSaveResult::Ok;
+    }
+
     // Production callers use the generated pinned limit; explicit-limit overloads
     // remain available for separately resolved overrides and offline fixtures.
     NativeSaveResult load(const char* hash, NativeStarterCandyRecord* records, size_t capacity,

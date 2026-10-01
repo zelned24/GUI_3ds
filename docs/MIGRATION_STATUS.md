@@ -764,3 +764,9 @@
 4. Regresiones de importación/provenance y nativas 57–63 escritas, sin ejecutar. Falta consumidor de gameplay, timed events/fusión, coordinación durable con la run y callbacks; aún no se habilita Rare Candy por la existencia del store.
 
 5. Reimportación completa duplicada con pins intactos: hash `90f3866eb2663f7c79773f01288b2aa9cf56d4fa14bbf611c881464ed4ac2863`, reproducible entre ambas pasadas. El cambio de contenido sigue requiriendo migración explícita de saves/perfiles con hash anterior; no se relaja esa validación.
+
+## Importar el perfil exportado
+
+1. `NativeStarterCandyStore.importExport` usa `readExport`, valida checksum/catálogo/raíces/límites y prepara registros en staging del caller. Después escribe mediante el journal y readback existentes. La generación del archivo externo se reemplaza por la siguiente generación local.
+2. Staging no es el perfil vivo: el consumidor solo debe publicar gameplay tras éxito. Count/generación de salida permanecen sin cambios si falla la operación; una exportación corrupta no modifica el journal.
+3. Regresiones 64–66 escritas: roundtrip, segunda importación con generación local creciente y rechazo de export corrupto conservando el perfil previo. Sin ejecución ni validación de SD física. Falta menú de importación y coordinación con la run antes de habilitar ganancias en gameplay.

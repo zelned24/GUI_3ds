@@ -348,5 +348,27 @@ extern "C" int runNativeSaveChecks() {
         candyStore.load(PokerogueContent::kContentHash, restoredCandy, 2, candyCount, candyGeneration) !=
             NativeSaveResult::Ok || restoredCandy[0].candyCount != 10 ||
         candyStore.exportLatest(PokerogueContent::kContentHash) != NativeSaveResult::Ok) return 63;
+    disk.sizes[0] = disk.sizes[1] = 0;
+    disk.interrupt = false;
+    disk.exportSize = other.exportSize;
+    std::memcpy(disk.exported, other.exported, disk.exportSize);
+    NativeStarterCandyStore profileImporter(disk, profileScratch, sizeof(profileScratch));
+    size_t importedCandyCount = 0;
+    uint32_t importedCandyGeneration = 0;
+    NativeStarterCandyRecord importStaging[2]{};
+    if (profileImporter.importExport(PokerogueContent::kContentHash, importStaging, 2,
+            importedCandyCount, importedCandyGeneration) != NativeSaveResult::Ok || importedCandyCount != 2 ||
+        importedCandyGeneration != 1 ||
+        profileImporter.load(PokerogueContent::kContentHash, restoredCandy, 2, candyCount, candyGeneration) !=
+            NativeSaveResult::Ok || restoredCandy[0].candyCount != 10) return 64;
+    if (profileImporter.importExport(PokerogueContent::kContentHash, importStaging, 2,
+            importedCandyCount, importedCandyGeneration) != NativeSaveResult::Ok || importedCandyGeneration != 2)
+        return 65;
+    disk.exported[80] ^= 1;
+    if (profileImporter.importExport(PokerogueContent::kContentHash, importStaging, 2,
+            importedCandyCount, importedCandyGeneration) != NativeSaveResult::ChecksumMismatch ||
+        importedCandyGeneration != 2 || importedCandyCount != 2 ||
+        profileImporter.load(PokerogueContent::kContentHash, restoredCandy, 2, candyCount, candyGeneration) !=
+            NativeSaveResult::Ok || candyGeneration != 2 || restoredCandy[0].candyCount != 10) return 66;
     return 0;
 }
