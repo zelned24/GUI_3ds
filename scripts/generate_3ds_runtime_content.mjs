@@ -1080,5 +1080,13 @@ const levelIncrementRows = collections.items.flatMap(item => {
 });
 const levelIncrementHeader = ballRewardHeader.replace('struct MoveAttribute {',
   `struct LevelIncrementItemProfile { const char* itemId; bool allParty; const char* sourcePath; const char* sourceSymbol; const char* sourceHash; };\ninline constexpr LevelIncrementItemProfile kLevelIncrementItemProfiles[] = {\n${levelIncrementRows.join(',\n')}\n};\nstruct MoveAttribute {`);
-await fs.writeFile(outputPath, levelIncrementHeader, 'utf8');
-console.log(JSON.stringify({ output: path.relative(root, outputPath), bytes: Buffer.byteLength(levelIncrementHeader), hash: report.contentHash }));
+const friendshipRows = collections.species.map(species => {
+  const raw = species.extensions?.upstreamRawRecord?.value ?? '';
+  const parsed = /\bbaseFriendship\s*:\s*(\d+)\b/.exec(raw);
+  if (!parsed || Number(parsed[1]) > 255) throw new Error(`Missing/invalid pinned base friendship: ${species.id}`);
+  return `    {${species.speciesId}, ${Number(parsed[1])}, "${field(species.source?.sourcePath ?? '')}", "${field(species.source?.sourceSymbol ?? '')}", "${field(species.source?.sourceHash ?? '')}"}`;
+});
+const friendshipHeader = levelIncrementHeader.replace('struct MoveAttribute {',
+  `struct SpeciesFriendshipProfile { uint16_t speciesDex; uint8_t baseFriendship; const char* sourcePath; const char* sourceSymbol; const char* sourceHash; };\ninline constexpr SpeciesFriendshipProfile kSpeciesFriendshipProfiles[] = {\n${friendshipRows.join(',\n')}\n};\nstruct MoveAttribute {`);
+await fs.writeFile(outputPath, friendshipHeader, 'utf8');
+console.log(JSON.stringify({ output: path.relative(root, outputPath), bytes: Buffer.byteLength(friendshipHeader), hash: report.contentHash }));

@@ -276,6 +276,7 @@ inline bool applySpeciesEvolution(
         evolvedState.statStages[stat] = battleState.statStages[stat];
     }
 
+    evolvedState.friendship = battleState.friendship;
     evolvedState.pauseEvolutions = battleState.pauseEvolutions;
     battleState = evolvedState;
     if (identity) {

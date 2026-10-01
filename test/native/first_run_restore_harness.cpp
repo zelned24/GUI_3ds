@@ -1831,17 +1831,29 @@ int main() {
             NativeSaveResult::Ok || decodeNativePokemonSave(tagBytes, tagSize, decodedActor) != NativeSaveResult::Ok ||
             !restoreNativePokemonActorSave(decodedActor, restoredActor, restoredIdentity) ||
             !restoredActor.heldItemLostTags.unburden) return 405;
-        tagBytes[8] = '3';
-        if (decodeNativePokemonSave(tagBytes, tagSize - 3, decodedActor) != NativeSaveResult::Ok ||
-            decodedActor.unburdenTag) return 406;
+        tagState.friendship = 173;
+        if (!captureNativePokemonActorSave(tagState, currentActor.actor, currentActor.totalExperience, tagSnapshot) ||
+            encodeNativePokemonSave(tagSnapshot, tagBytes, sizeof(tagBytes), tagSize) != NativeSaveResult::Ok ||
+            decodeNativePokemonSave(tagBytes, tagSize, decodedActor) != NativeSaveResult::Ok ||
+            !decodedActor.friendshipResolved || decodedActor.friendship != 173 ||
+            !restoreNativePokemonActorSave(decodedActor, restoredActor, restoredIdentity) ||
+            restoredActor.friendship != 173) return 466;
         tagBytes[8] = '4';
-        tagBytes[tagSize - 2] = '2';
+        if (decodeNativePokemonSave(tagBytes, tagSize - 3, decodedActor) != NativeSaveResult::Ok ||
+            decodedActor.friendshipResolved || !decodedActor.unburdenTag ||
+            !restoreNativePokemonActorSave(decodedActor, restoredActor, restoredIdentity) ||
+            restoredActor.friendship != currentActor.battleState.friendship) return 467;
+        tagBytes[8] = '3';
+        if (decodeNativePokemonSave(tagBytes, tagSize - 6, decodedActor) != NativeSaveResult::Ok ||
+            decodedActor.unburdenTag) return 406;
+        tagBytes[8] = '5';
+        tagBytes[tagSize - 5] = '2';
         if (decodeNativePokemonSave(tagBytes, tagSize, decodedActor) != NativeSaveResult::InvalidFormat ||
             decodedActor.unburdenTag) return 407;
         // Member schema 1 has no pause field: preserve its exact former layout.
         const size_t concreteTypeBytes = std::strlen(pausedActor.initialTeraType) + 1;
         if (pauseSize < concreteTypeBytes + 6) return 328;
-        const size_t version2Size = pauseSize - concreteTypeBytes - 3;
+        const size_t version2Size = pauseSize - concreteTypeBytes - 6;
         pauseBytes[8] = '2';
         if (decodeNativePokemonSave(pauseBytes, version2Size, decodedActor) != NativeSaveResult::Ok ||
             !decodedActor.pauseEvolutions) return 329;

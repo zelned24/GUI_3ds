@@ -694,3 +694,10 @@
 2. `planPokemonLevelIncrement` aplica incremento de uno más stacks de Candy Jar (máximo upstream 99), calcula EXP bajo el límite sin cap solicitado y conserva EXP por encima de ese límite. La policy del booster debe estar resuelta. Las salidas indican amistad y LevelUpPhase pendientes; no consume el item.
 3. Fuentes pinned inspeccionadas: `src/modifier/modifier-type.ts`, `PokemonLevelIncrementModifierType`/`AllPokemonLevelIncrementModifierType`; `src/modifier/modifier.ts`, `PokemonLevelIncrementModifier.apply`/`LevelIncrementBoosterModifier.apply`; `src/battle-scene.ts`, `getMaxExpLevel`. Representación de EXP sigue limitada a uint32; overflow no fabrica un resultado.
 4. Regresiones 527–531 escritas, pendientes de ejecución. Recompensas de nivel todavía no habilitadas en `claimRewardChoice`: falta amistad persistente, starter candy y cola de decisiones por destinatario.
+
+## Amistad del Pokémon: inicialización y persistencia
+
+1. Todas las 1084 especies generan `SpeciesFriendshipProfile` desde `baseFriendship` del registro upstream preservado. Se conserva provenance; un dato ausente/inválido detiene la generación.
+2. El actor inicializa amistad desde ese perfil. Subida de nivel, evolución y cambio de forma conservan su valor, en lugar de reiniciarlo al valor de la nueva especie.
+3. Payload de Pokémon `pokemon=5` añade amistad. Lee versiones 1–4 con migración explícita a amistad base pinned; esos formatos nunca guardaron el valor. Captura/restauración de actor preserva la amistad. Un único miembro con amistad modificada exige snapshot explícito de equipo.
+4. Regresiones de v5/v4 y conservación al subir de nivel escritas, pendientes de ejecución. Todavía faltan ganancias/pérdidas de amistad, starter candy, amistad de fusión y condiciones evolutivas; Rare Candy permanece bloqueado.

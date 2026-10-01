@@ -392,6 +392,11 @@ PokemonBattleInitResult initializePokemonBattleState(
     if (input.moveCount > 4) return PokemonBattleInitResult::InvalidMoveCount;
 
     PokemonBattleState next{};
+    const PokerogueContent::SpeciesFriendshipProfile* friendship = nullptr;
+    for (const auto& profile : PokerogueContent::kSpeciesFriendshipProfiles)
+        if (profile.speciesDex == input.speciesDex) { friendship = &profile; break; }
+    if (!friendship) return PokemonBattleInitResult::MissingSpecies;
+    next.friendship = friendship->baseFriendship;
     next.speciesDex = input.speciesDex;
     next.formId = form ? form->id : nullptr;
     next.level = input.level;
@@ -489,6 +494,7 @@ bool changePokemonBattleForm(PokemonBattleState& state, const char* targetFormId
     for (uint8_t slot = 0; slot < state.moveCount; ++slot)
         if (!fullRestore) next.moves[slot].pp = state.moves[slot].pp;
     for (uint8_t stat = 0; stat < 7; ++stat) next.statStages[stat] = state.statStages[stat];
+    next.friendship = state.friendship;
     next.pauseEvolutions = state.pauseEvolutions;
     next.heldItemLostTags = state.heldItemLostTags;
     next.turnDamageDealt = state.turnDamageDealt;

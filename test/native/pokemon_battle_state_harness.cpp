@@ -2331,6 +2331,7 @@ extern "C" int runPokemonBattleStateChecks() {
         afterUnburden != beforeUnburden) return 520;
     auto levelActor = unburdenActor;
     levelActor.hp = levelActor.maxHp - 1;
+    levelActor.friendship = 173;
     levelActor.turnDamageDealt = 19;
     levelActor.pauseEvolutions = true;
     levelActor.statStages[0] = 2;
@@ -2338,6 +2339,7 @@ extern "C" int runPokemonBattleStateChecks() {
     if (!Pokerogue3DS::recalculatePokemonBattleLevel(levelActor, levelActor.level + 1) ||
         levelActor.hp != levelActor.maxHp - 1 ||
         levelActor.heldItemLostTags.unburden != beforeLevel.heldItemLostTags.unburden ||
+        levelActor.friendship != 173 ||
         levelActor.turnDamageDealt != 19 || !levelActor.pauseEvolutions ||
         levelActor.statStages[0] != 2 || levelActor.pokemonId != beforeLevel.pokemonId ||
         levelActor.moves[0].pp != beforeLevel.moves[0].pp ||

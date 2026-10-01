@@ -203,11 +203,17 @@ void FirstRunRuntime::captureNativeRunSave(NativeRunSave& output) const {
             }
         }
     }
+    bool hasChangedFriendship = false;
+    for (const auto& profile : PokerogueContent::kSpeciesFriendshipProfiles)
+        if (profile.speciesDex == m_context.player.battleState.speciesDex) {
+            hasChangedFriendship = m_context.player.battleState.friendship != profile.baseFriendship;
+            break;
+        }
     bool hasSummonTags = m_context.player.battleState.heldItemLostTags.unburden;
     for (uint8_t member = 0; member < m_context.playerPartyCount; ++member)
         hasSummonTags |= m_context.playerParty[member].battleState.heldItemLostTags.unburden;
     if (value.stage != NativeSaveStage::RunSetup &&
-        (m_context.playerPartyCount > 1 || m_playerHistoryRequiresSnapshot || m_heldModifierCount || hasSummonTags)) {
+        (m_context.playerPartyCount > 1 || m_playerHistoryRequiresSnapshot || m_heldModifierCount || hasSummonTags || hasChangedFriendship)) {
         if (m_context.playerPartyCount > 6 ||
             m_context.activePlayerPartyIndex >= m_context.playerPartyCount) { output = {}; return; }
         value.playerPartyCount = m_context.playerPartyCount;

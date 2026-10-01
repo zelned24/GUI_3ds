@@ -146,6 +146,7 @@ struct PokemonBattleState {
     uint16_t level = 0;
     uint32_t pokemonId = 0;
     uint16_t abilityId = 0;
+    uint8_t friendship = 0; // Persistent Pokemon friendship, initialized from pinned species.
     HeldItemLostTagState heldItemLostTags{}; // Transient summon data.
     uint32_t turnDamageDealt = 0; // PokemonTurnData.totalDamageDealt; reset after turn effects.
     PokemonGender gender = PokemonGender::Unspecified;
