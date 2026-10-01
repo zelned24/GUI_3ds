@@ -129,6 +129,51 @@ static int checkInitialStarterTeamSetup() {
     return 0;
 }
 
+static int checkInitialTeamFirstTurnRoundtrip() {
+    using namespace Pokerogue3DS;
+    uint16_t starters[2]{};
+    size_t count = 0;
+    for (const auto& species : PokerogueContent::kSpecies)
+        if (species.freshProfileStarter && species.starterEligible && species.starterCost <= 3 && count < 2)
+            starters[count++] = species.dex;
+    if (count != 2) return 663;
+    // Search only for a declared supported encounter/move, never skip a failed turn.
+    for (uint32_t seed = 1; seed <= 128; ++seed) {
+        FirstRunRuntime game(seed);
+        if (!game.restoreStarterTeamSetup(seed, starters, 2)) return 664;
+        for (uint8_t slot = 0; slot < game.presentation().player.battleState.moveCount; ++slot) {
+            if (game.selectedBattleMove() != slot && !game.selectBattleMove(1)) return 665;
+            if (!game.battleInputSupported()) continue;
+            const auto reserve = *game.playerPartyMember(1);
+            const uint32_t activeId = game.presentation().player.battleState.pokemonId;
+            if (!game.advanceBattleTurn() || !game.runStarted() || game.playerPartyCount() != 2) return 666;
+            const auto* after = game.playerPartyMember(1);
+            if (!after || after->battleState.pokemonId != reserve.battleState.pokemonId ||
+                after->battleState.hp != reserve.battleState.hp || after->totalExperience != reserve.totalExperience) return 667;
+            for (uint8_t move = 0; move < reserve.moveCount; ++move)
+                if (after->battleState.moves[move].pp != reserve.battleState.moves[move].pp) return 668;
+            NativeRunSave checkpoint{};
+            if (game.captureNativeRunSave(checkpoint) != NativeSaveResult::Ok || checkpoint.playerPartyCount != 2 ||
+                checkpoint.setupStarterCount || checkpoint.participantCount != 1 ||
+                checkpoint.participantIds[0] != activeId || checkpoint.playerParty[1].pokemonId != reserve.battleState.pokemonId)
+                return 669;
+            char encoded[kNativeSaveMaxBytes]{};
+            size_t written = 0;
+            NativeRunSave decoded{};
+            if (encodeNativeRunSave(checkpoint, encoded, sizeof(encoded), written) != NativeSaveResult::Ok ||
+                decodeNativeRunSave(encoded, written, PokerogueContent::kContentHash, decoded) != NativeSaveResult::Ok)
+                return 670;
+            FirstRunRuntime restored(seed + 1);
+            if (!restored.restoreNativeRunSave(decoded) || restored.playerPartyCount() != 2 ||
+                restored.presentation().player.battleState.pokemonId != activeId ||
+                restored.playerPartyMember(1)->battleState.pokemonId != reserve.battleState.pokemonId ||
+                restored.playerPartyMember(1)->battleState.hp != reserve.battleState.hp || !sceneNodesOwnedBy(restored)) return 671;
+            return 0;
+        }
+    }
+    return 672; // Missing supported real encounter is a failure, never an implicit skip.
+}
+
 static int checkStarterCostPurchasePersistence() {
     using namespace Pokerogue3DS;
     FirstRunRuntime game(1);
@@ -2990,6 +3035,8 @@ int main() {
         if (evoCheck) return evoCheck;
         const int initialTeamCheck = checkInitialStarterTeamSetup();
         if (initialTeamCheck) return initialTeamCheck;
+        const int firstTeamTurn = checkInitialTeamFirstTurnRoundtrip();
+        if (firstTeamTurn) return firstTeamTurn;
         const int purchaseCheck = checkStarterCostPurchasePersistence();
         if (purchaseCheck) return purchaseCheck;
         return checkExtendedWaveAndBiomeSaveValidation();

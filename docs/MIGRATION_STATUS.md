@@ -1168,3 +1168,9 @@
 1. Revisión estática detectó cuatro publicaciones de candidatos (`purchaseStarterCostReduction`, `restoreStarterTeamSetup`, `restoreSetup`, `initializeFreshStarterProfile`) sin reconstruir escena. La copia conserva punteros a nodos/textos del candidato temporal, que se libera al salir del método.
 2. Añadido `buildScene` después de publicar cada copia, como ya hacen las restantes transacciones. No cambia datos, reglas ni RNG; vuelve a enlazar presentación con almacenamiento de la instancia definitiva.
 3. Regresiones nativas escritas comprueban que nodos de escena pertenecen al runtime tras setup/equipo/compra. Sin ejecutar por instrucción del usuario; sanitizers y validación final pendientes.
+
+## Regresión de equipo inicial en primer turno real
+
+1. Añadida cadena setup de dos especies fresh canónicas → encuentro/movimiento declarado soportado → turno real → checkpoint de party → encode/decode → restauración. Comprueba identidad por miembro, reserva sin gasto de HP/PP, participación exclusiva del activo y ownership de escena restaurada.
+2. Busca únicamente un candidato declarado soportado entre semillas acotadas; después de seleccionar ese candidato cualquier error de turno/guardado/restauración falla, sin continuar buscando otro que pase. Si no existe candidato, falla explícitamente.
+3. Prueba escrita y pendiente de ejecución; no constituye evidencia de combate exitoso todavía. Revisión detectó también que iniciales capturados no default requieren metadata de Pokédex (naturaleza/IVs/atributos) que el perfil actual no almacena: su resolver fresh los rechaza. Desbloqueo visible no demuestra que esos iniciales sean jugables; esta integración permanece pendiente.
