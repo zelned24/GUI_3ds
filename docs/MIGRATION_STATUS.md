@@ -570,3 +570,8 @@
 
 1. Wrapper distingue crossSide: BlockItemTheft cancela solo entre bandos, segun BattleScene.tryTransferHeldItemModifier pinned. PostItemLost sigue controlado por itemLost tambien dentro del equipo.
 2. Regresiones 419-420 escritas para Sticky Hold + Unburden dentro del equipo y itemLost=false. Tests/compilacion aplazados. Dispatcher de fin de turno sigue pendiente.
+
+## Activacion nativa TurnHeldItemTransfer
+
+1. Une holder vivo, seleccion seeded de rival/objeto, policy de habilidad, matching especifico del objeto robado y transferencia/callback. Matching es inyectado: el objeto robado puede pertenecer a otra clase. RNG se conserva tras cancelacion soportada/capacidad agotada/ausencia de objeto; capacidades pendientes no publican draws.
+2. Regresiones 421-423 escritas; no ejecutadas. Maximo dos rivales corresponde posiciones del campo, no limite de catalogo. Aun no conectado a finishBattleTurn ni habilitados objetos desconocidos; falta dispatcher de clases y contexto real.

@@ -418,6 +418,71 @@ inline HeldItemTransferSelectionResult selectNativeHeldItemTransferAttempt(
         });
 }
 
+struct HeldTransferOpponent {
+    PokemonBattleState* actor = nullptr;
+    HeldApplicableAbilitySet abilities{};
+    bool applicabilityResolved = false;
+};
+enum class TurnHeldTransferResult : uint8_t {
+    Transferred, HolderFainted, NoOpponent, NoItem, Blocked, NoCapacity, Unsupported, InvalidState
+};
+// Modifier-specific matching remains injected: stealing an item does not mean
+// the stolen item's class equals the activating Mini Black Hole class.
+template <typename MatchResolver>
+inline TurnHeldTransferResult activateTurnHeldItemTransfer(
+    const NativeHeldModifierInstance& activatingModifier, PokemonBattleState& holder,
+    const HeldTransferOpponent* opponents, size_t opponentCount,
+    NativeHeldModifierInstance* records, size_t capacity, size_t& count,
+    PokerogueRngAdapter& battleRng, HeldItemInventoryTransferEvent& output,
+    const MatchResolver& resolveMatch) {
+    if (!validateHeldModifierInstance(activatingModifier) ||
+        activatingModifier.ownerPokemonId != holder.pokemonId ||
+        !isTurnHeldItemTransferInstance(activatingModifier) || activatingModifier.stackCount != 1 ||
+        (activatingModifier.rawArguments[0] && std::strcmp(activatingModifier.rawArguments, "[]")) ||
+        opponentCount > 2 || (opponentCount && !opponents)) return TurnHeldTransferResult::InvalidState;
+    if (!holder.hp) return TurnHeldTransferResult::HolderFainted;
+    uint32_t ids[2]{};
+    for (size_t i = 0; i < opponentCount; ++i) {
+        if (!opponents[i].actor || opponents[i].actor == &holder ||
+            opponents[i].actor->pokemonId == holder.pokemonId || opponents[i].abilities.count > 2 ||
+            (i && opponents[i].actor->pokemonId == ids[0])) return TurnHeldTransferResult::InvalidState;
+        ids[i] = opponents[i].actor->pokemonId;
+    }
+    auto nextRng = battleRng;
+    HeldItemTransferSelection selection{};
+    const auto selected = selectNativeHeldItemTransferAttempt(ids, opponentCount, records,
+        capacity, count, 1, nextRng, selection);
+    if (selected == HeldItemTransferSelectionResult::InvalidState) return TurnHeldTransferResult::InvalidState;
+    if (selected == HeldItemTransferSelectionResult::NoOpponent) return TurnHeldTransferResult::NoOpponent;
+    if (selected == HeldItemTransferSelectionResult::NoItem) {
+        battleRng = nextRng;
+        return TurnHeldTransferResult::NoItem;
+    }
+    if (selected != HeldItemTransferSelectionResult::Selected) return TurnHeldTransferResult::InvalidState;
+    const auto& opponent = opponents[selection.opponentIndex];
+    bool blocked = false;
+    if (resolveHeldItemTheftAbilityPolicy(opponent.abilities.ids, opponent.abilities.count,
+            opponent.applicabilityResolved, blocked, true) != HeldItemTheftAbilityPolicyResult::Resolved)
+        return TurnHeldTransferResult::Unsupported;
+    // A supported cancellation still consumed both selection draws upstream.
+    if (blocked) { battleRng = nextRng; return TurnHeldTransferResult::Blocked; }
+    HeldItemTheftPolicy policy{};
+    if (resolveMatch(records[selection.inventoryIndex], records, count, holder.pokemonId,
+            policy) != HeldItemMatchPolicyResult::Resolved) return TurnHeldTransferResult::Unsupported;
+    HeldItemInventoryTransferEvent event{};
+    const auto result = applyHeldItemTheftWithCallbacks(records, capacity, count,
+        selection.inventoryIndex, *opponent.actor, holder.pokemonId, policy,
+        opponent.abilities.ids, opponent.abilities.count, opponent.applicabilityResolved, true, event);
+    if (result == HeldItemInventoryTransferResult::NoCapacity) {
+        battleRng = nextRng;
+        return TurnHeldTransferResult::NoCapacity;
+    }
+    if (result != HeldItemInventoryTransferResult::Transferred) return TurnHeldTransferResult::Unsupported;
+    battleRng = nextRng;
+    output = event;
+    return TurnHeldTransferResult::Transferred;
+}
+
 enum class ModifierRewardRollResult : uint8_t {
     Ok, InvalidLuck, MissingWeight, InvalidWeight, EmptyPool, MissingItem
 };

@@ -728,6 +728,49 @@ static int checkWave200FinalBossAndGameClear() {
             callbackPolicy, &pendingLostAbility, 1, true, false, callbackEvent, false) !=
             HeldItemInventoryTransferResult::Transferred || callbackActor.heldItemLostTags.unburden)
         return 420;
+    auto activationHolder = callbackActor;
+    activationHolder.pokemonId = 1002;
+    activationHolder.hp = 1;
+    auto activationItem = otherHolder;
+    activationItem.ownerPokemonId = 1002;
+    activationItem.stackCount = 1;
+    activationItem.rawArguments[0] = 0;
+    callbackRecords[0] = activationItem;
+    callbackRecords[0].ownerPokemonId = callbackActor.pokemonId;
+    callbackCount = 1;
+    HeldTransferOpponent activationOpponent{};
+    activationOpponent.actor = &callbackActor;
+    activationOpponent.applicabilityResolved = true;
+    activationOpponent.abilities.ids[0] = pendingLostAbility;
+    activationOpponent.abilities.count = 1;
+    PokerogueRngAdapter activationRng{};
+    const auto miniMatch = [](const NativeHeldModifierInstance& source,
+        const NativeHeldModifierInstance* inventory, size_t inventoryCount, uint32_t target,
+        HeldItemTheftPolicy& result) {
+        return resolveTurnHeldItemTransferMatchPolicy(source, inventory, inventoryCount, target, true, false, result);
+    };
+    callbackActor.heldItemLostTags = {};
+    if (activateTurnHeldItemTransfer(activationItem, activationHolder, &activationOpponent, 1,
+            callbackRecords, 2, callbackCount, activationRng, callbackEvent, miniMatch) !=
+            TurnHeldTransferResult::Transferred || !callbackActor.heldItemLostTags.unburden ||
+        callbackRecords[0].ownerPokemonId != 1002) return 421;
+    callbackRecords[0].ownerPokemonId = callbackActor.pokemonId;
+    activationOpponent.abilities.ids[0] = blockingTheftAbility;
+    auto expectedActivationRng = activationRng;
+    expectedActivationRng.randSeedInt(1);
+    expectedActivationRng.randSeedInt(1);
+    callbackActor.heldItemLostTags = {};
+    if (activateTurnHeldItemTransfer(activationItem, activationHolder, &activationOpponent, 1,
+            callbackRecords, 2, callbackCount, activationRng, callbackEvent, miniMatch) !=
+            TurnHeldTransferResult::Blocked || callbackRecords[0].ownerPokemonId != callbackActor.pokemonId ||
+        callbackActor.heldItemLostTags.unburden || activationRng.state().s0 != expectedActivationRng.state().s0 ||
+        activationRng.state().s1 != expectedActivationRng.state().s1 ||
+        activationRng.state().s2 != expectedActivationRng.state().s2 ||
+        activationRng.state().carry != expectedActivationRng.state().carry) return 423;
+    activationHolder.hp = 0;
+    if (activateTurnHeldItemTransfer(activationItem, activationHolder, &activationOpponent, 1,
+            callbackRecords, 2, callbackCount, activationRng, callbackEvent, miniMatch) !=
+            TurnHeldTransferResult::HolderFainted) return 422;
     const auto preservedBoss = bossActor;
     if (applyPokemonFixedEnemyMovePp(*firstPhase, bossActor) ||
         bossActor.moves[3].maxPp != preservedBoss.moves[3].maxPp) return 338;
