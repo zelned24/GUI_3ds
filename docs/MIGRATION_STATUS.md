@@ -845,3 +845,14 @@
 1. Regresiones 532–540 escritas a partir de una identidad capturada y su learnset canónico: reserva a un EXP del próximo movimiento, cuatro slots ocupados y actor activo en cap. La cola debe seleccionar al miembro 1; reemplazar su slot no cambia el moveset ni EXP del actor activo. Las decisiones restantes se drenan por los comandos existentes.
 2. No se cambia ningún assert previo; los niveles y movimientos se resuelven del catálogo. La policy pauseEvolutions de esta fixture aísla la selección del destinatario de los callbacks de evolución.
 3. Historial multiparty desconocido ahora muestra feedback explícito al rechazar la concesión. Regresiones sin ejecutar; tests, compilación y validación Azahar/Old 3DS siguen pendientes.
+
+## Perfil vivo en la progresión de combate
+
+1. FirstRunRuntime puede adjuntar un perfil validado por raíces/orden/límites y generación exacta. Al conceder EXP prepara copia de actores y ledger; participantes vivos reciben amistad por derrota incluso en el cap de EXP. Raíces ausentes se insertan ordenadas; callbacks máximos no migrados rechazan la operación completa. Sin perfil adjunto el camino anterior permanece como bridge y no se presenta como progreso permanente completo.
+2. Captura llama a la concesión con pokemonDefeated=false y no añade amistad por derrota. El policy de amistad debe resolver boosters, timed events y fusión; el host todavía debe seleccionar y adjuntar esa policy.
+3. `saveNativeProgress` captura checkpoint y usa NativeProgressStore para guardar ledger y run; confirma la nueva referencia solo después de éxito. Esto todavía no sustituye llamadas de SD/QuickJS del host; falta carga/adjunción/exportación/importación conjunta en el programa.
+4. Regresiones 541–543 escritas: dos participantes vivos con ledger de raíces, amistad+caramelos y rechazo atómico por callback de máximo pendiente. Sin ejecutar/compilar. La copia del ledger deriva del catálogo y aumenta el uso de stack en transacciones: debe revisarse en la etapa de compilación y memoria Old 3DS antes de declarar jugabilidad verificada.
+
+5. Restore de run desadjunta siempre el perfil vivo: conservarlo por igualdad de generación podría arrastrar ganancias todavía no guardadas al recargar actores antiguos y duplicarlas. El consumidor debe cargar de nuevo el perfil durable exacto y adjuntarlo después de restaurar.
+
+6. Regresión 544 escrita: rollback de actores tras ganar amistad desadjunta el ledger no confirmado y restaura la amistad anterior. Pendiente de ejecución.

@@ -9,11 +9,13 @@
 #include "game/PokerogueClassicVictoryPlan.hpp"
 #include "game/PokerogueModifierReward.hpp"
 #include "storage/NativeRunSave.hpp"
+#include "storage/NativeStarterCandyProfile.hpp"
 #include <cstdint>
 #include <array>
 #include <string>
 
 namespace Pokerogue3DS {
+class NativeProgressStore;
 
 struct RunState {
     uint32_t seed;
@@ -87,6 +89,12 @@ public:
     bool restoreSetup(uint32_t seed, uint16_t starterDex);
     void captureNativeRunSave(NativeRunSave& output) const;
     bool restoreNativeRunSave(const NativeRunSave& save);
+    bool restoreStarterCandyProfile(const NativeStarterCandyRecord* records, size_t count,
+        uint32_t generation, const PokemonFriendshipPolicy& policy);
+    NativeSaveResult saveNativeProgress(NativeProgressStore& store);
+    bool starterProfileReady() const { return m_starterProfileReady; }
+    size_t starterProfileCount() const { return m_starterProfileCount; }
+    const NativeStarterCandyRecord* starterProfileRecords() const { return m_starterProfileRecords.data(); }
     bool battleInputSupported() const;
     bool trainerBattleSupported() const;
     bool doubleBattleSupported() const;
@@ -168,7 +176,7 @@ private:
     bool weatherBattleSupported() const;
     void resolve(bool carryPlayer = false);
     bool restoreNativeRunSaveInPlace(const NativeRunSave& save);
-    bool grantVictoryExperience();
+    bool grantVictoryExperience(bool pokemonDefeated = true);
     void advanceProgressionQueue();
     ResolvedPokemon& progressionPokemonMutable();
     bool advanceTrainerAfterDefeat();
@@ -210,6 +218,10 @@ private:
     uint8_t m_selectedBattleMove = 0;
     uint8_t m_selectedTarget = 0;
     uint32_t m_starterProfileGeneration = 0;
+    bool m_starterProfileReady = false;
+    size_t m_starterProfileCount = 0;
+    std::array<NativeStarterCandyRecord, PokerogueContent::kSpeciesCount> m_starterProfileRecords{};
+    PokemonFriendshipPolicy m_starterFriendshipPolicy{};
     bool m_participantHistoryResolved = true;
     uint8_t m_participantCount = 0;
     std::array<uint32_t, 6> m_participantIds{};

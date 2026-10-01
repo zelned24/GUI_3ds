@@ -1,4 +1,5 @@
 #include "game/FirstRunRuntime.hpp"
+#include "storage/NativeProgressStore.hpp"
 #include "game/PokerogueEncounterResolver.hpp"
 #include "game/PokerogueClassicWaveSchedule.hpp"
 #include "game/PokerogueTurnOrder.hpp"
@@ -242,12 +243,42 @@ void FirstRunRuntime::captureNativeRunSave(NativeRunSave& output) const {
     output = value;
 }
 
+bool FirstRunRuntime::restoreStarterCandyProfile(const NativeStarterCandyRecord* records, size_t count,
+    uint32_t generation, const PokemonFriendshipPolicy& policy) {
+    if (!policy.resolved || generation != m_starterProfileGeneration ||
+        count > m_starterProfileRecords.size() || (count && !records)) return false;
+    uint16_t previous = 0;
+    for (size_t i = 0; i < count; ++i) {
+        if (!StarterCandyProfileCodec::valid(records[i], previous, PokerogueContent::kMaxStarterCandyCount))
+            return false;
+        previous = records[i].speciesDex;
+    }
+    for (size_t i = 0; i < count; ++i) m_starterProfileRecords[i] = records[i];
+    for (size_t i = count; i < m_starterProfileRecords.size(); ++i) m_starterProfileRecords[i] = {};
+    m_starterProfileCount = count;
+    m_starterFriendshipPolicy = policy;
+    m_starterProfileReady = true;
+    return true;
+}
+
+NativeSaveResult FirstRunRuntime::saveNativeProgress(NativeProgressStore& store) {
+    if (!m_starterProfileReady) return NativeSaveResult::InvalidRecord;
+    NativeRunSave snapshot{};
+    captureNativeRunSave(snapshot);
+    const auto status = store.commit(snapshot, m_starterProfileRecords.data(), m_starterProfileCount);
+    if (status != NativeSaveResult::Ok) return status;
+    m_starterProfileGeneration = snapshot.starterProfileGeneration;
+    return NativeSaveResult::Ok;
+}
+
 bool FirstRunRuntime::restoreNativeRunSave(const NativeRunSave& save) {
     if (validateNativeRunSave(save, PokerogueContent::kContentHash) != NativeSaveResult::Ok)
         return false;
     FirstRunRuntime candidate(save.seed);
     if (!candidate.restoreNativeRunSaveInPlace(save)) return false;
     candidate.m_starterProfileGeneration = save.starterProfileGeneration;
+    // Reload the referenced durable profile explicitly; live uncommitted gains
+    // must never survive rollback merely because the reference is unchanged.
     candidate.m_participantHistoryResolved = save.participantHistoryResolved;
     candidate.m_participantCount = save.participantCount;
     candidate.m_participantIds = {};
@@ -1003,7 +1034,7 @@ bool FirstRunRuntime::cycleTarget(int direction) {
     return true;
 }
 
-bool FirstRunRuntime::grantVictoryExperience() {
+bool FirstRunRuntime::grantVictoryExperience(bool pokemonDefeated) {
     if (!m_context.playerPartyCount || m_context.playerPartyCount > m_context.playerParty.size() ||
         m_context.activePlayerPartyIndex >= m_context.playerPartyCount ||
         moveLearningPending() || evolutionPending()) return false;
@@ -1024,6 +1055,8 @@ bool FirstRunRuntime::grantVictoryExperience() {
                                   defeatedForm) != PokemonExperienceResult::Ok ||
         rawExperience < 0.0 || rawExperience > 4294967295.0) return false;
     auto nextParty = m_context.playerParty;
+    auto nextProfile = m_starterProfileRecords;
+    size_t nextProfileCount = m_starterProfileCount;
     nextParty[m_context.activePlayerPartyIndex] = m_context.player;
     std::array<PokemonPendingLevelMoves, 6> pendingMoves{};
     std::array<const char*, 6> pendingEvolutions{};
@@ -1056,6 +1089,25 @@ bool FirstRunRuntime::grantVictoryExperience() {
                     PokemonExperienceResult::Ok || award2 > 0xffffffffU - memberAward) return false;
             memberAward += award2;
         }
+        if (m_starterProfileReady && pokemonDefeated && participated && target.battleState.hp) {
+            const auto* root = pokemonRootSpecies(target.dex);
+            if (!root) return false;
+            size_t record = 0;
+            while (record < nextProfileCount && nextProfile[record].speciesDex < root->dex) ++record;
+            if (record == nextProfileCount || nextProfile[record].speciesDex != root->dex) {
+                if (nextProfileCount == nextProfile.size()) return false;
+                for (size_t i = nextProfileCount; i > record; --i) nextProfile[i] = nextProfile[i - 1];
+                nextProfile[record] = {root->dex, 0, 0};
+                ++nextProfileCount;
+            }
+            StarterCandyAwardEvent event{};
+            if (applyNativePokemonFriendship(target.battleState, nextProfile[record],
+                    PokerogueContent::kFriendshipGainFromBattle, m_starterFriendshipPolicy, false, event) !=
+                    NativeFriendshipApplyResult::Applied) {
+                m_battleFeedback = "Friendship requires resolved root/profile/maximum callbacks";
+                return false;
+            }
+        }
         if (!memberAward) continue;
         const auto* species = PokerogueContent::findSpeciesByDex(target.dex);
         if (!species || !target.actorIdentityResolved) return false;
@@ -1081,6 +1133,8 @@ bool FirstRunRuntime::grantVictoryExperience() {
         target.level = progress.level;
         target.totalExperience = progress.totalExperience;
     }
+    m_starterProfileRecords = nextProfile;
+    m_starterProfileCount = nextProfileCount;
     m_context.playerParty = nextParty;
     m_context.player = nextParty[m_context.activePlayerPartyIndex];
     m_progressionQueueMembers = pendingMembers;
@@ -2277,7 +2331,7 @@ bool FirstRunRuntime::throwPokeballInPlace(PokeballType ball) {
         m_runStarted = true;
 
         if (enemyPartyDefeated()) {
-            if (!grantVictoryExperience() || !planClassicVictory(m_run.wave, m_victoryPlan)) {
+            if (!grantVictoryExperience(false) || !planClassicVictory(m_run.wave, m_victoryPlan)) {
                 m_battleFeedback = "Capture victory could not resolve";
                 return false;
             }

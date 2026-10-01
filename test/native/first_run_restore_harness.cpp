@@ -1242,6 +1242,35 @@ static int checkPlayerPartyManagementAndSwitching() {
         unknownExpGame.playerPartyMember(0)->totalExperience != unknownVictory.playerParty[0].experience ||
         unknownExpGame.playerPartyMember(1)->totalExperience != unknownVictory.playerParty[1].experience)
         return 531;
+    auto friendshipVictory = sharedVictory;
+    for (uint8_t member = 0; member < 2; ++member) {
+        friendshipVictory.playerParty[member].friendshipResolved = true;
+        friendshipVictory.playerParty[member].friendship = 70;
+    }
+    FirstRunRuntime friendshipVictoryGame(6);
+    PokemonFriendshipPolicy classicFriendshipPolicy{};
+    classicFriendshipPolicy.resolved = true;
+    classicFriendshipPolicy.candyMultiplier = PokerogueContent::kClassicCandyFriendshipMultiplier;
+    if (!friendshipVictoryGame.restoreNativeRunSave(friendshipVictory) ||
+        !friendshipVictoryGame.restoreStarterCandyProfile(nullptr, 0, 0, classicFriendshipPolicy) ||
+        !friendshipVictoryGame.advanceBattleTurn()) return 541;
+    uint32_t totalCandyFriendship = 0;
+    for (size_t record = 0; record < friendshipVictoryGame.starterProfileCount(); ++record)
+        totalCandyFriendship += friendshipVictoryGame.starterProfileRecords()[record].friendship;
+    if (friendshipVictoryGame.playerPartyMember(0)->battleState.friendship != 73 ||
+        friendshipVictoryGame.playerPartyMember(1)->battleState.friendship != 73 ||
+        totalCandyFriendship != 18) return 542;
+    if (!friendshipVictoryGame.restoreNativeRunSave(friendshipVictory) ||
+        friendshipVictoryGame.starterProfileReady() || friendshipVictoryGame.starterProfileCount() ||
+        friendshipVictoryGame.playerPartyMember(0)->battleState.friendship != 70) return 544;
+    auto blockedFriendshipVictory = friendshipVictory;
+    blockedFriendshipVictory.playerParty[1].friendship = 254;
+    FirstRunRuntime blockedFriendshipGame(7);
+    if (!blockedFriendshipGame.restoreNativeRunSave(blockedFriendshipVictory) ||
+        !blockedFriendshipGame.restoreStarterCandyProfile(nullptr, 0, 0, classicFriendshipPolicy) ||
+        blockedFriendshipGame.advanceBattleTurn() || blockedFriendshipGame.starterProfileCount() ||
+        blockedFriendshipGame.playerPartyMember(0)->battleState.friendship != 70 ||
+        blockedFriendshipGame.playerPartyMember(1)->battleState.friendship != 254) return 543;
     // Force a genuine reserve learnset boundary, retaining its captured identity.
     NativeRunSave learningVictory = sharedVictory;
     const auto* reserveSpecies = PokerogueContent::findSpeciesByDex(learningVictory.playerParty[1].speciesDex);
