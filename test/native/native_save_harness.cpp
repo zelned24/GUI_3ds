@@ -606,5 +606,26 @@ extern "C" int runNativeSaveChecks() {
     if (progress.load(PokerogueContent::kContentHash, portable, restoredCandy, 2, candyCount) !=
             NativeSaveResult::Ok || portable.starterProfileGeneration != 3 || portable.seed != 321)
         return 111;
+    NativeStarterCandyRecord caughtProfile[1]{{1, 0, 0, true}};
+    char caughtEncoded[256]{};
+    size_t caughtWritten = 0;
+    if (encodeNativeStarterCandyProfile(caughtProfile, 1, 1, PokerogueContent::kContentHash,
+            PokerogueContent::kMaxStarterCandyCount, caughtEncoded, sizeof(caughtEncoded), caughtWritten) !=
+            NativeSaveResult::Ok) return 112;
+    NativeStarterCandyRecord caughtDecoded[1]{};
+    size_t caughtCount = 0;
+    uint32_t caughtGeneration = 0;
+    if (decodeNativeStarterCandyProfile(caughtEncoded, caughtWritten, PokerogueContent::kContentHash,
+            PokerogueContent::kMaxStarterCandyCount, caughtDecoded, 1, caughtCount, caughtGeneration) !=
+            NativeSaveResult::Ok || caughtCount != 1 || !caughtDecoded[0].caught) return 113;
+    // Legacy records retain candy/friendship but do not invent caught metadata.
+    std::memcpy(caughtEncoded, "P3CANDY1", 8);
+    --caughtWritten;
+    char legacyDigest[65]{};
+    IntegritySha256::hashHex(caughtEncoded, caughtWritten - 64, legacyDigest);
+    std::memcpy(caughtEncoded + caughtWritten - 64, legacyDigest, 64);
+    if (decodeNativeStarterCandyProfile(caughtEncoded, caughtWritten, PokerogueContent::kContentHash,
+            PokerogueContent::kMaxStarterCandyCount, caughtDecoded, 1, caughtCount, caughtGeneration) !=
+            NativeSaveResult::Ok || caughtDecoded[0].caught) return 114;
     return 0;
 }

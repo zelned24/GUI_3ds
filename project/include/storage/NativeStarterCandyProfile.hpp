@@ -13,6 +13,7 @@ struct NativeStarterCandyRecord {
     uint16_t speciesDex = 0; // Canonical root SpeciesId, never a catalog offset.
     uint16_t candyCount = 0;
     uint32_t friendship = 0; // Starter progress, separate from Pokemon friendship.
+    bool caught = false; // Exact canonical species; separate from starter/root progress.
 };
 
 enum class StarterCandyApplyResult : uint8_t {
@@ -87,7 +88,7 @@ inline NativeFriendshipApplyResult applyNativePokemonFriendship(
 }
 
 inline constexpr size_t kStarterCandyProfileOverhead = 144;
-inline constexpr size_t kStarterCandyProfileRecordBytes = 8;
+inline constexpr size_t kStarterCandyProfileRecordBytes = 9;
 inline constexpr size_t kStarterCandyProfileMaxBytes = kStarterCandyProfileOverhead +
     PokerogueContent::kSpeciesCount * kStarterCandyProfileRecordBytes;
 
@@ -112,13 +113,14 @@ inline uint32_t get(const char* input, size_t bytes) {
         value |= static_cast<uint32_t>(static_cast<uint8_t>(input[i])) << (i * 8);
     return value;
 }
-inline NativeStarterCandyRecord record(const char* input) {
-    return {static_cast<uint16_t>(get(input, 2)), static_cast<uint16_t>(get(input + 2, 2)), get(input + 4, 4)};
+inline NativeStarterCandyRecord record(const char* input, bool legacy = false) {
+    return {static_cast<uint16_t>(get(input, 2)), static_cast<uint16_t>(get(input + 2, 2)), get(input + 4, 4), !legacy && input[8] == 1};
 }
 inline bool valid(const NativeStarterCandyRecord& value, uint16_t previous, uint16_t candyLimit) {
-    const auto* species = pokemonRootSpecies(value.speciesDex);
-    return species && species->dex == value.speciesDex && value.speciesDex > previous &&
-        value.candyCount <= candyLimit;
+    const auto* species = PokerogueContent::findSpeciesByDex(value.speciesDex);
+    const auto* root = pokemonRootSpecies(value.speciesDex);
+    return species && root && value.speciesDex > previous && value.candyCount <= candyLimit &&
+        (root->dex == value.speciesDex || (!value.candyCount && !value.friendship));
 }
 }
 
@@ -139,7 +141,7 @@ inline NativeSaveResult encodeNativeStarterCandyProfile(const NativeStarterCandy
         if (!StarterCandyProfileCodec::valid(records[i], previous, candyLimit)) return NativeSaveResult::InvalidRecord;
         previous = records[i].speciesDex;
     }
-    std::memcpy(output, "P3CANDY1", 8);
+    std::memcpy(output, "P3CANDY2", 8);
     std::memcpy(output + 8, contentHash, 64);
     StarterCandyProfileCodec::put(generation, output + 72, 4);
     StarterCandyProfileCodec::put(static_cast<uint32_t>(count), output + 76, 4);
@@ -148,6 +150,7 @@ inline NativeSaveResult encodeNativeStarterCandyProfile(const NativeStarterCandy
         StarterCandyProfileCodec::put(records[i].speciesDex, target, 2);
         StarterCandyProfileCodec::put(records[i].candyCount, target + 2, 2);
         StarterCandyProfileCodec::put(records[i].friendship, target + 4, 4);
+        target[8] = records[i].caught ? 1 : 0;
     }
     char digest[65]{};
     IntegritySha256::hashHex(output, size - 64, digest);
@@ -160,10 +163,12 @@ inline NativeSaveResult inspectNativeStarterCandyProfile(const char* input, size
     const char* contentHash, uint16_t candyLimit, size_t& count, uint32_t& generation) {
     if (!input || length < kStarterCandyProfileOverhead || length > kStarterCandyProfileMaxBytes ||
         !candyLimit || !StarterCandyProfileCodec::validHash(contentHash)) return NativeSaveResult::InvalidFormat;
-    if (std::memcmp(input, "P3CANDY1", 8)) return NativeSaveResult::UnsupportedVersion;
+    const bool legacy = !std::memcmp(input, "P3CANDY1", 8);
+    if (!legacy && std::memcmp(input, "P3CANDY2", 8)) return NativeSaveResult::UnsupportedVersion;
+    const size_t recordBytes = legacy ? 8 : kStarterCandyProfileRecordBytes;
     const uint32_t entries = StarterCandyProfileCodec::get(input + 76, 4);
     if (entries > PokerogueContent::kSpeciesCount ||
-        length != kStarterCandyProfileOverhead + entries * kStarterCandyProfileRecordBytes)
+        length != kStarterCandyProfileOverhead + entries * recordBytes)
         return NativeSaveResult::InvalidFormat;
     char digest[65]{};
     IntegritySha256::hashHex(input, length - 64, digest);
@@ -173,7 +178,13 @@ inline NativeSaveResult inspectNativeStarterCandyProfile(const char* input, size
     if (!sequence) return NativeSaveResult::InvalidRecord;
     uint16_t previous = 0;
     for (size_t i = 0; i < entries; ++i) {
-        const auto value = StarterCandyProfileCodec::record(input + 80 + i * kStarterCandyProfileRecordBytes);
+        const char* source = input + 80 + i * recordBytes;
+        if (!legacy && static_cast<uint8_t>(source[8]) > 1) return NativeSaveResult::InvalidRecord;
+        const auto value = StarterCandyProfileCodec::record(source, legacy);
+        if (legacy) {
+            const auto* root = pokemonRootSpecies(value.speciesDex);
+            if (!root || root->dex != value.speciesDex) return NativeSaveResult::InvalidRecord;
+        }
         if (!StarterCandyProfileCodec::valid(value, previous, candyLimit)) return NativeSaveResult::InvalidRecord;
         previous = value.speciesDex;
     }
@@ -192,8 +203,10 @@ inline NativeSaveResult decodeNativeStarterCandyProfile(const char* input, size_
     if (entries > capacity || (entries && !output)) return NativeSaveResult::TooLarge;
     if (entries && StarterCandyProfileCodec::overlaps(input, length, output, entries * sizeof(*output)))
         return NativeSaveResult::InvalidRecord;
+    const bool legacy = !std::memcmp(input, "P3CANDY1", 8);
+    const size_t recordBytes = legacy ? 8 : kStarterCandyProfileRecordBytes;
     for (size_t i = 0; i < entries; ++i)
-        output[i] = StarterCandyProfileCodec::record(input + 80 + i * kStarterCandyProfileRecordBytes);
+        output[i] = StarterCandyProfileCodec::record(input + 80 + i * recordBytes, legacy);
     count = entries;
     generation = sequence;
     return NativeSaveResult::Ok;

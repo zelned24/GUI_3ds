@@ -1025,3 +1025,9 @@
 1. executeCaptureAttempt acepta política explícita resuelta de caught-species, Daily/fresh-start y stacks de Catching Charm. Porta umbrales estrictos, clamp de tasa 255 y multiplicadores 2/2.5/3 del upstream pinned.
 2. Captura crítica consume una tirada de sacudida después del draw de selección, incluyendo probabilidad garantizada. Regresiones 606–610 escritas para umbrales, fresh-start, charm y secuencia RNG; sin ejecutar.
 3. FirstRunRuntime todavía no suministra esta política: el perfil candy/friendship carece de caughtAttr. Persistir Pokédex real y conectar los modifiers/profile sigue pendiente; no se declara captura crítica integrada en partidas.
+
+## Perfil de especies capturadas — conexión gameplay pendiente
+
+1. Extiende el perfil existente con caught por SpeciesId exacto, separado del progreso de starter/root. P3CANDY2 añade un byte validado por registro y permite especies evolucionadas sin progreso de caramelos inventado.
+2. Lee P3CANDY1 conservando candy/friendship y caught=false: no reconstruye capturas desconocidas. Journal acepta ambas versiones; tamaños máximos siguen derivados del catálogo.
+3. Regresiones codec 112–114 escritas para caught persistente y lectura legacy, sin ejecutar. Conectar successful capture y policy crítica al perfil sigue pendiente; todavía no se declara Pokédex completo.
