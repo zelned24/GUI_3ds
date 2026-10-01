@@ -436,6 +436,19 @@ static int checkStatusActionAdmission() {
                     confusionAfter.enemyConfusion.present)) ||
                 confusionAfter.enemyHp != repeatedConfusionAfter.enemyHp ||
                 confusionAfter.enemyConfusion.turns != repeatedConfusionAfter.enemyConfusion.turns) return 9480;
+            auto rayCheckpoint = emberCheckpoint;
+            rayCheckpoint.playerMoveIds[0] = 109;
+            rayCheckpoint.playerPp[0] = 10;
+            rayCheckpoint.playerParty[0].moveIds[0] = 109;
+            rayCheckpoint.playerParty[0].pp[0] = rayCheckpoint.playerParty[0].maxPp[0] = 10;
+            FirstRunRuntime confuseRay(seed), repeatedRay(seed);
+            NativeRunSave rayAfter{}, repeatedRayAfter{};
+            if (!confuseRay.restoreNativeRunSave(rayCheckpoint) || !repeatedRay.restoreNativeRunSave(rayCheckpoint) ||
+                !confuseRay.battleInputSupported() || !confuseRay.advanceBattleTurn() || !repeatedRay.advanceBattleTurn() ||
+                confuseRay.captureNativeRunSave(rayAfter) != NativeSaveResult::Ok ||
+                repeatedRay.captureNativeRunSave(repeatedRayAfter) != NativeSaveResult::Ok || rayAfter.playerPp[0] != 9 ||
+                rayAfter.enemyHp != repeatedRayAfter.enemyHp || rayAfter.playerHp != repeatedRayAfter.playerHp ||
+                rayAfter.enemyConfusion.turns != repeatedRayAfter.enemyConfusion.turns) return 9490;
             checkedExecution = true;
         }
         if (checkedRejection && checkedExecution) return 0;

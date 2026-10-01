@@ -969,8 +969,21 @@ bool singleDamageConfusionEffect(uint16_t moveId) {
         if (profile.moveId == moveId) return profile.resolved && !profile.selfTarget;
     return false;
 }
+bool singleStatusConfusionEffect(uint16_t moveId) {
+    const auto* move = PokerogueContent::findMoveById(moveId);
+    if (!move || move->category != PokerogueContent::MoveStatus || move->attributeCount != 1 ||
+        !move->target || std::strcmp(move->target, "NEAR_OTHER") ||
+        !PokerogueContent::moveHasAttribute(*move, "ConfuseAttr")) return false;
+    bool known = false;
+    for (const auto& flags : PokerogueContent::kStatusMoveFlagProfiles)
+        if (flags.moveId == moveId) known = flags.resolved;
+    if (!known) return false;
+    for (const auto& profile : PokerogueContent::kMoveConfusionEffects)
+        if (profile.moveId == moveId) return profile.resolved && !profile.selfTarget;
+    return false;
+}
 bool supportsBaselineBattleMove(uint16_t moveId) {
-    if (singleOpponentStatusEffect(moveId) || singleDamageStatusEffect(moveId) || singleDamageConfusionEffect(moveId) || pokemonWeatherChangeProfile(moveId) || supportsPokemonTrickRoomMove(moveId) || supportsPokemonStatStageMove(moveId) || selfHealingProfile(moveId) || damageDrainProfile(moveId) || damageRecoilProfile(moveId)) return true;
+    if (singleStatusConfusionEffect(moveId) || singleOpponentStatusEffect(moveId) || singleDamageStatusEffect(moveId) || singleDamageConfusionEffect(moveId) || pokemonWeatherChangeProfile(moveId) || supportsPokemonTrickRoomMove(moveId) || supportsPokemonStatStageMove(moveId) || selfHealingProfile(moveId) || damageDrainProfile(moveId) || damageRecoilProfile(moveId)) return true;
     const auto* move = PokerogueContent::findMoveById(moveId);
     // This first resolver only executes plain, single-target damaging moves.
     // Only plain damage or a single migrated weather/critical attribute is
@@ -1053,13 +1066,13 @@ bool FirstRunRuntime::resolveActiveStatusCommandPolicies(const PokemonBattleStat
     PokemonStatusEffectCommandPolicy& commandOutput, PokemonPostSetStatusPolicy& reactionsOutput) const {
     const auto* move = PokerogueContent::findMoveById(moveId);
     const auto* effect = singleOpponentStatusEffect(moveId);
-    if (!move || !effect) return false;
+    if (!move || (!effect && !singleStatusConfusionEffect(moveId))) return false;
     PokemonStatusRecipientPolicies recipientPolicies{}, sourcePolicies{};
-    const auto status = static_cast<PokemonStatusEffect>(effect->effectId);
+    const auto status = effect ? static_cast<PokemonStatusEffect>(effect->effectId) : PokemonStatusEffect::None;
     if (!resolveActiveStatusRecipientPolicies(opponent, user, status, recipientPolicies) ||
         !resolveActiveStatusRecipientPolicies(user, opponent, status, sourcePolicies)) return false;
     PokemonPostSetStatusPolicy reactions{};
-    if (!resolvePokemonPostSetStatusPolicy(opponent, user, status, recipientPolicies,
+    if (effect && !resolvePokemonPostSetStatusPolicy(opponent, user, status, recipientPolicies,
             sourcePolicies, true, true, true, reactions)) return false;
     PokemonStatusEffectCommandPolicy command{};
     command.reactionsResolved = true;
@@ -1121,7 +1134,7 @@ bool FirstRunRuntime::supportsActiveBattleMove(const PokemonBattleState& user,
         return resolveActiveStatusRecipientPolicies(opponent, user, PokemonStatusEffect::None, recipient) &&
             resolvePokemonMoveEffectChance(moveId, user.abilityId, opponent.abilityId, false, chance);
     }
-    if (!singleOpponentStatusEffect(moveId)) return true;
+    if (!singleOpponentStatusEffect(moveId) && !singleStatusConfusionEffect(moveId)) return true;
     uint8_t ppCost = 1;
     PokemonStatusEffectCommandPolicy command{};
     PokemonPostSetStatusPolicy reactions{};
@@ -1132,6 +1145,11 @@ bool FirstRunRuntime::supportsActiveBattleMove(const PokemonBattleState& user,
 double FirstRunRuntime::scoreActiveEnemyMove(const PokemonBattleState& user,
     const PokemonBattleState& target, const PokerogueContent::Move& move) const {
     int16_t chance = move.upstreamChance;
+    if (singleStatusConfusionEffect(move.id)) {
+        double benefit = 0;
+        return resolvePokemonMoveEffectChance(move.id, user.abilityId, target.abilityId, false, chance) &&
+            calculatePokemonConfusionMoveAiBenefit(move.id, chance, benefit) ? -benefit : -20.0;
+    }
     const auto* effect = singleOpponentStatusEffect(move.id);
     if (!effect) {
         double score = baselineEnemyMoveScore(user, target, move);
@@ -2458,6 +2476,31 @@ bool FirstRunRuntime::executeActiveBattleMove(uint8_t userIndex, uint8_t targetI
                 PokemonWeatherChangeResult::Ok) return false;
         if (!applyMoveHeldHealing(user)) return false;
         m_battleFeedback = event.changed ? "Weather changed" : "Weather move failed";
+        return true;
+    }
+    if (singleStatusConfusionEffect(move->id)) {
+        if (!user.moves[moveSlot].pp || user.moves[moveSlot].pp > user.moves[moveSlot].maxPp) return false;
+        PokemonStatusEffectCommandPolicy command{};
+        PokemonPostSetStatusPolicy unusedReactions{};
+        PokemonStatusRecipientPolicies recipient{};
+        if (!resolveActiveStatusCommandPolicies(user, opponent, move->id, pp.cost, command, unusedReactions) ||
+            !resolveActiveStatusRecipientPolicies(opponent, user, PokemonStatusEffect::None, recipient)) return false;
+        auto nextUser = user, nextOpponent = opponent;
+        auto nextRng = rng;
+        PokemonStatusMoveHitEvent hitEvent{};
+        PokemonMoveConfusionEvent confusionEvent{};
+        if (!resolvePokemonStatusMoveHit(*move, false, command.move.hit, nextRng, hitEvent)) return false;
+        if (hitEvent.hit && !applyPokemonMoveConfusion(nextOpponent, move->id, command.move.effectiveChance,
+                recipient.status.safeguardBlocks, recipient.confusion, nextRng, confusionEvent)) return false;
+        const uint8_t consumed = pp.cost < nextUser.moves[moveSlot].pp ? pp.cost : nextUser.moves[moveSlot].pp;
+        nextUser.moves[moveSlot].pp -= consumed;
+        if (!applyMoveHeldHealing(nextUser)) return false;
+        user = nextUser;
+        opponent = nextOpponent;
+        rng = nextRng;
+        m_battleFeedback = !hitEvent.hit ? "Confusion move missed or blocked" :
+            confusionEvent.tagAttempted && confusionEvent.tagResult == PokemonConfusionTagResult::Added
+                ? "Target confused" : "Confusion unchanged";
         return true;
     }
     if (singleOpponentStatusEffect(move->id)) {

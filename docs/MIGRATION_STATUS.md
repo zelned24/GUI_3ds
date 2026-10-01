@@ -1743,3 +1743,9 @@
 3. ConfuseAttr comprueba Safeguard antes de AddBattlerTagAttr.canApply/faint; chance y duración siguen después. Overlap/immunity/Misty conservan el draw de duración. Benefit de IA es floor(-5 * chance / 100), con chance negativa tratada como 100; no inventa probe de elegibilidad.
 4. Evento conserva moveId; tag nativo persiste duración/presencia. Persistir sourceMoveId de tags y todos los productores sigue pendiente; esta integración no declara paridad completa de tags.
 5. Regresiones de creación/overlap/inmunidad/Safeguard/faint/chance cero y replay del comando Confusion con encuentro real escritas sin ejecutar. Tests/compilación pendientes.
+
+## Confuse Ray conectado al comando de estado
+
+1. Runtime admite ConfuseAttr único de categoría Status y objetivo NEAR_OTHER con builders conocidos. Reutiliza proveedor de hit (clima, precisión/evasión, flags/tipos) y políticas vivas de confusión; reflexión/protecciones no representadas continúan fuera de la capacidad admitida.
+2. Comando publica PP, tag y RNG de manera atómica, consumiendo PP también ante miss/inmunidad/overlap. No repite daño ni aplica un estado no volátil ficticio. IA usa beneficio canónico de AddBattlerTagAttr.
+3. Replay del comando Confuse Ray con encuentro real/snapshot de test escrito sin ejecutar. Fuente de tag en save y productores con atributos adicionales/selfTarget siguen pendientes; tests/compilación aplazados.
