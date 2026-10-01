@@ -707,3 +707,9 @@
 1. `planPokemonFriendshipChange` conserva la semántica de `Pokemon.addFriendship` y `PokemonFriendshipBoosterModifier.apply`: pérdida sin multiplicadores/caramelos, booster con floor, cap sin reducir amistad ya superior, límite 255 y señal de callbacks de amistad máxima. El progreso de caramelos usa la ganancia completa después del booster, no la diferencia de amistad del actor.
 2. `planStarterCandyProgress` prepara premios múltiples y residuo; si `GameData.addStarterCandy` rechaza el premio, conserva `cap - 1`. Policy desconocida y overflow fallan sin publicar resultados. Fuentes pinned: `src/field/pokemon.ts`, `addFriendship`; `src/modifier/modifier.ts`, `PokemonFriendshipBoosterModifier.apply`.
 3. Son planes para una transacción, no persistencia del perfil de jugador. Faltan ledger de starter candy, raíces de fusión/timed events, awards/ribbons y conexión a victoria/faint/Rare Candy. Regresiones 532–540 escritas, pendientes de ejecución.
+
+## Evolución: estado conservado y pausa upstream
+
+1. `applySpeciesEvolution` conserva amistad, tags de pérdida de item, daño acumulado y el moveset con PP actual/máximo. La evolución exitosa desactiva `pauseEvolutions`, siguiendo `PlayerPokemon.evolve` (`src/field/pokemon.ts` pinned); la opción continúa siendo persistente antes de aceptar una evolución.
+2. Entradas con HP/PP/etapas inválidos o stats no soportadas se rechazan antes de publicar el actor. Regresiones 468–469 escritas, pendientes de ejecución. El PP máximo se conserva como estado; esto no habilita todavía el consumo de PP Up.
+3. No existe aún almacenamiento completo del perfil de jugador; `PokemonFreshProfile` solo resuelve naturalezas iniciales. Starter candy sigue pendiente de ledger persistente, no se declara conectado por los resolvers de planificación.

@@ -1255,6 +1255,24 @@ static int checkLevelUpMoveLearningAndEvolution() {
     PokemonBattleState bulbaState{};
     if (initializePokemonBattleState(bulbaInit, bulbaState) != PokemonBattleInitResult::Ok) return 194;
 
+    auto taggedEvolution = bulbaState;
+    taggedEvolution.friendship = 173;
+    taggedEvolution.heldItemLostTags.unburden = true;
+    taggedEvolution.turnDamageDealt = 19;
+    taggedEvolution.pauseEvolutions = true;
+    taggedEvolution.moves[0].pp = 1;
+    taggedEvolution.moves[0].maxPp = 42; // Tackle with one PP Up.
+    EvolutionResult taggedEvolutionResult{};
+    if (!applySpeciesEvolution(1, "ivysaur", taggedEvolution, taggedEvolutionResult) ||
+        !taggedEvolutionResult.evolved || taggedEvolution.friendship != 173 ||
+        !taggedEvolution.heldItemLostTags.unburden || taggedEvolution.turnDamageDealt != 19 ||
+        taggedEvolution.pauseEvolutions || taggedEvolution.moves[0].pp != 1 ||
+        taggedEvolution.moves[0].maxPp != 42) return 468;
+    auto invalidEvolution = bulbaState;
+    invalidEvolution.moves[0].pp = invalidEvolution.moves[0].maxPp + 1;
+    EvolutionResult invalidEvolutionResult{};
+    if (applySpeciesEvolution(1, "ivysaur", invalidEvolution, invalidEvolutionResult) ||
+        invalidEvolution.speciesDex != 1 || invalidEvolutionResult.evolved) return 469;
     const uint16_t bulbaHp = bulbaState.hp;
     const uint16_t bulbaMaxHp = bulbaState.maxHp;
     EvolutionResult evoRes{};

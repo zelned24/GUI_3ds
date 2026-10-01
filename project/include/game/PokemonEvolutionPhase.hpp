@@ -206,6 +206,11 @@ inline bool applySpeciesEvolution(
     uint16_t oldDex, const char* targetSpeciesId,
     PokemonBattleState& battleState, EvolutionResult& result,
     std::string* feedback = nullptr, PokemonActorIdentity* identity = nullptr) {
+    if (!battleState.statsAreBaseFormulaOnly || !battleState.maxHp ||
+        battleState.hp > battleState.maxHp || battleState.moveCount > 4) return false;
+    for (int8_t stage : battleState.statStages) if (stage < -6 || stage > 6) return false;
+    for (uint8_t slot = 0; slot < battleState.moveCount; ++slot)
+        if (battleState.moves[slot].pp > battleState.moves[slot].maxPp) return false;
     const auto* target = findSpeciesById(targetSpeciesId);
     if (!target) return false;
 
@@ -270,14 +275,17 @@ inline bool applySpeciesEvolution(
         evolvedState.hp = std::min<uint16_t>(battleState.hp, evolvedState.maxHp);
     }
     for (uint8_t i = 0; i < battleState.moveCount; ++i) {
-        evolvedState.moves[i].pp = battleState.moves[i].pp;
+        evolvedState.moves[i] = battleState.moves[i];
     }
     for (uint8_t stat = 0; stat < 7; ++stat) {
         evolvedState.statStages[stat] = battleState.statStages[stat];
     }
 
     evolvedState.friendship = battleState.friendship;
-    evolvedState.pauseEvolutions = battleState.pauseEvolutions;
+    evolvedState.heldItemLostTags = battleState.heldItemLostTags;
+    evolvedState.turnDamageDealt = battleState.turnDamageDealt;
+    // Pinned PlayerPokemon.evolve clears the pause after a successful evolution.
+    evolvedState.pauseEvolutions = false;
     battleState = evolvedState;
     if (identity) {
         identity->initialTeraType = originalTeraType;
