@@ -1589,3 +1589,9 @@
 1. executePokemonPostSetStatusReactions une Synchronize del receptor y ConfusionOnStatusEffect de fuente, en el orden de ObtainStatusEffectPhase. Reutiliza perfiles canónicos; actualiza status de fuente/tag de receptor y streams compartidos/separados sobre candidato.
 2. Forms y callbacks reflejados exigen resolución explícita. Dos actores distintos con fuente presente son el alcance actual; fases sin fuente/self-target y el proveedor completo del comando activo siguen pendientes. Error tardío revierte también la reflexión previa.
 3. Regresiones de pareja real Synchronize/Poison Puppeteer y fallo tardío atómico escritas sin ejecutar. Tests/compilación aplazados.
+
+## Acción completa de movimiento de estado y reacciones
+
+1. executePokemonStatusAction une hit/chance/PP, pendingStatus/ObtainStatus y dispatcher de reacciones. Publica actores/tags/streams juntos; fallo posterior revierte también PP y el estado inicial.
+2. Alcance de dos actores distintos y efecto sobre oponente; self-target requiere su dispatcher. Políticas explícitas de hit/campo/forms/callbacks no se sustituyen por defaults. FirstRunRuntime aún necesita proveedor para habilitar estos movimientos.
+3. Regresiones de Poison Powder real con Synchronize/Poison Puppeteer y rollback tardío escritas sin ejecutar. Tests/compilación aplazados.

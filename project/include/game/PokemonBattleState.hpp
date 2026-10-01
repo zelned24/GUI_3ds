@@ -638,6 +638,17 @@ bool executePokemonPostSetStatusReactions(PokemonBattleState& recipient, Pokemon
     PokerogueRngAdapter& recipientRng, PokerogueRngAdapter& sourceRng,
     PokemonPostSetStatusEvent& output);
 
+struct PokemonStatusActionEvent {
+    PokemonStatusEffectMoveEvent move{};
+    PokemonPostSetStatusEvent reactions{};
+    bool reactionsExecuted = false;
+};
+// Opponent-targeted status move plus ObtainStatus and post-set callbacks.
+// Caller resolves hit/chance/field/forms/reflected callbacks before publication.
+bool executePokemonStatusAction(PokemonBattleState& user, PokemonBattleState& target, uint8_t slot,
+    const PokemonStatusEffectCommandPolicy& commandPolicy, const PokemonPostSetStatusPolicy& reactionsPolicy,
+    PokerogueRngAdapter& userRng, PokerogueRngAdapter& targetRng, PokemonStatusActionEvent& output);
+
 struct PokemonStatusMoveCheckPolicy {
     bool resolved = false;
     bool bypassSleep = false;

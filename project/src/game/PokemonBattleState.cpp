@@ -207,6 +207,37 @@ bool executePokemonPostSetStatusReactions(PokemonBattleState& recipient, Pokemon
     return true;
 }
 
+bool executePokemonStatusAction(PokemonBattleState& user, PokemonBattleState& target, uint8_t slot,
+    const PokemonStatusEffectCommandPolicy& commandPolicy, const PokemonPostSetStatusPolicy& reactionsPolicy,
+    PokerogueRngAdapter& userRng, PokerogueRngAdapter& targetRng, PokemonStatusActionEvent& output) {
+    if (&user == &target) return false; // Self-target post-set dispatcher still pending.
+    auto nextUser = user;
+    auto nextTarget = target;
+    auto nextUserRng = userRng;
+    auto nextTargetRng = targetRng;
+    auto& recipientRng = &userRng == &targetRng ? nextUserRng : nextTargetRng;
+    PokemonStatusActionEvent event{};
+    if (!executePokemonStatusEffectCommand(nextUser, nextTarget, slot, commandPolicy,
+            nextUserRng, recipientRng, event.move)) return false;
+    if (event.move.application.requestObtainStatusPhase) {
+        if (event.move.application.selfTarget) return false;
+        PokemonQueuedStatusRequest applied{};
+        applied.recipientPokemonId = nextTarget.pokemonId;
+        applied.sourcePokemonId = nextUser.pokemonId;
+        applied.hasSource = true;
+        applied.effect = event.move.application.effect;
+        if (!executePokemonPostSetStatusReactions(nextTarget, nextUser, applied, reactionsPolicy,
+                recipientRng, nextUserRng, event.reactions)) return false;
+        event.reactionsExecuted = true;
+    }
+    user = nextUser;
+    target = nextTarget;
+    if (&userRng == &targetRng) userRng = nextUserRng;
+    else { userRng = nextUserRng; targetRng = nextTargetRng; }
+    output = event;
+    return true;
+}
+
 bool resolvePokemonStatusApplicationEnvironment(const PokemonBattleState& recipient,
     const PokemonBattleState* source, const PokemonStatusFieldContext& field,
     PokemonStatusApplicationPolicy& output) {

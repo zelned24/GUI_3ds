@@ -3231,6 +3231,40 @@ extern "C" int runPokemonBattleStateChecks() {
         reactionSource.status.present || reactionSource.pendingStatus != Effect::None ||
         reactionRecipient.confusion.present ||
         statusApplicationRng.randSeedUint32() != expectedApplicationRng.randSeedUint32()) return 9231;
+    // Poison Powder -> ObtainStatus -> Synchronize -> Poison Puppeteer.
+    PokemonBattleState completeStatusUser = reactionSource, completeStatusTarget = reactionRecipient;
+    completeStatusUser.status = {};
+    completeStatusUser.moveCount = 1;
+    completeStatusUser.moves[0].moveId = 77;
+    completeStatusUser.moves[0].pp = completeStatusUser.moves[0].maxPp = 35;
+    completeStatusTarget.status = {};
+    completeStatusTarget.confusion = {};
+    Pokerogue3DS::PokemonStatusEffectCommandPolicy completeStatusPolicy{};
+    completeStatusPolicy.reactionsResolved = true;
+    completeStatusPolicy.move.hit.resolved = completeStatusPolicy.move.hit.bypassAccuracy = true;
+    completeStatusPolicy.move.application.resolved = completeStatusPolicy.move.application.hasSource = true;
+    completeStatusPolicy.move.chanceCallbacksResolved = true;
+    reactionsPolicy.confusionProbe.resolved = true;
+    Pokerogue3DS::PokemonStatusActionEvent completeStatusEvent{};
+    expectedApplicationRng = statusApplicationRng;
+    const auto completeTagDuration = expectedApplicationRng.randSeedIntRange(2, 5);
+    if (!Pokerogue3DS::executePokemonStatusAction(completeStatusUser, completeStatusTarget, 0,
+            completeStatusPolicy, reactionsPolicy, statusApplicationRng, statusApplicationRng, completeStatusEvent) ||
+        completeStatusUser.moves[0].pp != 34 || completeStatusUser.status.effect != Effect::Poison ||
+        !completeStatusUser.status.present || completeStatusTarget.status.effect != Effect::Poison ||
+        !completeStatusTarget.status.present || completeStatusTarget.confusion.turns != completeTagDuration ||
+        !completeStatusEvent.reactionsExecuted ||
+        statusApplicationRng.randSeedUint32() != expectedApplicationRng.randSeedUint32()) return 9240;
+    completeStatusUser.status = {};
+    completeStatusTarget.status = {};
+    completeStatusTarget.confusion = {};
+    reactionsPolicy.formsResolved = false;
+    expectedApplicationRng = statusApplicationRng;
+    if (Pokerogue3DS::executePokemonStatusAction(completeStatusUser, completeStatusTarget, 0,
+            completeStatusPolicy, reactionsPolicy, statusApplicationRng, statusApplicationRng, completeStatusEvent) ||
+        completeStatusUser.moves[0].pp != 34 || completeStatusUser.status.present ||
+        completeStatusTarget.status.present || completeStatusTarget.pendingStatus != Effect::None ||
+        statusApplicationRng.randSeedUint32() != expectedApplicationRng.randSeedUint32()) return 9241;
     bool foundStatusConfusion = false;
     for (const auto& profile : PokerogueContent::kStatusConfusionAbilityProfiles) {
         if (!profile.resolved || !(profile.statusMask & 2)) continue;
