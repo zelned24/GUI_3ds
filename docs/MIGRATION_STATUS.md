@@ -1529,3 +1529,9 @@
 1. canPokemonAddConfusionTag distingue el probe simulado (inmunidades propias/aliadas) de addPokemonConfusionTag (también ConfusedTag.canAdd: Misty si grounded). Overlap precede callbacks y no refresca duración. Eliminación explícita limpia el estado.
 2. Precisión adicional de provenance: ConfusionOnStatusEffectAbAttr pasa opponent.id a addTag, pero getBattlerTag(CONFUSED) construye ConfusedTag sin sourceId. La solicitud conserva el argumento upstream; el estado del tag no inventa una fuente que upstream descarta.
 3. Regresiones de probe/terreno, overlap, inmunidades y fallo de capacidad escritas sin ejecutar. Dispatcher, almacenamiento y callbacks de daño/inmunidades continúan pendientes; tests/compilación aplazados.
+
+## Inmunidad canónica a confusión
+
+1. Generador deriva BattlerTagImmunityAbAttr/UserFieldBattlerTagImmunityAbAttr (símbolo o array) por habilidad, distinguiendo ámbito propio/aliado. Own Tempo real (20) bloquea CONFUSED en ámbito propio. Condiciones dinámicas/conditionalAttr y variante ConditionalUserField permanecen sin resolver.
+2. resolvePokemonConfusionAbilityImmunity conserva output ante capacidad desconocida; activación y callbacks requieren contexto explícito. No declara implementadas suppression/pasivas ni PostSummonRemoveBattlerTagAbAttr.
+3. Tabla regenerada con hash canónico conservado. Regresiones de habilidad real, inactividad y callback pendiente escritas sin ejecutar. Tests/compilación aplazados; conexión al dispatcher sigue pendiente.

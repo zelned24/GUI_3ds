@@ -3174,6 +3174,23 @@ extern "C" int runPokemonBattleStateChecks() {
             return 9113;
     }
     if (!foundStatusConfusion) return 9114;
+    bool foundConfusionImmunity = false;
+    for (const auto& profile : PokerogueContent::kConfusionImmunityAbilityProfiles) {
+        if (!profile.selfResolved || !profile.selfBlocks) continue;
+        foundConfusionImmunity = true;
+        bool blocksConfusion = false;
+        if (Pokerogue3DS::resolvePokemonConfusionAbilityImmunity(profile.abilityId, true, false, true,
+                blocksConfusion) != Pokerogue3DS::PokemonStatusImmunityResult::Resolved || !blocksConfusion)
+            return 9140;
+        if (Pokerogue3DS::resolvePokemonConfusionAbilityImmunity(profile.abilityId, false, false, true,
+                blocksConfusion) != Pokerogue3DS::PokemonStatusImmunityResult::Resolved || blocksConfusion)
+            return 9141;
+        blocksConfusion = true;
+        if (Pokerogue3DS::resolvePokemonConfusionAbilityImmunity(profile.abilityId, true, false, false,
+                blocksConfusion) != Pokerogue3DS::PokemonStatusImmunityResult::UnsupportedCondition ||
+            !blocksConfusion) return 9142;
+    }
+    if (!foundConfusionImmunity) return 9143;
     Pokerogue3DS::PokemonConfusionTagState addedConfusion{};
     Pokerogue3DS::PokemonConfusionTagPolicy tagPolicy{};
     tagPolicy.resolved = tagPolicy.grounded = tagPolicy.mistyTerrain = true;

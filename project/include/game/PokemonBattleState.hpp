@@ -533,6 +533,18 @@ struct PokemonConfusionTagPolicy {
 enum class PokemonConfusionTagResult : uint8_t {
     Added, Overlap, OwnAbility, AllyAbility, MistyTerrain, Unsupported, Invalid,
 };
+inline PokemonStatusImmunityResult resolvePokemonConfusionAbilityImmunity(uint16_t abilityId,
+    bool active, bool allyField, bool callbacksResolved, bool& output) {
+    if (!callbacksResolved) return PokemonStatusImmunityResult::UnsupportedCondition;
+    for (const auto& profile : PokerogueContent::kConfusionImmunityAbilityProfiles) {
+        if (profile.abilityId != abilityId) continue;
+        if (active && !(allyField ? profile.allyResolved : profile.selfResolved))
+            return PokemonStatusImmunityResult::UnsupportedCondition;
+        output = active && (allyField ? profile.allyBlocks : profile.selfBlocks);
+        return PokemonStatusImmunityResult::Resolved;
+    }
+    return PokemonStatusImmunityResult::UnknownAbility;
+}
 // canAddTag's simulated probe deliberately omits ConfusedTag.canAdd terrain.
 bool canPokemonAddConfusionTag(const PokemonConfusionTagState& tag,
     const PokemonConfusionTagPolicy& policy, bool& output);
