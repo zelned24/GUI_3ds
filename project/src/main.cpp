@@ -124,13 +124,13 @@ int main() {
         else if (pressed & KEY_DOWN) { game.selectBattleMove(1); changed = true; }
         else if (pressed & KEY_A) { game.advanceBattleTurn(); changed = true; }
         else if (pressed & KEY_B) { game.skipVictoryReward(); changed = true; }
-#if defined(POKEROGUE_ENABLE_QUICKJS)
-        }
-        // Starter navigation and SD operations remain host-owned; no duplicate battle input.
-        // JS queues starter navigation and native save/load outside rendering.
-#endif
         if (pressed & KEY_SELECT)
             changed = game.togglePlayerEvolutionPause(game.activePlayerPartyIndex()) || changed;
+#if defined(POKEROGUE_ENABLE_QUICKJS)
+        }
+        // Healthy JS owns menu/game controls; fallback native input runs only without it.
+        // JS queues storage/game commands outside rendering.
+#endif
         uint32_t hostStorageKeys = pressed & (KEY_X | KEY_Y | KEY_L | KEY_R);
 #if defined(POKEROGUE_ENABLE_QUICKJS)
         if (jsCommands) hostStorageKeys = 0; // Bridge queues all SD actions outside rendering.

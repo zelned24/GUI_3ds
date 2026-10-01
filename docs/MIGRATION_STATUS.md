@@ -966,3 +966,8 @@
 1. Snapshot identifica aprendizaje/evolución y confirmación de pausa desde el runtime. HUD da prioridad a esos estados antes de captura/cambio/ataque, incluso en la caída intermedia de dobles.
 2. Slots de aprendizaje no se filtran según moveset del activo: `resolvePendingLearnMove` valida el destinatario de la progresión. B puede rechazar aprendizajes/evoluciones durante combate a través del comando 200 existente.
 3. Regresiones JS escritas para ambas decisiones durante combate, rechazo sin captura y confirmación del slot elegido. Sin ejecutar. Presentación final de evoluciones y fase completa upstream aún pendientes.
+
+## Propiedad del botón SELECT — pendiente de ejecución
+
+1. El host ya no cambia `pauseEvolutions` al abrir el menú de equipo QuickJS. El toggle nativo de SELECT queda dentro del bloque de fallback sin bridge sano.
+2. Regresión del script escrita para apertura sin mutación y confirmación de cambio; comprobación estática complementaria sitúa el toggle bajo el guard del host. No sustituye prueba del ejecutable, pendiente al final.

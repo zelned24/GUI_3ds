@@ -129,4 +129,30 @@ export function registerQuickJsStorageTests(register) {
     });
   }
 
+  register('QuickJS party: Select opens menu without toggling evolution pause', () => {
+    const commands = [];
+    const context = { JSON, Math };
+    for (const name of new Set(match[1].match(/_3ds_[A-Za-z]+/g))) context[name] = () => undefined;
+    context._3ds_getBattleState = () => JSON.stringify({runStarted: true, finished: false});
+    context._3ds_getPresentationInfo = () => ({playerPartyCount: 2, activePlayerPartyIndex: 0, playerParty: [1, 16]});
+    context._3ds_getCombatLog = () => '';
+    context._3ds_getMoveName = () => 'Move';
+    context._3ds_submitAction = id => commands.push(id);
+    vm.createContext(context);
+    vm.runInContext(match[1], context);
+    context._3ds_tick({select: true});
+    assert.deepEqual(commands, [], 'opening party menu emits no gameplay mutation');
+    context._3ds_tick({down: true});
+    context._3ds_tick({A: true});
+    assert.deepEqual(commands, [212], 'only confirmed switch to reserve is queued');
+    // Static host ownership assertion supplements the script regression until
+    // the native executable can be built and exercised at the final stage.
+    const host = readFileSync(new URL('../project/src/main.cpp', import.meta.url), 'utf8');
+    const start = host.indexOf('if (!jsCommands) {');
+    const end = host.indexOf('Healthy JS owns menu/game controls', start);
+    const ownershipBlock = host.slice(start, end);
+    assert.ok(ownershipBlock.includes('togglePlayerEvolutionPause'));
+    assert.ok(ownershipBlock.indexOf('togglePlayerEvolutionPause') < ownershipBlock.indexOf('\n        }\n'));
+  });
+
 }
