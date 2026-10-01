@@ -3178,6 +3178,22 @@ extern "C" int runPokemonBattleStateChecks() {
         reflectedSource.status.present || reflectedSource.pendingStatus != Effect::None ||
         !synchronizedEvent.statusApplied ||
         statusApplicationRng.randSeedUint32() != expectedApplicationRng.randSeedUint32()) return 9212;
+    reflectedSource.hp = 0;
+    expectedApplicationRng = statusApplicationRng;
+    if (!Pokerogue3DS::executePokemonSynchronizeReaction(synchronizeActor, reflectedSource, synchronizedRequest,
+            true, true, applicationPolicy, true, statusApplicationRng, synchronizedEvent) ||
+        !synchronizedEvent.reaction.abilityActivates || synchronizedEvent.statusApplied ||
+        synchronizedEvent.eligibility != Pokerogue3DS::PokemonStatusEligibility::Fainted ||
+        reflectedSource.status.present || reflectedSource.pendingStatus != Effect::None ||
+        statusApplicationRng.randSeedUint32() != expectedApplicationRng.randSeedUint32()) return 9220;
+    reflectedSource.hp = 100;
+    applicationPolicy.resolved = false;
+    expectedApplicationRng = statusApplicationRng;
+    if (!Pokerogue3DS::executePokemonSynchronizeReaction(synchronizeActor, reflectedSource, synchronizedRequest,
+            true, true, applicationPolicy, false, statusApplicationRng, synchronizedEvent, true) ||
+        !synchronizedEvent.reaction.abilityActivates || synchronizedEvent.statusApplied ||
+        reflectedSource.status.present || reflectedSource.pendingStatus != Effect::None ||
+        statusApplicationRng.randSeedUint32() != expectedApplicationRng.randSeedUint32()) return 9221;
     bool foundStatusConfusion = false;
     for (const auto& profile : PokerogueContent::kStatusConfusionAbilityProfiles) {
         if (!profile.resolved || !(profile.statusMask & 2)) continue;

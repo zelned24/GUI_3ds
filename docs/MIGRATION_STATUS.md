@@ -1577,3 +1577,9 @@
 1. executePokemonSynchronizeReaction integra reacción canónica, enqueue de estado reflejado y ObtainStatus sobre candidato. Conserva identidad de ambos actores y emite activación incluso cuando inmunidad impide aplicar status.
 2. Política reflejada/reacciones pendientes falla sin publicar actor/pendingStatus/RNG/output. No crea recursión falsa ni habilita moves de estado sin contexto completo; el dispatcher debe resolver callbacks adicionales.
 3. Regresiones Synchronize real (burn aplicado, Fire inmune sin RNG, callback pendiente atómico) escritas sin ejecutar. Tests/compilación aplazados.
+
+## Synchronize sobre fuente debilitada y simulación
+
+1. enqueue distingue Fainted de InvalidState después de canSetStatus, conforme trySetStatus. Synchronize conserva activación y rechazo normal cuando la fuente está debilitada; no aborta el turno por ese rechazo.
+2. Ejecución simulated mantiene canApply pero no solicita/aplica fase reflejada ni consulta política de aplicación pendiente, conforme SynchronizeStatusAbAttr.apply. Sin mutación de actor/pending/RNG.
+3. Regresiones de fuente debilitada y simulated escritas sin ejecutar. Tests/compilación aplazados.

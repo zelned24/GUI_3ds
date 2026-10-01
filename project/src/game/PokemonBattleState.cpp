@@ -118,7 +118,7 @@ bool executePokemonSynchronizeReaction(const PokemonBattleState& statusRecipient
     PokemonBattleState& originalSource, const PokemonQueuedStatusRequest& applied,
     bool abilityActive, bool callbacksResolved, const PokemonStatusApplicationPolicy& reflectedPolicy,
     bool reflectedReactionsResolved, PokerogueRngAdapter& reflectedRecipientRng,
-    PokemonSynchronizeCommandEvent& output) {
+    PokemonSynchronizeCommandEvent& output, bool simulated) {
     if (applied.recipientPokemonId != statusRecipient.pokemonId ||
         (applied.hasSource && applied.sourcePokemonId != originalSource.pokemonId)) return false;
     auto nextActor = originalSource;
@@ -126,7 +126,7 @@ bool executePokemonSynchronizeReaction(const PokemonBattleState& statusRecipient
     PokemonSynchronizeCommandEvent event{};
     if (resolvePokemonSynchronizeReaction(statusRecipient.abilityId, abilityActive, callbacksResolved,
             applied, event.reaction) != PokemonStatusImmunityResult::Resolved) return false;
-    if (event.reaction.requestStatus) {
+    if (event.reaction.requestStatus && !simulated) {
         event.eligibility = enqueuePokemonStatusRequest(nextActor, event.reaction.request, reflectedPolicy);
         if (event.eligibility == PokemonStatusEligibility::UnsupportedPolicy ||
             event.eligibility == PokemonStatusEligibility::InvalidState) return false;
@@ -421,7 +421,7 @@ PokemonStatusEligibility enqueuePokemonStatusRequest(PokemonBattleState& recipie
     pendingPolicy.pendingStatus = policy.pendingStatus || recipient.pendingStatus != PokemonStatusEffect::None;
     const auto eligibility = canPokemonSetStatus(recipient.status, request.effect, pendingPolicy);
     if (eligibility != PokemonStatusEligibility::Allowed) return eligibility;
-    if (!recipient.hp && request.effect != PokemonStatusEffect::Faint) return PokemonStatusEligibility::InvalidState;
+    if (!recipient.hp && request.effect != PokemonStatusEffect::Faint) return PokemonStatusEligibility::Fainted;
     recipient.pendingStatus = request.effect;
     return PokemonStatusEligibility::Allowed;
 }

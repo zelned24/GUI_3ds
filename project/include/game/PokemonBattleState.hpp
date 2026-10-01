@@ -371,7 +371,7 @@ inline PokemonStatusImmunityResult composePokemonStatusApplicationPolicy(Pokemon
 enum class PokemonStatusEligibility : uint8_t {
     Allowed, InvalidState, UnsupportedPolicy, ExistingStatus, PendingStatus, MistyTerrain,
     PoisonType, SteelType, ElectricType, ElectricTerrain, IceType, SunnyWeather,
-    FireType, SelfAbility, AllyAbility, Safeguard, NoEffect
+    FireType, SelfAbility, AllyAbility, Safeguard, NoEffect, Fainted
 };
 // Pokemon.canSetStatus predicate only. trySetStatus's faint check, queued
 // ObtainStatusEffectPhase, duration draws and reactions are separate stages.
@@ -522,7 +522,7 @@ bool executePokemonSynchronizeReaction(const PokemonBattleState& statusRecipient
     PokemonBattleState& originalSource, const PokemonQueuedStatusRequest& applied,
     bool abilityActive, bool callbacksResolved, const PokemonStatusApplicationPolicy& reflectedPolicy,
     bool reflectedReactionsResolved, PokerogueRngAdapter& reflectedRecipientRng,
-    PokemonSynchronizeCommandEvent& output);
+    PokemonSynchronizeCommandEvent& output, bool simulated = false);
 
 struct PokemonStatusEffectCommandPolicy {
     PokemonStatusEffectMovePolicy move{};
