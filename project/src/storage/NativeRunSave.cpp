@@ -7,6 +7,8 @@
 #include "game/PokerogueModifierReward.hpp"
 #include "game/PokerogueTurnOrder.hpp"
 #include "content/PokerogueRuntimeContent.hpp"
+#include <memory>
+#include <new>
 
 namespace Pokerogue3DS {
 namespace {
@@ -175,7 +177,7 @@ struct JournalSlot {
     NativeSaveResult status = NativeSaveResult::NotFound;
 };
 
-NativeSaveResult readJournal(NativeSaveStorage& storage, JournalSlot (&slots)[2], int& selected) {
+NativeSaveResult readJournal(NativeSaveStorage& storage, JournalSlot* slots, int& selected) {
     selected = -1;
     for (unsigned i = 0; i < 2; ++i) {
         slots[i].status = storage.readSlot(i, slots[i].bytes, sizeof(slots[i].bytes), slots[i].size);
@@ -222,7 +224,9 @@ const char* nativeSaveResultName(NativeSaveResult result) {
 }
 
 NativeSaveResult makeNativeRunSetupSave(uint32_t seed, uint16_t starterDex, NativeRunSave& output) {
-    NativeRunSave value{};
+    std::unique_ptr<NativeRunSave> valueStorage(new (std::nothrow) NativeRunSave{});
+    if (!valueStorage) return NativeSaveResult::MemoryUnavailable;
+    auto& value = *valueStorage;
     value.seed = seed;
     value.starterDex = starterDex;
     if (!starterExperienceAtLevelFive(starterDex, value.playerExperience))
@@ -846,7 +850,9 @@ NativeSaveResult encodeNativeRunSave(const NativeRunSave& save, char* output, si
 
 NativeSaveResult decodeNativeRunSave(const char* bytes, size_t length, const char* expectedContentHash,
                                     NativeRunSave& output) {
-    NativeRunSave value{};
+    std::unique_ptr<NativeRunSave> valueStorage(new (std::nothrow) NativeRunSave{});
+    if (!valueStorage) return NativeSaveResult::MemoryUnavailable;
+    auto& value = *valueStorage;
     size_t payloadStart = 0;
     auto status = inspectEnvelope(bytes, length, value, payloadStart);
     if (status != NativeSaveResult::Ok) return status;
@@ -1037,11 +1043,15 @@ NativeSaveResult decodeNativeRunSave(const char* bytes, size_t length, const cha
 }
 
 NativeSaveResult NativeRunSaveStore::load(const char* contentHash, NativeRunSave& output) {
-    JournalSlot slots[2];
+    std::unique_ptr<JournalSlot[]> slotsStorage(new (std::nothrow) JournalSlot[2]);
+    if (!slotsStorage) return NativeSaveResult::MemoryUnavailable;
+    auto* slots = slotsStorage.get();
     int selected = -1;
     const auto status = readJournal(m_storage, slots, selected);
     if (status != NativeSaveResult::Ok) return status;
-    NativeRunSave candidate{};
+    std::unique_ptr<NativeRunSave> candidateStorage(new (std::nothrow) NativeRunSave{});
+    if (!candidateStorage) return NativeSaveResult::MemoryUnavailable;
+    auto& candidate = *candidateStorage;
     auto decoded = decodeNativeRunSave(slots[selected].bytes, slots[selected].size, contentHash, candidate);
     if (decoded != NativeSaveResult::Ok) return decoded;
     if (candidate.starterProfileGeneration) {
@@ -1062,23 +1072,31 @@ NativeSaveResult NativeRunSaveStore::save(const NativeRunSave& value) {
         if (status == NativeSaveResult::NotFound) status = NativeSaveResult::InvalidRecord;
     }
     if (status != NativeSaveResult::Ok) return status;
-    JournalSlot slots[2];
+    std::unique_ptr<JournalSlot[]> slotsStorage(new (std::nothrow) JournalSlot[2]);
+    if (!slotsStorage) return NativeSaveResult::MemoryUnavailable;
+    auto* slots = slotsStorage.get();
     int selected = -1;
     status = readJournal(m_storage, slots, selected);
     if (status != NativeSaveResult::Ok && status != NativeSaveResult::NotFound) return status;
-    NativeRunSave next = value;
+    std::unique_ptr<NativeRunSave> nextStorage(new (std::nothrow) NativeRunSave(value));
+    if (!nextStorage) return NativeSaveResult::MemoryUnavailable;
+    auto& next = *nextStorage;
     next.generation = 1;
     if (selected >= 0) {
-        NativeRunSave previous{};
+        std::unique_ptr<NativeRunSave> previousStorage(new (std::nothrow) NativeRunSave{});
+        if (!previousStorage) return NativeSaveResult::MemoryUnavailable;
+        auto& previous = *previousStorage;
         status = decodeNativeRunSave(slots[selected].bytes, slots[selected].size, value.contentHash, previous);
         if (status != NativeSaveResult::Ok) return status;
         if (previous.generation == 0xffffffffu) return NativeSaveResult::SequenceExhausted;
         next.generation = previous.generation + 1;
     }
     const unsigned target = selected == 0 ? 1 : 0;
-    char bytes[kNativeSaveMaxBytes];
+    std::unique_ptr<char[]> bytesStorage(new (std::nothrow) char[kNativeSaveMaxBytes]);
+    if (!bytesStorage) return NativeSaveResult::MemoryUnavailable;
+    auto* bytes = bytesStorage.get();
     size_t size = 0;
-    status = encodeNativeRunSave(next, bytes, sizeof(bytes), size);
+    status = encodeNativeRunSave(next, bytes, kNativeSaveMaxBytes, size);
     if (status != NativeSaveResult::Ok) return status;
     status = m_storage.writeSlot(target, bytes, size);
     if (status != NativeSaveResult::Ok) return status;
@@ -1091,18 +1109,24 @@ NativeSaveResult NativeRunSaveStore::save(const NativeRunSave& value) {
 }
 
 NativeSaveResult NativeRunSaveStore::exportLatest(const char* contentHash) {
-    NativeRunSave value{};
+    std::unique_ptr<NativeRunSave> valueStorage(new (std::nothrow) NativeRunSave{});
+    if (!valueStorage) return NativeSaveResult::MemoryUnavailable;
+    auto& value = *valueStorage;
     auto status = load(contentHash, value);
     if (status != NativeSaveResult::Ok) return status;
-    char bytes[kNativeSaveMaxBytes];
+    std::unique_ptr<char[]> bytesStorage(new (std::nothrow) char[kNativeSaveMaxBytes]);
+    if (!bytesStorage) return NativeSaveResult::MemoryUnavailable;
+    auto* bytes = bytesStorage.get();
     size_t size = 0;
-    status = encodeNativeRunSave(value, bytes, sizeof(bytes), size);
+    status = encodeNativeRunSave(value, bytes, kNativeSaveMaxBytes, size);
     if (status != NativeSaveResult::Ok) return status;
+    std::unique_ptr<char[]> verifiedStorage(new (std::nothrow) char[kNativeSaveMaxBytes]);
+    if (!verifiedStorage) return NativeSaveResult::MemoryUnavailable;
+    auto* verified = verifiedStorage.get();
     status = m_storage.writeExport(bytes, size);
     if (status != NativeSaveResult::Ok) return status;
-    char verified[kNativeSaveMaxBytes];
     size_t verifiedSize = 0;
-    status = m_storage.readExport(verified, sizeof(verified), verifiedSize);
+    status = m_storage.readExport(verified, kNativeSaveMaxBytes, verifiedSize);
     if (status != NativeSaveResult::Ok) return status;
     if (verifiedSize != size) return NativeSaveResult::IoError;
     for (size_t i = 0; i < size; ++i) if (verified[i] != bytes[i]) return NativeSaveResult::IoError;
@@ -1110,11 +1134,15 @@ NativeSaveResult NativeRunSaveStore::exportLatest(const char* contentHash) {
 }
 
 NativeSaveResult NativeRunSaveStore::importExport(const char* contentHash) {
-    char bytes[kNativeSaveMaxBytes];
+    std::unique_ptr<char[]> bytesStorage(new (std::nothrow) char[kNativeSaveMaxBytes]);
+    if (!bytesStorage) return NativeSaveResult::MemoryUnavailable;
+    auto* bytes = bytesStorage.get();
     size_t size = 0;
-    auto status = m_storage.readExport(bytes, sizeof(bytes), size);
+    auto status = m_storage.readExport(bytes, kNativeSaveMaxBytes, size);
     if (status != NativeSaveResult::Ok) return status;
-    NativeRunSave value{};
+    std::unique_ptr<NativeRunSave> valueStorage(new (std::nothrow) NativeRunSave{});
+    if (!valueStorage) return NativeSaveResult::MemoryUnavailable;
+    auto& value = *valueStorage;
     status = decodeNativeRunSave(bytes, size, contentHash, value);
     if (status != NativeSaveResult::Ok) return status;
     // A foreign profile sequence is not a local identity; paired import must rebase it.

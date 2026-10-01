@@ -1084,3 +1084,9 @@
 1. Load/commit/export/import pasan sus envelopes NativeRunSave automáticos a propiedad RAII con new(nothrow). Fallo antes de asignación no escribe journals ni publica candidatos.
 2. NativeSaveResult.MemoryUnavailable distingue fallo de memoria de contenido inválido y SD I/O. Regresión 116 escrita para nombre distinto; cobertura de rollback existente sin ejecutar. Inyección de fallo de allocator y pico/fragmentación aún pendientes.
 3. No se ha compilado ni medido hardware. Otras capas del codec/host conservan envelopes automáticos que deben revisarse; no se declara eliminado todo uso grande de pila.
+
+## Memoria temporal del codec/journal de runs — pendiente de medición
+
+1. NativeRunSaveStore mueve slots, envelopes candidatos y buffers de escritura/exportación a asignaciones comprobadas RAII. Decode y creación de setup también dejan sus envelopes grandes fuera de la pila.
+2. Conserva validación de checksum, generación, readback y referencia exacta de perfil. Fallo de asignación devuelve MemoryUnavailable; no se publica output parcial.
+3. Regresiones existentes de corrupción, interrupción, ambigüedad y rollback permanecen sin ejecutar. Medición de memoria/fragmentación y fallos de allocator requieren etapa final; no se afirma funcionamiento en consola.
