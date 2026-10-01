@@ -1130,3 +1130,9 @@
 3. `FirstRunRuntime.purchaseStarterCostReduction` solo opera en setup con perfil e inicial desbloqueado; prepara copia en heap y confirma run+perfil mediante `NativeProgressStore` antes de publicar. Error de almacenamiento no publica reducción ni descuento. El resultado de compra describe la preparación; `NativeSaveResult::Ok` es imprescindible para afirmar que se confirmó.
 4. `starterSelectionAllowed` suma unidades de cuarto de punto con reducciones del perfil, conserva límite Classic diez puntos y rechaza duplicados. El equipo inicial completo y la interfaz/comando de compra aún están pendientes: una API no demuestra integración visible. Pasivas, huevos y retos distintos de Classic normal permanecen pendientes.
 5. Regresiones escritas para dos compras, rechazo por fondos/máximo, v3 roundtrip, lectura v2, presupuesto reducido, persistencia y fallo de escritura de ambos journals. Sin ejecutar; tests, compilación, Azahar y Old 3DS siguen aplazados.
+
+## Compra de reducción conectada al selector
+
+1. Bridge registra `_3ds_purchaseStarterCost`, con un comando 208 exclusivo por tick, solo en setup y con store persistente. Ejecución fuera del tick llama la compra transaccional C++; feedback de éxito exige commit confirmado.
+2. Snapshot de presentación expone coste fraccionario, caramelos, reducción, precio y disponibilidad desde catálogo/perfil reales. HUD setup: B abre confirmación, A compra, B cancela; sin comenzar combate durante confirmación. Operaciones de almacenamiento conservan prioridad.
+3. Regresión VM del template exacto escrita para confirmación única, coste 0.5, fondos/disponibilidad y prioridad de guardado. Sin ejecutar. Bundle diagnóstico regenerado, sin compilar el programa. Equipo inicial múltiple, presentación final equivalente web y validación de hardware siguen pendientes.

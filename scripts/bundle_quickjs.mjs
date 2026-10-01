@@ -40,7 +40,7 @@ function biomeColor(id) {
   for (let i = 0; i < id.length; ++i) hash = ((hash * 31) + id.charCodeAt(i)) >>> 0;
   return palette[hash % palette.length];
 }
-let previousJson = '', state = {}, partyMenu = false, partyCursor = 0, recipientMenu = false, recoveryMove = 0;
+let previousJson = '', state = {}, partyMenu = false, partyCursor = 0, recipientMenu = false, recoveryMove = 0, starterCostMenu = false;
 globalThis._3ds_tick = function(input) {
   const json = _3ds_getBattleState();
   if (json !== previousJson) { state = JSON.parse(json); previousJson = json; }
@@ -49,10 +49,18 @@ globalThis._3ds_tick = function(input) {
   const presentation = _3ds_getPresentationInfo() || {};
   const gameOverScreen = state.finished && !state.playerWon;
   if (!state.rewardPending) recipientMenu = false;
+  if (state.runStarted) starterCostMenu = false;
   if (input.X) _3ds_importNative();
   else if (input.Y) _3ds_exportNative();
   else if (input.L) _3ds_saveNative();
   else if (input.R) _3ds_loadNative();
+  else if (!state.runStarted && starterCostMenu) {
+    if (input.B) starterCostMenu = false;
+    else if (input.A && presentation.starterCanReduce) {
+      _3ds_purchaseStarterCost(); starterCostMenu = false;
+    }
+  }
+  else if (!state.runStarted && input.B) { starterCostMenu = true; partyMenu = false; }
   else if (presentation.capturePartyChoicePending) {
     partyMenu = false;
     if (input.up) _3ds_submitAction(-1);
@@ -83,7 +91,7 @@ globalThis._3ds_tick = function(input) {
     recipientMenu = true;
     partyCursor = presentation.activePlayerPartyIndex || 0;
     recoveryMove = 0;
-  } else if (!state.finished && input.select) {
+  } else if (state.runStarted && !state.finished && input.select) {
     partyMenu = !partyMenu;
     partyCursor = presentation.activePlayerPartyIndex || 0;
   } else if (partyMenu && !state.finished) {
@@ -207,6 +215,20 @@ globalThis._3ds_tick = function(input) {
     for (let i = 0; i < party.length; ++i)
       _3ds_drawText((i === partyCursor ? '> ' : '  ') + 'Pokemon #' + party[i], 10, 40 + i * 24, 0.5, WHITE);
     _3ds_drawText('A: switch  B: cancel', 10, 205, 0.45, WHITE);
+    return;
+  }
+  if (!state.runStarted) {
+    _3ds_drawText('Starter: ' + _3ds_getStarterName(), 10, 42, 0.55, GREEN);
+    _3ds_drawText('Cost: ' + (presentation.starterCost || 0) + ' / 10   Candy: ' + (presentation.starterCandy || 0), 10, 70, 0.48, WHITE);
+    if (starterCostMenu) {
+      _3ds_drawText('Reduce cost: ' + (presentation.starterReductionPrice || 0) + ' candy', 10, 105, 0.5, WHITE);
+      _3ds_drawText(presentation.starterCanReduce ? 'A: buy and save   B: cancel' :
+        (presentation.starterReduction >= 2 ? 'Maximum reduction reached' : 'Purchase unavailable'), 10, 135, 0.45, presentation.starterCanReduce ? GREEN : RED);
+    } else {
+      _3ds_drawText('Left/Right: starter   B: reduce cost', 10, 110, 0.45, WHITE);
+      _3ds_drawText('A/Start: begin Classic', 10, 140, 0.5, GREEN);
+    }
+    _3ds_drawText('L:Save R:Load Y:Export X:Import', 8, 219, 0.43, WHITE);
     return;
   }
   const moves = state.playerMoves || [], pp = state.playerPP || [];

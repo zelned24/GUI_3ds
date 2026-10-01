@@ -1,3 +1,4 @@
+#include "game/PokemonStarterMoveset.hpp"
 // Kept optional until a pinned QuickJS ARM11 library is integrated into the build.
 #if defined(POKEROGUE_ENABLE_QUICKJS)
 #include "runtime/QuickJSBridge.hpp"
@@ -76,7 +77,7 @@ bool QuickJSBridge::init(Renderer2D& renderer) {
         {"_3ds_resetRun", resetRun, 0}, {"_3ds_cycleStarter", cycleStarterBinding, 1},
         {"_3ds_getStarterName", getStarterName, 0}, {"_3ds_getMoveName", getMoveName, 1},
         {"_3ds_getPresentationInfo", getPresentationInfo, 0},
-        {"_3ds_saveNative", saveNative, 0}, {"_3ds_loadNative", loadNative, 0},
+        {"_3ds_purchaseStarterCost", purchaseStarterCost, 0}, {"_3ds_saveNative", saveNative, 0}, {"_3ds_loadNative", loadNative, 0},
         {"_3ds_exportNative", exportNative, 0}, {"_3ds_importNative", importNative, 0},
         {"_3ds_submitAction", submitAction, 1}, {"_3ds_skipReward", skipReward, 0},
         {"_3ds_getCombatLog", getCombatLog, 0},
@@ -309,6 +310,27 @@ JSValue QuickJSBridge::getPresentationInfo(JSContext* ctx, JSValueConst, int, JS
         !set("activePlayerPartyIndex", JS_NewUint32(ctx, b->m_game->activePlayerPartyIndex()))) {
         JS_FreeValue(ctx, info); return JS_EXCEPTION;
     }
+    if (!b->m_game->runStarted()) {
+        const uint16_t dex = b->m_game->run().starterDex;
+        const auto* species = PokerogueContent::findSpeciesByDex(dex);
+        const uint8_t reduction = b->m_game->starterCostReduction(dex);
+        uint16_t candy = 0, quarterCost = 0, price = 0;
+        for (size_t i = 0; i < b->m_game->starterProfileCount(); ++i)
+            if (b->m_game->starterProfileRecords()[i].speciesDex == dex)
+                candy = b->m_game->starterProfileRecords()[i].candyCount;
+        const bool costResolved = pokemonStarterCostQuarterUnits(dex, reduction, quarterCost);
+        if (species && reduction < 2)
+            for (const auto& row : PokerogueContent::kStarterCandyPrices)
+                if (row.cost == species->starterCost) { price = row.costReduction[reduction]; break; }
+        if (!set("starterCost", JS_NewFloat64(ctx, costResolved ? quarterCost / 4.0 : 0)) ||
+            !set("starterCandy", JS_NewUint32(ctx, candy)) ||
+            !set("starterReduction", JS_NewUint32(ctx, reduction)) ||
+            !set("starterReductionPrice", JS_NewUint32(ctx, price)) ||
+            !set("starterCanReduce", JS_NewBool(ctx, costResolved && price && candy >= price &&
+                b->m_progress && b->m_game->starterProfileReady() && b->m_game->starterUnlocked(dex)))) {
+            JS_FreeValue(ctx, info); return JS_EXCEPTION;
+        }
+    }
     const auto* selectedReward = b->m_game->rewardChoice(b->m_game->selectedRewardChoice());
     const char* selectedItem = selectedReward && selectedReward->poolEntry ? selectedReward->poolEntry->itemId : nullptr;
     const bool recovery = selectedItem && (hpRestoreItemProfile(selectedItem) || ppRestoreItemProfile(selectedItem) ||
@@ -418,6 +440,13 @@ JSValue QuickJSBridge::getStarterName(JSContext* ctx, JSValueConst, int, JSValue
     const auto* species = b ? PokerogueContent::findSpeciesByDex(b->restartStarterDex()) : nullptr;
     return JS_NewString(ctx, species ? species->name : "?");
 }
+JSValue QuickJSBridge::purchaseStarterCost(JSContext* ctx, JSValueConst, int argc, JSValueConst*) {
+    auto* b = static_cast<QuickJSBridge*>(JS_GetContextOpaque(ctx));
+    if (!b || !b->m_game || !b->m_progress || !b->m_inTick || argc ||
+        b->m_game->runStarted() || b->m_pendingAction != -999) return JS_FALSE;
+    b->m_pendingAction = 208;
+    return JS_TRUE;
+}
 JSValue QuickJSBridge::saveNative(JSContext* ctx, JSValueConst, int argc, JSValueConst*) {
     auto* b = static_cast<QuickJSBridge*>(JS_GetContextOpaque(ctx));
     if (!b || !b->m_game || !b->m_saves || !b->m_inTick || argc || b->m_pendingAction != -999) return JS_FALSE;
@@ -478,6 +507,16 @@ bool QuickJSBridge::processPendingAction() {
                 }
             }
         }
+    } else if (action == 208) {
+        StarterCostPurchaseResult purchase = StarterCostPurchaseResult::InvalidRecord;
+        const auto status = m_progress ? m_game->purchaseStarterCostReduction(
+            m_game->run().starterDex, *m_progress, &purchase) : NativeSaveResult::InvalidRecord;
+        const char* message = status == NativeSaveResult::Ok ? "Starter cost reduced and saved" :
+            purchase == StarterCostPurchaseResult::InsufficientCandy ? "Not enough candy" :
+            purchase == StarterCostPurchaseResult::MaximumReduction ? "Maximum cost reduction reached" :
+            purchase == StarterCostPurchaseResult::MissingPrice ? "Missing canonical candy price" :
+            nativeSaveResultName(status);
+        std::snprintf(m_actionFeedback, sizeof(m_actionFeedback), "%s", message);
     } else if (action == 206 || action == 207) {
         NativeSaveResult status = NativeSaveResult::InvalidRecord;
         std::unique_ptr<NativeRunSave> saveStorage(new (std::nothrow) NativeRunSave{});

@@ -35,6 +35,39 @@ export function registerQuickJsStorageTests(register) {
       assert.deepEqual(commands, [], 'no repeated storage command without another key pulse');
     });
   }
+  register('QuickJS starters: confirm canonical cost purchase once, preserve storage priority', () => {
+    const commands = [], drawn = [];
+    const state = { runStarted: false, finished: false, selectedMove: 0 };
+    const presentation = { starterCost: 0.5, starterCandy: 60, starterReduction: 1,
+      starterReductionPrice: 60, starterCanReduce: true };
+    const context = { JSON, Math };
+    for (const name of new Set(match[1].match(/_3ds_[A-Za-z]+/g))) context[name] = () => undefined;
+    context._3ds_getBattleState = () => JSON.stringify(state);
+    context._3ds_getPresentationInfo = () => presentation;
+    context._3ds_getStarterName = () => 'Canonical starter';
+    context._3ds_getCombatLog = () => '';
+    context._3ds_drawText = text => drawn.push(text);
+    context._3ds_purchaseStarterCost = () => { commands.push('buy'); return true; };
+    context._3ds_saveNative = () => { commands.push('save'); return true; };
+    context._3ds_submitAction = () => { commands.push('battle'); return true; };
+    vm.createContext(context); vm.runInContext(match[1], context);
+    context._3ds_tick({ B: true });
+    assert.deepEqual(commands, []);
+    assert.ok(drawn.some(text => text.includes('Cost: 0.5')));
+    context._3ds_tick({ A: true, start: true });
+    assert.deepEqual(commands, ['buy']);
+    context._3ds_tick({});
+    assert.deepEqual(commands, ['buy']);
+    context._3ds_tick({ B: true });
+    context._3ds_tick({ A: true, L: true });
+    assert.deepEqual(commands, ['buy', 'save']);
+    presentation.starterCanReduce = false;
+    context._3ds_tick({ A: true });
+    assert.deepEqual(commands, ['buy', 'save']);
+    context._3ds_tick({ B: true });
+    context._3ds_tick({ A: true });
+    assert.deepEqual(commands, ['buy', 'save', 'battle']);
+  });
   register('QuickJS rewards: confirmation opens pool and recovery targets a reserve', () => {
     const commands = [];
     const state = { runStarted: true, finished: true, playerWon: true,
