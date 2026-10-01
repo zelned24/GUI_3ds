@@ -403,6 +403,19 @@ static int checkStatusActionAdmission() {
                 emberAfter.enemyHp != repeatedEmberAfter.enemyHp ||
                 emberAfter.enemyStatus.effect != repeatedEmberAfter.enemyStatus.effect ||
                 emberAfter.enemyStatus.present != repeatedEmberAfter.enemyStatus.present) return 9430;
+            auto confusedEmberCheckpoint = emberCheckpoint;
+            confusedEmberCheckpoint.enemyConfusion = {3, true};
+            FirstRunRuntime confusedEmber(seed), repeatedConfusedEmber(seed);
+            NativeRunSave confusedEmberAfter{}, repeatedConfusedEmberAfter{};
+            if (!confusedEmber.restoreNativeRunSave(confusedEmberCheckpoint) ||
+                !repeatedConfusedEmber.restoreNativeRunSave(confusedEmberCheckpoint) ||
+                !confusedEmber.advanceBattleTurn() || !repeatedConfusedEmber.advanceBattleTurn() ||
+                confusedEmber.captureNativeRunSave(confusedEmberAfter) != NativeSaveResult::Ok ||
+                repeatedConfusedEmber.captureNativeRunSave(repeatedConfusedEmberAfter) != NativeSaveResult::Ok ||
+                confusedEmberAfter.playerPp[0] != 24 ||
+                confusedEmberAfter.enemyConfusion.turns != repeatedConfusedEmberAfter.enemyConfusion.turns ||
+                confusedEmberAfter.enemyHp != repeatedConfusedEmberAfter.enemyHp ||
+                confusedEmberAfter.playerHp != repeatedConfusedEmberAfter.playerHp) return 9463;
             checkedExecution = true;
         }
         if (checkedRejection && checkedExecution) return 0;

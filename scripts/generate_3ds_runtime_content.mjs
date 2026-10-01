@@ -34,7 +34,8 @@ const statusActionAbilityRows = collections.abilities.map(ability => {
     'SyncEncounterNatureAbAttr', 'SynchronizeStatusAbAttr', 'RunSuccessAbAttr',
     'ProtectStatAbAttr', 'IgnoreOpponentStatStagesAbAttr',
     'MoveEffectChanceMultiplierAbAttr', 'IgnoreMoveEffectsAbAttr',
-    'StatusEffectImmunityAbAttr', 'PostSummonHealStatusAbAttr', 'BattlerTagImmunityAbAttr']);
+    'StatusEffectImmunityAbAttr', 'PostSummonHealStatusAbAttr', 'BattlerTagImmunityAbAttr',
+    'PostSummonRemoveBattlerTagAbAttr', 'IntimidateImmunityAbAttr', 'ConfusionOnStatusEffectAbAttr']);
   const ignoreMentions = [...raw.matchAll(/\bIgnoreOpponentStatStagesAbAttr\b/g)].length;
   const ignoreDeclarations = [...raw.matchAll(/\.attr\s*\(\s*IgnoreOpponentStatStagesAbAttr\s*,\s*\[\s*Stat\.EVA\s*\]\s*\)/g)].length;
   // Other stat-stage bypasses also affect damage calculations; this active
@@ -45,10 +46,12 @@ const statusActionAbilityRows = collections.abilities.map(ability => {
   const ignoreEffectDeclarations = [...raw.matchAll(/\.attr\s*\(\s*IgnoreMoveEffectsAbAttr\s*(?:,\s*(?:true|false)\s*)?\)/g)].length;
   const chanceMultiplier = chanceDeclarations.length === 1 ? Number(chanceDeclarations[0][1]) : 1;
   if (!Number.isFinite(chanceMultiplier)) throw new Error(`Invalid move-effect chance multiplier: ${ability.id}`);
+  const removalMentions = [...raw.matchAll(/\bPostSummonRemoveBattlerTagAbAttr\b/g)].length;
+  const removalDeclarations = [...raw.matchAll(/\.attr\s*\(\s*PostSummonRemoveBattlerTagAbAttr\s*,\s*BattlerTagType\.CONFUSED\s*\)/g)].length;
   const resolved = !!raw && /new AbBuilder\(/.test(raw) && attrCalls === attrs.length &&
     calls.every(c => builders.has(c)) && attrs.every(a => known.has(a)) && ignoreMentions === ignoreDeclarations &&
     chanceMentions === chanceDeclarations.length && chanceDeclarations.length <= 1 && Number.isFinite(chanceMultiplier) &&
-    ignoreEffectMentions === ignoreEffectDeclarations;
+    ignoreEffectMentions === ignoreEffectDeclarations && removalMentions === removalDeclarations;
   return `    {${ability.abilityId}, ${resolved}, false, ${ignoreDeclarations > 0}, ${chanceMultiplier}, ${ignoreEffectDeclarations > 0}}`;
 }).join(',\n');
 

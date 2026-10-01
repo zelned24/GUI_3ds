@@ -3524,6 +3524,26 @@ extern "C" int runPokemonBattleStateChecks() {
     if (Pokerogue3DS::resolvePokemonStatusAbilityImmunity(15, Effect::Sleep, true, false, true,
             canonicalImmunity) != Pokerogue3DS::PokemonStatusImmunityResult::Resolved || !canonicalImmunity) return 9457;
 
+    bool ownTempoActionFound = false, puppeteerActionFound = false;
+    for (const auto& profile : PokerogueContent::kStatusActionAbilityProfiles) {
+        if (profile.abilityId == 20) ownTempoActionFound = profile.resolved;
+        if (profile.abilityId == 310) puppeteerActionFound = profile.resolved;
+    }
+    if (!ownTempoActionFound || !puppeteerActionFound) return 9460;
+    Pokerogue3DS::PokemonConfusionTagPolicy ownTempoEnvironment{}, ownTempoPolicy{};
+    ownTempoEnvironment.resolved = true;
+    const Pokerogue3DS::PokemonStatusAbilityComponent ownTempoComponent[] = {{20, true, true}};
+    if (Pokerogue3DS::composePokemonConfusionTagPolicy(ownTempoEnvironment, ownTempoComponent, 1,
+            nullptr, 0, ownTempoPolicy) != Pokerogue3DS::PokemonStatusImmunityResult::Resolved ||
+        !ownTempoPolicy.ownAbilityBlocks) return 9461;
+    auto ownTempoActor = completeStatusTarget;
+    ownTempoActor.abilityId = 20;
+    ownTempoActor.confusion = {3, true};
+    Pokerogue3DS::PokemonConfusionRemovalEvent ownTempoRemoval{};
+    if (Pokerogue3DS::applyPokemonPostSummonConfusionRemoval(ownTempoActor, true, true, ownTempoRemoval) !=
+            Pokerogue3DS::PokemonStatusImmunityResult::Resolved || !ownTempoRemoval.abilityActivates ||
+        !ownTempoRemoval.removed || ownTempoActor.confusion.present || ownTempoActor.confusion.turns) return 9462;
+
     bool foundStarterStatusCapability = false, foundPendingStatusCapability = false;
     for (const auto& profile : PokerogueContent::kStatusActionAbilityProfiles) {
         // Canonical IDs: Overgrow only changes power. Keen Eye now carries

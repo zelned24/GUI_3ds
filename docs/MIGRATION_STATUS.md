@@ -1728,3 +1728,10 @@
 3. Runtime invoca el callback al entrar reservas de entrenador (cambio/KO), cambio voluntario del jugador y reemplazo tras faint. Restaurar un checkpoint entre turnos no repite un summon ni cura silenciosamente su estado.
 4. Curación y eventos no consumen RNG. Declaraciones/condiciones desconocidas quedan pendientes; pasivas/suppression/adquisición de habilidad y otros PostSummon siguen sin dispatcher completo.
 5. Regresiones de Toxic, Insomnia, estado no cubierto, inactividad, callback pendiente, pendingStatus e inmunidades reales escritas sin ejecutar. Tests/compilación pendientes.
+
+## Confusión activa: Own Tempo y Poison Puppeteer
+
+1. Capacidad de acciones de estado admite los atributos inspeccionados de Own Tempo y Poison Puppeteer. PostSummonRemoveBattlerTagAbAttr se admite únicamente con CONFUSED; otras declaraciones de retirada de tags quedan pendientes.
+2. El runtime conecta el resolver existente de retirada de confusión en entradas por cambio/reemplazo. Inmunidad propia y reacción de Poison Puppeteer usan las políticas canónicas ya compuestas.
+3. Comprobación PRE_MOVE de confusión usa la capacidad de estados en lugar del gate de daño de jefes. Atributos admitidos no modifican ATK/DEF efectivo ni daño indirecto de self-hit; bypass de evasión solo afecta precisión. Dobles, modifiers, clima y jefes continúan requiriendo resolvers adicionales.
+4. Regresiones de perfiles reales, inmunidad/retirada Own Tempo y replay de turno con tag restaurado escritas sin ejecutar. No se han añadido ConfuseAttr ni todos los productores de confusión; tests/compilación pendientes.

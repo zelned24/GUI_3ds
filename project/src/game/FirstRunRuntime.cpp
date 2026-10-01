@@ -2023,6 +2023,11 @@ bool FirstRunRuntime::advanceBattleTurnInPlace() {
                 // actor; the trainer consumes its command by switching, not attacking.
                 const ResolvedPokemon outgoing = m_context.enemy;
                 ResolvedPokemon incoming = m_context.trainerParty[decision.partyIndex];
+                if (incoming.battleState.confusion.present) {
+                    PokemonConfusionRemovalEvent incomingConfusion{};
+                    if (applyPokemonPostSummonConfusionRemoval(incoming.battleState, true, true, incomingConfusion) !=
+                            PokemonStatusImmunityResult::Resolved) return false;
+                }
                 resetPokemonSummonState(incoming.battleState);
                 PokemonPostSummonStatusHealingEvent incomingStatus{};
                 if (!applyPokemonPostSummonStatusHealing(incoming.battleState, true, true, incomingStatus)) return false;
@@ -2354,13 +2359,10 @@ bool FirstRunRuntime::executeActiveBattleMove(uint8_t userIndex, uint8_t targetI
         }
     }
     if (user.confusion.present || user.confusion.turns) {
-        const auto* ownProfile = PokerogueContent::findAbilityMovegenProfile(user.abilityId);
-        const auto* opposingProfile = PokerogueContent::findAbilityMovegenProfile(opponent.abilityId);
-        // This existing conservative capability admits only abilities without
-        // stat/damage callbacks. Broader field/held/weather policies need resolvers.
+        // Status-action capability admits no ATK/DEF multipliers or indirect
+        // damage callbacks. Its EVA-only bypass does not affect self-hit stats.
         if (m_doubleBattle || m_heldModifierCount || m_arenaWeather.type != PokemonEffectiveWeather::None ||
-            !ownProfile || !ownProfile->bossDamageCallbacksResolved ||
-            !opposingProfile || !opposingProfile->bossDamageCallbacksResolved) {
+            !statusActionAbilitySupported(user.abilityId) || !statusActionAbilitySupported(opponent.abilityId)) {
             m_battleFeedback = "Confusion stat/damage callbacks require dispatcher";
             return false;
         }
@@ -2976,6 +2978,11 @@ bool FirstRunRuntime::advanceTrainerAfterDefeat() {
     m_context.trainerParty[m_context.activeTrainerPartyIndex] = m_context.enemy;
     m_context.activeTrainerPartyIndex = next;
     m_context.enemy = m_context.trainerParty[next];
+    if (m_context.enemy.battleState.confusion.present) {
+        PokemonConfusionRemovalEvent incomingConfusion{};
+        if (applyPokemonPostSummonConfusionRemoval(m_context.enemy.battleState, true, true, incomingConfusion) !=
+                PokemonStatusImmunityResult::Resolved) return false;
+    }
     resetPokemonSummonState(m_context.enemy.battleState);
     PokemonPostSummonStatusHealingEvent incomingStatus{};
     if (!applyPokemonPostSummonStatusHealing(m_context.enemy.battleState, true, true, incomingStatus)) return false;
@@ -3401,6 +3408,11 @@ bool FirstRunRuntime::switchPlayerPokemonInPlace(uint8_t targetIndex) {
     m_context.playerParty[m_context.activePlayerPartyIndex] = m_context.player;
     m_context.activePlayerPartyIndex = targetIndex;
     m_context.player = m_context.playerParty[targetIndex];
+    if (m_context.player.battleState.confusion.present) {
+        PokemonConfusionRemovalEvent incomingConfusion{};
+        if (applyPokemonPostSummonConfusionRemoval(m_context.player.battleState, true, true, incomingConfusion) !=
+                PokemonStatusImmunityResult::Resolved) return false;
+    }
     resetPokemonSummonState(m_context.player.battleState);
     PokemonPostSummonStatusHealingEvent incomingStatus{};
     if (!applyPokemonPostSummonStatusHealing(m_context.player.battleState, true, true, incomingStatus)) return false;
@@ -3458,6 +3470,11 @@ bool FirstRunRuntime::advancePlayerAfterDefeat() {
         if (m_context.playerParty[i].battleState.hp > 0) {
             m_context.activePlayerPartyIndex = i;
             m_context.player = m_context.playerParty[i];
+            if (m_context.player.battleState.confusion.present) {
+                PokemonConfusionRemovalEvent incomingConfusion{};
+                if (applyPokemonPostSummonConfusionRemoval(m_context.player.battleState, true, true, incomingConfusion) !=
+                        PokemonStatusImmunityResult::Resolved) return false;
+            }
             resetPokemonSummonState(m_context.player.battleState);
             PokemonPostSummonStatusHealingEvent incomingStatus{};
             if (!applyPokemonPostSummonStatusHealing(m_context.player.battleState, true, true, incomingStatus)) return false;
