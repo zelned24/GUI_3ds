@@ -1048,7 +1048,13 @@ bool FirstRunRuntime::resolveActiveStatusCommandPolicies(const PokemonBattleStat
     command.move.hit.blockedBeforeAccuracy = hit.blockedByAbility;
     command.move.hit.bypassAccuracy = hit.bypassAccuracy || move->accuracy < 0;
     command.move.hit.accuracyMultiplier = hit.accuracyMultiplier;
-    if (!composePokemonStatusAccuracyStagePolicy(user, opponent, command.move.hit, command.move.hit)) return false;
+    bool ignoreUserAccuracy = false, ignoreTargetEvasion = false;
+    for (const auto& profile : PokerogueContent::kStatusActionAbilityProfiles) {
+        if (profile.abilityId == opponent.abilityId) ignoreUserAccuracy = profile.ignoresOpponentAccuracy;
+        if (profile.abilityId == user.abilityId) ignoreTargetEvasion = profile.ignoresOpponentEvasion;
+    }
+    if (!composePokemonStatusAccuracyStagePolicy(user, opponent, command.move.hit, command.move.hit,
+            ignoreUserAccuracy, ignoreTargetEvasion)) return false;
     const auto* form = PokerogueContent::findFormById(opponent.formId);
     if (!form) return false;
     const char* types[] = {form->type1, form->type2};

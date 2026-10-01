@@ -3411,15 +3411,31 @@ extern "C" int runPokemonBattleStateChecks() {
     if (Pokerogue3DS::composePokemonStatusAccuracyStagePolicy(accuracyUser, accuracyTarget,
             statusAccuracyBase, statusAccuracyComposed) || statusAccuracyComposed.accuracyMultiplier != 42) return 9392;
 
+    accuracyUser.statStages[5] = 0;
+    accuracyTarget.statStages[6] = 6;
+    if (!Pokerogue3DS::composePokemonStatusAccuracyStagePolicy(accuracyUser, accuracyTarget,
+            statusAccuracyBase, statusAccuracyComposed, false, true) ||
+        statusAccuracyComposed.accuracyMultiplier != 0.5) return 9410;
+    accuracyTarget.statStages[6] = -6;
+    if (!Pokerogue3DS::composePokemonStatusAccuracyStagePolicy(accuracyUser, accuracyTarget,
+            statusAccuracyBase, statusAccuracyComposed, false, true) ||
+        statusAccuracyComposed.accuracyMultiplier != 0.5) return 9411;
+    accuracyUser.statStages[5] = -6;
+    accuracyTarget.statStages[6] = 0;
+    if (!Pokerogue3DS::composePokemonStatusAccuracyStagePolicy(accuracyUser, accuracyTarget,
+            statusAccuracyBase, statusAccuracyComposed, true, false) ||
+        statusAccuracyComposed.accuracyMultiplier != 0.5) return 9412;
     bool foundStarterStatusCapability = false, foundPendingStatusCapability = false;
     for (const auto& profile : PokerogueContent::kStatusActionAbilityProfiles) {
-        // Canonical IDs: Overgrow only changes move power; Keen Eye ignores
-        // evasion and still needs its accuracy callback in this provider.
+        // Canonical IDs: Overgrow only changes power. Keen Eye now carries
+        // its explicit evasion bypass; Unaware damage-stage bypass is pending.
         if (profile.abilityId == 65) {
             if (!profile.resolved) return 9400;
             foundStarterStatusCapability = true;
         }
-        if (profile.abilityId == 51) {
+        if (profile.abilityId == 51 && (!profile.resolved || !profile.ignoresOpponentEvasion ||
+                profile.ignoresOpponentAccuracy)) return 9401;
+        if (profile.abilityId == 109) {
             if (profile.resolved) return 9401;
             foundPendingStatusCapability = true;
         }

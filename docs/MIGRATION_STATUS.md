@@ -1698,3 +1698,10 @@
 1. StatusActionAbilityProfile sustituye la reutilización incorrecta de bossDamageCallbacksResolved en el proveedor de estados. Se deriva del raw pinned y rechaza atributos/builders desconocidos.
 2. ab-attrs.ts inspeccionado: LowHpMoveTypePowerBoostAbAttr afecta potencia; RunSuccessAbAttr solo escape; SyncEncounterNatureAbAttr encuentro. SynchronizeStatusAbAttr tiene dispatcher post-set existente. No habilita Keen Eye, grounding, suppressions ni condiciones globales pendientes.
 3. Regresiones escritas: Overgrow admite contexto de estado; Keen Eye sigue pendiente; encuentro real con snapshot de Hypnosis inyectado solo en test compara ejecución repetida y verifica rechazo de otras habilidades. Ninguna regresión ejecutada; programa no compilado.
+
+## Keen Eye: precisión de acciones de estado
+
+1. Pokemon.getAccuracyMultiplier y IgnoreOpponentStatStagesAbAttr (pinned 8555c08c823b856cbec4eb99ca84ea52a955836d) consultan EVA en la habilidad del usuario y ACC en la del objetivo, neutralizando la etapa correspondiente a cero.
+2. StatusActionAbilityProfile conserva flags explícitos de bypass. Importer admite la declaración exacta [Stat.EVA]; listas que afectan daño como Unaware siguen pendientes. ProtectStatAbAttr pertenece a PreStatStageChange y no cambia el estado de estas acciones StatusEffectAttr.
+3. Runtime usa el perfil del usuario para ignorar evasión del objetivo antes de componer precisión. Se neutralizan etapas positivas y negativas. No declara paridad de ataques de daño ni otros callbacks.
+4. Regresiones de bypass en ambos sentidos y perfiles reales escritas sin ejecutar. Contenido regenerado; tests/compilación pendientes.

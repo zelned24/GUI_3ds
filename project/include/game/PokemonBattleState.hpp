@@ -1024,10 +1024,7 @@ inline bool pokemonBaselineEffectiveStat(const PokemonBattleState& state, uint8_
     return true;
 }
 
-inline bool pokemonAccuracyStageMultiplier(const PokemonBattleState& user,
-    const PokemonBattleState& target, double& output) {
-    const int accuracy = user.statStages[5];
-    const int evasion = target.statStages[6];
+inline bool pokemonAccuracyStageMultiplier(int accuracy, int evasion, double& output) {
     if (accuracy < -6 || accuracy > 6 || evasion < -6 || evasion > 6) return false;
     int difference = accuracy - evasion;
     if (difference > 6) difference = 6;
@@ -1036,14 +1033,23 @@ inline bool pokemonAccuracyStageMultiplier(const PokemonBattleState& user,
     return true;
 }
 
+inline bool pokemonAccuracyStageMultiplier(const PokemonBattleState& user,
+    const PokemonBattleState& target, double& output) {
+    return pokemonAccuracyStageMultiplier(user.statStages[5], target.statStages[6], output);
+}
+
 // Ability/held-item accuracy callbacks belong to the base policy. This adds
 // actor accuracy/evasion stages for the supported arena context.
 inline bool composePokemonStatusAccuracyStagePolicy(const PokemonBattleState& user,
     const PokemonBattleState& target, const PokemonStatusMoveHitPolicy& base,
-    PokemonStatusMoveHitPolicy& output) {
+    PokemonStatusMoveHitPolicy& output, bool ignoreUserAccuracy = false, bool ignoreTargetEvasion = false) {
     if (!base.resolved || !std::isfinite(base.accuracyMultiplier) || base.accuracyMultiplier < 0) return false;
+    if (user.statStages[5] < -6 || user.statStages[5] > 6 ||
+        target.statStages[6] < -6 || target.statStages[6] > 6) return false;
+    const int accuracy = ignoreUserAccuracy ? 0 : user.statStages[5];
+    const int evasion = ignoreTargetEvasion ? 0 : target.statStages[6];
     double stages = 1.0;
-    if (!pokemonAccuracyStageMultiplier(user, target, stages)) return false;
+    if (!pokemonAccuracyStageMultiplier(accuracy, evasion, stages)) return false;
     auto policy = base;
     policy.accuracyMultiplier *= stages;
     if (!std::isfinite(policy.accuracyMultiplier)) return false;
