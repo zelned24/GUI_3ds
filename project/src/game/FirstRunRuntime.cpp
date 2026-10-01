@@ -23,6 +23,8 @@
 #include <algorithm>
 #include <cstdio>
 #include <cstring>
+#include <memory>
+#include <new>
 
 namespace Pokerogue3DS {
 namespace {
@@ -90,7 +92,12 @@ bool FirstRunRuntime::cycleStarter(int direction) {
             ? (index + 1) % PokerogueContent::kSpeciesCount
             : (index + PokerogueContent::kSpeciesCount - 1) % PokerogueContent::kSpeciesCount;
         if (starterUnlocked(PokerogueContent::kSpecies[index].dex)) {
-            FirstRunRuntime candidate = *this;
+            std::unique_ptr<FirstRunRuntime> candidateStorage(new (std::nothrow) FirstRunRuntime(*this));
+            if (!candidateStorage) {
+                m_battleFeedback = "Runtime transaction allocation failed";
+                return false;
+            }
+            auto& candidate = *candidateStorage;
             candidate.m_starterIndex = index;
             candidate.resolve();
             if (!candidate.m_encounterResolved || !candidate.m_context.player.actorIdentityResolved ||
@@ -122,7 +129,12 @@ bool FirstRunRuntime::starterSelectionAllowed(const uint16_t* dexes, size_t coun
 
 bool FirstRunRuntime::restoreSetup(uint32_t seed, uint16_t starterDex) {
     if (!starterSelectionAllowed(&starterDex, 1)) return false;
-    FirstRunRuntime candidate = *this;
+    std::unique_ptr<FirstRunRuntime> candidateStorage(new (std::nothrow) FirstRunRuntime(*this));
+    if (!candidateStorage) {
+        m_battleFeedback = "Runtime transaction allocation failed";
+        return false;
+    }
+    auto& candidate = *candidateStorage;
     if (!candidate.restoreSetupInPlace(seed, starterDex)) {
         m_battleFeedback = "New run setup could not resolve";
         buildScene();
@@ -296,7 +308,12 @@ bool FirstRunRuntime::restoreStarterCandyProfile(const NativeStarterCandyRecord*
 
 bool FirstRunRuntime::initializeFreshStarterProfile(const PokemonFriendshipPolicy& policy) {
     if (m_starterProfileReady || m_starterProfileGeneration || m_runStarted) return false;
-    FirstRunRuntime candidate = *this;
+    std::unique_ptr<FirstRunRuntime> candidateStorage(new (std::nothrow) FirstRunRuntime(*this));
+    if (!candidateStorage) {
+        m_battleFeedback = "Runtime transaction allocation failed";
+        return false;
+    }
+    auto& candidate = *candidateStorage;
     if (!candidate.restoreStarterCandyProfile(nullptr, 0, 0, policy)) return false;
     // GameData.initDexData marks defaultStarterSpecies caught. Canonical
     // freshProfileStarter comes from that pinned source list, not local IDs.
@@ -384,7 +401,12 @@ bool FirstRunRuntime::restoreNativeRunSave(const NativeRunSave& save,
         for (size_t i = 0; i < count; ++i)
             unlocked |= records[i].speciesDex == save.starterDex && records[i].caught;
     if (!unlocked) return false;
-    FirstRunRuntime candidate(save.seed);
+    std::unique_ptr<FirstRunRuntime> candidateStorage(new (std::nothrow) FirstRunRuntime(save.seed));
+    if (!candidateStorage) {
+        m_battleFeedback = "Runtime restore allocation failed";
+        return false;
+    }
+    auto& candidate = *candidateStorage;
     if (!candidate.restoreNativeRunSaveInPlace(save)) return false;
     candidate.m_starterProfileGeneration = save.starterProfileGeneration;
     // Reload the referenced durable profile explicitly; live uncommitted gains
@@ -902,7 +924,12 @@ bool FirstRunRuntime::selectRewardChoice(int direction) {
 }
 
 bool FirstRunRuntime::claimRewardChoice() {
-    FirstRunRuntime candidate = *this;
+    std::unique_ptr<FirstRunRuntime> candidateStorage(new (std::nothrow) FirstRunRuntime(*this));
+    if (!candidateStorage) {
+        m_battleFeedback = "Runtime transaction allocation failed";
+        return false;
+    }
+    auto& candidate = *candidateStorage;
     if (!candidate.claimRewardChoiceInPlace()) {
         m_battleFeedback = candidate.m_battleFeedback;
         buildScene();
@@ -915,7 +942,12 @@ bool FirstRunRuntime::claimRewardChoice() {
 
 bool FirstRunRuntime::claimHeldRewardChoice(uint8_t partyMember) {
     if (partyMember >= m_context.playerPartyCount) return false;
-    FirstRunRuntime candidate = *this;
+    std::unique_ptr<FirstRunRuntime> candidateStorage(new (std::nothrow) FirstRunRuntime(*this));
+    if (!candidateStorage) {
+        m_battleFeedback = "Runtime transaction allocation failed";
+        return false;
+    }
+    auto& candidate = *candidateStorage;
     if (!candidate.claimRewardChoiceInPlace(partyMember)) {
         m_battleFeedback = candidate.m_battleFeedback;
         buildScene();
@@ -928,7 +960,12 @@ bool FirstRunRuntime::claimHeldRewardChoice(uint8_t partyMember) {
 
 bool FirstRunRuntime::claimRecoveryRewardChoice(uint8_t partyMember, uint8_t moveSlot) {
     if (partyMember >= m_context.playerPartyCount) return false;
-    FirstRunRuntime candidate = *this;
+    std::unique_ptr<FirstRunRuntime> candidateStorage(new (std::nothrow) FirstRunRuntime(*this));
+    if (!candidateStorage) {
+        m_battleFeedback = "Runtime transaction allocation failed";
+        return false;
+    }
+    auto& candidate = *candidateStorage;
     if (!candidate.claimRewardChoiceInPlace(partyMember, true, moveSlot)) {
         m_battleFeedback = candidate.m_battleFeedback;
         buildScene();
@@ -1082,7 +1119,12 @@ bool FirstRunRuntime::finishPendingEvolution(bool accepted) {
 }
 
 bool FirstRunRuntime::resolvePendingLearnMove(int selectedSlot) {
-    FirstRunRuntime candidate = *this;
+    std::unique_ptr<FirstRunRuntime> candidateStorage(new (std::nothrow) FirstRunRuntime(*this));
+    if (!candidateStorage) {
+        m_battleFeedback = "Runtime transaction allocation failed";
+        return false;
+    }
+    auto& candidate = *candidateStorage;
     if (!candidate.resolvePendingLearnMoveInPlace(selectedSlot)) return false;
     *this = candidate;
     buildScene();
@@ -1197,7 +1239,14 @@ bool FirstRunRuntime::grantVictoryExperience(bool pokemonDefeated, uint8_t enemy
         rawExperience < 0.0 || rawExperience > 4294967295.0) return false;
     std::array<ResolvedPokemon, 6> nextParty{};
     for (uint8_t member = 0; member < 6; ++member) nextParty[member] = m_context.playerParty[member];
-    auto nextProfile = m_starterProfileRecords;
+    // Catalog-sized ledger must not sit beside actor arrays on the ARM11 stack.
+    std::unique_ptr<decltype(m_starterProfileRecords)> nextProfileStorage(
+        new (std::nothrow) decltype(m_starterProfileRecords)(m_starterProfileRecords));
+    if (!nextProfileStorage) {
+        m_battleFeedback = "EXP profile allocation failed";
+        return false;
+    }
+    auto& nextProfile = *nextProfileStorage;
     size_t nextProfileCount = m_starterProfileCount;
     nextParty[m_context.activePlayerPartyIndex] = m_context.player;
     std::array<PokemonPendingLevelMoves, 6> pendingMoves{};
@@ -1389,7 +1438,12 @@ bool FirstRunRuntime::executeEnemyResponse(uint8_t userIndex, PokerogueRngAdapte
 
 bool FirstRunRuntime::advanceBattleTurn() {
     // Host processes commands before rendering; a failed phase cannot publish half a turn.
-    FirstRunRuntime candidate = *this;
+    std::unique_ptr<FirstRunRuntime> candidateStorage(new (std::nothrow) FirstRunRuntime(*this));
+    if (!candidateStorage) {
+        m_battleFeedback = "Runtime transaction allocation failed";
+        return false;
+    }
+    auto& candidate = *candidateStorage;
     if (!candidate.advanceBattleTurnInPlace()) {
         m_battleFeedback = candidate.m_battleFeedback;
         buildScene();
@@ -2218,7 +2272,12 @@ bool FirstRunRuntime::enemyPartyDefeated() const {
 }
 
 bool FirstRunRuntime::skipVictoryReward() {
-    FirstRunRuntime candidate = *this;
+    std::unique_ptr<FirstRunRuntime> candidateStorage(new (std::nothrow) FirstRunRuntime(*this));
+    if (!candidateStorage) {
+        m_battleFeedback = "Runtime transaction allocation failed";
+        return false;
+    }
+    auto& candidate = *candidateStorage;
     if (!candidate.skipVictoryRewardInPlace()) {
         m_battleFeedback = candidate.m_battleFeedback;
         buildScene();
@@ -2360,7 +2419,12 @@ void FirstRunRuntime::refreshTrainerBaselineMatchups() {
 
 bool FirstRunRuntime::throwPokeball(PokeballType ball) {
     // Commands run before render. Commit the complete action only on success.
-    FirstRunRuntime candidate = *this;
+    std::unique_ptr<FirstRunRuntime> candidateStorage(new (std::nothrow) FirstRunRuntime(*this));
+    if (!candidateStorage) {
+        m_battleFeedback = "Runtime transaction allocation failed";
+        return false;
+    }
+    auto& candidate = *candidateStorage;
     if (!candidate.throwPokeballInPlace(ball)) {
         m_battleFeedback = candidate.m_battleFeedback;
         buildScene();
@@ -2600,7 +2664,12 @@ bool FirstRunRuntime::finishSuccessfulCapture(ResolvedPokemon& target, const uin
 }
 
 bool FirstRunRuntime::resolveCapturePartyChoice(int member) {
-    FirstRunRuntime candidate = *this;
+    std::unique_ptr<FirstRunRuntime> candidateStorage(new (std::nothrow) FirstRunRuntime(*this));
+    if (!candidateStorage) {
+        m_battleFeedback = "Runtime transaction allocation failed";
+        return false;
+    }
+    auto& candidate = *candidateStorage;
     if (!candidate.resolveCapturePartyChoiceInPlace(member)) {
         m_battleFeedback = candidate.m_battleFeedback;
         buildScene();
@@ -2655,7 +2724,12 @@ bool FirstRunRuntime::togglePlayerEvolutionPause(uint8_t memberIndex) {
 
 bool FirstRunRuntime::switchPlayerPokemon(uint8_t targetIndex) {
     // Commands run before render. Commit the complete action only on success.
-    FirstRunRuntime candidate = *this;
+    std::unique_ptr<FirstRunRuntime> candidateStorage(new (std::nothrow) FirstRunRuntime(*this));
+    if (!candidateStorage) {
+        m_battleFeedback = "Runtime transaction allocation failed";
+        return false;
+    }
+    auto& candidate = *candidateStorage;
     if (!candidate.switchPlayerPokemonInPlace(targetIndex)) {
         m_battleFeedback = candidate.m_battleFeedback;
         buildScene();

@@ -1072,3 +1072,9 @@
 1. restoreSetup publica una run nueva solo cuando encuentro, identidad y moveset se resuelven. Selección de otro starter también trabaja en candidato; fallo mantiene estado anterior y comunica error.
 2. Conserva el perfil capturas/candy/friendship al reiniciar; reconstrucción interna de checkpoints sigue separada del permiso del perfil. No afirma battleInputSupported para reglas aún no portadas.
 3. Regresiones 623–625 escritas para seed inválido sin mutación, reinicio y conservación exacta del perfil; sin ejecutar. Tests y compilación aplazados.
+
+## Memoria de candidatos transaccionales Old 3DS — pendiente de medición
+
+1. Candidatos completos de FirstRunRuntime pasan de objetos automáticos a unique_ptr/new(nothrow). Ledger candidato de EXP también sale de la pila. Propiedad RAII libera la memoria al publicar o fallar.
+2. Fallo de asignación devuelve false con motivo y no publica estado parcial. No cambia orden RNG, contenido ni permisos; regresiones existentes de rollback/inicio/captura/EXP siguen pendientes de ejecución.
+3. Es corrección por inspección de almacenamiento, no medición de pico real. Heap, frames restantes, fragmentación y rendimiento requieren compilación y Old 3DS en la etapa final.
