@@ -792,3 +792,9 @@
 
 5. `exportGeneration` exporta el perfil confirmado por referencia, aunque exista un candidato más reciente, y verifica el archivo leído después de escribirlo. Regresiones 84–86 escritas, no ejecutadas. Esto no hace atómica una exportación de dos archivos: falta empaquetar/importar ambos como una unidad portable y conectar consumidores.
 6. La fixture de migración v10 ahora parte de una cabecera v12 y comprueba las constantes de versión actuales; conserva las comprobaciones del inventario y del Pokémon anterior.
+
+## EXP del actor y policy de caramelos
+
+1. Inspección pinned: `src/modifier/modifier.ts`, `PokemonLevelIncrementModifier.apply`, conserva EXP si el nivel supera `getMaxExpLevel(true)`. `src/battle-scene.ts`, `getMaxExpLevel`, retorna normalmente Number.MAX_SAFE_INTEGER con ignoreLevelCap; un override positivo cambia ese límite. No se presenta la conservación de EXP como regla normal de Classic.
+2. El codec de Pokémon conserva nivel/EXP independientes y sigue validando especie, fórmula representable, identidad, HP, IVs y PP. El validator de run mantiene sus capacidades/límites actuales; no se habilitan overrides ni Rare Candy mediante esta corrección.
+3. Regresiones 501–505 escritas: especie real, plan con override explícito, recalculación de stats, captura, encode/decode y restauración sin perder EXP/HP/friendship. Pendientes de ejecución; sin compilación.

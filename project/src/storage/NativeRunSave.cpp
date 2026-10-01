@@ -265,9 +265,11 @@ bool restoreNativePokemonSave(const NativePokemonSave& saved, PokemonBattleState
         if (saved.ivs[i] != actor.ivs[i]) return false;
     uint32_t threshold = 0;
     if (pokemonTotalExperienceForLevel(species->growthRate, saved.level, threshold) !=
-            PokemonExperienceResult::Ok || saved.experience < threshold) return false;
-    // Experience may exceed the next threshold while the wave level cap is active.
-    // The enclosing run validator must resolve that cap, rather than truncate EXP.
+            PokemonExperienceResult::Ok) return false;
+    // PokemonLevelIncrementModifier keeps EXP when an explicit uncapped-limit
+    // override is exceeded. Actor storage has no such policy: preserve both
+    // values; the enclosing run validates its resolved progression capability.
+    // EXP may also exceed the next threshold while the wave cap is active.
     if (saved.friendshipResolved) actor.friendship = saved.friendship;
     actor.pauseEvolutions = saved.pauseEvolutions;
     actor.heldItemLostTags.unburden = saved.unburdenTag;

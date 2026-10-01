@@ -1815,6 +1815,28 @@ int main() {
         for (uint8_t slot = 0; slot < restoredActor.moveCount; ++slot)
             if (restoredActor.moves[slot].moveId != currentActor.battleState.moves[slot].moveId ||
                 restoredActor.moves[slot].pp != currentActor.battleState.moves[slot].pp) return 272;
+        // Real species + pinned candy plan with an explicit uncapped-limit override.
+        const auto* candySpecies = PokerogueContent::findSpeciesByDex(actorSnapshot.speciesDex);
+        PokemonLevelIncrementPlan candyPlan{};
+        if (!candySpecies || planPokemonLevelIncrement(candySpecies->growthRate,
+                actorSnapshot.level, actorSnapshot.experience, 0, true, actorSnapshot.level, candyPlan) !=
+                PokemonExperienceResult::Ok || candyPlan.progress.experience != actorSnapshot.experience)
+            return 501;
+        auto candyActor = currentActor.battleState;
+        if (!recalculatePokemonBattleLevel(candyActor, candyPlan.progress.level)) return 502;
+        NativePokemonSave candySnapshot{}, decodedCandy{};
+        if (!captureNativePokemonSave(candyActor, candyPlan.progress.experience, candySnapshot)) return 503;
+        char candyPayload[1024]{};
+        size_t candyPayloadSize = 0;
+        if (encodeNativePokemonSave(candySnapshot, candyPayload, sizeof(candyPayload), candyPayloadSize) !=
+                NativeSaveResult::Ok || decodeNativePokemonSave(candyPayload, candyPayloadSize, decodedCandy) !=
+                NativeSaveResult::Ok || decodedCandy.experience != actorSnapshot.experience ||
+            decodedCandy.level != candyPlan.progress.level) return 504;
+        PokemonBattleState candyRestored{};
+        if (!restoreNativePokemonSave(decodedCandy, candyRestored) ||
+            candyRestored.level != candyActor.level || candyRestored.maxHp != candyActor.maxHp ||
+            candyRestored.hp != candyActor.hp || candyRestored.friendship != candyActor.friendship)
+            return 505;
         auto invalidActor = actorSnapshot;
         invalidActor.hp = 65535;
         const uint16_t beforeInvalidHp = restoredActor.hp;
