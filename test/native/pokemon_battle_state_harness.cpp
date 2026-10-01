@@ -783,6 +783,33 @@ extern "C" int runPokemonBattleStateChecks() {
             stageTarget.statStages[4] != -1 || stageUser.moves[0].pp != 10 ||
             stageRng.randSeedUint32() != expectedStageRng.randSeedUint32()) return 9562;
     }
+    {
+        PokemonBattleState aiUser = state, aiTarget = state;
+        aiUser.moveCount = 1;
+        aiUser.moves[0] = {94, 10, 10};
+        for (auto& stage : aiTarget.statStages) stage = 0;
+        double statBenefit = 123;
+        // Pinned SPDEF getter specifically requires a PHYSICAL attack in the
+        // user's moveset, even though Psychic itself is SPECIAL.
+        if (!Pokerogue3DS::calculateCanonicalDamageStatStageAiBenefit(aiUser, aiTarget, 94, statBenefit) ||
+            statBenefit != 0) return 9570;
+        aiUser.moveCount = 2;
+        aiUser.moves[1] = {33, 35, 35};
+        if (!Pokerogue3DS::calculateCanonicalDamageStatStageAiBenefit(aiUser, aiTarget, 94, statBenefit) ||
+            statBenefit != 2) return 9571;
+        double combinedScore = 0;
+        if (!Pokerogue3DS::calculatePlainAttackAiScore(2, 100, 100, 90, 100, true, combinedScore, statBenefit) ||
+            combinedScore != 66) return 9572;
+        aiTarget.statStages[4] = -6;
+        if (!Pokerogue3DS::calculateCanonicalDamageStatStageAiBenefit(aiUser, aiTarget, 94, statBenefit) ||
+            statBenefit != -2) return 9573; // Pinned levels==0 keeps the +2 term.
+        statBenefit = 123;
+        if (Pokerogue3DS::calculateCanonicalDamageStatStageAiBenefit(aiUser, aiTarget, 95, statBenefit) ||
+            statBenefit != 123) return 9574;
+        aiUser.moves[1].moveId = 65535;
+        if (Pokerogue3DS::calculateCanonicalDamageStatStageAiBenefit(aiUser, aiTarget, 94, statBenefit) ||
+            statBenefit != 123) return 9575;
+    }
     const uint8_t mixedSlots[] = {0, 1};
     const uint32_t mixedDamage[] = {0, 10};
     uint8_t mixedFiltered[4]{}, mixedCount = 0;

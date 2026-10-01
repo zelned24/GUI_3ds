@@ -1801,3 +1801,9 @@
 2. FirstRunRuntime admite ataque individual con un efecto constante y modificador crítico opcional conocido. Proveedor común compone chance y reacciones para preflight/ejecución; después de daño efectivo invoca executePokemonDamageStatStagePhase. Psychic ya puede atravesar ese pipeline. Crunch/otros builders desconocidos permanecen pendientes; no se omite bitingMove.
 3. Dispatcher de reacciones se comparte con comandos de estado: copia, reacciones del destinatario, reflexión y reacciones del origen. La fase no repite precisión/PP/daño; destinatario faint no consume chance. RNG y actores se publican transaccionalmente.
 4. Generador incluye perfiles de flags/builders para ataques StatStageChangeAttr, manteniendo raw/provenance y hash canónico sin cambios. Regresiones escritas: fase Psychic, PP/HP intactos, faint sin draw, política pendiente y replay de comando con encuentro real. Tests y compilación aplazados; IA de efectos secundarios, dobles/modifiers y Classic completo siguen pendientes.
+
+## IA de cambios de estadísticas secundarios
+
+1. Pinned src/data/moves/move.ts StatStageChangeAttr.getTargetBenefitScore no pondera chance ni consulta inmunidades; usa etapas/clamp y composición de moveset. src/field/pokemon.ts suma beneficios antes de efectividad/STAB. Runtime añade el beneficio secundario en ese punto del scorer existente, con signo según destinatario.
+2. Reutiliza calculateStatStageTargetBenefit, conservando la consulta PHYSICAL para SPDEF y el término +2 cuando levels es cero. No introduce un score esperado por chance ni reemplaza comportamiento upstream por una fórmula inventada.
+3. Regresiones escritas para Psychic con moveset especial/mixto, efectividad/STAB, límite -6 y fallos con output intacto. Tests/compilación siguen aplazados. El selector completo, callbacks de todos los movimientos y Classic completo continúan pendientes.

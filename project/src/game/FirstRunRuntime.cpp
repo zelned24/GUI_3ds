@@ -1038,8 +1038,11 @@ double baselineEnemyMoveScore(const PokemonBattleState& user,
     double score = -20.0;
     const double critBenefit = PokerogueContent::moveHasAttribute(move, "HighCritAttr") ? 3.0 :
         PokerogueContent::moveHasAttribute(move, "CritOnlyAttr") ? 5.0 : 0.0;
+    double statBenefit = 0.0;
+    if (singleDamageStatStageEffect(move.id) &&
+        !calculateCanonicalDamageStatStageAiBenefit(user, target, move.id, statBenefit)) return -20.0;
     if (!calculatePlainAttackAiScore(effectiveness, selectedStat, otherStat,
-            move.power, move.accuracy, stab, score, critBenefit)) return -20.0;
+            move.power, move.accuracy, stab, score, critBenefit + statBenefit)) return -20.0;
     return score + canonicalDamageDrainAiBenefit(user, move) + canonicalRecoilAiBenefit(move);
 }
 

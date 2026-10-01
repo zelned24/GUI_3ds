@@ -326,6 +326,25 @@ inline bool calculateStatStageTargetBenefit(
     return true;
 }
 
+// The pinned attribute getter does not scale by chance or probe ability
+// immunity. Selection calls this only after resolving the move's capability.
+inline bool calculateCanonicalDamageStatStageAiBenefit(
+    const PokemonBattleState& user, const PokemonBattleState& opponent,
+    uint16_t moveId, double& output) {
+    const auto* move = PokerogueContent::findMoveById(moveId);
+    if (!move || move->power <= 0 ||
+        !pokemonDamageSecondaryAttributesResolved(*move, "StatStageChangeAttr")) return false;
+    const PokerogueContent::MoveStatStageEffect* effect = nullptr;
+    for (const auto& row : PokerogueContent::kMoveStatStageEffects)
+        if (row.moveId == moveId) { if (effect) return false; effect = &row; }
+    if (!effect) return false;
+    double benefit = 0;
+    if (!calculateStatStageTargetBenefit(user, effect->selfTarget ? user : opponent, *effect, benefit))
+        return false;
+    output = benefit * (effect->selfTarget ? 1.0 : -1.0);
+    return true;
+}
+
 inline bool calculateCanonicalStatStageStatusAiScore(
     const PokemonBattleState& user, const PokemonBattleState& opponent,
     uint16_t moveId, double& output) {
