@@ -449,6 +449,20 @@ static int checkStatusActionAdmission() {
                     combinedAfter.enemyStatus.effect != repeatedCombinedAfter.enemyStatus.effect ||
                     combinedAfter.enemyStatus.present != repeatedCombinedAfter.enemyStatus.present) return 9532;
             }
+            auto psychicCheckpoint = checkpoint;
+            psychicCheckpoint.playerMoveIds[0] = psychicCheckpoint.playerParty[0].moveIds[0] = 94;
+            psychicCheckpoint.playerPp[0] = psychicCheckpoint.playerParty[0].pp[0] =
+                psychicCheckpoint.playerParty[0].maxPp[0] = 10;
+            FirstRunRuntime psychic(seed), repeatedPsychic(seed);
+            NativeRunSave psychicAfter{}, repeatedPsychicAfter{};
+            if (!psychic.restoreNativeRunSave(psychicCheckpoint) ||
+                !repeatedPsychic.restoreNativeRunSave(psychicCheckpoint) || !psychic.battleInputSupported() ||
+                !psychic.advanceBattleTurn() || !repeatedPsychic.advanceBattleTurn() ||
+                psychic.captureNativeRunSave(psychicAfter) != NativeSaveResult::Ok ||
+                repeatedPsychic.captureNativeRunSave(repeatedPsychicAfter) != NativeSaveResult::Ok ||
+                psychicAfter.playerPp[0] != 9 || psychicAfter.enemyHp != repeatedPsychicAfter.enemyHp ||
+                psychicAfter.playerHp != repeatedPsychicAfter.playerHp ||
+                psychicAfter.enemyStatStages[4] != repeatedPsychicAfter.enemyStatStages[4]) return 9563;
             auto growlCheckpoint = checkpoint;
             growlCheckpoint.playerMoveIds[0] = growlCheckpoint.playerParty[0].moveIds[0] = 45;
             growlCheckpoint.playerPp[0] = growlCheckpoint.playerParty[0].pp[0] =

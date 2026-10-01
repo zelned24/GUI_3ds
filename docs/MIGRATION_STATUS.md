@@ -1794,3 +1794,10 @@
 1. Growl tiene soundBased en raw pinned; el proveedor de estadísticas ahora consulta los resolvers compartidos de flags/tipos antes de accuracy. Conserva typeImmune separado del bloqueo por habilidad y lo propaga al evento de la fase.
 2. USER omite consulta de inmunidad del oponente. Prankster y habilidades cuya capacidad global sigue pendiente no se habilitan por este cambio; la consulta continúa rechazando políticas sin resolver. Reflection/protecciones/otros contextos pendientes no se declaran portados.
 3. Regresiones escritas para Soundproof/Growl y política de tipo: PP consumido, etapas intactas, ningún draw de accuracy y motivo distinguible. Tests y compilación siguen aplazados; Classic completo todavía pendiente.
+
+## StatStageChangeAttr después de ataques reales
+
+1. Pinned 8555c08c823b856cbec4eb99ca84ea52a955836d, src/data/moves/move.ts: StatStageChangeAttr.apply comprueba super.apply/condición antes de chance y encola StatStageChangePhase. La tabla existente conserva únicamente constructores constantes sin options/callbacks.
+2. FirstRunRuntime admite ataque individual con un efecto constante y modificador crítico opcional conocido. Proveedor común compone chance y reacciones para preflight/ejecución; después de daño efectivo invoca executePokemonDamageStatStagePhase. Psychic ya puede atravesar ese pipeline. Crunch/otros builders desconocidos permanecen pendientes; no se omite bitingMove.
+3. Dispatcher de reacciones se comparte con comandos de estado: copia, reacciones del destinatario, reflexión y reacciones del origen. La fase no repite precisión/PP/daño; destinatario faint no consume chance. RNG y actores se publican transaccionalmente.
+4. Generador incluye perfiles de flags/builders para ataques StatStageChangeAttr, manteniendo raw/provenance y hash canónico sin cambios. Regresiones escritas: fase Psychic, PP/HP intactos, faint sin draw, política pendiente y replay de comando con encuentro real. Tests y compilación aplazados; IA de efectos secundarios, dobles/modifiers y Classic completo siguen pendientes.

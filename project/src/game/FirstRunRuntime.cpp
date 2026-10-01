@@ -982,8 +982,22 @@ bool singleStatusConfusionEffect(uint16_t moveId) {
         if (profile.moveId == moveId) return profile.resolved && !profile.selfTarget;
     return false;
 }
+const PokerogueContent::MoveStatStageEffect* singleDamageStatStageEffect(uint16_t moveId) {
+    const auto* move = PokerogueContent::findMoveById(moveId);
+    if (!move || move->power <= 0 || move->upstreamFlags || !move->target ||
+        std::strcmp(move->target, "NEAR_OTHER") ||
+        !pokemonDamageSecondaryAttributesResolved(*move, "StatStageChangeAttr")) return nullptr;
+    bool buildersResolved = false;
+    for (const auto& flags : PokerogueContent::kStatusMoveFlagProfiles)
+        if (flags.moveId == moveId) buildersResolved = flags.resolved;
+    if (!buildersResolved) return nullptr;
+    const PokerogueContent::MoveStatStageEffect* effect = nullptr;
+    for (const auto& row : PokerogueContent::kMoveStatStageEffects)
+        if (row.moveId == moveId) { if (effect) return nullptr; effect = &row; }
+    return effect;
+}
 bool supportsBaselineBattleMove(uint16_t moveId) {
-    if (singleStatusConfusionEffect(moveId) || singleOpponentStatusEffect(moveId) || singleDamageStatusEffect(moveId) || singleDamageConfusionEffect(moveId) || pokemonWeatherChangeProfile(moveId) || supportsPokemonTrickRoomMove(moveId) || supportsPokemonStatStageMove(moveId) || selfHealingProfile(moveId) || damageDrainProfile(moveId) || damageRecoilProfile(moveId)) return true;
+    if (singleDamageStatStageEffect(moveId) || singleStatusConfusionEffect(moveId) || singleOpponentStatusEffect(moveId) || singleDamageStatusEffect(moveId) || singleDamageConfusionEffect(moveId) || pokemonWeatherChangeProfile(moveId) || supportsPokemonTrickRoomMove(moveId) || supportsPokemonStatStageMove(moveId) || selfHealingProfile(moveId) || damageDrainProfile(moveId) || damageRecoilProfile(moveId)) return true;
     const auto* move = PokerogueContent::findMoveById(moveId);
     // This first resolver only executes plain, single-target damaging moves.
     // Only plain damage or a single migrated weather/critical attribute is
@@ -1119,15 +1133,26 @@ bool FirstRunRuntime::resolveActiveStatStageCommandPolicy(const PokemonBattleSta
     const PokemonBattleState& opponent, uint16_t moveId, uint8_t ppCost,
     PokemonStatStageCommandPolicy& output) const {
     const auto* move = PokerogueContent::findMoveById(moveId);
-    if (!move || !supportsPokemonStatStageMove(moveId) || m_doubleBattle || m_heldModifierCount ||
+    if (!move || (!supportsPokemonStatStageMove(moveId) && !singleDamageStatStageEffect(moveId)) ||
+        m_doubleBattle || m_heldModifierCount ||
         !user.statsAreBaseFormulaOnly || !opponent.statsAreBaseFormulaOnly) return false;
-    const bool self = std::strcmp(move->target, "USER") == 0;
+    const bool damaging = move->category != PokerogueContent::MoveStatus;
+    const PokerogueContent::MoveStatStageEffect* effect = nullptr;
+    for (const auto& row : PokerogueContent::kMoveStatStageEffects)
+        if (row.moveId == moveId) { if (effect) return false; effect = &row; }
+    if (!effect) return false;
+    const bool self = effect->selfTarget;
     PokemonStatStageCommandPolicy policy{};
+    if (damaging) {
+        if (!statusActionAbilitySupported(user.abilityId) || !statusActionAbilitySupported(opponent.abilityId) ||
+            !resolvePokemonMoveEffectChance(moveId, user.abilityId, opponent.abilityId, self,
+                policy.move.stagePolicy.chance)) return false;
+    }
     policy.move.hitPolicyResolved = true;
     policy.move.ppCost = self ? 1 : ppCost;
     policy.move.stagePolicy.resolved = true;
     policy.postChangePoliciesResolved = true;
-    if (!self) {
+    if (!self && !damaging) {
         PokemonMoveWeatherContext weatherContext{};
         PokemonHitPolicy hit{};
         const PokemonWeatherAbilityComponent activeAbilities[2] = {
@@ -1186,12 +1211,6 @@ bool FirstRunRuntime::resolveActiveStatStageCommandPolicy(const PokemonBattleSta
     const ResolvedStatStageAbilityComponent sourceComp[] = {{userProfile, userProfile != nullptr}};
     const ResolvedStatStageAbilityComponent observerComp[] = {{observerProfile, observerProfile != nullptr}};
 
-    const PokerogueContent::MoveStatStageEffect* effect = nullptr;
-    for (const auto& row : PokerogueContent::kMoveStatStageEffects)
-        if (row.moveId == move->id && row.selfTarget == self) {
-            if (effect) return false;
-            effect = &row;
-        }
     if (!effect || !composePokemonStatStageAbilityPolicy(*effect, recipientComp, 1, false,
             policy.move.stagePolicy, true)) return false;
 
@@ -1225,7 +1244,7 @@ bool FirstRunRuntime::resolveActiveStatStageCommandPolicy(const PokemonBattleSta
 bool FirstRunRuntime::supportsActiveBattleMove(const PokemonBattleState& user,
     const PokemonBattleState& opponent, uint16_t moveId) const {
     if (!supportsBaselineBattleMove(moveId)) return false;
-    if (supportsPokemonStatStageMove(moveId)) {
+    if (supportsPokemonStatStageMove(moveId) || singleDamageStatStageEffect(moveId)) {
         const auto* move = PokerogueContent::findMoveById(moveId);
         uint8_t ppCost = 1;
         PokemonStatStageCommandPolicy policy{};
@@ -2776,6 +2795,15 @@ bool FirstRunRuntime::executeActiveBattleMove(uint8_t userIndex, uint8_t targetI
             if (!resolvePokemonMoveEffectChance(move->id, nextUser.abilityId, nextOpponent.abilityId, false, chance)) return false;
             if (!executePokemonMoveStatusPhase(nextUser, nextOpponent, move->id, chance,
                     recipient.status, reactions, nextRng, statusEvent)) return false;
+        }
+    }
+    if (const auto* effect = singleDamageStatStageEffect(move->id)) {
+        PokemonStatStageCommandPolicy policy{};
+        if (!resolveActiveStatStageCommandPolicy(nextUser, nextOpponent, move->id, pp.cost, policy)) return false;
+        if (!result.weatherCancelled && result.damageRoll.hit && result.damageApplied) {
+            PokemonStatStageCommandEvent event{};
+            if (executePokemonDamageStatStagePhase(nextUser, nextOpponent, *effect, policy, nextRng, event) !=
+                PokemonStatStageEffectResult::Ok) return false;
         }
     }
     if (singleDamageConfusionEffect(move->id) && !result.weatherCancelled &&

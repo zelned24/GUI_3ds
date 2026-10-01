@@ -316,23 +316,11 @@ struct PokemonStatStageCommandEvent {
     PokemonStatStageEffectEvent sourceReactions[2]{};
 };
 
-// Bounded one-target command transaction. Reaction phases queued by the
-// recipient precede a reflected phase (source unshift ordering). No state or
-// RNG commits if a later required phase policy is unresolved.
-inline PokemonStatStageEffectResult usePokemonStatStageStatusCommand(
-    PokemonBattleState& user, PokemonBattleState& target, uint8_t slot,
-    const PokemonStatStageCommandPolicy& policy, PokerogueRngAdapter& battleRng,
-    PokemonStatStageCommandEvent& output) {
-    if (!policy.postChangePoliciesResolved)
-        return PokemonStatStageEffectResult::UnresolvedPolicy;
-    PokemonBattleState nextUser = user, nextTarget = target;
-    PokerogueRngAdapter nextRng = battleRng;
-    PokemonStatStageCommandEvent event{};
-    auto result = usePokemonStatStageStatusMove(nextUser, nextTarget, slot,
-        policy.move, nextRng, event.move);
-    if (result != PokemonStatStageEffectResult::Ok) return result;
-    const auto* move = PokerogueContent::findMoveById(nextUser.moves[slot].moveId);
-    const bool self = std::strcmp(move->target, "USER") == 0;
+inline PokemonStatStageEffectResult applyPokemonStatStageCommandReactions(
+    PokemonBattleState& nextUser, PokemonBattleState& nextTarget, bool self,
+    const PokemonStatStageCommandPolicy& policy, PokemonStatStageCommandEvent& event) {
+    if (!policy.postChangePoliciesResolved) return PokemonStatStageEffectResult::UnresolvedPolicy;
+    auto result = PokemonStatStageEffectResult::Ok;
     auto& recipient = self ? nextUser : nextTarget;
     if (event.move.hit && event.move.stages.triggered) {
         if (policy.opponentCopyProfile && policy.opponentCopyProfile->copiesRaises) {
@@ -362,9 +350,62 @@ inline PokemonStatStageEffectResult usePokemonStatStageStatusCommand(
             }
         }
     }
+    return PokemonStatStageEffectResult::Ok;
+}
+
+// Bounded one-target command transaction. Reaction phases queued by the
+// recipient precede a reflected phase (source unshift ordering). No state or
+// RNG commits if a later required phase policy is unresolved.
+inline PokemonStatStageEffectResult usePokemonStatStageStatusCommand(
+    PokemonBattleState& user, PokemonBattleState& target, uint8_t slot,
+    const PokemonStatStageCommandPolicy& policy, PokerogueRngAdapter& battleRng,
+    PokemonStatStageCommandEvent& output) {
+    if (!policy.postChangePoliciesResolved)
+        return PokemonStatStageEffectResult::UnresolvedPolicy;
+    PokemonBattleState nextUser = user, nextTarget = target;
+    PokerogueRngAdapter nextRng = battleRng;
+    PokemonStatStageCommandEvent event{};
+    auto result = usePokemonStatStageStatusMove(nextUser, nextTarget, slot,
+        policy.move, nextRng, event.move);
+    if (result != PokemonStatStageEffectResult::Ok) return result;
+    const auto* move = PokerogueContent::findMoveById(nextUser.moves[slot].moveId);
+    const bool self = std::strcmp(move->target, "USER") == 0;
+    result = applyPokemonStatStageCommandReactions(nextUser, nextTarget, self, policy, event);
+    if (result != PokemonStatStageEffectResult::Ok) return result;
     user = nextUser;
     if (&user != &target) target = nextTarget;
     battleRng = nextRng;
+    output = event;
+    return PokemonStatStageEffectResult::Ok;
+}
+
+// POST_APPLY for an already resolved damage hit; no damage, PP or accuracy
+// is repeated. MoveEffectAttr.canApply skips a fainted recipient before chance.
+inline PokemonStatStageEffectResult executePokemonDamageStatStagePhase(
+    PokemonBattleState& user, PokemonBattleState& target,
+    const PokerogueContent::MoveStatStageEffect& effect,
+    const PokemonStatStageCommandPolicy& policy, PokerogueRngAdapter& rng,
+    PokemonStatStageCommandEvent& output) {
+    if (&user == &target || !user.hp || !policy.postChangePoliciesResolved)
+        return PokemonStatStageEffectResult::UnresolvedPolicy;
+    const auto* move = PokerogueContent::findMoveById(effect.moveId);
+    if (!move || !pokemonDamageSecondaryAttributesResolved(*move, "StatStageChangeAttr"))
+        return PokemonStatStageEffectResult::InvalidDefinition;
+    auto nextUser = user, nextTarget = target;
+    auto nextRng = rng;
+    PokemonStatStageCommandEvent event{};
+    event.move.hit = true;
+    auto& recipient = effect.selfTarget ? nextUser : nextTarget;
+    if (recipient.hp) {
+        auto result = applyPokemonStatStageEffect(recipient, effect, policy.move.stagePolicy,
+            nextRng, event.move.stages);
+        if (result != PokemonStatStageEffectResult::Ok) return result;
+        result = applyPokemonStatStageCommandReactions(nextUser, nextTarget, effect.selfTarget, policy, event);
+        if (result != PokemonStatStageEffectResult::Ok) return result;
+    }
+    user = nextUser;
+    target = nextTarget;
+    rng = nextRng;
     output = event;
     return PokemonStatStageEffectResult::Ok;
 }

@@ -752,6 +752,37 @@ extern "C" int runPokemonBattleStateChecks() {
             soundUser.moves[0].pp != 38 || soundTarget.statStages[0] != state.statStages[0] ||
             soundRng.randSeedUint32() != expectedSoundRng.randSeedUint32()) return 9552;
     }
+    {
+        PokemonBattleState stageUser = state, stageTarget = state;
+        stageUser.moves[0] = {94, 10, 10};
+        for (auto& value : stageTarget.statStages) value = 0;
+        const PokerogueContent::MoveStatStageEffect psychic{94, 16, -1, false};
+        Pokerogue3DS::PokemonStatStageCommandPolicy stagePolicy{};
+        stagePolicy.postChangePoliciesResolved = stagePolicy.move.stagePolicy.resolved = true;
+        stagePolicy.move.stagePolicy.chance = 100;
+        Pokerogue3DS::PokemonStatStageCommandEvent phaseEvent{};
+        auto stageRng = replacementRng, expectedStageRng = stageRng;
+        const auto userHp = stageUser.hp, targetHp = stageTarget.hp;
+        if (Pokerogue3DS::executePokemonDamageStatStagePhase(stageUser, stageTarget, psychic,
+                stagePolicy, stageRng, phaseEvent) != Pokerogue3DS::PokemonStatStageEffectResult::Ok ||
+            stageTarget.statStages[4] != -1 || phaseEvent.move.stages.changedStatMask != 16 ||
+            stageUser.moves[0].pp != 10 || stageUser.hp != userHp || stageTarget.hp != targetHp ||
+            stageRng.randSeedUint32() != expectedStageRng.randSeedUint32()) return 9560;
+        stageTarget.hp = 0;
+        stagePolicy.move.stagePolicy.chance = 10;
+        stageRng = expectedStageRng;
+        if (Pokerogue3DS::executePokemonDamageStatStagePhase(stageUser, stageTarget, psychic,
+                stagePolicy, stageRng, phaseEvent) != Pokerogue3DS::PokemonStatStageEffectResult::Ok ||
+            phaseEvent.move.stages.triggered || stageTarget.statStages[4] != -1 || stageUser.moves[0].pp != 10 ||
+            stageRng.randSeedUint32() != expectedStageRng.randSeedUint32()) return 9561;
+        stageTarget.hp = targetHp;
+        stagePolicy.postChangePoliciesResolved = false;
+        stageRng = expectedStageRng;
+        if (Pokerogue3DS::executePokemonDamageStatStagePhase(stageUser, stageTarget, psychic,
+                stagePolicy, stageRng, phaseEvent) != Pokerogue3DS::PokemonStatStageEffectResult::UnresolvedPolicy ||
+            stageTarget.statStages[4] != -1 || stageUser.moves[0].pp != 10 ||
+            stageRng.randSeedUint32() != expectedStageRng.randSeedUint32()) return 9562;
+    }
     const uint8_t mixedSlots[] = {0, 1};
     const uint32_t mixedDamage[] = {0, 10};
     uint8_t mixedFiltered[4]{}, mixedCount = 0;
