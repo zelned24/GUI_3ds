@@ -917,6 +917,11 @@ bool supportsPokemonStatStageMove(uint16_t moveId) {
         if (effect.moveId == moveId && effect.selfTarget == self) ++count;
     return count == 1;
 }
+bool statusActionAbilitySupported(uint16_t abilityId) {
+    for (const auto& profile : PokerogueContent::kStatusActionAbilityProfiles)
+        if (profile.abilityId == abilityId) return profile.resolved;
+    return false;
+}
 const PokerogueContent::MoveStatusEffect* singleOpponentStatusEffect(uint16_t moveId) {
     const auto* move = PokerogueContent::findMoveById(moveId);
     if (!move || move->category != PokerogueContent::MoveStatus || move->attributeCount != 1 ||
@@ -990,10 +995,8 @@ bool FirstRunRuntime::resolveActiveStatusRecipientPolicies(const PokemonBattleSt
     // this provider can admit actors carrying those capabilities.
     if (m_doubleBattle || m_heldModifierCount || !recipient.statsAreBaseFormulaOnly ||
         !source.statsAreBaseFormulaOnly) return false;
-    const auto* recipientCapability = PokerogueContent::findAbilityMovegenProfile(recipient.abilityId);
-    const auto* sourceCapability = PokerogueContent::findAbilityMovegenProfile(source.abilityId);
-    if (!recipientCapability || !sourceCapability || !recipientCapability->bossDamageCallbacksResolved ||
-        !sourceCapability->bossDamageCallbacksResolved) return false;
+    if (!statusActionAbilitySupported(recipient.abilityId) ||
+        !statusActionAbilitySupported(source.abilityId)) return false;
     const auto* form = recipient.formId ? PokerogueContent::findFormById(recipient.formId) : nullptr;
     const auto* species = PokerogueContent::findSpeciesByDex(recipient.speciesDex);
     if (!form || !species || std::strcmp(form->speciesId, species->id) != 0) return false;

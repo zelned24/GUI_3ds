@@ -1692,3 +1692,9 @@
 3. Regresión escrita con encuentro real y Hypnosis inyectado exclusivamente en test: habilidad con callbacks pendientes debe bloquear entrada y preservar PP/turno/estado. Tests y compilación pendientes.
 
 4. Proveedor de hit incorpora etapas de precisión/evasión del actor mediante el resolver existente; antes solo propagaba el multiplicador de habilidades/clima. Regresiones de clamp ±6 y fallo sin modificar output escritas sin ejecutar.
+
+## Capacidad específica de habilidades en acciones de estado
+
+1. StatusActionAbilityProfile sustituye la reutilización incorrecta de bossDamageCallbacksResolved en el proveedor de estados. Se deriva del raw pinned y rechaza atributos/builders desconocidos.
+2. ab-attrs.ts inspeccionado: LowHpMoveTypePowerBoostAbAttr afecta potencia; RunSuccessAbAttr solo escape; SyncEncounterNatureAbAttr encuentro. SynchronizeStatusAbAttr tiene dispatcher post-set existente. No habilita Keen Eye, grounding, suppressions ni condiciones globales pendientes.
+3. Regresiones escritas: Overgrow admite contexto de estado; Keen Eye sigue pendiente; encuentro real con snapshot de Hypnosis inyectado solo en test compara ejecución repetida y verifica rechazo de otras habilidades. Ninguna regresión ejecutada; programa no compilado.

@@ -3411,6 +3411,21 @@ extern "C" int runPokemonBattleStateChecks() {
     if (Pokerogue3DS::composePokemonStatusAccuracyStagePolicy(accuracyUser, accuracyTarget,
             statusAccuracyBase, statusAccuracyComposed) || statusAccuracyComposed.accuracyMultiplier != 42) return 9392;
 
+    bool foundStarterStatusCapability = false, foundPendingStatusCapability = false;
+    for (const auto& profile : PokerogueContent::kStatusActionAbilityProfiles) {
+        // Canonical IDs: Overgrow only changes move power; Keen Eye ignores
+        // evasion and still needs its accuracy callback in this provider.
+        if (profile.abilityId == 65) {
+            if (!profile.resolved) return 9400;
+            foundStarterStatusCapability = true;
+        }
+        if (profile.abilityId == 51) {
+            if (profile.resolved) return 9401;
+            foundPendingStatusCapability = true;
+        }
+    }
+    if (!foundStarterStatusCapability || !foundPendingStatusCapability) return 9402;
+
     PokemonBattleState scoredStatusActor{};
     scoredStatusActor.hp = scoredStatusActor.maxHp = 100;
     Pokerogue3DS::PokemonStatusApplicationPolicy scoredStatusPolicy{};

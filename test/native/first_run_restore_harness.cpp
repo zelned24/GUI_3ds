@@ -328,12 +328,14 @@ static void setSingleParticipantFixture(Pokerogue3DS::NativeRunSave& save,
 // the standard C++ library; it is not the freestanding WASM parity harness.
 static int checkStatusActionAdmission() {
     using namespace Pokerogue3DS;
+    bool checkedRejection = false, checkedExecution = false;
     for (uint32_t seed = 1; seed <= 256; ++seed) {
         FirstRunRuntime game(seed);
         const auto& context = game.presentation();
         if (!context.enemy.actorIdentityResolved || context.secondEnemy.dex || context.trainerPartyCount) continue;
-        const auto* capability = PokerogueContent::findAbilityMovegenProfile(context.player.battleState.abilityId);
-        if (!capability || capability->bossDamageCallbacksResolved) continue;
+        bool enemyStatusCapability = false;
+        for (const auto& profile : PokerogueContent::kStatusActionAbilityProfiles)
+            if (profile.abilityId == context.enemy.battleState.abilityId) enemyStatusCapability = profile.resolved;
         NativeRunSave checkpoint{};
         if (game.captureNativeRunSave(checkpoint) != NativeSaveResult::Ok) return 9380;
         checkpoint.stage = NativeSaveStage::BattleActive;
@@ -364,12 +366,30 @@ static int checkStatusActionAdmission() {
         if (!game.restoreNativeRunSave(checkpoint)) return 9381;
         NativeRunSave beforeAction{}, afterAction{};
         if (game.captureNativeRunSave(beforeAction) != NativeSaveResult::Ok) return 9384;
-        if (game.battleInputSupported() || game.advanceBattleTurn() ||
-            game.presentation().player.battleState.moves[0].pp != 20 ||
-            game.presentation().enemy.battleState.status.present ||
-            game.captureNativeRunSave(afterAction) != NativeSaveResult::Ok ||
-            afterAction.battleTurn != beforeAction.battleTurn) return 9382;
-        return 0;
+        if (!enemyStatusCapability) {
+            if (game.battleInputSupported() || game.advanceBattleTurn() ||
+                game.presentation().player.battleState.moves[0].pp != 20 ||
+                game.presentation().enemy.battleState.status.present ||
+                game.captureNativeRunSave(afterAction) != NativeSaveResult::Ok ||
+                afterAction.battleTurn != beforeAction.battleTurn) return 9382;
+            checkedRejection = true;
+        } else {
+            if (!game.battleInputSupported()) continue;
+            FirstRunRuntime repeated(seed);
+            if (!repeated.restoreNativeRunSave(checkpoint) || !game.advanceBattleTurn() ||
+                !repeated.advanceBattleTurn()) return 9386;
+            NativeRunSave repeatedAction{};
+            if (game.captureNativeRunSave(afterAction) != NativeSaveResult::Ok ||
+                repeated.captureNativeRunSave(repeatedAction) != NativeSaveResult::Ok ||
+                afterAction.playerPp[0] != 19 || afterAction.battleTurn != beforeAction.battleTurn + 1 ||
+                afterAction.playerHp != repeatedAction.playerHp || afterAction.enemyHp != repeatedAction.enemyHp ||
+                afterAction.enemyStatus.present != repeatedAction.enemyStatus.present ||
+                afterAction.enemyStatus.effect != repeatedAction.enemyStatus.effect ||
+                afterAction.enemyStatus.sleepTurnsRemaining != repeatedAction.enemyStatus.sleepTurnsRemaining)
+                return 9387;
+            checkedExecution = true;
+        }
+        if (checkedRejection && checkedExecution) return 0;
     }
     return 9383; // Missing real encounter is a failure, not skipped coverage.
 }
