@@ -1,12 +1,21 @@
 import assert from 'assert';
 import { readFile } from 'node:fs/promises';
-import { PokerogueImporter } from '../tools/js/data/PokerogueImporter.js';
+import { PokerogueImporter, parseStarterCandyPriceTable } from '../tools/js/data/PokerogueImporter.js';
 import { PokerogueRepository } from '../tools/js/data/PokerogueRepository.js';
 import { EncounterResolver, FirstRunFlow } from '../tools/js/game/FirstRunFlow.js';
 import { CanonicalContent, RuntimeContent } from '../tools/js/data/CanonicalDataContract.js';
 import { DataManager } from '../tools/js/data/DataManager.js';
 
 export function registerMigrationContentTests(test) {
+  test('Starter candy prices: normalize literals and preserve unknown fields', () => {
+    const source = 'const allStarterCandyCosts: readonly StarterCandyCosts[] = [{passive: 40, costReduction: [25,60], eggCosts: [30,15], eggCostReductionThresholds: [20], futureField: 7},];';
+    const parsed = parseStarterCandyPriceTable(source);
+    assert.deepEqual(parsed.entries[0].costReduction, [25, 60]);
+    assert.equal(parsed.entries[0].raw.futureField, 7);
+    assert.throws(() => parseStarterCandyPriceTable(source.replace('[25,60]', '[25]')));
+    assert.throws(() => parseStarterCandyPriceTable(source.replace('40', 'getPrice()')));
+  });
+
   test('Content migration: pinned upstream content completes a deterministic first-run presentation flow', async () => {
     const importer = new PokerogueImporter(new PokerogueRepository());
     const imported = await importer.importPlayableCanonicalContent(undefined, { generations: [1] });
@@ -20,6 +29,16 @@ export function registerMigrationContentTests(test) {
     assert.strictEqual(friendship.faintLoss.provenance.revision, imported.canonicalContent.sourceSnapshot.revision);
     assert.match(friendship.faintLoss.provenance.sourceHash, /^[a-f0-9]{64}$/);
     const candyRules = imported.canonicalContent.extensions.starterCandyRules;
+    assert.deepStrictEqual(candyRules.prices.entries.map(row => [row.cost, row.passive, ...row.costReduction]),
+      [[1,40,25,60],[2,40,25,60],[3,35,20,50],[4,30,15,40],[5,25,12,35],
+       [6,20,10,30],[7,15,8,20],[8,10,5,15],[9,10,5,15],[10,10,5,15]]);
+    assert.deepStrictEqual(candyRules.prices.entries[0].eggCosts, [30,27,22,15]);
+    assert.deepStrictEqual(candyRules.prices.entries[9].eggCostReductionThresholds, [8,16,32]);
+    assert.strictEqual(candyRules.prices.provenance.sourceSymbol, 'allStarterCandyCosts');
+    assert.strictEqual(candyRules.prices.provenance.sourcePath, 'src/data/balance/starters.ts');
+    assert.strictEqual(candyRules.prices.provenance.revision, imported.canonicalContent.sourceSnapshot.revision);
+    assert.match(candyRules.prices.provenance.sourceHash, /^[a-f0-9]{64}$/);
+    assert.ok(candyRules.prices.raw.includes('eggCostReductionThresholds'));
     assert.strictEqual(candyRules.maxCandyCount.value, 9999);
     assert.strictEqual(candyRules.maxCandyCount.provenance.sourcePath, 'src/constants/game-constants.ts');
     assert.strictEqual(candyRules.classicMultiplier.value, 3);

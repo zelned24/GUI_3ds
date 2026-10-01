@@ -1125,5 +1125,24 @@ const candyCapRows = candyRules.friendshipCaps.entries.map(entry => {
 });
 const candyHeader = friendshipRulesHeader.replace('struct MoveAttribute {',
   `struct StarterCandyRule { const char* id; uint32_t value; const char* sourcePath; const char* sourceSymbol; const char* sourceHash; };\ninline constexpr StarterCandyRule kStarterCandyRules[] = {\n${candyRuleRows.join(',\n')}\n};\nstruct StarterCandyFriendshipCap { uint8_t cost; uint32_t value; const char* sourcePath; const char* sourceSymbol; const char* sourceHash; };\ninline constexpr StarterCandyFriendshipCap kStarterCandyFriendshipCaps[] = {\n${candyCapRows.join(',\n')}\n};\ninline constexpr uint16_t kMaxStarterCandyCount = ${candyRules.maxCandyCount.value};\ninline constexpr uint32_t kClassicCandyFriendshipMultiplier = ${candyRules.classicMultiplier.value};\ninline constexpr uint32_t kStarterCandyFriendshipFallback = ${candyRules.friendshipCaps.fallback};\nstruct MoveAttribute {`);
-await fs.writeFile(outputPath, candyHeader, 'utf8');
-console.log(JSON.stringify({ output: path.relative(root, outputPath), bytes: Buffer.byteLength(candyHeader), hash: report.contentHash }));
+const priceTable = candyRules.prices;
+if (!Array.isArray(priceTable?.entries) || !priceTable.entries.length || !priceTable.provenance?.sourceHash)
+  throw new Error('Missing canonical starter candy prices');
+const priceCosts = new Set();
+const priceRows = priceTable.entries.map(entry => {
+  if (!Number.isInteger(entry.cost) || entry.cost < 1 || entry.cost > 255 ||
+      priceCosts.has(entry.cost) || !Array.isArray(entry.costReduction) ||
+      ![entry.passive, ...entry.costReduction].every(value => Number.isInteger(value) && value > 0 && value <= 65535) ||
+      entry.costReduction.length !== 2) throw new Error('Invalid canonical starter candy prices');
+  priceCosts.add(entry.cost);
+  const source = priceTable.provenance;
+  return `    {${entry.cost}, ${entry.passive}, {${entry.costReduction.join(', ')}}, "${field(source.sourcePath)}", "${field(source.sourceSymbol)}[${entry.cost - 1}]", "${field(source.sourceHash)}"}`;
+});
+const pricedCandyHeader = candyHeader.replace('struct MoveAttribute {',
+  `struct StarterCandyPrice { uint8_t cost; uint16_t passive; uint16_t costReduction[2]; const char* sourcePath; const char* sourceSymbol; const char* sourceHash; };
+inline constexpr StarterCandyPrice kStarterCandyPrices[] = {
+${priceRows.join(',\n')}
+};
+struct MoveAttribute {`);
+await fs.writeFile(outputPath, pricedCandyHeader, 'utf8');
+console.log(JSON.stringify({ output: path.relative(root, outputPath), bytes: Buffer.byteLength(pricedCandyHeader), hash: report.contentHash }));

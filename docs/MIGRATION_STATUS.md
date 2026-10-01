@@ -1114,3 +1114,11 @@
 1. PokemonStarterMoveset porta GameData.getSpeciesStarterValue: resta un punto por reducción mientras coste>1, después divide por dos. VALUE_REDUCTION_MAX pinned es 2; representación exacta en cuartos evita truncar 0.5/0.25.
 2. Validador actual de selección reutiliza el cálculo con reducción cero. Regresiones 628–631 escritas para costes canónicos 1–3 y rechazo de reducción inválida, sin ejecutar.
 3. Compra mediante candy prices importados, valueReduction persistente, presupuesto fraccionario de equipo y comandos de selección siguen pendientes. No se declara reducción comprable en partidas.
+
+## Precios canónicos de caramelos de iniciales
+
+1. Importado `allStarterCandyCosts` desde `src/data/balance/starters.ts` en la revisión pinned. Conserva precios de pasiva, dos reducciones de coste, precios de huevos, umbrales, raw y provenance. No ejecuta expresiones TypeScript ni usa precios de fixtures en producción.
+2. Generador emite `StarterCandyPrice`/`kStarterCandyPrices` para pasiva y reducción; huevos y umbrales se conservan en el catálogo canónico hasta conectar su sistema. Rechaza tablas ausentes, filas inválidas y costes duplicados.
+3. Dos importaciones completas dieron el mismo hash `d2e27cf94a29826157bed69b788e807a9bb30ee05a44de3f4369a51146a9b4ff`. Los pins y conteos de entidades permanecen iguales. Esto es evidencia del pipeline de datos, no de ejecución del juego.
+4. El hash anterior `90f3866eb2663f7c79773f01288b2aa9cf56d4fa14bbf611c881464ed4ac2863` ya no coincide: los guardados/perfiles vinculados a él seguirán rechazados hasta implementar una migración explícita. No se reinterpretan silenciosamente.
+5. Añadidas regresiones del parser, metadata desconocida, expresiones no soportadas y precios reales/provenance; sin ejecutar por instrucción del usuario. Pendiente conectar compras, reducción persistente y presupuesto con esas reducciones, pasivas y huevos. Tests, compilación, Azahar y consola aplazados.

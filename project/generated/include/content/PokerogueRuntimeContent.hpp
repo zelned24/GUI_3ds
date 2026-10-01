@@ -3,7 +3,7 @@
 #include <cstddef>
 #include <cstdint>
 namespace PokerogueContent {
-inline constexpr char kContentHash[] = "90f3866eb2663f7c79773f01288b2aa9cf56d4fa14bbf611c881464ed4ac2863";
+inline constexpr char kContentHash[] = "d2e27cf94a29826157bed69b788e807a9bb30ee05a44de3f4369a51146a9b4ff";
 inline constexpr char kPokerogueRevision[] = "8555c08c823b856cbec4eb99ca84ea52a955836d";
 inline constexpr char kAssetsRevision[] = "056a1f408f26a3be4fef243f7462cb43608c7928";
 inline constexpr char kLocalesRevision[] = "23aea1cb0da5a0b15b836f3c243791591cc42303";
@@ -3810,6 +3810,19 @@ inline constexpr StarterCandyFriendshipCap kStarterCandyFriendshipCaps[] = {
 inline constexpr uint16_t kMaxStarterCandyCount = 9999;
 inline constexpr uint32_t kClassicCandyFriendshipMultiplier = 3;
 inline constexpr uint32_t kStarterCandyFriendshipFallback = 600;
+struct StarterCandyPrice { uint8_t cost; uint16_t passive; uint16_t costReduction[2]; const char* sourcePath; const char* sourceSymbol; const char* sourceHash; };
+inline constexpr StarterCandyPrice kStarterCandyPrices[] = {
+    {1, 40, {25, 60}, "src/data/balance/starters.ts", "allStarterCandyCosts[0]", "6f9c59ba6371d08e803f8bb45bb5552fb4947371d91106d0aa6047d6a31592ca"},
+    {2, 40, {25, 60}, "src/data/balance/starters.ts", "allStarterCandyCosts[1]", "6f9c59ba6371d08e803f8bb45bb5552fb4947371d91106d0aa6047d6a31592ca"},
+    {3, 35, {20, 50}, "src/data/balance/starters.ts", "allStarterCandyCosts[2]", "6f9c59ba6371d08e803f8bb45bb5552fb4947371d91106d0aa6047d6a31592ca"},
+    {4, 30, {15, 40}, "src/data/balance/starters.ts", "allStarterCandyCosts[3]", "6f9c59ba6371d08e803f8bb45bb5552fb4947371d91106d0aa6047d6a31592ca"},
+    {5, 25, {12, 35}, "src/data/balance/starters.ts", "allStarterCandyCosts[4]", "6f9c59ba6371d08e803f8bb45bb5552fb4947371d91106d0aa6047d6a31592ca"},
+    {6, 20, {10, 30}, "src/data/balance/starters.ts", "allStarterCandyCosts[5]", "6f9c59ba6371d08e803f8bb45bb5552fb4947371d91106d0aa6047d6a31592ca"},
+    {7, 15, {8, 20}, "src/data/balance/starters.ts", "allStarterCandyCosts[6]", "6f9c59ba6371d08e803f8bb45bb5552fb4947371d91106d0aa6047d6a31592ca"},
+    {8, 10, {5, 15}, "src/data/balance/starters.ts", "allStarterCandyCosts[7]", "6f9c59ba6371d08e803f8bb45bb5552fb4947371d91106d0aa6047d6a31592ca"},
+    {9, 10, {5, 15}, "src/data/balance/starters.ts", "allStarterCandyCosts[8]", "6f9c59ba6371d08e803f8bb45bb5552fb4947371d91106d0aa6047d6a31592ca"},
+    {10, 10, {5, 15}, "src/data/balance/starters.ts", "allStarterCandyCosts[9]", "6f9c59ba6371d08e803f8bb45bb5552fb4947371d91106d0aa6047d6a31592ca"}
+};
 struct MoveAttribute { const char* id; };
 struct Move { uint16_t id; uint8_t category; int16_t power; int16_t accuracy; int16_t pp; int8_t priority; int16_t upstreamChance; uint8_t generation; uint16_t upstreamFlags; uint8_t multiHitType; uint32_t attributeOffset; uint16_t attributeCount; const char* key; const char* name; const char* type; const char* target; const char* sourcePath; const char* sourceSymbol; const char* sourceHash; };
 struct PokemonSpriteAtlas { uint16_t speciesDex; uint16_t width; uint16_t height; uint32_t frameOffset; uint16_t frameCount; const char* manifestPath; const char* imagePath; const char* manifestHash; }; struct PokemonSpriteFrame { const char* filename; uint16_t x; uint16_t y; uint16_t width; uint16_t height; uint16_t sourceWidth; uint16_t sourceHeight; uint16_t trimX; uint16_t trimY; }; struct SpeciesLevelMove { uint16_t speciesDex; int8_t level; uint16_t moveId; }; struct SpeciesEggMove { uint16_t speciesDex; uint16_t moveId; };

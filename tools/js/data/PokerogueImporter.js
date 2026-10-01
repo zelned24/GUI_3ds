@@ -67,6 +67,31 @@ function splitTopLevelArguments(source) {
   return parts;
 }
 
+export function parseStarterCandyPriceTable(source) {
+  const declaration = /\bconst\s+allStarterCandyCosts\b[^=]*=\s*(\[)/.exec(source);
+  if (!declaration) throw new Error('Missing pinned allStarterCandyCosts');
+  const opening = declaration.index + declaration[0].lastIndexOf('[');
+  const raw = extractBalancedLiteral(source, opening);
+  if (!raw) throw new Error('Unclosed starter candy price table');
+  const json = raw.replace(/\/\/[^\n]*|\/\*[\s\S]*?\*\//g, '')
+    .replace(/([{,]\s*)([A-Za-z_$][\w$]*)\s*:/g, '$1"$2":')
+    .replace(/,\s*([}\]])/g, '$1');
+  let rows;
+  try { rows = JSON.parse(json); } catch { throw new Error('Unsupported starter candy table expression'); }
+  const positive = value => Number.isInteger(value) && value > 0 && value <= 65535;
+  if (!Array.isArray(rows) || !rows.length) throw new Error('Empty starter candy price table');
+  const entries = rows.map((row, index) => {
+    if (!row || !positive(row.passive) || !Array.isArray(row.costReduction) || row.costReduction.length !== 2 ||
+        !row.costReduction.every(positive) || !Array.isArray(row.eggCosts) || !row.eggCosts.length ||
+        !row.eggCosts.every(positive) || !Array.isArray(row.eggCostReductionThresholds) ||
+        row.eggCostReductionThresholds.length !== row.eggCosts.length - 1 ||
+        !row.eggCostReductionThresholds.every(positive)) throw new Error('Invalid starter candy price row');
+    return { cost: index + 1, passive: row.passive, costReduction: row.costReduction,
+      eggCosts: row.eggCosts, eggCostReductionThresholds: row.eggCostReductionThresholds, raw: row };
+  });
+  return { entries, raw };
+}
+
 function parseLevelMoveArray(arrayLiteral, context) {
   if (!arrayLiteral?.startsWith('[') || !arrayLiteral.endsWith(']')) throw new Error(`Invalid import: ${context} must be an array`);
   const moves = [];
@@ -1490,7 +1515,11 @@ export class PokerogueImporter {
     }
     if (pendingCosts.length || pendingDefault || capFallback === null || !capEntries.length ||
         capSwitch[1].slice(capCursor).trim()) throw new Error('Incomplete starter friendship cap normalization');
+    const starterCandyPrices = parseStarterCandyPriceTable(friendshipSource.content);
+    starterCandyPrices.provenance = { repository: game.url, revision: game.revision,
+      sourcePath: friendshipSource.path, sourceSymbol: 'allStarterCandyCosts', sourceHash: sourceHash(friendshipSource) };
     const starterCandyRules = {
+      prices: starterCandyPrices,
       maxCandyCount: friendshipValue(byPath.get('pokerogue:src/constants/game-constants.ts'), 'MAX_STARTER_CANDY_COUNT', 65535),
       classicMultiplier: friendshipValue(friendshipSource, 'CLASSIC_CANDY_FRIENDSHIP_MULTIPLIER'),
       friendshipCaps: { entries: capEntries.sort((a, b) => a.cost - b.cost), fallback: capFallback,
