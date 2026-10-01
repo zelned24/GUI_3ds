@@ -1311,10 +1311,26 @@ static int checkPlayerPartyManagementAndSwitching() {
     if (!game.restoreStarterCandyProfile(nullptr, 0, 0, captureFriendshipPolicy)) return 589;
     const auto friendshipBeforeCapture = game.presentation().player.battleState.friendship;
     if (!game.throwPokeball(PokeballType::Pokeball)) return 168;
+    const auto* captureParticipantRoot = pokemonRootSpecies(game.presentation().player.dex);
+    const NativeStarterCandyRecord* captureParticipantRecord = nullptr;
+    for (size_t i = 0; i < game.starterProfileCount(); ++i)
+        if (captureParticipantRoot && game.starterProfileRecords()[i].speciesDex == captureParticipantRoot->dex)
+            captureParticipantRecord = &game.starterProfileRecords()[i];
     if (game.presentation().player.battleState.friendship != friendshipBeforeCapture +
-            PokerogueContent::kFriendshipGainFromBattle || game.starterProfileCount() != 1 ||
-        game.starterProfileRecords()[0].friendship != PokerogueContent::kFriendshipGainFromBattle *
-            PokerogueContent::kClassicCandyFriendshipMultiplier) return 590;
+            PokerogueContent::kFriendshipGainFromBattle || !captureParticipantRecord ||
+        captureParticipantRecord->friendship != PokerogueContent::kFriendshipGainFromBattle *
+            PokerogueContent::kClassicCandyFriendshipMultiplier || !game.hasCaughtSpecies(wildSave.encounterDex)) return 590;
+    uint16_t caughtChainDex = wildSave.encounterDex;
+    while (caughtChainDex) {
+        const auto* caughtChainSpecies = PokerogueContent::findSpeciesByDex(caughtChainDex);
+        if (!caughtChainSpecies || !game.hasCaughtSpecies(caughtChainDex)) return 611;
+        caughtChainDex = caughtChainSpecies->prevolutionDex;
+    }
+    char caughtRuntimeProfile[Pokerogue3DS::kStarterCandyProfileMaxBytes]{};
+    size_t caughtRuntimeBytes = 0;
+    if (encodeNativeStarterCandyProfile(game.starterProfileRecords(), game.starterProfileCount(), 1,
+            PokerogueContent::kContentHash, PokerogueContent::kMaxStarterCandyCount,
+            caughtRuntimeProfile, sizeof(caughtRuntimeProfile), caughtRuntimeBytes) != NativeSaveResult::Ok) return 612;
     if (game.playerPartyCount() != 2) return 169;
     const uint16_t caughtDex = game.playerPartyMember(1)->dex;
     if (caughtDex != wildSave.encounterDex) return 170;

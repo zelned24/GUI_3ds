@@ -261,6 +261,41 @@ bool FirstRunRuntime::restoreStarterCandyProfile(const NativeStarterCandyRecord*
     return true;
 }
 
+uint32_t FirstRunRuntime::caughtSpeciesCount() const {
+    uint32_t count = 0;
+    for (size_t i = 0; i < m_starterProfileCount; ++i) count += m_starterProfileRecords[i].caught ? 1 : 0;
+    return count;
+}
+
+bool FirstRunRuntime::hasCaughtSpecies(uint16_t dex) const {
+    for (size_t i = 0; i < m_starterProfileCount; ++i)
+        if (m_starterProfileRecords[i].speciesDex == dex) return m_starterProfileRecords[i].caught;
+    return false;
+}
+
+bool FirstRunRuntime::recordCaughtSpecies(uint16_t dex) {
+    // Legacy diagnostics without an attached profile do not fabricate durable data.
+    if (!m_starterProfileReady) return true;
+    size_t depth = 0;
+    while (dex) {
+        if (++depth > PokerogueContent::kSpeciesCount) return false;
+        const auto* species = PokerogueContent::findSpeciesByDex(dex);
+        if (!species) return false;
+        size_t index = 0;
+        while (index < m_starterProfileCount && m_starterProfileRecords[index].speciesDex < dex) ++index;
+        if (index == m_starterProfileCount || m_starterProfileRecords[index].speciesDex != dex) {
+            if (m_starterProfileCount == m_starterProfileRecords.size()) return false;
+            for (size_t i = m_starterProfileCount; i > index; --i)
+                m_starterProfileRecords[i] = m_starterProfileRecords[i - 1];
+            m_starterProfileRecords[index] = {dex, 0, 0, false};
+            ++m_starterProfileCount;
+        }
+        m_starterProfileRecords[index].caught = true;
+        dex = species->prevolutionDex;
+    }
+    return true;
+}
+
 NativeSaveResult FirstRunRuntime::saveNativeProgress(NativeProgressStore& store) {
     if (!m_starterProfileReady) return NativeSaveResult::InvalidRecord;
     NativeRunSave snapshot{};
@@ -2367,13 +2402,23 @@ bool FirstRunRuntime::throwPokeballInPlace(PokeballType ball) {
 
     PokemonCaptureEvent captureEvent{};
     const bool isFinalBoss = (m_run.wave == PokerogueContent::kClassicFinalWave);
-    if (!executeCaptureAttempt(target->battleState, ball, false, false, bossShieldBlocked, isFinalBoss, *rng, captureEvent)) {
+    PokemonCaptureCriticalPolicy criticalPolicy{};
+    criticalPolicy.resolved = m_starterProfileReady;
+    criticalPolicy.caughtSpeciesCount = caughtSpeciesCount();
+    // Current playable mode is Classic and no Catching Charm dispatcher is active.
+    if (!executeCaptureAttempt(target->battleState, ball, false, false, bossShieldBlocked, isFinalBoss,
+            *rng, captureEvent, m_starterProfileReady ? &criticalPolicy : nullptr)) {
         m_battleFeedback = "Capture inputs could not resolve";
         buildScene();
         return false;
     }
 
     if (captureEvent.caught) {
+        // GameData.setPokemonCaught precedes the full-party incorporation choice.
+        if (!recordCaughtSpecies(target->dex)) {
+            m_battleFeedback = "Caught species profile could not resolve";
+            return false;
+        }
         if (m_context.playerPartyCount > 6) return false;
         {
             ResolvedPokemon caughtMon = *target;

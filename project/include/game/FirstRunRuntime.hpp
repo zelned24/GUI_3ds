@@ -99,6 +99,8 @@ public:
     NativeSaveResult saveNativeProgress(NativeProgressStore& store);
     bool starterProfileReady() const { return m_starterProfileReady; }
     size_t starterProfileCount() const { return m_starterProfileCount; }
+    uint32_t caughtSpeciesCount() const;
+    bool hasCaughtSpecies(uint16_t dex) const;
     const NativeStarterCandyRecord* starterProfileRecords() const { return m_starterProfileRecords.data(); }
     bool capturePartyChoicePending() const { return m_capturePartyChoicePending; }
     uint8_t selectedCapturePartyChoice() const { return m_selectedCapturePartyChoice; }
@@ -172,6 +174,7 @@ public:
     bool throwPokeball(PokeballType type = PokeballType::Pokeball);
 
 private:
+    bool recordCaughtSpecies(uint16_t dex);
     bool resolveCapturePartyChoiceInPlace(int partyMember);
     bool finishSuccessfulCapture(ResolvedPokemon& target, const uint32_t* releasedParticipant = nullptr);
     bool advanceBattleTurnInPlace();

@@ -1031,3 +1031,9 @@
 1. Extiende el perfil existente con caught por SpeciesId exacto, separado del progreso de starter/root. P3CANDY2 añade un byte validado por registro y permite especies evolucionadas sin progreso de caramelos inventado.
 2. Lee P3CANDY1 conservando candy/friendship y caught=false: no reconstruye capturas desconocidas. Journal acepta ambas versiones; tamaños máximos siguen derivados del catálogo.
 3. Regresiones codec 112–114 escritas para caught persistente y lectura legacy, sin ejecutar. Conectar successful capture y policy crítica al perfil sigue pendiente; todavía no se declara Pokédex completo.
+
+## Capturas conectadas al perfil y al resolvedor crítico — pendiente de ejecución
+
+1. Captura exitosa con perfil adjunto marca caught por especie y cadena prevolutionDex, antes de elegir incorporación, como setPokemonCaught/setPokemonSpeciesCaught pinned. La transacción candidata revierte el ledger si falla el comando.
+2. executeCaptureAttempt recibe el número de especies caught del perfil real en Classic. Export/journal utilizan P3CANDY2 existente; no cuentan filas de amistad como capturas. Sin perfil adjunto permanece el diagnóstico previo, sin fingir persistencia.
+3. Regresiones 590/611–612 cubren captura real, preevoluciones y codificación del perfil actualizado; sin ejecutar. Catching Charm, atributos form/nature/ability/shiny, starters iniciales y callbacks completos siguen pendientes.
