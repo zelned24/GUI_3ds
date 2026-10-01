@@ -361,6 +361,22 @@ struct PokemonBurnDamagePolicy {
     bool ignoreSourceAbility = false;
     bool abilityBypassesReduction = false;
 };
+// Caller resolves suppression, passive/conditional callbacks and ignore flags.
+inline bool resolvePokemonBurnDamagePolicy(uint16_t abilityId, bool callbacksResolved,
+    bool abilityActive, bool ignoreSourceAbility, PokemonBurnDamagePolicy& output) {
+    bool found = false;
+    for (const auto& profile : PokerogueContent::kAbilityMovegenProfiles)
+        if (profile.abilityId == abilityId) { found = true; break; }
+    if (!found || !callbacksResolved) return false;
+    PokemonBurnDamagePolicy next{};
+    next.resolved = true;
+    next.ignoreSourceAbility = ignoreSourceAbility;
+    if (abilityActive && !ignoreSourceAbility)
+        for (uint16_t id : PokerogueContent::kBurnReductionBypassAbilities)
+            if (id == abilityId) { next.abilityBypassesReduction = true; break; }
+    output = next;
+    return true;
+}
 // Pokemon.getAttackDamage applies burn after STAB/type and before screens.
 // This returns a multiplier, never modifies permanent attack stats.
 inline bool pokemonBurnDamageMultiplier(const PokemonBattleState& source, uint16_t moveId,

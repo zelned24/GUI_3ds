@@ -7,6 +7,9 @@ inline constexpr char kContentHash[] = "400fb84aa16a460c6d3eb6260240e8eae948acb9
 inline constexpr char kPokerogueRevision[] = "8555c08c823b856cbec4eb99ca84ea52a955836d";
 inline constexpr char kAssetsRevision[] = "056a1f408f26a3be4fef243f7462cb43608c7928";
 inline constexpr char kLocalesRevision[] = "23aea1cb0da5a0b15b836f3c243791591cc42303";
+inline constexpr uint16_t kBurnReductionBypassAbilities[] = {
+    62
+};
 struct MoveStatusEffect { uint16_t moveId; const char* effect; bool selfTarget; bool parametersResolved; const char* sourcePath; const char* sourceSymbol; const char* sourceHash; };
 inline constexpr MoveStatusEffect kMoveStatusEffects[] = {
     {7, "BURN", false, true, "src/data/moves/move.ts", "MoveId.FIRE_PUNCH", "012df47701de494d4140e97cd4804b25cc7472fcf61805aa71aaa21fe7b59475"},

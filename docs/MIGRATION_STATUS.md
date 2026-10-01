@@ -1392,3 +1392,9 @@
 1. resolveStandardPokemonMoveDamage consume PokemonBurnDamagePolicy opcional y aplica factor después de STAB/types antes de redondear. useStandardPokemonMove transmite policy al resolver conservando API existente por default. No añade draws RNG.
 2. Actor quemado físico sin policy resuelta falla antes de precisión/crítico/RNG, en lugar de omitir la habilidad. Actors no quemados y moves bypass no requieren policy adicional. FirstRunRuntime todavía debe resolver callbacks de habilidad antes de habilitar status en combate.
 3. Revisión estática/diff; tests/compilación aplazados. Dispatcher de estados y save permanecen pendientes.
+
+## Datos de bypass de quemadura por habilidad
+
+1. Generador extrae atributos constantes BypassBurnDamageReductionAbAttr desde raw real de abilities; catálogo actual declara GUTS. La clase upstream hereda CancelInteractionAbAttr sin condición propia. Otras condiciones de Guts siguen separadas.
+2. resolvePokemonBurnDamagePolicy consulta IDs canónicos y tabla generada, exige callbacks/suppression resueltos y distingue habilidad activa de ignoreSourceAbility. No declara resueltas pasivas ni dispatchers desconocidos. Conexión desde FirstRunRuntime pendiente.
+3. Datos regenerados sin cambiar snapshot/hash; tests/compilación aplazados.

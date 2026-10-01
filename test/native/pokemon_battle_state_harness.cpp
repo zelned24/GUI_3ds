@@ -2611,5 +2611,13 @@ extern "C" int runPokemonBattleStateChecks() {
     burnPolicy.ignoreSourceAbility = true;
     if (!Pokerogue3DS::pokemonBurnDamageMultiplier(burnedActor, 33, burnPolicy, burnMultiplier) ||
         burnMultiplier != 0.5) return 608;
+    for (uint16_t ability : PokerogueContent::kBurnReductionBypassAbilities) {
+        Pokerogue3DS::PokemonBurnDamagePolicy resolvedBurn{};
+        if (!Pokerogue3DS::resolvePokemonBurnDamagePolicy(ability, true, true, false, resolvedBurn) ||
+            !resolvedBurn.abilityBypassesReduction) return 609;
+        if (!Pokerogue3DS::resolvePokemonBurnDamagePolicy(ability, true, false, false, resolvedBurn) ||
+            resolvedBurn.abilityBypassesReduction) return 610;
+        if (Pokerogue3DS::resolvePokemonBurnDamagePolicy(ability, false, true, false, resolvedBurn)) return 611;
+    }
     return 0;
 }
