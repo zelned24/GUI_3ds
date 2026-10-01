@@ -120,11 +120,48 @@ bool FirstRunRuntime::starterUnlocked(uint16_t dex) const {
         (species->freshProfileStarter || (m_starterProfileReady && hasCaughtSpecies(dex)));
 }
 
+uint8_t FirstRunRuntime::starterCostReduction(uint16_t dex) const {
+    if (!m_starterProfileReady) return 0;
+    for (size_t i = 0; i < m_starterProfileCount; ++i)
+        if (m_starterProfileRecords[i].speciesDex == dex) return m_starterProfileRecords[i].costReduction;
+    return 0;
+}
+
 bool FirstRunRuntime::starterSelectionAllowed(const uint16_t* dexes, size_t count) const {
-    uint16_t value = 0;
-    if (classicStarterSelectionValue(dexes, count, value) != PokemonStarterSelectionResult::Ok) return false;
-    for (size_t i = 0; i < count; ++i) if (!starterUnlocked(dexes[i])) return false;
+    if (!dexes || !count || count > 6) return false;
+    uint16_t totalQuarterUnits = 0;
+    for (size_t i = 0; i < count; ++i) {
+        if (!starterUnlocked(dexes[i])) return false;
+        for (size_t prior = 0; prior < i; ++prior) if (dexes[prior] == dexes[i]) return false;
+        uint16_t cost = 0;
+        if (!pokemonStarterCostQuarterUnits(dexes[i], starterCostReduction(dexes[i]), cost)) return false;
+        totalQuarterUnits += cost;
+        if (totalQuarterUnits > kClassicStarterValueLimit * 4) return false;
+    }
     return true;
+}
+
+NativeSaveResult FirstRunRuntime::purchaseStarterCostReduction(uint16_t dex, NativeProgressStore& store,
+    StarterCostPurchaseResult* purchaseResult) {
+    if (purchaseResult) *purchaseResult = StarterCostPurchaseResult::InvalidRecord;
+    if (m_runStarted) return NativeSaveResult::UnsupportedStage;
+    if (!m_starterProfileReady || !starterUnlocked(dex)) return NativeSaveResult::InvalidRecord;
+    std::unique_ptr<FirstRunRuntime> prepared(new (std::nothrow) FirstRunRuntime(*this));
+    if (!prepared) return NativeSaveResult::MemoryUnavailable;
+    bool found = false;
+    for (size_t i = 0; i < prepared->m_starterProfileCount; ++i) {
+        if (prepared->m_starterProfileRecords[i].speciesDex != dex) continue;
+        const auto applied = applyNativeStarterCostReduction(prepared->m_starterProfileRecords[i]);
+        if (purchaseResult) *purchaseResult = applied;
+        if (applied != StarterCostPurchaseResult::Applied) return NativeSaveResult::InvalidRecord;
+        found = true;
+        break;
+    }
+    if (!found) return NativeSaveResult::InvalidRecord;
+    const auto committed = prepared->saveNativeProgress(store);
+    if (committed != NativeSaveResult::Ok) return committed;
+    *this = *prepared;
+    return NativeSaveResult::Ok;
 }
 
 bool FirstRunRuntime::restoreSetup(uint32_t seed, uint16_t starterDex) {

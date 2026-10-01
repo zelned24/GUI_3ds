@@ -90,6 +90,9 @@ public:
     bool restoreSetup(uint32_t seed, uint16_t starterDex);
     bool starterUnlocked(uint16_t dex) const;
     bool starterSelectionAllowed(const uint16_t* dexes, size_t count) const;
+    uint8_t starterCostReduction(uint16_t dex) const;
+    NativeSaveResult purchaseStarterCostReduction(uint16_t dex, NativeProgressStore& store,
+        StarterCostPurchaseResult* purchaseResult = nullptr);
     // Live presentation phase; this does not claim the state is saveable.
     NativeSaveStage presentationStage() const {
         if (!m_runStarted) return NativeSaveStage::RunSetup;

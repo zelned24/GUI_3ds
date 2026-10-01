@@ -45,6 +45,47 @@ public:
     }
 };
 
+static int checkStarterCostPurchasePersistence() {
+    using namespace Pokerogue3DS;
+    FirstRunRuntime game(1);
+    const uint16_t dex = game.run().starterDex;
+    NativeStarterCandyRecord profile{dex, 999, 0, true};
+    PokemonFriendshipPolicy policy{};
+    policy.resolved = true;
+    policy.candyMultiplier = PokerogueContent::kClassicCandyFriendshipMultiplier;
+    if (!game.restoreStarterCandyProfile(&profile, 1, 0, policy)) return 635;
+    static ProgressMemoryStorage runDisk, profileDisk;
+    static char scratch[2 * kStarterCandyProfileMaxBytes]{};
+    NativeRunSaveStore runs(runDisk);
+    NativeStarterCandyStore profiles(profileDisk, scratch, sizeof(scratch));
+    NativeProgressStore store(runs, profiles);
+    StarterCostPurchaseResult purchase{};
+    if (game.purchaseStarterCostReduction(dex, store, &purchase) != NativeSaveResult::Ok ||
+        purchase != StarterCostPurchaseResult::Applied || game.starterCostReduction(dex) != 1) return 636;
+    const uint16_t afterFirst = game.starterProfileRecords()[0].candyCount;
+    profileDisk.interrupt = true;
+    if (game.purchaseStarterCostReduction(dex, store, &purchase) != NativeSaveResult::IoError ||
+        game.starterCostReduction(dex) != 1 || game.starterProfileRecords()[0].candyCount != afterFirst) return 637;
+    profileDisk.interrupt = false;
+    runDisk.interrupt = true;
+    if (game.purchaseStarterCostReduction(dex, store, &purchase) != NativeSaveResult::IoError ||
+        game.starterCostReduction(dex) != 1 || game.starterProfileRecords()[0].candyCount != afterFirst) return 638;
+    runDisk.interrupt = false;
+    FirstRunRuntime restored(2);
+    static NativeStarterCandyRecord staging[PokerogueContent::kSpeciesCount]{};
+    NativeRunSave loaded{};
+    if (restored.loadNativeProgress(runs, profiles, staging, PokerogueContent::kSpeciesCount, policy, &loaded) !=
+            NativeSaveResult::Ok || loaded.starterProfileGeneration != 1 ||
+        restored.starterCostReduction(dex) != 1 || restored.starterProfileRecords()[0].candyCount != afterFirst) return 639;
+    if (restored.purchaseStarterCostReduction(dex, store, &purchase) != NativeSaveResult::Ok ||
+        restored.starterCostReduction(dex) != 2) return 640;
+    const uint16_t afterSecond = restored.starterProfileRecords()[0].candyCount;
+    if (restored.purchaseStarterCostReduction(dex, store, &purchase) != NativeSaveResult::InvalidRecord ||
+        purchase != StarterCostPurchaseResult::MaximumReduction || restored.starterCostReduction(dex) != 2 ||
+        restored.starterProfileRecords()[0].candyCount != afterSecond) return 641;
+    return 0;
+}
+
 // Synthetic KO checkpoints still represent a real active battle participant.
 static void setSingleParticipantFixture(Pokerogue3DS::NativeRunSave& save,
         const Pokerogue3DS::FirstRunRuntime& game) {
@@ -1416,6 +1457,26 @@ static int checkPlayerPartyManagementAndSwitching() {
         if (pokemonStarterCostQuarterUnits(species.dex, 3, reducedCost) || reducedCost != 999) return 630;
     }
     if (coveredStarterCosts != 7) return 631;
+    NativeStarterCandyRecord reducedStarters[6]{};
+    for (size_t i = 0; i < costlyCount; ++i) reducedStarters[i] = {costlyStarters[i], 0, 0, true, 2};
+    for (size_t i = 0; i < costlyCount; ++i)
+        for (size_t j = i + 1; j < costlyCount; ++j)
+            if (reducedStarters[j].speciesDex < reducedStarters[i].speciesDex) {
+                const auto swap = reducedStarters[i]; reducedStarters[i] = reducedStarters[j]; reducedStarters[j] = swap;
+            }
+    FirstRunRuntime reducedStarterGame(1);
+    if (!reducedStarterGame.restoreStarterCandyProfile(reducedStarters, costlyCount, 0, captureFriendshipPolicy)) return 632;
+    uint16_t reducedTotal = 0;
+    for (size_t i = 0; i < costlyCount; ++i) {
+        uint16_t cost = 0;
+        if (reducedStarterGame.starterCostReduction(costlyStarters[i]) != 2 ||
+            !pokemonStarterCostQuarterUnits(costlyStarters[i], 2, cost)) return 633;
+        reducedTotal += cost;
+    }
+    if (reducedStarterGame.starterSelectionAllowed(costlyStarters, costlyCount) !=
+            (reducedTotal <= kClassicStarterValueLimit * 4) ||
+        reducedStarterGame.starterSelectionAllowed(duplicateStarters, 2)) return 634;
+
     char caughtRuntimeProfile[Pokerogue3DS::kStarterCandyProfileMaxBytes]{};
     size_t caughtRuntimeBytes = 0;
     if (encodeNativeStarterCandyProfile(game.starterProfileRecords(), game.starterProfileCount(), 1,
@@ -2842,6 +2903,8 @@ int main() {
         if (partyCheck) return partyCheck;
         const int evoCheck = checkLevelUpMoveLearningAndEvolution();
         if (evoCheck) return evoCheck;
+        const int purchaseCheck = checkStarterCostPurchasePersistence();
+        if (purchaseCheck) return purchaseCheck;
         return checkExtendedWaveAndBiomeSaveValidation();
     }
     return 7; // No supported canonical encounter found: do not silently skip.
