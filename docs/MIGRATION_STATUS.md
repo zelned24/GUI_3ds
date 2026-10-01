@@ -1421,3 +1421,9 @@
 1. Envelope/runtime v15 conserva status del jugador, enemigo y seis reservas de entrenador; equipo jugador usa payload actor v7. Lectura de v14 migra ausencia de status, sin inventar contadores.
 2. Capture/restore conecta estos campos; active status debe coincidir con el miembro activo. Setup y doubles siguen fuera de esta capacidad. Límites de waves/checkpoints anteriores permanecen.
 3. Regresiones de ida/vuelta y discrepancia activo/reserva escritas, sin ejecutar. Revisión estática/diff solamente; tests/compilación aplazados. Conexión del dispatcher de estados y validación en hardware siguen pendientes.
+
+## Orden upstream de descongelación
+
+1. Inspección pinned de MovePhase.checkFreeze/doThawCheck encontró curación demasiado temprana en el resolver. Ahora distingue indirect (cure inmediato sin draws), self-heal cualificado (evento thaw pendiente, sin contador/RNG) y rama de heal posterior al incremento (cure sin draw).
+2. Dispatcher deberá aplicar thaw solo tras superar demás failure checks, incluyendo condición de tipo Fire para Burn Up. No se habilitan moves por asumir resueltas estas condiciones.
+3. Regresiones de las tres ramas escritas, sin ejecutar. Tests/compilación aplazados.

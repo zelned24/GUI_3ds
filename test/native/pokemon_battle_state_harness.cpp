@@ -2625,6 +2625,35 @@ extern "C" int runPokemonBattleStateChecks() {
     moveStatusPolicy.indirectSleepWake = true;
     if (Pokerogue3DS::checkPokemonStatusBeforeMove(checkStatus, moveStatusPolicy, paraCheckRng, moveStatusEvent) !=
             Pokerogue3DS::PokemonStatusMoveCheckResult::Ok || !moveStatusEvent.cured || checkStatus.present) return 598;
+    moveStatusPolicy = {};
+    moveStatusPolicy.resolved = true;
+    moveStatusPolicy.deferredFreezeThawMove = true;
+    checkStatus = {};
+    checkStatus.present = true;
+    checkStatus.effect = Effect::Freeze;
+    checkStatus.hasFreezeTurnsRemaining = true;
+    checkStatus.freezeTurnsRemaining = 3;
+    auto expectedThawRng = paraCheckRng;
+    if (Pokerogue3DS::checkPokemonStatusBeforeMove(checkStatus, moveStatusPolicy, paraCheckRng, moveStatusEvent) !=
+            Pokerogue3DS::PokemonStatusMoveCheckResult::Ok || moveStatusEvent.cancelled || moveStatusEvent.cured ||
+        !moveStatusEvent.thawAfterFailureChecks || !checkStatus.present || checkStatus.freezeTurnsRemaining != 3 ||
+        checkStatus.toxicTurnCount || paraCheckRng.randSeedUint32() != expectedThawRng.randSeedUint32()) return 9006;
+    moveStatusPolicy.indirectFreezeWake = true;
+    expectedThawRng = paraCheckRng;
+    if (Pokerogue3DS::checkPokemonStatusBeforeMove(checkStatus, moveStatusPolicy, paraCheckRng, moveStatusEvent) !=
+            Pokerogue3DS::PokemonStatusMoveCheckResult::Ok || !moveStatusEvent.cured || checkStatus.present ||
+        moveStatusEvent.thawAfterFailureChecks ||
+        paraCheckRng.randSeedUint32() != expectedThawRng.randSeedUint32()) return 9007;
+    moveStatusPolicy.indirectFreezeWake = moveStatusPolicy.deferredFreezeThawMove = false;
+    moveStatusPolicy.freezeCureAfterIncrement = true;
+    checkStatus.present = true;
+    checkStatus.effect = Effect::Freeze;
+    checkStatus.hasFreezeTurnsRemaining = true;
+    checkStatus.freezeTurnsRemaining = 3;
+    expectedThawRng = paraCheckRng;
+    if (Pokerogue3DS::checkPokemonStatusBeforeMove(checkStatus, moveStatusPolicy, paraCheckRng, moveStatusEvent) !=
+            Pokerogue3DS::PokemonStatusMoveCheckResult::Ok || !moveStatusEvent.cured || checkStatus.present ||
+        paraCheckRng.randSeedUint32() != expectedThawRng.randSeedUint32()) return 9008;
     PokemonBattleState paralyzedSpeed{};
     paralyzedSpeed.stats[5] = 101;
     paralyzedSpeed.status.present = true;

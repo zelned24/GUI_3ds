@@ -11,8 +11,13 @@ PokemonStatusMoveCheckResult checkPokemonStatusBeforeMove(PokemonStatusState& st
     PokemonStatusMoveCheckEvent event{};
     event.effect = status.effect;
     if (status.present && (status.effect == PokemonStatusEffect::Sleep || status.effect == PokemonStatusEffect::Freeze)) {
-        if (status.effect == PokemonStatusEffect::Sleep && policy.indirectSleepWake) event.cured = true;
-        else {
+        if ((status.effect == PokemonStatusEffect::Sleep && policy.indirectSleepWake) ||
+            (status.effect == PokemonStatusEffect::Freeze && policy.indirectFreezeWake)) event.cured = true;
+        else if (status.effect == PokemonStatusEffect::Freeze && policy.deferredFreezeThawMove) {
+            // MovePhase.checkFreeze sets thaw before incrementTurn; pre-use
+            // doThawCheck owns the later cure after other checks succeed.
+            event.thawAfterFailureChecks = true;
+        } else {
             if (incrementPokemonStatusTurn(next) == PokemonStatusTickResult::CounterOverflow)
                 return PokemonStatusMoveCheckResult::CounterOverflow;
             if (status.effect == PokemonStatusEffect::Sleep) {
@@ -24,7 +29,7 @@ PokemonStatusMoveCheckResult checkPokemonStatusBeforeMove(PokemonStatusState& st
                 event.cancelled = !event.cured && !policy.bypassSleep;
             } else {
                 // JS evaluates randBattleSeedInt(4) before the expired-counter test.
-                event.cured = policy.immediateFreezeCureMove || nextRng.randSeedInt(4) == 0 ||
+                event.cured = policy.freezeCureAfterIncrement || nextRng.randSeedInt(4) == 0 ||
                     !next.hasFreezeTurnsRemaining || !next.freezeTurnsRemaining;
                 event.cancelled = !event.cured;
             }

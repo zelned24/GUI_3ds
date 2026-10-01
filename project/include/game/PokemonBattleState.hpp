@@ -314,10 +314,13 @@ struct PokemonStatusMoveCheckPolicy {
     bool resolved = false;
     bool bypassSleep = false;
     bool indirectSleepWake = false;
-    bool immediateFreezeCureMove = false;
+    bool indirectFreezeWake = false;
+    bool deferredFreezeThawMove = false; // Qualified self-heal attribute, including Burn Up type check.
+    bool freezeCureAfterIncrement = false; // Remaining self-heal branch; no random draw.
     uint32_t sleepDurationReduction = 0; // Resolved ReduceStatusEffectDurationAbAttr result.
 };
 struct PokemonStatusMoveCheckEvent {
+    bool thawAfterFailureChecks = false; // Caller applies cure only after remaining checks pass.
     bool cancelled = false;
     bool cured = false;
     PokemonStatusEffect effect = PokemonStatusEffect::None;
