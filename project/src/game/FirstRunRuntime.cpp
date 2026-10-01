@@ -343,6 +343,13 @@ NativeSaveResult FirstRunRuntime::captureNativeRunSave(NativeRunSave& output) co
         m_context.secondEnemy.battleState.pendingStatus != PokemonStatusEffect::None;
     for (const auto& member : m_context.playerParty) pending |= member.battleState.pendingStatus != PokemonStatusEffect::None;
     for (const auto& member : m_context.trainerParty) pending |= member.battleState.pendingStatus != PokemonStatusEffect::None;
+    const auto hasUnsavedTag = [](const PokemonBattleState& actor) {
+        return actor.confusion.present || actor.confusion.turns;
+    };
+    pending |= hasUnsavedTag(m_context.player.battleState) || hasUnsavedTag(m_context.enemy.battleState) ||
+        hasUnsavedTag(m_context.secondEnemy.battleState);
+    for (const auto& member : m_context.playerParty) pending |= hasUnsavedTag(member.battleState);
+    for (const auto& member : m_context.trainerParty) pending |= hasUnsavedTag(member.battleState);
     if (pending) { output = {}; return NativeSaveResult::UnsupportedStage; }
     if (!m_runStarted) {
         for (const auto& member : m_context.playerParty)
@@ -2133,6 +2140,11 @@ bool FirstRunRuntime::executeActiveBattleMove(uint8_t userIndex, uint8_t targetI
     if (moveSlot >= user.moveCount || moveSlot >= 4) return false;
     const auto* move = PokerogueContent::findMoveById(user.moves[moveSlot].moveId);
     if (!move || !supportsBaselineBattleMove(move->id)) return false;
+    if (user.confusion.present || user.confusion.turns) {
+        m_battleFeedback = "Confusion requires the shared action dispatcher";
+        return false;
+    }
+
     if (user.status.present && (user.status.effect == PokemonStatusEffect::Sleep ||
             user.status.effect == PokemonStatusEffect::Freeze || user.status.effect == PokemonStatusEffect::Paralysis)) {
         // Area attacks visit each target; status checks belong to one MovePhase,

@@ -1541,3 +1541,9 @@
 1. executePokemonStatusConfusionReaction integra canAddTag simulado, duración desde RNG de fuente y addTag real sobre candidato. Misty bloquea creación después de consumir duración; tag existente evita la tirada. La política de aplicación permanece separada del probe para reflejar callbacks simulated vs reales.
 2. Capacidad desconocida conserva tag/RNG/output. Solicitud retiene IDs como provenance sin inventar sourceId persistente para ConfusedTag. Dispatcher general y checkpoints aún requieren integración.
 3. Regresiones Poison Puppeteer real: Misty con draw, creación por toxic, tag existente sin draw y fallo atómico escritas sin ejecutar. Tests/compilación aplazados.
+
+## Confusión como estado del actor
+
+1. PokemonBattleState conserva el tag de confusión en summon data; resetPokemonSummonState lo elimina al retirar el actor. Cambio de forma conserva status, pendingStatus y confusión en vez de perderlos al reconstruir estadísticas.
+2. Snapshots de actor y run rechazan tags de confusión activos/inválidos hasta implementar serialización, evitando pérdida silenciosa. Esta frontera es temporal; no declara resuelta la continuidad de tags.
+3. Regresión de recall escrita sin ejecutar. Dispatcher de movimiento/status y serialización siguen pendientes; tests/compilación aplazados.

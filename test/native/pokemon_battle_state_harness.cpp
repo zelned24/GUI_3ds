@@ -2425,6 +2425,15 @@ extern "C" int runPokemonBattleStateChecks() {
         invalidFormActor.formId != finalActor.formId) return 517;
     finalActor.hp = 0;
     finalActor.moves[0].pp = 1;
+    auto statusFormActor = finalActor;
+    statusFormActor.status.present = true;
+    statusFormActor.status.effect = Pokerogue3DS::PokemonStatusEffect::Burn;
+    statusFormActor.pendingStatus = Pokerogue3DS::PokemonStatusEffect::Poison;
+    statusFormActor.confusion = {3, true};
+    if (!Pokerogue3DS::changePokemonBattleForm(statusFormActor, eternatus->firstFormId, eternatus->ability1) ||
+        !statusFormActor.status.present || statusFormActor.status.effect != Pokerogue3DS::PokemonStatusEffect::Burn ||
+        statusFormActor.pendingStatus != Pokerogue3DS::PokemonStatusEffect::Poison ||
+        !statusFormActor.confusion.present || statusFormActor.confusion.turns != 3) return 9162;
     if (!Pokerogue3DS::changePokemonBattleForm(finalActor, eternatus->firstFormId, eternatus->ability1) ||
         finalActor.hp || finalActor.moves[0].pp != 1) return 515;
     auto unburdenActor = finalActor;
@@ -2471,9 +2480,11 @@ extern "C" int runPokemonBattleStateChecks() {
     const auto persistentActor = recalledActor;
     recalledActor.heldItemLostTags.unburden = true;
     recalledActor.turnDamageDealt = 19;
+    recalledActor.confusion = {3, true};
     for (auto& stage : recalledActor.statStages) stage = 3;
     Pokerogue3DS::resetPokemonSummonState(recalledActor);
     for (auto stage : recalledActor.statStages) if (stage) return 565;
+    if (recalledActor.confusion.present || recalledActor.confusion.turns) return 9160;
     if (recalledActor.heldItemLostTags.unburden || recalledActor.turnDamageDealt ||
         recalledActor.hp != persistentActor.hp || recalledActor.maxHp != persistentActor.maxHp ||
         recalledActor.friendship != persistentActor.friendship ||

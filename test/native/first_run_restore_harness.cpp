@@ -2986,6 +2986,11 @@ int main() {
         if (captureNativePokemonActorSave(tagState, currentActor.actor, currentActor.totalExperience, tagSnapshot))
             return 9046;
         tagState.pendingStatus = PokemonStatusEffect::None;
+        tagState.confusion = {3, true};
+        if (captureNativePokemonActorSave(tagState, currentActor.actor, currentActor.totalExperience, tagSnapshot))
+            return 9161;
+        tagState.confusion = {};
+
         tagState.friendship = 173;
         if (!captureNativePokemonActorSave(tagState, currentActor.actor, currentActor.totalExperience, tagSnapshot) ||
             encodeNativePokemonSave(tagSnapshot, tagBytes, sizeof(tagBytes), tagSize) != NativeSaveResult::Ok ||

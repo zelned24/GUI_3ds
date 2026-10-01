@@ -208,6 +208,11 @@ inline double pokemonStatusCatchRateMultiplier(const PokemonStatusState& status)
     }
 }
 
+struct PokemonConfusionTagState {
+    uint32_t turns = 0;
+    bool present = false;
+};
+
 struct PokemonBattleState {
     uint16_t speciesDex = 0;
     const char* formId = nullptr;
@@ -217,6 +222,7 @@ struct PokemonBattleState {
     uint8_t friendship = 0; // Persistent Pokemon friendship, initialized from pinned species.
     PokemonStatusState status{}; // Persistent nonvolatile status, stored in run v15.
     PokemonStatusEffect pendingStatus = PokemonStatusEffect::None; // PokemonTurnData; queue must drain before checkpoint.
+    PokemonConfusionTagState confusion{}; // Transient summon tag; not yet serialized.
     HeldItemLostTagState heldItemLostTags{}; // Transient summon data.
     uint32_t turnDamageDealt = 0; // PokemonTurnData.totalDamageDealt; reset after turn effects.
     PokemonGender gender = PokemonGender::Unspecified;
@@ -519,10 +525,6 @@ bool executePokemonStatusEffectCommand(PokemonBattleState& user, PokemonBattleSt
 
 // Pinned src/data/battler-tags.ts ConfusedTag.lapse, PRE_MOVE only.
 // Caller owns tag lifecycle and resolves effective stats/damage callbacks.
-struct PokemonConfusionTagState {
-    uint32_t turns = 0;
-    bool present = false;
-};
 struct PokemonConfusionTagPolicy {
     bool resolved = false; // Own/ally immunity callbacks and terrain resolved.
     bool ownAbilityBlocks = false;
@@ -790,6 +792,7 @@ inline void resetPokemonStatStages(PokemonBattleState& state) {
 inline void resetPokemonSummonState(PokemonBattleState& state) {
     resetPokemonStatStages(state);
     state.heldItemLostTags = {};
+    state.confusion = {};
     state.turnDamageDealt = 0;
 }
 

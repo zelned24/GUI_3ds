@@ -895,6 +895,9 @@ bool changePokemonBattleForm(PokemonBattleState& state, const char* targetFormId
     for (uint8_t stat = 0; stat < 7; ++stat) next.statStages[stat] = state.statStages[stat];
     next.friendship = state.friendship;
     next.pauseEvolutions = state.pauseEvolutions;
+    next.status = state.status;
+    next.pendingStatus = state.pendingStatus;
+    next.confusion = state.confusion;
     next.heldItemLostTags = state.heldItemLostTags;
     next.turnDamageDealt = state.turnDamageDealt;
     state = next;

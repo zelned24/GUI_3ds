@@ -332,7 +332,8 @@ bool captureNativePokemonSave(const PokemonBattleState& state, uint32_t experien
     NativePokemonSave& output) {
     // Mid-turn snapshots require turnData serialization; checkpoints reset it.
     if (!state.statsAreBaseFormulaOnly || !state.formId || state.turnDamageDealt ||
-        state.pendingStatus != PokemonStatusEffect::None) return false;
+        state.pendingStatus != PokemonStatusEffect::None || state.confusion.present ||
+        state.confusion.turns) return false;
     NativePokemonSave saved{};
     if (!copyText(saved.formId, sizeof(saved.formId), state.formId)) return false;
     saved.speciesDex = state.speciesDex;
