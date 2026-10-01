@@ -1749,3 +1749,10 @@
 1. Runtime admite ConfuseAttr único de categoría Status y objetivo NEAR_OTHER con builders conocidos. Reutiliza proveedor de hit (clima, precisión/evasión, flags/tipos) y políticas vivas de confusión; reflexión/protecciones no representadas continúan fuera de la capacidad admitida.
 2. Comando publica PP, tag y RNG de manera atómica, consumiendo PP también ante miss/inmunidad/overlap. No repite daño ni aplica un estado no volátil ficticio. IA usa beneficio canónico de AddBattlerTagAttr.
 3. Replay del comando Confuse Ray con encuentro real/snapshot de test escrito sin ejecutar. Fuente de tag en save y productores con atributos adicionales/selfTarget siguen pendientes; tests/compilación aplazados.
+
+## Corrección del decoder de partidas v16
+
+1. Revisión estática identificó un chequeo de reader.position == reader.end antes de leer playerConfusion/enemyConfusion/memberConfusion. Writer v16 siempre escribe esos campos; por tanto la ubicación anterior rechazaba su propio payload antes de consumirlo.
+2. Decoder ahora comprueba fin después de todos los campos de la versión, conservando validación de checksum, referencias y migraciones anteriores. No cambia schema ni inventa valores faltantes.
+3. Regresión añade un campo extra con checksum válido y exige InvalidFormat/output intacto; después vuelve a codificar/decodificar una partida v16 válida con confusión. Roundtrip existente sigue intacto. Pruebas aún sin ejecutar; compilación aplazada.
+4. Persistencia de sourceMoveId del tag queda pendiente del siguiente cambio de formato compatible; esta corrección elimina primero el bloqueo del reader actual.

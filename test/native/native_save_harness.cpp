@@ -172,6 +172,26 @@ extern "C" int runNativeSaveChecks() {
         decodeNativeRunSave(partyBytes, partySize, PokerogueContent::kContentHash, restored) != NativeSaveResult::Ok ||
         restored.saveVersion != 16 || restored.playerConfusion.turns != 3 ||
         restored.enemyConfusion.turns != 2 || restored.trainerParty[1].confusion.turns != 5) return 9180;
+    // A valid checksum does not authorize trailing payload fields. Check
+    // completion after v16 confusion fields, preserving output on rejection.
+    {
+        constexpr size_t digestLineBytes = 7 + 64 + 1;
+        const char extra[] = "unexpected=00000000\n";
+        const size_t extraBytes = sizeof(extra) - 1;
+        const size_t payloadEnd = partySize - digestLineBytes;
+        if (partySize + extraBytes > sizeof(partyBytes)) return 9500;
+        for (size_t n = partySize; n > payloadEnd; --n)
+            partyBytes[n + extraBytes - 1] = partyBytes[n - 1];
+        std::memcpy(partyBytes + payloadEnd, extra, extraBytes);
+        IntegritySha256::hashHex(partyBytes, payloadEnd + extraBytes, digest);
+        std::memcpy(partyBytes + payloadEnd + extraBytes + 7, digest, 64);
+        restored.seed = 0x12345678u;
+        if (decodeNativeRunSave(partyBytes, partySize + extraBytes, PokerogueContent::kContentHash, restored) !=
+                NativeSaveResult::InvalidFormat || restored.seed != 0x12345678u) return 9501;
+        if (encodeNativeRunSave(confusionSave, partyBytes, sizeof(partyBytes), partySize) != NativeSaveResult::Ok ||
+            decodeNativeRunSave(partyBytes, partySize, PokerogueContent::kContentHash, restored) != NativeSaveResult::Ok ||
+            restored.enemyConfusion.turns != 2) return 9502;
+    }
     confusionSave.enemyConfusion.turns = 4;
     if (validateNativeRunSave(confusionSave, PokerogueContent::kContentHash) != NativeSaveResult::InvalidRecord)
         return 9181;

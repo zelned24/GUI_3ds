@@ -1180,7 +1180,6 @@ NativeSaveResult decodeNativeRunSave(const char* bytes, size_t length, const cha
                 if (!reader.literal("memberStatus=") || !readStatus(reader, value.trainerParty[i].status))
                     return NativeSaveResult::InvalidFormat;
         }
-        if (reader.position != reader.end) return NativeSaveResult::InvalidFormat;
         if (value.saveVersion >= 16) {
             if (!reader.literal("playerConfusion=") || !reader.hex(8, value.playerConfusion.turns) ||
                 !reader.literal("enemyConfusion=") || !reader.hex(8, value.enemyConfusion.turns))
@@ -1193,6 +1192,9 @@ NativeSaveResult decodeNativeRunSave(const char* bytes, size_t length, const cha
                 value.trainerParty[i].confusion.present = value.trainerParty[i].confusion.turns != 0;
             }
         }
+        // All version-specific fields, including v16 confusion, must be
+        // consumed before checking for trailing or missing payload bytes.
+        if (reader.position != reader.end) return NativeSaveResult::InvalidFormat;
         if (legacyBattle || legacyProgress || legacyTrainer || legacySwitch || legacyStages || legacyWeather || legacyRoom || legacyInventory || legacyParty || legacyHeld || legacyProfile || legacyParticipants || legacySetupParty || legacyStatus) {
             value.saveVersion = kNativeSaveVersion;
             value.runtimeVersion = kNativeSaveRuntimeVersion;
