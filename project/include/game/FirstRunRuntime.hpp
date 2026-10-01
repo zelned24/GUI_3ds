@@ -16,6 +16,7 @@
 
 namespace Pokerogue3DS {
 class NativeProgressStore;
+class PokerogueRngAdapter;
 class NativeStarterCandyStore;
 
 struct RunState {
@@ -89,6 +90,7 @@ public:
     bool cycleStarter(int direction);
     bool restoreSetup(uint32_t seed, uint16_t starterDex);
     bool starterUnlocked(uint16_t dex) const;
+    bool restoreStarterTeamSetup(uint32_t seed, const uint16_t* dexes, size_t count);
     bool starterSelectionAllowed(const uint16_t* dexes, size_t count) const;
     uint8_t starterCostReduction(uint16_t dex) const;
     NativeSaveResult purchaseStarterCostReduction(uint16_t dex, NativeProgressStore& store,
@@ -203,6 +205,7 @@ private:
     bool executeEnemyResponse(uint8_t userIndex, PokerogueRngAdapter& rng);
     bool enemyPartyDefeated() const;
     bool weatherBattleSupported() const;
+    bool resolveFreshStarter(uint16_t dex, PokerogueRngAdapter& rng, ResolvedPokemon& output);
     void resolve(bool carryPlayer = false);
     bool restoreNativeRunSaveInPlace(const NativeRunSave& save);
     bool grantVictoryExperience(bool pokemonDefeated = true, uint8_t enemyMask = 0);

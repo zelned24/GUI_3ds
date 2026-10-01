@@ -45,6 +45,41 @@ public:
     }
 };
 
+static int checkInitialStarterTeamSetup() {
+    using namespace Pokerogue3DS;
+    uint16_t dexes[2]{};
+    size_t count = 0;
+    for (const auto& species : PokerogueContent::kSpecies)
+        if (species.freshProfileStarter && species.starterEligible && species.starterCost <= 3 && count < 2)
+            dexes[count++] = species.dex;
+    if (count != 2) return 642;
+    FirstRunRuntime first(1), repeated(2);
+    if (!first.restoreStarterTeamSetup(1, dexes, 2) || !repeated.restoreStarterTeamSetup(1, dexes, 2) ||
+        first.playerPartyCount() != 2 || repeated.playerPartyCount() != 2 || first.runStarted()) return 643;
+    for (uint8_t member = 0; member < 2; ++member) {
+        const auto* actor = first.playerPartyMember(member);
+        const auto* repeat = repeated.playerPartyMember(member);
+        if (!actor || !repeat || actor->dex != dexes[member] || !actor->actorIdentityResolved ||
+            !actor->movesetResolved || actor->battleState.pokemonId != repeat->battleState.pokemonId ||
+            actor->battleState.hp != repeat->battleState.hp || actor->moveCount != repeat->moveCount) return 644;
+        for (uint8_t slot = 0; slot < actor->moveCount; ++slot)
+            if (actor->moveIds[slot] != repeat->moveIds[slot] ||
+                actor->battleState.moves[slot].pp != repeat->battleState.moves[slot].pp) return 645;
+    }
+    if (first.playerPartyMember(0)->battleState.pokemonId ==
+        first.playerPartyMember(1)->battleState.pokemonId) return 646;
+    const uint16_t duplicate[] = {dexes[0], dexes[0]};
+    const uint32_t reservePid = first.playerPartyMember(1)->battleState.pokemonId;
+    if (first.restoreStarterTeamSetup(1, duplicate, 2) ||
+        first.restoreStarterTeamSetup(0, dexes, 2) || first.playerPartyCount() != 2 ||
+        first.playerPartyMember(1)->battleState.pokemonId != reservePid) return 647;
+    NativeRunSave unsupportedSetup{};
+    if (first.captureNativeRunSave(unsupportedSetup) != NativeSaveResult::UnsupportedStage) return 648;
+    if (!first.restoreStarterTeamSetup(1, dexes, 1) || first.playerPartyCount() != 1 ||
+        first.captureNativeRunSave(unsupportedSetup) != NativeSaveResult::Ok) return 649;
+    return 0;
+}
+
 static int checkStarterCostPurchasePersistence() {
     using namespace Pokerogue3DS;
     FirstRunRuntime game(1);
@@ -2903,6 +2938,8 @@ int main() {
         if (partyCheck) return partyCheck;
         const int evoCheck = checkLevelUpMoveLearningAndEvolution();
         if (evoCheck) return evoCheck;
+        const int initialTeamCheck = checkInitialStarterTeamSetup();
+        if (initialTeamCheck) return initialTeamCheck;
         const int purchaseCheck = checkStarterCostPurchasePersistence();
         if (purchaseCheck) return purchaseCheck;
         return checkExtendedWaveAndBiomeSaveValidation();

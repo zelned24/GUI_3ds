@@ -1136,3 +1136,10 @@
 1. Bridge registra `_3ds_purchaseStarterCost`, con un comando 208 exclusivo por tick, solo en setup y con store persistente. Ejecución fuera del tick llama la compra transaccional C++; feedback de éxito exige commit confirmado.
 2. Snapshot de presentación expone coste fraccionario, caramelos, reducción, precio y disponibilidad desde catálogo/perfil reales. HUD setup: B abre confirmación, A compra, B cancela; sin comenzar combate durante confirmación. Operaciones de almacenamiento conservan prioridad.
 3. Regresión VM del template exacto escrita para confirmación única, coste 0.5, fondos/disponibilidad y prioridad de guardado. Sin ejecutar. Bundle diagnóstico regenerado, sin compilar el programa. Equipo inicial múltiple, presentación final equivalente web y validación de hardware siguen pendientes.
+
+## Equipo inicial: creación C++ de varios actores
+
+1. `restoreStarterTeamSetup` valida 1–6 especies desbloqueadas, duplicados y presupuesto reducido; prepara setup y actores en una copia del runtime. Cada actor llega al array real de party con moveset, estado de batalla, identidad, HP/PP, forma, assets y experiencia propios. Un error no publica un equipo parcial.
+2. `resolveFreshStarter` reutiliza la creación anterior. Sigue el perfil inicial con IV 15, naturaleza default, habilidad inicial y sin egg moves desbloqueados. Un único RNG seeded se consume en orden para PID/Tera de cada actor; no reinicia la semilla por miembro. Fuente de orden: `src/phases/select-starter-phase.ts`, `SelectStarterPhase.initBattle`, pinned. No equivale todavía al perfil Pokédex completo.
+3. Guardar setup con varios miembros devuelve `UnsupportedStage`: formato actual no representa esa selección. No se degrada a un solo inicial. Checkpoints de combate ya tienen snapshot de party; falta guardar/restaurar selección inicial, interfaz múltiple y verificar el flujo completo.
+4. Regresiones escritas con dos especies reales, identidad distinta, reproducibilidad, datos por miembro, rollback y rechazo de guardado incompleto. Sin ejecutar; compilación y validación final aplazadas.

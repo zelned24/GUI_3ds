@@ -164,6 +164,27 @@ NativeSaveResult FirstRunRuntime::purchaseStarterCostReduction(uint16_t dex, Nat
     return NativeSaveResult::Ok;
 }
 
+bool FirstRunRuntime::restoreStarterTeamSetup(uint32_t seed, const uint16_t* dexes, size_t count) {
+    if (!seed || !starterSelectionAllowed(dexes, count)) return false;
+    std::unique_ptr<FirstRunRuntime> prepared(new (std::nothrow) FirstRunRuntime(*this));
+    if (!prepared || !prepared->restoreSetupInPlace(seed, dexes[0])) return false;
+    PokerogueRngAdapter starterRng;
+    starterRng.sow(prepared->m_seedCodeUnits.data(), prepared->m_seedLength);
+    for (size_t i = 0; i < count; ++i) {
+        if (!prepared->resolveFreshStarter(dexes[i], starterRng, prepared->m_context.playerParty[i])) return false;
+        for (size_t prior = 0; prior < i; ++prior)
+            if (prepared->m_context.playerParty[prior].battleState.pokemonId ==
+                prepared->m_context.playerParty[i].battleState.pokemonId) return false;
+    }
+    prepared->m_context.playerPartyCount = static_cast<uint8_t>(count);
+    prepared->m_context.activePlayerPartyIndex = 0;
+    prepared->m_context.player = prepared->m_context.playerParty[0];
+    prepared->m_playerHistoryRequiresSnapshot = count > 1;
+    prepared->buildScene();
+    *this = *prepared;
+    return true;
+}
+
 bool FirstRunRuntime::restoreSetup(uint32_t seed, uint16_t starterDex) {
     if (!starterSelectionAllowed(&starterDex, 1)) return false;
     std::unique_ptr<FirstRunRuntime> candidateStorage(new (std::nothrow) FirstRunRuntime(*this));
@@ -214,6 +235,9 @@ NativeSaveResult FirstRunRuntime::captureNativeRunSave(NativeRunSave& output) co
     std::unique_ptr<NativeRunSave> valueStorage(new (std::nothrow) NativeRunSave{});
     if (!valueStorage) { output = {}; return NativeSaveResult::MemoryUnavailable; }
     auto& value = *valueStorage;
+    if (!m_runStarted && m_context.playerPartyCount > 1) {
+        output = {}; return NativeSaveResult::UnsupportedStage; // Setup team serialization pending; never lose reserves.
+    }
     // v9 preserves ball inventory; doubles, captured party and later trainer history remain unsupported.
     // Never report a setup checkpoint as a successful save of an active double battle.
     if (m_capturePartyChoicePending || m_context.enemy.bossState.segmentCount || m_doubleBattle || m_pokeballs[5] ||
@@ -2883,6 +2907,78 @@ bool FirstRunRuntime::advancePlayerAfterDefeat() {
     return false;
 }
 
+bool FirstRunRuntime::resolveFreshStarter(uint16_t dex, PokerogueRngAdapter& rng, ResolvedPokemon& output) {
+    const auto* entry = PokerogueContent::findSpeciesByDex(dex);
+    if (!entry || !entry->starterEligible) return false;
+    const auto& starter = *entry;
+    const std::string starterLocaleId = std::string("pokemon:") + starter.id;
+    ResolvedPokemon prepared{starter.dex, 5, starter.id, locale(starterLocaleId.c_str(), starter.name),
+        starter.firstFormId, starter.assetSourcePath};
+    if (pokemonTotalExperienceForLevel(starter.growthRate, 5, prepared.totalExperience) !=
+            PokemonExperienceResult::Ok) return false;
+    auto nextRng = rng;
+      prepared.movesetResolved = selectPokemonStarterMoveset(
+          starter.dex, starter.firstFormId, 0, nullptr, 0,
+          prepared.moveIds, prepared.moveCount) ==
+          PokemonStarterMovesetResult::Ok;
+      if (prepared.movesetResolved) {
+        PokemonActorIdentity starterActor{};
+        PokemonNature starterNature = PokemonNature::Unspecified;
+        if (pokemonFreshProfileNature(starter.dex, starterNature) != PokemonFreshProfileResult::Ok)
+            return false;
+        const char* starterFormId = starter.firstFormId && *starter.firstFormId
+            ? starter.firstFormId : nullptr;
+
+        // The new profile's DexData supplies 15 IVs, the first unlocked
+        // ability, default male gender (or genderless), base form, and its
+        // source-derived default nature. Pokemon's constructor still consumes
+        // its PID and initial Tera pick from the run's root RNG stream.
+
+        starterActor.pokemonId = nextRng.randSeedUint32();
+        starterActor.abilityIndex = 0;
+        starterActor.gender = starter.malePercentTenths == 65534
+            ? PokemonGender::Genderless : PokemonGender::Male;
+        starterActor.nature = starterNature;
+        starterActor.formId = starterFormId;
+        for (uint8_t& iv : starterActor.ivs) iv = 15;
+
+        const auto* starterForm = PokerogueContent::findFormById(starterFormId);
+        const char* starterType1 = starterForm ? starterForm->type1 : starter.type1;
+        const char* starterType2 = starterForm ? starterForm->type2 : starter.type2;
+        if (!starterType1 || !*starterType1) return false;
+        const bool hasSecondaryType = starterType2 && *starterType2 &&
+            std::strcmp(starterType2, "NONE") != 0;
+        starterActor.initialTeraTypeIndex = static_cast<uint8_t>(
+            nextRng.randSeedInt(hasSecondaryType ? 2 : 1));
+        starterActor.initialTeraType = resolvePokemonTypeSymbol(
+            starterActor.initialTeraTypeIndex ? starterType2 : starterType1);
+        if (!starterActor.initialTeraType) return false;
+        starterActor.initialTeraTypeResolved = true;
+
+        PokemonBattleInit starterInput{};
+        starterInput.speciesDex = starter.dex;
+        starterInput.formId = starterActor.formId;
+        starterInput.level = prepared.level;
+        starterInput.pokemonId = starterActor.pokemonId;
+        starterInput.nature = starterActor.nature;
+        starterInput.gender = starterActor.gender;
+        starterInput.abilityId = starterForm && starterForm->ability1
+            ? starterForm->ability1 : starter.ability1;
+        for (uint8_t i = 0; i < 6; ++i) starterInput.ivs[i] = starterActor.ivs[i];
+        starterInput.moveCount = prepared.moveCount;
+        for (uint8_t i = 0; i < starterInput.moveCount; ++i)
+            starterInput.moveIds[i] = prepared.moveIds[i];
+        if (initializePokemonBattleState(starterInput, prepared.battleState) !=
+            PokemonBattleInitResult::Ok) return false;
+        prepared.actor = starterActor;
+        prepared.actorIdentityResolved = true;
+        prepared.formId = starterActor.formId;
+      } else return false;
+    rng = nextRng;
+    output = prepared;
+    return true;
+}
+
 void FirstRunRuntime::resolve(bool carryPlayer) {
     m_participantHistoryResolved = true;
     m_participantCount = 0;
@@ -2972,84 +3068,16 @@ void FirstRunRuntime::resolve(bool carryPlayer) {
     const auto* biomeEntry = findBiomeById(m_run.biomeId);
     const std::string biomeLocaleId = std::string("biomes:") + m_run.biomeId;
     m_context.biomeName = locale(biomeLocaleId.c_str(), biomeEntry ? biomeEntry->name : m_run.biomeId);
-    const std::string starterLocaleId = std::string("pokemon:") + starter.id;
     if (!carryPlayer) {
         m_playerHistoryRequiresSnapshot = false;
         m_heldModifiers = {};
         m_heldModifierCount = 0;
-        m_context.player = {starter.dex, 5, starter.id, locale(starterLocaleId.c_str(), starter.name), starter.firstFormId, starter.assetSourcePath};
-        if (pokemonTotalExperienceForLevel(starter.growthRate, 5, m_context.player.totalExperience)
-            != PokemonExperienceResult::Ok) return;
-    }
-    // Fresh-profile save data starts with no unlocked egg moves and no saved
-    // move preferences. Resolve its actual level-1-to-5 learnset through the
-    // same canonical catalog as the wild actor; do not invent a starter list.
-    if (!carryPlayer) {
-      m_context.player.movesetResolved = selectPokemonStarterMoveset(
-          starter.dex, starter.firstFormId, 0, nullptr, 0,
-          m_context.player.moveIds, m_context.player.moveCount) ==
-          PokemonStarterMovesetResult::Ok;
-      if (m_context.player.movesetResolved) {
-        PokemonActorIdentity starterActor{};
-        PokemonNature starterNature = PokemonNature::Unspecified;
-        if (pokemonFreshProfileNature(starter.dex, starterNature) != PokemonFreshProfileResult::Ok)
-            return;
-        const char* starterFormId = starter.firstFormId && *starter.firstFormId
-            ? starter.firstFormId : nullptr;
-
-        // The new profile's DexData supplies 15 IVs, the first unlocked
-        // ability, default male gender (or genderless), base form, and its
-        // source-derived default nature. Pokemon's constructor still consumes
-        // its PID and initial Tera pick from the run's root RNG stream.
         PokerogueRngAdapter starterRng;
         starterRng.sow(m_seedCodeUnits.data(), m_seedLength);
-        starterActor.pokemonId = starterRng.randSeedUint32();
-        starterActor.abilityIndex = 0;
-        starterActor.gender = starter.malePercentTenths == 65534
-            ? PokemonGender::Genderless : PokemonGender::Male;
-        starterActor.nature = starterNature;
-        starterActor.formId = starterFormId;
-        for (uint8_t& iv : starterActor.ivs) iv = 15;
-
-        const auto* starterForm = PokerogueContent::findFormById(starterFormId);
-        const char* starterType1 = starterForm ? starterForm->type1 : starter.type1;
-        const char* starterType2 = starterForm ? starterForm->type2 : starter.type2;
-        if (!starterType1 || !*starterType1) return;
-        const bool hasSecondaryType = starterType2 && *starterType2 &&
-            std::strcmp(starterType2, "NONE") != 0;
-        starterActor.initialTeraTypeIndex = static_cast<uint8_t>(
-            starterRng.randSeedInt(hasSecondaryType ? 2 : 1));
-        starterActor.initialTeraType = resolvePokemonTypeSymbol(
-            starterActor.initialTeraTypeIndex ? starterType2 : starterType1);
-        if (!starterActor.initialTeraType) return;
-        starterActor.initialTeraTypeResolved = true;
-
-        PokemonBattleInit starterInput{};
-        starterInput.speciesDex = starter.dex;
-        starterInput.formId = starterActor.formId;
-        starterInput.level = m_context.player.level;
-        starterInput.pokemonId = starterActor.pokemonId;
-        starterInput.nature = starterActor.nature;
-        starterInput.gender = starterActor.gender;
-        starterInput.abilityId = starterForm && starterForm->ability1
-            ? starterForm->ability1 : starter.ability1;
-        for (uint8_t i = 0; i < 6; ++i) starterInput.ivs[i] = starterActor.ivs[i];
-        starterInput.moveCount = m_context.player.moveCount;
-        for (uint8_t i = 0; i < starterInput.moveCount; ++i)
-            starterInput.moveIds[i] = m_context.player.moveIds[i];
-        if (initializePokemonBattleState(starterInput, m_context.player.battleState) !=
-            PokemonBattleInitResult::Ok) return;
-        m_context.player.actor = starterActor;
-        m_context.player.actorIdentityResolved = true;
-        m_context.player.formId = starterActor.formId;
-        if (!carryPlayer) {
-            m_context.playerParty[0] = m_context.player;
-            m_context.playerPartyCount = 1;
-            m_context.activePlayerPartyIndex = 0;
-        } else {
-            m_context.playerParty[m_context.activePlayerPartyIndex] = m_context.player;
-        }
-      }
+        if (!resolveFreshStarter(starter.dex, starterRng, m_context.player)) return;
+        m_context.playerParty[0] = m_context.player;
+        m_context.playerPartyCount = 1;
+        m_context.activePlayerPartyIndex = 0;
     }
 
     uint8_t cycleOffset = 0;
