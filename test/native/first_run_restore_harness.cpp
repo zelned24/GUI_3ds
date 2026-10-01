@@ -371,6 +371,22 @@ static int checkTrainerExperienceReplay() {
         NativeRunSave checkpoint{};
         game.captureNativeRunSave(checkpoint);
         if (checkpoint.stage != NativeSaveStage::BattleActive) continue;
+        NativeRunSave confusedCheckpoint = checkpoint;
+        confusedCheckpoint.playerConfusion = {3, true};
+        confusedCheckpoint.enemyConfusion = {2, true};
+        if (confusedCheckpoint.playerPartyCount)
+            confusedCheckpoint.playerParty[confusedCheckpoint.activePlayerMember].confusion =
+                confusedCheckpoint.playerConfusion;
+        confusedCheckpoint.trainerParty[confusedCheckpoint.activeTrainerMember].confusion =
+            confusedCheckpoint.enemyConfusion;
+        if (!game.restoreNativeRunSave(confusedCheckpoint) ||
+            game.presentation().player.battleState.confusion.turns != 3 ||
+            game.presentation().enemy.battleState.confusion.turns != 2) return 9190;
+        NativeRunSave recapturedConfusion{};
+        if (game.captureNativeRunSave(recapturedConfusion) != NativeSaveResult::Ok ||
+            recapturedConfusion.playerConfusion.turns != 3 || recapturedConfusion.enemyConfusion.turns != 2)
+            return 9191;
+        if (!game.restoreNativeRunSave(checkpoint)) return 9192;
         NativeRunSave memberWon = checkpoint;
         memberWon.stage = NativeSaveStage::BattleWon;
         setSingleParticipantFixture(memberWon, game);

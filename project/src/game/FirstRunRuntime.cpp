@@ -2143,13 +2143,9 @@ bool FirstRunRuntime::executeActiveBattleMove(uint8_t userIndex, uint8_t targetI
     if (moveSlot >= user.moveCount || moveSlot >= 4) return false;
     const auto* move = PokerogueContent::findMoveById(user.moves[moveSlot].moveId);
     if (!move || !supportsBaselineBattleMove(move->id)) return false;
-    if (user.confusion.present || user.confusion.turns) {
-        m_battleFeedback = "Confusion requires the shared action dispatcher";
-        return false;
-    }
 
     if (user.status.present && (user.status.effect == PokemonStatusEffect::Sleep ||
-            user.status.effect == PokemonStatusEffect::Freeze || user.status.effect == PokemonStatusEffect::Paralysis)) {
+            user.status.effect == PokemonStatusEffect::Freeze)) {
         // Area attacks visit each target; status checks belong to one MovePhase,
         // so doubles require the shared action dispatcher before enabling this.
         if (m_doubleBattle || PokerogueContent::moveHasAttribute(*move, "BypassSleepAttr") ||
@@ -2168,7 +2164,7 @@ bool FirstRunRuntime::executeActiveBattleMove(uint8_t userIndex, uint8_t targetI
                     break;
                 }
         }
-        // Current gated actor path has no Nightmare/Confused tags or indirect
+        // Current gated actor path has no Nightmare tags or indirect
         // use modes. Unknown ability conditions fail before publishing the turn.
         PokemonStatusMoveCheckEvent statusEvent{};
         if (checkPokemonStatusBeforeMove(user.status, statusPolicy, rng, statusEvent) !=
@@ -2179,6 +2175,51 @@ bool FirstRunRuntime::executeActiveBattleMove(uint8_t userIndex, uint8_t targetI
         if (statusEvent.cancelled) {
             m_battleFeedback = "Status prevented the move";
             return true; // First failure check cancels without consuming PP.
+        }
+    }
+    if (user.confusion.present || user.confusion.turns) {
+        const auto* ownProfile = PokerogueContent::findAbilityMovegenProfile(user.abilityId);
+        const auto* opposingProfile = PokerogueContent::findAbilityMovegenProfile(opponent.abilityId);
+        // This existing conservative capability admits only abilities without
+        // stat/damage callbacks. Broader field/held/weather policies need resolvers.
+        if (m_doubleBattle || m_heldModifierCount || m_arenaWeather.type != PokemonEffectiveWeather::None ||
+            !ownProfile || !ownProfile->bossDamageCallbacksResolved ||
+            !opposingProfile || !opposingProfile->bossDamageCallbacksResolved) {
+            m_battleFeedback = "Confusion stat/damage callbacks require dispatcher";
+            return false;
+        }
+        ResolvedPokemon* resolvedActors[] = {&m_context.player, &m_context.enemy, &m_context.secondEnemy};
+        if (resolvedActors[userIndex]->bossState.segmentCount) {
+            m_battleFeedback = "Confusion boss damage requires dispatcher";
+            return false;
+        }
+        uint32_t attack = 0, defense = 0;
+        if (!pokemonBaselineEffectiveStat(user, 1, false, attack) ||
+            !pokemonBaselineEffectiveStat(user, 2, false, defense)) return false;
+        PokemonConfusionMovePolicy confusionPolicy{};
+        confusionPolicy.resolved = true;
+        confusionPolicy.effectiveAttack = attack;
+        confusionPolicy.effectiveDefense = defense;
+        PokemonConfusionMoveEvent confusionEvent{};
+        if (!checkPokemonConfusionBeforeMove(user, user.confusion, confusionPolicy, rng, confusionEvent)) return false;
+        if (confusionEvent.moveCancelled) {
+            m_battleFeedback = "Confusion prevented the move";
+            return true;
+        }
+    }
+    if (user.status.present && user.status.effect == PokemonStatusEffect::Paralysis) {
+        if (m_doubleBattle) {
+            m_battleFeedback = "Status move-use conditions require dispatcher";
+            return false;
+        }
+        PokemonStatusMoveCheckPolicy paralysisPolicy{};
+        paralysisPolicy.resolved = true;
+        PokemonStatusMoveCheckEvent paralysisEvent{};
+        if (checkPokemonStatusBeforeMove(user.status, paralysisPolicy, rng, paralysisEvent) !=
+                PokemonStatusMoveCheckResult::Ok) return false;
+        if (paralysisEvent.cancelled) {
+            m_battleFeedback = "Status prevented the move";
+            return true;
         }
     }
     const auto applyMoveHeldHealing = [this](PokemonBattleState& actor) {

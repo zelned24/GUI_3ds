@@ -1559,3 +1559,9 @@
 1. Run/save runtime v16 conserva contador de confusión de jugador/enemigo activos y equipo entrenador; snapshots v8 conservan equipo jugador. Validación exige coincidencia entre actor activo y miembro, presencia/contador coherentes y slots vacíos sin tag.
 2. Captura/restauración FirstRunRuntime copia tags y los repone tras cleanup de reconstrucción. Setup y segundo enemigo siguen fuera de esta frontera. Decoder migra v15 sin inventar tags; lectura anterior permanece.
 3. Regresiones de run v16 y discrepancia de actor/miembro escritas sin ejecutar. Dispatcher de confusión todavía pendiente; tests/compilación aplazados.
+
+## Confusión en el comando de combate individual
+
+1. executeActiveBattleMove aplica confusión después de sleep/freeze y antes de paralysis; autogolpe cancela sin consumir PP. Usa tag propiedad del actor y RNG del usuario. Sleep/freeze que cancelan no adelantan contador/RNG de confusión.
+2. Proveedor conservador exige combate individual, sin held modifiers/clima/boss del usuario, y habilidades de ambos actores con callbacks de estadísticas/daño cubiertos por la frontera actual. No finge soporte de tags/abilities/campo pendientes; creación por Poison Puppeteer todavía requiere conexión del dispatcher de estados.
+3. Regresiones de restore/recapture de tags de ambos activos escritas sin ejecutar; checks de resolver ya cubren contador/autogolpe/RNG. Tests/compilación y validación del flujo completo siguen aplazados.
