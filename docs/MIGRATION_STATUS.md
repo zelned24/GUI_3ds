@@ -615,3 +615,8 @@
 
 1. advanceBattleTurn reemplaza bloqueo global por validacion de clases de curacion ya conectadas: TurnHeal/HitHeal, stacks canonicos, argumentos resueltos y unicidad por owner/clase. Mini Black Hole y otras clases siguen rechazados. Reward/capture/switch con inventario siguen pendientes y mantienen sus gates.
 2. Regresiones 436-438 escritas para clases conocidas, duplicado y clase pendiente. No demuestra run completa; tags/charms, rewards, multihit y validacion final pendientes. Tests/compilacion aplazados.
+
+## Cambio de equipo con inventario curativo
+
+1. switchPlayerPokemon permite clases curativas ya conectadas; mantiene owner PID y ejecuta respuesta enemiga y fin de turno por fases existentes. Limpia summon tag/turnDamageDealt de actor saliente/entrante. Clases desconocidas siguen rechazadas.
+2. Regresiones 439-440 escritas para cambio con objetos de ambos miembros y ownership estable. Tests/compilacion aplazados; capture/reward y efectos restantes pendientes.

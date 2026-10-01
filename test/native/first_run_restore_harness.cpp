@@ -1095,6 +1095,20 @@ static int checkPlayerPartyManagementAndSwitching() {
             game.playerPartyMember(1)->level, expectedReserveExperience) != PokemonExperienceResult::Ok ||
         reserveExperience != expectedReserveExperience) return 221;
 
+    auto healingSwitchGame = game;
+    NativeHeldModifierInstance switchHealing[2]{};
+    const uint32_t outgoingPid = game.presentation().player.battleState.pokemonId;
+    const uint32_t incomingPid = game.playerPartyMember(1)->battleState.pokemonId;
+    if (initializeHeldModifierInstance("LEFTOVERS", outgoingPid, 1, true, nullptr, switchHealing[0]) !=
+            HeldModifierStorageResult::Ok ||
+        initializeHeldModifierInstance("SHELL_BELL", incomingPid, 1, true, nullptr, switchHealing[1]) !=
+            HeldModifierStorageResult::Ok || !healingSwitchGame.restoreHeldModifierInventory(switchHealing, 2))
+        return 439;
+    if (!healingSwitchGame.switchPlayerPokemon(1) || healingSwitchGame.activePlayerPartyIndex() != 1 ||
+        healingSwitchGame.heldModifierCount() != 2 ||
+        healingSwitchGame.heldModifier(0)->ownerPokemonId != outgoingPid ||
+        healingSwitchGame.heldModifier(1)->ownerPokemonId != incomingPid ||
+        healingSwitchGame.presentation().player.battleState.turnDamageDealt) return 440;
     // Switch to reserve member (index 1):
     if (!game.switchPlayerPokemon(1)) return 176;
     if (game.activePlayerPartyIndex() != 1) return 177;

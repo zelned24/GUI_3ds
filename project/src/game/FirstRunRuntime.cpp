@@ -2247,7 +2247,7 @@ bool FirstRunRuntime::switchPlayerPokemon(uint8_t targetIndex) {
 }
 
 bool FirstRunRuntime::switchPlayerPokemonInPlace(uint8_t targetIndex) {
-    if (m_heldModifierCount) {
+    if (!heldHealingInventorySupported(m_heldModifiers.data(), m_heldModifierCount)) {
         m_battleFeedback = "Held modifier effects require native dispatch";
         return false;
     }
@@ -2268,10 +2268,12 @@ bool FirstRunRuntime::switchPlayerPokemonInPlace(uint8_t targetIndex) {
     if (!rng) return false;
 
     m_context.player.battleState.heldItemLostTags = {};
+    m_context.player.battleState.turnDamageDealt = 0;
     m_context.playerParty[m_context.activePlayerPartyIndex] = m_context.player;
     m_context.activePlayerPartyIndex = targetIndex;
     m_context.player = m_context.playerParty[targetIndex];
     m_context.player.battleState.heldItemLostTags = {};
+    m_context.player.battleState.turnDamageDealt = 0;
     resetPokemonStatStages(m_context.player.battleState);
 
     m_checkpointAvailable = false;
