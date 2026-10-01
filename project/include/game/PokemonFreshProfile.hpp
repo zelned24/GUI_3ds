@@ -6,6 +6,33 @@
 
 namespace Pokerogue3DS {
 
+enum class PokemonObservedFormResult : uint8_t {
+    Ok, MissingSpecies, MissingForm, SpeciesMismatch, UnresolvedForm, AttributeCapacityUnsupported
+};
+// Pokemon.getDexAttr -> GameData.getFormAttr: DEFAULT_FORM (128) shifted
+// by the actual source form index. This preserves observation, not unlock rules.
+inline PokemonObservedFormResult pokemonObservedDexFormAttr(uint16_t dex,
+    const PokemonActorIdentity& actor, uint64_t& output) {
+    const auto* species = PokerogueContent::findSpeciesByDex(dex);
+    if (!species) return PokemonObservedFormResult::MissingSpecies;
+    uint16_t index = 0;
+    if (actor.formId && *actor.formId) {
+        const auto* form = PokerogueContent::findFormById(actor.formId);
+        if (!form) return PokemonObservedFormResult::MissingForm;
+        const char* left = form->speciesId;
+        const char* right = species->id;
+        if (!left || !right) return PokemonObservedFormResult::SpeciesMismatch;
+        while (*left && *right && *left == *right) { ++left; ++right; }
+        if (*left != *right) return PokemonObservedFormResult::SpeciesMismatch;
+        index = form->upstreamFormIndex;
+    } else if (species->firstFormId && *species->firstFormId) {
+        return PokemonObservedFormResult::UnresolvedForm;
+    }
+    if (index > 56) return PokemonObservedFormResult::AttributeCapacityUnsupported;
+    output = uint64_t(128) << index;
+    return PokemonObservedFormResult::Ok;
+}
+
 enum class PokemonFreshProfileResult : uint8_t {
     Ok = 0, MissingSpecies, NotDefaultStarter, InvalidStarterOrder
 };

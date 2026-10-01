@@ -781,6 +781,15 @@ extern "C" int runNativeSaveChecks() {
         for (const auto& species : PokerogueContent::kSpecies)
             if (!std::strcmp(species.id, form.speciesId)) { speciesDex = species.dex; break; }
         if (!speciesDex || PokerogueContent::findFormByUpstreamIndex(speciesDex, form.upstreamFormIndex) != &form) return 145;
+        PokemonActorIdentity formActor{};
+        formActor.formId = form.id;
+        uint64_t observed = 0;
+        if (pokemonObservedDexFormAttr(speciesDex, formActor, observed) != PokemonObservedFormResult::Ok ||
+            observed != (uint64_t(128) << form.upstreamFormIndex)) return 147;
+        observed = 123;
+        if (pokemonObservedDexFormAttr(0, formActor, observed) != PokemonObservedFormResult::MissingSpecies ||
+            observed != 123) return 148;
+
     }
     if (PokerogueContent::findFormByUpstreamIndex(0, 0)) return 146;
     return 0;

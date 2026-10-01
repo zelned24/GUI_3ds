@@ -1237,3 +1237,9 @@
 2. Dos importaciones completas coincidieron en hash `bcc2ae431359522ca9c6c0441bd06e257ce28ccb940e7dbb31d31099cfd38bbe`; pins y conteos siguen iguales: 1084 especies/609 formas. Esta evidencia demuestra generación determinista, no ejecución del juego.
 3. El snapshot previo `d2e27cf94a29826157bed69b788e807a9bb30ee05a44de3f4369a51146a9b4ff` deja de coincidir; guardados/perfiles vinculados a ese hash requieren migración explícita todavía pendiente. No se neutraliza la protección de hash.
 4. Regresiones de orden de constructor y lookup por especie/índice para todo el catálogo de formas escritas; sin ejecutar. Persistir/desbloquear formas y reglas de battle forms siguen pendientes; tests/compilación aplazados.
+
+## Metadata observada de forma: resolver previo a persistencia
+
+1. Verificada construcción de `PokemonSpecies.forms`: conserva directamente el array upstream; índices importados corresponden a los usados por `Pokemon.getDexAttr`. `pokemonObservedDexFormAttr` resuelve identidad canónica a `DEFAULT_FORM (128) << upstreamFormIndex`, sin RNG y sin modificar output si falla.
+2. Distingue especie/forma ausente, especie discordante, forma sin resolver y capacidad de atributo de 64 bits excedida (índice >56). Esa capacidad es del adaptador de metadata, no un límite del catálogo canónico. No trunca bits ni inventa una forma base cuando hay forms.
+3. Resolver todavía no conectado al perfil de captura; observa forma, no sustituye `getFullUnlocksData` ni reglas de battle forms. Persistencia y desbloqueos completos pendientes. Regresión del catálogo real escrita, sin ejecutar; tests/compilación aplazados.
