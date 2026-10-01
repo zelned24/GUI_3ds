@@ -162,6 +162,11 @@ export function registerMigrationContentTests(test) {
     assert.match(header, /\{3, 0, 15, 85, 10, 0, -1, 1, MoveHasMultiHit, 1, "double_slap"/, 'default MultiHitAttr maps to pinned TWO_TO_FIVE');
     assert.ok(header.includes('int8_t level; uint16_t moveId;'), 'native learnset retains upstream signed sentinel levels');
     assert.ok(header.includes('levelMovesFor(const Form& form)'), 'native runtime exposes form-specific learnset ranges');
+    assert.ok(header.includes('kMoveStatusEffects[]'), 'real StatusEffectAttr metadata reaches C++ tables');
+    const thunderWave = canonical.collections.moves.find(move => move.id === 'thunder_wave');
+    assert.ok(thunderWave.extensions.upstreamRawRecord.value.includes('StatusEffectAttr, StatusEffect.PARALYSIS'));
+    assert.ok(header.includes(`{${thunderWave.moveId}, "PARALYSIS", false, true,`),
+      'Thunder Wave preserves the pinned constant effect and constructor selfTarget default');
     assert.ok(header.includes('kFormChangeReferences[]'), 'form-change targets reach native capture rules');
     const venusaurChanges = canonical.collections.species.find(species => species.id === 'venusaur')
       .extensions.upstreamFormChanges;

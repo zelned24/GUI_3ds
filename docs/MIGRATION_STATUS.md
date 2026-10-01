@@ -1328,3 +1328,9 @@
 1. Harness prepara una especie/forma alternativa seleccionable desde el catálogo real y metadata de perfil explícita de test; no busca otro caso después de una falla del runtime.
 2. Cubre selección → actor/learnset de forma → commit pareado, interrupción de escritura de perfil, interrupción del run, reload de última generación válida, rollback vivo, rechazo de índice inválido y eliminación de preferencia con retorno a default. Comprueba ownership de escena y conserva PID/HP al fallar.
 3. Prueba escrita y registrada, sin ejecutar. No demuestra todavía que el guardado/selección funcionen en Azahar o Old 3DS; tests/compilación siguen aplazados por el usuario.
+
+## Parámetros de estados de movimientos en C++
+
+1. Generador normaliza declaraciones StatusEffectAttr desde raw canónico real a kMoveStatusEffects: ID de move upstream, símbolo de StatusEffect, selfTarget (default false), resolución de parámetros y provenance. Expresiones no constantes quedan explícitamente parametersResolved=false, sin sustituir por un efecto inventado.
+2. Fuente inspeccionada src/data/moves/move.ts, StatusEffectAttr.constructor/apply: chance usa MoveEffectAttr.getMoveChance y luego target.trySetStatus; turnos/inmunidades/modificadores pertenecen a otras capas. MultiStatusEffectAttr y callbacks siguen en metadata canónica, no se ejecutan como efecto constante.
+3. Esta tabla prepara porting de estados; no habilita esos movimientos en combate. Faltan estado durable, inmunidades, pre-move/residuals y dispatcher antes de declararlos jugables. Regresión de Thunder Wave escrita; tests/compilación aplazados.
