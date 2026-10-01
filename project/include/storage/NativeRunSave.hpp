@@ -6,8 +6,8 @@
 
 namespace Pokerogue3DS {
 
-inline constexpr uint16_t kNativeSaveVersion = 11;
-inline constexpr uint16_t kNativeSaveRuntimeVersion = 11;
+inline constexpr uint16_t kNativeSaveVersion = 12;
+inline constexpr uint16_t kNativeSaveRuntimeVersion = 12;
 // Bounded text envelope including six trainer members and field/inventory state.
 inline constexpr size_t kNativeSaveMaxBytes = 8192;
 inline constexpr size_t kNativeHeldModifierCapacity = 32;
@@ -74,6 +74,8 @@ bool restoreNativePokemonActorSave(const NativePokemonSave& saved,
 
 struct NativeRunSave {
     uint32_t generation = 0;
+    // Zero denotes a legacy/unlinked run; otherwise load this exact profile generation.
+    uint32_t starterProfileGeneration = 0;
     uint16_t saveVersion = kNativeSaveVersion;
     uint16_t runtimeVersion = kNativeSaveRuntimeVersion;
     char contentHash[65]{};

@@ -776,3 +776,9 @@
 1. `loadGeneration` carga la generación concreta referenciada por una run, sin sustituirla por el perfil más reciente. Si no existe, falla explícitamente.
 2. `prepareFromCommitted` escribe un candidato en el slot opuesto al perfil comprometido. Si una run aún referencia generación 1 y existe candidato 2, un reintento escribe candidato 3 sobre el slot pendiente, conservando 1. Esto evita destruir el perfil necesario para recuperar la run anterior.
 3. Regresiones 67–72 escritas: interrupción entre perfil/run simulada, reintento y recuperación de generaciones exactas; sin ejecutar. Falta persistir la referencia en NativeRunSave y conectar el coordinador al arranque/checkpoints/exportación. Todavía no se declara transacción conjunta completa.
+
+## Referencia del perfil en el guardado de la run
+
+1. Envelope/runtime v12 almacena `starterProfileGeneration` dentro del contenido protegido por SHA-256. Cero identifica una run legacy o todavía sin perfil asociado; una referencia positiva exige cargar esa generación exacta.
+2. Lectura v1–v11 conservada; v11 mantiene inventario y migra la referencia a cero. El codec no consulta SD ni sustituye una generación ausente.
+3. Regresiones 73–75 escritas para roundtrip de la referencia y migración v11, pendientes de ejecución. Falta conectar el coordinador al arranque/checkpoints/exportación y preservar la referencia al capturar snapshots de gameplay; no se declara transacción conjunta completa.

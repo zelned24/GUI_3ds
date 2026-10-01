@@ -808,6 +808,7 @@ NativeSaveResult encodeNativeRunSave(const NativeRunSave& save, char* output, si
         writer.text("heldModifierBytes="); writer.hex(static_cast<uint32_t>(payloadSize), 4);
         for (size_t byte = 0; byte < payloadSize; ++byte) writer.character(payload[byte]);
     }
+    writer.text("starterProfileGeneration="); writer.hex(save.starterProfileGeneration, 8);
     if (!writer.valid) return NativeSaveResult::TooLarge;
     char hash[65];
     IntegritySha256::hashHex(output, writer.position, hash);
@@ -824,7 +825,7 @@ NativeSaveResult decodeNativeRunSave(const char* bytes, size_t length, const cha
     auto status = inspectEnvelope(bytes, length, value, payloadStart);
     if (status != NativeSaveResult::Ok) return status;
     if (value.saveVersion > kNativeSaveVersion) return NativeSaveResult::UnsupportedVersion;
-    if (value.saveVersion != 1 && value.saveVersion != 2 && value.saveVersion != 3 && value.saveVersion != 4 && value.saveVersion != 5 && value.saveVersion != 6 && value.saveVersion != 7 && value.saveVersion != 8 && value.saveVersion != 9 && value.saveVersion != 10 &&
+    if (value.saveVersion != 1 && value.saveVersion != 2 && value.saveVersion != 3 && value.saveVersion != 4 && value.saveVersion != 5 && value.saveVersion != 6 && value.saveVersion != 7 && value.saveVersion != 8 && value.saveVersion != 9 && value.saveVersion != 10 && value.saveVersion != 11 &&
         value.saveVersion != kNativeSaveVersion) return NativeSaveResult::UnsupportedVersion;
     const bool legacySetup = value.saveVersion == 1 && value.runtimeVersion == 1;
     const bool legacyBattle = value.saveVersion == 2 && value.runtimeVersion == 2;
@@ -836,9 +837,10 @@ NativeSaveResult decodeNativeRunSave(const char* bytes, size_t length, const cha
     const bool legacyRoom = value.saveVersion == 8 && value.runtimeVersion == 8;
     const bool legacyInventory = value.saveVersion == 9 && value.runtimeVersion == 9;
     const bool legacyParty = value.saveVersion == 10 && value.runtimeVersion == 10;
+    const bool legacyHeld = value.saveVersion == 11 && value.runtimeVersion == 11;
     const bool currentPayload = value.saveVersion == kNativeSaveVersion &&
         value.runtimeVersion == kNativeSaveRuntimeVersion;
-    if (!currentPayload && !legacySetup && !legacyBattle && !legacyProgress && !legacyTrainer && !legacySwitch && !legacyStages && !legacyWeather && !legacyRoom && !legacyInventory && !legacyParty)
+    if (!currentPayload && !legacySetup && !legacyBattle && !legacyProgress && !legacyTrainer && !legacySwitch && !legacyStages && !legacyWeather && !legacyRoom && !legacyInventory && !legacyParty && !legacyHeld)
         return NativeSaveResult::IncompatibleRuntime;
     if (!isHash(expectedContentHash)) return NativeSaveResult::InvalidFormat;
     if (!equal(value.contentHash, expectedContentHash)) return NativeSaveResult::ContentMismatch;
@@ -982,8 +984,11 @@ NativeSaveResult decodeNativeRunSave(const char* bytes, size_t length, const cha
                 reader.position += parsed;
             }
         }
+        if (value.saveVersion >= 12 &&
+            (!reader.literal("starterProfileGeneration=") ||
+             !reader.hex(8, value.starterProfileGeneration))) return NativeSaveResult::InvalidFormat;
         if (reader.position != reader.end) return NativeSaveResult::InvalidFormat;
-        if (legacyBattle || legacyProgress || legacyTrainer || legacySwitch || legacyStages || legacyWeather || legacyRoom || legacyInventory || legacyParty) {
+        if (legacyBattle || legacyProgress || legacyTrainer || legacySwitch || legacyStages || legacyWeather || legacyRoom || legacyInventory || legacyParty || legacyHeld) {
             value.saveVersion = kNativeSaveVersion;
             value.runtimeVersion = kNativeSaveRuntimeVersion;
         }
