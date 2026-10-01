@@ -820,6 +820,12 @@ static int checkWave200FinalBossAndGameClear() {
     if (applyHeldMoveHealingPhase(healingItems, 2, heldHealActor, true, heldHealPolicy, heldHealEvent) !=
         HeldHealingResult::Resolved || heldHealEvent.healed != 7 || heldHealActor.hp != 17 ||
         heldHealActor.turnDamageDealt != 19) return 433;
+    // Move-end healing reads accumulated turn damage, even if this move added none.
+    if (applyHeldMoveHealingPhase(healingItems, 2, heldHealActor, true, heldHealPolicy, heldHealEvent) !=
+        HeldHealingResult::Resolved || heldHealEvent.healed != 7 || heldHealActor.hp != 24) return 434;
+    heldHealActor.turnDamageDealt = 0;
+    if (applyHeldMoveHealingPhase(healingItems, 2, heldHealActor, true, heldHealPolicy, heldHealEvent) !=
+        HeldHealingResult::Resolved || heldHealEvent.healed || heldHealActor.hp != 24) return 435;
     const auto preservedBoss = bossActor;
     if (applyPokemonFixedEnemyMovePp(*firstPhase, bossActor) ||
         bossActor.moves[3].maxPp != preservedBoss.moves[3].maxPp) return 338;

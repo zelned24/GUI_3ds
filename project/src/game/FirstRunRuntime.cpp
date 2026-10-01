@@ -1531,12 +1531,20 @@ bool FirstRunRuntime::executeActiveBattleMove(uint8_t userIndex, uint8_t targetI
     if (moveSlot >= user.moveCount || moveSlot >= 4) return false;
     const auto* move = PokerogueContent::findMoveById(user.moves[moveSlot].moveId);
     if (!move || !supportsBaselineBattleMove(move->id)) return false;
+    const auto applyMoveHeldHealing = [this](PokemonBattleState& actor) {
+        PokemonHealingPolicy policy{};
+        policy.resolved = true; // Current gated frontier has no Heal Block/Healing Charms.
+        PokemonHealingEvent event{};
+        return applyHeldMoveHealingPhase(m_heldModifiers.data(), m_heldModifierCount,
+            actor, actor.hp != 0, policy, event) == HeldHealingResult::Resolved;
+    };
     if (selfHealingProfile(move->id)) {
         PokemonHealingPolicy policy{};
         policy.resolved = true;
         PokemonHealingEvent event{};
         if (usePokemonSelfHealingCommand(user, moveSlot, policy, event) != PokemonHealingResult::Ok)
             return false;
+        if (!applyMoveHeldHealing(user)) return false;
         m_battleFeedback = event.healed ? "HP restored" : "HP unchanged";
         return true;
     }
@@ -1554,6 +1562,7 @@ bool FirstRunRuntime::executeActiveBattleMove(uint8_t userIndex, uint8_t targetI
         PokemonWeatherChangeEvent event{};
         if (usePokemonWeatherChangeCommand(user, m_arenaWeather, moveSlot, policy, event) !=
                 PokemonWeatherChangeResult::Ok) return false;
+        if (!applyMoveHeldHealing(user)) return false;
         m_battleFeedback = event.changed ? "Weather changed" : "Weather move failed";
         return true;
     }
@@ -1617,6 +1626,7 @@ bool FirstRunRuntime::executeActiveBattleMove(uint8_t userIndex, uint8_t targetI
         PokemonStatStageCommandEvent event{};
         if (usePokemonStatStageStatusCommand(user, opponent, moveSlot, policy, rng, event) !=
                 PokemonStatStageEffectResult::Ok) return false;
+        if (!applyMoveHeldHealing(user)) return false;
         if (!event.move.hit) {
             m_battleFeedback = policy.move.blockedBeforeAccuracy ? "Move blocked by ability" : "Move missed";
         } else {
@@ -1632,6 +1642,7 @@ bool FirstRunRuntime::executeActiveBattleMove(uint8_t userIndex, uint8_t targetI
         PokemonTrickRoomCommandEvent event{};
         if (usePokemonTrickRoomCommand(user, m_trickRoom, moveSlot, policy, event) !=
                 PokemonTrickRoomCommandResult::Ok) return false;
+        if (!applyMoveHeldHealing(user)) return false;
         m_battleFeedback = event.field.activated ? "Trick Room activated" : "Trick Room removed";
         return true;
     }
@@ -1658,13 +1669,6 @@ bool FirstRunRuntime::executeActiveBattleMove(uint8_t userIndex, uint8_t targetI
         m_battleFeedback = "Boss damage callbacks require dispatcher";
         return false;
     }
-    const auto applyMoveHeldHealing = [this](PokemonBattleState& actor) {
-        PokemonHealingPolicy policy{};
-        policy.resolved = true; // Current gated frontier has no Heal Block/Healing Charms.
-        PokemonHealingEvent event{};
-        return applyHeldMoveHealingPhase(m_heldModifiers.data(), m_heldModifierCount,
-            actor, actor.hp != 0, policy, event) == HeldHealingResult::Resolved;
-    };
     if (damageRecoilProfile(move->id)) {
         auto nextUser = user;
         auto nextOpponent = opponent;

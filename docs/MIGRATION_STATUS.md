@@ -600,3 +600,8 @@
 
 1. Fase compartida de curacion filtra HitHealModifier al fin del movimiento; runtime la conecta en ataques normales, recoil y drain antes de commit de actores/RNG/boss. Usa turnDamageDealt acumulado y conserva el contador hasta TurnEnd.
 2. Regresion 433 escrita; tests/compilacion aplazados. Inventario sigue bloqueado hasta dispatcher completo; status/multihit y politica de tags/charms pendientes.
+
+## Cierre de movimientos de estado con Shell Bell
+
+1. Rutas nativas self-heal, clima, stat-stage y Trick Room pasan por el mismo cierre HitHealModifier que los ataques. Conserva turnDamageDealt acumulado; movimiento sin dano nuevo no sustituye el contador por cero. Fallos se propagan al comando candidato.
+2. Regresiones 434-435 escritas para acumulador conservado y ausencia de dano; tests/compilacion aplazados. Inventario sigue bloqueado hasta resolver dispatcher completo, tags/charms y multihit.
