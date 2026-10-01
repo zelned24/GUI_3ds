@@ -120,7 +120,8 @@ enum class HeldItemTheftAbilityPolicyResult : uint8_t {
 // IDs are the source actor's currently applicable abilities/passives, after
 // suppression/ignorable/fainted/fusion rules. This resolver does not invent that set.
 inline HeldItemTheftAbilityPolicyResult resolveHeldItemTheftAbilityPolicy(
-    const uint16_t* activeAbilityIds, size_t count, bool applicabilityResolved, bool& theftBlocked) {
+    const uint16_t* activeAbilityIds, size_t count, bool applicabilityResolved, bool& theftBlocked,
+    bool nativePostLostCallbacksReady = false) {
     if (count && !activeAbilityIds) return HeldItemTheftAbilityPolicyResult::InvalidState;
     if (!applicabilityResolved) return HeldItemTheftAbilityPolicyResult::UnresolvedApplicability;
     bool blocked = false, pending = false;
@@ -131,7 +132,8 @@ inline HeldItemTheftAbilityPolicyResult resolveHeldItemTheftAbilityPolicy(
         if (!selected) return HeldItemTheftAbilityPolicyResult::UnknownAbility;
         if (selected->conditionalCallbacks) return HeldItemTheftAbilityPolicyResult::UnresolvedCallbacks;
         blocked |= selected->blocksTheft;
-        pending |= selected->requiresPostLostDispatcher;
+        pending |= selected->requiresPostLostDispatcher &&
+            !(nativePostLostCallbacksReady && selected->appliesUnburden);
     }
     // CancelInteractionAbAttr cancels before inventory mutation/PostItemLost.
     if (!blocked && pending) return HeldItemTheftAbilityPolicyResult::UnresolvedCallbacks;
@@ -268,6 +270,39 @@ inline HeldItemInventoryTransferResult applySelectedHeldItemTheft(
     event.resultingInventoryIndex = count - 1;
     output = event;
     return HeldItemInventoryTransferResult::Transferred;
+}
+
+// Preflight copied tags; commit them only after inventory transfer succeeds.
+// The caller resolves applicability and modifier matching before this operation.
+inline HeldItemInventoryTransferResult applyHeldItemTheftWithCallbacks(
+    NativeHeldModifierInstance* records, size_t capacity, size_t& count, size_t sourceIndex,
+    PokemonBattleState& sourceActor, uint32_t targetPokemonId, const HeldItemTheftPolicy& matchPolicy,
+    const uint16_t* activeAbilityIds, size_t abilityCount, bool applicabilityResolved,
+    bool itemLost, HeldItemInventoryTransferEvent& output) {
+    if (!records || count > capacity || sourceIndex >= count ||
+        records[sourceIndex].ownerPokemonId != sourceActor.pokemonId)
+        return HeldItemInventoryTransferResult::InvalidState;
+    if (!matchPolicy.resolved) return HeldItemInventoryTransferResult::UnresolvedPolicy;
+    bool blocked = false;
+    if (resolveHeldItemTheftAbilityPolicy(activeAbilityIds, abilityCount, applicabilityResolved,
+            blocked, true) != HeldItemTheftAbilityPolicyResult::Resolved)
+        return HeldItemInventoryTransferResult::UnresolvedPolicy;
+    auto nextTags = sourceActor.heldItemLostTags;
+    if (!blocked && itemLost) {
+        const auto callback = applyHeldItemLostCallbacks(activeAbilityIds, abilityCount,
+            applicabilityResolved, false, nextTags);
+        if (callback != HeldItemLostCallbackResult::Applied && callback != HeldItemLostCallbackResult::NoChange)
+            return HeldItemInventoryTransferResult::UnresolvedPolicy;
+    }
+    auto policy = matchPolicy;
+    policy.blockedByAbility = blocked;
+    HeldItemInventoryTransferEvent event{};
+    const auto result = applySelectedHeldItemTheft(records, capacity, count, sourceIndex,
+        targetPokemonId, policy, event);
+    if (result != HeldItemInventoryTransferResult::Transferred) return result;
+    sourceActor.heldItemLostTags = nextTags;
+    output = event;
+    return result;
 }
 
 struct HeldItemTransferCandidate {

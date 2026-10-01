@@ -555,3 +555,8 @@
 
 1. Subformato pokemon=4 agrega flag Unburden; lectores 1-3 migran tag ausente. Envelope run v11 conserva compatibilidad estructural; runtime antiguo rechaza actor v4. Snapshot explicito requerido con tags; restore aplica tag despues de reconstruir encuentro.
 2. Regresiones 405-407 escritas para roundtrip, migracion v3 y flag invalido; fixtures v1/v2 conservan layout previo. Tests/compilacion aplazados. Sigue pendiente callback dentro del turno y resto del lifecycle.
+
+## Transferencia y callback atomicos
+
+1. applyHeldItemTheftWithCallbacks valida owner y policy, prepara PostItemLost en copia y publica tags/evento solo tras transferencia. Unburden conocido resuelve callbacks; metadata desconocida sigue rechazada.
+2. Regresiones 410-413 escritas para aplicabilidad pendiente, Sticky Hold y transferencia con Unburden. Falta conexion al fin de turno y aplicabilidad completa. Tests/compilacion aplazados.

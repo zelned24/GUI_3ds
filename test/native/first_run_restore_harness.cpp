@@ -663,6 +663,40 @@ static int checkWave200FinalBossAndGameClear() {
     lostTags = {};
     if (applyHeldItemLostCallbacks(invalidLostSet, 2, true, false, lostTags) !=
             HeldItemLostCallbackResult::UnknownAbility || lostTags.unburden) return 404;
+    NativeHeldModifierInstance callbackRecords[2]{};
+    callbackRecords[0] = otherHolder;
+    callbackRecords[0].ownerPokemonId = 1001;
+    callbackRecords[0].stackCount = 1;
+    size_t callbackCount = 1;
+    PokemonBattleState callbackActor{};
+    callbackActor.pokemonId = 1001;
+    HeldItemTheftPolicy callbackPolicy{};
+    callbackPolicy.resolved = true;
+    callbackPolicy.targetMaxStack = 1;
+    HeldItemInventoryTransferEvent callbackEvent{};
+    if (applyHeldItemTheftWithCallbacks(callbackRecords, 2, callbackCount, 0, callbackActor, 1002,
+            callbackPolicy, &pendingLostAbility, 1, false, true, callbackEvent) !=
+            HeldItemInventoryTransferResult::UnresolvedPolicy || callbackActor.heldItemLostTags.unburden ||
+        callbackRecords[0].ownerPokemonId != 1001) return 410;
+    if (applyHeldItemTheftWithCallbacks(callbackRecords, 2, callbackCount, 0, callbackActor, 1002,
+            callbackPolicy, &blockingTheftAbility, 1, true, true, callbackEvent) !=
+            HeldItemInventoryTransferResult::BlockedByAbility || callbackActor.heldItemLostTags.unburden ||
+        callbackRecords[0].ownerPokemonId != 1001) return 411;
+    callbackRecords[1] = callbackRecords[0];
+    callbackRecords[1].ownerPokemonId = 1002;
+    callbackCount = 2;
+    callbackPolicy.matchingTargetIndex = 1;
+    if (applyHeldItemTheftWithCallbacks(callbackRecords, 2, callbackCount, 0, callbackActor, 1002,
+            callbackPolicy, &pendingLostAbility, 1, true, true, callbackEvent) !=
+            HeldItemInventoryTransferResult::NoCapacity || callbackActor.heldItemLostTags.unburden ||
+        callbackCount != 2 || callbackRecords[0].ownerPokemonId != 1001) return 413;
+    callbackCount = 1;
+    callbackRecords[1] = {};
+    callbackPolicy.matchingTargetIndex = static_cast<size_t>(-1);
+    if (applyHeldItemTheftWithCallbacks(callbackRecords, 2, callbackCount, 0, callbackActor, 1002,
+            callbackPolicy, &pendingLostAbility, 1, true, true, callbackEvent) !=
+            HeldItemInventoryTransferResult::Transferred || !callbackActor.heldItemLostTags.unburden ||
+        callbackRecords[0].ownerPokemonId != 1002 || callbackEvent.sourcePokemonId != 1001) return 412;
     const auto preservedBoss = bossActor;
     if (applyPokemonFixedEnemyMovePp(*firstPhase, bossActor) ||
         bossActor.moves[3].maxPp != preservedBoss.moves[3].maxPp) return 338;
