@@ -1272,3 +1272,8 @@
 1. pokemonObtainableFormMask implementa únicamente la componente de formas de PokemonSpecies.getFullUnlocksData: catálogo con cero/una forma usa DEFAULT_FORM; múltiples formas excluyen isUnobtainable. Metadata desconocida y capacidad excedida fallan explícitamente sin modificar output.
 2. Máscara de permisos no equivale a desbloqueos ganados. Aún falta combinar capturas, reglas especiales de battle forms/preevoluciones y perfil durable antes de conectar selección de formas. Observaciones no conceden todas las formas obtenibles.
 3. Regresión de máscara para las 1084 especies y error de especie ausente añadida al harness; pendiente de ejecución. Tests/compilación siguen aplazados.
+
+## Corrección del lector legacy de perfiles
+
+1. Revisión estática detectó código duplicado dentro del bloque v1 de inspectNativeStarterCandyProfile: referencia a species sin declaración y retornos bool incompatibles con NativeSaveResult. Retirado únicamente ese duplicado.
+2. Se conserva la restricción v1 a especies raíz y la validación común StarterCandyProfileCodec::valid para IDs, atributos y formas. No se modifica el formato ni se relajan checksums/hash. Regresiones legacy existentes permanecen; ejecución y compilación aplazadas.

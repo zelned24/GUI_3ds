@@ -329,13 +329,7 @@ inline NativeSaveResult inspectNativeStarterCandyProfile(const char* input, size
         if (!legacy && (reduced ? (static_cast<uint8_t>(source[8]) & ~7u) != 0 : static_cast<uint8_t>(source[8]) > 1)) return NativeSaveResult::InvalidRecord;
         const auto value = StarterCandyProfileCodec::record(source, v);
         if (legacy) {
-            if (value.observedFormAttr & uint64_t(127)) return false;
-    if (species) for (uint8_t index = 0; index <= 56; ++index) {
-        if (!(value.observedFormAttr & (uint64_t(128) << index))) continue;
-        if (PokerogueContent::findFormByUpstreamIndex(value.speciesDex, index)) continue;
-        if (index || (species->firstFormId && *species->firstFormId)) return false;
-    }
-    const auto* root = pokemonRootSpecies(value.speciesDex);
+            const auto* root = pokemonRootSpecies(value.speciesDex);
             if (!root || root->dex != value.speciesDex) return NativeSaveResult::InvalidRecord;
         }
         if (!StarterCandyProfileCodec::valid(value, previous, candyLimit)) return NativeSaveResult::InvalidRecord;
