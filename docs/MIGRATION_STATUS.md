@@ -1445,3 +1445,9 @@
 1. Generador deriva BlockNonDirectDamageAbAttr, BlockStatusDamageAbAttr y ReduceBurnDamageAbAttr desde raw pinned; guarda máscara por status y ratio de burn, y marca parámetros/builders desconocidos sin resolver. Runtime consulta perfiles por ID canónico, sin ramas por nombre de habilidad.
 2. Magic Guard bloquea residual conservando incremento del contador; Heatproof reduce burn a mitad. Poison Heal conserva máscara poison/toxic pero sigue sin resolver hasta implementar PostTurnStatusHealAbAttr. Política distingue habilidad activa y callbacks resueltos; pasivas/suppression completos pendientes.
 3. Regresiones de catálogo real, reducción/bloqueo, habilidad inactiva y rechazo de callbacks pendientes escritas, sin ejecutar. Catálogo regenerado, hash unchanged. Tests/compilación aplazados.
+
+## Curación posterior al turno por estado
+
+1. PostTurnStatusHealAbAttr deriva máscara poison/toxic del catálogo y cura toDmgValue(maxHP/8) mediante política explícita de Heal Block/multiplicador. No cura status ni modifica counters; respeta HP máximo/faint.
+2. finishBattleTurn aplica este efecto después de held turn healing y antes del reset de turno; interlude lo omite. Poison Heal deja de ser capability pendiente en este dominio porque ahora están ambos atributos de bloqueo/curación. No declara completa su interacción con pasivas/suppression ni doubles.
+3. Regresiones de bloqueo toxic + curación, cap, Heal Block, efecto no elegible y policy desconocida escritas sin ejecutar. Catálogo regenerado conservando hash. Tests/compilación aplazados.

@@ -2512,6 +2512,23 @@ bool FirstRunRuntime::finishBattleTurn() {
             return false;
         }
     }
+    if (!upcomingInterlude) {
+        PokemonBattleState* healActors[] = {&nextPlayer, &nextEnemy, &nextSecondEnemy};
+        for (uint8_t i = 0; i < (m_doubleBattle ? 3 : 2); ++i) {
+            auto& actor = *healActors[i];
+            bool statusHealingDeclared = false;
+            for (const auto& profile : PokerogueContent::kStatusResidualAbilityProfiles)
+                if (profile.abilityId == actor.abilityId) { statusHealingDeclared = profile.healedStatusMask != 0; break; }
+            if (!actor.hp || !statusHealingDeclared) continue;
+            PokemonHealingPolicy healing{};
+            healing.resolved = true; // Current frontier excludes Heal Block/Healing Charms.
+            PokemonHealingEvent event{};
+            if (m_doubleBattle || applyPokemonPostTurnStatusHealing(actor, true, healing, event) != PokemonHealingResult::Ok) {
+                m_battleFeedback = "Post-turn status healing requires dispatcher";
+                return false;
+            }
+        }
+    }
     // Reset PokemonTurnData after all end-of-turn consumers.
     if ((!nextPlayer.hp || !nextEnemy.hp || (m_doubleBattle && !nextSecondEnemy.hp)) &&
         !recordActiveParticipant()) return false;

@@ -147,6 +147,36 @@ struct PokemonHealingEvent {
     uint16_t hpAfter = 0;
     uint16_t healed = 0;
 };
+// PostTurnStatusHealAbAttr queues PokemonHealPhase with toDmgValue(maxHP / 8).
+inline PokemonHealingResult applyPokemonPostTurnStatusHealing(PokemonBattleState& actor,
+    bool abilityActive, const PokemonHealingPolicy& policy, PokemonHealingEvent& output) {
+    if (!policy.resolved) return PokemonHealingResult::UnresolvedPolicy;
+    if (!pokemonStatusStateValid(actor.status) || actor.hp > actor.maxHp || !actor.maxHp ||
+        !std::isfinite(policy.healingMultiplier) || policy.healingMultiplier <= 0)
+        return PokemonHealingResult::InvalidState;
+    const PokerogueContent::StatusResidualAbilityProfile* capability = nullptr;
+    for (const auto& profile : PokerogueContent::kStatusResidualAbilityProfiles)
+        if (profile.abilityId == actor.abilityId) { capability = &profile; break; }
+    if (!capability || !capability->resolved) return PokemonHealingResult::UnresolvedPolicy;
+    PokemonHealingEvent event{};
+    event.hpBefore = event.hpAfter = actor.hp;
+    if (abilityActive && actor.hp && actor.status.present &&
+        (capability->healedStatusMask & (1u << static_cast<uint8_t>(actor.status.effect)))) {
+        event.failedFullHp = actor.hp == actor.maxHp;
+        event.blocked = !event.failedFullHp && policy.healBlocked;
+        if (!event.failedFullHp && !event.blocked) {
+            const uint32_t base = actor.maxHp / 8 ? actor.maxHp / 8 : 1;
+            const double amount = std::floor(base * policy.healingMultiplier);
+            const uint16_t missing = actor.maxHp - actor.hp;
+            event.healed = amount >= missing ? missing : static_cast<uint16_t>(amount);
+            event.hpAfter += event.healed;
+            event.showAnimation = event.healed != 0;
+        }
+    }
+    actor.hp = event.hpAfter;
+    output = event;
+    return PokemonHealingResult::Ok;
+}
 inline PokemonHealingResult usePokemonSelfHealingCommand(PokemonBattleState& user,
     uint8_t slot, const PokemonHealingPolicy& policy, PokemonHealingEvent& output) {
     if (!policy.resolved) return PokemonHealingResult::UnresolvedPolicy;

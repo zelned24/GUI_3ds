@@ -2741,11 +2741,11 @@ extern "C" int runPokemonBattleStateChecks() {
             residualActor.status.toxicTurnCount != 1) return 9012;
     }
     if (!foundResidualCapability) return 9013;
-    bool foundIndirectBlock = false, foundBurnReduction = false, foundUnresolvedStatusBlock = false;
+    bool foundIndirectBlock = false, foundBurnReduction = false, foundStatusBlock = false;
     for (const auto& profile : PokerogueContent::kStatusResidualAbilityProfiles) {
         Pokerogue3DS::PokemonStatusResidualPolicy policy{};
+        if (profile.blockedStatusMask) foundStatusBlock = true;
         if (!profile.resolved) {
-            if (profile.blockedStatusMask) foundUnresolvedStatusBlock = true;
             if (Pokerogue3DS::resolvePokemonStatusResidualPolicy(profile.abilityId, Effect::Burn, true, true, policy))
                 return 9014;
             continue;
@@ -2771,6 +2771,45 @@ extern "C" int runPokemonBattleStateChecks() {
             policy.blockNonDirectDamage || policy.blockStatusDamage || policy.burnMultiplierDenominator != 1)
             return 9018;
     }
-    if (!foundIndirectBlock || !foundBurnReduction || !foundUnresolvedStatusBlock) return 9019;
+    if (!foundIndirectBlock || !foundBurnReduction || !foundStatusBlock) return 9019;
+    bool foundStatusHealing = false;
+    for (const auto& profile : PokerogueContent::kStatusResidualAbilityProfiles) {
+        if (!profile.resolved || !profile.healedStatusMask) continue;
+        foundStatusHealing = true;
+        PokemonBattleState actor{};
+        actor.abilityId = profile.abilityId;
+        actor.maxHp = 160;
+        actor.hp = 100;
+        actor.status.present = true;
+        actor.status.effect = Effect::Toxic;
+        Pokerogue3DS::PokemonStatusResidualPolicy residualPolicy{};
+        if (!Pokerogue3DS::resolvePokemonStatusResidualPolicy(actor.abilityId, Effect::Toxic, true, true,
+                residualPolicy)) return 9020;
+        Pokerogue3DS::PokemonStatusResidualEvent residualEvent{};
+        if (Pokerogue3DS::applyPokemonStatusResidual(actor, residualPolicy, residualEvent) !=
+                Pokerogue3DS::PokemonStatusResidualResult::Blocked || actor.hp != 100 ||
+            actor.status.toxicTurnCount != 1) return 9021;
+        Pokerogue3DS::PokemonHealingPolicy healing{};
+        healing.resolved = true;
+        Pokerogue3DS::PokemonHealingEvent event{};
+        if (Pokerogue3DS::applyPokemonPostTurnStatusHealing(actor, true, healing, event) !=
+                Pokerogue3DS::PokemonHealingResult::Ok || actor.hp != 120 || event.healed != 20 ||
+            !actor.status.present || actor.status.toxicTurnCount != 1) return 9022;
+        healing.healBlocked = true;
+        if (Pokerogue3DS::applyPokemonPostTurnStatusHealing(actor, true, healing, event) !=
+                Pokerogue3DS::PokemonHealingResult::Ok || !event.blocked || actor.hp != 120) return 9023;
+        healing.healBlocked = false;
+        actor.hp = 159;
+        if (Pokerogue3DS::applyPokemonPostTurnStatusHealing(actor, true, healing, event) !=
+                Pokerogue3DS::PokemonHealingResult::Ok || actor.hp != 160 || event.healed != 1) return 9024;
+        actor.hp = 100;
+        actor.status.effect = Effect::Burn;
+        if (Pokerogue3DS::applyPokemonPostTurnStatusHealing(actor, true, healing, event) !=
+                Pokerogue3DS::PokemonHealingResult::Ok || actor.hp != 100 || event.healed) return 9025;
+        healing.resolved = false;
+        if (Pokerogue3DS::applyPokemonPostTurnStatusHealing(actor, true, healing, event) !=
+                Pokerogue3DS::PokemonHealingResult::UnresolvedPolicy || actor.hp != 100) return 9026;
+    }
+    if (!foundStatusHealing) return 9027;
     return 0;
 }
