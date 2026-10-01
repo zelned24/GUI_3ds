@@ -3,6 +3,7 @@
 #include "storage/IntegritySha256.hpp"
 #include "game/PokemonBattleState.hpp"
 #include "game/PokemonExperience.hpp"
+#include "game/PokemonFreshProfile.hpp"
 #include <cstdint>
 #include <cstddef>
 #include <cstring>
@@ -20,6 +21,18 @@ struct NativeStarterCandyRecord {
     uint8_t abilityAttr = 0; // Upstream AbilityAttr 1/2/4; zero is unavailable.
     uint8_t genderAttr = 0; // Upstream DexAttr.MALE/FEMALE 4/8; genderless adds neither.
 };
+
+// GameData.initDexData/initStarterData pinned baseline. Only default starters
+// receive this known metadata; never infer attributes for other caught species.
+inline bool seedNativeFreshStarterDexMetadata(NativeStarterCandyRecord& record) {
+    PokemonNature nature = PokemonNature::Unspecified;
+    if (pokemonFreshProfileNature(record.speciesDex, nature) != PokemonFreshProfileResult::Ok) return false;
+    record.natureAttr |= 1u << (static_cast<uint8_t>(nature) + 1);
+    record.abilityAttr |= 1u; // ABILITY_1
+    record.genderAttr |= 12u; // initDexData unlocks MALE and FEMALE bits.
+    for (uint8_t& iv : record.dexIvs) if (iv < 15) iv = 15;
+    return true;
+}
 
 enum class StarterCandyApplyResult : uint8_t {
     Applied = 0, InvalidRootSpecies, MissingStarterCost, InvalidCandyCount, Overflow

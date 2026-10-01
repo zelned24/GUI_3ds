@@ -1493,6 +1493,24 @@ static int checkPlayerPartyManagementAndSwitching() {
         }
     }
     if (!expectedFreshCaught || freshProfileGame.caughtSpeciesCount() != expectedFreshCaught) return 615;
+    for (size_t i = 0; i < freshProfileGame.starterProfileCount(); ++i) {
+        const auto& entry = freshProfileGame.starterProfileRecords()[i];
+        const auto* species = PokerogueContent::findSpeciesByDex(entry.speciesDex);
+        if (!species || !species->freshProfileStarter) continue;
+        PokemonNature nature = PokemonNature::Unspecified;
+        if (pokemonFreshProfileNature(entry.speciesDex, nature) != PokemonFreshProfileResult::Ok ||
+            entry.natureAttr != (1u << (static_cast<uint8_t>(nature) + 1)) || entry.abilityAttr != 1 ||
+            entry.genderAttr != 12) return 673;
+        for (uint8_t iv : entry.dexIvs) if (iv != 15) return 674;
+        auto merged = entry;
+        merged.dexIvs[0] = 31;
+        merged.abilityAttr |= 4;
+        merged.natureAttr |= 1u << 25;
+        const uint32_t mergedNatures = merged.natureAttr;
+        if (!seedNativeFreshStarterDexMetadata(merged) || merged.dexIvs[0] != 31 ||
+            merged.abilityAttr != 5 || merged.natureAttr != mergedNatures) return 675;
+    }
+
     if (freshProfileGame.presentationStage() != NativeSaveStage::RunSetup ||
         game.presentationStage() != NativeSaveStage::BattleActive) return 627;
     const auto friendshipBeforeCapture = game.presentation().player.battleState.friendship;

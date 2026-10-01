@@ -1188,3 +1188,9 @@
 2. Fuente pinned inspeccionada: `src/system/game-data.ts`, `setPokemonSpeciesCaught`; `src/field/pokemon.ts`, `getDexAttr`; `src/enums/ability-attr.ts`/`dex-attr.ts`. El perfil mantiene ambos grupos por separado, no afirma implementar todo `caughtAttr` ni `getFullUnlocksData`. Propagación completa de formas/battle forms y restricciones de especies requieren su resolver.
 3. Lectura v1–v4 conserva campos presentes y deja atributos no existentes en cero; v4 preserva naturaleza/IV. Validator rechaza bits ajenos. Pruebas v5 roundtrip, legacy v4 y bits inválidos escritas, sin ejecutar. Capacidades derivadas aumentan; medición de memoria Old 3DS pendiente.
 4. Falta conectar atributos al resolver de iniciales y persistir formas/shiny/variantes. Iniciales capturados no default siguen sin integración jugable completa. Tests/compilación aplazados.
+
+## Perfil nuevo conserva metadata de iniciales default
+
+1. `seedNativeFreshStarterDexMetadata` usa naturaleza canónica reproducible de `PokemonFreshProfile`, IV mínimos 15, ABILITY_1 y ambos bits MALE/FEMALE, tal como `GameData.initDexData`/`initStarterData` pinned. Solo acepta especies default; no infiere atributos de otros iniciales.
+2. `initializeFreshStarterProfile` guarda esa metadata en el ledger real. Capturar una especie default combina ese baseline conocido antes de agregar atributos capturados: OR de unlocks y máximos IV, sin perder progreso previo ni bajar IV superiores. No modifica un perfil legacy por el mero hecho de cargarlo.
+3. Regresiones de todo el catálogo default, naturaleza exacta, IV/flags y combinación idempotente escritas; sin ejecutar. Formas/shiny/variantes y consumo del perfil por el resolver todavía pendientes; tests y compilación aplazados.

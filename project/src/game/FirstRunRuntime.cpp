@@ -426,6 +426,11 @@ bool FirstRunRuntime::initializeFreshStarterProfile(const PokemonFriendshipPolic
     // freshProfileStarter comes from that pinned source list, not local IDs.
     for (const auto& species : PokerogueContent::kSpecies)
         if (species.freshProfileStarter && !candidate.recordCaughtSpecies(species.dex)) return false;
+    for (size_t i = 0; i < candidate.m_starterProfileCount; ++i) {
+        const auto* species = PokerogueContent::findSpeciesByDex(candidate.m_starterProfileRecords[i].speciesDex);
+        if (species && species->freshProfileStarter &&
+            !seedNativeFreshStarterDexMetadata(candidate.m_starterProfileRecords[i])) return false;
+    }
     *this = candidate;
     buildScene(); // Rebind nodes and text after publishing the heap candidate.
     return true;
@@ -470,6 +475,7 @@ bool FirstRunRuntime::recordCaughtSpecies(uint16_t dex, const ResolvedPokemon* c
         m_starterProfileRecords[index].caught = true;
         if (captured) {
             auto& entry = m_starterProfileRecords[index];
+            if (species->freshProfileStarter && !seedNativeFreshStarterDexMetadata(entry)) return false;
             entry.natureAttr |= 1u << (static_cast<uint8_t>(captured->battleState.nature) + 1);
             const auto* originalSpecies = PokerogueContent::findSpeciesByDex(captured->dex);
             if (!originalSpecies) return false;
