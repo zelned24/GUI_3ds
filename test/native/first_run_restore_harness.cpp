@@ -436,6 +436,21 @@ static int checkStatusActionAdmission() {
                     combinedAfter.enemyStatus.effect != repeatedCombinedAfter.enemyStatus.effect ||
                     combinedAfter.enemyStatus.present != repeatedCombinedAfter.enemyStatus.present) return 9532;
             }
+            auto growlCheckpoint = checkpoint;
+            growlCheckpoint.playerMoveIds[0] = growlCheckpoint.playerParty[0].moveIds[0] = 45;
+            growlCheckpoint.playerPp[0] = growlCheckpoint.playerParty[0].pp[0] =
+                growlCheckpoint.playerParty[0].maxPp[0] = 40;
+            growlCheckpoint.playerStatStages[5] = growlCheckpoint.playerParty[0].statStages[5] = -6;
+            growlCheckpoint.enemyStatStages[6] = 6;
+            FirstRunRuntime growl(seed), repeatedGrowl(seed);
+            NativeRunSave growlAfter{}, repeatedGrowlAfter{};
+            if (!growl.restoreNativeRunSave(growlCheckpoint) || !repeatedGrowl.restoreNativeRunSave(growlCheckpoint) ||
+                !growl.advanceBattleTurn() || !repeatedGrowl.advanceBattleTurn() ||
+                growl.captureNativeRunSave(growlAfter) != NativeSaveResult::Ok ||
+                repeatedGrowl.captureNativeRunSave(repeatedGrowlAfter) != NativeSaveResult::Ok ||
+                growlAfter.playerPp[0] != 39 || growlAfter.enemyStatStages[0] != repeatedGrowlAfter.enemyStatStages[0] ||
+                growlAfter.playerHp != repeatedGrowlAfter.playerHp || growlAfter.enemyHp != repeatedGrowlAfter.enemyHp)
+                return 9540;
             auto confusedEmberCheckpoint = emberCheckpoint;
             confusedEmberCheckpoint.enemyConfusion = {3, true};
             FirstRunRuntime confusedEmber(seed), repeatedConfusedEmber(seed);

@@ -1776,3 +1776,9 @@
 1. Pinned 8555c08c823b856cbec4eb99ca84ea52a955836d, src/data/moves/move.ts: HighCritAttr.apply añade una etapa; Blaze Kick y Poison Tail combinan HighCritAttr con StatusEffectAttr. Datos canónicos reales conservan ambas declaraciones.
 2. Admisión C++ permite un único efecto secundario y un modificador crítico ya portado (HighCritAttr/CritOnlyAttr). Reutiliza cálculo de crítico, daño y fase POST_APPLY; no vuelve a consumir PP ni sortea el crítico después del estado. Otros atributos/flags/builders siguen necesitando su dispatcher; Cross Poison no se habilita ignorando slicingMove.
 3. Regresión de encuentro real con snapshots de test añade ambos ataques, comprueba etapa crítica y replay de PP/HP/estado. Está escrita sin ejecutar; compilación/tests y Classic completo siguen pendientes.
+
+## Precisión de comandos que modifican estadísticas
+
+1. Revisión de FirstRunRuntime detectó que la rama StatStageStatusCommand omitía las etapas ACC/EVA al componer precisión. Ahora reutiliza composePokemonStatusAccuracyStagePolicy y los flags de bypass inspeccionados del pinned, igual que las acciones de estado.
+2. Perfiles de precisión pendientes no se interpretan como ausencia de callbacks; ejecución falla de forma transaccional. USER no hace comprobación de precisión contra oponente. La admisión anticipada completa de esta rama y ataques con StatStageChangeAttr después del daño siguen pendientes.
+3. Regresión Growl con ACC -6/EVA +6 y encuentro real compara replay de PP, HP y etapas. Compositor ya tiene regresiones de clamp y bypass escritas. Tests y compilación aún aplazados; no se declara validación ejecutada.

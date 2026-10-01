@@ -2534,7 +2534,25 @@ bool FirstRunRuntime::executeActiveBattleMove(uint8_t userIndex, uint8_t targetI
                 !composePokemonAlwaysHitPolicy(activeAbilities, 2, hit, move->id, &weatherContext)) return false;
             policy.move.blockedBeforeAccuracy = hit.blockedByAbility;
             policy.move.bypassAccuracy = hit.bypassAccuracy || move->accuracy < 0;
-            policy.move.accuracyMultiplier = hit.accuracyMultiplier;
+            PokemonStatusMoveHitPolicy baseAccuracy{}, stagedAccuracy{};
+            baseAccuracy.resolved = true;
+            baseAccuracy.accuracyMultiplier = hit.accuracyMultiplier;
+            bool ignoreUserAccuracy = false, ignoreTargetEvasion = false;
+            bool userAccuracyResolved = false, targetAccuracyResolved = false;
+            for (const auto& profile : PokerogueContent::kStatusActionAbilityProfiles) {
+                if (profile.abilityId == user.abilityId) {
+                    userAccuracyResolved = profile.resolved;
+                    ignoreTargetEvasion = profile.ignoresOpponentEvasion;
+                }
+                if (profile.abilityId == opponent.abilityId) {
+                    targetAccuracyResolved = profile.resolved;
+                    ignoreUserAccuracy = profile.ignoresOpponentAccuracy;
+                }
+            }
+            if (!userAccuracyResolved || !targetAccuracyResolved ||
+                !composePokemonStatusAccuracyStagePolicy(user, opponent, baseAccuracy, stagedAccuracy,
+                    ignoreUserAccuracy, ignoreTargetEvasion)) return false;
+            policy.move.accuracyMultiplier = stagedAccuracy.accuracyMultiplier;
         }
 
         const auto* userProfile = PokerogueContent::findAbilityStatStageProfile(user.abilityId);
