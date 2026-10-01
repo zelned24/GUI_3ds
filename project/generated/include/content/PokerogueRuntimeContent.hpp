@@ -3,7 +3,7 @@
 #include <cstddef>
 #include <cstdint>
 namespace PokerogueContent {
-inline constexpr char kContentHash[] = "9475c38f55fde778b84ea3c0d3b454c7c2ef3be4e1f61203efbd66b0392df611";
+inline constexpr char kContentHash[] = "6a2ddff478b5b7a144b9d277e06e24391a9ca223e5452d74668949510d83d6d4";
 inline constexpr char kPokerogueRevision[] = "8555c08c823b856cbec4eb99ca84ea52a955836d";
 inline constexpr char kAssetsRevision[] = "056a1f408f26a3be4fef243f7462cb43608c7928";
 inline constexpr char kLocalesRevision[] = "23aea1cb0da5a0b15b836f3c243791591cc42303";
@@ -2211,6 +2211,12 @@ inline constexpr SimpleLevelEvolutionProfile kSimpleLevelEvolutionProfiles[] = {
     {"arctibax", 0},
     {"paldea_wooper", 0}
 };
+struct FixedEnemyMoveset { uint16_t speciesDex; uint8_t formIndex; uint16_t moveIds[4]; uint8_t ppUsed[4]; int8_t ppUp[4]; };
+inline constexpr FixedEnemyMoveset kFixedEnemyMovesets[] = {
+    {890, 1, {744, 440, 53, 105}, {0, 0, 0, 0}, {0, 0, 0, -4}},
+    {890, 0, {795, 188, 53, 322}, {0, 0, 0, 0}, {0, 0, 0, 0}}
+};
+inline constexpr Entity kFixedEnemyMovesetSource = {"fixed-enemy-movesets", "EnemyPokemon.generateAndPopulateMoveset", "src/field/pokemon.ts", "EnemyPokemon.generateAndPopulateMoveset:ETERNATUS", "9f08e4bbd54ba7995b29f3fd402e54eaf98adaf5714004925f20f25b00d040dc"};
 struct MoveAttribute { const char* id; };
 struct Move { uint16_t id; uint8_t category; int16_t power; int16_t accuracy; int16_t pp; int8_t priority; int16_t upstreamChance; uint8_t generation; uint16_t upstreamFlags; uint8_t multiHitType; uint32_t attributeOffset; uint16_t attributeCount; const char* key; const char* name; const char* type; const char* target; const char* sourcePath; const char* sourceSymbol; const char* sourceHash; };
 struct PokemonSpriteAtlas { uint16_t speciesDex; uint16_t width; uint16_t height; uint32_t frameOffset; uint16_t frameCount; const char* manifestPath; const char* imagePath; const char* manifestHash; }; struct PokemonSpriteFrame { const char* filename; uint16_t x; uint16_t y; uint16_t width; uint16_t height; uint16_t sourceWidth; uint16_t sourceHeight; uint16_t trimX; uint16_t trimY; }; struct SpeciesLevelMove { uint16_t speciesDex; int8_t level; uint16_t moveId; }; struct SpeciesEggMove { uint16_t speciesDex; uint16_t moveId; };

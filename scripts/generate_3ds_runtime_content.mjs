@@ -1008,5 +1008,16 @@ const simpleEvolutionRows = evolutionEdges.filter(({ edge }) =>
 ).map(({ species, edge, order }) => `    {"${field(species.id)}", ${order}}`);
 const evolutionCapabilityHeader = captureHeader.replace('struct MoveAttribute {',
   `struct SimpleLevelEvolutionProfile { const char* speciesId; uint16_t sourceOrder; };\ninline constexpr SimpleLevelEvolutionProfile kSimpleLevelEvolutionProfiles[] = {\n${simpleEvolutionRows.join(',\n')}\n};\nstruct MoveAttribute {`);
-await fs.writeFile(outputPath, evolutionCapabilityHeader, 'utf8');
-console.log(JSON.stringify({ output: path.relative(root, outputPath), bytes: Buffer.byteLength(evolutionCapabilityHeader), hash: report.contentHash }));
+const fixedMovesets = content.extensions?.fixedEnemyMovesets;
+if (!fixedMovesets?.entries?.length || !fixedMovesets.provenance?.sourceHash)
+  throw new Error('Missing pinned fixed enemy movesets');
+const fixedRows = fixedMovesets.entries.map(profile => {
+  const species = collections.species.find(entry => entry.id === profile.speciesId);
+  if (!species || profile.moves.length !== 4 || profile.moves.some(move => !catalogMoveIds.has(move.moveId)))
+    throw new Error('Invalid fixed enemy moveset reference');
+  return `    {${species.speciesId}, ${profile.formIndex}, {${profile.moves.map(move => move.moveId).join(', ')}}, {${profile.moves.map(move => move.ppUsed).join(', ')}}, {${profile.moves.map(move => move.ppUp).join(', ')}}}`;
+});
+const fixedMovesetHeader = evolutionCapabilityHeader.replace('struct MoveAttribute {',
+  `struct FixedEnemyMoveset { uint16_t speciesDex; uint8_t formIndex; uint16_t moveIds[4]; uint8_t ppUsed[4]; int8_t ppUp[4]; };\ninline constexpr FixedEnemyMoveset kFixedEnemyMovesets[] = {\n${fixedRows.join(',\n')}\n};\ninline constexpr Entity kFixedEnemyMovesetSource = {"fixed-enemy-movesets", "EnemyPokemon.generateAndPopulateMoveset", "${field(fixedMovesets.provenance.sourcePath)}", "${field(fixedMovesets.provenance.sourceSymbol)}", "${field(fixedMovesets.provenance.sourceHash)}"};\nstruct MoveAttribute {`);
+await fs.writeFile(outputPath, fixedMovesetHeader, 'utf8');
+console.log(JSON.stringify({ output: path.relative(root, outputPath), bytes: Buffer.byteLength(fixedMovesetHeader), hash: report.contentHash }));

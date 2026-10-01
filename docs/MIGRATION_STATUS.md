@@ -468,3 +468,9 @@
 3. Este helper todavía no está conectado a initFinalBossPhaseTwo. Faltan moveset de fase 2, Mini Black Hole, limpiar status/tags, cancelar moves encolados y dos posiciones de jugador; el combate final sigue incompleto. Fuentes: src/battle-scene.ts initFinalBossPhaseTwo; src/phases/quiet-form-change-phase.ts end; src/data/balance/species/generation-08.ts ETERNATUS.forms.
 
 4. Regresiones 516-517 adicionales para stages invalidos y PP maximos modificados no soportados; el cambio falla sin publicar un actor parcialmente recalculado. Pendientes de ejecucion.
+
+## Movesets fijos de Eternatus importados
+
+1. Importer inspecciona src/field/pokemon.ts EnemyPokemon.generateAndPopulateMoveset:ETERNATUS del snapshot pinned; conserva ambos arrays, ppUsed/ppUp, raw y provenance/SHA-256. IDs se resuelven contra movimientos canónicos. Overrides Inverse Battle quedan preservados explícitamente como no soportados.
+2. Generated Runtime expone kFixedEnemyMovesets. Constructor enemigo usa esos cuatro IDs para Eternatus, sin consumir selección/ponderación salvaje. PokemonMove.getMovePp aplica ppUp negativo: Recover de fase 2 tiene máximo 1 PP. Transición completa a fase 2 todavía pendiente.
+3. Regresiones de importación y 335–338 nativas escritas para ambos sets, Recover y rechazo sin mutación. Importación doble verifica reproducibilidad del contenido; no constituye ejecución de tests ni compilación. Classic y transición final no se declaran completos.

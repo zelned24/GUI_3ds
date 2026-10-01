@@ -2812,26 +2812,35 @@ void FirstRunRuntime::resolve(bool carryPlayer) {
         PokemonBattleState battleState{};
         if (initializePokemonBattleStateForActor(battleInput, actor, battleState) != PokemonBattleInitResult::Ok) return false;
 
-        PokemonLevelMoveCandidate candidates[128]{};
-        std::size_t candidateCount = 0;
-        if (buildPokemonLevelMovePool(species.dex, actor.formId, destination.level,
-                candidates, 128, candidateCount) != PokemonLevelMovePoolResult::Ok) return false;
-        PokemonWildMoveRuntimeMetadata metadata[128]{};
-        for (std::size_t i = 0; i < candidateCount; ++i) {
-            if (!buildPokemonWildMoveRuntimeMetadata(candidates[i].moveId, battleState.abilityId, metadata[i])) return false;
-        }
-        const auto* form = actor.formId ? PokerogueContent::findFormById(actor.formId) : nullptr;
-        const char* type1 = form ? form->type1 : species.type1;
-        const char* type2 = form ? form->type2 : species.type2;
+        const auto* selectedForm = actor.formId ? PokerogueContent::findFormById(actor.formId) : nullptr;
+        const auto* fixedMoveset = findPokemonFixedEnemyMoveset(species.dex,
+            selectedForm && selectedForm->formKey && !std::strcmp(selectedForm->formKey, "ETERNAMAX") ? 1 : 0);
         uint16_t moveIds[4]{};
         uint8_t moveCount = 0;
-        if (generateWildMovesetFromLearnset(species.dex, actor.formId, destination.level,
-                battleState.stats[1], battleState.stats[3], battleState.stats[2], type1, type2,
-                metadata, candidateCount, waveRng, moveIds, moveCount) != PokemonWildMovesetResult::Ok) return false;
+        if (fixedMoveset) {
+            moveCount = 4;
+            for (uint8_t slot = 0; slot < 4; ++slot) moveIds[slot] = fixedMoveset->moveIds[slot];
+        } else {
+            PokemonLevelMoveCandidate candidates[128]{};
+            std::size_t candidateCount = 0;
+            if (buildPokemonLevelMovePool(species.dex, actor.formId, destination.level,
+                    candidates, 128, candidateCount) != PokemonLevelMovePoolResult::Ok) return false;
+            PokemonWildMoveRuntimeMetadata metadata[128]{};
+            for (std::size_t i = 0; i < candidateCount; ++i) {
+                if (!buildPokemonWildMoveRuntimeMetadata(candidates[i].moveId, battleState.abilityId, metadata[i])) return false;
+            }
+            const auto* form = actor.formId ? PokerogueContent::findFormById(actor.formId) : nullptr;
+            const char* type1 = form ? form->type1 : species.type1;
+            const char* type2 = form ? form->type2 : species.type2;
+            if (generateWildMovesetFromLearnset(species.dex, actor.formId, destination.level,
+                    battleState.stats[1], battleState.stats[3], battleState.stats[2], type1, type2,
+                    metadata, candidateCount, waveRng, moveIds, moveCount) != PokemonWildMovesetResult::Ok) return false;
+        }
         battleInput.moveCount = moveCount;
         for (uint8_t i = 0; i < moveCount; ++i) battleInput.moveIds[i] = moveIds[i];
         PokemonBattleState battleReadyState{};
         if (initializePokemonBattleStateForActor(battleInput, actor, battleReadyState) != PokemonBattleInitResult::Ok) return false;
+        if (fixedMoveset && !applyPokemonFixedEnemyMovePp(*fixedMoveset, battleReadyState)) return false;
         destination.actor = actor;
         destination.actorIdentityResolved = true;
         destination.formId = actor.formId;

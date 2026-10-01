@@ -6,6 +6,7 @@
 #include "game/PokerogueClassicWaveSchedule.hpp"
 #include "game/PokerogueEncounterResolver.hpp"
 #include "game/PokerogueTrainerPartyLevels.hpp"
+#include "game/PokemonWildMovesetGenerator.hpp"
 
 // Standalone host regression for atomic checkpoint application. This requires
 // the standard C++ library; it is not the freestanding WASM parity harness.
@@ -373,6 +374,32 @@ static int checkWave200FinalBossAndGameClear() {
     uint16_t seed[PokerogueRngAdapter::kMaxSeedCodeUnits] = {'t', 'e', 's', 't'};
     rng.sow(seed, 4);
     if (PokerogueEncounterResolver::bossLevelForWave(200, rng) != 200) return 113;
+    const auto* firstPhase = findPokemonFixedEnemyMoveset(890, 0);
+    const auto* secondPhase = findPokemonFixedEnemyMoveset(890, 1);
+    if (!firstPhase || !secondPhase || findPokemonFixedEnemyMoveset(1, 0)) return 335;
+    const uint16_t firstExpected[] = {795, 188, 53, 322};
+    const uint16_t secondExpected[] = {744, 440, 53, 105};
+    for (uint8_t slot = 0; slot < 4; ++slot)
+        if (firstPhase->moveIds[slot] != firstExpected[slot] ||
+            secondPhase->moveIds[slot] != secondExpected[slot]) return 336;
+    const auto* finalSpecies = PokerogueContent::findSpeciesByDex(890);
+    PokemonBattleInit bossInput{};
+    bossInput.speciesDex = 890;
+    bossInput.formId = finalSpecies->firstFormId;
+    bossInput.level = 200;
+    bossInput.abilityId = finalSpecies->ability1;
+    bossInput.gender = PokemonGender::Genderless;
+    bossInput.nature = PokemonNature::Hardy;
+    bossInput.moveCount = 4;
+    for (uint8_t slot = 0; slot < 4; ++slot) bossInput.moveIds[slot] = secondPhase->moveIds[slot];
+    PokemonBattleState bossActor{};
+    if (initializePokemonBattleState(bossInput, bossActor) != PokemonBattleInitResult::Ok ||
+        !applyPokemonFixedEnemyMovePp(*secondPhase, bossActor) ||
+        bossActor.moves[3].maxPp != 1 || bossActor.moves[3].pp != 1) return 337;
+    const auto preservedBoss = bossActor;
+    if (applyPokemonFixedEnemyMovePp(*firstPhase, bossActor) ||
+        bossActor.moves[3].maxPp != preservedBoss.moves[3].maxPp) return 338;
+
 
     return 0;
 }

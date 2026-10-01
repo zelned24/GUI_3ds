@@ -1,9 +1,34 @@
 #pragma once
 #include "game/PokemonLevelMovePool.hpp"
+#include "game/PokemonBattleState.hpp"
 #include "game/PokemonMoveEffectivePower.hpp"
 #include "game/PokemonMovesetWeights.hpp"
 
 namespace Pokerogue3DS {
+
+inline const PokerogueContent::FixedEnemyMoveset* findPokemonFixedEnemyMoveset(
+    uint16_t speciesDex, uint8_t formIndex) {
+    for (const auto& profile : PokerogueContent::kFixedEnemyMovesets)
+        if (profile.speciesDex == speciesDex && profile.formIndex == formIndex) return &profile;
+    return nullptr;
+}
+
+inline bool applyPokemonFixedEnemyMovePp(const PokerogueContent::FixedEnemyMoveset& profile,
+    PokemonBattleState& state) {
+    if (state.speciesDex != profile.speciesDex || state.moveCount != 4) return false;
+    auto next = state;
+    for (uint8_t slot = 0; slot < 4; ++slot) {
+        const auto* move = PokerogueContent::findMoveById(profile.moveIds[slot]);
+        if (!move || next.moves[slot].moveId != move->id || move->pp <= 0) return false;
+        // PokemonMove.getMovePp uses toDmgValue (floor, minimum one) for each PP Up.
+        const int32_t maxPp = move->pp + profile.ppUp[slot] * (move->pp / 5 > 0 ? move->pp / 5 : 1);
+        if (maxPp < 1 || maxPp > 255 || profile.ppUsed[slot] > maxPp) return false;
+        next.moves[slot].maxPp = static_cast<uint8_t>(maxPp);
+        next.moves[slot].pp = static_cast<uint8_t>(maxPp - profile.ppUsed[slot]);
+    }
+    state = next;
+    return true;
+}
 
 struct PokemonWildMoveRuntimeMetadata {
     PokemonMovePowerMetadata power{};

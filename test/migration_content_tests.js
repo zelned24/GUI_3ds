@@ -12,6 +12,14 @@ export function registerMigrationContentTests(test) {
     const imported = await importer.importPlayableCanonicalContent(undefined, { generations: [1] });
     const repeatedImport = await importer.importPlayableCanonicalContent(undefined, { generations: [1] });
     assert.strictEqual(repeatedImport.importReport.contentHash, imported.importReport.contentHash, 'same pins/import/normalization produce the same canonical hash');
+    const fixed = imported.canonicalContent.extensions.fixedEnemyMovesets;
+    assert.strictEqual(fixed.provenance.sourcePath, 'src/field/pokemon.ts');
+    assert.strictEqual(fixed.provenance.sourceSymbol, 'EnemyPokemon.generateAndPopulateMoveset:ETERNATUS');
+    assert.deepStrictEqual(fixed.entries.find(entry => entry.formIndex === 0).moves.map(move => move.moveId), [795, 188, 53, 322]);
+    const secondPhase = fixed.entries.find(entry => entry.formIndex === 1);
+    assert.deepStrictEqual(secondPhase.moves.map(move => move.moveId), [744, 440, 53, 105]);
+    assert.strictEqual(secondPhase.moves[3].ppUp, -4);
+    assert.ok(fixed.raw.includes('Challenges.INVERSE_BATTLE'));
     const pikachu = imported.species.find(species => species.id === 'pikachu');
     assert.strictEqual(pikachu.baseTotal, 320, 'explicit upstream baseTotal is normalized as canonical data');
     assert.strictEqual(pikachu.growthRate, 'MEDIUM_FAST', 'growth-rate identifier is normalized without a gameplay port');
