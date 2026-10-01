@@ -562,6 +562,33 @@ inline HeldHealingResult applyHeldHealingModifier(const NativeHeldModifierInstan
     return HeldHealingResult::Resolved;
 }
 
+// Caller validates the full effect set separately; this phase visits only
+// TurnHealModifier records in inventory order. Other classes have other phases.
+inline HeldHealingResult applyHeldTurnHealingPhase(const NativeHeldModifierInstance* records,
+    size_t count, PokemonBattleState& actor, bool active, const PokemonHealingPolicy& policy,
+    PokemonHealingEvent& output) {
+    if (count && !records) return HeldHealingResult::InvalidState;
+    auto nextActor = actor;
+    PokemonHealingEvent aggregate{};
+    aggregate.hpBefore = aggregate.hpAfter = actor.hp;
+    for (size_t i = 0; i < count; ++i) {
+        if (!validateHeldModifierInstance(records[i])) return HeldHealingResult::InvalidState;
+        if (records[i].ownerPokemonId != actor.pokemonId) continue;
+        const auto* profile = heldModifierClassProfile(records[i]);
+        if (!profile || std::strcmp(profile->matchingClass, "TurnHealModifier")) continue;
+        PokemonHealingEvent event{};
+        const auto result = applyHeldHealingModifier(records[i], nextActor, 0, active, policy, event);
+        if (result != HeldHealingResult::Resolved) return result;
+        aggregate.blocked |= event.blocked;
+        aggregate.showAnimation |= event.showAnimation;
+    }
+    aggregate.hpAfter = nextActor.hp;
+    aggregate.healed = aggregate.hpAfter - aggregate.hpBefore;
+    actor = nextActor;
+    output = aggregate;
+    return HeldHealingResult::Resolved;
+}
+
 enum class ModifierRewardRollResult : uint8_t {
     Ok, InvalidLuck, MissingWeight, InvalidWeight, EmptyPool, MissingItem
 };

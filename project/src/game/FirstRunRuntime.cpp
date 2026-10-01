@@ -1782,6 +1782,22 @@ bool FirstRunRuntime::finishBattleTurn() {
         buildScene();
         return false;
     }
+    // Current command frontier excludes unported tags/Healing Charms.
+    // Do not infer this policy when that frontier is expanded.
+    if (!upcomingInterlude && m_heldModifierCount) {
+        PokemonHealingPolicy healing{};
+        healing.resolved = true;
+        PokemonHealingEvent heldEvent{};
+        if (applyHeldTurnHealingPhase(m_heldModifiers.data(), m_heldModifierCount,
+                nextPlayer, nextPlayer.hp != 0, healing, heldEvent) != HeldHealingResult::Resolved ||
+            applyHeldTurnHealingPhase(m_heldModifiers.data(), m_heldModifierCount,
+                nextEnemy, nextEnemy.hp != 0, healing, heldEvent) != HeldHealingResult::Resolved ||
+            (m_doubleBattle && applyHeldTurnHealingPhase(m_heldModifiers.data(), m_heldModifierCount,
+                nextSecondEnemy, nextSecondEnemy.hp != 0, healing, heldEvent) != HeldHealingResult::Resolved)) {
+            m_battleFeedback = "Held turn healing could not resolve";
+            return false;
+        }
+    }
     // Reset PokemonTurnData after all end-of-turn consumers.
     nextPlayer.turnDamageDealt = nextEnemy.turnDamageDealt = nextSecondEnemy.turnDamageDealt = 0;
     m_context.player.battleState = nextPlayer;

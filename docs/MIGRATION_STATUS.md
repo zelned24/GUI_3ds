@@ -590,3 +590,8 @@
 
 1. useStandardPokemonMove suma damageApplied confirmado en turnDamageDealt, con overflow antes de commit. Recoil/drain preservan el contador via copias existentes. finishBattleTurn limpia tras consumidores; cambio de forma conserva.
 2. Actor save rechaza contador no cero hasta portar payload turnData. Checkpoints lo limpian. Tests/compilacion aplazados; falta conexion Shell Bell, sustitutos y multihit.
+
+## Fase de curacion Leftovers conectada
+
+1. finishBattleTurn ejecuta fase TurnHealModifier para actores activos fuera de interlude, antes de limpiar turnData. Fase conserva orden de inventario y prepara actor en copia: error posterior no publica curacion parcial. Politica baseline sin tags/charms solo corresponde al frontier actual.
+2. Regresiones 431-432 escritas para filtrar Shell Bell y fallo atomico. El bloqueo de comandos con inventario sigue activo hasta dispatcher completo: conexion no demuestra jugabilidad con items. Shell Bell pertenece al fin de MoveEffectPhase, no a TurnEndPhase; aun pendiente. Tests/compilacion aplazados.
