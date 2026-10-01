@@ -2,6 +2,8 @@
 
 #include "content/PokerogueRuntimeContent.hpp"
 #include "game/PokemonBattleState.hpp"
+#include "game/PokemonHealingEffect.hpp"
+#include <cmath>
 #include "game/PokerogueRngAdapter.hpp"
 #include <cstdint>
 #include <cstring>
@@ -520,6 +522,44 @@ inline TurnHeldTransferResult activateTurnHeldItemTransfer(
     battleRng = nextRng;
     output = event;
     return TurnHeldTransferResult::Transferred;
+}
+
+enum class HeldHealingResult : uint8_t { Resolved, UnsupportedClass, UnresolvedPolicy, InvalidState };
+// Port of TurnHealModifier/HitHealModifier amounts and non-revival PokemonHealPhase.
+// Caller resolves active field state, Heal Block and HealingBoosterModifier.
+inline HeldHealingResult applyHeldHealingModifier(const NativeHeldModifierInstance& item,
+    PokemonBattleState& actor, uint32_t turnDamageDealt, bool active,
+    const PokemonHealingPolicy& policy, PokemonHealingEvent& output) {
+    if (!policy.resolved) return HeldHealingResult::UnresolvedPolicy;
+    if (!validateHeldModifierInstance(item) || item.ownerPokemonId != actor.pokemonId ||
+        !actor.maxHp || actor.hp > actor.maxHp || !std::isfinite(policy.healingMultiplier) ||
+        policy.healingMultiplier <= 0) return HeldHealingResult::InvalidState;
+    const auto* profile = heldModifierClassProfile(item);
+    if (!profile || (std::strcmp(profile->matchingClass, "TurnHealModifier") &&
+        std::strcmp(profile->matchingClass, "HitHealModifier"))) return HeldHealingResult::UnsupportedClass;
+    if (item.stackCount > profile->maxHeldCount ||
+        (item.rawArguments[0] && std::strcmp(item.rawArguments, "[]"))) return HeldHealingResult::InvalidState;
+    PokemonHealingEvent event{};
+    event.hpBefore = event.hpAfter = actor.hp;
+    const bool turnHeal = !std::strcmp(profile->matchingClass, "TurnHealModifier");
+    if (!active || !actor.hp || actor.hp == actor.maxHp || (!turnHeal && !turnDamageDealt)) {
+        output = event;
+        return HeldHealingResult::Resolved;
+    }
+    const double base = turnHeal ? std::fmax(std::floor(actor.maxHp / 16.0), 1.0) * item.stackCount
+        : std::fmax(std::floor(static_cast<double>(turnDamageDealt) * item.stackCount / 8.0), 1.0);
+    const double amount = std::floor(base * policy.healingMultiplier);
+    if (!std::isfinite(amount)) return HeldHealingResult::InvalidState;
+    event.blocked = policy.healBlocked;
+    event.showAnimation = true;
+    if (!event.blocked) {
+        const uint16_t missing = actor.maxHp - actor.hp;
+        event.healed = amount >= missing ? missing : static_cast<uint16_t>(amount);
+        actor.hp += event.healed;
+        event.hpAfter = actor.hp;
+    }
+    output = event;
+    return HeldHealingResult::Resolved;
 }
 
 enum class ModifierRewardRollResult : uint8_t {

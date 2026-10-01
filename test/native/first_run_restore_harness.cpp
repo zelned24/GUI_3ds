@@ -787,6 +787,25 @@ static int checkWave200FinalBossAndGameClear() {
         HeldItemInventoryTransferResult::Transferred || healingCount != 3 ||
         healingItems[0].stackCount != 1 || healingItems[2].stackCount != 4 ||
         std::strcmp(heldModifierDefinition(healingItems[1])->id, "SHELL_BELL")) return 426;
+    PokemonBattleState heldHealActor{};
+    heldHealActor.pokemonId = 1001;
+    heldHealActor.maxHp = 31;
+    heldHealActor.hp = 10;
+    PokemonHealingPolicy heldHealPolicy{};
+    PokemonHealingEvent heldHealEvent{};
+    if (applyHeldHealingModifier(healingItems[0], heldHealActor, 0, true, heldHealPolicy, heldHealEvent) !=
+        HeldHealingResult::UnresolvedPolicy || heldHealActor.hp != 10) return 427;
+    heldHealPolicy.resolved = true;
+    healingItems[0].stackCount = 4;
+    if (applyHeldHealingModifier(healingItems[0], heldHealActor, 0, true, heldHealPolicy, heldHealEvent) !=
+        HeldHealingResult::Resolved || heldHealEvent.healed != 4 || heldHealActor.hp != 14) return 428;
+    healingItems[1].ownerPokemonId = 1001;
+    healingItems[1].stackCount = 3;
+    if (applyHeldHealingModifier(healingItems[1], heldHealActor, 5, true, heldHealPolicy, heldHealEvent) !=
+        HeldHealingResult::Resolved || heldHealEvent.healed != 1 || heldHealActor.hp != 15) return 429;
+    heldHealPolicy.healBlocked = true;
+    if (applyHeldHealingModifier(healingItems[0], heldHealActor, 0, true, heldHealPolicy, heldHealEvent) !=
+        HeldHealingResult::Resolved || !heldHealEvent.blocked || heldHealActor.hp != 15) return 430;
     const auto preservedBoss = bossActor;
     if (applyPokemonFixedEnemyMovePp(*firstPhase, bossActor) ||
         bossActor.moves[3].maxPp != preservedBoss.moves[3].maxPp) return 338;

@@ -580,3 +580,8 @@
 
 1. Perfiles derivados del constructor upstream identifican TurnHealModifier/HitHealModifier; adapters portan matchType por clase y cap 4 inspeccionados en modifier.ts pinned. Resolver permite coexistencia de clases conocidas; desconocidas/argumentos no resueltos fallan. No implementa curacion.
 2. Regresiones 424-426 escritas para matching, coexistencia y transferencia parcial hasta cap. Generacion permitida; tests/compilacion aplazados. Efectos y conexion al turno pendientes.
+
+## Curacion de objetos equipados
+
+1. Adapter existente de inventario reutiliza PokemonHealingPolicy/Event. Leftovers redondea maxHP/16 antes de stacks; Shell Bell redondea dano*stacks/8. HealingBooster se aplica despues; Heal Block y actividad son entradas resueltas. No revive ni consume PP.
+2. Regresiones 427-430 escritas para policy pendiente, ambos redondeos y bloqueo. Tests/compilacion aplazados; dispatcher, acumulador real de dano y presentacion de eventos pendientes.
