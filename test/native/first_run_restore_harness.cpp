@@ -2936,6 +2936,30 @@ int main() {
         size_t rejectedSize = 99;
         if (encodeNativePokemonSave(actorSnapshot, actorBytesAgain, 1, rejectedSize) != NativeSaveResult::TooLarge ||
             rejectedSize) return 286;
+        // Actor payload v7 preserves optional zero counters and full uint32 counts.
+        auto statusActor = currentActor.battleState;
+        statusActor.status.present = true;
+        statusActor.status.effect = PokemonStatusEffect::Sleep;
+        statusActor.status.toxicTurnCount = 0xFFFFFFFFu;
+        statusActor.status.hasSleepTurnsRemaining = true;
+        statusActor.status.sleepTurnsRemaining = 0;
+        NativePokemonSave statusSnapshot{};
+        if (!captureNativePokemonActorSave(statusActor, currentActor.actor,
+                currentActor.totalExperience, statusSnapshot) ||
+            encodeNativePokemonSave(statusSnapshot, actorBytesAgain, sizeof(actorBytesAgain), actorSizeAgain) !=
+                NativeSaveResult::Ok ||
+            decodeNativePokemonSave(actorBytesAgain, actorSizeAgain, decodedActor) != NativeSaveResult::Ok ||
+            !restoreNativePokemonActorSave(decodedActor, restoredActor, restoredIdentity) ||
+            !restoredActor.status.present || restoredActor.status.effect != PokemonStatusEffect::Sleep ||
+            restoredActor.status.toxicTurnCount != 0xFFFFFFFFu ||
+            !restoredActor.status.hasSleepTurnsRemaining || restoredActor.status.sleepTurnsRemaining)
+            return 9001;
+        statusSnapshot.status.hasSleepTurnsRemaining = false;
+        statusSnapshot.status.sleepTurnsRemaining = 2;
+        if (encodeNativePokemonSave(statusSnapshot, actorBytesAgain, sizeof(actorBytesAgain), actorSizeAgain) !=
+                NativeSaveResult::InvalidRecord || actorSizeAgain) return 9002;
+        if (decodeNativePokemonSave(actorBytes, actorSize, decodedActor) != NativeSaveResult::Ok ||
+            decodedActor.status.present) return 9003;
         auto pausedState = currentActor.battleState;
         pausedState.pauseEvolutions = true;
         NativePokemonSave pausedActor{};

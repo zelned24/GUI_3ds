@@ -3,6 +3,7 @@
 #include <cstddef>
 #include <cstdint>
 #include "game/PokerogueModifierReward.hpp"
+#include "game/PokemonBattleState.hpp"
 
 namespace Pokerogue3DS {
 
@@ -48,6 +49,7 @@ struct NativePokemonSave {
     uint16_t moveIds[4]{};
     uint8_t pp[4]{};
     int8_t statStages[7]{};
+    PokemonStatusState status{}; // Actor payload v7; older payloads contain no status.
     bool ivsDerivedFromId = false;
     bool pauseEvolutions = false;
     uint8_t maxPp[4]{};

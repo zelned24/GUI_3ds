@@ -1409,3 +1409,9 @@
 1. Harness de comando estándar comprueba Tackle real con daño por quemadura antes del truncado, bypass resuelto y stream RNG idéntico al cálculo sin quemadura.
 2. Política sin resolver debe conservar PP, HP, acumulador de daño, estado, output y RNG. Revisión estática confirma publicación conjunta después del resolver; no fue necesario cambiar el runtime.
 3. Pruebas escritas, sin ejecutar. Tests y compilación aplazados; dispatcher completo de estados y persistencia siguen pendientes.
+
+## Persistencia de estados por actor
+
+1. Payload Pokemon v7 conserva efecto, toxicTurnCount y presencia/valor de contadores sleep/freeze con validación y publicación atómica. Actores sin estado mantienen payload v6; lectura v1–v6 conserva ausencia de estado.
+2. Capture/restore del actor ya transportan status. El guardado completo sigue rechazando estados hasta extender enemigos/reservas y el envelope de runtime; no se declara save de estados integrado.
+3. Regresiones de contador máximo, optional cero, metadata inválida y lectura legacy escritas, sin ejecutar. Tests/compilación aplazados.

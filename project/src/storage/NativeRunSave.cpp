@@ -240,6 +240,7 @@ NativeSaveResult makeNativeRunSetupSave(uint32_t seed, uint16_t starterDex, Nati
 }
 
 bool restoreNativePokemonSave(const NativePokemonSave& saved, PokemonBattleState& output) {
+    if (!pokemonStatusStateValid(saved.status)) return false;
     if (saved.nature > 24 || saved.gender > static_cast<uint8_t>(PokemonGender::Female) ||
         !saved.moveCount || saved.moveCount > 4 || !saved.formId[0]) return false;
     bool terminated = false;
@@ -282,6 +283,7 @@ bool restoreNativePokemonSave(const NativePokemonSave& saved, PokemonBattleState
     actor.pauseEvolutions = saved.pauseEvolutions;
     actor.heldItemLostTags.unburden = saved.unburdenTag;
     actor.hp = saved.hp;
+    actor.status = saved.status;
     for (uint8_t i = 0; i < saved.moveCount; ++i) {
         if (saved.maxPpResolved) {
             if (!pokemonPermanentMaxPpSupported(saved.moveIds[i], saved.maxPp[i])) return false;
@@ -318,6 +320,7 @@ bool captureNativePokemonSave(const PokemonBattleState& state, uint32_t experien
     saved.friendshipResolved = true;
     saved.unburdenTag = state.heldItemLostTags.unburden;
     saved.hp = state.hp;
+    saved.status = state.status;
     saved.experience = experience;
     saved.moveCount = state.moveCount;
     for (uint8_t i = 0; i < 6; ++i) saved.ivs[i] = state.ivs[i];
@@ -446,7 +449,7 @@ NativeSaveResult encodeNativePokemonSave(const NativePokemonSave& saved, char* o
     if (!restoreNativePokemonActorSave(saved, state, identity)) return NativeSaveResult::InvalidRecord;
     if (!output) return NativeSaveResult::InvalidFormat;
     Writer writer{output, capacity};
-    writer.text("pokemon=6\n");
+    writer.text(saved.status.present ? "pokemon=7\n" : "pokemon=6\n");
     writer.hex(saved.speciesDex, 4);
     writer.text(saved.formId); writer.character('\n');
     writer.hex(saved.level, 4);
@@ -471,6 +474,14 @@ NativeSaveResult encodeNativePokemonSave(const NativePokemonSave& saved, char* o
     writer.hex(saved.unburdenTag ? 1 : 0, 2);
     writer.hex(state.friendship, 2);
     for (uint8_t slot = 0; slot < 4; ++slot) writer.hex(state.moves[slot].maxPp, 2);
+    if (saved.status.present) {
+        writer.hex(static_cast<uint8_t>(saved.status.effect), 2);
+        writer.hex((saved.status.hasSleepTurnsRemaining ? 1 : 0) |
+            (saved.status.hasFreezeTurnsRemaining ? 2 : 0), 2);
+        writer.hex(saved.status.toxicTurnCount, 8);
+        writer.hex(saved.status.sleepTurnsRemaining, 8);
+        writer.hex(saved.status.freezeTurnsRemaining, 8);
+    }
     if (!writer.valid) return NativeSaveResult::TooLarge;
     written = writer.position;
     return NativeSaveResult::Ok;
@@ -482,8 +493,9 @@ NativeSaveResult decodeNativePokemonSave(const char* bytes, size_t length,
     Reader reader{bytes, length};
     NativePokemonSave saved{};
     uint32_t value = 0;
-    if (!reader.literal("pokemon=") || !reader.hex(1, value) || (value < 1 || value > 6))
+    if (!reader.literal("pokemon=") || !reader.hex(1, value) || (value < 1 || value > 7))
         return NativeSaveResult::InvalidFormat;
+    const bool hasStatus = value >= 7;
     const bool hasMaxPp = value >= 6;
     const bool hasFriendship = value >= 5;
     const bool hasUnburdenTag = value >= 4;
@@ -542,6 +554,17 @@ NativeSaveResult decodeNativePokemonSave(const char* bytes, size_t length,
             saved.maxPp[slot] = static_cast<uint8_t>(value);
         }
         saved.maxPpResolved = true;
+    }
+    if (hasStatus) {
+        if (!reader.hex(2, value) || value > 7) return NativeSaveResult::InvalidFormat;
+        saved.status.effect = static_cast<PokemonStatusEffect>(value);
+        saved.status.present = true;
+        if (!reader.hex(2, value) || value > 3) return NativeSaveResult::InvalidFormat;
+        saved.status.hasSleepTurnsRemaining = (value & 1) != 0;
+        saved.status.hasFreezeTurnsRemaining = (value & 2) != 0;
+        if (!reader.hex(8, saved.status.toxicTurnCount) ||
+            !reader.hex(8, saved.status.sleepTurnsRemaining) ||
+            !reader.hex(8, saved.status.freezeTurnsRemaining)) return NativeSaveResult::InvalidFormat;
     }
     saved.actorIdentityResolved = saved.initialTeraTypeResolved = true;
     if (reader.position != reader.end) return NativeSaveResult::InvalidFormat;
