@@ -616,6 +616,28 @@ PokemonStatusImmunityResult executePokemonStatusConfusionReaction(const PokemonB
     PokemonConfusionTagState& tag, PokerogueRngAdapter& sourceRng,
     PokemonStatusConfusionCommandEvent& output);
 
+struct PokemonPostSetStatusPolicy {
+    bool formsResolved = false;
+    bool recipientAbilityActive = false;
+    bool recipientCallbacksResolved = false;
+    bool sourceAbilityActive = false;
+    bool simulated = false;
+    PokemonStatusApplicationPolicy reflectedApplication{};
+    bool reflectedReactionsResolved = false;
+    PokemonConfusionTagPolicy confusionProbe{};
+    PokemonConfusionTagPolicy confusionApplication{};
+};
+struct PokemonPostSetStatusEvent {
+    PokemonSynchronizeCommandEvent synchronize{};
+    PokemonStatusConfusionCommandEvent confusion{};
+};
+// Two distinct actors; streams may alias. Further reflected callbacks require
+// reflectedReactionsResolved rather than silently skipping a recursive phase.
+bool executePokemonPostSetStatusReactions(PokemonBattleState& recipient, PokemonBattleState& source,
+    const PokemonQueuedStatusRequest& applied, const PokemonPostSetStatusPolicy& policy,
+    PokerogueRngAdapter& recipientRng, PokerogueRngAdapter& sourceRng,
+    PokemonPostSetStatusEvent& output);
+
 struct PokemonStatusMoveCheckPolicy {
     bool resolved = false;
     bool bypassSleep = false;

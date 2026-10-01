@@ -1583,3 +1583,9 @@
 1. enqueue distingue Fainted de InvalidState después de canSetStatus, conforme trySetStatus. Synchronize conserva activación y rechazo normal cuando la fuente está debilitada; no aborta el turno por ese rechazo.
 2. Ejecución simulated mantiene canApply pero no solicita/aplica fase reflejada ni consulta política de aplicación pendiente, conforme SynchronizeStatusAbAttr.apply. Sin mutación de actor/pending/RNG.
 3. Regresiones de fuente debilitada y simulated escritas sin ejecutar. Tests/compilación aplazados.
+
+## Dispatcher de reacciones posteriores a estado
+
+1. executePokemonPostSetStatusReactions une Synchronize del receptor y ConfusionOnStatusEffect de fuente, en el orden de ObtainStatusEffectPhase. Reutiliza perfiles canónicos; actualiza status de fuente/tag de receptor y streams compartidos/separados sobre candidato.
+2. Forms y callbacks reflejados exigen resolución explícita. Dos actores distintos con fuente presente son el alcance actual; fases sin fuente/self-target y el proveedor completo del comando activo siguen pendientes. Error tardío revierte también la reflexión previa.
+3. Regresiones de pareja real Synchronize/Poison Puppeteer y fallo tardío atómico escritas sin ejecutar. Tests/compilación aplazados.

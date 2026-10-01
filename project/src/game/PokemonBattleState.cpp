@@ -174,6 +174,39 @@ PokemonStatusImmunityResult executePokemonStatusConfusionReaction(const PokemonB
     return PokemonStatusImmunityResult::Resolved;
 }
 
+bool executePokemonPostSetStatusReactions(PokemonBattleState& recipient, PokemonBattleState& source,
+    const PokemonQueuedStatusRequest& applied, const PokemonPostSetStatusPolicy& policy,
+    PokerogueRngAdapter& recipientRng, PokerogueRngAdapter& sourceRng,
+    PokemonPostSetStatusEvent& output) {
+    if (&recipient == &source || !policy.formsResolved || !applied.hasSource ||
+        !pokemonStatusStateValid(recipient.status) || !recipient.status.present ||
+        recipient.status.effect != applied.effect || recipient.pendingStatus != PokemonStatusEffect::None ||
+        applied.recipientPokemonId != recipient.pokemonId || applied.sourcePokemonId != source.pokemonId)
+        return false;
+    auto nextRecipient = recipient;
+    auto nextSource = source;
+    auto nextRecipientRng = recipientRng;
+    auto nextSourceRng = sourceRng;
+    auto& reflectedRng = &recipientRng == &sourceRng ? nextRecipientRng : nextSourceRng;
+    PokemonPostSetStatusEvent event{};
+    // ObtainStatusEffectPhase: form trigger, recipient PostSetStatus, then
+    // source ConfusionOnStatusEffect. Synchronize duration uses its recipient.
+    if (!executePokemonSynchronizeReaction(nextRecipient, nextSource, applied,
+            policy.recipientAbilityActive, policy.recipientCallbacksResolved,
+            policy.reflectedApplication, policy.reflectedReactionsResolved, reflectedRng,
+            event.synchronize, policy.simulated)) return false;
+    if (executePokemonStatusConfusionReaction(nextSource, nextRecipient, applied.effect,
+            policy.sourceAbilityActive, policy.simulated, policy.confusionProbe,
+            policy.confusionApplication, nextRecipient.confusion, reflectedRng, event.confusion) !=
+            PokemonStatusImmunityResult::Resolved) return false;
+    recipient = nextRecipient;
+    source = nextSource;
+    if (&recipientRng == &sourceRng) sourceRng = nextRecipientRng;
+    else { recipientRng = nextRecipientRng; sourceRng = nextSourceRng; }
+    output = event;
+    return true;
+}
+
 bool resolvePokemonStatusApplicationEnvironment(const PokemonBattleState& recipient,
     const PokemonBattleState* source, const PokemonStatusFieldContext& field,
     PokemonStatusApplicationPolicy& output) {

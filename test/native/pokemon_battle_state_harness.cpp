@@ -3194,6 +3194,43 @@ extern "C" int runPokemonBattleStateChecks() {
         !synchronizedEvent.reaction.abilityActivates || synchronizedEvent.statusApplied ||
         reflectedSource.status.present || reflectedSource.pendingStatus != Effect::None ||
         statusApplicationRng.randSeedUint32() != expectedApplicationRng.randSeedUint32()) return 9221;
+    PokemonBattleState reactionRecipient{}, reactionSource{};
+    reactionRecipient.abilityId = 28;
+    reactionRecipient.pokemonId = 101;
+    reactionRecipient.hp = reactionRecipient.maxHp = 100;
+    reactionRecipient.status.present = true;
+    reactionRecipient.status.effect = Effect::Poison;
+    reactionSource.abilityId = 310;
+    reactionSource.pokemonId = 102;
+    reactionSource.hp = reactionSource.maxHp = 100;
+    synchronizedRequest.recipientPokemonId = 101;
+    synchronizedRequest.sourcePokemonId = 102;
+    synchronizedRequest.effect = Effect::Poison;
+    Pokerogue3DS::PokemonPostSetStatusPolicy reactionsPolicy{};
+    reactionsPolicy.formsResolved = reactionsPolicy.recipientAbilityActive =
+        reactionsPolicy.recipientCallbacksResolved = reactionsPolicy.sourceAbilityActive = true;
+    reactionsPolicy.reflectedApplication.resolved = reactionsPolicy.reflectedApplication.hasSource = true;
+    reactionsPolicy.reflectedReactionsResolved = true;
+    reactionsPolicy.confusionProbe.resolved = reactionsPolicy.confusionApplication.resolved = true;
+    Pokerogue3DS::PokemonPostSetStatusEvent reactionsEvent{};
+    expectedApplicationRng = statusApplicationRng;
+    const auto expectedReactionDuration = expectedApplicationRng.randSeedIntRange(2, 5);
+    if (!Pokerogue3DS::executePokemonPostSetStatusReactions(reactionRecipient, reactionSource,
+            synchronizedRequest, reactionsPolicy, statusApplicationRng, statusApplicationRng, reactionsEvent) ||
+        reactionSource.status.effect != Effect::Poison || !reactionSource.status.present ||
+        reactionSource.pendingStatus != Effect::None || !reactionRecipient.confusion.present ||
+        reactionRecipient.confusion.turns != expectedReactionDuration ||
+        !reactionsEvent.synchronize.statusApplied || !reactionsEvent.confusion.tagAttempted ||
+        statusApplicationRng.randSeedUint32() != expectedApplicationRng.randSeedUint32()) return 9230;
+    reactionSource.status = {};
+    reactionRecipient.confusion = {};
+    reactionsPolicy.confusionProbe.resolved = false;
+    expectedApplicationRng = statusApplicationRng;
+    if (Pokerogue3DS::executePokemonPostSetStatusReactions(reactionRecipient, reactionSource,
+            synchronizedRequest, reactionsPolicy, statusApplicationRng, statusApplicationRng, reactionsEvent) ||
+        reactionSource.status.present || reactionSource.pendingStatus != Effect::None ||
+        reactionRecipient.confusion.present ||
+        statusApplicationRng.randSeedUint32() != expectedApplicationRng.randSeedUint32()) return 9231;
     bool foundStatusConfusion = false;
     for (const auto& profile : PokerogueContent::kStatusConfusionAbilityProfiles) {
         if (!profile.resolved || !(profile.statusMask & 2)) continue;
