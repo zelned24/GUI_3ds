@@ -1647,3 +1647,9 @@
 1. StatusMoveFlagProfile conserva reflectable/powder/sound desde declaraciones canónicas, separado de Move.upstreamFlags (máscara interna de selección, no enum MoveFlags). Builder desconocido conserva capacidad pendiente.
 2. Esta tabla describe propiedades, no implementa Magic Bounce, Overcoat, inmunidad Grass ni Soundproof. Comando activo debe resolverlas antes de habilitar estos movimientos.
 3. Regresiones de Hypnosis/Poison Powder/Sing escritas sin ejecutar; contenido regenerado. Tests/compilación aplazados.
+
+## Inmunidad de tipo para movimientos de estado
+
+1. resolvePokemonStatusMoveTypeImmunity porta Move.isTypeImmune del pinned: USER bypass, Grass inmune a powder, Dark inmune a estado con Prankster solo entre oponentes. Usa vista originalIfStellar y perfil de flags canónico, no IDs locales de movimientos.
+2. Activación real de Prankster/tipos vivos requiere policy resuelta. No implementa Overcoat, Safety Goggles, Soundproof ni reflexión; integración en fase de hit sigue pendiente.
+3. Regresiones Poison Powder/Hypnosis, Prankster entre aliados/oponentes y fallo atómico escritas sin ejecutar. Tests/compilación aplazados.

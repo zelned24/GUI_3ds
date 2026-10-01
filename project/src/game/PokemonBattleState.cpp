@@ -376,6 +376,28 @@ PokemonMoveStatusApplicationResult resolvePokemonMoveStatusApplication(
     return result;
 }
 
+bool resolvePokemonStatusMoveTypeImmunity(uint16_t moveId,
+    const PokemonStatusMoveTypeImmunityPolicy& policy, bool& output) {
+    const auto* move = PokerogueContent::findMoveById(moveId);
+    if (!move || move->category != PokerogueContent::MoveStatus || !move->target) return false;
+    // Move.isTypeImmune exits for USER before querying types/abilities.
+    if (std::strcmp(move->target, "USER") == 0) { output = false; return true; }
+    if (!policy.resolved || !policy.originalIfStellarTypes || !policy.typeCount) return false;
+    const PokerogueContent::StatusMoveFlagProfile* flags = nullptr;
+    for (const auto& profile : PokerogueContent::kStatusMoveFlagProfiles)
+        if (profile.moveId == moveId) { flags = &profile; break; }
+    if (!flags || !flags->resolved) return false;
+    bool immune = false;
+    for (size_t i = 0; i < policy.typeCount; ++i) {
+        const char* type = policy.originalIfStellarTypes[i];
+        if (!type || !resolvePokemonTypeSymbol(type)) return false;
+        if (std::strcmp(type, "GRASS") == 0 && flags->powder) immune = true;
+        if (std::strcmp(type, "DARK") == 0 && policy.userHasPrankster && policy.opponents) immune = true;
+    }
+    output = immune;
+    return true;
+}
+
 bool resolvePokemonStatusMoveHit(const PokerogueContent::Move& move, bool self,
     const PokemonStatusMoveHitPolicy& policy, PokerogueRngAdapter& rng, PokemonStatusMoveHitEvent& output) {
     if (!policy.resolved || move.accuracy < -1 || move.accuracy > 100 ||

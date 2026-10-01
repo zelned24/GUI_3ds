@@ -3300,6 +3300,26 @@ extern "C" int runPokemonBattleStateChecks() {
         if (profile.moveId == 47) singFlags = profile.resolved && profile.reflectable && profile.sound && !profile.powder;
     }
     if (!hypnosisFlags || !powderFlags || !singFlags) return 9310;
+    const char* powderTargetTypes[] = {"GRASS", "DARK"};
+    Pokerogue3DS::PokemonStatusMoveTypeImmunityPolicy typeImmunityPolicy{};
+    typeImmunityPolicy.resolved = true;
+    typeImmunityPolicy.originalIfStellarTypes = powderTargetTypes;
+    typeImmunityPolicy.typeCount = 2;
+    bool typeImmune = false;
+    if (!Pokerogue3DS::resolvePokemonStatusMoveTypeImmunity(77, typeImmunityPolicy, typeImmune) ||
+        !typeImmune) return 9320;
+    if (!Pokerogue3DS::resolvePokemonStatusMoveTypeImmunity(95, typeImmunityPolicy, typeImmune) ||
+        typeImmune) return 9321;
+    typeImmunityPolicy.userHasPrankster = typeImmunityPolicy.opponents = true;
+    if (!Pokerogue3DS::resolvePokemonStatusMoveTypeImmunity(95, typeImmunityPolicy, typeImmune) ||
+        !typeImmune) return 9322;
+    typeImmunityPolicy.opponents = false;
+    if (!Pokerogue3DS::resolvePokemonStatusMoveTypeImmunity(95, typeImmunityPolicy, typeImmune) ||
+        typeImmune) return 9323;
+    typeImmunityPolicy.resolved = false;
+    typeImmune = true;
+    if (Pokerogue3DS::resolvePokemonStatusMoveTypeImmunity(95, typeImmunityPolicy, typeImmune) ||
+        !typeImmune) return 9324;
     bool foundStatusConfusion = false;
     for (const auto& profile : PokerogueContent::kStatusConfusionAbilityProfiles) {
         if (!profile.resolved || !(profile.statusMask & 2)) continue;

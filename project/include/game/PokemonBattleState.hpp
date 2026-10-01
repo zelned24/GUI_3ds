@@ -443,6 +443,16 @@ PokemonMoveStatusApplicationResult resolvePokemonMoveStatusApplication(
     bool chanceCallbacksResolved, const PokemonStatusApplicationPolicy& policy,
     PokerogueRngAdapter& userRng, PokemonMoveStatusApplicationEvent& output);
 
+struct PokemonStatusMoveTypeImmunityPolicy {
+    bool resolved = false;
+    const char* const* originalIfStellarTypes = nullptr;
+    size_t typeCount = 0;
+    bool userHasPrankster = false;
+    bool opponents = false;
+};
+bool resolvePokemonStatusMoveTypeImmunity(uint16_t moveId,
+    const PokemonStatusMoveTypeImmunityPolicy& policy, bool& output);
+
 struct PokemonStatusMoveHitPolicy {
     bool resolved = false;
     bool blockedBeforeAccuracy = false;
