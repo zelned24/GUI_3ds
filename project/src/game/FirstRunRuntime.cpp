@@ -203,8 +203,11 @@ void FirstRunRuntime::captureNativeRunSave(NativeRunSave& output) const {
             }
         }
     }
+    bool hasSummonTags = m_context.player.battleState.heldItemLostTags.unburden;
+    for (uint8_t member = 0; member < m_context.playerPartyCount; ++member)
+        hasSummonTags |= m_context.playerParty[member].battleState.heldItemLostTags.unburden;
     if (value.stage != NativeSaveStage::RunSetup &&
-        (m_context.playerPartyCount > 1 || m_playerHistoryRequiresSnapshot || m_heldModifierCount)) {
+        (m_context.playerPartyCount > 1 || m_playerHistoryRequiresSnapshot || m_heldModifierCount || hasSummonTags)) {
         if (m_context.playerPartyCount > 6 ||
             m_context.activePlayerPartyIndex >= m_context.playerPartyCount) { output = {}; return; }
         value.playerPartyCount = m_context.playerPartyCount;
@@ -278,6 +281,8 @@ bool FirstRunRuntime::restoreNativeRunSaveInPlace(const NativeRunSave& save) {
         for (uint8_t member = 0; member < save.playerPartyCount; ++member)
             for (uint8_t stat = 0; stat < 7; ++stat)
                 m_context.playerParty[member].battleState.statStages[stat] = save.playerParty[member].statStages[stat];
+        for (uint8_t member = 0; member < save.playerPartyCount; ++member)
+            m_context.playerParty[member].battleState.heldItemLostTags.unburden = save.playerParty[member].unburdenTag;
         m_context.player = m_context.playerParty[save.activePlayerMember];
     }
     for (uint16_t wave = 1; !save.playerPartyCount && wave < save.wave; ++wave) {

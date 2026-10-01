@@ -550,3 +550,8 @@
 
 1. Tag PostItemLost pertenece al PokemonBattleState; velocidad consume tag y perfil canonico de habilidad. Cambio manual limpia tag; cambio de forma lo conserva.
 2. Captura v11 rechaza tag activo: falta payload de summon tags. Otros reset de campo, pasivas/supresion y callback en turnos siguen pendientes. Regresiones 518-520 escritas; tests/compilacion aplazados.
+
+## Persistencia Unburden en actor v4
+
+1. Subformato pokemon=4 agrega flag Unburden; lectores 1-3 migran tag ausente. Envelope run v11 conserva compatibilidad estructural; runtime antiguo rechaza actor v4. Snapshot explicito requerido con tags; restore aplica tag despues de reconstruir encuentro.
+2. Regresiones 405-407 escritas para roundtrip, migracion v3 y flag invalido; fixtures v1/v2 conservan layout previo. Tests/compilacion aplazados. Sigue pendiente callback dentro del turno y resto del lifecycle.

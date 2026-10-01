@@ -269,6 +269,7 @@ bool restoreNativePokemonSave(const NativePokemonSave& saved, PokemonBattleState
     // Experience may exceed the next threshold while the wave level cap is active.
     // The enclosing run validator must resolve that cap, rather than truncate EXP.
     actor.pauseEvolutions = saved.pauseEvolutions;
+    actor.heldItemLostTags.unburden = saved.unburdenTag;
     actor.hp = saved.hp;
     for (uint8_t i = 0; i < saved.moveCount; ++i) {
         if (saved.pp[i] > actor.moves[i].maxPp) return false;
@@ -284,8 +285,7 @@ bool restoreNativePokemonSave(const NativePokemonSave& saved, PokemonBattleState
 
 bool captureNativePokemonSave(const PokemonBattleState& state, uint32_t experience,
     NativePokemonSave& output) {
-    // Schema v11 cannot serialize summon tags; never silently drop an active tag.
-    if (!state.statsAreBaseFormulaOnly || !state.formId || state.heldItemLostTags.unburden) return false;
+    if (!state.statsAreBaseFormulaOnly || !state.formId) return false;
     NativePokemonSave saved{};
     if (!copyText(saved.formId, sizeof(saved.formId), state.formId)) return false;
     saved.speciesDex = state.speciesDex;
@@ -296,6 +296,7 @@ bool captureNativePokemonSave(const PokemonBattleState& state, uint32_t experien
     saved.nature = static_cast<uint8_t>(state.nature);
     saved.ivsDerivedFromId = state.ivsWereDerivedFromPokemonId;
     saved.pauseEvolutions = state.pauseEvolutions;
+    saved.unburdenTag = state.heldItemLostTags.unburden;
     saved.hp = state.hp;
     saved.experience = experience;
     saved.moveCount = state.moveCount;
@@ -425,7 +426,7 @@ NativeSaveResult encodeNativePokemonSave(const NativePokemonSave& saved, char* o
     if (!restoreNativePokemonActorSave(saved, state, identity)) return NativeSaveResult::InvalidRecord;
     if (!output) return NativeSaveResult::InvalidFormat;
     Writer writer{output, capacity};
-    writer.text("pokemon=3\n");
+    writer.text("pokemon=4\n");
     writer.hex(saved.speciesDex, 4);
     writer.text(saved.formId); writer.character('\n');
     writer.hex(saved.level, 4);
@@ -447,6 +448,7 @@ NativeSaveResult encodeNativePokemonSave(const NativePokemonSave& saved, char* o
     writer.hex(saved.initialTeraTypeIndex, 2);
     writer.hex(saved.pauseEvolutions ? 1 : 0, 2);
     writer.text(identity.initialTeraType); writer.character('\n');
+    writer.hex(saved.unburdenTag ? 1 : 0, 2);
     if (!writer.valid) return NativeSaveResult::TooLarge;
     written = writer.position;
     return NativeSaveResult::Ok;
@@ -458,8 +460,9 @@ NativeSaveResult decodeNativePokemonSave(const char* bytes, size_t length,
     Reader reader{bytes, length};
     NativePokemonSave saved{};
     uint32_t value = 0;
-    if (!reader.literal("pokemon=") || !reader.hex(1, value) || (value < 1 || value > 3))
+    if (!reader.literal("pokemon=") || !reader.hex(1, value) || (value < 1 || value > 4))
         return NativeSaveResult::InvalidFormat;
+    const bool hasUnburdenTag = value >= 4;
     const bool hasConcreteTeraType = value >= 3;
     const bool hasEvolutionPause = value >= 2;
     if (!reader.hex(4, value)) return NativeSaveResult::InvalidFormat;
@@ -500,6 +503,10 @@ NativeSaveResult decodeNativePokemonSave(const char* bytes, size_t length,
     }
     if (hasConcreteTeraType && (!reader.line(saved.initialTeraType, sizeof(saved.initialTeraType)) ||
         !saved.initialTeraType[0])) return NativeSaveResult::InvalidFormat;
+    if (hasUnburdenTag) {
+        if (!reader.hex(2, value) || value > 1) return NativeSaveResult::InvalidFormat;
+        saved.unburdenTag = value != 0;
+    }
     saved.actorIdentityResolved = saved.initialTeraTypeResolved = true;
     if (reader.position != reader.end) return NativeSaveResult::InvalidFormat;
     PokemonBattleState state{};

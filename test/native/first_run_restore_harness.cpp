@@ -1537,10 +1537,27 @@ int main() {
                 NativeSaveResult::Ok || !decodedActor.pauseEvolutions ||
             !restoreNativePokemonActorSave(decodedActor, restoredActor, restoredIdentity) ||
             !restoredActor.pauseEvolutions) return 321;
+        auto tagState = pausedState;
+        tagState.heldItemLostTags.unburden = true;
+        NativePokemonSave tagSnapshot{};
+        char tagBytes[512]{};
+        size_t tagSize = 0;
+        if (!captureNativePokemonActorSave(tagState, currentActor.actor, currentActor.totalExperience, tagSnapshot) ||
+            !tagSnapshot.unburdenTag || encodeNativePokemonSave(tagSnapshot, tagBytes, sizeof(tagBytes), tagSize) !=
+            NativeSaveResult::Ok || decodeNativePokemonSave(tagBytes, tagSize, decodedActor) != NativeSaveResult::Ok ||
+            !restoreNativePokemonActorSave(decodedActor, restoredActor, restoredIdentity) ||
+            !restoredActor.heldItemLostTags.unburden) return 405;
+        tagBytes[8] = '3';
+        if (decodeNativePokemonSave(tagBytes, tagSize - 3, decodedActor) != NativeSaveResult::Ok ||
+            decodedActor.unburdenTag) return 406;
+        tagBytes[8] = '4';
+        tagBytes[tagSize - 2] = '2';
+        if (decodeNativePokemonSave(tagBytes, tagSize, decodedActor) != NativeSaveResult::InvalidFormat ||
+            decodedActor.unburdenTag) return 407;
         // Member schema 1 has no pause field: preserve its exact former layout.
         const size_t concreteTypeBytes = std::strlen(pausedActor.initialTeraType) + 1;
-        if (pauseSize < concreteTypeBytes + 3) return 328;
-        const size_t version2Size = pauseSize - concreteTypeBytes;
+        if (pauseSize < concreteTypeBytes + 6) return 328;
+        const size_t version2Size = pauseSize - concreteTypeBytes - 3;
         pauseBytes[8] = '2';
         if (decodeNativePokemonSave(pauseBytes, version2Size, decodedActor) != NativeSaveResult::Ok ||
             !decodedActor.pauseEvolutions) return 329;
@@ -1563,6 +1580,14 @@ int main() {
                 PokerogueContent::kContentHash, decodedParty) != NativeSaveResult::Ok ||
             decodedParty.playerPartyCount != 1 || decodedParty.activePlayerMember ||
             decodedParty.playerParty[0].pokemonId != actorSnapshot.pokemonId) return 287;
+        auto taggedRun = decodedParty;
+        taggedRun.playerParty[0].unburdenTag = true;
+        FirstRunRuntime taggedRuntime(7);
+        NativeRunSave taggedRecaptured{};
+        if (!taggedRuntime.restoreNativeRunSave(taggedRun)) return 408;
+        taggedRuntime.captureNativeRunSave(taggedRecaptured);
+        if (taggedRecaptured.playerPartyCount != 1 || !taggedRecaptured.playerParty[0].unburdenTag)
+            return 409;
         FirstRunRuntime singleSnapshotRuntime(7);
         if (!singleSnapshotRuntime.restoreNativeRunSave(decodedParty)) return 317;
         NativeRunSave singleRecaptured{};

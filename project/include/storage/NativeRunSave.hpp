@@ -50,6 +50,7 @@ struct NativePokemonSave {
     int8_t statStages[7]{};
     bool ivsDerivedFromId = false;
     bool pauseEvolutions = false;
+    bool unburdenTag = false;
     bool actorIdentityResolved = false;
     uint8_t abilityIndex = 0;
     char initialTeraType[16]{}; // Empty only for legacy actor payloads.
