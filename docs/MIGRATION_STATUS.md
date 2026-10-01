@@ -818,3 +818,14 @@
 1. `pokemonParticipantExperience` sigue `src/battle-scene.ts`, `applyPartyExp`: floor previo del bonus trainer, división por número de participantes, bonus múltiple/EXP Share, Pokérus, override, booster y floor por receptor. Eligibility y policies deben estar resueltas; cero participantes o receptor excluido concede cero. ExpBalance es una pasada posterior todavía pendiente.
 2. El resolver single-participant usado por gameplay delega en el mismo cálculo con policy neutral explícita. No se conecta todavía el reparto a toda la party ni la amistad: falta registrar/persistir participantes y preparar todas las colas de aprendizaje/evolución antes de publicar.
 3. Regresiones 513–519 escritas: policy pendiente, dos participantes, bonus/Pokérus, reserva con EXP Share, override/booster, receptor capped y ausencia de participantes. Sin ejecutar ni compilar. El seguimiento upstream añade actores en TurnInitPhase y gestiona altas/bajas en FaintPhase; no equivale simplemente a marcar cada switch como participación inmediata.
+
+## Persistencia del historial de participantes
+
+1. Envelope/runtime v13 añade historial resuelto, count y IDs de identidad Pokémon ordenados; no índices de party ni especies. Valida orden único, capacidad de seis miembros, referencias a snapshots explícitos y datos sobrantes. ID cero es una identidad válida cuando está dentro del count.
+2. v1–v12 continúan legibles: el historial se migra como desconocido, sin inventar qué reservas participaron. v12 conserva la referencia de perfil. El registro de TurnInit/Faint y su consumo por el reparto quedan pendientes de conectar al runtime.
+3. Regresiones 90–94 escritas para roundtrip, duplicados, historial inconsistente y migración v12; fixtures anteriores ahora parten de cabecera v13. Sin ejecutar ni compilar por instrucción del usuario.
+
+4. FirstRunRuntime registra el actor activo al aceptar ataques, captura o switch (TurnInit conceptual antes del comando); agrega el activo ante faint de cualquier actor y lo retira si cae el player. Conserva el set durante sustituciones de enemigos de entrenador y lo reinicia con la nueva batalla. IDs ordenados se capturan/restauran; restore también valida pertenencia contra actores reconstruidos. Historial legacy desconocido no se transforma en un set inventado.
+5. Roundtrip de runtime ampliado con identidad real. Falta conectar la distribución a todos los participantes y colas de aprendizaje/evolución; los nuevos IDs no se presentan como reparto completo. Tests/compilación permanecen pendientes.
+
+6. Regresiones 520–521 añaden rechazo de una identidad ajena durante reconstrucción de la run y verifican que el historial anterior no se publica parcialmente. Pendientes de ejecución.

@@ -166,6 +166,8 @@ private:
     bool advanceTrainerAfterDefeat();
     bool generateVictoryRewards();
     bool finishBattleTurn();
+    bool recordActiveParticipant();
+    void removeParticipant(uint32_t pokemonId);
     bool executeActiveBattleMove(bool enemyActs, uint8_t moveSlot, PokerogueRngAdapter& rng);
     bool executeActiveBattleMove(uint8_t userIndex, uint8_t targetIndex, uint8_t moveSlot, PokerogueRngAdapter& rng, const PokemonPpPolicy* ppOverride = nullptr);
     void refreshTrainerBaselineMatchups();
@@ -200,6 +202,9 @@ private:
     uint8_t m_selectedBattleMove = 0;
     uint8_t m_selectedTarget = 0;
     uint32_t m_starterProfileGeneration = 0;
+    bool m_participantHistoryResolved = true;
+    uint8_t m_participantCount = 0;
+    std::array<uint32_t, 6> m_participantIds{};
     uint32_t m_turn = 1;
     uint32_t m_enemySwitchCounter = 0;
     bool m_battleFinished = false;

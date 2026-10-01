@@ -146,6 +146,9 @@ void FirstRunRuntime::captureNativeRunSave(NativeRunSave& output) const {
     }
     for (uint8_t ball = 0; ball < 5; ++ball) value.pokeballCounts[ball] = m_pokeballs[ball];
     value.starterProfileGeneration = m_starterProfileGeneration;
+    value.participantHistoryResolved = m_participantHistoryResolved;
+    value.participantCount = m_participantCount;
+    for (uint8_t i = 0; i < m_participantCount; ++i) value.participantIds[i] = m_participantIds[i];
     value.wave = m_run.wave;
     value.playerLevel = m_context.player.level;
     value.playerExperience = m_context.player.totalExperience;
@@ -245,6 +248,16 @@ bool FirstRunRuntime::restoreNativeRunSave(const NativeRunSave& save) {
     FirstRunRuntime candidate(save.seed);
     if (!candidate.restoreNativeRunSaveInPlace(save)) return false;
     candidate.m_starterProfileGeneration = save.starterProfileGeneration;
+    candidate.m_participantHistoryResolved = save.participantHistoryResolved;
+    candidate.m_participantCount = save.participantCount;
+    candidate.m_participantIds = {};
+    for (uint8_t i = 0; i < save.participantCount; ++i) {
+        bool found = false;
+        for (uint8_t member = 0; member < candidate.m_context.playerPartyCount; ++member)
+            found |= candidate.m_context.playerParty[member].battleState.pokemonId == save.participantIds[i];
+        if (!found) return false;
+        candidate.m_participantIds[i] = save.participantIds[i];
+    }
     *this = candidate;
     // Scene nodes and text pointers belong to their runtime instance. Rebuild
     // after committing so none point at the temporary candidate's storage.
@@ -1212,6 +1225,8 @@ bool FirstRunRuntime::advanceBattleTurnInPlace() {
         return false;
     }
 
+    if (!recordActiveParticipant()) return false;
+
     if (m_trainerBattle) {
         // Restricted to the complete fixed party. The current plain
         // battle gate represents no queue/trap/hazard state; broader effects
@@ -1763,6 +1778,28 @@ bool FirstRunRuntime::executeActiveBattleMove(bool enemyActs, uint8_t moveSlot,
     return executeActiveBattleMove(enemyActs ? 1 : 0, enemyActs ? 0 : 1, moveSlot, rng);
 }
 
+bool FirstRunRuntime::recordActiveParticipant() {
+    if (!m_participantHistoryResolved) return true;
+    const uint32_t id = m_context.player.battleState.pokemonId;
+    uint8_t position = 0;
+    while (position < m_participantCount && m_participantIds[position] < id) ++position;
+    if (position < m_participantCount && m_participantIds[position] == id) return true;
+    if (m_participantCount == m_participantIds.size()) return false;
+    for (uint8_t i = m_participantCount; i > position; --i) m_participantIds[i] = m_participantIds[i - 1];
+    m_participantIds[position] = id;
+    ++m_participantCount;
+    return true;
+}
+
+void FirstRunRuntime::removeParticipant(uint32_t id) {
+    for (uint8_t i = 0; i < m_participantCount; ++i) {
+        if (m_participantIds[i] != id) continue;
+        for (uint8_t n = i + 1; n < m_participantCount; ++n) m_participantIds[n - 1] = m_participantIds[n];
+        m_participantIds[--m_participantCount] = 0;
+        return;
+    }
+}
+
 bool FirstRunRuntime::finishBattleTurn() {
     // TurnEndPhase lapses arena tags except during a biome interlude.
     // Current checkpoint progression ends before the first X0 transition.
@@ -1828,7 +1865,12 @@ bool FirstRunRuntime::finishBattleTurn() {
         }
     }
     // Reset PokemonTurnData after all end-of-turn consumers.
-    if (!nextPlayer.hp && !applyPokemonFaintFriendship(nextPlayer)) return false;
+    if ((!nextPlayer.hp || !nextEnemy.hp || (m_doubleBattle && !nextSecondEnemy.hp)) &&
+        !recordActiveParticipant()) return false;
+    if (!nextPlayer.hp) {
+        if (!applyPokemonFaintFriendship(nextPlayer)) return false;
+        removeParticipant(nextPlayer.pokemonId);
+    }
     nextPlayer.turnDamageDealt = nextEnemy.turnDamageDealt = nextSecondEnemy.turnDamageDealt = 0;
     m_context.player.battleState = nextPlayer;
     m_context.enemy.battleState = nextEnemy;
@@ -2139,6 +2181,7 @@ bool FirstRunRuntime::throwPokeballInPlace(PokeballType ball) {
         m_battleFeedback = "Weaken the boss before throwing a ball";
         return false;
     }
+    if (!recordActiveParticipant()) return false;
     --m_pokeballs[ballIdx];
 
     PokemonCaptureEvent captureEvent{};
@@ -2296,6 +2339,7 @@ bool FirstRunRuntime::switchPlayerPokemonInPlace(uint8_t targetIndex) {
     auto* rng = m_battleRng.currentStream();
     if (!rng) return false;
 
+    if (!recordActiveParticipant()) return false;
     m_context.player.battleState.heldItemLostTags = {};
     m_context.player.battleState.turnDamageDealt = 0;
     m_context.playerParty[m_context.activePlayerPartyIndex] = m_context.player;
@@ -2368,6 +2412,9 @@ bool FirstRunRuntime::advancePlayerAfterDefeat() {
 }
 
 void FirstRunRuntime::resolve(bool carryPlayer) {
+    m_participantHistoryResolved = true;
+    m_participantCount = 0;
+    m_participantIds = {};
     if (carryPlayer) {
         uint32_t partyIds[6]{};
         if (m_context.playerPartyCount > 6) { m_encounterResolved = false; return; }

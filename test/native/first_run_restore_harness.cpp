@@ -1791,6 +1791,16 @@ int main() {
             encodeNativeRunSave(afterRejected, afterBytes, sizeof(afterBytes), afterSize) != NativeSaveResult::Ok ||
             beforeSize != afterSize || std::memcmp(beforeBytes, afterBytes, beforeSize)) return 3;
         active.starterProfileGeneration = 17;
+        active.participantHistoryResolved = true;
+        active.participantCount = 1;
+        active.participantIds[0] = context.player.battleState.pokemonId;
+        auto foreignParticipant = active;
+        foreignParticipant.participantIds[0] ^= 0xffffffffU;
+        if (game.restoreNativeRunSave(foreignParticipant)) return 520;
+        NativeRunSave unchangedParticipants{};
+        game.captureNativeRunSave(unchangedParticipants);
+        if (!unchangedParticipants.participantHistoryResolved || unchangedParticipants.participantCount)
+            return 521;
         if (!game.restoreNativeRunSave(active)) return 4;
         if (!game.scene().nodes || !game.scene().nodeCount ||
             !game.scene().nodes[0].text || std::strcmp(game.scene().nodes[0].text,
@@ -1799,7 +1809,8 @@ int main() {
         game.captureNativeRunSave(loaded);
         if (loaded.stage != NativeSaveStage::BattleActive || loaded.enemyHp != active.enemyHp ||
             loaded.seed != seed || loaded.playerStatStages[0] != -2 ||
-            loaded.enemyStatStages[4] != 3 || loaded.starterProfileGeneration != 17) return 6;
+            loaded.enemyStatStages[4] != 3 || loaded.starterProfileGeneration != 17 || !loaded.participantHistoryResolved ||
+            loaded.participantCount != 1 || loaded.participantIds[0] != active.participantIds[0]) return 6;
         NativePokemonSave actorSnapshot{};
         const auto& currentActor = game.presentation().player;
         if (!captureNativePokemonSave(currentActor.battleState, currentActor.totalExperience,
@@ -2097,8 +2108,8 @@ int main() {
         if (!heldSection) return 386;
         size_t versionTenSize = static_cast<size_t>(heldSection - heldRunPayload);
         std::memcpy(versionTenPayload, heldRunPayload, versionTenSize);
-        char* tenSaveVersion = std::strstr(versionTenPayload, "saveVersion=000c");
-        char* tenRuntimeVersion = std::strstr(versionTenPayload, "runtimeVersion=000c");
+        char* tenSaveVersion = std::strstr(versionTenPayload, "saveVersion=000d");
+        char* tenRuntimeVersion = std::strstr(versionTenPayload, "runtimeVersion=000d");
         if (!tenSaveVersion || !tenRuntimeVersion) return 387;
         tenSaveVersion[std::strlen("saveVersion=") + 3] = 'a';
         tenRuntimeVersion[std::strlen("runtimeVersion=") + 3] = 'a';
