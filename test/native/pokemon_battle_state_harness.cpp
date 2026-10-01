@@ -2510,5 +2510,20 @@ extern "C" int runPokemonBattleStateChecks() {
     statusPolicy.pendingStatus = true;
     if (Pokerogue3DS::canPokemonSetStatus(absentStatus, Effect::Poison, statusPolicy) != Eligibility::ExistingStatus ||
         Pokerogue3DS::canPokemonSetStatus(absentStatus, Effect::Sleep, statusPolicy) != Eligibility::Allowed) return 588;
+    PokemonBattleState obtainActor{};
+    obtainActor.hp = obtainActor.maxHp = 20;
+    Pokerogue3DS::PokerogueRngAdapter obtainRng, expectedStatusRng;
+    const uint32_t expectedSleep = expectedStatusRng.randSeedInt(3) == 0 ? 2 : 3;
+    statusPolicy = {};
+    statusPolicy.resolved = true;
+    if (Pokerogue3DS::obtainPokemonStatus(obtainActor, Effect::Sleep, statusPolicy, false, obtainRng) !=
+            Pokerogue3DS::PokemonStatusObtainResult::UnsupportedReactions || obtainActor.status.present) return 589;
+    if (Pokerogue3DS::obtainPokemonStatus(obtainActor, Effect::Sleep, statusPolicy, true, obtainRng) !=
+            Pokerogue3DS::PokemonStatusObtainResult::Applied || obtainActor.status.sleepTurnsRemaining != expectedSleep ||
+        obtainRng.randSeedUint32() != expectedStatusRng.randSeedUint32()) return 590;
+    obtainActor.status = {};
+    if (Pokerogue3DS::obtainPokemonStatus(obtainActor, Effect::Freeze, statusPolicy, true, obtainRng) !=
+            Pokerogue3DS::PokemonStatusObtainResult::Applied || obtainActor.status.freezeTurnsRemaining != 3 ||
+        obtainActor.status.sleepTurnsRemaining || !obtainActor.status.hasSleepTurnsRemaining) return 591;
     return 0;
 }

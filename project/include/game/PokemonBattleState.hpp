@@ -303,6 +303,13 @@ inline PokemonStatusEligibility canPokemonSetStatus(const PokemonStatusState& cu
     return PokemonStatusEligibility::Allowed;
 }
 
+enum class PokemonStatusObtainResult : uint8_t { Applied, Ineligible, Fainted, UnsupportedReactions };
+// Actor portion of doSetStatus. Caller resolves pending-status queue, tags,
+// move cancellation and callbacks before setting reactionsResolved=true.
+PokemonStatusObtainResult obtainPokemonStatus(PokemonBattleState& actor, PokemonStatusEffect effect,
+    const PokemonStatusApplicationPolicy& policy, bool reactionsResolved, PokerogueRngAdapter& rng,
+    bool explicitSleepDuration = false, uint32_t sleepDuration = 0);
+
 struct PokemonStatusResidualPolicy {
     bool resolved = false; // Both block attributes and post-damage callbacks resolved.
     bool active = true;

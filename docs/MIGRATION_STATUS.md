@@ -1353,3 +1353,9 @@
 1. canPokemonSetStatus reproduce Pokemon.canSetStatus: estado existente/pending, override de Rest, Misty grounded, poison/steel con bypass de fuente por tipo, Electric paralysis, Electric terrain sleep, Ice/sun freeze, Fire burn, bloqueo propio/aliado y Safeguard solo para fuente externa.
 2. Política exige tipos efectivos, grounding, campo y callbacks resueltos; no presupone que falta de representación implica ausencia. Sleep conserva detalle pinned de no consultar ignoreField. Predicate no muta actor ni consume RNG.
 3. Faltan el proveedor real de policy, trySetStatus/ObtainStatusEffectPhase, durations, reactions y fases del turno antes de habilitar moves con estados. Regresiones de Corrosion parcial, fuente ausente, terrenos, sol y override escritas; sin ejecutar. Tests/compilación aplazados.
+
+## Actor de ObtainStatusEffect
+
+1. obtainPokemonStatus porta componente de actor de Pokemon.doSetStatus: contador toxic cero, sleep sin duración explícita consume randBattleSeedInt(3) y elige 2/3, freeze recibe tres. Optional sleep conserva cero presente para otros estados como el constructor upstream.
+2. Elegibilidad, faint y reactionsResolved se comprueban antes del draw; RNG y actor se publican conjuntamente. Tags/queue/callbacks requieren resolución explícita y no se simulan. Dispatcher del turno y save status siguen pendientes.
+3. Regresiones de duración/RNG, reacción no resuelta y freeze escritas, sin ejecutar. Tests/compilación aplazados.

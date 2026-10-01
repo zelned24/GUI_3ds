@@ -2,6 +2,28 @@
 #include "game/PokerogueRngAdapter.hpp"
 
 namespace Pokerogue3DS {
+PokemonStatusObtainResult obtainPokemonStatus(PokemonBattleState& actor, PokemonStatusEffect effect,
+    const PokemonStatusApplicationPolicy& policy, bool reactionsResolved, PokerogueRngAdapter& rng,
+    bool explicitSleepDuration, uint32_t sleepDuration) {
+    if (canPokemonSetStatus(actor.status, effect, policy) != PokemonStatusEligibility::Allowed)
+        return PokemonStatusObtainResult::Ineligible;
+    if (!actor.hp && effect != PokemonStatusEffect::Faint) return PokemonStatusObtainResult::Fainted;
+    if (!reactionsResolved) return PokemonStatusObtainResult::UnsupportedReactions;
+    auto nextRng = rng;
+    PokemonStatusState status{};
+    status.present = true;
+    status.effect = effect;
+    // JS default parameter draws only for sleep without an explicit duration.
+    status.hasSleepTurnsRemaining = true;
+    status.sleepTurnsRemaining = explicitSleepDuration ? sleepDuration :
+        effect == PokemonStatusEffect::Sleep ? (nextRng.randSeedInt(3) == 0 ? 2 : 3) : 0;
+    status.hasFreezeTurnsRemaining = effect == PokemonStatusEffect::Freeze;
+    status.freezeTurnsRemaining = status.hasFreezeTurnsRemaining ? 3 : 0;
+    actor.status = status;
+    rng = nextRng;
+    return PokemonStatusObtainResult::Applied;
+}
+
 namespace {
 bool abilityBelongsToSpecies(const PokerogueContent::Species& species, uint16_t id) {
     return id != 0 && (species.ability1 == id || species.ability2 == id ||
