@@ -3255,6 +3255,28 @@ extern "C" int runPokemonBattleStateChecks() {
         !completeStatusTarget.status.present || completeStatusTarget.confusion.turns != completeTagDuration ||
         !completeStatusEvent.reactionsExecuted ||
         statusApplicationRng.randSeedUint32() != expectedApplicationRng.randSeedUint32()) return 9240;
+    // currentBattle owns both actors' duration draws; no actor-local stream.
+    auto sleepActionUser = completeStatusUser;
+    auto sleepActionTarget = completeStatusTarget;
+    sleepActionUser.status = {};
+    sleepActionTarget.status = {};
+    sleepActionTarget.confusion = {};
+    sleepActionUser.moves[0].moveId = 95;
+    sleepActionUser.moves[0].pp = sleepActionUser.moves[0].maxPp = 20;
+    auto sleepActionPolicy = completeStatusPolicy;
+    sleepActionPolicy.move.effectiveChance = -1;
+    auto sleepReactionPolicy = reactionsPolicy;
+    sleepReactionPolicy.formsResolved = true;
+    auto sharedSleepRng = statusApplicationRng;
+    auto expectedSharedSleepRng = sharedSleepRng;
+    const auto expectedSleepTurns = expectedSharedSleepRng.randSeedInt(3) == 0 ? 2 : 3;
+    Pokerogue3DS::PokemonStatusActionEvent sleepActionEvent{};
+    if (!Pokerogue3DS::executePokemonStatusAction(sleepActionUser, sleepActionTarget, 0,
+            sleepActionPolicy, sleepReactionPolicy, sharedSleepRng, sharedSleepRng, sleepActionEvent) ||
+        sleepActionUser.moves[0].pp != 19 || sleepActionUser.status.present ||
+        sleepActionTarget.status.effect != Effect::Sleep ||
+        sleepActionTarget.status.sleepTurnsRemaining != expectedSleepTurns ||
+        sharedSleepRng.randSeedUint32() != expectedSharedSleepRng.randSeedUint32()) return 9370;
     completeStatusUser.status = {};
     completeStatusTarget.status = {};
     completeStatusTarget.confusion = {};

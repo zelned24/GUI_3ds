@@ -1677,3 +1677,10 @@
 1. calculatePokemonStatusEffectAiBenefit porta StatusEffectAttr.getTargetBenefitScore: chance negativa -10, otra floor(chance * -0.1), cero cuando canSetStatus rechaza. Consulta ignoreField=true sin RNG ni mutación, conservando otras inmunidades.
 2. Probabilidad y policy necesitan callbacks resueltos; múltiples atributos/datos desconocidos no reciben puntuación ficticia. Convención de signo del selector y conexión al runtime siguen pendientes.
 3. Regresiones Hypnosis de chance negativa/fraccional, estado existente, Misty ignorado y callback pendiente escritas sin ejecutar. Tests/compilación aplazados.
+
+## Estados conectados al comando activo
+
+1. FirstRunRuntime integra movimientos con un único StatusEffectAttr, parámetros y flags conocidos y objetivo individual enemigo. Compone políticas vivas, precisión/clima, inmunidades de tipo/flags y callbacks post-set antes de ejecutar la acción transaccional.
+2. Pokemon.randBattleSeedInt en src/field/pokemon.ts de 8555c08c823b856cbec4eb99ca84ea52a955836d delega a currentBattle. El comando usa el mismo stream para precisión/chance, duración y reacciones.
+3. Selector enemigo consume beneficio canónico con signo invertido entre oponentes. Habilidades no resueltas, dobles, modifiers y campos no representados siguen rechazados; esto no completa Classic.
+4. Regresión Sleep/stream compartido escrita sin ejecutar. Tests, compilación y cobertura end-to-end en Azahar permanecen pendientes por instrucción del usuario.

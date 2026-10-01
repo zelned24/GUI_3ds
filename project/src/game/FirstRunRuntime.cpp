@@ -917,8 +917,25 @@ bool supportsPokemonStatStageMove(uint16_t moveId) {
         if (effect.moveId == moveId && effect.selfTarget == self) ++count;
     return count == 1;
 }
+const PokerogueContent::MoveStatusEffect* singleOpponentStatusEffect(uint16_t moveId) {
+    const auto* move = PokerogueContent::findMoveById(moveId);
+    if (!move || move->category != PokerogueContent::MoveStatus || move->attributeCount != 1 ||
+        !PokerogueContent::moveHasAttribute(*move, "StatusEffectAttr") || !move->target ||
+        (std::strcmp(move->target, "NEAR_OTHER") && std::strcmp(move->target, "NEAR_ENEMY"))) return nullptr;
+    bool flagsKnown = false;
+    for (const auto& flags : PokerogueContent::kStatusMoveFlagProfiles)
+        if (flags.moveId == moveId) flagsKnown = flags.resolved;
+    if (!flagsKnown) return nullptr;
+    const PokerogueContent::MoveStatusEffect* result = nullptr;
+    for (const auto& row : PokerogueContent::kMoveStatusEffects) {
+        if (row.moveId != moveId) continue;
+        if (result || !row.parametersResolved || row.selfTarget || !row.effectId || row.effectId >= 7) return nullptr;
+        result = &row;
+    }
+    return result;
+}
 bool supportsBaselineBattleMove(uint16_t moveId) {
-    if (pokemonWeatherChangeProfile(moveId) || supportsPokemonTrickRoomMove(moveId) || supportsPokemonStatStageMove(moveId) || selfHealingProfile(moveId) || damageDrainProfile(moveId) || damageRecoilProfile(moveId)) return true;
+    if (singleOpponentStatusEffect(moveId) || pokemonWeatherChangeProfile(moveId) || supportsPokemonTrickRoomMove(moveId) || supportsPokemonStatStageMove(moveId) || selfHealingProfile(moveId) || damageDrainProfile(moveId) || damageRecoilProfile(moveId)) return true;
     const auto* move = PokerogueContent::findMoveById(moveId);
     // This first resolver only executes plain, single-target damaging moves.
     // Only plain damage or a single migrated weather/critical attribute is
@@ -996,6 +1013,20 @@ bool FirstRunRuntime::resolveActiveStatusRecipientPolicies(const PokemonBattleSt
     const PokemonStatusAbilityComponent sourceAbilities[] = {{source.abilityId, true, true}};
     return resolvePokemonStatusRecipientPolicies(recipient, &source, effect, field,
         own, 1, nullptr, 0, sourceAbilities, 1, output);
+}
+
+double FirstRunRuntime::scoreActiveEnemyMove(const PokemonBattleState& user,
+    const PokemonBattleState& target, const PokerogueContent::Move& move) const {
+    const auto* effect = singleOpponentStatusEffect(move.id);
+    if (!effect) return baselineEnemyMoveScore(user, target, move);
+    PokemonStatusRecipientPolicies policies{};
+    double targetBenefit = 0;
+    if (!resolveActiveStatusRecipientPolicies(target, user,
+            static_cast<PokemonStatusEffect>(effect->effectId), policies) ||
+        !calculatePokemonStatusEffectAiBenefit(target, move.id, move.upstreamChance,
+            true, policies.status, targetBenefit)) return -20.0;
+    // Pokemon.getEnemyMoveScores flips target benefit for opposing Pokemon.
+    return -targetBenefit;
 }
 
 bool FirstRunRuntime::resolveActiveMoveWeather(const PokemonBattleState& user,
@@ -1699,7 +1730,7 @@ bool FirstRunRuntime::selectEnemyMoveSlot(const PokemonBattleState& enemyState,
         // short-circuits in the pinned source without consuming the stream.
         (void)rng.randSeedInt(1);
         candidates[candidateCount] = i;
-        scores[candidateCount] = baselineEnemyMoveScore(enemyState, playerState, *move);
+        scores[candidateCount] = scoreActiveEnemyMove(enemyState, playerState, *move);
         ++candidateCount;
     }
     for (uint8_t i = 1; i < candidateCount; ++i) {
@@ -1942,7 +1973,7 @@ bool FirstRunRuntime::advanceBattleTurnInPlace() {
                 if (!move) return false;
                 (void)rng->randSeedInt(1);
                 candidates[candidateCount] = i;
-                scores[candidateCount] = baselineEnemyMoveScore(m_context.enemy.battleState, playerState, *move);
+                scores[candidateCount] = scoreActiveEnemyMove(m_context.enemy.battleState, playerState, *move);
                 ++candidateCount;
             }
             for (uint8_t i = 1; i < candidateCount; ++i) {
@@ -1997,7 +2028,7 @@ bool FirstRunRuntime::advanceBattleTurnInPlace() {
                 if (!move) return false;
                 (void)rng->randSeedInt(1);
                 candidates[candidateCount] = i;
-                scores[candidateCount] = baselineEnemyMoveScore(m_context.secondEnemy.battleState, playerState, *move);
+                scores[candidateCount] = scoreActiveEnemyMove(m_context.secondEnemy.battleState, playerState, *move);
                 ++candidateCount;
             }
             for (uint8_t i = 1; i < candidateCount; ++i) {
@@ -2287,6 +2318,51 @@ bool FirstRunRuntime::executeActiveBattleMove(uint8_t userIndex, uint8_t targetI
                 PokemonWeatherChangeResult::Ok) return false;
         if (!applyMoveHeldHealing(user)) return false;
         m_battleFeedback = event.changed ? "Weather changed" : "Weather move failed";
+        return true;
+    }
+    if (const auto* effect = singleOpponentStatusEffect(move->id)) {
+        PokemonStatusRecipientPolicies recipientPolicies{}, sourcePolicies{};
+        const auto status = static_cast<PokemonStatusEffect>(effect->effectId);
+        if (!resolveActiveStatusRecipientPolicies(opponent, user, status, recipientPolicies) ||
+            !resolveActiveStatusRecipientPolicies(user, opponent, status, sourcePolicies)) return false;
+        PokemonPostSetStatusPolicy reactions{};
+        if (!resolvePokemonPostSetStatusPolicy(opponent, user, status, recipientPolicies,
+                sourcePolicies, true, true, true, reactions)) return false;
+        PokemonStatusEffectCommandPolicy command{};
+        command.reactionsResolved = true;
+        command.move.application = recipientPolicies.status;
+        command.move.chanceCallbacksResolved = true;
+        command.move.effectiveChance = move->upstreamChance;
+        command.move.ppCost = pp.cost;
+        PokemonMoveWeatherContext weather{};
+        PokemonHitPolicy hit{};
+        const PokemonWeatherAbilityComponent abilities[] = {
+            {user.abilityId, true, true}, {opponent.abilityId, true, false}
+        };
+        if (!resolveActiveMoveWeather(user, opponent, weather) ||
+            !composePokemonAlwaysHitPolicy(abilities, 2, hit, move->id, &weather)) return false;
+        command.move.hit.resolved = true;
+        command.move.hit.blockedBeforeAccuracy = hit.blockedByAbility;
+        command.move.hit.bypassAccuracy = hit.bypassAccuracy || move->accuracy < 0;
+        command.move.hit.accuracyMultiplier = hit.accuracyMultiplier;
+        const auto* form = PokerogueContent::findFormById(opponent.formId);
+        if (!form) return false;
+        const char* types[] = {form->type1, form->type2};
+        PokemonStatusMoveTypeImmunityPolicy typePolicy{};
+        typePolicy.resolved = typePolicy.opponents = true;
+        typePolicy.originalIfStellarTypes = types;
+        typePolicy.typeCount = types[1] && types[1][0] ? 2 : 1;
+        const PokemonStatusAbilityComponent defenders[] = {{opponent.abilityId, true, true}};
+        if (!composePokemonStatusMoveTypeHitPolicy(move->id, command.move.hit, typePolicy, command.move.hit) ||
+            !composePokemonStatusFlagAbilityHitPolicy(move->id, command.move.hit, false,
+                defenders, 1, command.move.hit)) return false;
+        PokemonStatusActionEvent event{};
+        // Pokemon.randBattleSeedInt delegates to currentBattle: duration and
+        // post-set reactions consume the same stream as accuracy/chance.
+        if (!executePokemonStatusAction(user, opponent, moveSlot, command, reactions, rng, rng, event)) return false;
+        if (!applyMoveHeldHealing(user)) return false;
+        m_battleFeedback = !event.move.hit.hit ? "Status move missed or blocked" :
+            event.reactionsExecuted ? "Status applied" : "Status unchanged";
         return true;
     }
     if (supportsPokemonStatStageMove(move->id)) {
