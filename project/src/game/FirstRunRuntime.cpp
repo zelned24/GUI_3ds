@@ -732,7 +732,7 @@ bool FirstRunRuntime::claimRewardChoice() {
 }
 
 bool FirstRunRuntime::claimRewardChoiceInPlace() {
-    if (m_heldModifierCount) {
+    if (!heldHealingInventorySupported(m_heldModifiers.data(), m_heldModifierCount)) {
         m_battleFeedback = "Held modifier effects require native dispatch";
         return false;
     }
@@ -742,7 +742,18 @@ bool FirstRunRuntime::claimRewardChoiceInPlace() {
     if (choice.poolEntry && choice.poolEntry->itemId) {
         const char* itemId = choice.poolEntry->itemId;
         auto& playerState = m_context.player.battleState;
-        if (std::strcmp(itemId, "POTION") == 0) {
+        NativeHeldModifierInstance heldReward{};
+        const bool knownHeldReward = initializeHeldModifierInstance(itemId, playerState.pokemonId,
+            1, true, nullptr, heldReward) == HeldModifierStorageResult::Ok &&
+            heldHealingInventorySupported(&heldReward, 1);
+        if (knownHeldReward) {
+            const auto added = addKnownHealingHeldReward(m_heldModifiers.data(), m_heldModifiers.size(),
+                m_heldModifierCount, heldReward);
+            if (added != HeldRewardAddResult::Added && added != HeldRewardAddResult::Merged) {
+                m_battleFeedback = "Held reward requires stack replacement or storage policy";
+                return false;
+            }
+        } else if (std::strcmp(itemId, "POTION") == 0) {
             playerState.hp = std::min<uint16_t>(playerState.maxHp, playerState.hp + 20);
         } else if (std::strcmp(itemId, "SUPER_POTION") == 0) {
             playerState.hp = std::min<uint16_t>(playerState.maxHp, playerState.hp + 50);

@@ -631,3 +631,8 @@
 
 1. resolve(carryPlayer) retiene registros por PID de equipo antes de retirar enemigos anteriores. Capturados conservan sus objetos; orden de inventario estable. skipVictoryReward acepta clases curativas soportadas; elegir rewards con inventario sigue pendiente.
 2. Regresion 442 escrita para cleanup enemigo y retencion de equipo. Fuente BattleEndPhase.clearEnemyHeldItemModifiers pinned. Tests/compilacion aplazados; callbacks PostBattle y reward weights completos pendientes.
+
+## Recompensas equipadas curativas
+
+1. addKnownHealingHeldReward porta PersistentModifier.add/incrementStack: fusion por clase/owner, sin truncar exceso. Stack lleno retorna FullStackNeedsReplacement hasta portar fallback. claimRewardChoice conecta recompensa canonica curativa al inventario del actor seleccionado actualmente; inventario curativo previo ya no bloquea claim.
+2. Regresiones 443-445 escritas; tests/compilacion aplazados. Selector de miembro, pesos reward completos, fallback y efectos restantes pendientes. No certifica Classic completo.

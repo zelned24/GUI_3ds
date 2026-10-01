@@ -838,6 +838,17 @@ static int checkWave200FinalBossAndGameClear() {
     if (!retainPartyHeldInventory(healingItems, 3, retainedCount, retainedPartyIds, 1) ||
         retainedCount != 2 || healingItems[0].ownerPokemonId != 1001 ||
         healingItems[1].ownerPokemonId != 1001 || healingItems[2].stackCount) return 442;
+    NativeHeldModifierInstance rewardItems[2]{};
+    size_t rewardItemCount = 0;
+    auto healingReward = healingItems[0];
+    healingReward.stackCount = 1;
+    if (addKnownHealingHeldReward(rewardItems, 2, rewardItemCount, healingReward) !=
+        HeldRewardAddResult::Added || rewardItemCount != 1) return 443;
+    if (addKnownHealingHeldReward(rewardItems, 2, rewardItemCount, healingReward) !=
+        HeldRewardAddResult::Merged || rewardItems[0].stackCount != 2 || rewardItemCount != 1) return 444;
+    healingReward.stackCount = 3;
+    if (addKnownHealingHeldReward(rewardItems, 2, rewardItemCount, healingReward) !=
+        HeldRewardAddResult::FullStackNeedsReplacement || rewardItems[0].stackCount != 2) return 445;
     const auto preservedBoss = bossActor;
     if (applyPokemonFixedEnemyMovePp(*firstPhase, bossActor) ||
         bossActor.moves[3].maxPp != preservedBoss.moves[3].maxPp) return 338;

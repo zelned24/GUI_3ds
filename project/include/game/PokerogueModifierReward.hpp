@@ -641,6 +641,28 @@ inline bool retainPartyHeldInventory(NativeHeldModifierInstance* records, size_t
     return true;
 }
 
+enum class HeldRewardAddResult : uint8_t { Added, Merged, FullStackNeedsReplacement, InvalidState, Unsupported, StorageCapacity };
+inline HeldRewardAddResult addKnownHealingHeldReward(NativeHeldModifierInstance* records,
+    size_t capacity, size_t& count, const NativeHeldModifierInstance& incoming) {
+    if ((!records && capacity) || count > capacity || !validateHeldModifierInstance(incoming))
+        return HeldRewardAddResult::InvalidState;
+    if (!heldHealingInventorySupported(&incoming, 1)) return HeldRewardAddResult::Unsupported;
+    if (!heldHealingInventorySupported(records, count)) return HeldRewardAddResult::Unsupported;
+    const auto* incomingClass = heldModifierClassProfile(incoming);
+    for (size_t i = 0; i < count; ++i) {
+        if (records[i].ownerPokemonId != incoming.ownerPokemonId) continue;
+        const auto* currentClass = heldModifierClassProfile(records[i]);
+        if (std::strcmp(currentClass->matchingClass, incomingClass->matchingClass)) continue;
+        const uint32_t nextStack = records[i].stackCount + incoming.stackCount;
+        if (nextStack > currentClass->maxHeldCount) return HeldRewardAddResult::FullStackNeedsReplacement;
+        records[i].stackCount = static_cast<uint16_t>(nextStack);
+        return HeldRewardAddResult::Merged;
+    }
+    if (count == capacity) return HeldRewardAddResult::StorageCapacity;
+    records[count++] = incoming;
+    return HeldRewardAddResult::Added;
+}
+
 enum class ModifierRewardRollResult : uint8_t {
     Ok, InvalidLuck, MissingWeight, InvalidWeight, EmptyPool, MissingItem
 };
