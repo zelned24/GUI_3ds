@@ -1072,32 +1072,34 @@ bool FirstRunRuntime::cycleTarget(int direction) {
     return true;
 }
 
-bool FirstRunRuntime::grantVictoryExperience(bool pokemonDefeated) {
-    if (!m_context.playerPartyCount || m_context.playerPartyCount > m_context.playerParty.size() ||
+bool FirstRunRuntime::grantVictoryExperience(bool pokemonDefeated, uint8_t enemyMask) {
+    if (!m_context.playerPartyCount || m_context.playerPartyCount > 6 ||
         m_context.activePlayerPartyIndex >= m_context.playerPartyCount ||
         moveLearningPending() || evolutionPending()) return false;
     if (m_experienceGranted || !m_context.player.actorIdentityResolved ||
         !m_context.enemy.actorIdentityResolved) return false;
     if (m_doubleBattle && !m_secondEncounterResolved) return false;
-    if (m_doubleBattle && m_doubleDefeatParticipantsResolved &&
-        (m_doubleDefeatParticipantCount != m_participantCount || m_doubleDefeatParticipantIds != m_participantIds)) {
-        m_battleFeedback = "Double EXP requires per-faint participant snapshots";
-        return false; // Do not award the prior defeat to a newly participating actor.
-    }
+    if (m_doubleBattle) {
+        if (!enemyMask) enemyMask = pokemonPendingDoubleExperienceMask(!m_context.enemy.battleState.hp,
+            !m_context.secondEnemy.battleState.hp, m_doubleExperienceGrantedMask);
+        if (enemyMask > 3 || (enemyMask & m_doubleExperienceGrantedMask)) return false;
+        if (!enemyMask) { m_experienceGranted = true; return true; }
+    } else enemyMask = 1;
     if (!m_participantHistoryResolved && m_context.playerPartyCount > 1) {
         m_battleFeedback = "Party EXP requires persisted participant history";
         return false;
     }
     const auto* starter = PokerogueContent::findSpeciesByDex(m_context.player.dex);
-    const auto* defeated = PokerogueContent::findSpeciesByDex(m_context.enemy.dex);
-    const auto* defeatedForm = m_context.enemy.formId
-        ? PokerogueContent::findFormById(m_context.enemy.formId) : nullptr;
-    if (!starter || !defeated || (m_context.enemy.formId && !defeatedForm)) return false;
+    const auto& defeatedActor = enemyMask == 2 ? m_context.secondEnemy : m_context.enemy;
+    const auto* defeated = PokerogueContent::findSpeciesByDex(defeatedActor.dex);
+    const auto* defeatedForm = defeatedActor.formId ? PokerogueContent::findFormById(defeatedActor.formId) : nullptr;
+    if (!starter || !defeated || (defeatedActor.formId && !defeatedForm)) return false;
     double rawExperience = 0.0;
-    if (pokemonExperienceForDefeat(*defeated, m_context.enemy.level, rawExperience,
+    if (pokemonExperienceForDefeat(*defeated, defeatedActor.level, rawExperience,
                                   defeatedForm) != PokemonExperienceResult::Ok ||
         rawExperience < 0.0 || rawExperience > 4294967295.0) return false;
-    auto nextParty = m_context.playerParty;
+    std::array<ResolvedPokemon, 6> nextParty{};
+    for (uint8_t member = 0; member < 6; ++member) nextParty[member] = m_context.playerParty[member];
     auto nextProfile = m_starterProfileRecords;
     size_t nextProfileCount = m_starterProfileCount;
     nextParty[m_context.activePlayerPartyIndex] = m_context.player;
@@ -1121,7 +1123,7 @@ bool FirstRunRuntime::grantVictoryExperience(bool pokemonDefeated) {
         uint32_t memberAward = 0;
         if (pokemonParticipantExperience(rawExperience, m_trainerBattle, policy, memberAward) !=
                 PokemonExperienceResult::Ok) return false;
-        if (m_doubleBattle) {
+        if (m_doubleBattle && enemyMask == 3) {
             const auto* species2 = PokerogueContent::findSpeciesByDex(m_context.secondEnemy.dex);
             const auto* form2 = m_context.secondEnemy.formId
                 ? PokerogueContent::findFormById(m_context.secondEnemy.formId) : nullptr;
@@ -1132,7 +1134,7 @@ bool FirstRunRuntime::grantVictoryExperience(bool pokemonDefeated) {
                     PokemonExperienceResult::Ok || award2 > 0xffffffffU - memberAward) return false;
             memberAward += award2;
         }
-        const uint8_t friendshipDefeats = pokemonVictoryFriendshipDefeats(m_doubleBattle, pokemonDefeated);
+        const uint8_t friendshipDefeats = pokemonDefeated ? (enemyMask == 3 ? 2 : 1) : 0;
         if (m_starterProfileReady && friendshipDefeats && participated && target.battleState.hp) {
             const auto* root = pokemonRootSpecies(target.dex);
             if (!root) return false;
@@ -1181,7 +1183,7 @@ bool FirstRunRuntime::grantVictoryExperience(bool pokemonDefeated) {
     }
     m_starterProfileRecords = nextProfile;
     m_starterProfileCount = nextProfileCount;
-    m_context.playerParty = nextParty;
+    for (uint8_t member = 0; member < 6; ++member) m_context.playerParty[member] = nextParty[member];
     m_context.player = nextParty[m_context.activePlayerPartyIndex];
     m_progressionQueueMembers = pendingMembers;
     m_progressionQueueMoves = pendingMoves;
@@ -1193,6 +1195,7 @@ bool FirstRunRuntime::grantVictoryExperience(bool pokemonDefeated) {
     m_pendingEvolutionSpeciesId = nullptr;
     advanceProgressionQueue();
     if (m_context.playerPartyCount > 1) m_playerHistoryRequiresSnapshot = true;
+    if (m_doubleBattle) m_doubleExperienceGrantedMask |= enemyMask;
     m_experienceGranted = true;
     return true;
 }
@@ -2044,17 +2047,21 @@ bool FirstRunRuntime::finishBattleTurn() {
     m_trickRoom = nextRoom;
     m_arenaWeather = nextWeather;
     m_context.playerParty[m_context.activePlayerPartyIndex] = m_context.player;
-    if (m_doubleBattle && !m_doubleDefeatParticipantsResolved &&
-        ((!m_context.enemy.battleState.hp) != (!m_context.secondEnemy.battleState.hp))) {
-        m_doubleDefeatParticipantsResolved = true;
-        m_doubleDefeatParticipantCount = m_participantCount;
-        m_doubleDefeatParticipantIds = m_participantIds;
-    }
     const bool playerDown = !m_context.player.battleState.hp;
     const bool enemiesDownNow = m_doubleBattle
         ? (!m_context.enemy.battleState.hp && !m_context.secondEnemy.battleState.hp)
         : (!m_context.enemy.battleState.hp);
     const auto conclusion = pokemonBattleConclusion(playerPartyDefeated(), enemiesDownNow);
+    if (m_doubleBattle && !enemiesDownNow && conclusion != PokemonBattleConclusion::PlayerDefeat) {
+        const uint8_t pending = pokemonPendingDoubleExperienceMask(!m_context.enemy.battleState.hp,
+            !m_context.secondEnemy.battleState.hp, m_doubleExperienceGrantedMask);
+        if (pending) {
+            if (!grantVictoryExperience(true, pending)) return false;
+            // An intermediate enemy defeat does not complete battle rewards.
+            // Pending level decisions are processed before the next combat command.
+            m_experienceGranted = false;
+        }
+    }
     if (playerDown && conclusion != PokemonBattleConclusion::PlayerDefeat) {
         // A legal reserve prevents GameOver. If the last enemy also fainted,
         // resolve victory rather than starting another turn against a dead field.
@@ -2608,9 +2615,7 @@ void FirstRunRuntime::resolve(bool carryPlayer) {
     m_doubleBattle = false;
     m_trainerBattle = false;
     m_secondEncounterResolved = false;
-    m_doubleDefeatParticipantsResolved = false;
-    m_doubleDefeatParticipantCount = 0;
-    m_doubleDefeatParticipantIds = {};
+    m_doubleExperienceGrantedMask = 0;
     m_context.enemy = {};
     m_context.secondEnemy = {};
     m_run.encounterDex = 0;

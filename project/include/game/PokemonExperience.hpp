@@ -220,6 +220,11 @@ inline uint8_t pokemonVictoryFriendshipDefeats(bool doubleBattle, bool finalEnem
     return static_cast<uint8_t>((doubleBattle ? 1 : 0) + (finalEnemyDefeated ? 1 : 0));
 }
 
+inline uint8_t pokemonPendingDoubleExperienceMask(bool primaryFainted, bool secondaryFainted, uint8_t granted) {
+    const uint8_t fainted = static_cast<uint8_t>((primaryFainted ? 1 : 0) | (secondaryFainted ? 2 : 0));
+    return static_cast<uint8_t>(fainted & ~granted & 3);
+}
+
 struct PokemonParticipantExperiencePolicy {
     bool resolved = false; // Includes recipient eligibility and all per-member modifiers.
     uint8_t participantCount = 0;

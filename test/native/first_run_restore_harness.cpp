@@ -421,6 +421,12 @@ static int checkDoubleBattleTargetingAndMechanics() {
         pokemonVictoryFriendshipDefeats(false, false) != 0 ||
         pokemonVictoryFriendshipDefeats(true, true) != 2 ||
         pokemonVictoryFriendshipDefeats(true, false) != 1) return 581;
+    if (pokemonPendingDoubleExperienceMask(true, false, 0) != 1 ||
+        pokemonPendingDoubleExperienceMask(false, true, 0) != 2 ||
+        pokemonPendingDoubleExperienceMask(true, true, 1) != 2 ||
+        pokemonPendingDoubleExperienceMask(true, true, 2) != 1 ||
+        pokemonPendingDoubleExperienceMask(true, true, 3) != 0 ||
+        pokemonPendingDoubleExperienceMask(false, false, 0) != 0) return 585;
     FirstRunRuntime friendshipSource(1);
     auto friendshipActor = friendshipSource.presentation().player.battleState;
     friendshipActor.friendship = 70;

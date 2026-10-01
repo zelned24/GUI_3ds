@@ -951,3 +951,12 @@
 4. Distribución temporal de EXP/amistad al ocurrir cada faint, cambios de participantes entre caídas y cola completa de fases permanecen pendientes. No se declara paridad completa de dobles.
 
 5. Se conserva snapshot de participantes en la primera caída de un doble. Si cambian antes de la segunda, la agregación falla explícitamente en vez de conceder al nuevo participante la derrota anterior; resolver ese caso requiere la cola por faint pendiente. Dobles aún no son checkpoints soportados.
+
+## EXP de la primera caída en dobles — pendiente de ejecución
+
+1. Una caída intermedia concede EXP/amistad del enemigo caído al finalizar el turno, usando los participantes actuales. Un bit por enemigo evita conceder otra vez esa derrota al caer/capturar el último.
+2. Elimina el bloqueo previo por cambios posteriores de participantes: la derrota anterior ya fue aplicada. Decisiones de aprendizaje/evolución se procesan antes del siguiente comando de combate; rewards permanecen pendientes solo tras terminar el combate.
+3. Regresión 585 escrita para máscaras pendientes/ya concedidas y ambos órdenes; sin ejecutar. Dobles siguen sin checkpoint soportado.
+4. La cola por faint dentro del mismo turno, antes de movimientos posteriores, aún requiere refactor de fases; dos caídas simultáneas siguen usando la agregación existente. No se declara paridad completa de EXP/dobles con upstream.
+
+5. Revisión estática corrigió la copia de equipo para EXP: `PresentationContext.playerParty` es array C; se prepara ahora un `std::array` independiente y se publica miembro a miembro después de resolver todo. Evita decaimiento a puntero, asignación inválida de arrays y mutaciones prematuras. Las regresiones de rollback de EXP existentes siguen pendientes de ejecución.
