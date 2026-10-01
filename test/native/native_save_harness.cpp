@@ -653,7 +653,7 @@ extern "C" int runNativeSaveChecks() {
         poor.candyCount || poor.costReduction || poor.friendship != 42 || !poor.caught) return 120;
     if (encodeNativeStarterCandyProfile(&purchased, 1, 1, PokerogueContent::kContentHash,
             PokerogueContent::kMaxStarterCandyCount, caughtEncoded, sizeof(caughtEncoded), caughtWritten) !=
-            NativeSaveResult::Ok || std::memcmp(caughtEncoded, "P3CANDY7", 8) ||
+            NativeSaveResult::Ok || std::memcmp(caughtEncoded, "P3CANDY8", 8) ||
         decodeNativeStarterCandyProfile(caughtEncoded, caughtWritten, PokerogueContent::kContentHash,
             PokerogueContent::kMaxStarterCandyCount, caughtDecoded, 1, caughtCount, caughtGeneration) !=
             NativeSaveResult::Ok || caughtDecoded[0].costReduction != 2 || !caughtDecoded[0].caught ||
@@ -938,6 +938,49 @@ extern "C" int runNativeSaveChecks() {
             species.malePercentTenths == 0 ? PokemonGender::Female : PokemonGender::Male;
         if (!nativeStarterDefaultGender(record, actual) || actual != expected) return 167;
     }
+    char v7Bytes[256]{};
+    const size_t v7Size = kStarterCandyProfileOverhead + 37;
+    char currentPreferenceBytes[256]{};
+    size_t currentPreferenceSize = 0;
+    if (encodeNativeStarterCandyProfile(&purchased, 1, 1, PokerogueContent::kContentHash,
+            PokerogueContent::kMaxStarterCandyCount, currentPreferenceBytes, sizeof(currentPreferenceBytes),
+            currentPreferenceSize) != NativeSaveResult::Ok) return 174;
+    std::memcpy(v7Bytes, currentPreferenceBytes, 117);
+    std::memcpy(v7Bytes, "P3CANDY7", 8);
+    char v7Digest[65]{};
+    IntegritySha256::hashHex(v7Bytes, v7Size - 64, v7Digest);
+    std::memcpy(v7Bytes + v7Size - 64, v7Digest, 64);
+    NativeStarterCandyRecord v7Decoded[1]{};
+    if (decodeNativeStarterCandyProfile(v7Bytes, v7Size, PokerogueContent::kContentHash,
+            PokerogueContent::kMaxStarterCandyCount, v7Decoded, 1, caughtCount, caughtGeneration) != NativeSaveResult::Ok ||
+        v7Decoded[0].unlockedFormAttr != purchased.unlockedFormAttr || v7Decoded[0].preferredFormIndex != 65535) return 170;
+    size_t selectablePreferences = 0;
+    for (const auto& species : PokerogueContent::kSpecies) {
+        if (!species.starterEligible) continue;
+        for (const auto& form : PokerogueContent::kForms) {
+            if (std::strcmp(form.speciesId, species.id) || form.upstreamFormIndex > 56) continue;
+            const uint64_t bit = uint64_t(128) << form.upstreamFormIndex;
+            if (pokemonValidateStarterForm(species.dex, form.upstreamFormIndex, bit) != PokemonStarterFormResult::Ok) continue;
+            NativeStarterCandyRecord preference{};
+            preference.speciesDex = species.dex;
+            preference.caught = true;
+            preference.unlockedFormAttr = bit;
+            preference.preferredFormIndex = form.upstreamFormIndex;
+            char bytes[256]{};
+            size_t length = 0, count = 0;
+            uint32_t generation = 0;
+            NativeStarterCandyRecord restored[1]{};
+            if (encodeNativeStarterCandyProfile(&preference, 1, 1, PokerogueContent::kContentHash,
+                    PokerogueContent::kMaxStarterCandyCount, bytes, sizeof(bytes), length) != NativeSaveResult::Ok ||
+                decodeNativeStarterCandyProfile(bytes, length, PokerogueContent::kContentHash,
+                    PokerogueContent::kMaxStarterCandyCount, restored, 1, count, generation) != NativeSaveResult::Ok ||
+                restored[0].preferredFormIndex != preference.preferredFormIndex) return 171;
+            preference.unlockedFormAttr = 0;
+            if (StarterCandyProfileCodec::valid(preference, 0, PokerogueContent::kMaxStarterCandyCount)) return 172;
+            ++selectablePreferences;
+        }
+    }
+    if (!selectablePreferences) return 173;
     if (PokerogueContent::findFormByUpstreamIndex(0, 0)) return 146;
     return 0;
 }

@@ -176,6 +176,36 @@ bool FirstRunRuntime::starterSelectionAllowed(const uint16_t* dexes, size_t coun
     return true;
 }
 
+NativeSaveResult FirstRunRuntime::selectSetupStarterForm(uint16_t dex, uint16_t formIndex,
+    NativeProgressStore& store) {
+    if (m_runStarted) return NativeSaveResult::UnsupportedStage;
+    if (!m_starterProfileReady || !starterUnlocked(dex) || !m_context.playerPartyCount ||
+        m_context.playerPartyCount > 6) return NativeSaveResult::InvalidRecord;
+    std::unique_ptr<FirstRunRuntime> prepared(new (std::nothrow) FirstRunRuntime(*this));
+    if (!prepared) return NativeSaveResult::MemoryUnavailable;
+    bool found = false;
+    for (size_t i = 0; i < prepared->m_starterProfileCount; ++i) {
+        auto& record = prepared->m_starterProfileRecords[i];
+        if (record.speciesDex != dex) continue;
+        if (formIndex != 65535 && pokemonValidateStarterForm(dex, formIndex, record.unlockedFormAttr) !=
+                PokemonStarterFormResult::Ok) return NativeSaveResult::InvalidRecord;
+        record.preferredFormIndex = formIndex;
+        found = true;
+        break;
+    }
+    if (!found) return NativeSaveResult::InvalidRecord;
+    uint16_t dexes[6]{};
+    const uint8_t count = m_context.playerPartyCount;
+    for (uint8_t i = 0; i < count; ++i) dexes[i] = m_context.playerParty[i].dex;
+    if (!prepared->restoreStarterTeamSetup(m_run.seed, dexes, count)) return NativeSaveResult::InvalidRecord;
+    prepared->m_setupCursorDex = m_setupCursorDex;
+    const auto result = prepared->saveNativeProgress(store);
+    if (result != NativeSaveResult::Ok) return result;
+    *this = *prepared;
+    buildScene();
+    return NativeSaveResult::Ok;
+}
+
 NativeSaveResult FirstRunRuntime::purchaseStarterCostReduction(uint16_t dex, NativeProgressStore& store,
     StarterCostPurchaseResult* purchaseResult) {
     if (purchaseResult) *purchaseResult = StarterCostPurchaseResult::InvalidRecord;
@@ -3018,17 +3048,24 @@ bool FirstRunRuntime::resolveStarterFromDex(uint16_t dex, PokerogueRngAdapter& r
             if (m_starterProfileRecords[i].speciesDex == dex) { dexMetadata = &m_starterProfileRecords[i]; break; }
     if (!starter.freshProfileStarter && (!dexMetadata || !dexMetadata->caught ||
         !dexMetadata->natureAttr || !dexMetadata->abilityAttr)) return false;
-    if (!starter.freshProfileStarter && starter.firstFormId && *starter.firstFormId &&
-        pokemonValidateStarterForm(dex, 0, dexMetadata->unlockedFormAttr) != PokemonStarterFormResult::Ok)
+    const uint16_t selectedFormIndex = dexMetadata && dexMetadata->preferredFormIndex != 65535
+        ? dexMetadata->preferredFormIndex : 0;
+    const auto* selectedForm = PokerogueContent::findFormByUpstreamIndex(dex, selectedFormIndex);
+    if (dexMetadata && dexMetadata->preferredFormIndex != 65535 &&
+        pokemonValidateStarterForm(dex, selectedFormIndex, dexMetadata->unlockedFormAttr) != PokemonStarterFormResult::Ok)
         return false;
+    if (!starter.freshProfileStarter && starter.firstFormId && *starter.firstFormId &&
+        pokemonValidateStarterForm(dex, selectedFormIndex, dexMetadata->unlockedFormAttr) != PokemonStarterFormResult::Ok)
+        return false;
+    const char* selectedFormId = selectedForm ? selectedForm->id : starter.firstFormId;
     const std::string starterLocaleId = std::string("pokemon:") + starter.id;
     ResolvedPokemon prepared{starter.dex, 5, starter.id, locale(starterLocaleId.c_str(), starter.name),
-        starter.firstFormId, starter.assetSourcePath};
+        selectedFormId, starter.assetSourcePath};
     if (pokemonTotalExperienceForLevel(starter.growthRate, 5, prepared.totalExperience) !=
             PokemonExperienceResult::Ok) return false;
     auto nextRng = rng;
       prepared.movesetResolved = selectPokemonStarterMoveset(
-          starter.dex, starter.firstFormId, 0, nullptr, 0,
+          starter.dex, selectedFormId, 0, nullptr, 0,
           prepared.moveIds, prepared.moveCount) ==
           PokemonStarterMovesetResult::Ok;
       if (prepared.movesetResolved) {
@@ -3046,8 +3083,7 @@ bool FirstRunRuntime::resolveStarterFromDex(uint16_t dex, PokerogueRngAdapter& r
                 }
             }
         }
-        const char* starterFormId = starter.firstFormId && *starter.firstFormId
-            ? starter.firstFormId : nullptr;
+        const char* starterFormId = selectedFormId && *selectedFormId ? selectedFormId : nullptr;
 
         // The new profile's DexData supplies 15 IVs, the first unlocked
         // ability, default male gender (or genderless), base form, and its
@@ -3077,6 +3113,11 @@ bool FirstRunRuntime::resolveStarterFromDex(uint16_t dex, PokerogueRngAdapter& r
             }
         }
         if (!starter.freshProfileStarter && !nativeStarterDefaultGender(*dexMetadata, starterActor.gender)) return false;
+        if (dexMetadata && dexMetadata->preferredFormIndex != 65535 && selectedForm &&
+            pokemonFormTextEquals(selectedForm->formKey, "FEMALE")) {
+            if (!(dexMetadata->genderAttr & 8u)) return false;
+            starterActor.gender = PokemonGender::Female;
+        }
         starterActor.nature = starterNature;
         starterActor.formId = starterFormId;
         for (uint8_t& iv : starterActor.ivs) iv = starter.freshProfileStarter ? 15 : 0;

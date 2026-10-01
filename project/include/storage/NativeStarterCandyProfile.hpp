@@ -22,6 +22,7 @@ struct NativeStarterCandyRecord {
     uint8_t genderAttr = 0; // Upstream DexAttr.MALE/FEMALE 4/8; genderless adds neither.
     uint64_t observedFormAttr = 0; // Observed source forms, NOT starter unlocks.
     uint64_t unlockedFormAttr = 0; // Form component of upstream caughtAttr; legacy unavailable is zero.
+    uint16_t preferredFormIndex = 65535; // No explicit preference; upstream default index zero.
 };
 
 // GameData.initDexData/initStarterData pinned baseline. Only default starters
@@ -191,7 +192,7 @@ inline NativeFriendshipApplyResult applyNativePokemonFriendship(
 }
 
 inline constexpr size_t kStarterCandyProfileOverhead = 144;
-inline constexpr size_t kStarterCandyProfileRecordBytes = 37;
+inline constexpr size_t kStarterCandyProfileRecordBytes = 39;
 inline constexpr size_t kStarterCandyProfileMaxBytes = kStarterCandyProfileOverhead +
     PokerogueContent::kSpeciesCount * kStarterCandyProfileRecordBytes;
 
@@ -217,11 +218,11 @@ inline uint32_t get(const char* input, size_t bytes) {
     return value;
 }
 inline uint8_t version(const char* input) {
-    if (std::memcmp(input, "P3CANDY", 7) || input[7] < '1' || input[7] > '7') return 0;
+    if (std::memcmp(input, "P3CANDY", 7) || input[7] < '1' || input[7] > '8') return 0;
     return static_cast<uint8_t>(input[7] - '0');
 }
 inline size_t recordBytes(uint8_t v) {
-    return v == 1 ? 8 : v == 2 || v == 3 ? 9 : v == 4 ? 19 : v == 5 ? 21 : v == 6 ? 29 : v == 7 ? 37 : 0;
+    return v == 1 ? 8 : v == 2 || v == 3 ? 9 : v == 4 ? 19 : v == 5 ? 21 : v == 6 ? 29 : v == 7 ? 37 : v == 8 ? 39 : 0;
 }
 inline void put64(uint64_t value, char* output) {
     for (uint8_t i = 0; i < 8; ++i) output[i] = static_cast<char>(value >> (i * 8));
@@ -242,6 +243,7 @@ inline NativeStarterCandyRecord record(const char* input, uint8_t v) {
     if (v >= 5) { value.abilityAttr = static_cast<uint8_t>(input[19]); value.genderAttr = static_cast<uint8_t>(input[20]); }
     if (v >= 6) value.observedFormAttr = get64(input + 21);
     if (v >= 7) value.unlockedFormAttr = get64(input + 29);
+    if (v >= 8) value.preferredFormIndex = static_cast<uint16_t>(get(input + 37, 2));
     return value;
 }
 inline bool valid(const NativeStarterCandyRecord& value, uint16_t previous, uint16_t candyLimit) {
@@ -258,6 +260,9 @@ inline bool valid(const NativeStarterCandyRecord& value, uint16_t previous, uint
             pokemonRecursiveFormUnlockMetadata(*species, index)) continue;
         return false;
     }
+    if (value.preferredFormIndex != 65535 && (!value.caught || !species || !species->starterEligible ||
+        pokemonValidateStarterForm(value.speciesDex, value.preferredFormIndex, value.unlockedFormAttr) !=
+            PokemonStarterFormResult::Ok)) return false;
     const auto* root = pokemonRootSpecies(value.speciesDex);
     return species && root && value.speciesDex > previous && value.candyCount <= candyLimit && value.costReduction <= 2 &&
         (!value.costReduction || (species->starterEligible && species->starterCost >= 1)) &&
@@ -282,7 +287,7 @@ inline NativeSaveResult encodeNativeStarterCandyProfile(const NativeStarterCandy
         if (!StarterCandyProfileCodec::valid(records[i], previous, candyLimit)) return NativeSaveResult::InvalidRecord;
         previous = records[i].speciesDex;
     }
-    std::memcpy(output, "P3CANDY7", 8);
+    std::memcpy(output, "P3CANDY8", 8);
     std::memcpy(output + 8, contentHash, 64);
     StarterCandyProfileCodec::put(generation, output + 72, 4);
     StarterCandyProfileCodec::put(static_cast<uint32_t>(count), output + 76, 4);
@@ -298,6 +303,7 @@ inline NativeSaveResult encodeNativeStarterCandyProfile(const NativeStarterCandy
         target[20] = static_cast<char>(records[i].genderAttr);
         StarterCandyProfileCodec::put64(records[i].observedFormAttr, target + 21);
         StarterCandyProfileCodec::put64(records[i].unlockedFormAttr, target + 29);
+        StarterCandyProfileCodec::put(records[i].preferredFormIndex, target + 37, 2);
     }
     char digest[65]{};
     IntegritySha256::hashHex(output, size - 64, digest);

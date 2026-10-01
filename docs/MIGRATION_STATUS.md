@@ -1309,3 +1309,10 @@
 1. SetPokemonSpeciesCaught upstream aplica la rama Urshifu formIndex 3 → getFormAttr(1) también durante la recursión de Kubfu. Ahora se conserva ese bit en unlockedFormAttr aunque Kubfu no tenga una forma física en índice uno.
 2. Codec permite exclusivamente esta excepción de metadata desbloqueada; observedFormAttr todavía exige forma real. PokemonValidateStarterForm sigue rechazando índice uno de Kubfu, sin inventar sprites, stats ni formas seleccionables. Otras referencias desconocidas permanecen explícitas.
 3. Regresión Urshifu → Kubfu, roundtrip durable y rechazo de observación/selección ficticia añadidas; sin ejecución. Formato v7 y hash actual sin cambios. Tests/compilación aplazados.
+
+## Preferencia durable de forma del inicial
+
+1. P3CANDY8 añade preferredFormIndex (uint16, 65535 significa sin preferencia), 39 bytes por registro. Lectura v1–v7 mantiene metadata previa y no inventa preferencia; validator exige forma seleccionable/desbloqueada de una especie inicial para preferencias explícitas.
+2. resolveStarterFromDex consume forma preferida: ID, learnset, stats, tipos, habilidad de forma y Tera inicial se resuelven por catálogo. Sin preferencia conserva índice cero upstream. Forma FEMALE explícita exige unlock de género femenino y actualiza identidad antes de inicializar stats.
+3. selectSetupStarterForm prepara perfil y reconstrucción del equipo con la misma seed; persiste run+profile antes de publicar y vuelve a enlazar escena. Fallo de validación/almacenamiento conserva runtime original. Conexión del botón/cycling en QuickJS y preview aún pendientes; preferencias de género/naturaleza/habilidad aún no implementadas.
+4. Regresiones v8 roundtrip de todas las formas seleccionables de iniciales, rechazo sin unlock y lectura v7 sin preferencia escritas; no ejecutadas. Tests/compilación aplazados; impacto de memoria pendiente.

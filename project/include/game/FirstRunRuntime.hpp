@@ -96,6 +96,7 @@ public:
     bool restoreStarterTeamSetup(uint32_t seed, const uint16_t* dexes, size_t count);
     bool starterSelectionAllowed(const uint16_t* dexes, size_t count) const;
     uint8_t starterCostReduction(uint16_t dex) const;
+    NativeSaveResult selectSetupStarterForm(uint16_t dex, uint16_t formIndex, NativeProgressStore& store);
     NativeSaveResult purchaseStarterCostReduction(uint16_t dex, NativeProgressStore& store,
         StarterCostPurchaseResult* purchaseResult = nullptr);
     // Live presentation phase; this does not claim the state is saveable.
