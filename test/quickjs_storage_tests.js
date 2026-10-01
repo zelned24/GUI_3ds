@@ -67,5 +67,37 @@ export function registerQuickJsStorageTests(register) {
     context._3ds_tick({ B: true });
     assert.deepEqual(commands, [['skip']], 'only explicit skip advances without an item');
   });
+  register('QuickJS rewards: held reward targets a reserve without a move slot', () => {
+    const commands = [];
+    const state = { runStarted: true, finished: true, playerWon: true,
+      experienceGranted: true, rewardPending: false, selectedMove: 0 };
+    const presentation = { playerPartyCount: 2, activePlayerPartyIndex: 0,
+      playerParty: [1, 16], rewardRecovery: false, rewardHeld: true, rewardChoices: ['LEFTOVERS'], selectedRewardChoice: 0 };
+    const context = { JSON, Math };
+    for (const name of new Set(match[1].match(/_3ds_[A-Za-z]+/g))) context[name] = () => undefined;
+    context._3ds_getBattleState = () => JSON.stringify(state);
+    context._3ds_getPresentationInfo = () => presentation;
+    context._3ds_getCombatLog = () => '';
+    context._3ds_getMoveName = () => 'Move';
+    context._3ds_submitAction = (...args) => { commands.push(['action', ...args]); return true; };
+    context._3ds_skipReward = () => { commands.push(['skip']); return true; };
+    vm.createContext(context);
+    vm.runInContext(match[1], context);
+    context._3ds_tick({ A: true });
+    assert.deepEqual(commands, [['action', 0]], 'generate rewards instead of automatically skipping');
+    commands.length = 0;
+    state.rewardPending = true;
+    context._3ds_tick({ A: true });
+    assert.deepEqual(commands, [], 'recipient choice does not apply the reward yet');
+    context._3ds_tick({ down: true });
+    context._3ds_tick({ right: true });
+    context._3ds_tick({ A: true });
+    assert.deepEqual(commands, [['action', 331]], 'reserve index one is the held item owner');
+    commands.length = 0;
+    context._3ds_tick({ B: true });
+    assert.deepEqual(commands, [], 'cancel recipient selection keeps the pending reward');
+    context._3ds_tick({ B: true });
+    assert.deepEqual(commands, [['skip']], 'only explicit skip advances without an item');
+  });
 
 }

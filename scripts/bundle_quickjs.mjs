@@ -40,7 +40,7 @@ function biomeColor(id) {
   for (let i = 0; i < id.length; ++i) hash = ((hash * 31) + id.charCodeAt(i)) >>> 0;
   return palette[hash % palette.length];
 }
-let previousJson = '', state = {}, partyMenu = false, partyCursor = 0, recoveryMenu = false, recoveryMove = 0;
+let previousJson = '', state = {}, partyMenu = false, partyCursor = 0, recipientMenu = false, recoveryMove = 0;
 globalThis._3ds_tick = function(input) {
   const json = _3ds_getBattleState();
   if (json !== previousJson) { state = JSON.parse(json); previousJson = json; }
@@ -48,7 +48,7 @@ globalThis._3ds_tick = function(input) {
   // Queue one command. Host processes it before the next snapshot/render frame.
   const presentation = _3ds_getPresentationInfo() || {};
   const gameOverScreen = state.finished && !state.playerWon;
-  if (!state.rewardPending) recoveryMenu = false;
+  if (!state.rewardPending) recipientMenu = false;
   if (input.X) _3ds_importNative();
   else if (input.Y) _3ds_exportNative();
   else if (input.L) _3ds_saveNative();
@@ -57,16 +57,17 @@ globalThis._3ds_tick = function(input) {
     if (input.left) _3ds_cycleStarter(-1);
     else if (input.right) _3ds_cycleStarter(1);
     else if (input.start || input.A) _3ds_resetRun();
-  } else if (state.rewardPending && recoveryMenu) {
+  } else if (state.rewardPending && recipientMenu) {
     const count = presentation.playerPartyCount || 1;
     if (input.up) partyCursor = (partyCursor + count - 1) % count;
     else if (input.down) partyCursor = (partyCursor + 1) % count;
-    else if (input.left) recoveryMove = (recoveryMove + 3) % 4;
-    else if (input.right) recoveryMove = (recoveryMove + 1) % 4;
-    else if (input.B) recoveryMenu = false;
-    else if (input.A || input.start) _3ds_submitAction(300 + partyCursor * 4 + recoveryMove);
-  } else if (state.rewardPending && (input.A || input.start) && presentation.rewardRecovery) {
-    recoveryMenu = true;
+    else if (input.left && presentation.rewardRecovery) recoveryMove = (recoveryMove + 3) % 4;
+    else if (input.right && presentation.rewardRecovery) recoveryMove = (recoveryMove + 1) % 4;
+    else if (input.B) recipientMenu = false;
+    else if (input.A || input.start) _3ds_submitAction(presentation.rewardHeld
+      ? 330 + partyCursor : 300 + partyCursor * 4 + recoveryMove);
+  } else if (state.rewardPending && (input.A || input.start) && (presentation.rewardRecovery || presentation.rewardHeld)) {
+    recipientMenu = true;
     partyCursor = presentation.activePlayerPartyIndex || 0;
     recoveryMove = 0;
   } else if (!state.finished && input.select) {
@@ -133,11 +134,13 @@ globalThis._3ds_tick = function(input) {
   _3ds_clear(0xFF16213E);
   _3ds_drawText('Wave: ' + (state.wave || 0) + (presentation.doubleBattle ? ' - Doble batalla' : ''), 10, 10, 0.55, 0xFF00FFFF);
   if (state.rewardPending) {
-    if (recoveryMenu) {
+    if (recipientMenu) {
       const party = presentation.playerParty || [];
       for (let i = 0; i < party.length; ++i)
         _3ds_drawText((i === partyCursor ? '> ' : '  ') + 'Pokemon #' + party[i], 10, 38 + i * 23, 0.48, WHITE);
-      _3ds_drawText('Move slot: ' + (recoveryMove + 1) + ' Left/Right', 8, 188, 0.43, WHITE);
+      if (presentation.rewardRecovery)
+        _3ds_drawText('Move slot: ' + (recoveryMove + 1) + ' Left/Right', 8, 188, 0.43, WHITE);
+      else _3ds_drawText('Choose the held item owner', 8, 188, 0.43, WHITE);
       _3ds_drawText('A: apply  B: return to rewards', 8, 207, 0.43, WHITE);
     } else {
       const choices = presentation.rewardChoices || [];

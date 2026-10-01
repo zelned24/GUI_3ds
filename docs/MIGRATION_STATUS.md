@@ -924,3 +924,9 @@
 2. Recuperación soportada abre elección de miembro y slot: Up/Down elige actor, Left/Right slot, A encola 300–323. El host llama `claimRecoveryRewardChoice`; valida/aplica atómicamente y conserva el reward ante destinatario inválido.
 3. Regresión JS escrita sobre el script real: generación sin skip automático, reserve + slot, cancelación y skip explícito. Bundle regenerado sin compilar; pruebas pendientes.
 4. HUD sigue diagnóstico: nombres/locales finales, información detallada de HP/PP para cada destinatario, selección de destinatarios held y todas las familias de rewards todavía requieren integración.
+
+## Destinatarios de held rewards QuickJS — pendiente de ejecución
+
+1. El snapshot clasifica rewards held mediante `initializeHeldModifierInstance` + el dispatch soportado, igual que el engine. No se clasifican por strings dentro del HUD.
+2. Confirmar abre el selector de miembro y encola 330–335; el host ejecuta `claimHeldRewardChoice`, conservando propietario por identidad, stacks y aplicación atómica existentes. Left/Right no elige moves para held items.
+3. Regresión del script real escrita para selección de reserva, cancelación y skip explícito; sin ejecutar. Familias held sin dispatch, reemplazo de stacks y presentación final permanecen pendientes.

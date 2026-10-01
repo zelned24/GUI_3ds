@@ -217,8 +217,8 @@ JSValue QuickJSBridge::submitAction(JSContext* ctx, JSValueConst, int argc, JSVa
         return JS_ThrowTypeError(ctx, "submitAction requires runtime and one command");
     double value;
     if (!number(ctx, argv[0], value) || std::floor(value) != value ||
-        !((value >= 0 && value <= 3) || value == -1 || value == 100 || (value >= 210 && value <= 216) || (value >= 220 && value <= 225) || (value >= 300 && value <= 323)))
-        return JS_ThrowRangeError(ctx, "Use slots 0..3, cursor -1/+100, capture 210, party 211..216 evolution pause 220..225, or recovery recipient 300..323");
+        !((value >= 0 && value <= 3) || value == -1 || value == 100 || (value >= 210 && value <= 216) || (value >= 220 && value <= 225) || (value >= 300 && value <= 323) || (value >= 330 && value <= 335)))
+        return JS_ThrowRangeError(ctx, "Use slots 0..3, cursor -1/+100, capture 210, party 211..216 evolution pause 220..225, recovery recipient 300..323, or held recipient 330..335");
     if (bridge->m_pendingAction != -999) return JS_FALSE;
     if (value >= 0 && value <= 3 && !bridge->m_game->battleFinished() &&
         value >= bridge->m_game->presentation().player.battleState.moveCount) return JS_FALSE;
@@ -301,7 +301,12 @@ JSValue QuickJSBridge::getPresentationInfo(JSContext* ctx, JSValueConst, int, JS
     const char* selectedItem = selectedReward && selectedReward->poolEntry ? selectedReward->poolEntry->itemId : nullptr;
     const bool recovery = selectedItem && (hpRestoreItemProfile(selectedItem) || ppRestoreItemProfile(selectedItem) ||
         ppUpItemProfile(selectedItem) || reviveItemProfile(selectedItem));
-    if (!set("rewardRecovery", JS_NewBool(ctx, recovery)) ||
+    NativeHeldModifierInstance selectedHeld{};
+    const bool held = selectedItem && initializeHeldModifierInstance(selectedItem,
+        view.player.battleState.pokemonId, 1, true, nullptr, selectedHeld) == HeldModifierStorageResult::Ok &&
+        heldHealingInventorySupported(&selectedHeld, 1);
+    if (!set("rewardHeld", JS_NewBool(ctx, held)) ||
+        !set("rewardRecovery", JS_NewBool(ctx, recovery)) ||
         !set("selectedRewardChoice", JS_NewUint32(ctx, b->m_game->selectedRewardChoice()))) {
         JS_FreeValue(ctx, info); return JS_EXCEPTION;
     }
@@ -493,6 +498,8 @@ bool QuickJSBridge::processPendingAction() {
         m_game->throwPokeball(PokeballType::Pokeball);
     } else if (action >= 211 && action <= 216) {
         m_game->switchPlayerPokemon(static_cast<uint8_t>(action - 211));
+    } else if (action >= 330 && action <= 335) {
+        return m_game->claimHeldRewardChoice(static_cast<uint8_t>(action - 330));
     } else if (action >= 300 && action <= 323) {
         const uint8_t recipient = static_cast<uint8_t>((action - 300) / 4);
         const uint8_t moveSlot = static_cast<uint8_t>((action - 300) % 4);
