@@ -585,6 +585,17 @@ PokemonStatusImmunityResult resolvePokemonStatusConfusionReaction(const PokemonB
     const PokemonStatusConfusionReactionPolicy& policy, PokerogueRngAdapter& sourceRng,
     PokemonStatusConfusionReactionEvent& output);
 
+struct PokemonStatusConfusionCommandEvent {
+    PokemonStatusConfusionReactionEvent reaction{};
+    bool tagAttempted = false;
+    PokemonConfusionTagResult tagResult = PokemonConfusionTagResult::Invalid;
+};
+PokemonStatusImmunityResult executePokemonStatusConfusionReaction(const PokemonBattleState& source,
+    const PokemonBattleState& recipient, PokemonStatusEffect applied, bool abilityActive, bool simulated,
+    const PokemonConfusionTagPolicy& probePolicy, const PokemonConfusionTagPolicy& applyPolicy,
+    PokemonConfusionTagState& tag, PokerogueRngAdapter& sourceRng,
+    PokemonStatusConfusionCommandEvent& output);
+
 struct PokemonStatusMoveCheckPolicy {
     bool resolved = false;
     bool bypassSleep = false;

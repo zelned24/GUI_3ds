@@ -95,6 +95,38 @@ PokemonStatusImmunityResult resolvePokemonStatusConfusionReaction(const PokemonB
     return PokemonStatusImmunityResult::UnknownAbility;
 }
 
+PokemonStatusImmunityResult executePokemonStatusConfusionReaction(const PokemonBattleState& source,
+    const PokemonBattleState& recipient, PokemonStatusEffect applied, bool abilityActive, bool simulated,
+    const PokemonConfusionTagPolicy& probePolicy, const PokemonConfusionTagPolicy& applyPolicy,
+    PokemonConfusionTagState& tag, PokerogueRngAdapter& sourceRng,
+    PokemonStatusConfusionCommandEvent& output) {
+    auto nextTag = tag;
+    auto nextRng = sourceRng;
+    bool canAdd = false;
+    if (!canPokemonAddConfusionTag(nextTag, probePolicy, canAdd))
+        return PokemonStatusImmunityResult::UnsupportedCondition;
+    PokemonStatusConfusionReactionPolicy reactionPolicy{};
+    reactionPolicy.resolved = true;
+    reactionPolicy.abilityActive = abilityActive;
+    reactionPolicy.simulated = simulated;
+    reactionPolicy.targetCanAddConfusion = canAdd;
+    PokemonStatusConfusionCommandEvent event{};
+    const auto result = resolvePokemonStatusConfusionReaction(source, recipient, applied,
+        reactionPolicy, nextRng, event.reaction);
+    if (result != PokemonStatusImmunityResult::Resolved) return result;
+    if (event.reaction.requestConfusionTag) {
+        event.tagAttempted = true;
+        event.tagResult = addPokemonConfusionTag(nextTag, event.reaction.turns, applyPolicy);
+        if (event.tagResult == PokemonConfusionTagResult::Unsupported ||
+            event.tagResult == PokemonConfusionTagResult::Invalid)
+            return PokemonStatusImmunityResult::UnsupportedCondition;
+    }
+    tag = nextTag;
+    sourceRng = nextRng;
+    output = event;
+    return PokemonStatusImmunityResult::Resolved;
+}
+
 bool resolvePokemonStatusApplicationEnvironment(const PokemonBattleState& recipient,
     const PokemonBattleState* source, const PokemonStatusFieldContext& field,
     PokemonStatusApplicationPolicy& output) {

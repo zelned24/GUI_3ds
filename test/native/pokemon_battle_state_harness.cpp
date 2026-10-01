@@ -3174,6 +3174,44 @@ extern "C" int runPokemonBattleStateChecks() {
             return 9113;
     }
     if (!foundStatusConfusion) return 9114;
+    PokemonBattleState puppeteerSource{}, puppeteerTarget{};
+    puppeteerSource.abilityId = 310;
+    puppeteerTarget.pokemonId = 72;
+    puppeteerTarget.hp = puppeteerTarget.maxHp = 100;
+    Pokerogue3DS::PokemonConfusionTagState puppeteerTag{};
+    Pokerogue3DS::PokemonConfusionTagPolicy probeConfusion{}, applyConfusion{};
+    probeConfusion.resolved = applyConfusion.resolved = true;
+    applyConfusion.grounded = applyConfusion.mistyTerrain = true;
+    Pokerogue3DS::PokemonStatusConfusionCommandEvent puppeteerEvent{};
+    expectedApplicationRng = statusApplicationRng;
+    const auto mistyDuration = expectedApplicationRng.randSeedIntRange(2, 5);
+    if (Pokerogue3DS::executePokemonStatusConfusionReaction(puppeteerSource, puppeteerTarget,
+            Effect::Poison, true, false, probeConfusion, applyConfusion, puppeteerTag,
+            statusApplicationRng, puppeteerEvent) != Pokerogue3DS::PokemonStatusImmunityResult::Resolved ||
+        !puppeteerEvent.tagAttempted || puppeteerTag.present || puppeteerEvent.reaction.turns != mistyDuration ||
+        puppeteerEvent.tagResult != Pokerogue3DS::PokemonConfusionTagResult::MistyTerrain ||
+        statusApplicationRng.randSeedUint32() != expectedApplicationRng.randSeedUint32()) return 9150;
+    applyConfusion.grounded = false;
+    if (Pokerogue3DS::executePokemonStatusConfusionReaction(puppeteerSource, puppeteerTarget,
+            Effect::Toxic, true, false, probeConfusion, applyConfusion, puppeteerTag,
+            statusApplicationRng, puppeteerEvent) != Pokerogue3DS::PokemonStatusImmunityResult::Resolved ||
+        !puppeteerTag.present || puppeteerTag.turns != puppeteerEvent.reaction.turns ||
+        puppeteerEvent.tagResult != Pokerogue3DS::PokemonConfusionTagResult::Added) return 9151;
+    expectedApplicationRng = statusApplicationRng;
+    if (Pokerogue3DS::executePokemonStatusConfusionReaction(puppeteerSource, puppeteerTarget,
+            Effect::Toxic, true, false, probeConfusion, applyConfusion, puppeteerTag,
+            statusApplicationRng, puppeteerEvent) != Pokerogue3DS::PokemonStatusImmunityResult::Resolved ||
+        puppeteerEvent.tagAttempted ||
+        statusApplicationRng.randSeedUint32() != expectedApplicationRng.randSeedUint32()) return 9152;
+    puppeteerTag = {};
+    applyConfusion.resolved = false;
+    puppeteerEvent.tagAttempted = false;
+    expectedApplicationRng = statusApplicationRng;
+    if (Pokerogue3DS::executePokemonStatusConfusionReaction(puppeteerSource, puppeteerTarget,
+            Effect::Toxic, true, false, probeConfusion, applyConfusion, puppeteerTag,
+            statusApplicationRng, puppeteerEvent) != Pokerogue3DS::PokemonStatusImmunityResult::UnsupportedCondition ||
+        puppeteerTag.present || puppeteerEvent.tagAttempted ||
+        statusApplicationRng.randSeedUint32() != expectedApplicationRng.randSeedUint32()) return 9153;
     bool foundConfusionImmunity = false;
     for (const auto& profile : PokerogueContent::kConfusionImmunityAbilityProfiles) {
         if (!profile.selfResolved || !profile.selfBlocks) continue;

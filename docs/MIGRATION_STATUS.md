@@ -1535,3 +1535,9 @@
 1. Generador deriva BattlerTagImmunityAbAttr/UserFieldBattlerTagImmunityAbAttr (símbolo o array) por habilidad, distinguiendo ámbito propio/aliado. Own Tempo real (20) bloquea CONFUSED en ámbito propio. Condiciones dinámicas/conditionalAttr y variante ConditionalUserField permanecen sin resolver.
 2. resolvePokemonConfusionAbilityImmunity conserva output ante capacidad desconocida; activación y callbacks requieren contexto explícito. No declara implementadas suppression/pasivas ni PostSummonRemoveBattlerTagAbAttr.
 3. Tabla regenerada con hash canónico conservado. Regresiones de habilidad real, inactividad y callback pendiente escritas sin ejecutar. Tests/compilación aplazados; conexión al dispatcher sigue pendiente.
+
+## Reacción de estado conectada a creación de tag
+
+1. executePokemonStatusConfusionReaction integra canAddTag simulado, duración desde RNG de fuente y addTag real sobre candidato. Misty bloquea creación después de consumir duración; tag existente evita la tirada. La política de aplicación permanece separada del probe para reflejar callbacks simulated vs reales.
+2. Capacidad desconocida conserva tag/RNG/output. Solicitud retiene IDs como provenance sin inventar sourceId persistente para ConfusedTag. Dispatcher general y checkpoints aún requieren integración.
+3. Regresiones Poison Puppeteer real: Misty con draw, creación por toxic, tag existente sin draw y fallo atómico escritas sin ejecutar. Tests/compilación aplazados.
