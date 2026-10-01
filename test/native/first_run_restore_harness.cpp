@@ -45,6 +45,15 @@ public:
     }
 };
 
+static bool sceneNodesOwnedBy(const Pokerogue3DS::FirstRunRuntime& game) {
+    const auto& scene = game.scene();
+    const uintptr_t owner = reinterpret_cast<uintptr_t>(&game);
+    const uintptr_t nodes = reinterpret_cast<uintptr_t>(scene.nodes);
+    const size_t bytes = scene.nodeCount * sizeof(*scene.nodes);
+    return scene.nodes && scene.nodeCount && nodes >= owner &&
+        nodes - owner <= sizeof(game) && bytes <= sizeof(game) - (nodes - owner);
+}
+
 static int checkInitialStarterTeamSetup() {
     using namespace Pokerogue3DS;
     uint16_t dexes[2]{};
@@ -68,6 +77,7 @@ static int checkInitialStarterTeamSetup() {
     }
     if (first.playerPartyMember(0)->battleState.pokemonId ==
         first.playerPartyMember(1)->battleState.pokemonId) return 646;
+    if (!sceneNodesOwnedBy(first) || !sceneNodesOwnedBy(repeated)) return 660;
     const uint16_t duplicate[] = {dexes[0], dexes[0]};
     const uint32_t reservePid = first.playerPartyMember(1)->battleState.pokemonId;
     if (first.restoreStarterTeamSetup(1, duplicate, 2) ||
@@ -115,6 +125,7 @@ static int checkInitialStarterTeamSetup() {
     for (size_t i = 0; i < PokerogueContent::kSpeciesCount && first.selectedSetupStarterDex() != dexes[0]; ++i)
         if (!first.browseSetupStarter(1)) return 658;
     if (first.toggleSetupStarter() || first.playerPartyCount() != 1 || first.run().starterDex != dexes[0]) return 659;
+    if (!sceneNodesOwnedBy(first) || !first.restoreSetup(1, dexes[0]) || !sceneNodesOwnedBy(first)) return 661;
     return 0;
 }
 
@@ -135,6 +146,7 @@ static int checkStarterCostPurchasePersistence() {
     StarterCostPurchaseResult purchase{};
     if (game.purchaseStarterCostReduction(dex, store, &purchase) != NativeSaveResult::Ok ||
         purchase != StarterCostPurchaseResult::Applied || game.starterCostReduction(dex) != 1) return 636;
+    if (!sceneNodesOwnedBy(game)) return 662;
     const uint16_t afterFirst = game.starterProfileRecords()[0].candyCount;
     profileDisk.interrupt = true;
     if (game.purchaseStarterCostReduction(dex, store, &purchase) != NativeSaveResult::IoError ||

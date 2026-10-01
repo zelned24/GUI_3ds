@@ -196,6 +196,7 @@ NativeSaveResult FirstRunRuntime::purchaseStarterCostReduction(uint16_t dex, Nat
     const auto committed = prepared->saveNativeProgress(store);
     if (committed != NativeSaveResult::Ok) return committed;
     *this = *prepared;
+    buildScene(); // Rebind nodes and text after publishing the heap candidate.
     return NativeSaveResult::Ok;
 }
 
@@ -217,6 +218,7 @@ bool FirstRunRuntime::restoreStarterTeamSetup(uint32_t seed, const uint16_t* dex
     prepared->m_playerHistoryRequiresSnapshot = count > 1;
     prepared->buildScene();
     *this = *prepared;
+    buildScene(); // Rebind nodes and text after publishing the heap candidate.
     return true;
 }
 
@@ -234,6 +236,7 @@ bool FirstRunRuntime::restoreSetup(uint32_t seed, uint16_t starterDex) {
         return false;
     }
     *this = candidate;
+    buildScene(); // Rebind nodes and text after publishing the heap candidate.
     return true;
 }
 
@@ -424,6 +427,7 @@ bool FirstRunRuntime::initializeFreshStarterProfile(const PokemonFriendshipPolic
     for (const auto& species : PokerogueContent::kSpecies)
         if (species.freshProfileStarter && !candidate.recordCaughtSpecies(species.dex)) return false;
     *this = candidate;
+    buildScene(); // Rebind nodes and text after publishing the heap candidate.
     return true;
 }
 

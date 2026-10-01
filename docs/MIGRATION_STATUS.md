@@ -1162,3 +1162,9 @@
 1. `_3ds_drawStarter` resuelve especie/forma del cursor desde catálogo, verifica desbloqueo y dibuja su atlas frontal existente en la pantalla superior. No construye un actor ni modifica party, estado de combate, PID o RNG.
 2. Reutiliza el cache frontal del enemigo mientras setup oculta el combate; no añade otra página de textura retenida. Al entrar en batalla, el presenter resuelve la clave del enemigo como antes. Asset ausente sigue el tratamiento explícito existente del presenter, sin generar sprites falsos.
 3. HUD setup superior muestra nombre y pertenencia al equipo; inferior conserva selección y presupuesto. Regresión VM escrita del preview sin comando de gameplay. Bundle regenerado. Tests/compilación/Azahar/hardware siguen aplazados; equivalencia visual final y selección vacía pendientes.
+
+## Ownership de bindings tras transacciones
+
+1. Revisión estática detectó cuatro publicaciones de candidatos (`purchaseStarterCostReduction`, `restoreStarterTeamSetup`, `restoreSetup`, `initializeFreshStarterProfile`) sin reconstruir escena. La copia conserva punteros a nodos/textos del candidato temporal, que se libera al salir del método.
+2. Añadido `buildScene` después de publicar cada copia, como ya hacen las restantes transacciones. No cambia datos, reglas ni RNG; vuelve a enlazar presentación con almacenamiento de la instancia definitiva.
+3. Regresiones nativas escritas comprueban que nodos de escena pertenecen al runtime tras setup/equipo/compra. Sin ejecutar por instrucción del usuario; sanitizers y validación final pendientes.
