@@ -1493,3 +1493,9 @@
 1. Generador importa IgnoreTypeStatusEffectImmunityAbAttr como conjunto de estados y entradas por tipo; Corrosion pinned declara POISON/TOXIC y STEEL/POISON. Expresiones o condiciones desconocidas quedan sin resolver.
 2. resolvePokemonStatusTypeImmunityBypass consulta ID canónico/tipo/estado y distingue capacidad, activación e input inválido. Caller compone bypass de Poison y Steel por separado; fuente ausente sigue inmune conforme canSetStatus.
 3. Regresiones de Corrosion real, doble tipo, inactividad, otro estado, fuente ausente e input inválido escritas sin ejecutar. Catálogo regenerado/hash unchanged; integración del proveedor completo y reacciones pendiente. Tests/compilación aplazados.
+
+## Composición de política de aplicación
+
+1. composePokemonStatusApplicationPolicy une listas explícitas de habilidades propias/pasivas, aliados y fuente; deriva bloqueos por ámbito y bypass de ambos tipos desde tablas canónicas. Campo/tipos efectivos/grounding/Safeguard requieren contexto resuelto del caller.
+2. No infiere activación/suppression ni omite componentes desconocidos. Error conserva output; fuente ausente limpia bypass. Corrosion nunca sustituye inmunidad por habilidad.
+3. Regresiones de Corrosion vs Immunity, fuente ausente, fallo de callback y aliado real escritas sin ejecutar. Falta proveedor de contexto y reacciones/forms en FirstRunRuntime para habilitar moves de estado; tests/compilación aplazados.

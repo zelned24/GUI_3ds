@@ -293,6 +293,57 @@ inline PokemonStatusImmunityResult resolvePokemonStatusTypeImmunityBypass(uint16
     return PokemonStatusImmunityResult::UnknownAbility;
 }
 
+struct PokemonStatusAbilityComponent {
+    uint16_t abilityId = 0;
+    bool active = false;
+    bool callbacksResolved = false;
+};
+// Environment policy supplies resolved live types/grounding/terrain/Safeguard.
+// Component lists include primary/passive and live allies in upstream order.
+inline PokemonStatusImmunityResult composePokemonStatusApplicationPolicy(PokemonStatusEffect effect,
+    const PokemonStatusApplicationPolicy& environment,
+    const PokemonStatusAbilityComponent* own, size_t ownCount,
+    const PokemonStatusAbilityComponent* allies, size_t allyCount,
+    const PokemonStatusAbilityComponent* source, size_t sourceCount,
+    PokemonStatusApplicationPolicy& output) {
+    if (static_cast<uint8_t>(effect) > 7) return PokemonStatusImmunityResult::InvalidEffect;
+    if (!environment.resolved || !ownCount || !own || (allyCount && !allies) || (sourceCount && !source) ||
+        (environment.hasSource ? !sourceCount : sourceCount != 0) ||
+        (!environment.hasSource && environment.sourceIsTarget)) return PokemonStatusImmunityResult::UnsupportedCondition;
+    auto policy = environment;
+    policy.selfAbilityBlocks = policy.allyAbilityBlocks = false;
+    policy.sourceIgnoresPoisonImmunity = policy.sourceIgnoresSteelImmunity = false;
+    for (size_t i = 0; i < ownCount; ++i) {
+        bool blocked = false;
+        const auto result = resolvePokemonStatusAbilityImmunity(own[i].abilityId, effect,
+            own[i].active, false, own[i].callbacksResolved, blocked);
+        if (result != PokemonStatusImmunityResult::Resolved) return result;
+        policy.selfAbilityBlocks |= blocked;
+    }
+    for (size_t i = 0; i < allyCount; ++i) {
+        bool blocked = false;
+        const auto result = resolvePokemonStatusAbilityImmunity(allies[i].abilityId, effect,
+            allies[i].active, true, allies[i].callbacksResolved, blocked);
+        if (result != PokemonStatusImmunityResult::Resolved) return result;
+        policy.allyAbilityBlocks |= blocked;
+    }
+    if (effect == PokemonStatusEffect::Poison || effect == PokemonStatusEffect::Toxic) {
+        for (size_t i = 0; i < sourceCount; ++i) {
+            bool poison = false, steel = false;
+            auto result = resolvePokemonStatusTypeImmunityBypass(source[i].abilityId, effect, "POISON",
+                source[i].active, source[i].callbacksResolved, poison);
+            if (result != PokemonStatusImmunityResult::Resolved) return result;
+            result = resolvePokemonStatusTypeImmunityBypass(source[i].abilityId, effect, "STEEL",
+                source[i].active, source[i].callbacksResolved, steel);
+            if (result != PokemonStatusImmunityResult::Resolved) return result;
+            policy.sourceIgnoresPoisonImmunity |= poison;
+            policy.sourceIgnoresSteelImmunity |= steel;
+        }
+    }
+    output = policy;
+    return PokemonStatusImmunityResult::Resolved;
+}
+
 enum class PokemonStatusEligibility : uint8_t {
     Allowed, InvalidState, UnsupportedPolicy, ExistingStatus, PendingStatus, MistyTerrain,
     PoisonType, SteelType, ElectricType, ElectricTerrain, IceType, SunnyWeather,

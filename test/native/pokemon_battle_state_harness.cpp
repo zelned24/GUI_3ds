@@ -3021,5 +3021,47 @@ extern "C" int runPokemonBattleStateChecks() {
     applicationPolicy.hasSource = false;
     if (Pokerogue3DS::canPokemonSetStatus({}, Effect::Poison, applicationPolicy) !=
             Pokerogue3DS::PokemonStatusEligibility::PoisonType) return 9076;
+    Pokerogue3DS::PokemonStatusApplicationPolicy environment{};
+    environment.resolved = true;
+    environment.hasSource = true;
+    environment.poisonType = environment.steelType = true;
+    const Pokerogue3DS::PokemonStatusAbilityComponent corrosionSource[] = {{212, true, true}};
+    Pokerogue3DS::PokemonStatusAbilityComponent ownImmunity[] = {{17, true, true}};
+    Pokerogue3DS::PokemonStatusApplicationPolicy composedPolicy{};
+    if (Pokerogue3DS::composePokemonStatusApplicationPolicy(Effect::Poison, environment,
+            ownImmunity, 1, nullptr, 0, corrosionSource, 1, composedPolicy) !=
+                Pokerogue3DS::PokemonStatusImmunityResult::Resolved ||
+        !composedPolicy.sourceIgnoresPoisonImmunity || !composedPolicy.sourceIgnoresSteelImmunity ||
+        !composedPolicy.selfAbilityBlocks ||
+        Pokerogue3DS::canPokemonSetStatus({}, Effect::Poison, composedPolicy) !=
+                Pokerogue3DS::PokemonStatusEligibility::SelfAbility) return 9080;
+    ownImmunity[0] = {0, true, true};
+    if (Pokerogue3DS::composePokemonStatusApplicationPolicy(Effect::Poison, environment,
+            ownImmunity, 1, nullptr, 0, corrosionSource, 1, composedPolicy) !=
+                Pokerogue3DS::PokemonStatusImmunityResult::Resolved || composedPolicy.selfAbilityBlocks ||
+        Pokerogue3DS::canPokemonSetStatus({}, Effect::Poison, composedPolicy) !=
+                Pokerogue3DS::PokemonStatusEligibility::Allowed) return 9081;
+    environment.hasSource = false;
+    if (Pokerogue3DS::composePokemonStatusApplicationPolicy(Effect::Poison, environment,
+            ownImmunity, 1, nullptr, 0, nullptr, 0, composedPolicy) !=
+                Pokerogue3DS::PokemonStatusImmunityResult::Resolved || composedPolicy.sourceIgnoresPoisonImmunity ||
+        Pokerogue3DS::canPokemonSetStatus({}, Effect::Poison, composedPolicy) !=
+                Pokerogue3DS::PokemonStatusEligibility::PoisonType) return 9082;
+    ownImmunity[0].callbacksResolved = false;
+    composedPolicy.selfAbilityBlocks = true;
+    if (Pokerogue3DS::composePokemonStatusApplicationPolicy(Effect::Poison, environment,
+            ownImmunity, 1, nullptr, 0, nullptr, 0, composedPolicy) !=
+                Pokerogue3DS::PokemonStatusImmunityResult::UnsupportedCondition || !composedPolicy.selfAbilityBlocks)
+        return 9083;
+    ownImmunity[0].callbacksResolved = true;
+    for (const auto& profile : PokerogueContent::kStatusImmunityAbilityProfiles) {
+        if (!profile.allyResolved || !(profile.allyMask & 16)) continue;
+        const Pokerogue3DS::PokemonStatusAbilityComponent ally[] = {{profile.abilityId, true, true}};
+        if (Pokerogue3DS::composePokemonStatusApplicationPolicy(Effect::Sleep, environment,
+                ownImmunity, 1, ally, 1, nullptr, 0, composedPolicy) !=
+                    Pokerogue3DS::PokemonStatusImmunityResult::Resolved || !composedPolicy.allyAbilityBlocks ||
+            Pokerogue3DS::canPokemonSetStatus({}, Effect::Sleep, composedPolicy) !=
+                    Pokerogue3DS::PokemonStatusEligibility::AllyAbility) return 9084;
+    }
     return 0;
 }
