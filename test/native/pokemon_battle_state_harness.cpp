@@ -3405,6 +3405,28 @@ extern "C" int runPokemonBattleStateChecks() {
     if (Pokerogue3DS::composePokemonConfusionTagPolicy(confusionEnvironment, inactiveTempo, 1, tempoComponents, 1,
             composedConfusion) != Pokerogue3DS::PokemonStatusImmunityResult::Resolved ||
         composedConfusion.ownAbilityBlocks || composedConfusion.allyAbilityBlocks) return 9272;
+    const char* recipientTypes[] = {"NORMAL"};
+    Pokerogue3DS::PokemonStatusFieldContext sharedField{};
+    sharedField.resolved = sharedField.grounded = sharedField.mistyTerrain = sharedField.ignoreField = true;
+    sharedField.effectiveTypes = sharedField.originalIfStellarTypes = recipientTypes;
+    sharedField.effectiveTypeCount = sharedField.originalIfStellarTypeCount = 1;
+    Pokerogue3DS::PokemonStatusRecipientPolicies recipientPolicies{};
+    PokemonBattleState policyRecipient{}, policySource{};
+    policyRecipient.hp = policyRecipient.maxHp = 100;
+    const Pokerogue3DS::PokemonStatusAbilityComponent neutralComponents[] = {{0, true, true}};
+    if (!Pokerogue3DS::resolvePokemonStatusRecipientPolicies(policyRecipient, &policySource, Effect::Burn,
+            sharedField, neutralComponents, 1, nullptr, 0, neutralComponents, 1, recipientPolicies) ||
+        !recipientPolicies.status.ignoreField || !recipientPolicies.confusion.mistyTerrain ||
+        !recipientPolicies.confusion.grounded || recipientPolicies.confusion.ownAbilityBlocks) return 9280;
+    Pokerogue3DS::PokemonConfusionTagState policyTag{};
+    if (Pokerogue3DS::canPokemonSetStatus(policyRecipient.status, Effect::Burn, recipientPolicies.status) !=
+            Pokerogue3DS::PokemonStatusEligibility::Allowed ||
+        Pokerogue3DS::addPokemonConfusionTag(policyTag, 3, recipientPolicies.confusion) !=
+            Pokerogue3DS::PokemonConfusionTagResult::MistyTerrain) return 9281;
+    recipientPolicies.confusion.ownAbilityBlocks = true;
+    if (Pokerogue3DS::resolvePokemonStatusRecipientPolicies(policyRecipient, &policySource, Effect::Burn,
+            sharedField, unknownTempo, 1, nullptr, 0, neutralComponents, 1, recipientPolicies) ||
+        !recipientPolicies.confusion.ownAbilityBlocks) return 9282;
     bool foundConfusionImmunity = false;
     for (const auto& profile : PokerogueContent::kConfusionImmunityAbilityProfiles) {
         if (!profile.selfResolved || !profile.selfBlocks) continue;

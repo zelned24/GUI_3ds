@@ -584,6 +584,31 @@ inline PokemonStatusImmunityResult composePokemonConfusionTagPolicy(
     output = policy;
     return PokemonStatusImmunityResult::Resolved;
 }
+struct PokemonStatusRecipientPolicies {
+    PokemonStatusApplicationPolicy status{};
+    PokemonConfusionTagPolicy confusion{};
+};
+inline bool resolvePokemonStatusRecipientPolicies(const PokemonBattleState& recipient,
+    const PokemonBattleState* sourceActor, PokemonStatusEffect effect, const PokemonStatusFieldContext& field,
+    const PokemonStatusAbilityComponent* own, size_t ownCount,
+    const PokemonStatusAbilityComponent* allies, size_t allyCount,
+    const PokemonStatusAbilityComponent* sourceAbilities, size_t sourceCount,
+    PokemonStatusRecipientPolicies& output) {
+    PokemonStatusApplicationPolicy environment{};
+    if (!resolvePokemonStatusApplicationEnvironment(recipient, sourceActor, field, environment)) return false;
+    PokemonStatusRecipientPolicies policies{};
+    if (composePokemonStatusApplicationPolicy(effect, environment, own, ownCount, allies, allyCount,
+            sourceAbilities, sourceCount, policies.status) != PokemonStatusImmunityResult::Resolved) return false;
+    PokemonConfusionTagPolicy tagEnvironment{};
+    tagEnvironment.resolved = field.resolved;
+    // ConfusedTag.canAdd never honors canSetStatus's ignoreField.
+    tagEnvironment.grounded = field.grounded;
+    tagEnvironment.mistyTerrain = field.mistyTerrain;
+    if (composePokemonConfusionTagPolicy(tagEnvironment, own, ownCount, allies, allyCount,
+            policies.confusion) != PokemonStatusImmunityResult::Resolved) return false;
+    output = policies;
+    return true;
+}
 // canAddTag's simulated probe deliberately omits ConfusedTag.canAdd terrain.
 bool canPokemonAddConfusionTag(const PokemonConfusionTagState& tag,
     const PokemonConfusionTagPolicy& policy, bool& output);

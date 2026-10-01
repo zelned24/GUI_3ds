@@ -1611,3 +1611,9 @@
 1. composePokemonConfusionTagPolicy reutiliza componentes de habilidad propia/pasiva y aliados, resuelve cada ámbito desde catálogo y conserva contexto explícito de grounding/Misty. No hereda booleans de inmunidad manuales ni omite callbacks desconocidos.
 2. Output se publica solo tras resolver todos los componentes. Activación/suppression y campo siguen siendo responsabilidad del proveedor vivo; esta composición no declara doubles/pasivas completos.
 3. Regresiones de Own Tempo propio, ámbito aliado, inactividad y fallo atómico escritas sin ejecutar. Tests/compilación aplazados.
+
+## Contexto compartido de estados y tag de confusión
+
+1. resolvePokemonStatusRecipientPolicies une actor/fuente/campo vivo con composición canónica de inmunidades/bypass y confusión. Publica ambas políticas juntas; componente pendiente conserva output completo.
+2. No aplica ignoreField a ConfusedTag.canAdd: Misty sigue bloqueando confusión aunque canSetStatus ignore campo. Tipos efectivos/grounding/terrain y activación siguen requiriendo contexto explícito del runtime.
+3. Regresiones de diferencia ignoreField/Misty y fallo atómico escritas sin ejecutar. Conexión al comando activo y tests/compilación siguen pendientes.
