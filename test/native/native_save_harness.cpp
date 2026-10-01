@@ -370,5 +370,28 @@ extern "C" int runNativeSaveChecks() {
         importedCandyGeneration != 2 || importedCandyCount != 2 ||
         profileImporter.load(PokerogueContent::kContentHash, restoredCandy, 2, candyCount, candyGeneration) !=
             NativeSaveResult::Ok || candyGeneration != 2 || restoredCandy[0].candyCount != 10) return 66;
+    other.sizes[0] = other.sizes[1] = 0;
+    candyRecords[0].candyCount = 7;
+    if (candyStore.save(candyRecords, 2, PokerogueContent::kContentHash, candyGeneration) != NativeSaveResult::Ok ||
+        candyGeneration != 1) return 67;
+    candyRecords[0].candyCount = 10;
+    uint32_t preparedGeneration = 0;
+    if (candyStore.prepareFromCommitted(candyRecords, 2, PokerogueContent::kContentHash, 1,
+            preparedGeneration) != NativeSaveResult::Ok || preparedGeneration != 2) return 68;
+    // Simulate power loss before the run stores its new profile generation.
+    if (candyStore.loadGeneration(PokerogueContent::kContentHash, 1, restoredCandy, 2,
+            candyCount, candyGeneration) != NativeSaveResult::Ok || restoredCandy[0].candyCount != 7)
+        return 69;
+    if (candyStore.prepareFromCommitted(candyRecords, 2, PokerogueContent::kContentHash, 1,
+            preparedGeneration) != NativeSaveResult::Ok || preparedGeneration != 3 ||
+        candyStore.loadGeneration(PokerogueContent::kContentHash, 1, restoredCandy, 2,
+            candyCount, candyGeneration) != NativeSaveResult::Ok || restoredCandy[0].candyCount != 7)
+        return 70;
+    if (candyStore.loadGeneration(PokerogueContent::kContentHash, 3, restoredCandy, 2,
+            candyCount, candyGeneration) != NativeSaveResult::Ok || restoredCandy[0].candyCount != 10 ||
+        candyGeneration != 3) return 71;
+    if (candyStore.loadGeneration(PokerogueContent::kContentHash, 2, restoredCandy, 2,
+            candyCount, candyGeneration) != NativeSaveResult::NotFound || candyGeneration != 3 ||
+        restoredCandy[0].candyCount != 10) return 72;
     return 0;
 }

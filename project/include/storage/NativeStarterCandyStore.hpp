@@ -22,7 +22,7 @@ public:
     }
 
     NativeSaveResult save(const NativeStarterCandyRecord* records, size_t count,
-        const char* hash, uint16_t limit, uint32_t& generation) {
+        const char* hash, uint16_t limit, uint32_t& generation, uint32_t committedGeneration = 0) {
         if (count > PokerogueContent::kSpeciesCount || (count && !records) ||
             !StarterCandyProfileCodec::validHash(hash)) return NativeSaveResult::InvalidRecord;
         if (m_scratch && ((count && StarterCandyProfileCodec::overlaps(records, count * sizeof(*records),
@@ -41,7 +41,21 @@ public:
             if (previous == 0xffffffffU) return NativeSaveResult::SequenceExhausted;
             next = previous + 1;
         }
-        const unsigned target = selected == 0 ? 1 : 0;
+        unsigned target = selected == 0 ? 1 : 0;
+        if (committedGeneration) {
+            int committed = -1;
+            for (unsigned i = 0; i < 2; ++i)
+                if (m_valid[i] && StarterCandyProfileCodec::get(slot(i) + 72, 4) == committedGeneration)
+                    committed = static_cast<int>(i);
+            if (committed < 0) return NativeSaveResult::NotFound;
+            size_t committedCount = 0;
+            uint32_t verifiedGeneration = 0;
+            status = inspectNativeStarterCandyProfile(slot(committed), m_sizes[committed], hash, limit,
+                committedCount, verifiedGeneration);
+            if (status != NativeSaveResult::Ok) return status;
+            target = committed == 0 ? 1 : 0; // Retry replaces the pending slot, never the run's committed profile.
+        }
+
         size_t size = 0;
         status = encodeNativeStarterCandyProfile(records, count, next, hash, limit,
             slot(target), kStarterCandyProfileMaxBytes, size);
@@ -73,6 +87,29 @@ public:
         status = inspectNativeStarterCandyProfile(slot(selected), m_sizes[selected], hash, limit, count, generation);
         return status == NativeSaveResult::Ok
             ? m_storage.writeExport(slot(selected), m_sizes[selected]) : status;
+    }
+
+    NativeSaveResult loadGeneration(const char* hash, uint32_t requiredGeneration,
+        NativeStarterCandyRecord* records, size_t capacity, size_t& count, uint32_t& generation) {
+        if (!requiredGeneration) return NativeSaveResult::InvalidRecord;
+        if (records && capacity && m_scratch && StarterCandyProfileCodec::overlaps(records,
+                (capacity < PokerogueContent::kSpeciesCount ? capacity : PokerogueContent::kSpeciesCount) * sizeof(*records),
+                m_scratch, 2 * kStarterCandyProfileMaxBytes)) return NativeSaveResult::InvalidRecord;
+        int selected = -1;
+        const auto status = select(selected);
+        if (status != NativeSaveResult::Ok) return status;
+        for (unsigned i = 0; i < 2; ++i)
+            if (m_valid[i] && StarterCandyProfileCodec::get(slot(i) + 72, 4) == requiredGeneration)
+                return decodeNativeStarterCandyProfile(slot(i), m_sizes[i], hash, PokerogueContent::kMaxStarterCandyCount,
+                    records, capacity, count, generation);
+        return NativeSaveResult::NotFound;
+    }
+
+    NativeSaveResult prepareFromCommitted(const NativeStarterCandyRecord* records, size_t count,
+        const char* hash, uint32_t committedGeneration, uint32_t& preparedGeneration) {
+        if (!committedGeneration) return NativeSaveResult::InvalidRecord;
+        return save(records, count, hash, PokerogueContent::kMaxStarterCandyCount,
+            preparedGeneration, committedGeneration);
     }
 
     // Staging is caller-owned workspace, never the live gameplay profile.
@@ -123,6 +160,7 @@ private:
         selected = -1;
         for (unsigned i = 0; i < 2; ++i) {
             m_sizes[i] = 0;
+            m_valid[i] = false;
             statuses[i] = m_storage.readSlot(i, slot(i), kStarterCandyProfileMaxBytes, m_sizes[i]);
             if (statuses[i] == NativeSaveResult::IoError || statuses[i] == NativeSaveResult::TooLarge)
                 return statuses[i];
@@ -140,6 +178,7 @@ private:
             if (std::memcmp(slot(i), "P3CANDY1", 8)) return NativeSaveResult::UnsupportedVersion;
             sequence[i] = StarterCandyProfileCodec::get(slot(i) + 72, 4);
             if (!sequence[i]) { statuses[i] = NativeSaveResult::InvalidRecord; continue; }
+            m_valid[i] = true;
             if (selected < 0 || sequence[i] > sequence[selected]) selected = static_cast<int>(i);
         }
         if (selected < 0) return statuses[0] == NativeSaveResult::NotFound ? statuses[1] : statuses[0];
@@ -152,6 +191,7 @@ private:
     char* m_scratch;
     size_t m_capacity;
     size_t m_sizes[2]{};
+    bool m_valid[2]{};
 };
 
 class SdNativeStarterCandyStorage final : public NativeSaveStorage {

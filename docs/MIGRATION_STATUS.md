@@ -770,3 +770,9 @@
 1. `NativeStarterCandyStore.importExport` usa `readExport`, valida checksum/catálogo/raíces/límites y prepara registros en staging del caller. Después escribe mediante el journal y readback existentes. La generación del archivo externo se reemplaza por la siguiente generación local.
 2. Staging no es el perfil vivo: el consumidor solo debe publicar gameplay tras éxito. Count/generación de salida permanecen sin cambios si falla la operación; una exportación corrupta no modifica el journal.
 3. Regresiones 64–66 escritas: roundtrip, segunda importación con generación local creciente y rechazo de export corrupto conservando el perfil previo. Sin ejecución ni validación de SD física. Falta menú de importación y coordinación con la run antes de habilitar ganancias en gameplay.
+
+## Perfil comprometido y candidato pendiente
+
+1. `loadGeneration` carga la generación concreta referenciada por una run, sin sustituirla por el perfil más reciente. Si no existe, falla explícitamente.
+2. `prepareFromCommitted` escribe un candidato en el slot opuesto al perfil comprometido. Si una run aún referencia generación 1 y existe candidato 2, un reintento escribe candidato 3 sobre el slot pendiente, conservando 1. Esto evita destruir el perfil necesario para recuperar la run anterior.
+3. Regresiones 67–72 escritas: interrupción entre perfil/run simulada, reintento y recuperación de generaciones exactas; sin ejecutar. Falta persistir la referencia en NativeRunSave y conectar el coordinador al arranque/checkpoints/exportación. Todavía no se declara transacción conjunta completa.
