@@ -222,6 +222,9 @@ private:
     bool m_secondEncounterResolved = false;
     uint8_t m_selectedBattleMove = 0;
     uint8_t m_selectedTarget = 0;
+    bool m_doubleDefeatParticipantsResolved = false;
+    uint8_t m_doubleDefeatParticipantCount = 0;
+    std::array<uint32_t, 6> m_doubleDefeatParticipantIds{};
     uint32_t m_starterProfileGeneration = 0;
     bool m_starterProfileReady = false;
     size_t m_starterProfileCount = 0;

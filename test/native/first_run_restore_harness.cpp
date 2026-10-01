@@ -417,6 +417,26 @@ static int checkBiomeTransitionProgression() {
 
 static int checkDoubleBattleTargetingAndMechanics() {
     using namespace Pokerogue3DS;
+    if (pokemonVictoryFriendshipDefeats(false, true) != 1 ||
+        pokemonVictoryFriendshipDefeats(false, false) != 0 ||
+        pokemonVictoryFriendshipDefeats(true, true) != 2 ||
+        pokemonVictoryFriendshipDefeats(true, false) != 1) return 581;
+    FirstRunRuntime friendshipSource(1);
+    auto friendshipActor = friendshipSource.presentation().player.battleState;
+    friendshipActor.friendship = 70;
+    const auto* friendshipRoot = pokemonRootSpecies(friendshipActor.speciesDex);
+    if (!friendshipRoot) return 582;
+    NativeStarterCandyRecord friendshipRecord{friendshipRoot->dex, 0, 0};
+    PokemonFriendshipPolicy friendshipPolicy{};
+    friendshipPolicy.resolved = true;
+    friendshipPolicy.candyMultiplier = PokerogueContent::kClassicCandyFriendshipMultiplier;
+    for (uint8_t defeat = 0; defeat < pokemonVictoryFriendshipDefeats(true, true); ++defeat) {
+        StarterCandyAwardEvent event{};
+        if (applyNativePokemonFriendship(friendshipActor, friendshipRecord,
+            PokerogueContent::kFriendshipGainFromBattle, friendshipPolicy, false, event) !=
+            NativeFriendshipApplyResult::Applied) return 583;
+    }
+    if (friendshipActor.friendship != 76 || friendshipRecord.friendship != 18) return 584;
     for (uint32_t seed = 1; seed <= 256; ++seed) {
         FirstRunRuntime game(seed);
         if (!game.doubleBattle()) continue;

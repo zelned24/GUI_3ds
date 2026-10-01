@@ -942,3 +942,12 @@
 1. `resolve` deja el encuentro sin resolver si la transición canónica falla, con motivo explícito; no conserva silenciosamente el bioma anterior. Los comandos de reward/skip conservan su rollback por candidato existente.
 2. Claim no sustituye un error de transición por el mensaje de éxito. Diferencia ruta/bioma faltante, modo no soportado, elección pendiente/inválida y entrada inválida.
 3. Regresiones 578–580 escritas para ruta faltante, modo no soportado y motivos distintos de elección; sin ejecutar. Guardado completo de historia de rutas y elección Map aún pendientes.
+
+## Amistad por enemigos derrotados en dobles — pendiente de ejecución
+
+1. El frontier actual agrega EXP al final de dobles, pero ahora aplica una ganancia de amistad por enemigo derrotado: dos derrotas generan dos ganancias; derrotar uno y capturar el último genera una. Captura simple no genera amistad de derrota.
+2. Fuente pinned inspeccionada: `src/phases/victory-phase.ts`, `VictoryPhase.start` → `applyPartyExp(expValue, true)`; captura ya utiliza `grantVictoryExperience(false)`. La captura con ambos enemigos vivos permanece bloqueada, por lo que el caso captura final tiene exactamente una derrota previa.
+3. Ganancias preparadas una a una en actor/ledger candidatos; fallo en callbacks conserva atomicidad. Regresiones 581–584 escritas para conteo y actor real + ledger Classic; sin ejecutar.
+4. Distribución temporal de EXP/amistad al ocurrir cada faint, cambios de participantes entre caídas y cola completa de fases permanecen pendientes. No se declara paridad completa de dobles.
+
+5. Se conserva snapshot de participantes en la primera caída de un doble. Si cambian antes de la segunda, la agregación falla explícitamente en vez de conceder al nuevo participante la derrota anterior; resolver ese caso requiere la cola por faint pendiente. Dobles aún no son checkpoints soportados.

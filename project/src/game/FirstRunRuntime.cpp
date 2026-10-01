@@ -1079,6 +1079,11 @@ bool FirstRunRuntime::grantVictoryExperience(bool pokemonDefeated) {
     if (m_experienceGranted || !m_context.player.actorIdentityResolved ||
         !m_context.enemy.actorIdentityResolved) return false;
     if (m_doubleBattle && !m_secondEncounterResolved) return false;
+    if (m_doubleBattle && m_doubleDefeatParticipantsResolved &&
+        (m_doubleDefeatParticipantCount != m_participantCount || m_doubleDefeatParticipantIds != m_participantIds)) {
+        m_battleFeedback = "Double EXP requires per-faint participant snapshots";
+        return false; // Do not award the prior defeat to a newly participating actor.
+    }
     if (!m_participantHistoryResolved && m_context.playerPartyCount > 1) {
         m_battleFeedback = "Party EXP requires persisted participant history";
         return false;
@@ -1127,7 +1132,8 @@ bool FirstRunRuntime::grantVictoryExperience(bool pokemonDefeated) {
                     PokemonExperienceResult::Ok || award2 > 0xffffffffU - memberAward) return false;
             memberAward += award2;
         }
-        if (m_starterProfileReady && pokemonDefeated && participated && target.battleState.hp) {
+        const uint8_t friendshipDefeats = pokemonVictoryFriendshipDefeats(m_doubleBattle, pokemonDefeated);
+        if (m_starterProfileReady && friendshipDefeats && participated && target.battleState.hp) {
             const auto* root = pokemonRootSpecies(target.dex);
             if (!root) return false;
             size_t record = 0;
@@ -1138,12 +1144,14 @@ bool FirstRunRuntime::grantVictoryExperience(bool pokemonDefeated) {
                 nextProfile[record] = {root->dex, 0, 0};
                 ++nextProfileCount;
             }
-            StarterCandyAwardEvent event{};
-            if (applyNativePokemonFriendship(target.battleState, nextProfile[record],
-                    PokerogueContent::kFriendshipGainFromBattle, m_starterFriendshipPolicy, false, event) !=
-                    NativeFriendshipApplyResult::Applied) {
-                m_battleFeedback = "Friendship requires resolved root/profile/maximum callbacks";
-                return false;
+            for (uint8_t defeat = 0; defeat < friendshipDefeats; ++defeat) {
+                StarterCandyAwardEvent event{};
+                if (applyNativePokemonFriendship(target.battleState, nextProfile[record],
+                        PokerogueContent::kFriendshipGainFromBattle, m_starterFriendshipPolicy, false, event) !=
+                        NativeFriendshipApplyResult::Applied) {
+                    m_battleFeedback = "Friendship requires resolved root/profile/maximum callbacks";
+                    return false;
+                }
             }
         }
         if (!memberAward) continue;
@@ -2036,6 +2044,12 @@ bool FirstRunRuntime::finishBattleTurn() {
     m_trickRoom = nextRoom;
     m_arenaWeather = nextWeather;
     m_context.playerParty[m_context.activePlayerPartyIndex] = m_context.player;
+    if (m_doubleBattle && !m_doubleDefeatParticipantsResolved &&
+        ((!m_context.enemy.battleState.hp) != (!m_context.secondEnemy.battleState.hp))) {
+        m_doubleDefeatParticipantsResolved = true;
+        m_doubleDefeatParticipantCount = m_participantCount;
+        m_doubleDefeatParticipantIds = m_participantIds;
+    }
     const bool playerDown = !m_context.player.battleState.hp;
     const bool enemiesDownNow = m_doubleBattle
         ? (!m_context.enemy.battleState.hp && !m_context.secondEnemy.battleState.hp)
@@ -2355,9 +2369,7 @@ bool FirstRunRuntime::throwPokeballInPlace(PokeballType ball) {
             }
             // EnemyPokemon.addToParty passes the source into PlayerPokemon:
             // preserve capture HP/PP; remove the enemy only after copying it.
-            resetPokemonStatStages(caughtMon.battleState);
-            caughtMon.battleState.heldItemLostTags = {};
-            caughtMon.battleState.turnDamageDealt = 0;
+            resetPokemonSummonState(caughtMon.battleState);
             m_context.playerParty[m_context.playerPartyCount++] = caughtMon;
         }
         target->battleState.hp = 0;
@@ -2596,6 +2608,9 @@ void FirstRunRuntime::resolve(bool carryPlayer) {
     m_doubleBattle = false;
     m_trainerBattle = false;
     m_secondEncounterResolved = false;
+    m_doubleDefeatParticipantsResolved = false;
+    m_doubleDefeatParticipantCount = 0;
+    m_doubleDefeatParticipantIds = {};
     m_context.enemy = {};
     m_context.secondEnemy = {};
     m_run.encounterDex = 0;
