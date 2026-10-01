@@ -1826,6 +1826,7 @@ bool FirstRunRuntime::finishBattleTurn() {
         }
     }
     // Reset PokemonTurnData after all end-of-turn consumers.
+    if (!nextPlayer.hp && !applyPokemonFaintFriendship(nextPlayer)) return false;
     nextPlayer.turnDamageDealt = nextEnemy.turnDamageDealt = nextSecondEnemy.turnDamageDealt = 0;
     m_context.player.battleState = nextPlayer;
     m_context.enemy.battleState = nextEnemy;

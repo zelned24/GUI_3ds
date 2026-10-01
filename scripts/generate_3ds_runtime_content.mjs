@@ -1096,5 +1096,14 @@ const ppUpRows = collections.items.flatMap(item => {
 });
 const ppUpHeader = friendshipHeader.replace('struct MoveAttribute {',
   `struct PpUpItemProfile { const char* itemId; uint8_t upPoints; const char* sourcePath; const char* sourceSymbol; const char* sourceHash; };\ninline constexpr PpUpItemProfile kPpUpItemProfiles[] = {\n${ppUpRows.join(',\n')}\n};\nstruct MoveAttribute {`);
-await fs.writeFile(outputPath, ppUpHeader, 'utf8');
-console.log(JSON.stringify({ output: path.relative(root, outputPath), bytes: Buffer.byteLength(ppUpHeader), hash: report.contentHash }));
+const friendshipRules = content.extensions?.pokemonFriendshipRules;
+const friendshipRuleRows = ['battleGain', 'rareCandyGain', 'faintLoss', 'rareCandyCap'].map(key => {
+  const rule = friendshipRules?.[key];
+  if (!Number.isInteger(rule?.value) || rule.value < 0 || rule.value > 255 || !rule.provenance?.sourceHash)
+    throw new Error(`Missing canonical friendship rule: ${key}`);
+  return `    {"${key}", ${rule.value}, "${field(rule.provenance.sourcePath)}", "${field(rule.provenance.sourceSymbol)}", "${field(rule.provenance.sourceHash)}"}`;
+});
+const friendshipRulesHeader = ppUpHeader.replace('struct MoveAttribute {',
+  `struct PokemonFriendshipRule { const char* id; uint8_t value; const char* sourcePath; const char* sourceSymbol; const char* sourceHash; };\ninline constexpr PokemonFriendshipRule kPokemonFriendshipRules[] = {\n${friendshipRuleRows.join(',\n')}\n};\ninline constexpr uint8_t kFriendshipLossFromFaint = ${friendshipRules.faintLoss.value};\ninline constexpr uint8_t kFriendshipGainFromBattle = ${friendshipRules.battleGain.value};\ninline constexpr uint8_t kFriendshipGainFromRareCandy = ${friendshipRules.rareCandyGain.value};\ninline constexpr uint8_t kRareCandyFriendshipCap = ${friendshipRules.rareCandyCap.value};\nstruct MoveAttribute {`);
+await fs.writeFile(outputPath, friendshipRulesHeader, 'utf8');
+console.log(JSON.stringify({ output: path.relative(root, outputPath), bytes: Buffer.byteLength(friendshipRulesHeader), hash: report.contentHash }));

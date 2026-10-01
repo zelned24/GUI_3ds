@@ -3,7 +3,7 @@
 #include <cstddef>
 #include <cstdint>
 namespace PokerogueContent {
-inline constexpr char kContentHash[] = "6a2ddff478b5b7a144b9d277e06e24391a9ca223e5452d74668949510d83d6d4";
+inline constexpr char kContentHash[] = "480b1150389ea156949fad9e04ea31bb80f026d4ddbe4703c7846b14a7dacef3";
 inline constexpr char kPokerogueRevision[] = "8555c08c823b856cbec4eb99ca84ea52a955836d";
 inline constexpr char kAssetsRevision[] = "056a1f408f26a3be4fef243f7462cb43608c7928";
 inline constexpr char kLocalesRevision[] = "23aea1cb0da5a0b15b836f3c243791591cc42303";
@@ -3778,6 +3778,17 @@ inline constexpr PpUpItemProfile kPpUpItemProfiles[] = {
     {"PP_UP", 1, "src/modifier/modifier-type.ts", "modifierTypeInitObj.PP_UP", "2d2bcbf71adec1fc80fc6a097e47118f5c9da87a22cbef4723141bbb17fd7968"},
     {"PP_MAX", 3, "src/modifier/modifier-type.ts", "modifierTypeInitObj.PP_MAX", "2d2bcbf71adec1fc80fc6a097e47118f5c9da87a22cbef4723141bbb17fd7968"}
 };
+struct PokemonFriendshipRule { const char* id; uint8_t value; const char* sourcePath; const char* sourceSymbol; const char* sourceHash; };
+inline constexpr PokemonFriendshipRule kPokemonFriendshipRules[] = {
+    {"battleGain", 3, "src/data/balance/starters.ts", "FRIENDSHIP_GAIN_FROM_BATTLE", "6f9c59ba6371d08e803f8bb45bb5552fb4947371d91106d0aa6047d6a31592ca"},
+    {"rareCandyGain", 6, "src/data/balance/starters.ts", "FRIENDSHIP_GAIN_FROM_RARE_CANDY", "6f9c59ba6371d08e803f8bb45bb5552fb4947371d91106d0aa6047d6a31592ca"},
+    {"faintLoss", 5, "src/data/balance/starters.ts", "FRIENDSHIP_LOSS_FROM_FAINT", "6f9c59ba6371d08e803f8bb45bb5552fb4947371d91106d0aa6047d6a31592ca"},
+    {"rareCandyCap", 200, "src/constants.ts", "RARE_CANDY_FRIENDSHIP_CAP", "983089a39ddf4ec77691326586c46ef6e8a289dedc17fe0834914fb1215e2c84"}
+};
+inline constexpr uint8_t kFriendshipLossFromFaint = 5;
+inline constexpr uint8_t kFriendshipGainFromBattle = 3;
+inline constexpr uint8_t kFriendshipGainFromRareCandy = 6;
+inline constexpr uint8_t kRareCandyFriendshipCap = 200;
 struct MoveAttribute { const char* id; };
 struct Move { uint16_t id; uint8_t category; int16_t power; int16_t accuracy; int16_t pp; int8_t priority; int16_t upstreamChance; uint8_t generation; uint16_t upstreamFlags; uint8_t multiHitType; uint32_t attributeOffset; uint16_t attributeCount; const char* key; const char* name; const char* type; const char* target; const char* sourcePath; const char* sourceSymbol; const char* sourceHash; };
 struct PokemonSpriteAtlas { uint16_t speciesDex; uint16_t width; uint16_t height; uint32_t frameOffset; uint16_t frameCount; const char* manifestPath; const char* imagePath; const char* manifestHash; }; struct PokemonSpriteFrame { const char* filename; uint16_t x; uint16_t y; uint16_t width; uint16_t height; uint16_t sourceWidth; uint16_t sourceHeight; uint16_t trimX; uint16_t trimY; }; struct SpeciesLevelMove { uint16_t speciesDex; int8_t level; uint16_t moveId; }; struct SpeciesEggMove { uint16_t speciesDex; uint16_t moveId; };

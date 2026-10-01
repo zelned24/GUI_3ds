@@ -111,6 +111,17 @@ extern "C" int runPokemonBattleStateChecks() {
         return 539;
     if (Pokerogue3DS::planStarterCandyProgress(0xffffffffU, 1, 25, true, true, candyProgress) !=
             Pokerogue3DS::PokemonExperienceResult::Overflow || candyProgress.friendship != 24) return 540;
+    auto faintFriendshipActor = highLevelActor;
+    faintFriendshipActor.friendship = 50;
+    if (Pokerogue3DS::applyPokemonFaintFriendship(faintFriendshipActor) ||
+        faintFriendshipActor.friendship != 50) return 541;
+    faintFriendshipActor.hp = 0;
+    if (!Pokerogue3DS::applyPokemonFaintFriendship(faintFriendshipActor) ||
+        faintFriendshipActor.friendship != 50 - PokerogueContent::kFriendshipLossFromFaint ||
+        faintFriendshipActor.hp) return 542;
+    faintFriendshipActor.friendship = 1;
+    if (!Pokerogue3DS::applyPokemonFaintFriendship(faintFriendshipActor) ||
+        faintFriendshipActor.friendship) return 543;
     highLevelInput.level = 65535;
     const uint16_t previousHp = highLevelActor.hp;
     if (Pokerogue3DS::initializePokemonBattleState(highLevelInput, highLevelActor) !=

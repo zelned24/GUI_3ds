@@ -727,3 +727,12 @@
 2. `applyPokemonPpUpItem` reproduce el filtro de selección y `PokemonPpUpModifier.apply`: PP base de al menos cinco, máximo tres mejoras y PP gastado conservado. Overrides no representados y entradas inválidas se rechazan.
 3. `claimRewardChoiceInPlace` aplica el perfil al miembro/slot seleccionado mediante `claimRecoveryRewardChoice`; el payload v6 conserva el resultado. El selector de presentación sigue pendiente de conexión por la otra IA.
 4. Regresiones 474–478 escritas, sin ejecutar. Solo generación y `git diff --check`; compilación y tests permanecen aplazados.
+
+## Debilitamiento: pérdida de amistad canónica
+
+1. El importer incorpora `src/data/balance/starters.ts` pinned y preserva las constantes de ganancia por combate/Rare Candy, pérdida por faint y cap de Rare Candy en `pokemonFriendshipRules`, con repository/revision/ruta/símbolo/SHA-256. El generador produce los valores C++ desde esa extensión canónica.
+2. `finishBattleTurn` aplica la pérdida de amistad al jugador con HP cero antes de publicar el estado y enviar la reserva o finalizar el combate. El frontier actual excluye instant-revive modifiers, cuya policy futura debe preceder a la pérdida. Fuente: `FaintPhase.doFaint`, `src/phases/faint-phase.ts`.
+3. `applyPokemonFaintFriendship` utiliza la rama negativa de `addFriendship`: mínimo cero, sin boosters, timed events ni modificación de starter candy. El valor resultante persiste mediante el payload del actor.
+4. Regresiones 541–543 escritas, pendientes de ejecución. No aplica una pérdida durante la restauración de un checkpoint ya debilitado. Ganancias positivas y perfil persistente de starter candy siguen pendientes.
+
+5. Reimportación local completa ejecutada dos veces con los mismos pins: hash `480b1150389ea156949fad9e04ea31bb80f026d4ddbe4703c7846b14a7dacef3`, igualdad comprobada por el pipeline. El hash cambió al añadir reglas canónicas; la migración de saves ligados al hash anterior sigue pendiente. No se ejecutaron suites ni se compiló el programa.

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "content/PokerogueRuntimeContent.hpp"
+#include "game/PokemonBattleState.hpp"
 #include <cstdint>
 #include <cstring>
 
@@ -148,6 +149,18 @@ inline PokemonExperienceResult planPokemonFriendshipChange(uint8_t currentFriend
     next.candyFriendshipGain = static_cast<uint32_t>(candy);
     output = next;
     return PokemonExperienceResult::Ok;
+}
+
+// Called once by the resolved player faint phase, after instant-revive checks.
+inline bool applyPokemonFaintFriendship(PokemonBattleState& actor) {
+    if (actor.hp) return false;
+    PokemonFriendshipChangePlan plan{};
+    PokemonFriendshipPolicy unused{};
+    if (planPokemonFriendshipChange(actor.friendship,
+            -static_cast<int32_t>(PokerogueContent::kFriendshipLossFromFaint), unused, plan) !=
+            PokemonExperienceResult::Ok) return false;
+    actor.friendship = plan.friendship;
+    return true;
 }
 
 struct StarterCandyProgressPlan {

@@ -12,6 +12,13 @@ export function registerMigrationContentTests(test) {
     const imported = await importer.importPlayableCanonicalContent(undefined, { generations: [1] });
     const repeatedImport = await importer.importPlayableCanonicalContent(undefined, { generations: [1] });
     assert.strictEqual(repeatedImport.importReport.contentHash, imported.importReport.contentHash, 'same pins/import/normalization produce the same canonical hash');
+    const friendship = imported.canonicalContent.extensions.pokemonFriendshipRules;
+    assert.deepStrictEqual(Object.fromEntries(Object.entries(friendship).map(([key, rule]) => [key, rule.value])),
+      { battleGain: 3, rareCandyGain: 6, faintLoss: 5, rareCandyCap: 200 });
+    assert.strictEqual(friendship.faintLoss.provenance.sourcePath, 'src/data/balance/starters.ts');
+    assert.strictEqual(friendship.faintLoss.provenance.sourceSymbol, 'FRIENDSHIP_LOSS_FROM_FAINT');
+    assert.strictEqual(friendship.faintLoss.provenance.revision, imported.canonicalContent.sourceSnapshot.revision);
+    assert.match(friendship.faintLoss.provenance.sourceHash, /^[a-f0-9]{64}$/);
     const fixed = imported.canonicalContent.extensions.fixedEnemyMovesets;
     assert.strictEqual(fixed.provenance.sourcePath, 'src/field/pokemon.ts');
     assert.strictEqual(fixed.provenance.sourceSymbol, 'EnemyPokemon.generateAndPopulateMoveset:ETERNATUS');
