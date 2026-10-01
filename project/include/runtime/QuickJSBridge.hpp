@@ -8,6 +8,10 @@ class Renderer2D;
 namespace Pokerogue3DS {
 class FirstRunRuntime;
 class NativeRunSaveStore;
+class NativeProgressStore;
+class NativeStarterCandyStore;
+struct NativeStarterCandyRecord;
+struct PokemonFriendshipPolicy;
 class QuickJSBridge {
 public:
     QuickJSBridge() = default;
@@ -25,6 +29,11 @@ public:
     static JSValue drawPokemon(JSContext*, JSValueConst, int, JSValueConst*);
     void bindRuntime(FirstRunRuntime& game) { m_game = &game; }
     void bindSaveStore(NativeRunSaveStore& saves) { m_saves = &saves; }
+    void bindProgressStore(NativeProgressStore& progress, NativeStarterCandyStore& profiles,
+        NativeStarterCandyRecord* staging, size_t capacity, const PokemonFriendshipPolicy& policy) {
+        m_progress = &progress; m_profiles = &profiles; m_profileStaging = staging;
+        m_profileCapacity = capacity; m_friendshipPolicy = &policy;
+    }
     void setJournalGeneration(uint32_t generation) { m_journalGeneration = generation; }
     uint32_t journalGeneration() const { return m_journalGeneration; }
     uint16_t restartStarterDex() const;
@@ -66,6 +75,11 @@ private:
     uint64_t m_animationTimeMs = 0;
     FirstRunRuntime* m_game = nullptr; // borrowed, never deleted
     NativeRunSaveStore* m_saves = nullptr;
+    NativeProgressStore* m_progress = nullptr;
+    NativeStarterCandyStore* m_profiles = nullptr;
+    NativeStarterCandyRecord* m_profileStaging = nullptr;
+    size_t m_profileCapacity = 0;
+    const PokemonFriendshipPolicy* m_friendshipPolicy = nullptr;
     uint16_t m_restartStarter = 0;
     uint32_t m_journalGeneration = 0;
     char m_actionFeedback[128]{};

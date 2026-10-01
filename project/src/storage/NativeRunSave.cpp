@@ -1114,6 +1114,8 @@ NativeSaveResult NativeRunSaveStore::importExport(const char* contentHash) {
     NativeRunSave value{};
     status = decodeNativeRunSave(bytes, size, contentHash, value);
     if (status != NativeSaveResult::Ok) return status;
+    // A foreign profile sequence is not a local identity; paired import must rebase it.
+    if (value.starterProfileGeneration) return NativeSaveResult::InvalidRecord;
     return save(value);
 }
 

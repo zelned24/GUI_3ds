@@ -16,6 +16,7 @@
 
 namespace Pokerogue3DS {
 class NativeProgressStore;
+class NativeStarterCandyStore;
 
 struct RunState {
     uint32_t seed;
@@ -88,7 +89,11 @@ public:
     bool cycleStarter(int direction);
     bool restoreSetup(uint32_t seed, uint16_t starterDex);
     void captureNativeRunSave(NativeRunSave& output) const;
-    bool restoreNativeRunSave(const NativeRunSave& save);
+    bool restoreNativeRunSave(const NativeRunSave& save, const NativeStarterCandyRecord* records = nullptr,
+        size_t count = 0, const PokemonFriendshipPolicy* policy = nullptr);
+    NativeSaveResult loadNativeProgress(NativeRunSaveStore& runs, NativeStarterCandyStore& profiles,
+        NativeStarterCandyRecord* staging, size_t capacity, const PokemonFriendshipPolicy& policy,
+        NativeRunSave* loadedRun = nullptr);
     bool restoreStarterCandyProfile(const NativeStarterCandyRecord* records, size_t count,
         uint32_t generation, const PokemonFriendshipPolicy& policy);
     NativeSaveResult saveNativeProgress(NativeProgressStore& store);

@@ -271,7 +271,30 @@ NativeSaveResult FirstRunRuntime::saveNativeProgress(NativeProgressStore& store)
     return NativeSaveResult::Ok;
 }
 
-bool FirstRunRuntime::restoreNativeRunSave(const NativeRunSave& save) {
+NativeSaveResult FirstRunRuntime::loadNativeProgress(NativeRunSaveStore& runs,
+    NativeStarterCandyStore& profiles, NativeStarterCandyRecord* staging, size_t capacity,
+    const PokemonFriendshipPolicy& policy, NativeRunSave* loadedRun) {
+    NativeRunSave saved{};
+    auto status = runs.load(PokerogueContent::kContentHash, saved);
+    if (status != NativeSaveResult::Ok) return status;
+    size_t count = 0;
+    uint32_t generation = 0;
+    status = saved.starterProfileGeneration
+        ? profiles.loadGeneration(PokerogueContent::kContentHash, saved.starterProfileGeneration,
+            staging, capacity, count, generation)
+        : profiles.load(PokerogueContent::kContentHash, staging, capacity, count, generation);
+    if (status == NativeSaveResult::NotFound && !saved.starterProfileGeneration) {
+        count = 0; // Explicit fresh/legacy bootstrap, never fabricated awards.
+        status = NativeSaveResult::Ok;
+    }
+    if (status != NativeSaveResult::Ok) return status;
+    if (!restoreNativeRunSave(saved, staging, count, &policy)) return NativeSaveResult::InvalidRecord;
+    if (loadedRun) *loadedRun = saved;
+    return NativeSaveResult::Ok;
+}
+
+bool FirstRunRuntime::restoreNativeRunSave(const NativeRunSave& save,
+    const NativeStarterCandyRecord* records, size_t count, const PokemonFriendshipPolicy* policy) {
     if (validateNativeRunSave(save, PokerogueContent::kContentHash) != NativeSaveResult::Ok)
         return false;
     FirstRunRuntime candidate(save.seed);
@@ -289,6 +312,9 @@ bool FirstRunRuntime::restoreNativeRunSave(const NativeRunSave& save) {
         if (!found) return false;
         candidate.m_participantIds[i] = save.participantIds[i];
     }
+    if (policy && !candidate.restoreStarterCandyProfile(records, count, save.starterProfileGeneration, *policy))
+        return false;
+    if (!policy && (records || count)) return false;
     *this = candidate;
     // Scene nodes and text pointers belong to their runtime instance. Rebuild
     // after committing so none point at the temporary candidate's storage.

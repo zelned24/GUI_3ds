@@ -3,12 +3,45 @@
 #include <cstring>
 #include "storage/IntegritySha256.hpp"
 #include "storage/NativeStarterCandyProfile.hpp"
+#include "storage/NativeProgressStore.hpp"
 #include "game/PokemonExperience.hpp"
 #include "game/PokemonWeatherPhase.hpp"
 #include "game/PokerogueClassicWaveSchedule.hpp"
 #include "game/PokerogueEncounterResolver.hpp"
 #include "game/PokerogueTrainerPartyLevels.hpp"
 #include "game/PokemonWildMovesetGenerator.hpp"
+
+class ProgressMemoryStorage final : public Pokerogue3DS::NativeSaveStorage {
+public:
+    using Result = Pokerogue3DS::NativeSaveResult;
+    char slots[2][Pokerogue3DS::kStarterCandyProfileMaxBytes]{};
+    size_t sizes[2]{};
+    char exported[Pokerogue3DS::kStarterCandyProfileMaxBytes]{};
+    size_t exportSize = 0;
+    bool interrupt = false;
+    Result readSlot(unsigned i, char* out, size_t cap, size_t& read) override {
+        read = sizes[i];
+        if (!read) return Result::NotFound;
+        if (read > cap) return Result::TooLarge;
+        std::memcpy(out, slots[i], read); return Result::Ok;
+    }
+    Result writeSlot(unsigned i, const char* in, size_t size) override {
+        if (size > sizeof(slots[i])) return Result::TooLarge;
+        sizes[i] = interrupt ? size / 2 : size;
+        std::memcpy(slots[i], in, sizes[i]);
+        return interrupt ? Result::IoError : Result::Ok;
+    }
+    Result readExport(char* out, size_t cap, size_t& read) override {
+        read = exportSize;
+        if (!read) return Result::NotFound;
+        if (read > cap) return Result::TooLarge;
+        std::memcpy(out, exported, read); return Result::Ok;
+    }
+    Result writeExport(const char* in, size_t size) override {
+        if (size > sizeof(exported)) return Result::TooLarge;
+        exportSize = size; std::memcpy(exported, in, size); return Result::Ok;
+    }
+};
 
 // Synthetic KO checkpoints still represent a real active battle participant.
 static void setSingleParticipantFixture(Pokerogue3DS::NativeRunSave& save,
@@ -1263,6 +1296,51 @@ static int checkPlayerPartyManagementAndSwitching() {
     if (!friendshipVictoryGame.restoreNativeRunSave(friendshipVictory) ||
         friendshipVictoryGame.starterProfileReady() || friendshipVictoryGame.starterProfileCount() ||
         friendshipVictoryGame.playerPartyMember(0)->battleState.friendship != 70) return 544;
+    static ProgressMemoryStorage progressRunDisk, progressProfileDisk;
+    static char progressScratch[2 * kStarterCandyProfileMaxBytes]{};
+    static NativeStarterCandyRecord progressStaging[PokerogueContent::kSpeciesCount]{};
+    NativeRunSaveStore progressRuns(progressRunDisk);
+    NativeStarterCandyStore progressProfiles(progressProfileDisk, progressScratch, sizeof(progressScratch));
+    NativeProgressStore progressStore(progressRuns, progressProfiles);
+    FirstRunRuntime durableFriendshipGame(8);
+    if (!durableFriendshipGame.restoreNativeRunSave(friendshipVictory, nullptr, 0, &classicFriendshipPolicy) ||
+        !durableFriendshipGame.advanceBattleTurn()) return 545;
+    for (unsigned decision = 0; decision < 512 &&
+            (durableFriendshipGame.moveLearningPending() || durableFriendshipGame.evolutionPending()); ++decision)
+        if (!durableFriendshipGame.skipVictoryReward()) return 546;
+    if (durableFriendshipGame.saveNativeProgress(progressStore) != NativeSaveResult::Ok) return 547;
+    NativeRunSave durableRun{};
+    FirstRunRuntime durableReloaded(9);
+    if (durableReloaded.loadNativeProgress(progressRuns, progressProfiles, progressStaging,
+            PokerogueContent::kSpeciesCount, classicFriendshipPolicy, &durableRun) != NativeSaveResult::Ok ||
+        durableRun.starterProfileGeneration != 1 || !durableReloaded.starterProfileReady() ||
+        durableReloaded.playerPartyMember(0)->battleState.friendship != 73 ||
+        durableReloaded.playerPartyMember(1)->battleState.friendship != 73) return 548;
+    uint32_t durableCandyGain = 0;
+    for (size_t i = 0; i < durableReloaded.starterProfileCount(); ++i)
+        durableCandyGain += durableReloaded.starterProfileRecords()[i].friendship;
+    if (durableCandyGain != 18 || !durableReloaded.starterProfileCount()) return 549;
+    ++progressStaging[0].friendship;
+    if (!durableReloaded.restoreStarterCandyProfile(progressStaging, durableReloaded.starterProfileCount(),
+            durableRun.starterProfileGeneration, classicFriendshipPolicy)) return 550;
+    progressRunDisk.interrupt = true;
+    if (durableReloaded.saveNativeProgress(progressStore) != NativeSaveResult::IoError) return 551;
+    progressRunDisk.interrupt = false;
+    if (durableReloaded.loadNativeProgress(progressRuns, progressProfiles, progressStaging,
+            PokerogueContent::kSpeciesCount, classicFriendshipPolicy, &durableRun) != NativeSaveResult::Ok ||
+        durableRun.starterProfileGeneration != 1) return 552;
+    durableCandyGain = 0;
+    for (size_t i = 0; i < durableReloaded.starterProfileCount(); ++i)
+        durableCandyGain += durableReloaded.starterProfileRecords()[i].friendship;
+    if (durableCandyGain != 18 || progressStore.exportLatest(PokerogueContent::kContentHash) !=
+            NativeSaveResult::Ok) return 553;
+    size_t exportedProfileCount = 0;
+    uint32_t exportedProfileGeneration = 0;
+    if (inspectNativeStarterCandyProfile(progressProfileDisk.exported, progressProfileDisk.exportSize,
+            PokerogueContent::kContentHash, PokerogueContent::kMaxStarterCandyCount,
+            exportedProfileCount, exportedProfileGeneration) != NativeSaveResult::Ok ||
+        exportedProfileGeneration != 1 || progressRuns.importExport(PokerogueContent::kContentHash) !=
+            NativeSaveResult::InvalidRecord) return 554;
     auto blockedFriendshipVictory = friendshipVictory;
     blockedFriendshipVictory.playerParty[1].friendship = 254;
     FirstRunRuntime blockedFriendshipGame(7);

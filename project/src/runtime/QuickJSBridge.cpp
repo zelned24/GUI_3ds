@@ -4,6 +4,7 @@
 #include "runtime/RuntimeAssetManager.hpp"
 #include "gfx/renderer2d.hpp"
 #include "game/FirstRunRuntime.hpp"
+#include "storage/NativeProgressStore.hpp"
 #include <3ds.h>
 #include <cmath>
 #include <cstdio>
@@ -386,15 +387,22 @@ bool QuickJSBridge::processPendingAction() {
             if (action == 204) {
                 m_game->captureNativeRunSave(save);
                 status = validateNativeRunSave(save, PokerogueContent::kContentHash);
-                if (status == NativeSaveResult::Ok) status = m_saves->save(save);
+                if (status == NativeSaveResult::Ok)
+                    status = m_progress ? m_game->saveNativeProgress(*m_progress) : m_saves->save(save);
                 if (status == NativeSaveResult::Ok) {
                     NativeRunSave stored{};
                     if (m_saves->load(PokerogueContent::kContentHash, stored) == NativeSaveResult::Ok)
                         m_journalGeneration = stored.generation;
                 }
             } else {
-                status = m_saves->load(PokerogueContent::kContentHash, save);
-                if (status == NativeSaveResult::Ok && !m_game->restoreNativeRunSave(save)) status = NativeSaveResult::InvalidRecord;
+                if (m_progress && m_profiles && m_friendshipPolicy)
+                    status = m_game->loadNativeProgress(*m_saves, *m_profiles, m_profileStaging,
+                        m_profileCapacity, *m_friendshipPolicy, &save);
+                else {
+                    status = m_saves->load(PokerogueContent::kContentHash, save);
+                    if (status == NativeSaveResult::Ok && !m_game->restoreNativeRunSave(save))
+                        status = NativeSaveResult::InvalidRecord;
+                }
                 if (status == NativeSaveResult::Ok) { m_journalGeneration = save.generation; m_restartStarter = 0; }
             }
         }
@@ -429,6 +437,11 @@ void QuickJSBridge::fini() {
     m_pendingAction = -999;
     m_game = nullptr;
     m_saves = nullptr;
+    m_progress = nullptr;
+    m_profiles = nullptr;
+    m_profileStaging = nullptr;
+    m_profileCapacity = 0;
+    m_friendshipPolicy = nullptr;
     m_restartStarter = 0;
     m_journalGeneration = 0;
     m_actionFeedback[0] = 0;

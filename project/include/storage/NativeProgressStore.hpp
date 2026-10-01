@@ -57,6 +57,17 @@ public:
         return NativeSaveResult::Ok;
     }
 
+    // Both exports are verified, but these two files are not an atomic portable
+    // bundle. Linked standalone imports remain rejected until paired import exists.
+    NativeSaveResult exportLatest(const char* hash) {
+        NativeRunSave run{};
+        auto status = m_runs.load(hash, run);
+        if (status != NativeSaveResult::Ok) return status;
+        if (!run.starterProfileGeneration) return NativeSaveResult::InvalidRecord;
+        status = m_profiles.exportGeneration(hash, run.starterProfileGeneration);
+        return status == NativeSaveResult::Ok ? m_runs.exportLatest(hash) : status;
+    }
+
 private:
     NativeRunSaveStore& m_runs;
     NativeStarterCandyStore& m_profiles;

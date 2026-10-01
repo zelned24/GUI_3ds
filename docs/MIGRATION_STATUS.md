@@ -856,3 +856,10 @@
 5. Restore de run desadjunta siempre el perfil vivo: conservarlo por igualdad de generación podría arrastrar ganancias todavía no guardadas al recargar actores antiguos y duplicarlas. El consumidor debe cargar de nuevo el perfil durable exacto y adjuntarlo después de restaurar.
 
 6. Regresión 544 escrita: rollback de actores tras ganar amistad desadjunta el ledger no confirmado y restaura la amistad anterior. Pendiente de ejecución.
+
+## Perfil durable conectado al host SD y QuickJS
+
+1. Arranque y load nativo/QuickJS usan `loadNativeProgress`: leen run y perfil exacto, preparan staging fuera de la pila del host y publican actores+ledger juntos. Restore sin perfil sigue disponible para el bridge/test; producción adjunta perfil. Saves nativos/QuickJS llaman `saveNativeProgress` y confirman la referencia después del commit conjunto.
+2. El host declara policy offline explícita con multiplicador Classic generado, sin timed events, fusión ni boosters no representados. Perfil inexistente de una nueva/legacy run se inicializa vacío; corrupción/content mismatch no se convierte en perfil falso.
+3. Exportación escribe y verifica el perfil confirmado y la run (`starters.p3profile` + `progress.p3save`); todavía son dos archivos, no un bundle portable atómico. Import linked aislado se rechaza: secuencia extranjera puede coincidir con un perfil local distinto. Import legacy sin referencia permanece disponible; empaquetado/import conjunto pendiente.
+4. Regresiones 545–554 escritas: derrota real con dos participantes → amistad/ledger → commit → reload, interrupción entre perfil/run → perfil anterior, export de generación confirmada e import linked aislado rechazado. Sin ejecutar/compilar; SD física y consumo de stack pendientes de validar en Old 3DS.
