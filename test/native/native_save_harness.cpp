@@ -1,4 +1,5 @@
 #include "storage/NativeRunSave.hpp"
+#include "storage/NativeStarterCandyProfile.hpp"
 #include "storage/IntegritySha256.hpp"
 #include "content/PokerogueRuntimeContent.hpp"
 #include <cstring>
@@ -273,5 +274,24 @@ extern "C" int runNativeSaveChecks() {
     invalidSetup.pokeballCounts[1] = 1;
     if (validateNativeRunSave(invalidSetup, PokerogueContent::kContentHash) != NativeSaveResult::InvalidRecord)
         return 46;
+    NativeStarterCandyRecord candyRecords[] = {{1, 7, 24}, {4, 8, 12}};
+    char candyBytes[256]{};
+    size_t candySize = 0;
+    if (encodeNativeStarterCandyProfile(candyRecords, 2, 1, PokerogueContent::kContentHash,
+            9999, candyBytes, sizeof(candyBytes), candySize) != NativeSaveResult::Ok) return 47;
+    NativeStarterCandyRecord restoredCandy[2]{};
+    size_t candyCount = 0;
+    uint32_t candyGeneration = 0;
+    if (decodeNativeStarterCandyProfile(candyBytes, candySize, PokerogueContent::kContentHash, 9999,
+            restoredCandy, 2, candyCount, candyGeneration) != NativeSaveResult::Ok || candyCount != 2 ||
+        candyGeneration != 1 || restoredCandy[0].candyCount != 7 || restoredCandy[1].friendship != 12)
+        return 48;
+    candyBytes[80] ^= 1;
+    if (decodeNativeStarterCandyProfile(candyBytes, candySize, PokerogueContent::kContentHash, 9999,
+            restoredCandy, 2, candyCount, candyGeneration) != NativeSaveResult::ChecksumMismatch ||
+        restoredCandy[0].candyCount != 7 || candyCount != 2) return 49;
+    candyRecords[1].speciesDex = 1;
+    if (encodeNativeStarterCandyProfile(candyRecords, 2, 1, PokerogueContent::kContentHash, 9999,
+            candyBytes, sizeof(candyBytes), candySize) != NativeSaveResult::InvalidRecord || candySize) return 50;
     return 0;
 }

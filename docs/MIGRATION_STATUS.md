@@ -742,3 +742,9 @@
 1. `pokemonRootSpecies` reproduce `PokemonSpecies.getRootSpeciesId` pinned (`src/data/pokemon-species.ts`) usando las preevoluciones canónicas de SpeciesDataRegistry. La opción `forStarter` termina ante un starter elegible; amistad usa el recorrido completo, como `addFriendship`.
 2. `trainerPartyRootDex` reutiliza ese resolver y deja de imponer 16 pasos. Referencias ausentes/ciclos fallan; el límite de recorrido viene del número de registros del catálogo. `pokemonFriendshipStarterSpecies` expone la clave canónica para el futuro ledger del perfil.
 3. Regresiones 544–545 escritas sobre Ivysaur/Bulbasaur y todas las especies reales, pendientes de ejecución. Esto identifica destinatarios de progreso; el almacenamiento persistente de starter candy y la raíz de fusión siguen pendientes.
+
+## Formato separado de starter candy
+
+1. `NativeStarterCandyProfile.hpp` define registros por SpeciesId raíz, cantidad de caramelos y progreso de amistad, independientes de una run. El codec sin heap conserva orden canónico estricto, hash del catálogo, generación y SHA-256. Su tamaño depende del catálogo, no del límite de 8 KiB del journal de runs.
+2. Decode valida checksum, versiones, referencias raíz, duplicados, límites y capacidad antes de publicar registros. El caller debe resolver el límite pinned de caramelos; no se presupone en producción. No acepta solapamiento entre buffer y registros.
+3. Regresiones 47–50 escritas en el harness de almacenamiento: roundtrip, corrupción y duplicados; sin ejecutar. El formato existe, pero journal/SD, límite canónico generado y consumidor de gameplay siguen pendientes. No se declara perfil persistido en consola.
