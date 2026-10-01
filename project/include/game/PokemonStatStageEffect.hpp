@@ -223,6 +223,7 @@ struct PokemonStatStageMovePolicy {
     bool bypassAccuracy = false;
     double accuracyMultiplier = 1.0;
     PokemonStatStageEffectPolicy stagePolicy{};
+    bool typeImmune = false;
 };
 
 struct PokemonStatStageMoveEvent {
@@ -230,6 +231,7 @@ struct PokemonStatStageMoveEvent {
     bool accuracyRolled = false;
     uint8_t accuracyRoll = 0;
     PokemonStatStageEffectEvent stages{};
+    bool typeImmune = false;
 };
 
 // One-target status action with a single constant StatStageChangeAttr.
@@ -271,10 +273,12 @@ inline PokemonStatStageEffectResult usePokemonStatStageStatusMove(
     hitPolicy.blockedBeforeAccuracy = policy.blockedBeforeAccuracy;
     hitPolicy.bypassAccuracy = policy.bypassAccuracy;
     hitPolicy.accuracyMultiplier = policy.accuracyMultiplier;
+    hitPolicy.typeImmune = policy.typeImmune;
     PokemonStatusMoveHitEvent hitEvent{};
     if (!resolvePokemonStatusMoveHit(*move, self, hitPolicy, nextRng, hitEvent))
         return PokemonStatStageEffectResult::UnresolvedPolicy;
     event.hit = hitEvent.hit;
+    event.typeImmune = hitEvent.typeImmune;
     event.accuracyRolled = hitEvent.accuracyRolled;
     event.accuracyRoll = hitEvent.accuracyRoll;
     if (event.hit) {

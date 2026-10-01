@@ -1156,6 +1156,22 @@ bool FirstRunRuntime::resolveActiveStatStageCommandPolicy(const PokemonBattleSta
         if (!userAccuracyResolved || !targetAccuracyResolved ||
             !composePokemonStatusAccuracyStagePolicy(user, opponent, baseAccuracy, stagedAccuracy,
                 ignoreUserAccuracy, ignoreTargetEvasion)) return false;
+        const auto* form = PokerogueContent::findFormById(opponent.formId);
+        if (!form) return false;
+        const char* types[] = {form->type1, form->type2};
+        PokemonStatusMoveTypeImmunityPolicy typePolicy{};
+        typePolicy.resolved = typePolicy.opponents = true;
+        typePolicy.originalIfStellarTypes = types;
+        typePolicy.typeCount = types[1] && types[1][0] ? 2 : 1;
+        const PokemonStatusAbilityComponent defenders[] = {{opponent.abilityId, true, true}};
+        stagedAccuracy.blockedBeforeAccuracy = hit.blockedByAbility;
+        stagedAccuracy.bypassAccuracy = hit.bypassAccuracy || move->accuracy < 0;
+        if (!composePokemonStatusMoveTypeHitPolicy(moveId, stagedAccuracy, typePolicy, stagedAccuracy) ||
+            !composePokemonStatusFlagAbilityHitPolicy(moveId, stagedAccuracy, false,
+                defenders, 1, stagedAccuracy)) return false;
+        policy.move.blockedBeforeAccuracy = stagedAccuracy.blockedBeforeAccuracy;
+        policy.move.bypassAccuracy = stagedAccuracy.bypassAccuracy;
+        policy.move.typeImmune = stagedAccuracy.typeImmune;
         policy.move.accuracyMultiplier = stagedAccuracy.accuracyMultiplier;
     }
 

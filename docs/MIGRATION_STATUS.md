@@ -1788,3 +1788,9 @@
 1. resolveActiveStatStageCommandPolicy extrae la composición existente de precisión/etapas y callbacks de reacciones. supportsActiveBattleMove y executeActiveBattleMove consultan el mismo proveedor antes de admitir/ejecutar el comando, sin consumo RNG ni mutación durante consulta.
 2. Una definición duplicada de efecto y más de dos reacciones por actor fallan explícitamente; el antiguo bucle omitía reacciones adicionales. Dobles/modifiers y estadísticas no resueltas requieren dispatcher antes de habilitar estas acciones; no se declara cobertura de esos contextos.
 3. Regresiones Growl escritas para admisión resuelta y rechazo de habilidades pendientes preservando HP, PP, etapas y turno. Tests/compilación siguen aplazados. Ataques con StatStageChangeAttr tras daño y demás pendientes Classic aún no están completos.
+
+## Inmunidades de impacto en comandos de estadísticas
+
+1. Growl tiene soundBased en raw pinned; el proveedor de estadísticas ahora consulta los resolvers compartidos de flags/tipos antes de accuracy. Conserva typeImmune separado del bloqueo por habilidad y lo propaga al evento de la fase.
+2. USER omite consulta de inmunidad del oponente. Prankster y habilidades cuya capacidad global sigue pendiente no se habilitan por este cambio; la consulta continúa rechazando políticas sin resolver. Reflection/protecciones/otros contextos pendientes no se declaran portados.
+3. Regresiones escritas para Soundproof/Growl y política de tipo: PP consumido, etapas intactas, ningún draw de accuracy y motivo distinguible. Tests y compilación siguen aplazados; Classic completo todavía pendiente.

@@ -724,6 +724,34 @@ extern "C" int runPokemonBattleStateChecks() {
             supportBenefit) || supportBenefit != 2 ||
         !Pokerogue3DS::calculateCanonicalStatStageStatusAiScore(state, state, 14,
             supportBenefit) || supportBenefit != 6) return 236;
+    {
+        PokemonBattleState soundUser = state, soundTarget = state;
+        soundUser.moveCount = 1;
+        soundUser.moves[0] = {45, 40, 40};
+        Pokerogue3DS::PokemonStatusMoveHitPolicy soundHit{};
+        soundHit.resolved = true;
+        const Pokerogue3DS::PokemonStatusAbilityComponent soundDefenders[] = {{43, true, true}};
+        if (!Pokerogue3DS::composePokemonStatusFlagAbilityHitPolicy(45, soundHit, false,
+                soundDefenders, 1, soundHit) || !soundHit.blockedBeforeAccuracy) return 9550;
+        Pokerogue3DS::PokemonStatStageMovePolicy soundPolicy{};
+        soundPolicy.hitPolicyResolved = soundPolicy.stagePolicy.resolved = true;
+        soundPolicy.blockedBeforeAccuracy = soundHit.blockedBeforeAccuracy;
+        Pokerogue3DS::PokemonStatStageMoveEvent soundEvent{};
+        auto soundRng = replacementRng, expectedSoundRng = soundRng;
+        if (Pokerogue3DS::usePokemonStatStageStatusMove(soundUser, soundTarget, 0, soundPolicy,
+                soundRng, soundEvent) != Pokerogue3DS::PokemonStatStageEffectResult::Ok ||
+            soundEvent.hit || soundEvent.accuracyRolled || soundUser.moves[0].pp != 39 ||
+            soundTarget.statStages[0] != state.statStages[0] ||
+            soundRng.randSeedUint32() != expectedSoundRng.randSeedUint32()) return 9551;
+        soundPolicy.blockedBeforeAccuracy = false;
+        soundPolicy.typeImmune = true;
+        soundRng = expectedSoundRng;
+        if (Pokerogue3DS::usePokemonStatStageStatusMove(soundUser, soundTarget, 0, soundPolicy,
+                soundRng, soundEvent) != Pokerogue3DS::PokemonStatStageEffectResult::Ok ||
+            soundEvent.hit || !soundEvent.typeImmune || soundEvent.accuracyRolled ||
+            soundUser.moves[0].pp != 38 || soundTarget.statStages[0] != state.statStages[0] ||
+            soundRng.randSeedUint32() != expectedSoundRng.randSeedUint32()) return 9552;
+    }
     const uint8_t mixedSlots[] = {0, 1};
     const uint32_t mixedDamage[] = {0, 10};
     uint8_t mixedFiltered[4]{}, mixedCount = 0;
