@@ -1316,3 +1316,9 @@
 2. resolveStarterFromDex consume forma preferida: ID, learnset, stats, tipos, habilidad de forma y Tera inicial se resuelven por catálogo. Sin preferencia conserva índice cero upstream. Forma FEMALE explícita exige unlock de género femenino y actualiza identidad antes de inicializar stats.
 3. selectSetupStarterForm prepara perfil y reconstrucción del equipo con la misma seed; persiste run+profile antes de publicar y vuelve a enlazar escena. Fallo de validación/almacenamiento conserva runtime original. Conexión del botón/cycling en QuickJS y preview aún pendientes; preferencias de género/naturaleza/habilidad aún no implementadas.
 4. Regresiones v8 roundtrip de todas las formas seleccionables de iniciales, rechazo sin unlock y lectura v7 sin preferencia escritas; no ejecutadas. Tests/compilación aplazados; impacto de memoria pendiente.
+
+## Control visible y preview de formas del inicial
+
+1. Up/Down en setup emite _3ds_cycleStarterForm y cola de comando nativa 226/227, fuera del tick. Ciclo conserva índices upstream y ofrece solamente formas seleccionables/desbloqueadas.
+2. Transacción valida también el actor del cursor aunque no esté en equipo, reconstruye miembros y persiste antes de publicar. Preview front y etiqueta usan preferencia canónica sin construir actor/PID ni consumir RNG durante dibujo.
+3. Prioridad de almacenamiento y modal de compra permanece. Regresión template JS escrita para Up/Down y prioridad sobre A; sin ejecutar. Bundle diagnóstico regenerado; tests/compilación aplazados. Validación nativa de interrupciones de guardado de preferencias y visual/hardware pendientes.
