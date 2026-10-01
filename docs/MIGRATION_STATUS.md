@@ -1403,3 +1403,9 @@
 
 1. FirstRunRuntime resuelve policy de quemadura para físico BURN antes de damage/recoil/drain y la transmite al comando común. Callbacks constantes se identifican por tabla de todas las habilidades; referencias condicionales/no interpretadas quedan no resueltas y bloquean claramente.
 2. Camino soportado usa habilidad primaria activa sin supresión/passive/ignore flags adicionales. No habilita moves con status todavía; aplicación, residual queue y save siguen pendientes. Datos C++ regenerados; tests/compilación aplazados.
+
+## Cobertura transaccional de quemadura
+
+1. Harness de comando estándar comprueba Tackle real con daño por quemadura antes del truncado, bypass resuelto y stream RNG idéntico al cálculo sin quemadura.
+2. Política sin resolver debe conservar PP, HP, acumulador de daño, estado, output y RNG. Revisión estática confirma publicación conjunta después del resolver; no fue necesario cambiar el runtime.
+3. Pruebas escritas, sin ejecutar. Tests y compilación aplazados; dispatcher completo de estados y persistencia siguen pendientes.

@@ -1215,6 +1215,60 @@ extern "C" int runPokemonBattleStateChecks() {
     if (actualDamageRngState.carry != expectedDamageRngState.carry || actualDamageRngState.s0 != expectedDamageRngState.s0 ||
         actualDamageRngState.s1 != expectedDamageRngState.s1 || actualDamageRngState.s2 != expectedDamageRngState.s2) return 45;
 
+    // Same pinned Tackle damage and seeded draws; burn is applied before truncation.
+    PokemonBattleState burnCommandActor = state;
+    burnCommandActor.status.present = true;
+    burnCommandActor.status.effect = Pokerogue3DS::PokemonStatusEffect::Burn;
+    PokemonBattleState burnCommandTarget = state;
+    Pokerogue3DS::PokemonBurnDamagePolicy commandBurnPolicy{};
+    commandBurnPolicy.resolved = true;
+    PokerogueRngAdapter burnCommandRng;
+    burnCommandRng.sow(damageSeed, sizeof(damageSeed) / sizeof(damageSeed[0]));
+    PokemonMoveActionResult burnCommandResult{};
+    const uint8_t initialBurnPp = burnCommandActor.moves[0].pp;
+    const uint16_t initialBurnHp = burnCommandTarget.hp;
+    const double expectedBurnRaw = expectedRawDamage * 0.5;
+    const uint32_t expectedBurnDamage = expectedBurnRaw < 1.0 ? 1 : static_cast<uint32_t>(expectedBurnRaw);
+    if (Pokerogue3DS::useStandardPokemonMove(burnCommandActor, burnCommandTarget, 0, false,
+            burnCommandRng, burnCommandResult, nullptr, nullptr, nullptr, nullptr, nullptr,
+            nullptr, nullptr, &commandBurnPolicy) != PokemonMoveActionStatus::Ok ||
+        burnCommandResult.damageRoll.damage != expectedBurnDamage ||
+        burnCommandActor.moves[0].pp != initialBurnPp - 1 ||
+        burnCommandTarget.hp != initialBurnHp - burnCommandResult.damageApplied) return 612;
+    const auto burnCommandState = burnCommandRng.state();
+    if (burnCommandState.carry != expectedDamageRngState.carry ||
+        burnCommandState.s0 != expectedDamageRngState.s0 ||
+        burnCommandState.s1 != expectedDamageRngState.s1 ||
+        burnCommandState.s2 != expectedDamageRngState.s2) return 613;
+
+    burnCommandActor = state;
+    burnCommandActor.status.present = true;
+    burnCommandActor.status.effect = Pokerogue3DS::PokemonStatusEffect::Burn;
+    burnCommandTarget = state;
+    burnCommandRng.sow(damageSeed, sizeof(damageSeed) / sizeof(damageSeed[0]));
+    commandBurnPolicy.abilityBypassesReduction = true;
+    if (Pokerogue3DS::useStandardPokemonMove(burnCommandActor, burnCommandTarget, 0, false,
+            burnCommandRng, burnCommandResult, nullptr, nullptr, nullptr, nullptr, nullptr,
+            nullptr, nullptr, &commandBurnPolicy) != PokemonMoveActionStatus::Ok ||
+        burnCommandResult.damageRoll.damage != expectedDamage) return 614;
+
+    burnCommandActor = state;
+    burnCommandActor.status.present = true;
+    burnCommandActor.status.effect = Pokerogue3DS::PokemonStatusEffect::Burn;
+    burnCommandTarget = state;
+    burnCommandRng.sow(damageSeed, sizeof(damageSeed) / sizeof(damageSeed[0]));
+    commandBurnPolicy.resolved = false;
+    burnCommandResult.ppConsumed = 123; // Failure must preserve caller output too.
+    if (Pokerogue3DS::useStandardPokemonMove(burnCommandActor, burnCommandTarget, 0, false,
+            burnCommandRng, burnCommandResult, nullptr, nullptr, nullptr, nullptr, nullptr,
+            nullptr, nullptr, &commandBurnPolicy) != PokemonMoveActionStatus::UnsupportedAbilityCondition ||
+        burnCommandActor.moves[0].pp != initialBurnPp || burnCommandTarget.hp != initialBurnHp ||
+        burnCommandActor.turnDamageDealt != state.turnDamageDealt ||
+        burnCommandResult.ppConsumed != 123 || !burnCommandActor.status.present) return 615;
+    PokerogueRngAdapter untouchedBurnRng;
+    untouchedBurnRng.sow(damageSeed, sizeof(damageSeed) / sizeof(damageSeed[0]));
+    if (burnCommandRng.randSeedUint32() != untouchedBurnRng.randSeedUint32()) return 616;
+
     PokerogueRngAdapter missRng;
     PokerogueRngAdapter missExpectedRng;
     uint16_t missSeed = 0;
