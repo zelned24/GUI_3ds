@@ -1078,3 +1078,9 @@
 1. Candidatos completos de FirstRunRuntime pasan de objetos automáticos a unique_ptr/new(nothrow). Ledger candidato de EXP también sale de la pila. Propiedad RAII libera la memoria al publicar o fallar.
 2. Fallo de asignación devuelve false con motivo y no publica estado parcial. No cambia orden RNG, contenido ni permisos; regresiones existentes de rollback/inicio/captura/EXP siguen pendientes de ejecución.
 3. Es corrección por inspección de almacenamiento, no medición de pico real. Heap, frames restantes, fragmentación y rendimiento requieren compilación y Old 3DS en la etapa final.
+
+## Memoria temporal de NativeProgressStore — pendiente de medición
+
+1. Load/commit/export/import pasan sus envelopes NativeRunSave automáticos a propiedad RAII con new(nothrow). Fallo antes de asignación no escribe journals ni publica candidatos.
+2. NativeSaveResult.MemoryUnavailable distingue fallo de memoria de contenido inválido y SD I/O. Regresión 116 escrita para nombre distinto; cobertura de rollback existente sin ejecutar. Inyección de fallo de allocator y pico/fragmentación aún pendientes.
+3. No se ha compilado ni medido hardware. Otras capas del codec/host conservan envelopes automáticos que deben revisarse; no se declara eliminado todo uso grande de pila.

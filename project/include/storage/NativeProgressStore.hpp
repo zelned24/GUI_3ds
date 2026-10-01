@@ -1,6 +1,8 @@
 #pragma once
 #include "storage/NativeStarterCandyStore.hpp"
 #include "storage/NativeProgressBundle.hpp"
+#include <memory>
+#include <new>
 
 namespace Pokerogue3DS {
 
@@ -14,7 +16,9 @@ public:
 
     NativeSaveResult load(const char* hash, NativeRunSave& run,
         NativeStarterCandyRecord* records, size_t capacity, size_t& count) {
-        NativeRunSave candidate{};
+        std::unique_ptr<NativeRunSave> candidateStorage(new (std::nothrow) NativeRunSave{});
+        if (!candidateStorage) return NativeSaveResult::MemoryUnavailable;
+        auto& candidate = *candidateStorage;
         auto status = m_runs.load(hash, candidate);
         if (status != NativeSaveResult::Ok) return status;
         if (!candidate.starterProfileGeneration) return NativeSaveResult::InvalidRecord;
@@ -34,7 +38,9 @@ public:
     NativeSaveResult commit(NativeRunSave& run, const NativeStarterCandyRecord* records, size_t count) {
         auto status = validateNativeRunSave(run, run.contentHash);
         if (status != NativeSaveResult::Ok) return status;
-        NativeRunSave previous{};
+        std::unique_ptr<NativeRunSave> previousStorage(new (std::nothrow) NativeRunSave{});
+        if (!previousStorage) return NativeSaveResult::MemoryUnavailable;
+        auto& previous = *previousStorage;
         status = m_runs.load(run.contentHash, previous);
         if (status != NativeSaveResult::Ok && status != NativeSaveResult::NotFound) return status;
         const uint32_t committed = status == NativeSaveResult::Ok ? previous.starterProfileGeneration : 0;
@@ -63,7 +69,9 @@ public:
     // Both exports are verified, but these two files are not an atomic portable
     // bundle. Linked standalone imports remain rejected until paired import exists.
     NativeSaveResult exportLatest(const char* hash) {
-        NativeRunSave run{};
+        std::unique_ptr<NativeRunSave> runStorage(new (std::nothrow) NativeRunSave{});
+        if (!runStorage) return NativeSaveResult::MemoryUnavailable;
+        auto& run = *runStorage;
         auto status = m_runs.load(hash, run);
         if (status != NativeSaveResult::Ok) return status;
         if (!run.starterProfileGeneration) return NativeSaveResult::InvalidRecord;
@@ -80,7 +88,9 @@ public:
             (hash && StarterCandyProfileCodec::overlaps(workspace, workspaceSize, hash, 65)) ||
             (records && StarterCandyProfileCodec::overlaps(workspace, workspaceSize,
                 records, capacity * sizeof(*records)))) return NativeSaveResult::InvalidRecord;
-        NativeRunSave run{};
+        std::unique_ptr<NativeRunSave> runStorage(new (std::nothrow) NativeRunSave{});
+        if (!runStorage) return NativeSaveResult::MemoryUnavailable;
+        auto& run = *runStorage;
         size_t count = 0, runSize = 0, profileSize = 0, bundleSize = 0;
         auto status = load(hash, run, records, capacity, count);
         if (status != NativeSaveResult::Ok) return status;
@@ -131,7 +141,9 @@ public:
     // Caller has already replayed the staged runtime. On error reload local authority.
     NativeSaveResult commitImported(NativeRunSave& candidate,
         const NativeStarterCandyRecord* records, size_t count) {
-        NativeRunSave local{};
+        std::unique_ptr<NativeRunSave> localStorage(new (std::nothrow) NativeRunSave{});
+        if (!localStorage) return NativeSaveResult::MemoryUnavailable;
+        auto& local = *localStorage;
         auto status = m_runs.load(candidate.contentHash, local);
         if (status != NativeSaveResult::Ok && status != NativeSaveResult::NotFound) return status;
         const uint32_t foreignGeneration = candidate.starterProfileGeneration;

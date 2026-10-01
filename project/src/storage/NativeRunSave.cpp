@@ -216,6 +216,7 @@ const char* nativeSaveResultName(NativeSaveResult result) {
     case NativeSaveResult::IoError: return "SD read or write failed";
     case NativeSaveResult::SequenceExhausted: return "Save generation exhausted";
     case NativeSaveResult::AmbiguousJournal: return "Conflicting save generations";
+    case NativeSaveResult::MemoryUnavailable: return "Insufficient memory for save transaction";
     }
     return "Unknown save error";
 }

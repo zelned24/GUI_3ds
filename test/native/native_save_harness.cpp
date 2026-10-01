@@ -636,5 +636,9 @@ extern "C" int runNativeSaveChecks() {
     if (decodeNativeStarterCandyProfile(caughtEncoded, caughtWritten, PokerogueContent::kContentHash,
             PokerogueContent::kMaxStarterCandyCount, caughtDecoded, 1, caughtCount, caughtGeneration) !=
             NativeSaveResult::Ok || caughtDecoded[0].caught) return 114;
+    if (std::strcmp(nativeSaveResultName(NativeSaveResult::MemoryUnavailable),
+            "Insufficient memory for save transaction") ||
+        !std::strcmp(nativeSaveResultName(NativeSaveResult::MemoryUnavailable),
+            nativeSaveResultName(NativeSaveResult::InvalidRecord))) return 116;
     return 0;
 }

@@ -127,7 +127,7 @@ struct NativeRunSave {
 enum class NativeSaveResult : uint8_t {
     Ok = 0, NotFound, InvalidFormat, UnsupportedVersion, IncompatibleRuntime,
     ContentMismatch, UnsupportedStage, InvalidRecord, TooLarge,
-    ChecksumMismatch, IoError, SequenceExhausted, AmbiguousJournal
+    ChecksumMismatch, IoError, SequenceExhausted, AmbiguousJournal, MemoryUnavailable
 };
 
 const char* nativeSaveResultName(NativeSaveResult result);
