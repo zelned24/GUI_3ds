@@ -120,6 +120,17 @@ struct BattleMoveState {
     uint8_t maxPp = 0;
 };
 
+// Supported permanent PP: pinned PokemonMove.getMovePp with zero to three PP Ups.
+// Transform overrides and negative boss ppUp require separate explicit metadata.
+inline bool pokemonPermanentMaxPpSupported(uint16_t moveId, uint8_t maximum) {
+    const auto* move = PokerogueContent::findMoveById(moveId);
+    if (!move || move->pp < 1 || move->pp > 255) return false;
+    const uint16_t increment = move->pp / 5 > 0 ? move->pp / 5 : 1;
+    for (uint8_t boosts = 0; boosts <= 3; ++boosts)
+        if (move->pp + boosts * increment == maximum) return true;
+    return false;
+}
+
 // Caller supplies all RNG-derived state. This avoids fabricated IV/nature/move
 // defaults until the pinned Pokemon generation sequence is integrated.
 struct PokemonBattleInit {

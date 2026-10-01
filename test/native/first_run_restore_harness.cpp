@@ -1293,6 +1293,27 @@ static int checkLevelUpMoveLearningAndEvolution() {
     if (!evolvedSpecies || pokemonTotalExperienceForLevel(evolvedSpecies->growthRate, 16, evolvedExperience) !=
             PokemonExperienceResult::Ok || !captureNativePokemonActorSave(bulbaState, evolutionIdentity,
                 evolvedExperience, evolvedSnapshot)) return 299;
+    auto boostedPpActor = bulbaState;
+    boostedPpActor.moves[0].maxPp = 42;
+    boostedPpActor.moves[0].pp = 40;
+    NativePokemonSave boostedPpSave{};
+    NativePokemonSave decodedPpSave{};
+    PokemonBattleState restoredPpActor{};
+    PokemonActorIdentity restoredPpIdentity{};
+    char boostedPpBytes[512]{};
+    size_t boostedPpSize = 0;
+    if (!captureNativePokemonActorSave(boostedPpActor, evolutionIdentity, evolvedExperience, boostedPpSave) ||
+        !boostedPpSave.maxPpResolved || boostedPpSave.maxPp[0] != 42 ||
+        encodeNativePokemonSave(boostedPpSave, boostedPpBytes, sizeof(boostedPpBytes), boostedPpSize) !=
+            NativeSaveResult::Ok || decodeNativePokemonSave(boostedPpBytes, boostedPpSize, decodedPpSave) !=
+            NativeSaveResult::Ok || !restoreNativePokemonActorSave(decodedPpSave, restoredPpActor, restoredPpIdentity) ||
+        restoredPpActor.moves[0].maxPp != 42 || restoredPpActor.moves[0].pp != 40) return 470;
+    boostedPpBytes[8] = '5';
+    if (decodeNativePokemonSave(boostedPpBytes, boostedPpSize - 12, decodedPpSave) !=
+            NativeSaveResult::InvalidRecord) return 471; // Legacy base PP cannot hold 40/35.
+    boostedPpActor.moves[0].maxPp = 41;
+    if (captureNativePokemonActorSave(boostedPpActor, evolutionIdentity, evolvedExperience, boostedPpSave))
+        return 472;
     if (!evoRes.evolved || evoRes.newDex != 2 || std::strcmp(evoRes.newSpeciesId, "ivysaur") != 0) return 196;
     if (bulbaState.speciesDex != 2) return 197;
     // Ivysaur has higher base stats and max HP than Bulbasaur
@@ -1856,22 +1877,26 @@ int main() {
             !decodedActor.friendshipResolved || decodedActor.friendship != 173 ||
             !restoreNativePokemonActorSave(decodedActor, restoredActor, restoredIdentity) ||
             restoredActor.friendship != 173) return 466;
+        tagBytes[8] = '5';
+        if (decodeNativePokemonSave(tagBytes, tagSize - 12, decodedActor) != NativeSaveResult::Ok ||
+            decodedActor.maxPpResolved || !decodedActor.friendshipResolved || decodedActor.friendship != 173)
+            return 473;
         tagBytes[8] = '4';
-        if (decodeNativePokemonSave(tagBytes, tagSize - 3, decodedActor) != NativeSaveResult::Ok ||
+        if (decodeNativePokemonSave(tagBytes, tagSize - 15, decodedActor) != NativeSaveResult::Ok ||
             decodedActor.friendshipResolved || !decodedActor.unburdenTag ||
             !restoreNativePokemonActorSave(decodedActor, restoredActor, restoredIdentity) ||
             restoredActor.friendship != currentActor.battleState.friendship) return 467;
         tagBytes[8] = '3';
-        if (decodeNativePokemonSave(tagBytes, tagSize - 6, decodedActor) != NativeSaveResult::Ok ||
+        if (decodeNativePokemonSave(tagBytes, tagSize - 18, decodedActor) != NativeSaveResult::Ok ||
             decodedActor.unburdenTag) return 406;
-        tagBytes[8] = '5';
-        tagBytes[tagSize - 5] = '2';
+        tagBytes[8] = '6';
+        tagBytes[tagSize - 17] = '2';
         if (decodeNativePokemonSave(tagBytes, tagSize, decodedActor) != NativeSaveResult::InvalidFormat ||
             decodedActor.unburdenTag) return 407;
         // Member schema 1 has no pause field: preserve its exact former layout.
         const size_t concreteTypeBytes = std::strlen(pausedActor.initialTeraType) + 1;
         if (pauseSize < concreteTypeBytes + 6) return 328;
-        const size_t version2Size = pauseSize - concreteTypeBytes - 6;
+        const size_t version2Size = pauseSize - concreteTypeBytes - 18;
         pauseBytes[8] = '2';
         if (decodeNativePokemonSave(pauseBytes, version2Size, decodedActor) != NativeSaveResult::Ok ||
             !decodedActor.pauseEvolutions) return 329;

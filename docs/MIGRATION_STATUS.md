@@ -713,3 +713,10 @@
 1. `applySpeciesEvolution` conserva amistad, tags de pérdida de item, daño acumulado y el moveset con PP actual/máximo. La evolución exitosa desactiva `pauseEvolutions`, siguiendo `PlayerPokemon.evolve` (`src/field/pokemon.ts` pinned); la opción continúa siendo persistente antes de aceptar una evolución.
 2. Entradas con HP/PP/etapas inválidos o stats no soportadas se rechazan antes de publicar el actor. Regresiones 468–469 escritas, pendientes de ejecución. El PP máximo se conserva como estado; esto no habilita todavía el consumo de PP Up.
 3. No existe aún almacenamiento completo del perfil de jugador; `PokemonFreshProfile` solo resuelve naturalezas iniciales. Starter candy sigue pendiente de ledger persistente, no se declara conectado por los resolvers de planificación.
+
+## PP máximo: snapshot explícito
+
+1. Payload de Pokémon `pokemon=6` almacena PP máximo por slot. Captura y restore validan los valores permanentes derivados de cero a tres PP Ups según `PokemonMove.getMovePp` y `toDmgValue` pinned (`src/data/moves/pokemon-move.ts`, `src/utils/common.ts`). Slots vacíos requieren cero; PP restante nunca supera su máximo.
+2. Lectura de v1–v5 conserva su antiguo significado de PP base. Un miembro con máximo modificado solicita snapshot explícito al guardar, evitando perderlo por replay de semilla.
+3. Regresiones escritas: Tackle 40/42 persiste, v5 no acepta ese PP sobre el máximo base 35, máximo 41 se rechaza, v5 base conserva amistad. Fixtures v1–v4 mantienen sus layouts anteriores. Tests y compilación pendientes.
+4. Esto no habilita aún PP Up/PP Max como recompensas ni overrides de Transform. Cambio de forma con PP aumentado sigue limitado por su propio validator; snapshots especiales de jefes requieren metadata ppUp/override explícita.

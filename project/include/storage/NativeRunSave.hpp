@@ -50,6 +50,8 @@ struct NativePokemonSave {
     int8_t statStages[7]{};
     bool ivsDerivedFromId = false;
     bool pauseEvolutions = false;
+    uint8_t maxPp[4]{};
+    bool maxPpResolved = false;
     uint8_t friendship = 0;
     bool friendshipResolved = false; // Legacy payloads resolve to pinned species base.
     bool unburdenTag = false;

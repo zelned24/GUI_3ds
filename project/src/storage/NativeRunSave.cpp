@@ -253,7 +253,7 @@ bool restoreNativePokemonSave(const NativePokemonSave& saved, PokemonBattleState
     input.moveCount = saved.moveCount;
     for (uint8_t i = 0; i < 6; ++i) input.ivs[i] = saved.ivs[i];
     for (uint8_t i = 0; i < 4; ++i) {
-        if (i >= saved.moveCount && (saved.moveIds[i] || saved.pp[i])) return false;
+        if (i >= saved.moveCount && (saved.moveIds[i] || saved.pp[i] || (saved.maxPpResolved && saved.maxPp[i]))) return false;
         input.moveIds[i] = saved.moveIds[i];
         for (uint8_t prior = 0; prior < i && i < saved.moveCount; ++prior)
             if (saved.moveIds[prior] == saved.moveIds[i]) return false;
@@ -273,6 +273,10 @@ bool restoreNativePokemonSave(const NativePokemonSave& saved, PokemonBattleState
     actor.heldItemLostTags.unburden = saved.unburdenTag;
     actor.hp = saved.hp;
     for (uint8_t i = 0; i < saved.moveCount; ++i) {
+        if (saved.maxPpResolved) {
+            if (!pokemonPermanentMaxPpSupported(saved.moveIds[i], saved.maxPp[i])) return false;
+            actor.moves[i].maxPp = saved.maxPp[i];
+        }
         if (saved.pp[i] > actor.moves[i].maxPp) return false;
         actor.moves[i].pp = saved.pp[i];
     }
@@ -298,6 +302,8 @@ bool captureNativePokemonSave(const PokemonBattleState& state, uint32_t experien
     saved.nature = static_cast<uint8_t>(state.nature);
     saved.ivsDerivedFromId = state.ivsWereDerivedFromPokemonId;
     saved.pauseEvolutions = state.pauseEvolutions;
+    saved.maxPpResolved = true;
+    for (uint8_t slot = 0; slot < state.moveCount; ++slot) saved.maxPp[slot] = state.moves[slot].maxPp;
     saved.friendship = state.friendship;
     saved.friendshipResolved = true;
     saved.unburdenTag = state.heldItemLostTags.unburden;
@@ -430,7 +436,7 @@ NativeSaveResult encodeNativePokemonSave(const NativePokemonSave& saved, char* o
     if (!restoreNativePokemonActorSave(saved, state, identity)) return NativeSaveResult::InvalidRecord;
     if (!output) return NativeSaveResult::InvalidFormat;
     Writer writer{output, capacity};
-    writer.text("pokemon=5\n");
+    writer.text("pokemon=6\n");
     writer.hex(saved.speciesDex, 4);
     writer.text(saved.formId); writer.character('\n');
     writer.hex(saved.level, 4);
@@ -454,6 +460,7 @@ NativeSaveResult encodeNativePokemonSave(const NativePokemonSave& saved, char* o
     writer.text(identity.initialTeraType); writer.character('\n');
     writer.hex(saved.unburdenTag ? 1 : 0, 2);
     writer.hex(state.friendship, 2);
+    for (uint8_t slot = 0; slot < 4; ++slot) writer.hex(state.moves[slot].maxPp, 2);
     if (!writer.valid) return NativeSaveResult::TooLarge;
     written = writer.position;
     return NativeSaveResult::Ok;
@@ -465,8 +472,9 @@ NativeSaveResult decodeNativePokemonSave(const char* bytes, size_t length,
     Reader reader{bytes, length};
     NativePokemonSave saved{};
     uint32_t value = 0;
-    if (!reader.literal("pokemon=") || !reader.hex(1, value) || (value < 1 || value > 5))
+    if (!reader.literal("pokemon=") || !reader.hex(1, value) || (value < 1 || value > 6))
         return NativeSaveResult::InvalidFormat;
+    const bool hasMaxPp = value >= 6;
     const bool hasFriendship = value >= 5;
     const bool hasUnburdenTag = value >= 4;
     const bool hasConcreteTeraType = value >= 3;
@@ -517,6 +525,13 @@ NativeSaveResult decodeNativePokemonSave(const char* bytes, size_t length,
         if (!reader.hex(2, value)) return NativeSaveResult::InvalidFormat;
         saved.friendship = static_cast<uint8_t>(value);
         saved.friendshipResolved = true;
+    }
+    if (hasMaxPp) {
+        for (uint8_t slot = 0; slot < 4; ++slot) {
+            if (!reader.hex(2, value)) return NativeSaveResult::InvalidFormat;
+            saved.maxPp[slot] = static_cast<uint8_t>(value);
+        }
+        saved.maxPpResolved = true;
     }
     saved.actorIdentityResolved = saved.initialTeraTypeResolved = true;
     if (reader.position != reader.end) return NativeSaveResult::InvalidFormat;
@@ -697,7 +712,10 @@ NativeSaveResult validateNativeRunSave(const NativeRunSave& save, const char* ex
             if (save.playerMoveIds[i] || save.playerPp[i]) return NativeSaveResult::InvalidRecord;
         } else {
             const auto* move = PokerogueContent::findMoveById(save.playerMoveIds[i]);
-            if (!move || move->pp < 0 || save.playerPp[i] > move->pp) return NativeSaveResult::InvalidRecord;
+            if (!move || move->pp < 0) return NativeSaveResult::InvalidRecord;
+            const auto* active = save.playerPartyCount ? &save.playerParty[save.activePlayerMember] : nullptr;
+            const uint16_t maximum = active && active->maxPpResolved ? active->maxPp[i] : move->pp;
+            if (save.playerPp[i] > maximum) return NativeSaveResult::InvalidRecord;
         }
         if (i >= save.enemyMoveCount) {
             if (save.enemyMoveIds[i] || save.enemyPp[i]) return NativeSaveResult::InvalidRecord;
