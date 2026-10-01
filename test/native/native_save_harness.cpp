@@ -164,14 +164,53 @@ extern "C" int runNativeSaveChecks() {
     if (validateNativeRunSave(statusSave, PokerogueContent::kContentHash) != NativeSaveResult::InvalidRecord)
         return 9005;
     NativeRunSave confusionSave = trainerSave;
-    confusionSave.playerConfusion = {3, true};
-    confusionSave.enemyConfusion = {2, true};
+    confusionSave.playerConfusion = {3, true, 109, true};
+    confusionSave.enemyConfusion = {2, true, 93, true};
     confusionSave.trainerParty[confusionSave.activeTrainerMember].confusion = confusionSave.enemyConfusion;
-    confusionSave.trainerParty[1].confusion = {5, true};
+    confusionSave.trainerParty[1].confusion = {5, true, 0, true};
     if (encodeNativeRunSave(confusionSave, partyBytes, sizeof(partyBytes), partySize) != NativeSaveResult::Ok ||
         decodeNativeRunSave(partyBytes, partySize, PokerogueContent::kContentHash, restored) != NativeSaveResult::Ok ||
-        restored.saveVersion != 16 || restored.playerConfusion.turns != 3 ||
-        restored.enemyConfusion.turns != 2 || restored.trainerParty[1].confusion.turns != 5) return 9180;
+        restored.saveVersion != kNativeSaveVersion || restored.playerConfusion.turns != 3 ||
+        restored.enemyConfusion.turns != 2 || restored.trainerParty[1].confusion.turns != 5 ||
+        !restored.playerConfusion.sourceMoveResolved || restored.playerConfusion.sourceMoveId != 109 ||
+        !restored.enemyConfusion.sourceMoveResolved || restored.enemyConfusion.sourceMoveId != 93 ||
+        !restored.trainerParty[1].confusion.sourceMoveResolved || restored.trainerParty[1].confusion.sourceMoveId) return 9180;
+    {
+        // Build the exact v16 layout by removing only v17 source metadata.
+        char legacyBytes[kNativeSaveMaxBytes]{};
+        const char* sourceStart = std::strstr(partyBytes, "playerConfusionSource=");
+        if (!sourceStart || confusionSave.playerPartyCount) return 9511;
+        const size_t legacyPayload = static_cast<size_t>(sourceStart - partyBytes);
+        std::memcpy(legacyBytes, partyBytes, legacyPayload);
+        for (size_t n = 0; n < legacyPayload; ++n) {
+            if (n + 16 <= legacyPayload && std::memcmp(legacyBytes + n, "saveVersion=0011", 16) == 0)
+                std::memcpy(legacyBytes + n + 12, "0010", 4);
+            if (n + 19 <= legacyPayload && std::memcmp(legacyBytes + n, "runtimeVersion=0011", 19) == 0)
+                std::memcpy(legacyBytes + n + 15, "0010", 4);
+        }
+        IntegritySha256::hashHex(legacyBytes, legacyPayload, digest);
+        std::memcpy(legacyBytes + legacyPayload, "sha256=", 7);
+        std::memcpy(legacyBytes + legacyPayload + 7, digest, 64);
+        legacyBytes[legacyPayload + 71] = '\n';
+        if (decodeNativeRunSave(legacyBytes, legacyPayload + 72, PokerogueContent::kContentHash, restored) !=
+                NativeSaveResult::Ok || restored.saveVersion != kNativeSaveVersion ||
+            restored.playerConfusion.turns != 3 || restored.enemyConfusion.turns != 2 ||
+            restored.playerConfusion.sourceMoveResolved || restored.playerConfusion.sourceMoveId ||
+            restored.enemyConfusion.sourceMoveResolved || restored.enemyConfusion.sourceMoveId ||
+            restored.trainerParty[1].confusion.sourceMoveResolved) return 9512;
+        auto invalidSource = confusionSave;
+        invalidSource.enemyConfusion.sourceMoveId = 60;
+        if (validateNativeRunSave(invalidSource, PokerogueContent::kContentHash) != NativeSaveResult::InvalidRecord)
+            return 9513;
+        invalidSource = confusionSave;
+        invalidSource.playerConfusion.sourceMoveResolved = false;
+        if (validateNativeRunSave(invalidSource, PokerogueContent::kContentHash) != NativeSaveResult::InvalidRecord)
+            return 9514;
+        invalidSource = confusionSave;
+        invalidSource.playerConfusion.sourceMoveId = 65535;
+        if (validateNativeRunSave(invalidSource, PokerogueContent::kContentHash) != NativeSaveResult::InvalidRecord)
+            return 9515;
+    }
     // A valid checksum does not authorize trailing payload fields. Check
     // completion after v16 confusion fields, preserving output on rejection.
     {

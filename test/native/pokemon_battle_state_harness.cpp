@@ -3220,6 +3220,7 @@ extern "C" int runPokemonBattleStateChecks() {
         reactionSource.status.effect != Effect::Poison || !reactionSource.status.present ||
         reactionSource.pendingStatus != Effect::None || !reactionRecipient.confusion.present ||
         reactionRecipient.confusion.turns != expectedReactionDuration ||
+        !reactionRecipient.confusion.sourceMoveResolved || reactionRecipient.confusion.sourceMoveId ||
         !reactionsEvent.synchronize.statusApplied || !reactionsEvent.confusion.tagAttempted ||
         statusApplicationRng.randSeedUint32() != expectedApplicationRng.randSeedUint32()) return 9230;
     reactionSource.status = {};
@@ -3556,6 +3557,7 @@ extern "C" int runPokemonBattleStateChecks() {
             confuseMovePolicy, confuseMoveRng, confuseMoveEvent) || !confuseMoveEvent.tagAttempted ||
         confuseMoveEvent.tagResult != Pokerogue3DS::PokemonConfusionTagResult::Added ||
         confuseMoveTarget.confusion.turns != confuseMoveDuration ||
+        !confuseMoveTarget.confusion.sourceMoveResolved || confuseMoveTarget.confusion.sourceMoveId != 93 ||
         confuseMoveRng.randSeedUint32() != expectedConfuseMoveRng.randSeedUint32()) return 9470;
     expectedConfuseMoveRng = confuseMoveRng;
     (void)expectedConfuseMoveRng.randSeedIntRange(2, 5);
@@ -3563,7 +3565,26 @@ extern "C" int runPokemonBattleStateChecks() {
             confuseMovePolicy, confuseMoveRng, confuseMoveEvent) ||
         confuseMoveEvent.tagResult != Pokerogue3DS::PokemonConfusionTagResult::Overlap ||
         confuseMoveTarget.confusion.turns != confuseMoveDuration ||
+        !confuseMoveTarget.confusion.sourceMoveResolved || confuseMoveTarget.confusion.sourceMoveId != 93 ||
         confuseMoveRng.randSeedUint32() != expectedConfuseMoveRng.randSeedUint32()) return 9471;
+    // Expiry and explicit removal clear source metadata as well as duration.
+    auto sourcedTag = confuseMoveTarget.confusion;
+    sourcedTag.turns = 1;
+    Pokerogue3DS::PokemonConfusionMovePolicy expiryPolicy{};
+    expiryPolicy.resolved = true;
+    expiryPolicy.effectiveAttack = expiryPolicy.effectiveDefense = 1;
+    Pokerogue3DS::PokemonConfusionMoveEvent expiryEvent{};
+    auto expiryActor = confuseMoveTarget;
+    auto expiryRng = confuseMoveRng, expectedExpiryRng = expiryRng;
+    if (!Pokerogue3DS::checkPokemonConfusionBeforeMove(expiryActor, sourcedTag,
+            expiryPolicy, expiryRng, expiryEvent) || !expiryEvent.removed || sourcedTag.present ||
+        sourcedTag.sourceMoveResolved || sourcedTag.sourceMoveId ||
+        expiryRng.randSeedUint32() != expectedExpiryRng.randSeedUint32()) return 9516;
+    sourcedTag = confuseMoveTarget.confusion;
+    if (!Pokerogue3DS::removePokemonConfusionTag(sourcedTag) || sourcedTag.present ||
+        sourcedTag.sourceMoveResolved || sourcedTag.sourceMoveId) return 9517;
+    sourcedTag.sourceMoveId = 93;
+    if (Pokerogue3DS::validPokemonConfusionTag(sourcedTag)) return 9518;
     confuseMoveTarget.confusion = {};
     confuseMovePolicy.ownAbilityBlocks = true;
     expectedConfuseMoveRng = confuseMoveRng;

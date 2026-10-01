@@ -212,7 +212,17 @@ inline double pokemonStatusCatchRateMultiplier(const PokemonStatusState& status)
 struct PokemonConfusionTagState {
     uint32_t turns = 0;
     bool present = false;
+    uint16_t sourceMoveId = 0;
+    // false: legacy/unknown; true with ID zero: upstream explicitly omitted sourceMove.
+    bool sourceMoveResolved = false;
 };
+
+inline bool validPokemonConfusionTag(const PokemonConfusionTagState& tag) {
+    if (tag.present != (tag.turns != 0)) return false;
+    if (!tag.present) return !tag.sourceMoveId && !tag.sourceMoveResolved;
+    if (!tag.sourceMoveResolved) return !tag.sourceMoveId;
+    return !tag.sourceMoveId || PokerogueContent::findMoveById(tag.sourceMoveId);
+}
 
 struct PokemonBattleState {
     uint16_t speciesDex = 0;
@@ -223,7 +233,7 @@ struct PokemonBattleState {
     uint8_t friendship = 0; // Persistent Pokemon friendship, initialized from pinned species.
     PokemonStatusState status{}; // Persistent nonvolatile status, stored in run v15.
     PokemonStatusEffect pendingStatus = PokemonStatusEffect::None; // PokemonTurnData; queue must drain before checkpoint.
-    PokemonConfusionTagState confusion{}; // Transient summon tag; actor v8 / run v16.
+    PokemonConfusionTagState confusion{}; // Transient summon tag; actor v9 / run v17.
     HeldItemLostTagState heldItemLostTags{}; // Transient summon data.
     uint32_t turnDamageDealt = 0; // PokemonTurnData.totalDamageDealt; reset after turn effects.
     PokemonGender gender = PokemonGender::Unspecified;
@@ -730,7 +740,8 @@ inline bool resolvePokemonStatusRecipientPolicies(const PokemonBattleState& reci
 bool canPokemonAddConfusionTag(const PokemonConfusionTagState& tag,
     const PokemonConfusionTagPolicy& policy, bool& output);
 PokemonConfusionTagResult addPokemonConfusionTag(PokemonConfusionTagState& tag,
-    uint32_t turns, const PokemonConfusionTagPolicy& policy);
+    uint32_t turns, const PokemonConfusionTagPolicy& policy,
+    uint16_t sourceMoveId = 0, bool sourceMoveResolved = false);
 bool removePokemonConfusionTag(PokemonConfusionTagState& tag);
 struct PokemonMoveConfusionEvent {
     uint16_t moveId = 0;

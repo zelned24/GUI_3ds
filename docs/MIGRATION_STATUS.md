@@ -1756,3 +1756,10 @@
 2. Decoder ahora comprueba fin después de todos los campos de la versión, conservando validación de checksum, referencias y migraciones anteriores. No cambia schema ni inventa valores faltantes.
 3. Regresión añade un campo extra con checksum válido y exige InvalidFormat/output intacto; después vuelve a codificar/decodificar una partida v16 válida con confusión. Roundtrip existente sigue intacto. Pruebas aún sin ejecutar; compilación aplazada.
 4. Persistencia de sourceMoveId del tag queda pendiente del siguiente cambio de formato compatible; esta corrección elimina primero el bloqueo del reader actual.
+
+## Origen de confusión persistente: actor v9 / partida v17
+
+1. Pinned 8555c08c823b856cbec4eb99ca84ea52a955836d: Pokemon.addTag y BattlerTag conservan sourceMove opcional; ConfuseAttr aporta move.id y ConfusionOnStatusEffectAbAttr omite sourceMove. Runtime conserva ID canónico y distingue origen resuelto sin movimiento de origen desconocido legado.
+2. Actor v9 y partida/runtime v17 serializan ese origen; readers conservan v8/v16 con origen desconocido, sin inventar un ataque. Validación rechaza IDs inexistentes, metadata en tags ausentes y discrepancias entre actor activo y equipo. Overlap conserva origen; expiración/retirada limpian metadata.
+3. Regresiones escritas para creación/overlap/Puppeteer, roundtrip de actor/partida, migración v8/v16 y fuentes incoherentes. Tests y compilación siguen aplazados; no se declara validación ejecutada ni Classic completo.
+4. sourceId del Pokémon productor y otros productores/tags siguen pendientes; este cambio conserva únicamente sourceMove. Las partidas antiguas no contienen información suficiente para reconstruirlo.
