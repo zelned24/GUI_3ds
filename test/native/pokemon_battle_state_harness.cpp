@@ -2883,5 +2883,34 @@ extern "C" int runPokemonBattleStateChecks() {
             statusCommandPolicy, statusApplicationRng, statusCommandEvent) ||
         statusMoveUser.moves[0].pp != 18 || statusCommandEvent.ppConsumed != 123 ||
         statusApplicationRng.randSeedUint32() != expectedApplicationRng.randSeedUint32()) return 9036;
+    PokemonBattleState queuedRecipient{};
+    queuedRecipient.pokemonId = 1234;
+    queuedRecipient.hp = queuedRecipient.maxHp = 100;
+    queuedRecipient.status.present = true;
+    queuedRecipient.status.effect = Effect::Burn;
+    Pokerogue3DS::PokemonQueuedStatusRequest queuedStatus{};
+    queuedStatus.recipientPokemonId = 1234;
+    queuedStatus.effect = Effect::Sleep;
+    auto expectedQueuedRng = statusApplicationRng;
+    const uint32_t sleepDraw = expectedQueuedRng.randSeedInt(3);
+    if (Pokerogue3DS::applyPokemonQueuedStatus(queuedRecipient, queuedStatus, true, statusApplicationRng) !=
+            Pokerogue3DS::PokemonStatusObtainResult::Applied || queuedRecipient.status.effect != Effect::Sleep ||
+        queuedRecipient.status.sleepTurnsRemaining != (sleepDraw == 0 ? 2u : 3u) ||
+        statusApplicationRng.randSeedUint32() != expectedQueuedRng.randSeedUint32()) return 9040;
+    queuedStatus.recipientPokemonId = 1235;
+    expectedQueuedRng = statusApplicationRng;
+    if (Pokerogue3DS::applyPokemonQueuedStatus(queuedRecipient, queuedStatus, true, statusApplicationRng) !=
+            Pokerogue3DS::PokemonStatusObtainResult::Ineligible || queuedRecipient.status.effect != Effect::Sleep ||
+        statusApplicationRng.randSeedUint32() != expectedQueuedRng.randSeedUint32()) return 9041;
+    queuedStatus.recipientPokemonId = 1234;
+    queuedStatus.effect = Effect::None;
+    expectedQueuedRng = statusApplicationRng;
+    if (Pokerogue3DS::applyPokemonQueuedStatus(queuedRecipient, queuedStatus, true, statusApplicationRng) !=
+            Pokerogue3DS::PokemonStatusObtainResult::Ineligible || queuedRecipient.status.effect != Effect::Sleep ||
+        statusApplicationRng.randSeedUint32() != expectedQueuedRng.randSeedUint32()) return 9042;
+    queuedStatus.effect = Effect::Freeze;
+    if (Pokerogue3DS::applyPokemonQueuedStatus(queuedRecipient, queuedStatus, false, statusApplicationRng) !=
+            Pokerogue3DS::PokemonStatusObtainResult::UnsupportedReactions || queuedRecipient.status.effect != Effect::Sleep)
+        return 9043;
     return 0;
 }

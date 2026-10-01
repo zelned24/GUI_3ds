@@ -257,7 +257,7 @@ struct PokemonStatusApplicationPolicy {
 enum class PokemonStatusEligibility : uint8_t {
     Allowed, InvalidState, UnsupportedPolicy, ExistingStatus, PendingStatus, MistyTerrain,
     PoisonType, SteelType, ElectricType, ElectricTerrain, IceType, SunnyWeather,
-    FireType, SelfAbility, AllyAbility, Safeguard
+    FireType, SelfAbility, AllyAbility, Safeguard, NoEffect
 };
 // Pokemon.canSetStatus predicate only. trySetStatus's faint check, queued
 // ObtainStatusEffectPhase, duration draws and reactions are separate stages.
@@ -354,6 +354,19 @@ struct PokemonStatusEffectMoveEvent {
 bool usePokemonStatusEffectMove(PokemonBattleState& user, const PokemonBattleState& target,
     uint8_t slot, const PokemonStatusEffectMovePolicy& policy, PokerogueRngAdapter& rng,
     PokemonStatusEffectMoveEvent& output);
+
+struct PokemonQueuedStatusRequest {
+    uint32_t recipientPokemonId = 0;
+    uint32_t sourcePokemonId = 0;
+    bool hasSource = false;
+    PokemonStatusEffect effect = PokemonStatusEffect::None;
+    bool explicitSleepDuration = false;
+    uint32_t sleepDuration = 0;
+};
+// ObtainStatusEffectPhase uses an already accepted request, never repeats canSetStatus.
+// Caller resolves pendingStatus, hit cancellation, form changes and ability reactions.
+PokemonStatusObtainResult applyPokemonQueuedStatus(PokemonBattleState& recipient,
+    const PokemonQueuedStatusRequest& request, bool reactionsResolved, PokerogueRngAdapter& recipientRng);
 
 struct PokemonStatusMoveCheckPolicy {
     bool resolved = false;

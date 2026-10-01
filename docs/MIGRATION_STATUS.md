@@ -1463,3 +1463,9 @@
 1. usePokemonStatusEffectMove valida movimiento canónico de un atributo StatusEffectAttr, resuelve hit antes de chance/eligibilidad y publica PP/RNG/solicitud conjuntamente. Miss/bloqueo consume PP; error de capacidad conserva actor/RNG/output. Estado se aplica en fase posterior.
 2. resolvePokemonStatusMoveHit comparte la rutina anterior de accuracy con StatStageChange status, incluyendo USER bypass y bloqueos antes del draw. No duplica fórmulas de precisión.
 3. Regresiones Thunder Wave de hit/bypass, miss con draw y política no resuelta escritas, sin ejecutar. Integración de cola y proveedor completo de políticas aún pendiente. Tests/compilación aplazados.
+
+## Fase de aplicación de solicitud aceptada
+
+1. applyPokemonQueuedStatus separa ObtainStatusEffectPhase/doSetStatus de trySetStatus: no repite canSetStatus, conserva ID de destinatario/fuente, RNG de duración y reemplaza status tal como la fase upstream. Caller debe resolver pendingStatus, cancelación de hits, forms y reacciones antes de ejecutar.
+2. Solicitud por movimiento y wrapper de elegibilidad rechazan NONE, conforme trySetStatus. Request con destinatario distinto o reacciones sin resolver conserva estado/RNG.
+3. Regresiones de solicitud aceptada que no vuelve a consultar elegibilidad, duración seeded, identidad incorrecta y NONE escritas sin ejecutar. Cola activa/pendingStatus y callbacks completos siguen pendientes; tests/compilación aplazados.

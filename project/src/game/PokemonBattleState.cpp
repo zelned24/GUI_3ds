@@ -77,7 +77,8 @@ PokemonMoveStatusApplicationResult resolvePokemonMoveStatusApplication(
     }
     auto result = PokemonMoveStatusApplicationResult::ChanceFailed;
     if (chancePassed) {
-        event.eligibility = canPokemonSetStatus(recipient.status, event.effect, policy);
+        event.eligibility = event.effect == PokemonStatusEffect::None ? PokemonStatusEligibility::NoEffect :
+            canPokemonSetStatus(recipient.status, event.effect, policy);
         if (event.eligibility != PokemonStatusEligibility::Allowed)
             result = PokemonMoveStatusApplicationResult::Ineligible;
         else if (!recipient.hp && event.effect != PokemonStatusEffect::Faint)
@@ -149,22 +150,37 @@ bool usePokemonStatusEffectMove(PokemonBattleState& user, const PokemonBattleSta
 PokemonStatusObtainResult obtainPokemonStatus(PokemonBattleState& actor, PokemonStatusEffect effect,
     const PokemonStatusApplicationPolicy& policy, bool reactionsResolved, PokerogueRngAdapter& rng,
     bool explicitSleepDuration, uint32_t sleepDuration) {
+    if (effect == PokemonStatusEffect::None) return PokemonStatusObtainResult::Ineligible;
     if (canPokemonSetStatus(actor.status, effect, policy) != PokemonStatusEligibility::Allowed)
         return PokemonStatusObtainResult::Ineligible;
     if (!actor.hp && effect != PokemonStatusEffect::Faint) return PokemonStatusObtainResult::Fainted;
     if (!reactionsResolved) return PokemonStatusObtainResult::UnsupportedReactions;
-    auto nextRng = rng;
+    PokemonQueuedStatusRequest request{};
+    request.recipientPokemonId = actor.pokemonId;
+    request.effect = effect;
+    request.explicitSleepDuration = explicitSleepDuration;
+    request.sleepDuration = sleepDuration;
+    return applyPokemonQueuedStatus(actor, request, reactionsResolved, rng);
+}
+
+PokemonStatusObtainResult applyPokemonQueuedStatus(PokemonBattleState& recipient,
+    const PokemonQueuedStatusRequest& request, bool reactionsResolved, PokerogueRngAdapter& recipientRng) {
+    if (request.recipientPokemonId != recipient.pokemonId ||
+        request.effect == PokemonStatusEffect::None || static_cast<uint8_t>(request.effect) > 7 ||
+        (!request.hasSource && request.sourcePokemonId)) return PokemonStatusObtainResult::Ineligible;
+    if (!reactionsResolved) return PokemonStatusObtainResult::UnsupportedReactions;
+    auto nextRng = recipientRng;
     PokemonStatusState status{};
     status.present = true;
-    status.effect = effect;
+    status.effect = request.effect;
     // JS default parameter draws only for sleep without an explicit duration.
     status.hasSleepTurnsRemaining = true;
-    status.sleepTurnsRemaining = explicitSleepDuration ? sleepDuration :
-        effect == PokemonStatusEffect::Sleep ? (nextRng.randSeedInt(3) == 0 ? 2 : 3) : 0;
-    status.hasFreezeTurnsRemaining = effect == PokemonStatusEffect::Freeze;
+    status.sleepTurnsRemaining = request.explicitSleepDuration ? request.sleepDuration :
+        request.effect == PokemonStatusEffect::Sleep ? (nextRng.randSeedInt(3) == 0 ? 2 : 3) : 0;
+    status.hasFreezeTurnsRemaining = request.effect == PokemonStatusEffect::Freeze;
     status.freezeTurnsRemaining = status.hasFreezeTurnsRemaining ? 3 : 0;
-    actor.status = status;
-    rng = nextRng;
+    recipient.status = status;
+    recipientRng = nextRng;
     return PokemonStatusObtainResult::Applied;
 }
 
