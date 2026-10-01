@@ -150,15 +150,16 @@ int main() {
             const auto& state = game.presentation();
             bridge.setPokemonPresentation(state.player, state.enemy, osGetTime());
             const auto& actor = state.player.battleState;
+            const auto& moveActor = game.moveLearningPending() ? game.progressionPokemon().battleState : actor;
             const auto& opponent = state.enemy.battleState;
             const uint8_t slot = game.selectedBattleMove();
-            const auto* selected = slot < actor.moveCount && slot < 4
-                ? PokerogueContent::findMoveById(actor.moves[slot].moveId) : nullptr;
+            const auto* selected = slot < moveActor.moveCount && slot < 4
+                ? PokerogueContent::findMoveById(moveActor.moves[slot].moveId) : nullptr;
             uint16_t moveIds[4]{};
             uint8_t movePp[4]{};
-            for (uint8_t i = 0; i < actor.moveCount && i < 4; ++i) {
-                moveIds[i] = actor.moves[i].moveId;
-                movePp[i] = actor.moves[i].pp;
+            for (uint8_t i = 0; i < moveActor.moveCount && i < 4; ++i) {
+                moveIds[i] = moveActor.moves[i].moveId;
+                movePp[i] = moveActor.moves[i].pp;
             }
             char stateJson[768];
             const int length = std::snprintf(stateJson, sizeof(stateJson),
@@ -172,7 +173,7 @@ int main() {
                 unsigned(game.run().wave), unsigned(actor.hp), unsigned(actor.maxHp),
                 unsigned(opponent.hp), unsigned(opponent.maxHp), unsigned(state.player.dex),
                 unsigned(state.enemy.dex), unsigned(snapshot.stage), unsigned(selected ? selected->id : 0),
-                unsigned(selected ? actor.moves[slot].pp : 0),
+                unsigned(selected ? moveActor.moves[slot].pp : 0),
                 game.battleInputSupported() ? "true" : "false", game.battleFinished() ? "true" : "false", unsigned(slot),
                 unsigned(moveIds[0]), unsigned(moveIds[1]), unsigned(moveIds[2]), unsigned(moveIds[3]),
                 unsigned(movePp[0]), unsigned(movePp[1]), unsigned(movePp[2]), unsigned(movePp[3]),

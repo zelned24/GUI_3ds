@@ -103,6 +103,12 @@ public:
     bool selectBattleMove(int direction);
     bool evolutionPending() const { return m_pendingEvolutionSpeciesId != nullptr || m_evolutionPauseConfirmation; }
     bool moveLearningPending() const { return m_pendingLevelMoves.count != 0; }
+    uint8_t progressionPartyIndex() const { return m_progressionPartyIndex; }
+    const ResolvedPokemon& progressionPokemon() const {
+        return m_progressionPartyIndex < m_context.playerPartyCount &&
+            m_progressionPartyIndex != m_context.activePlayerPartyIndex
+            ? m_context.playerParty[m_progressionPartyIndex] : m_context.player;
+    }
     uint16_t pendingLearnMoveId() const { return m_pendingLevelMoves.count ? m_pendingLevelMoves.moveIds[0] : 0; }
     bool resolvePendingLearnMove(int selectedSlot); // -1 rejects; 0..3 replaces.
     bool advanceBattleTurn();
@@ -163,6 +169,8 @@ private:
     void resolve(bool carryPlayer = false);
     bool restoreNativeRunSaveInPlace(const NativeRunSave& save);
     bool grantVictoryExperience();
+    void advanceProgressionQueue();
+    ResolvedPokemon& progressionPokemonMutable();
     bool advanceTrainerAfterDefeat();
     bool generateVictoryRewards();
     bool finishBattleTurn();
@@ -212,6 +220,12 @@ private:
     bool m_experienceGranted = false;
     bool m_playerHistoryRequiresSnapshot = false; // Player choices cannot be replayed from seed.
     PokemonPendingLevelMoves m_pendingLevelMoves{};
+    uint8_t m_progressionPartyIndex = 0xFF;
+    uint8_t m_progressionQueueCount = 0;
+    uint8_t m_progressionQueueCursor = 0;
+    std::array<uint8_t, 6> m_progressionQueueMembers{};
+    std::array<PokemonPendingLevelMoves, 6> m_progressionQueueMoves{};
+    std::array<const char*, 6> m_progressionQueueEvolutions{};
     const char* m_pendingEvolutionSpeciesId = nullptr;
     bool m_evolutionPauseConfirmation = false;
     ClassicVictoryPlan m_victoryPlan{};

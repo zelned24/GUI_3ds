@@ -829,3 +829,13 @@
 5. Roundtrip de runtime ampliado con identidad real. Falta conectar la distribución a todos los participantes y colas de aprendizaje/evolución; los nuevos IDs no se presentan como reparto completo. Tests/compilación permanecen pendientes.
 
 6. Regresiones 520–521 añaden rechazo de una identidad ajena durante reconstrucción de la run y verifican que el historial anterior no se publica parcialmente. Pendientes de ejecución.
+
+## EXP de equipo y decisiones por destinatario
+
+1. `grantVictoryExperience` prepara una copia del equipo, distribuye por IDs del historial, recalcula cada receptor vivo bajo el cap y publica EXP/stats/moves solo tras preparar todos los miembros. Sin EXP Share, reservas no participantes reciben cero; actuales policies neutrales no habilitan modificadores todavía no representados. Historial legacy conserva el replay anterior, explícitamente sin demostrar reparto antiguo exacto.
+2. Cola acotada a los seis miembros existentes: decisiones de movimientos y evolución apuntan al destinatario; aceptar/rechazar/pausar en una reserva no cambia el actor activo de combate. Scene y lista de moves enviada a QuickJS consultan el destinatario durante aprendizaje. Checkpoints continúan rechazados mientras haya decisiones pendientes.
+3. Replays implícitos de saves anteriores siguen reconstruyendo el camino single-starter; al terminar restore se publica el historial persistido. En nuevo gameplay se utiliza la identidad real de participantes.
+4. Regresiones 522–529 escritas con encuentro reconstruido y equipo capturado real: dos participantes, EXP esperada por ambos, drenaje de decisiones y restore de ExperienceGranted sin repetir EXP. Sin ejecutar/compilar. Falta amistad/perfil vivo durable, EXP modifiers/Pokérus de actor/ExpBalance, dobles por derrotas individuales y validación completa de todas las colas en consola.
+
+5. Un historial legacy desconocido con varios miembros bloquea la concesión de EXP antes de publicar cambios: no inventa al participante activo como sustituto de todo el historial. La lectura de la run se conserva, pero necesita una migración explícita para conceder recompensas pendientes con ese estado.
+6. Fixtures de KO anteriores declaran ahora al actor real participante al fabricar BattleWon; sus asserts se conservan. Regresiones 530–531 añaden reserva no participante y rechazo atómico de historial desconocido con dos miembros. Todas pendientes de ejecución.

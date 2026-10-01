@@ -272,6 +272,7 @@ bool FirstRunRuntime::restoreNativeRunSaveInPlace(const NativeRunSave& save) {
     // Wave five is currently the only complete deterministic trainer party.
     if (save.trainerPartyCount && save.wave != 5) return false;
     if (!restoreSetup(save.seed, save.starterDex)) return false;
+    m_participantHistoryResolved = false; // Seed replay is the legacy single-starter path.
     // A skipped reward adds no modifier or party member. Replay each earlier
     // supported wild/fixed trainer victory to reconstruct level/EXP;
     // saved HP and PP are overlaid only after the target encounter is rebuilt.
@@ -304,6 +305,7 @@ bool FirstRunRuntime::restoreNativeRunSaveInPlace(const NativeRunSave& save) {
         m_context.player = m_context.playerParty[save.activePlayerMember];
         m_run.wave = save.wave;
         resolve(true);
+        m_participantHistoryResolved = false;
         // Encounter cleanup can reset stages; overlay the explicit checkpoint.
         for (uint8_t member = 0; member < save.playerPartyCount; ++member)
             for (uint8_t stat = 0; stat < 7; ++stat)
@@ -325,6 +327,7 @@ bool FirstRunRuntime::restoreNativeRunSaveInPlace(const NativeRunSave& save) {
         } else if (!grantVictoryExperience() || moveLearningPending() || evolutionPending()) return false;
         m_run.wave = static_cast<uint16_t>(wave + 1);
         resolve(true);
+        m_participantHistoryResolved = false;
     }
     if (save.wave != m_run.wave) return false;
     if (m_trainerBattle != (save.trainerPartyCount != 0)) return false;
@@ -870,13 +873,29 @@ bool FirstRunRuntime::claimRewardChoiceInPlace(uint8_t heldPartyMember, bool rec
     return m_encounterResolved;
 }
 
+ResolvedPokemon& FirstRunRuntime::progressionPokemonMutable() {
+    return m_progressionPartyIndex < m_context.playerPartyCount &&
+        m_progressionPartyIndex != m_context.activePlayerPartyIndex
+        ? m_context.playerParty[m_progressionPartyIndex] : m_context.player;
+}
+
+void FirstRunRuntime::advanceProgressionQueue() {
+    if (moveLearningPending() || m_pendingEvolutionSpeciesId || m_evolutionPauseConfirmation) return;
+    m_progressionPartyIndex = 0xFF;
+    if (m_progressionQueueCursor >= m_progressionQueueCount) return;
+    const uint8_t entry = m_progressionQueueCursor++;
+    m_progressionPartyIndex = m_progressionQueueMembers[entry];
+    m_pendingLevelMoves = m_progressionQueueMoves[entry];
+    m_pendingEvolutionSpeciesId = m_progressionQueueEvolutions[entry];
+}
+
 bool FirstRunRuntime::finishPendingEvolution(bool accepted) {
-    if (!m_pendingEvolutionSpeciesId) return true;
+    if (!m_pendingEvolutionSpeciesId) { advanceProgressionQueue(); return true; }
     if (!accepted) {
         m_battleFeedback = "Evolution ready: A continue, B cancel";
         return true;
     }
-    auto next = m_context.player;
+    auto next = progressionPokemon();
     EvolutionResult event{};
     std::string feedback;
     if (!applySpeciesEvolution(next.dex, m_pendingEvolutionSpeciesId, next.battleState,
@@ -894,10 +913,13 @@ bool FirstRunRuntime::finishPendingEvolution(bool accepted) {
     next.moveCount = next.battleState.moveCount;
     for (uint8_t slot = 0; slot < next.moveCount; ++slot) next.moveIds[slot] = next.battleState.moves[slot].moveId;
     m_pendingLevelMoves = pending;
-    m_context.player = next;
+    const uint8_t member = m_progressionPartyIndex < m_context.playerPartyCount
+        ? m_progressionPartyIndex : m_context.activePlayerPartyIndex;
+    m_context.playerParty[member] = next;
+    if (member == m_context.activePlayerPartyIndex) m_context.player = next;
     m_playerHistoryRequiresSnapshot = true;
-    m_context.playerParty[m_context.activePlayerPartyIndex] = next;
     m_pendingEvolutionSpeciesId = nullptr;
+    advanceProgressionQueue();
     m_battleFeedback = feedback;
     return true;
 }
@@ -913,13 +935,15 @@ bool FirstRunRuntime::resolvePendingLearnMove(int selectedSlot) {
 bool FirstRunRuntime::resolvePendingLearnMoveInPlace(int selectedSlot) {
     if (!moveLearningPending() || selectedSlot < -1 || selectedSlot > 3) return false;
     if (selectedSlot >= 0) {
-        auto next = m_context.player.battleState;
+        auto next = progressionPokemon().battleState;
         const auto result = learnPokemonMoveAtSlot(next, pendingLearnMoveId(), static_cast<uint8_t>(selectedSlot));
         if (result != PokemonLearnMoveResult::Learned && result != PokemonLearnMoveResult::AlreadyKnown) return false;
-        m_context.player.battleState = next;
-        m_context.player.moveCount = next.moveCount;
-        for (uint8_t slot = 0; slot < next.moveCount; ++slot) m_context.player.moveIds[slot] = next.moves[slot].moveId;
-        m_context.playerParty[m_context.activePlayerPartyIndex] = m_context.player;
+        auto& target = progressionPokemonMutable();
+        target.battleState = next;
+        target.moveCount = next.moveCount;
+        for (uint8_t slot = 0; slot < next.moveCount; ++slot) target.moveIds[slot] = next.moves[slot].moveId;
+        if (m_progressionPartyIndex == 0xFF || m_progressionPartyIndex == m_context.activePlayerPartyIndex)
+            m_context.playerParty[m_context.activePlayerPartyIndex] = m_context.player;
     }
     m_playerHistoryRequiresSnapshot = true;
     for (uint16_t i = 1; i < m_pendingLevelMoves.count; ++i)
@@ -980,9 +1004,13 @@ bool FirstRunRuntime::cycleTarget(int direction) {
 }
 
 bool FirstRunRuntime::grantVictoryExperience() {
+    if (!m_context.playerPartyCount || m_context.playerPartyCount > m_context.playerParty.size() ||
+        m_context.activePlayerPartyIndex >= m_context.playerPartyCount ||
+        moveLearningPending() || evolutionPending()) return false;
     if (m_experienceGranted || !m_context.player.actorIdentityResolved ||
         !m_context.enemy.actorIdentityResolved) return false;
     if (m_doubleBattle && !m_secondEncounterResolved) return false;
+    if (!m_participantHistoryResolved && m_context.playerPartyCount > 1) return false;
     const auto* starter = PokerogueContent::findSpeciesByDex(m_context.player.dex);
     const auto* defeated = PokerogueContent::findSpeciesByDex(m_context.enemy.dex);
     const auto* defeatedForm = m_context.enemy.formId
@@ -992,50 +1020,76 @@ bool FirstRunRuntime::grantVictoryExperience() {
     if (pokemonExperienceForDefeat(*defeated, m_context.enemy.level, rawExperience,
                                   defeatedForm) != PokemonExperienceResult::Ok ||
         rawExperience < 0.0 || rawExperience > 4294967295.0) return false;
-    uint32_t awardedExperience = 0;
-    if (pokemonSingleParticipantExperience(rawExperience, m_trainerBattle,
-            awardedExperience) != PokemonExperienceResult::Ok) return false;
-
-    if (m_doubleBattle) {
-        const auto* defeated2 = PokerogueContent::findSpeciesByDex(m_context.secondEnemy.dex);
-        const auto* defeatedForm2 = m_context.secondEnemy.formId
-            ? PokerogueContent::findFormById(m_context.secondEnemy.formId) : nullptr;
-        if (!defeated2 || (m_context.secondEnemy.formId && !defeatedForm2)) return false;
-        double rawExperience2 = 0.0;
-        uint32_t award2 = 0;
-        if (pokemonExperienceForDefeat(*defeated2, m_context.secondEnemy.level, rawExperience2,
-                defeatedForm2) != PokemonExperienceResult::Ok ||
-            rawExperience2 < 0.0 || rawExperience2 > 4294967295.0 ||
-            pokemonSingleParticipantExperience(rawExperience2, false, award2) != PokemonExperienceResult::Ok ||
-            award2 > 0xffffffffU - awardedExperience) return false;
-        awardedExperience += award2;
+    auto nextParty = m_context.playerParty;
+    nextParty[m_context.activePlayerPartyIndex] = m_context.player;
+    std::array<PokemonPendingLevelMoves, 6> pendingMoves{};
+    std::array<const char*, 6> pendingEvolutions{};
+    std::array<uint8_t, 6> pendingMembers{};
+    uint8_t pendingCount = 0;
+    // Legacy checkpoints retain the previous single-actor path; new histories
+    // resolve identity membership rather than granting all EXP to the active actor.
+    const uint8_t participants = m_participantHistoryResolved ? m_participantCount : 1;
+    for (uint8_t member = 0; member < m_context.playerPartyCount; ++member) {
+        auto& target = nextParty[member];
+        bool participated = !m_participantHistoryResolved && member == m_context.activePlayerPartyIndex;
+        for (uint8_t i = 0; i < m_participantCount; ++i)
+            participated |= m_participantIds[i] == target.battleState.pokemonId;
+        PokemonParticipantExperiencePolicy policy{};
+        policy.resolved = true; // Current held frontier excludes EXP modifiers/Pokerus.
+        policy.participantCount = participants;
+        policy.participated = participated;
+        policy.eligible = target.battleState.hp && target.level < classicExperienceLevelCap(m_run.wave);
+        uint32_t memberAward = 0;
+        if (pokemonParticipantExperience(rawExperience, m_trainerBattle, policy, memberAward) !=
+                PokemonExperienceResult::Ok) return false;
+        if (m_doubleBattle) {
+            const auto* species2 = PokerogueContent::findSpeciesByDex(m_context.secondEnemy.dex);
+            const auto* form2 = m_context.secondEnemy.formId
+                ? PokerogueContent::findFormById(m_context.secondEnemy.formId) : nullptr;
+            double raw2 = 0.0;
+            uint32_t award2 = 0;
+            if (!species2 || pokemonExperienceForDefeat(*species2, m_context.secondEnemy.level, raw2, form2) !=
+                    PokemonExperienceResult::Ok || pokemonParticipantExperience(raw2, false, policy, award2) !=
+                    PokemonExperienceResult::Ok || award2 > 0xffffffffU - memberAward) return false;
+            memberAward += award2;
+        }
+        if (!memberAward) continue;
+        const auto* species = PokerogueContent::findSpeciesByDex(target.dex);
+        if (!species || !target.actorIdentityResolved) return false;
+        PokemonExperienceProgress progress{};
+        if (applyPokemonExperience(species->growthRate, target.level, target.totalExperience,
+                memberAward, classicExperienceLevelCap(m_run.wave), progress) != PokemonExperienceResult::Ok)
+            return false;
+        const uint16_t oldLevel = target.level;
+        if (progress.level != oldLevel) {
+            if (!recalculatePokemonBattleLevel(target.battleState, progress.level)) return false;
+            PokemonPendingLevelMoves moves{};
+            learnNewLevelMoves(target.dex, oldLevel, progress.level, target.battleState,
+                target.moveIds, target.moveCount, nullptr, &moves);
+            if (moves.overflow) return false;
+            const auto* evo = checkSpeciesLevelEvolution(target.speciesId, oldLevel, progress.level);
+            const char* evolution = evo && !target.battleState.pauseEvolutions ? evo->targetSpeciesId : nullptr;
+            if (moves.count || evolution) {
+                pendingMembers[pendingCount] = member;
+                pendingMoves[pendingCount] = moves;
+                pendingEvolutions[pendingCount++] = evolution;
+            }
+        }
+        target.level = progress.level;
+        target.totalExperience = progress.totalExperience;
     }
-
-    PokemonExperienceProgress progress{};
-    if (applyPokemonExperience(starter->growthRate, m_context.player.level,
-                               m_context.player.totalExperience, awardedExperience,
-                               classicExperienceLevelCap(m_run.wave), progress)
-        != PokemonExperienceResult::Ok) return false;
-
-    const uint16_t oldLevel = m_context.player.level;
-    PokemonBattleState next = m_context.player.battleState;
-    if (progress.level != next.level) {
-        if (!recalculatePokemonBattleLevel(next, progress.level)) return false;
-
-        // Learn newly available level moves if there is space in the moveset (< 4)
-        std::string moveFeedback;
-        learnNewLevelMoves(next.speciesDex, oldLevel, progress.level, next,
-                           m_context.player.moveIds, m_context.player.moveCount, &moveFeedback, &m_pendingLevelMoves);
-        if (m_pendingLevelMoves.overflow) return false;
-
-        const auto* evo = checkSpeciesLevelEvolution(m_context.player.speciesId, oldLevel, progress.level);
-        if (evo && !next.pauseEvolutions) m_pendingEvolutionSpeciesId = evo->targetSpeciesId;
-    }
-    m_context.player.battleState = next;
-    m_context.player.level = progress.level;
-    m_context.player.totalExperience = progress.totalExperience;
-    if (!moveLearningPending() && !finishPendingEvolution()) return false;
-    m_context.playerParty[m_context.activePlayerPartyIndex] = m_context.player;
+    m_context.playerParty = nextParty;
+    m_context.player = nextParty[m_context.activePlayerPartyIndex];
+    m_progressionQueueMembers = pendingMembers;
+    m_progressionQueueMoves = pendingMoves;
+    m_progressionQueueEvolutions = pendingEvolutions;
+    m_progressionQueueCount = pendingCount;
+    m_progressionQueueCursor = 0;
+    m_progressionPartyIndex = 0xFF;
+    m_pendingLevelMoves = {};
+    m_pendingEvolutionSpeciesId = nullptr;
+    advanceProgressionQueue();
+    if (m_context.playerPartyCount > 1) m_playerHistoryRequiresSnapshot = true;
     m_experienceGranted = true;
     return true;
 }
@@ -1150,9 +1204,11 @@ bool FirstRunRuntime::advanceBattleTurnInPlace() {
     }
     if (moveLearningPending()) return resolvePendingLearnMove(m_selectedBattleMove);
     if (m_evolutionPauseConfirmation) {
-        m_context.player.battleState.pauseEvolutions = true;
-        m_context.playerParty[m_context.activePlayerPartyIndex] = m_context.player;
+        progressionPokemonMutable().battleState.pauseEvolutions = true;
+        if (m_progressionPartyIndex == 0xFF || m_progressionPartyIndex == m_context.activePlayerPartyIndex)
+            m_context.playerParty[m_context.activePlayerPartyIndex] = m_context.player;
         m_evolutionPauseConfirmation = false;
+        advanceProgressionQueue();
         m_battleFeedback = "Future evolutions paused";
         buildScene();
         return true;
@@ -1970,6 +2026,7 @@ bool FirstRunRuntime::skipVictoryRewardInPlace() {
     if (moveLearningPending()) return resolvePendingLearnMove(-1);
     if (m_evolutionPauseConfirmation) {
         m_evolutionPauseConfirmation = false;
+        advanceProgressionQueue();
         m_battleFeedback = "Future evolutions remain enabled";
         buildScene();
         return true;
@@ -2028,6 +2085,8 @@ bool FirstRunRuntime::advanceTrainerAfterDefeat() {
     m_battleFinished = false;
     m_playerWon = false;
     m_experienceGranted = false;
+    m_progressionQueueCount = m_progressionQueueCursor = 0;
+    m_progressionPartyIndex = 0xFF;
     m_pendingLevelMoves = {};
     m_pendingEvolutionSpeciesId = nullptr;
     m_evolutionPauseConfirmation = false;
@@ -2430,6 +2489,8 @@ void FirstRunRuntime::resolve(bool carryPlayer) {
     m_battleFinished = false;
     m_playerWon = false;
     m_experienceGranted = false;
+    m_progressionQueueCount = m_progressionQueueCursor = 0;
+    m_progressionPartyIndex = 0xFF;
     m_pendingLevelMoves = {};
     m_pendingEvolutionSpeciesId = nullptr;
     m_evolutionPauseConfirmation = false;
@@ -3212,9 +3273,10 @@ void FirstRunRuntime::buildScene() {
                 localizedItem + " [" + tier + "]";
         }
         m_text[11] = "  B: Skip reward";
-    } else if (m_context.player.movesetResolved) {
-        for (uint8_t i = 0; i < m_context.player.moveCount && i < 4; ++i) {
-            const auto* move = PokerogueContent::findMoveById(m_context.player.moveIds[i]);
+    } else if (progressionPokemon().movesetResolved) {
+        const auto& displayed = progressionPokemon();
+        for (uint8_t i = 0; i < displayed.moveCount && i < 4; ++i) {
+            const auto* move = PokerogueContent::findMoveById(displayed.moveIds[i]);
             if (!move) {
                 m_text[8] = "Starter moves unavailable: invalid canonical reference";
                 break;

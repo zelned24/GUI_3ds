@@ -10,6 +10,15 @@
 #include "game/PokerogueTrainerPartyLevels.hpp"
 #include "game/PokemonWildMovesetGenerator.hpp"
 
+// Synthetic KO checkpoints still represent a real active battle participant.
+static void setSingleParticipantFixture(Pokerogue3DS::NativeRunSave& save,
+        const Pokerogue3DS::FirstRunRuntime& game) {
+    save.participantHistoryResolved = true;
+    save.participantCount = 1;
+    for (auto& id : save.participantIds) id = 0;
+    save.participantIds[0] = game.presentation().player.battleState.pokemonId;
+}
+
 // Standalone host regression for atomic checkpoint application. This requires
 // the standard C++ library; it is not the freestanding WASM parity harness.
 static int checkTrainerExperienceReplay() {
@@ -34,6 +43,7 @@ static int checkTrainerExperienceReplay() {
             NativeRunSave won{};
             game.captureNativeRunSave(won);
             won.stage = NativeSaveStage::BattleWon;
+            setSingleParticipantFixture(won, game);
             won.encounterDex = context.enemy.dex;
             won.playerHp = context.player.battleState.hp;
             won.enemyHp = 0;
@@ -58,6 +68,7 @@ static int checkTrainerExperienceReplay() {
         if (checkpoint.stage != NativeSaveStage::BattleActive) continue;
         NativeRunSave memberWon = checkpoint;
         memberWon.stage = NativeSaveStage::BattleWon;
+        setSingleParticipantFixture(memberWon, game);
         memberWon.enemyHp = 0;
         memberWon.trainerParty[memberWon.activeTrainerMember].hp = 0;
         if (!game.restoreNativeRunSave(memberWon) ||
@@ -102,6 +113,7 @@ static int checkTrainerExperienceReplay() {
             restored.battleTurn != 2) return 10;
         NativeRunSave won = restored;
         won.stage = NativeSaveStage::BattleWon;
+        setSingleParticipantFixture(won, game);
         won.enemyHp = 0;
         won.trainerParty[1].hp = 0;
         if (!game.restoreNativeRunSave(won) || !game.advanceBattleTurn()) return 12;
@@ -185,6 +197,7 @@ static int checkTrainerInteractiveBattle() {
             NativeRunSave won{};
             game.captureNativeRunSave(won);
             won.stage = NativeSaveStage::BattleWon;
+            setSingleParticipantFixture(won, game);
             won.encounterDex = context.enemy.dex;
             won.playerHp = context.player.battleState.hp;
             won.enemyHp = 0;
@@ -222,6 +235,7 @@ static int checkTrainerInteractiveBattle() {
         NativeRunSave firstDefeated{};
         game.captureNativeRunSave(firstDefeated);
         firstDefeated.stage = NativeSaveStage::BattleWon;
+        setSingleParticipantFixture(firstDefeated, game);
         firstDefeated.enemyHp = 0;
         firstDefeated.trainerParty[firstDefeated.activeTrainerMember].hp = 0;
         if (!game.restoreNativeRunSave(firstDefeated)) return 44;
@@ -238,6 +252,7 @@ static int checkTrainerInteractiveBattle() {
         NativeRunSave secondDefeated{};
         game.captureNativeRunSave(secondDefeated);
         secondDefeated.stage = NativeSaveStage::BattleWon;
+        setSingleParticipantFixture(secondDefeated, game);
         secondDefeated.enemyHp = 0;
         secondDefeated.trainerParty[secondDefeated.activeTrainerMember].hp = 0;
         if (!game.restoreNativeRunSave(secondDefeated)) return 50;
@@ -286,6 +301,7 @@ static int checkModifierRewardGenerationAndClaim() {
         NativeRunSave won{};
         game.captureNativeRunSave(won);
         won.stage = NativeSaveStage::BattleWon;
+        setSingleParticipantFixture(won, game);
         won.enemyHp = 0;
         if (!game.restoreNativeRunSave(won)) return 60;
         if (!game.advanceBattleTurn()) return 61;
@@ -327,6 +343,7 @@ static int checkBiomeTransitionProgression() {
             NativeRunSave skipSave{};
             game.captureNativeRunSave(skipSave);
             skipSave.stage = NativeSaveStage::BattleWon;
+            setSingleParticipantFixture(skipSave, game);
             skipSave.enemyHp = 0;
             if (skipSave.trainerPartyCount) {
                 for (uint8_t i = 0; i < skipSave.trainerPartyCount; ++i)
@@ -340,6 +357,7 @@ static int checkBiomeTransitionProgression() {
         NativeRunSave wave10Won{};
         game.captureNativeRunSave(wave10Won);
         wave10Won.stage = NativeSaveStage::BattleWon;
+        setSingleParticipantFixture(wave10Won, game);
         wave10Won.enemyHp = 0;
         if (!game.restoreNativeRunSave(wave10Won) || !game.advanceBattleTurn()) return 81;
         if (!game.skipVictoryReward()) return 82;
@@ -1155,6 +1173,75 @@ static int checkPlayerPartyManagementAndSwitching() {
     if (recapturedPartySave.playerPartyCount != 2 ||
         recapturedPartySave.playerParty[1].experience != capturedPartySave.playerParty[1].experience)
         return 294;
+    // Real reconstructed enemy and captured party: both identities share EXP.
+    NativeRunSave sharedVictory = capturedPartySave;
+    sharedVictory.stage = NativeSaveStage::BattleWon;
+    sharedVictory.enemyHp = 0;
+    for (uint8_t member = 0; member < sharedVictory.trainerPartyCount; ++member)
+        sharedVictory.trainerParty[member].hp = 0;
+    sharedVictory.participantHistoryResolved = true;
+    sharedVictory.participantCount = 2;
+    const auto id0 = sharedVictory.playerParty[0].pokemonId;
+    const auto id1 = sharedVictory.playerParty[1].pokemonId;
+    sharedVictory.participantIds[0] = id0 < id1 ? id0 : id1;
+    sharedVictory.participantIds[1] = id0 < id1 ? id1 : id0;
+    const auto& realEnemy = restoredPartyGame.presentation().enemy;
+    const auto* realEnemySpecies = PokerogueContent::findSpeciesByDex(realEnemy.dex);
+    const auto* realEnemyForm = PokerogueContent::findFormById(realEnemy.formId);
+    double realExp = 0.0;
+    if (!realEnemySpecies || pokemonExperienceForDefeat(*realEnemySpecies, realEnemy.level, realExp,
+            realEnemyForm) != PokemonExperienceResult::Ok) return 522;
+    PokemonExperienceProgress expectedPartyExp[2]{};
+    for (uint8_t member = 0; member < 2; ++member) {
+        const auto& saved = sharedVictory.playerParty[member];
+        const auto* species = PokerogueContent::findSpeciesByDex(saved.speciesDex);
+        PokemonParticipantExperiencePolicy policy{};
+        policy.resolved = true; policy.participantCount = 2; policy.participated = true;
+        policy.eligible = saved.hp && saved.level < classicExperienceLevelCap(sharedVictory.wave);
+        uint32_t award = 0;
+        if (!species || pokemonParticipantExperience(realExp, sharedVictory.trainerPartyCount != 0,
+                policy, award) != PokemonExperienceResult::Ok ||
+            applyPokemonExperience(species->growthRate, saved.level, saved.experience, award,
+                classicExperienceLevelCap(sharedVictory.wave), expectedPartyExp[member]) !=
+                PokemonExperienceResult::Ok) return 523;
+    }
+    FirstRunRuntime sharedExpGame(1);
+    if (!sharedExpGame.restoreNativeRunSave(sharedVictory) || !sharedExpGame.advanceBattleTurn() ||
+        !sharedExpGame.experienceGranted()) return 524;
+    for (uint8_t member = 0; member < 2; ++member) {
+        const auto* actor = sharedExpGame.playerPartyMember(member);
+        if (!actor || actor->level != expectedPartyExp[member].level ||
+            actor->totalExperience != expectedPartyExp[member].totalExperience) return 525;
+    }
+    for (unsigned decision = 0; decision < 512 &&
+            (sharedExpGame.moveLearningPending() || sharedExpGame.evolutionPending()); ++decision)
+        if (!sharedExpGame.skipVictoryReward()) return 526;
+    if (sharedExpGame.moveLearningPending() || sharedExpGame.evolutionPending()) return 527;
+    NativeRunSave sharedExpCheckpoint{};
+    sharedExpGame.captureNativeRunSave(sharedExpCheckpoint);
+    FirstRunRuntime sharedExpReloaded(2);
+    if (sharedExpCheckpoint.stage != NativeSaveStage::ExperienceGranted ||
+        !sharedExpReloaded.restoreNativeRunSave(sharedExpCheckpoint)) return 528;
+    for (uint8_t member = 0; member < 2; ++member)
+        if (sharedExpReloaded.playerPartyMember(member)->totalExperience !=
+                expectedPartyExp[member].totalExperience) return 529;
+    NativeRunSave singleVictory = sharedVictory;
+    singleVictory.participantCount = 1;
+    singleVictory.participantIds[0] = singleVictory.playerParty[0].pokemonId;
+    singleVictory.participantIds[1] = 0;
+    FirstRunRuntime singleExpGame(3);
+    if (!singleExpGame.restoreNativeRunSave(singleVictory) || !singleExpGame.advanceBattleTurn() ||
+        singleExpGame.playerPartyMember(1)->totalExperience != singleVictory.playerParty[1].experience)
+        return 530;
+    auto unknownVictory = sharedVictory;
+    unknownVictory.participantHistoryResolved = false;
+    unknownVictory.participantCount = 0;
+    for (auto& id : unknownVictory.participantIds) id = 0;
+    FirstRunRuntime unknownExpGame(4);
+    if (!unknownExpGame.restoreNativeRunSave(unknownVictory) || unknownExpGame.advanceBattleTurn() ||
+        unknownExpGame.playerPartyMember(0)->totalExperience != unknownVictory.playerParty[0].experience ||
+        unknownExpGame.playerPartyMember(1)->totalExperience != unknownVictory.playerParty[1].experience)
+        return 531;
     // Restore a captured actor as active without granting it the starter's EXP.
     NativeRunSave reserveActiveSave = capturedPartySave;
     reserveActiveSave.activePlayerMember = 1;
