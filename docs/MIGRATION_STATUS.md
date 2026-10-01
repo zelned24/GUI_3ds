@@ -1102,3 +1102,9 @@
 1. Host usa presentationStage del estado vivo en lugar de construir NativeRunSave cada frame. Evita copias/asignaciones de almacenamiento en el loop visual; no afirma que la fase mostrada sea serializable.
 2. Save QuickJS con progress delega directamente en saveNativeProgress; fallback propaga resultado captureNativeRunSave antes de validar/escribir. Ya no duplica captura de checkpoint ni transforma falta de memoria/fase no soportada en referencia inválida.
 3. Regresión nativa 627 y comprobación estática JS del bloque de proyección escritas, sin ejecutar. Rendimiento real y consumo de memoria requieren etapa final en Old 3DS.
+
+## Memoria de comandos storage QuickJS — pendiente de ejecución
+
+1. Save/load/export/import adquieren envelope en heap con nothrow antes de procesar comandos. Fallo retorna MemoryUnavailable sin escribir ni sustituir run viva.
+2. Lectura de generación después de save reutiliza el workspace del comando en lugar de un segundo envelope. Preflight del runtime importado y referencias de perfil permanecen intactos.
+3. Comprobación estática JS escrita para propiedad y orden del guard, sin ejecutar. No sustituye inyección de OOM ni pruebas del binario/hardware pendientes.

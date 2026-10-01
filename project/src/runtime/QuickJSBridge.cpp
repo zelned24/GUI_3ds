@@ -11,6 +11,7 @@
 #include <cstring>
 #include <cerrno>
 #include <new>
+#include <memory>
 #include <sys/stat.h>
 #include <unistd.h>
 
@@ -479,7 +480,13 @@ bool QuickJSBridge::processPendingAction() {
         }
     } else if (action == 206 || action == 207) {
         NativeSaveResult status = NativeSaveResult::InvalidRecord;
-        NativeRunSave save{};
+        std::unique_ptr<NativeRunSave> saveStorage(new (std::nothrow) NativeRunSave{});
+        if (!saveStorage) {
+            std::snprintf(m_actionFeedback, sizeof(m_actionFeedback), "%s",
+                nativeSaveResultName(NativeSaveResult::MemoryUnavailable));
+            return false;
+        }
+        auto& save = *saveStorage;
         if (m_progress && m_bundleStorage && m_bundleWorkspace && m_profileStaging) {
             if (action == 206) {
                 status = m_game->saveNativeProgress(*m_progress);
@@ -511,7 +518,13 @@ bool QuickJSBridge::processPendingAction() {
             action == 206 ? "Export" : "Import", nativeSaveResultName(status));
     } else if (action == 204 || action == 205) {
         NativeSaveResult status = NativeSaveResult::NotFound;
-        NativeRunSave save{};
+        std::unique_ptr<NativeRunSave> saveStorage(new (std::nothrow) NativeRunSave{});
+        if (!saveStorage) {
+            std::snprintf(m_actionFeedback, sizeof(m_actionFeedback), "%s",
+                nativeSaveResultName(NativeSaveResult::MemoryUnavailable));
+            return false;
+        }
+        auto& save = *saveStorage;
         if (m_saves) {
             if (action == 204) {
                 if (m_progress) status = m_game->saveNativeProgress(*m_progress);
@@ -522,9 +535,9 @@ bool QuickJSBridge::processPendingAction() {
                     if (status == NativeSaveResult::Ok) status = m_saves->save(save);
                 }
                 if (status == NativeSaveResult::Ok) {
-                    NativeRunSave stored{};
-                    if (m_saves->load(PokerogueContent::kContentHash, stored) == NativeSaveResult::Ok)
-                        m_journalGeneration = stored.generation;
+                    // Reuse command workspace after commit; no second envelope.
+                    if (m_saves->load(PokerogueContent::kContentHash, save) == NativeSaveResult::Ok)
+                        m_journalGeneration = save.generation;
                 }
             } else {
                 if (m_progress && m_profiles && m_friendshipPolicy)

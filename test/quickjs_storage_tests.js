@@ -185,4 +185,16 @@ export function registerQuickJsStorageTests(register) {
     assert.ok(!projection.includes('NativeRunSave snapshot'));
   });
 
+  register('QuickJS storage: command envelopes have checked ownership', () => {
+    const bridge = readFileSync(new URL('../project/src/runtime/QuickJSBridge.cpp', import.meta.url), 'utf8');
+    const start = bridge.indexOf('} else if (action == 206 || action == 207)');
+    const end = bridge.indexOf('} else if (action == -1 || action == 100)', start);
+    assert.ok(start >= 0 && end > start);
+    const storage = bridge.slice(start, end);
+    assert.equal((storage.match(/if \(!saveStorage\)/g) || []).length, 2);
+    assert.ok(!storage.includes('NativeRunSave save{}'));
+    assert.ok(!storage.includes('NativeRunSave stored{}'));
+    assert.ok(storage.indexOf('if (!saveStorage)') < storage.indexOf('m_game->saveNativeProgress'));
+  });
+
 }
