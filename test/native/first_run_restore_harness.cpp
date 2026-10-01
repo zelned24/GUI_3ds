@@ -372,6 +372,19 @@ static int checkStatusActionAdmission() {
                 game.presentation().enemy.battleState.status.present ||
                 game.captureNativeRunSave(afterAction) != NativeSaveResult::Ok ||
                 afterAction.battleTurn != beforeAction.battleTurn) return 9382;
+            auto blockedGrowl = checkpoint;
+            blockedGrowl.playerMoveIds[0] = blockedGrowl.playerParty[0].moveIds[0] = 45;
+            blockedGrowl.playerPp[0] = blockedGrowl.playerParty[0].pp[0] =
+                blockedGrowl.playerParty[0].maxPp[0] = 40;
+            FirstRunRuntime rejectedGrowl(seed);
+            NativeRunSave rejectedBefore{}, rejectedAfter{};
+            if (!rejectedGrowl.restoreNativeRunSave(blockedGrowl) ||
+                rejectedGrowl.captureNativeRunSave(rejectedBefore) != NativeSaveResult::Ok ||
+                rejectedGrowl.battleInputSupported() || rejectedGrowl.advanceBattleTurn() ||
+                rejectedGrowl.captureNativeRunSave(rejectedAfter) != NativeSaveResult::Ok ||
+                rejectedAfter.playerPp[0] != 40 || rejectedAfter.battleTurn != rejectedBefore.battleTurn ||
+                rejectedAfter.playerHp != rejectedBefore.playerHp || rejectedAfter.enemyHp != rejectedBefore.enemyHp ||
+                rejectedAfter.enemyStatStages[0] != rejectedBefore.enemyStatStages[0]) return 9541;
             checkedRejection = true;
         } else {
             if (!game.battleInputSupported()) continue;
@@ -445,6 +458,7 @@ static int checkStatusActionAdmission() {
             FirstRunRuntime growl(seed), repeatedGrowl(seed);
             NativeRunSave growlAfter{}, repeatedGrowlAfter{};
             if (!growl.restoreNativeRunSave(growlCheckpoint) || !repeatedGrowl.restoreNativeRunSave(growlCheckpoint) ||
+                !growl.battleInputSupported() || !repeatedGrowl.battleInputSupported() ||
                 !growl.advanceBattleTurn() || !repeatedGrowl.advanceBattleTurn() ||
                 growl.captureNativeRunSave(growlAfter) != NativeSaveResult::Ok ||
                 repeatedGrowl.captureNativeRunSave(repeatedGrowlAfter) != NativeSaveResult::Ok ||

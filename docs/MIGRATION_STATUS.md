@@ -1782,3 +1782,9 @@
 1. Revisión de FirstRunRuntime detectó que la rama StatStageStatusCommand omitía las etapas ACC/EVA al componer precisión. Ahora reutiliza composePokemonStatusAccuracyStagePolicy y los flags de bypass inspeccionados del pinned, igual que las acciones de estado.
 2. Perfiles de precisión pendientes no se interpretan como ausencia de callbacks; ejecución falla de forma transaccional. USER no hace comprobación de precisión contra oponente. La admisión anticipada completa de esta rama y ataques con StatStageChangeAttr después del daño siguen pendientes.
 3. Regresión Growl con ACC -6/EVA +6 y encuentro real compara replay de PP, HP y etapas. Compositor ya tiene regresiones de clamp y bypass escritas. Tests y compilación aún aplazados; no se declara validación ejecutada.
+
+## Preflight compartido de comandos de estadísticas
+
+1. resolveActiveStatStageCommandPolicy extrae la composición existente de precisión/etapas y callbacks de reacciones. supportsActiveBattleMove y executeActiveBattleMove consultan el mismo proveedor antes de admitir/ejecutar el comando, sin consumo RNG ni mutación durante consulta.
+2. Una definición duplicada de efecto y más de dos reacciones por actor fallan explícitamente; el antiguo bucle omitía reacciones adicionales. Dobles/modifiers y estadísticas no resueltas requieren dispatcher antes de habilitar estas acciones; no se declara cobertura de esos contextos.
+3. Regresiones Growl escritas para admisión resuelta y rechazo de habilidades pendientes preservando HP, PP, etapas y turno. Tests/compilación siguen aplazados. Ataques con StatStageChangeAttr tras daño y demás pendientes Classic aún no están completos.

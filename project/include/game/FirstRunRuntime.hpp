@@ -15,6 +15,7 @@
 #include <string>
 
 namespace Pokerogue3DS {
+struct PokemonStatStageCommandPolicy;
 class NativeProgressStore;
 class PokerogueRngAdapter;
 class NativeStarterCandyStore;
@@ -226,6 +227,9 @@ private:
     bool executeActiveBattleMove(uint8_t userIndex, uint8_t targetIndex, uint8_t moveSlot, PokerogueRngAdapter& rng, const PokemonPpPolicy* ppOverride = nullptr);
     bool supportsActiveBattleMove(const PokemonBattleState& user,
         const PokemonBattleState& opponent, uint16_t moveId) const;
+    bool resolveActiveStatStageCommandPolicy(const PokemonBattleState& user,
+        const PokemonBattleState& opponent, uint16_t moveId, uint8_t ppCost,
+        PokemonStatStageCommandPolicy& output) const;
     bool resolveActiveStatusCommandPolicies(const PokemonBattleState& user,
         const PokemonBattleState& opponent, uint16_t moveId, uint8_t ppCost,
         PokemonStatusEffectCommandPolicy& command, PokemonPostSetStatusPolicy& reactions) const;

@@ -1115,9 +1115,108 @@ bool FirstRunRuntime::resolveActiveStatusCommandPolicies(const PokemonBattleStat
     return true;
 }
 
+bool FirstRunRuntime::resolveActiveStatStageCommandPolicy(const PokemonBattleState& user,
+    const PokemonBattleState& opponent, uint16_t moveId, uint8_t ppCost,
+    PokemonStatStageCommandPolicy& output) const {
+    const auto* move = PokerogueContent::findMoveById(moveId);
+    if (!move || !supportsPokemonStatStageMove(moveId) || m_doubleBattle || m_heldModifierCount ||
+        !user.statsAreBaseFormulaOnly || !opponent.statsAreBaseFormulaOnly) return false;
+    const bool self = std::strcmp(move->target, "USER") == 0;
+    PokemonStatStageCommandPolicy policy{};
+    policy.move.hitPolicyResolved = true;
+    policy.move.ppCost = self ? 1 : ppCost;
+    policy.move.stagePolicy.resolved = true;
+    policy.postChangePoliciesResolved = true;
+    if (!self) {
+        PokemonMoveWeatherContext weatherContext{};
+        PokemonHitPolicy hit{};
+        const PokemonWeatherAbilityComponent activeAbilities[2] = {
+            {user.abilityId, true, true},
+            {opponent.abilityId, true, false}
+        };
+        if (!resolveActiveMoveWeather(user, opponent, weatherContext) ||
+            !composePokemonAlwaysHitPolicy(activeAbilities, 2, hit, move->id, &weatherContext)) return false;
+        policy.move.blockedBeforeAccuracy = hit.blockedByAbility;
+        policy.move.bypassAccuracy = hit.bypassAccuracy || move->accuracy < 0;
+        PokemonStatusMoveHitPolicy baseAccuracy{}, stagedAccuracy{};
+        baseAccuracy.resolved = true;
+        baseAccuracy.accuracyMultiplier = hit.accuracyMultiplier;
+        bool ignoreUserAccuracy = false, ignoreTargetEvasion = false;
+        bool userAccuracyResolved = false, targetAccuracyResolved = false;
+        for (const auto& profile : PokerogueContent::kStatusActionAbilityProfiles) {
+            if (profile.abilityId == user.abilityId) {
+                userAccuracyResolved = profile.resolved;
+                ignoreTargetEvasion = profile.ignoresOpponentEvasion;
+            }
+            if (profile.abilityId == opponent.abilityId) {
+                targetAccuracyResolved = profile.resolved;
+                ignoreUserAccuracy = profile.ignoresOpponentAccuracy;
+            }
+        }
+        if (!userAccuracyResolved || !targetAccuracyResolved ||
+            !composePokemonStatusAccuracyStagePolicy(user, opponent, baseAccuracy, stagedAccuracy,
+                ignoreUserAccuracy, ignoreTargetEvasion)) return false;
+        policy.move.accuracyMultiplier = stagedAccuracy.accuracyMultiplier;
+    }
+
+    const auto* userProfile = PokerogueContent::findAbilityStatStageProfile(user.abilityId);
+    const auto* opponentProfile = PokerogueContent::findAbilityStatStageProfile(opponent.abilityId);
+    const auto* recipientProfile = self ? userProfile : opponentProfile;
+    const auto* observerProfile = self ? opponentProfile : userProfile;
+    const auto& recipient = self ? user : opponent;
+    const auto& source = user;
+
+    const ResolvedStatStageAbilityComponent recipientComp[] = {{recipientProfile, recipientProfile != nullptr}};
+    const ResolvedStatStageAbilityComponent sourceComp[] = {{userProfile, userProfile != nullptr}};
+    const ResolvedStatStageAbilityComponent observerComp[] = {{observerProfile, observerProfile != nullptr}};
+
+    const PokerogueContent::MoveStatStageEffect* effect = nullptr;
+    for (const auto& row : PokerogueContent::kMoveStatStageEffects)
+        if (row.moveId == move->id && row.selfTarget == self) {
+            if (effect) return false;
+            effect = &row;
+        }
+    if (!effect || !composePokemonStatStageAbilityPolicy(*effect, recipientComp, 1, false,
+            policy.move.stagePolicy, true)) return false;
+
+    const PokerogueContent::MoveStatStageEffect reaction{move->id, 127, 1, true};
+    policy.recipientReaction.resolved = policy.sourceReaction.resolved =
+        policy.reflection.resolved = policy.opponentCopy.resolved = true;
+    if (!composePokemonStatStageAbilityPolicy(reaction, recipientComp, 1, false, policy.recipientReaction) ||
+        !composePokemonStatStageAbilityPolicy(reaction, sourceComp, 1, false, policy.reflection) ||
+        !composePokemonStatStageAbilityPolicy(reaction, sourceComp, 1, false, policy.sourceReaction) ||
+        !composePokemonStatStageAbilityPolicy(reaction, observerComp, 1, false, policy.opponentCopy)) return false;
+    policy.opponentCopyProfile = observerProfile;
+
+    uint8_t recipientCount = 0;
+    for (const auto& row : PokerogueContent::kAbilityStatStageReactions)
+        if (row.abilityId == recipient.abilityId) {
+            if (recipientCount >= 2) return false;
+            policy.recipientReactions[recipientCount++] = &row;
+        }
+
+    uint8_t sourceCount = 0;
+    for (const auto& row : PokerogueContent::kAbilityStatStageReactions)
+        if (row.abilityId == source.abilityId) {
+            if (sourceCount >= 2) return false;
+            policy.sourceReactions[sourceCount++] = &row;
+        }
+
+    output = policy;
+    return true;
+}
+
 bool FirstRunRuntime::supportsActiveBattleMove(const PokemonBattleState& user,
     const PokemonBattleState& opponent, uint16_t moveId) const {
     if (!supportsBaselineBattleMove(moveId)) return false;
+    if (supportsPokemonStatStageMove(moveId)) {
+        const auto* move = PokerogueContent::findMoveById(moveId);
+        uint8_t ppCost = 1;
+        PokemonStatStageCommandPolicy policy{};
+        return move && (!std::strcmp(move->target, "USER") ||
+            pokemonSingleOpponentPpCost(opponent.abilityId, ppCost)) &&
+            resolveActiveStatStageCommandPolicy(user, opponent, moveId, ppCost, policy);
+    }
     if (const auto* effect = singleDamageStatusEffect(moveId)) {
         PokemonStatusRecipientPolicies recipient{}, source{};
         PokemonPostSetStatusPolicy reactions{};
@@ -2517,80 +2616,8 @@ bool FirstRunRuntime::executeActiveBattleMove(uint8_t userIndex, uint8_t targetI
         return true;
     }
     if (supportsPokemonStatStageMove(move->id)) {
-        const bool self = std::strcmp(move->target, "USER") == 0;
         PokemonStatStageCommandPolicy policy{};
-        policy.move.hitPolicyResolved = true;
-        policy.move.ppCost = self ? 1 : pp.cost;
-        policy.move.stagePolicy.resolved = true;
-        policy.postChangePoliciesResolved = true;
-        if (!self) {
-            PokemonMoveWeatherContext weatherContext{};
-            PokemonHitPolicy hit{};
-            const PokemonWeatherAbilityComponent activeAbilities[2] = {
-                {user.abilityId, true, true},
-                {opponent.abilityId, true, false}
-            };
-            if (!resolveActiveMoveWeather(user, opponent, weatherContext) ||
-                !composePokemonAlwaysHitPolicy(activeAbilities, 2, hit, move->id, &weatherContext)) return false;
-            policy.move.blockedBeforeAccuracy = hit.blockedByAbility;
-            policy.move.bypassAccuracy = hit.bypassAccuracy || move->accuracy < 0;
-            PokemonStatusMoveHitPolicy baseAccuracy{}, stagedAccuracy{};
-            baseAccuracy.resolved = true;
-            baseAccuracy.accuracyMultiplier = hit.accuracyMultiplier;
-            bool ignoreUserAccuracy = false, ignoreTargetEvasion = false;
-            bool userAccuracyResolved = false, targetAccuracyResolved = false;
-            for (const auto& profile : PokerogueContent::kStatusActionAbilityProfiles) {
-                if (profile.abilityId == user.abilityId) {
-                    userAccuracyResolved = profile.resolved;
-                    ignoreTargetEvasion = profile.ignoresOpponentEvasion;
-                }
-                if (profile.abilityId == opponent.abilityId) {
-                    targetAccuracyResolved = profile.resolved;
-                    ignoreUserAccuracy = profile.ignoresOpponentAccuracy;
-                }
-            }
-            if (!userAccuracyResolved || !targetAccuracyResolved ||
-                !composePokemonStatusAccuracyStagePolicy(user, opponent, baseAccuracy, stagedAccuracy,
-                    ignoreUserAccuracy, ignoreTargetEvasion)) return false;
-            policy.move.accuracyMultiplier = stagedAccuracy.accuracyMultiplier;
-        }
-
-        const auto* userProfile = PokerogueContent::findAbilityStatStageProfile(user.abilityId);
-        const auto* opponentProfile = PokerogueContent::findAbilityStatStageProfile(opponent.abilityId);
-        const auto* recipientProfile = self ? userProfile : opponentProfile;
-        const auto* observerProfile = self ? opponentProfile : userProfile;
-        const auto& recipient = self ? user : opponent;
-        const auto& source = user;
-
-        const ResolvedStatStageAbilityComponent recipientComp[] = {{recipientProfile, recipientProfile != nullptr}};
-        const ResolvedStatStageAbilityComponent sourceComp[] = {{userProfile, userProfile != nullptr}};
-        const ResolvedStatStageAbilityComponent observerComp[] = {{observerProfile, observerProfile != nullptr}};
-
-        const PokerogueContent::MoveStatStageEffect* effect = nullptr;
-        for (const auto& row : PokerogueContent::kMoveStatStageEffects)
-            if (row.moveId == move->id && row.selfTarget == self) effect = &row;
-        if (!effect || !composePokemonStatStageAbilityPolicy(*effect, recipientComp, 1, false,
-                policy.move.stagePolicy, true)) return false;
-
-        const PokerogueContent::MoveStatStageEffect reaction{move->id, 127, 1, true};
-        policy.recipientReaction.resolved = policy.sourceReaction.resolved =
-            policy.reflection.resolved = policy.opponentCopy.resolved = true;
-        if (!composePokemonStatStageAbilityPolicy(reaction, recipientComp, 1, false, policy.recipientReaction) ||
-            !composePokemonStatStageAbilityPolicy(reaction, sourceComp, 1, false, policy.reflection) ||
-            !composePokemonStatStageAbilityPolicy(reaction, sourceComp, 1, false, policy.sourceReaction) ||
-            !composePokemonStatStageAbilityPolicy(reaction, observerComp, 1, false, policy.opponentCopy)) return false;
-        policy.opponentCopyProfile = observerProfile;
-
-        uint8_t recipientCount = 0;
-        for (const auto& row : PokerogueContent::kAbilityStatStageReactions)
-            if (row.abilityId == recipient.abilityId && recipientCount < 2)
-                policy.recipientReactions[recipientCount++] = &row;
-
-        uint8_t sourceCount = 0;
-        for (const auto& row : PokerogueContent::kAbilityStatStageReactions)
-            if (row.abilityId == source.abilityId && sourceCount < 2)
-                policy.sourceReactions[sourceCount++] = &row;
-
+        if (!resolveActiveStatStageCommandPolicy(user, opponent, move->id, pp.cost, policy)) return false;
         PokemonStatStageCommandEvent event{};
         if (usePokemonStatStageStatusCommand(user, opponent, moveSlot, policy, rng, event) !=
                 PokemonStatStageEffectResult::Ok) return false;
