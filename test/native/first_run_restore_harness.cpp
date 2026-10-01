@@ -326,6 +326,54 @@ static void setSingleParticipantFixture(Pokerogue3DS::NativeRunSave& save,
 
 // Standalone host regression for atomic checkpoint application. This requires
 // the standard C++ library; it is not the freestanding WASM parity harness.
+static int checkStatusActionAdmission() {
+    using namespace Pokerogue3DS;
+    for (uint32_t seed = 1; seed <= 256; ++seed) {
+        FirstRunRuntime game(seed);
+        const auto& context = game.presentation();
+        if (!context.enemy.actorIdentityResolved || context.secondEnemy.dex || context.trainerPartyCount) continue;
+        const auto* capability = PokerogueContent::findAbilityMovegenProfile(context.player.battleState.abilityId);
+        if (!capability || capability->bossDamageCallbacksResolved) continue;
+        NativeRunSave checkpoint{};
+        if (game.captureNativeRunSave(checkpoint) != NativeSaveResult::Ok) return 9380;
+        checkpoint.stage = NativeSaveStage::BattleActive;
+        checkpoint.battleTurn = 1;
+        checkpoint.encounterDex = context.enemy.dex;
+        checkpoint.playerHp = context.player.battleState.hp;
+        checkpoint.enemyHp = context.enemy.battleState.hp;
+        checkpoint.playerMoveCount = 1;
+        checkpoint.playerMoveIds[0] = 95; // Explicit test-only Hypnosis injection.
+        checkpoint.playerPp[0] = 20;
+        checkpoint.enemyMoveCount = context.enemy.battleState.moveCount;
+        for (uint8_t slot = 0; slot < checkpoint.enemyMoveCount; ++slot) {
+            checkpoint.enemyMoveIds[slot] = context.enemy.battleState.moves[slot].moveId;
+            checkpoint.enemyPp[slot] = context.enemy.battleState.moves[slot].pp;
+        }
+        for (uint8_t slot = 1; slot < 4; ++slot) {
+            checkpoint.playerMoveIds[slot] = 0;
+            checkpoint.playerPp[slot] = 0;
+        }
+        auto injectedActor = context.player.battleState;
+        injectedActor.moveCount = 1;
+        injectedActor.moves[0] = {95, 20, 20};
+        for (uint8_t slot = 1; slot < 4; ++slot) injectedActor.moves[slot] = {};
+        checkpoint.playerPartyCount = 1;
+        checkpoint.activePlayerMember = 0;
+        if (!captureNativePokemonActorSave(injectedActor, context.player.actor,
+                context.player.totalExperience, checkpoint.playerParty[0])) return 9385;
+        if (!game.restoreNativeRunSave(checkpoint)) return 9381;
+        NativeRunSave beforeAction{}, afterAction{};
+        if (game.captureNativeRunSave(beforeAction) != NativeSaveResult::Ok) return 9384;
+        if (game.battleInputSupported() || game.advanceBattleTurn() ||
+            game.presentation().player.battleState.moves[0].pp != 20 ||
+            game.presentation().enemy.battleState.status.present ||
+            game.captureNativeRunSave(afterAction) != NativeSaveResult::Ok ||
+            afterAction.battleTurn != beforeAction.battleTurn) return 9382;
+        return 0;
+    }
+    return 9383; // Missing real encounter is a failure, not skipped coverage.
+}
+
 static int checkTrainerExperienceReplay() {
     using namespace Pokerogue3DS;
     for (uint32_t seed = 1; seed <= 256; ++seed) {
@@ -2642,6 +2690,9 @@ static int checkCanonicalTrainerSignatureSlots() {
 }
 
 int main() {
+    const int statusAdmissionCheck = checkStatusActionAdmission();
+    if (statusAdmissionCheck) return statusAdmissionCheck;
+
     const int bossCapabilitiesCheck = checkBossDamageAbilityCapabilities();
     if (bossCapabilitiesCheck) return bossCapabilitiesCheck;
     const int parentThresholdCheck = checkTrainerParentEvolutionThresholds();

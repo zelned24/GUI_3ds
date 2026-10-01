@@ -224,6 +224,11 @@ private:
     void removeParticipant(uint32_t pokemonId);
     bool executeActiveBattleMove(bool enemyActs, uint8_t moveSlot, PokerogueRngAdapter& rng);
     bool executeActiveBattleMove(uint8_t userIndex, uint8_t targetIndex, uint8_t moveSlot, PokerogueRngAdapter& rng, const PokemonPpPolicy* ppOverride = nullptr);
+    bool supportsActiveBattleMove(const PokemonBattleState& user,
+        const PokemonBattleState& opponent, uint16_t moveId) const;
+    bool resolveActiveStatusCommandPolicies(const PokemonBattleState& user,
+        const PokemonBattleState& opponent, uint16_t moveId, uint8_t ppCost,
+        PokemonStatusEffectCommandPolicy& command, PokemonPostSetStatusPolicy& reactions) const;
     double scoreActiveEnemyMove(const PokemonBattleState& user,
         const PokemonBattleState& target, const PokerogueContent::Move& move) const;
     bool resolveActiveStatusRecipientPolicies(const PokemonBattleState& recipient,

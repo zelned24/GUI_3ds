@@ -1015,6 +1015,64 @@ bool FirstRunRuntime::resolveActiveStatusRecipientPolicies(const PokemonBattleSt
         own, 1, nullptr, 0, sourceAbilities, 1, output);
 }
 
+bool FirstRunRuntime::resolveActiveStatusCommandPolicies(const PokemonBattleState& user,
+    const PokemonBattleState& opponent, uint16_t moveId, uint8_t ppCost,
+    PokemonStatusEffectCommandPolicy& commandOutput, PokemonPostSetStatusPolicy& reactionsOutput) const {
+    const auto* move = PokerogueContent::findMoveById(moveId);
+    const auto* effect = singleOpponentStatusEffect(moveId);
+    if (!move || !effect) return false;
+    PokemonStatusRecipientPolicies recipientPolicies{}, sourcePolicies{};
+    const auto status = static_cast<PokemonStatusEffect>(effect->effectId);
+    if (!resolveActiveStatusRecipientPolicies(opponent, user, status, recipientPolicies) ||
+        !resolveActiveStatusRecipientPolicies(user, opponent, status, sourcePolicies)) return false;
+    PokemonPostSetStatusPolicy reactions{};
+    if (!resolvePokemonPostSetStatusPolicy(opponent, user, status, recipientPolicies,
+            sourcePolicies, true, true, true, reactions)) return false;
+    PokemonStatusEffectCommandPolicy command{};
+    command.reactionsResolved = true;
+    command.move.application = recipientPolicies.status;
+    command.move.chanceCallbacksResolved = true;
+    command.move.effectiveChance = move->upstreamChance;
+    command.move.ppCost = ppCost;
+    PokemonMoveWeatherContext weather{};
+    PokemonHitPolicy hit{};
+    const PokemonWeatherAbilityComponent abilities[] = {
+        {user.abilityId, true, true}, {opponent.abilityId, true, false}
+    };
+    if (!resolveActiveMoveWeather(user, opponent, weather) ||
+        !composePokemonAlwaysHitPolicy(abilities, 2, hit, move->id, &weather)) return false;
+    command.move.hit.resolved = true;
+    command.move.hit.blockedBeforeAccuracy = hit.blockedByAbility;
+    command.move.hit.bypassAccuracy = hit.bypassAccuracy || move->accuracy < 0;
+    command.move.hit.accuracyMultiplier = hit.accuracyMultiplier;
+    if (!composePokemonStatusAccuracyStagePolicy(user, opponent, command.move.hit, command.move.hit)) return false;
+    const auto* form = PokerogueContent::findFormById(opponent.formId);
+    if (!form) return false;
+    const char* types[] = {form->type1, form->type2};
+    PokemonStatusMoveTypeImmunityPolicy typePolicy{};
+    typePolicy.resolved = typePolicy.opponents = true;
+    typePolicy.originalIfStellarTypes = types;
+    typePolicy.typeCount = types[1] && types[1][0] ? 2 : 1;
+    const PokemonStatusAbilityComponent defenders[] = {{opponent.abilityId, true, true}};
+    if (!composePokemonStatusMoveTypeHitPolicy(move->id, command.move.hit, typePolicy, command.move.hit) ||
+        !composePokemonStatusFlagAbilityHitPolicy(move->id, command.move.hit, false,
+            defenders, 1, command.move.hit)) return false;
+    commandOutput = command;
+    reactionsOutput = reactions;
+    return true;
+}
+
+bool FirstRunRuntime::supportsActiveBattleMove(const PokemonBattleState& user,
+    const PokemonBattleState& opponent, uint16_t moveId) const {
+    if (!supportsBaselineBattleMove(moveId)) return false;
+    if (!singleOpponentStatusEffect(moveId)) return true;
+    uint8_t ppCost = 1;
+    PokemonStatusEffectCommandPolicy command{};
+    PokemonPostSetStatusPolicy reactions{};
+    return pokemonSingleOpponentPpCost(opponent.abilityId, ppCost) &&
+        resolveActiveStatusCommandPolicies(user, opponent, moveId, ppCost, command, reactions);
+}
+
 double FirstRunRuntime::scoreActiveEnemyMove(const PokemonBattleState& user,
     const PokemonBattleState& target, const PokerogueContent::Move& move) const {
     const auto* effect = singleOpponentStatusEffect(move.id);
@@ -1119,7 +1177,7 @@ bool FirstRunRuntime::trainerBattleSupported() const {
     for (uint8_t i = 0; i < activeEnemy.moveCount; ++i) {
         const auto& move = activeEnemy.moves[i];
         if (!move.pp) continue;
-        if (!supportsBaselineBattleMove(move.moveId) || !weatherMoveAllowed(move.moveId) ||
+        if (!supportsActiveBattleMove(m_context.enemy.battleState, m_context.player.battleState, move.moveId) || !weatherMoveAllowed(move.moveId) ||
             (damageDrainProfile(move.moveId) && hasCanonicalReverseDrain(m_context.player.battleState.abilityId))) {
             return false;
         }
@@ -1150,7 +1208,7 @@ bool FirstRunRuntime::doubleBattleSupported() const {
         for (uint8_t i = 0; i < m_context.enemy.battleState.moveCount; ++i) {
             const auto& move = m_context.enemy.battleState.moves[i];
             if (!move.pp) continue;
-            if (!supportsBaselineBattleMove(move.moveId) || !weatherMoveAllowed(move.moveId) ||
+            if (!supportsActiveBattleMove(m_context.enemy.battleState, m_context.player.battleState, move.moveId) || !weatherMoveAllowed(move.moveId) ||
                 (damageDrainProfile(move.moveId) && hasCanonicalReverseDrain(m_context.player.battleState.abilityId))) return false;
             ++enemy0Usable;
         }
@@ -1163,7 +1221,7 @@ bool FirstRunRuntime::doubleBattleSupported() const {
         for (uint8_t i = 0; i < m_context.secondEnemy.battleState.moveCount; ++i) {
             const auto& move = m_context.secondEnemy.battleState.moves[i];
             if (!move.pp) continue;
-            if (!supportsBaselineBattleMove(move.moveId) || !weatherMoveAllowed(move.moveId) ||
+            if (!supportsActiveBattleMove(m_context.secondEnemy.battleState, m_context.player.battleState, move.moveId) || !weatherMoveAllowed(move.moveId) ||
                 (damageDrainProfile(move.moveId) && hasCanonicalReverseDrain(m_context.player.battleState.abilityId))) return false;
             ++enemy1Usable;
         }
@@ -1175,7 +1233,7 @@ bool FirstRunRuntime::doubleBattleSupported() const {
 
     if (m_selectedBattleMove >= m_context.player.battleState.moveCount) return false;
     const auto& playerMove = m_context.player.battleState.moves[m_selectedBattleMove];
-    if (!playerMove.pp || !supportsBaselineBattleMove(playerMove.moveId) || !weatherMoveAllowed(playerMove.moveId)) return false;
+    if (!playerMove.pp || !supportsActiveBattleMove(m_context.player.battleState, m_context.enemy.battleState, playerMove.moveId) || !weatherMoveAllowed(playerMove.moveId)) return false;
     if (damageDrainProfile(playerMove.moveId) &&
         (hasCanonicalReverseDrain(m_context.enemy.battleState.abilityId) ||
          hasCanonicalReverseDrain(m_context.secondEnemy.battleState.abilityId))) return false;
@@ -1198,13 +1256,14 @@ bool FirstRunRuntime::battleInputSupported() const {
     for (uint8_t i = 0; i < m_context.enemy.battleState.moveCount; ++i) {
         const auto& move = m_context.enemy.battleState.moves[i];
         if (!move.pp) continue;
-        if (!supportsBaselineBattleMove(move.moveId) || !weatherMoveAllowed(move.moveId) ||
+        if (!supportsActiveBattleMove(m_context.enemy.battleState, m_context.player.battleState, move.moveId) || !weatherMoveAllowed(move.moveId) ||
             (damageDrainProfile(move.moveId) && hasCanonicalReverseDrain(m_context.player.battleState.abilityId))) return false;
         ++enemyUsable;
     }
     return enemyUsable && m_selectedBattleMove < m_context.player.battleState.moveCount &&
         m_context.player.battleState.moves[m_selectedBattleMove].pp &&
-        supportsBaselineBattleMove(m_context.player.battleState.moves[m_selectedBattleMove].moveId) &&
+        supportsActiveBattleMove(m_context.player.battleState, m_context.enemy.battleState,
+            m_context.player.battleState.moves[m_selectedBattleMove].moveId) &&
         weatherMoveAllowed(m_context.player.battleState.moves[m_selectedBattleMove].moveId) &&
         !(damageDrainProfile(m_context.player.battleState.moves[m_selectedBattleMove].moveId) &&
           hasCanonicalReverseDrain(m_context.enemy.battleState.abilityId));
@@ -2320,42 +2379,10 @@ bool FirstRunRuntime::executeActiveBattleMove(uint8_t userIndex, uint8_t targetI
         m_battleFeedback = event.changed ? "Weather changed" : "Weather move failed";
         return true;
     }
-    if (const auto* effect = singleOpponentStatusEffect(move->id)) {
-        PokemonStatusRecipientPolicies recipientPolicies{}, sourcePolicies{};
-        const auto status = static_cast<PokemonStatusEffect>(effect->effectId);
-        if (!resolveActiveStatusRecipientPolicies(opponent, user, status, recipientPolicies) ||
-            !resolveActiveStatusRecipientPolicies(user, opponent, status, sourcePolicies)) return false;
-        PokemonPostSetStatusPolicy reactions{};
-        if (!resolvePokemonPostSetStatusPolicy(opponent, user, status, recipientPolicies,
-                sourcePolicies, true, true, true, reactions)) return false;
+    if (singleOpponentStatusEffect(move->id)) {
         PokemonStatusEffectCommandPolicy command{};
-        command.reactionsResolved = true;
-        command.move.application = recipientPolicies.status;
-        command.move.chanceCallbacksResolved = true;
-        command.move.effectiveChance = move->upstreamChance;
-        command.move.ppCost = pp.cost;
-        PokemonMoveWeatherContext weather{};
-        PokemonHitPolicy hit{};
-        const PokemonWeatherAbilityComponent abilities[] = {
-            {user.abilityId, true, true}, {opponent.abilityId, true, false}
-        };
-        if (!resolveActiveMoveWeather(user, opponent, weather) ||
-            !composePokemonAlwaysHitPolicy(abilities, 2, hit, move->id, &weather)) return false;
-        command.move.hit.resolved = true;
-        command.move.hit.blockedBeforeAccuracy = hit.blockedByAbility;
-        command.move.hit.bypassAccuracy = hit.bypassAccuracy || move->accuracy < 0;
-        command.move.hit.accuracyMultiplier = hit.accuracyMultiplier;
-        const auto* form = PokerogueContent::findFormById(opponent.formId);
-        if (!form) return false;
-        const char* types[] = {form->type1, form->type2};
-        PokemonStatusMoveTypeImmunityPolicy typePolicy{};
-        typePolicy.resolved = typePolicy.opponents = true;
-        typePolicy.originalIfStellarTypes = types;
-        typePolicy.typeCount = types[1] && types[1][0] ? 2 : 1;
-        const PokemonStatusAbilityComponent defenders[] = {{opponent.abilityId, true, true}};
-        if (!composePokemonStatusMoveTypeHitPolicy(move->id, command.move.hit, typePolicy, command.move.hit) ||
-            !composePokemonStatusFlagAbilityHitPolicy(move->id, command.move.hit, false,
-                defenders, 1, command.move.hit)) return false;
+        PokemonPostSetStatusPolicy reactions{};
+        if (!resolveActiveStatusCommandPolicies(user, opponent, move->id, pp.cost, command, reactions)) return false;
         PokemonStatusActionEvent event{};
         // Pokemon.randBattleSeedInt delegates to currentBattle: duration and
         // post-set reactions consume the same stream as accuracy/chance.

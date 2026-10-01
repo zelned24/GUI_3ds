@@ -3,6 +3,7 @@
 #include "content/PokerogueRuntimeContent.hpp"
 #include <cstdint>
 #include <cstddef>
+#include <cmath>
 
 namespace Pokerogue3DS {
 
@@ -1032,6 +1033,21 @@ inline bool pokemonAccuracyStageMultiplier(const PokemonBattleState& user,
     if (difference > 6) difference = 6;
     if (difference < -6) difference = -6;
     output = difference >= 0 ? (3.0 + difference) / 3.0 : 3.0 / (3.0 - difference);
+    return true;
+}
+
+// Ability/held-item accuracy callbacks belong to the base policy. This adds
+// actor accuracy/evasion stages for the supported arena context.
+inline bool composePokemonStatusAccuracyStagePolicy(const PokemonBattleState& user,
+    const PokemonBattleState& target, const PokemonStatusMoveHitPolicy& base,
+    PokemonStatusMoveHitPolicy& output) {
+    if (!base.resolved || !std::isfinite(base.accuracyMultiplier) || base.accuracyMultiplier < 0) return false;
+    double stages = 1.0;
+    if (!pokemonAccuracyStageMultiplier(user, target, stages)) return false;
+    auto policy = base;
+    policy.accuracyMultiplier *= stages;
+    if (!std::isfinite(policy.accuracyMultiplier)) return false;
+    output = policy;
     return true;
 }
 

@@ -1684,3 +1684,11 @@
 2. Pokemon.randBattleSeedInt en src/field/pokemon.ts de 8555c08c823b856cbec4eb99ca84ea52a955836d delega a currentBattle. El comando usa el mismo stream para precisión/chance, duración y reacciones.
 3. Selector enemigo consume beneficio canónico con signo invertido entre oponentes. Habilidades no resueltas, dobles, modifiers y campos no representados siguen rechazados; esto no completa Classic.
 4. Regresión Sleep/stream compartido escrita sin ejecutar. Tests, compilación y cobertura end-to-end en Azahar permanecen pendientes por instrucción del usuario.
+
+## Admisión de acciones de estado
+
+1. supportsActiveBattleMove usa resolveActiveStatusCommandPolicies, el mismo proveedor de la ejecución, antes de habilitar entrada individual o de entrenador. Dobles siguen rechazando estas acciones por falta de dispatcher compartido.
+2. La consulta no consume RNG ni modifica actores. Se resuelven también forma, post-set, clima e inmunidades antes de admitir la acción; una declaración canónica reconocida por sí sola no implica soporte runtime.
+3. Regresión escrita con encuentro real y Hypnosis inyectado exclusivamente en test: habilidad con callbacks pendientes debe bloquear entrada y preservar PP/turno/estado. Tests y compilación pendientes.
+
+4. Proveedor de hit incorpora etapas de precisión/evasión del actor mediante el resolver existente; antes solo propagaba el multiplicador de habilidades/clima. Regresiones de clamp ±6 y fallo sin modificar output escritas sin ejecutar.

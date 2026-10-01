@@ -3394,6 +3394,23 @@ extern "C" int runPokemonBattleStateChecks() {
                 pendingDefender, 1, immuneHit) || immuneHit.blockedBeforeAccuracy) return 9352;
     }
 
+    PokemonBattleState accuracyUser{}, accuracyTarget{};
+    accuracyUser.statStages[5] = 6;
+    accuracyTarget.statStages[6] = -6;
+    Pokerogue3DS::PokemonStatusMoveHitPolicy statusAccuracyBase{}, statusAccuracyComposed{};
+    statusAccuracyBase.resolved = true;
+    statusAccuracyBase.accuracyMultiplier = 0.5;
+    if (!Pokerogue3DS::composePokemonStatusAccuracyStagePolicy(accuracyUser, accuracyTarget,
+            statusAccuracyBase, statusAccuracyComposed) || statusAccuracyComposed.accuracyMultiplier != 1.5) return 9390;
+    accuracyUser.statStages[5] = -6;
+    accuracyTarget.statStages[6] = 6;
+    if (!Pokerogue3DS::composePokemonStatusAccuracyStagePolicy(accuracyUser, accuracyTarget,
+            statusAccuracyBase, statusAccuracyComposed) || statusAccuracyComposed.accuracyMultiplier != 1.0 / 6.0) return 9391;
+    statusAccuracyComposed.accuracyMultiplier = 42;
+    accuracyUser.statStages[5] = 7;
+    if (Pokerogue3DS::composePokemonStatusAccuracyStagePolicy(accuracyUser, accuracyTarget,
+            statusAccuracyBase, statusAccuracyComposed) || statusAccuracyComposed.accuracyMultiplier != 42) return 9392;
+
     PokemonBattleState scoredStatusActor{};
     scoredStatusActor.hp = scoredStatusActor.maxHp = 100;
     Pokerogue3DS::PokemonStatusApplicationPolicy scoredStatusPolicy{};
