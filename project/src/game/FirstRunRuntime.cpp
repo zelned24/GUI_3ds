@@ -1911,7 +1911,7 @@ bool FirstRunRuntime::skipVictoryReward() {
 }
 
 bool FirstRunRuntime::skipVictoryRewardInPlace() {
-    if (m_heldModifierCount) {
+    if (!heldHealingInventorySupported(m_heldModifiers.data(), m_heldModifierCount)) {
         m_battleFeedback = "Held modifier effects require native dispatch";
         return false;
     }
@@ -2358,6 +2358,15 @@ bool FirstRunRuntime::advancePlayerAfterDefeat() {
 }
 
 void FirstRunRuntime::resolve(bool carryPlayer) {
+    if (carryPlayer) {
+        uint32_t partyIds[6]{};
+        if (m_context.playerPartyCount > 6) { m_encounterResolved = false; return; }
+        for (uint8_t member = 0; member < m_context.playerPartyCount; ++member)
+            partyIds[member] = member == m_context.activePlayerPartyIndex
+                ? m_context.player.battleState.pokemonId : m_context.playerParty[member].battleState.pokemonId;
+        if (!retainPartyHeldInventory(m_heldModifiers.data(), m_heldModifiers.size(), m_heldModifierCount,
+                partyIds, m_context.playerPartyCount)) { m_encounterResolved = false; return; }
+    }
     m_selectedBattleMove = 0;
     m_turn = 1;
     m_enemySwitchCounter = 0;

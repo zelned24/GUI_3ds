@@ -831,6 +831,13 @@ static int checkWave200FinalBossAndGameClear() {
     if (heldHealingInventorySupported(healingItems, 3)) return 437;
     healingItems[2] = activationItem;
     if (heldHealingInventorySupported(healingItems, 3)) return 438;
+    healingItems[2] = healingItems[0];
+    healingItems[2].ownerPokemonId = 2000;
+    size_t retainedCount = 3;
+    const uint32_t retainedPartyIds[] = {1001};
+    if (!retainPartyHeldInventory(healingItems, 3, retainedCount, retainedPartyIds, 1) ||
+        retainedCount != 2 || healingItems[0].ownerPokemonId != 1001 ||
+        healingItems[1].ownerPokemonId != 1001 || healingItems[2].stackCount) return 442;
     const auto preservedBoss = bossActor;
     if (applyPokemonFixedEnemyMovePp(*firstPhase, bossActor) ||
         bossActor.moves[3].maxPp != preservedBoss.moves[3].maxPp) return 338;

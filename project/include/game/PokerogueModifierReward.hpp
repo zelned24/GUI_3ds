@@ -622,6 +622,25 @@ inline bool heldHealingInventorySupported(const NativeHeldModifierInstance* reco
     return true;
 }
 
+// BattleEndPhase clears enemy held modifiers. Party PIDs retain captured items.
+// Caller has already validated every owner against the encounter/party model.
+inline bool retainPartyHeldInventory(NativeHeldModifierInstance* records, size_t capacity, size_t& count,
+    const uint32_t* partyIds, size_t partyCount) {
+    if ((!records && capacity) || count > capacity || (partyCount && !partyIds)) return false;
+    for (size_t i = 0; i < count; ++i) if (!validateHeldModifierInstance(records[i])) return false;
+    size_t write = 0;
+    const size_t previous = count;
+    for (size_t i = 0; i < previous; ++i) {
+        bool retained = false;
+        for (size_t member = 0; member < partyCount; ++member)
+            retained |= records[i].ownerPokemonId == partyIds[member];
+        if (retained) records[write++] = records[i];
+    }
+    count = write;
+    for (; write < previous; ++write) records[write] = {};
+    return true;
+}
+
 enum class ModifierRewardRollResult : uint8_t {
     Ok, InvalidLuck, MissingWeight, InvalidWeight, EmptyPool, MissingItem
 };
