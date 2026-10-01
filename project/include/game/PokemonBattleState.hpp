@@ -438,7 +438,10 @@ inline bool pokemonBaselineEffectiveStat(const PokemonBattleState& state, uint8_
     double multiplier = 1.0;
     if (!stat || stat > 5 || !state.stats[stat] ||
         !pokemonStatStageMultiplier(state, stat, critical, multiplier)) return false;
-    const uint32_t effective = static_cast<uint32_t>(state.stats[stat] * multiplier);
+    if (!pokemonStatusStateValid(state.status)) return false;
+    uint32_t effective = static_cast<uint32_t>(state.stats[stat] * multiplier);
+    if (stat == 5 && state.status.present && state.status.effect == PokemonStatusEffect::Paralysis)
+        effective >>= 1;
     output = effective ? effective : 1;
     return true;
 }

@@ -1370,3 +1370,8 @@
 
 1. Harness comprueba sleep bloqueado/curado sin draws, bypass sleep con contador real, indirect wake, freeze expirado que aún consume randSeedInt(4), y paralysis con randSeedInt(8) sin incrementar toxicTurnCount.
 2. Compara siguiente uint32 del stream esperado y real para detectar draws omitidos/adicionales; policy no resuelta conserva estado. Pruebas escritas/registradas, sin ejecutar. Conexión al turno y save continúa pendiente; tests/compilación aplazados.
+
+## Velocidad por parálisis conectada a resolvers
+
+1. Pokemon.getStat(SPD) pinned aplica ret >>= 1 después de stages y antes de Unburden. pokemonWeatherEffectiveSpeed y pokemonBaselineEffectiveStat(SPD) ahora respetan ese truncado/mitad y mínimo uno. Tipos de status inválidos fallan sin publicar output.
+2. Turn order ya consume estos resolvers; no se habilitan todavía moves de status ni se inventan inmunidades. Speed de reservas sin getStat efectivo permanece sin penalización, siguiendo el caller upstream. Regresiones de valor impar, stage positivo y mínimo uno escritas, sin ejecutar. Tests/compilación aplazados.

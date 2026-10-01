@@ -958,7 +958,13 @@ bool pokemonWeatherEffectiveSpeed(const PokemonBattleState& state,
         }
         abilityMultiplier *= profile.multiplier;
     }
+    if (!pokemonStatusStateValid(state.status)) return false;
     double value = state.stats[5] * abilityMultiplier * stageMultiplier;
+    // Pokemon.getStat(SPD): paralysis truncates then halves before Unburden.
+    if (state.status.present && state.status.effect == PokemonStatusEffect::Paralysis) {
+        if (!(value >= 0.0) || value > 2147483647.0) return false;
+        value = static_cast<uint32_t>(value) >> 1;
+    }
     if (state.heldItemLostTags.unburden) {
         for (const auto& profile : PokerogueContent::kHeldItemTheftAbilityProfiles)
             if (profile.abilityId == state.abilityId && profile.appliesUnburden) { value *= 2.0; break; }

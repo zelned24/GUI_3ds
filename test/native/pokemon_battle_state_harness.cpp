@@ -2571,5 +2571,16 @@ extern "C" int runPokemonBattleStateChecks() {
     moveStatusPolicy.indirectSleepWake = true;
     if (Pokerogue3DS::checkPokemonStatusBeforeMove(checkStatus, moveStatusPolicy, paraCheckRng, moveStatusEvent) !=
             Pokerogue3DS::PokemonStatusMoveCheckResult::Ok || !moveStatusEvent.cured || checkStatus.present) return 598;
+    PokemonBattleState paralyzedSpeed{};
+    paralyzedSpeed.stats[5] = 101;
+    paralyzedSpeed.status.present = true;
+    paralyzedSpeed.status.effect = Effect::Paralysis;
+    uint32_t statusSpeed = 0;
+    if (!Pokerogue3DS::pokemonBaselineEffectiveStat(paralyzedSpeed, 5, false, statusSpeed) || statusSpeed != 50) return 599;
+    paralyzedSpeed.statStages[4] = 1;
+    if (!Pokerogue3DS::pokemonBaselineEffectiveStat(paralyzedSpeed, 5, false, statusSpeed) || statusSpeed != 75) return 600;
+    paralyzedSpeed.stats[5] = 1;
+    paralyzedSpeed.statStages[4] = 0;
+    if (!Pokerogue3DS::pokemonBaselineEffectiveStat(paralyzedSpeed, 5, false, statusSpeed) || statusSpeed != 1) return 601;
     return 0;
 }
