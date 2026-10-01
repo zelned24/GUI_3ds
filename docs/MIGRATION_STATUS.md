@@ -492,3 +492,9 @@
 1. selectHeldItemTransferAttempt en el módulo existente porta la activación de un objeto (máximo de Mini Black Hole): usa battle RNG del holder para elegir oponente y luego ordinal de held modifier transferible. Filtra por owner PID y conserva orden del inventario sin crear pool heap.
 2. Oponente se sortea antes de verificar count/objetos, incluso sin objeto transferible; sin oponentes no consume RNG. Datos inválidos no publican RNG/selección. Activaciones de stacks mayores a uno se marcan inválidas hasta portar el loop y eliminación/reintentos upstream.
 3. Regresiones 351–357 escritas para selección/filtrado, estado completo RNG y ausencia de consumo indebido. Inventario runtime, callbacks y conexión TurnEndPhase siguen pendientes; no se declara Mini Black Hole funcional. Tests/compilación aplazados.
+
+## Registro nativo de held modifier instances
+
+1. NativeHeldModifierInstance en el módulo existente referencia catálogo canónico (sin IDs paralelos), owner PID, stack, transferibilidad y argumentos raw. Mantiene definición separada de instancia y no supone que ID igual implique matchType.
+2. Primitivas de almacenamiento sobre buffer del caller conservan orden, permiten remoción compacta y fallan claramente por capacidad/ID inexistente/argumentos demasiado largos, sin truncar ni publicar datos falsos. La capacidad de buffer no limita el catálogo. Índices corresponden al content hash; futura serialización debe conservar identidad canónica y validar actualización.
+3. Regresiones 358–363 escritas con MINI_BLACK_HOLE real y bandera no transferible como el boss upstream, límites/remoción/metadata. Falta conectar inventario a runtime/rewards/save, políticas matchType y callbacks; no se declara efecto de batalla funcional. Tests/compilación aplazados.

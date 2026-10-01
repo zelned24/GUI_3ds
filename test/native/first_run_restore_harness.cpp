@@ -479,6 +479,33 @@ static int checkWave200FinalBossAndGameClear() {
     expectedTheftState = expectedTheftRng.state();
     if (actualTheftState.carry != expectedTheftState.carry || actualTheftState.s0 != expectedTheftState.s0 ||
         actualTheftState.s1 != expectedTheftState.s1 || actualTheftState.s2 != expectedTheftState.s2) return 357;
+    NativeHeldModifierInstance blackHoleInstance{};
+    if (initializeHeldModifierInstance("MINI_BLACK_HOLE", 89001, 1, false, "[]", blackHoleInstance) !=
+            HeldModifierStorageResult::Ok || !heldModifierDefinition(blackHoleInstance) ||
+        std::strcmp(heldModifierDefinition(blackHoleInstance)->id, "MINI_BLACK_HOLE") ||
+        blackHoleInstance.transferable || blackHoleInstance.ownerPokemonId != 89001 ||
+        std::strcmp(blackHoleInstance.rawArguments, "[]")) return 358;
+    NativeHeldModifierInstance heldRecords[2]{};
+    size_t heldCount = 0;
+    if (appendHeldModifierInstance(heldRecords, 2, heldCount, blackHoleInstance) !=
+            HeldModifierStorageResult::Ok || heldCount != 1) return 359;
+    auto otherHolder = blackHoleInstance;
+    otherHolder.ownerPokemonId = 89002;
+    otherHolder.transferable = true;
+    if (appendHeldModifierInstance(heldRecords, 2, heldCount, otherHolder) != HeldModifierStorageResult::Ok ||
+        appendHeldModifierInstance(heldRecords, 2, heldCount, otherHolder) !=
+            HeldModifierStorageResult::CapacityExceeded || heldCount != 2) return 360;
+    if (!removeHeldModifierInstance(heldRecords, 2, heldCount, 0) || heldCount != 1 ||
+        heldRecords[0].ownerPokemonId != 89002 || heldRecords[1].stackCount) return 361;
+    const auto heldBeforeInvalid = heldRecords[0];
+    if (initializeHeldModifierInstance("MISSING_CANONICAL_ITEM", 0, 1, true, nullptr, heldRecords[0]) !=
+            HeldModifierStorageResult::MissingItem || heldRecords[0].ownerPokemonId != heldBeforeInvalid.ownerPokemonId)
+        return 362;
+    char hugeArguments[129]{};
+    for (size_t i = 0; i < 128; ++i) hugeArguments[i] = 'x';
+    if (initializeHeldModifierInstance("MINI_BLACK_HOLE", 0, 1, true, hugeArguments, heldRecords[0]) !=
+            HeldModifierStorageResult::CapacityExceeded || heldRecords[0].ownerPokemonId != heldBeforeInvalid.ownerPokemonId)
+        return 363;
     const auto preservedBoss = bossActor;
     if (applyPokemonFixedEnemyMovePp(*firstPhase, bossActor) ||
         bossActor.moves[3].maxPp != preservedBoss.moves[3].maxPp) return 338;

@@ -8,6 +8,71 @@
 
 namespace Pokerogue3DS {
 
+// Actor instances reference canonical ItemDefinition rows; they do not carry
+// invented effects or assume that matching an item ID equals matchType.
+struct NativeHeldModifierInstance {
+    size_t canonicalItemIndex = 0;
+    uint32_t ownerPokemonId = 0;
+    uint16_t stackCount = 0;
+    bool transferable = true;
+    char rawArguments[128]{}; // Opaque until the modifier-specific adapter resolves them.
+};
+enum class HeldModifierStorageResult : uint8_t { Ok, MissingItem, InvalidState, CapacityExceeded };
+
+inline const PokerogueContent::Entity* heldModifierDefinition(const NativeHeldModifierInstance& instance) {
+    return instance.canonicalItemIndex < PokerogueContent::kItemCount
+        ? &PokerogueContent::kItems[instance.canonicalItemIndex] : nullptr;
+}
+
+inline bool validateHeldModifierInstance(const NativeHeldModifierInstance& instance) {
+    if (!heldModifierDefinition(instance) || !instance.stackCount) return false;
+    for (char ch : instance.rawArguments) if (!ch) return true;
+    return false;
+}
+
+inline HeldModifierStorageResult initializeHeldModifierInstance(const char* canonicalItemId,
+    uint32_t ownerPokemonId, uint16_t stackCount, bool transferable,
+    const char* rawArguments, NativeHeldModifierInstance& output) {
+    if (!canonicalItemId || !stackCount) return HeldModifierStorageResult::InvalidState;
+    size_t itemIndex = PokerogueContent::kItemCount;
+    for (size_t i = 0; i < PokerogueContent::kItemCount; ++i)
+        if (!std::strcmp(PokerogueContent::kItems[i].id, canonicalItemId)) { itemIndex = i; break; }
+    if (itemIndex == PokerogueContent::kItemCount) return HeldModifierStorageResult::MissingItem;
+    NativeHeldModifierInstance next{};
+    next.canonicalItemIndex = itemIndex;
+    next.ownerPokemonId = ownerPokemonId;
+    next.stackCount = stackCount;
+    next.transferable = transferable;
+    if (rawArguments) {
+        size_t i = 0;
+        for (; rawArguments[i]; ++i) {
+            if (i + 1 >= sizeof(next.rawArguments)) return HeldModifierStorageResult::CapacityExceeded;
+            next.rawArguments[i] = rawArguments[i];
+        }
+    }
+    output = next;
+    return HeldModifierStorageResult::Ok;
+}
+
+// Caller-owned storage: explicit capacity is a hardware budget, never a catalog limit.
+// Append preserves upstream modifier-list order. A resolved matchType policy must
+// decide whether to merge before this primitive is used.
+inline HeldModifierStorageResult appendHeldModifierInstance(NativeHeldModifierInstance* records,
+    size_t capacity, size_t& count, const NativeHeldModifierInstance& instance) {
+    if ((!records && capacity) || count > capacity || !validateHeldModifierInstance(instance))
+        return HeldModifierStorageResult::InvalidState;
+    if (count == capacity) return HeldModifierStorageResult::CapacityExceeded;
+    records[count++] = instance;
+    return HeldModifierStorageResult::Ok;
+}
+
+inline bool removeHeldModifierInstance(NativeHeldModifierInstance* records, size_t capacity, size_t& count, size_t index) {
+    if (!records || count > capacity || index >= count) return false;
+    for (size_t i = index + 1; i < count; ++i) records[i - 1] = records[i];
+    records[--count] = {};
+    return true;
+}
+
 enum class HeldItemStackTransferResult : uint8_t { Transferred, NoCapacity, InvalidState };
 struct HeldItemStackTransferEvent {
     uint16_t transferred = 0;
