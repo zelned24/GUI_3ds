@@ -638,6 +638,7 @@ extern "C" int runNativeSaveChecks() {
     if (applyNativeStarterCostReduction(purchased) != StarterCostPurchaseResult::Applied ||
         purchased.costReduction != 2 || purchased.candyCount !=
             999 - starterPrice->costReduction[0] - starterPrice->costReduction[1]) return 118;
+    purchased.observedFormAttr = 128;
     purchased.abilityAttr = 5;
     purchased.genderAttr = 12;
     purchased.natureAttr = (1u << 1) | (1u << 25);
@@ -651,13 +652,13 @@ extern "C" int runNativeSaveChecks() {
         poor.candyCount || poor.costReduction || poor.friendship != 42 || !poor.caught) return 120;
     if (encodeNativeStarterCandyProfile(&purchased, 1, 1, PokerogueContent::kContentHash,
             PokerogueContent::kMaxStarterCandyCount, caughtEncoded, sizeof(caughtEncoded), caughtWritten) !=
-            NativeSaveResult::Ok || std::memcmp(caughtEncoded, "P3CANDY5", 8) ||
+            NativeSaveResult::Ok || std::memcmp(caughtEncoded, "P3CANDY6", 8) ||
         decodeNativeStarterCandyProfile(caughtEncoded, caughtWritten, PokerogueContent::kContentHash,
             PokerogueContent::kMaxStarterCandyCount, caughtDecoded, 1, caughtCount, caughtGeneration) !=
             NativeSaveResult::Ok || caughtDecoded[0].costReduction != 2 || !caughtDecoded[0].caught ||
         caughtDecoded[0].candyCount != remainingCandy || caughtDecoded[0].friendship != 321) return 121;
     if (caughtDecoded[0].natureAttr != purchased.natureAttr || caughtDecoded[0].abilityAttr != 5 ||
-        caughtDecoded[0].genderAttr != 12) return 125;
+        caughtDecoded[0].genderAttr != 12 || caughtDecoded[0].observedFormAttr != 128) return 125;
     for (uint8_t i = 0; i < 6; ++i) if (caughtDecoded[0].dexIvs[i] != savedIvs[i]) return 126;
     char v3Bytes[256]{};
     std::memcpy(v3Bytes, caughtEncoded, 89);
@@ -689,6 +690,23 @@ extern "C" int runNativeSaveChecks() {
     invalidAttributes = purchased;
     invalidAttributes.genderAttr = 1;
     if (StarterCandyProfileCodec::valid(invalidAttributes, 0, PokerogueContent::kMaxStarterCandyCount)) return 133;
+    char v5Bytes[256]{};
+    std::memcpy(v5Bytes, caughtEncoded, 101);
+    std::memcpy(v5Bytes, "P3CANDY5", 8);
+    const size_t v5Size = kStarterCandyProfileOverhead + 21;
+    char v5Digest[65]{};
+    IntegritySha256::hashHex(v5Bytes, v5Size - 64, v5Digest);
+    std::memcpy(v5Bytes + v5Size - 64, v5Digest, 64);
+    NativeStarterCandyRecord v5Decoded[1]{};
+    if (decodeNativeStarterCandyProfile(v5Bytes, v5Size, PokerogueContent::kContentHash,
+            PokerogueContent::kMaxStarterCandyCount, v5Decoded, 1, caughtCount, caughtGeneration) !=
+            NativeSaveResult::Ok || v5Decoded[0].abilityAttr != 5 || v5Decoded[0].genderAttr != 12 ||
+        v5Decoded[0].natureAttr != purchased.natureAttr || v5Decoded[0].observedFormAttr) return 149;
+    auto invalidObserved = purchased;
+    invalidObserved.observedFormAttr = 1;
+    if (StarterCandyProfileCodec::valid(invalidObserved, 0, PokerogueContent::kMaxStarterCandyCount)) return 150;
+    invalidObserved.observedFormAttr = uint64_t(1) << 63;
+    if (StarterCandyProfileCodec::valid(invalidObserved, 0, PokerogueContent::kMaxStarterCandyCount)) return 151;
     auto invalidDexRecord = purchased;
     invalidDexRecord.dexIvs[0] = 32;
     if (StarterCandyProfileCodec::valid(invalidDexRecord, 0, PokerogueContent::kMaxStarterCandyCount)) return 127;
@@ -739,7 +757,7 @@ extern "C" int runNativeSaveChecks() {
     if (encodeNativeStarterCandyProfile(&purchased, 1, 1, PokerogueContent::kContentHash,
             PokerogueContent::kMaxStarterCandyCount, caughtEncoded, sizeof(caughtEncoded), invalidWritten) !=
             NativeSaveResult::InvalidRecord || invalidWritten) return 122;
-    // A checksum-valid v5 record still rejects reserved bits and reduction three.
+    // A checksum-valid v6 record still rejects reserved bits and reduction three.
     const uint8_t invalidFlags[] = {8, 7};
     for (const uint8_t flags : invalidFlags) {
         caughtEncoded[88] = static_cast<char>(flags);
@@ -786,6 +804,20 @@ extern "C" int runNativeSaveChecks() {
         uint64_t observed = 0;
         if (pokemonObservedDexFormAttr(speciesDex, formActor, observed) != PokemonObservedFormResult::Ok ||
             observed != (uint64_t(128) << form.upstreamFormIndex)) return 147;
+        NativeStarterCandyRecord observedRecord{};
+        observedRecord.speciesDex = speciesDex;
+        observedRecord.caught = true;
+        observedRecord.observedFormAttr = observed;
+        char observedBytes[256]{};
+        size_t observedSize = 0, observedCount = 0;
+        uint32_t observedGeneration = 0;
+        NativeStarterCandyRecord restoredObservation[1]{};
+        if (encodeNativeStarterCandyProfile(&observedRecord, 1, 1, PokerogueContent::kContentHash,
+                PokerogueContent::kMaxStarterCandyCount, observedBytes, sizeof(observedBytes), observedSize) != NativeSaveResult::Ok ||
+            decodeNativeStarterCandyProfile(observedBytes, observedSize, PokerogueContent::kContentHash,
+                PokerogueContent::kMaxStarterCandyCount, restoredObservation, 1, observedCount, observedGeneration) != NativeSaveResult::Ok ||
+            restoredObservation[0].observedFormAttr != observed || observedCount != 1) return 152;
+
         observed = 123;
         if (pokemonObservedDexFormAttr(0, formActor, observed) != PokemonObservedFormResult::MissingSpecies ||
             observed != 123) return 148;

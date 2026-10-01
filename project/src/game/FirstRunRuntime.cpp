@@ -449,6 +449,9 @@ bool FirstRunRuntime::hasCaughtSpecies(uint16_t dex) const {
 }
 
 bool FirstRunRuntime::recordCaughtSpecies(uint16_t dex, const ResolvedPokemon* captured) {
+    uint64_t observedForm = 0;
+    if (captured && pokemonObservedDexFormAttr(captured->dex, captured->actor, observedForm) !=
+            PokemonObservedFormResult::Ok) return false;
     if (captured) {
         if (!captured->actorIdentityResolved || captured->actor.abilityIndex > 2 ||
             captured->actor.gender == PokemonGender::Unspecified ||
@@ -475,6 +478,7 @@ bool FirstRunRuntime::recordCaughtSpecies(uint16_t dex, const ResolvedPokemon* c
         m_starterProfileRecords[index].caught = true;
         if (captured) {
             auto& entry = m_starterProfileRecords[index];
+            if (dex == captured->dex) entry.observedFormAttr |= observedForm;
             if (species->freshProfileStarter && !seedNativeFreshStarterDexMetadata(entry)) return false;
             entry.natureAttr |= 1u << (static_cast<uint8_t>(captured->battleState.nature) + 1);
             const auto* originalSpecies = PokerogueContent::findSpeciesByDex(captured->dex);

@@ -1243,3 +1243,10 @@
 1. Verificada construcción de `PokemonSpecies.forms`: conserva directamente el array upstream; índices importados corresponden a los usados por `Pokemon.getDexAttr`. `pokemonObservedDexFormAttr` resuelve identidad canónica a `DEFAULT_FORM (128) << upstreamFormIndex`, sin RNG y sin modificar output si falla.
 2. Distingue especie/forma ausente, especie discordante, forma sin resolver y capacidad de atributo de 64 bits excedida (índice >56). Esa capacidad es del adaptador de metadata, no un límite del catálogo canónico. No trunca bits ni inventa una forma base cuando hay forms.
 3. Resolver todavía no conectado al perfil de captura; observa forma, no sustituye `getFullUnlocksData` ni reglas de battle forms. Persistencia y desbloqueos completos pendientes. Regresión del catálogo real escrita, sin ejecutar; tests/compilación aplazados.
+
+## Formas observadas de captura persistidas en v6
+
+1. `P3CANDY6` conserva `observedFormAttr` de 64 bits, total veintinueve bytes por registro. Captura resuelve atributo desde identidad/índice canónicos antes de modificar el ledger; combina por OR solamente en la especie observada. No propaga una forma inventada a preevoluciones.
+2. Codec little endian dedicado de 64 bits evita truncar bits superiores a 31. Validator rechaza bits reservados y formas inexistentes para esa especie; admite base implícita únicamente cuando el catálogo no declara formas. Version/record width centralizados; lectura v1–v5 conserva datos presentes y deja observaciones ausentes en cero.
+3. Observación se mantiene separada de unlocks: no implementa todavía `getFullUnlocksData`, desbloqueos base de battle forms ni reglas especiales de preevoluciones. No se concede una forma de inicial por observarla. Capacidad 64 bits del adaptador rechaza índices >56 explícitamente; catálogo sigue sin ese límite.
+4. Regresiones escritas de todos los forms reales → atributo → encode/decode, legacy v5, referencias inválidas y bits reservados. Sin ejecutar. Capacidades derivadas y ledger crecen; memoria/rendimiento Old 3DS pendientes de medir. Tests/compilación aplazados.
