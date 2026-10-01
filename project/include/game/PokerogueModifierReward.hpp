@@ -602,6 +602,26 @@ inline HeldHealingResult applyHeldMoveHealingPhase(const NativeHeldModifierInsta
     return applyHeldHealingPhase(records, count, actor, active, policy, output, HeldHealingPhase::MoveEnd);
 }
 
+// Current native battle dispatcher covers these healing classes only.
+// Unknown classes remain explicit blockers rather than silently losing effects.
+inline bool heldHealingInventorySupported(const NativeHeldModifierInstance* records, size_t count) {
+    if (count && !records) return false;
+    for (size_t i = 0; i < count; ++i) {
+        if (!validateHeldModifierInstance(records[i])) return false;
+        const auto* profile = heldModifierClassProfile(records[i]);
+        if (!profile || (std::strcmp(profile->matchingClass, "TurnHealModifier") &&
+            std::strcmp(profile->matchingClass, "HitHealModifier")) ||
+            !profile->maxHeldCount || records[i].stackCount > profile->maxHeldCount ||
+            (records[i].rawArguments[0] && std::strcmp(records[i].rawArguments, "[]"))) return false;
+        for (size_t j = 0; j < i; ++j) {
+            if (records[j].ownerPokemonId != records[i].ownerPokemonId) continue;
+            const auto* previous = heldModifierClassProfile(records[j]);
+            if (previous && !std::strcmp(previous->matchingClass, profile->matchingClass)) return false;
+        }
+    }
+    return true;
+}
+
 enum class ModifierRewardRollResult : uint8_t {
     Ok, InvalidLuck, MissingWeight, InvalidWeight, EmptyPool, MissingItem
 };

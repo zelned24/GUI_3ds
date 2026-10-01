@@ -826,6 +826,11 @@ static int checkWave200FinalBossAndGameClear() {
     heldHealActor.turnDamageDealt = 0;
     if (applyHeldMoveHealingPhase(healingItems, 2, heldHealActor, true, heldHealPolicy, heldHealEvent) !=
         HeldHealingResult::Resolved || heldHealEvent.healed || heldHealActor.hp != 24) return 435;
+    if (!heldHealingInventorySupported(healingItems, 2)) return 436;
+    healingItems[2] = healingItems[0];
+    if (heldHealingInventorySupported(healingItems, 3)) return 437;
+    healingItems[2] = activationItem;
+    if (heldHealingInventorySupported(healingItems, 3)) return 438;
     const auto preservedBoss = bossActor;
     if (applyPokemonFixedEnemyMovePp(*firstPhase, bossActor) ||
         bossActor.moves[3].maxPp != preservedBoss.moves[3].maxPp) return 338;

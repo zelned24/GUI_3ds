@@ -1122,7 +1122,7 @@ bool FirstRunRuntime::advanceBattleTurn() {
 }
 
 bool FirstRunRuntime::advanceBattleTurnInPlace() {
-    if (m_heldModifierCount) {
+    if (!heldHealingInventorySupported(m_heldModifiers.data(), m_heldModifierCount)) {
         m_battleFeedback = "Held modifier effects require native dispatch";
         return false;
     }

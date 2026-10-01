@@ -610,3 +610,8 @@
 
 1. Shell Bell no cura tras cancelacion por clima primordial: MovePhase.secondFailureCheck termina antes de crear MoveEffectPhase. Rutas normal/recoil/drain respetan weatherCancelled. Conserva dano acumulado para consumidores posteriores.
 2. Revision estatica; tests/compilacion aplazados. Otras cancelaciones previas siguen pendientes.
+
+## Turnos con inventario de curacion
+
+1. advanceBattleTurn reemplaza bloqueo global por validacion de clases de curacion ya conectadas: TurnHeal/HitHeal, stacks canonicos, argumentos resueltos y unicidad por owner/clase. Mini Black Hole y otras clases siguen rechazados. Reward/capture/switch con inventario siguen pendientes y mantienen sus gates.
+2. Regresiones 436-438 escritas para clases conocidas, duplicado y clase pendiente. No demuestra run completa; tags/charms, rewards, multihit y validacion final pendientes. Tests/compilacion aplazados.
