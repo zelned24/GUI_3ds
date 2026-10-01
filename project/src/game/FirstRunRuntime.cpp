@@ -459,6 +459,21 @@ bool FirstRunRuntime::recordCaughtSpecies(uint16_t dex, const ResolvedPokemon* c
         if (static_cast<uint8_t>(captured->battleState.nature) >= 25) return false;
         for (uint8_t iv : captured->battleState.ivs) if (iv > 31) return false;
     }
+    // Upstream masks the captured actor's form bit against each species in
+    // the prevolution chain. Index zero has no battle-form special branches.
+    // Nonzero forms require the form-change registry before awarding unlocks.
+    if (captured && observedForm == uint64_t(128)) {
+        uint16_t ancestor = dex;
+        size_t visited = 0;
+        while (ancestor) {
+            if (++visited > PokerogueContent::kSpeciesCount) return false;
+            const auto* definition = PokerogueContent::findSpeciesByDex(ancestor);
+            uint64_t allowed = 0;
+            if (!definition || pokemonObtainableFormMask(ancestor, allowed) != PokemonFormUnlockMaskResult::Ok)
+                return false;
+            ancestor = definition->prevolutionDex;
+        }
+    }
     // Legacy diagnostics without an attached profile do not fabricate durable data.
     if (!m_starterProfileReady) return true;
     size_t depth = 0;
@@ -479,6 +494,12 @@ bool FirstRunRuntime::recordCaughtSpecies(uint16_t dex, const ResolvedPokemon* c
         if (captured) {
             auto& entry = m_starterProfileRecords[index];
             if (dex == captured->dex) entry.observedFormAttr |= observedForm;
+            if (observedForm == uint64_t(128)) {
+                uint64_t allowed = 0;
+                if (pokemonObtainableFormMask(dex, allowed) != PokemonFormUnlockMaskResult::Ok) return false;
+                entry.unlockedFormAttr |= observedForm & allowed;
+            }
+
             if (species->freshProfileStarter && !seedNativeFreshStarterDexMetadata(entry)) return false;
             entry.natureAttr |= 1u << (static_cast<uint8_t>(captured->battleState.nature) + 1);
             const auto* originalSpecies = PokerogueContent::findSpeciesByDex(captured->dex);
@@ -2999,8 +3020,10 @@ bool FirstRunRuntime::resolveStarterFromDex(uint16_t dex, PokerogueRngAdapter& r
         for (size_t i = 0; i < m_starterProfileCount; ++i)
             if (m_starterProfileRecords[i].speciesDex == dex) { dexMetadata = &m_starterProfileRecords[i]; break; }
     if (!starter.freshProfileStarter && (!dexMetadata || !dexMetadata->caught ||
-        !dexMetadata->natureAttr || !dexMetadata->abilityAttr ||
-        (starter.firstFormId && *starter.firstFormId))) return false; // Form unlock metadata not yet resolved.
+        !dexMetadata->natureAttr || !dexMetadata->abilityAttr)) return false;
+    if (!starter.freshProfileStarter && starter.firstFormId && *starter.firstFormId &&
+        pokemonValidateStarterForm(dex, 0, dexMetadata->unlockedFormAttr) != PokemonStarterFormResult::Ok)
+        return false;
     const std::string starterLocaleId = std::string("pokemon:") + starter.id;
     ResolvedPokemon prepared{starter.dex, 5, starter.id, locale(starterLocaleId.c_str(), starter.name),
         starter.firstFormId, starter.assetSourcePath};

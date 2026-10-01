@@ -1284,3 +1284,9 @@
 2. Lectura v1–v6 conserva campos conocidos y deja unlockedFormAttr en cero; no transforma observaciones legacy en desbloqueos. Nuevos perfiles default reciben DEFAULT_FORM (128) siguiendo GameData.initDexData.
 3. Capturas todavía no rellenan este campo: pendientes reglas especiales de battle forms, preevoluciones y registro de form changes. Preferencias/selector aún no conectados. El formato permite persistir la próxima integración sin confundir permiso con observación.
 4. Regresiones v7 roundtrip, v6 conserva observación pero no inventa unlock y bits reservados escritas. Tests/compilación aplazados; memoria/rendimiento Old 3DS siguen sin medir.
+
+## Capturas de forma cero y selección base conectadas
+
+1. recordCaughtSpecies combina el bit de forma cero capturado con pokemonObtainableFormMask de cada especie de la cadena de preevoluciones, y lo persiste en unlockedFormAttr. Prevalida máscaras/recorrido antes de modificar el ledger. Sigue GameData.setPokemonSpeciesCaught para formIndex cero, donde no se ejecutan ramas especiales de battle forms.
+2. resolveStarterFromDex admite inicial no-default con forma base declarada cuando existe metadata completa y pokemonValidateStarterForm confirma permiso y unlock. Perfiles legacy no reciben ese permiso por inferencia.
+3. Capturas de índices no cero mantienen observación; sus unlocks especiales siguen pendientes del registro de form changes y ramas pinned. No se conceden permisos basados solamente en la observación. Selector de otras formas aún pendiente. Tests y compilación aplazados.

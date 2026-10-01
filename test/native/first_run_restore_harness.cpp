@@ -1535,6 +1535,9 @@ static int checkPlayerPartyManagementAndSwitching() {
 
     if (freshProfileGame.presentationStage() != NativeSaveStage::RunSetup ||
         game.presentationStage() != NativeSaveStage::BattleActive) return 627;
+    uint64_t capturedSourceForm = 0;
+    if (pokemonObservedDexFormAttr(game.presentation().enemy.dex, game.presentation().enemy.actor,
+            capturedSourceForm) != PokemonObservedFormResult::Ok) return 680;
     const auto friendshipBeforeCapture = game.presentation().player.battleState.friendship;
     if (!game.throwPokeball(PokeballType::Pokeball)) return 168;
     const auto* captureParticipantRoot = pokemonRootSpecies(game.presentation().player.dex);
@@ -1550,6 +1553,15 @@ static int checkPlayerPartyManagementAndSwitching() {
     while (caughtChainDex) {
         const auto* caughtChainSpecies = PokerogueContent::findSpeciesByDex(caughtChainDex);
         if (!caughtChainSpecies || !game.hasCaughtSpecies(caughtChainDex)) return 611;
+        if (capturedSourceForm == uint64_t(128)) {
+            uint64_t allowed = 0;
+            if (pokemonObtainableFormMask(caughtChainDex, allowed) != PokemonFormUnlockMaskResult::Ok) return 681;
+            const NativeStarterCandyRecord* entry = nullptr;
+            for (size_t i = 0; i < game.starterProfileCount(); ++i)
+                if (game.starterProfileRecords()[i].speciesDex == caughtChainDex) entry = &game.starterProfileRecords()[i];
+            if (!entry || ((entry->unlockedFormAttr & uint64_t(128)) != (allowed & uint64_t(128)))) return 682;
+        }
+
         caughtChainDex = caughtChainSpecies->prevolutionDex;
     }
     const auto* caughtCandyRoot = pokemonRootSpecies(wildSave.encounterDex);
