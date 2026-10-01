@@ -54,6 +54,38 @@ inline StarterCandyApplyResult applyNativeStarterCandyFriendship(NativeStarterCa
     return StarterCandyApplyResult::Applied;
 }
 
+enum class NativeFriendshipApplyResult : uint8_t {
+    Applied = 0, UnresolvedPolicy, RootMismatch, InvalidProgress
+};
+
+// Prepare actor and root ledger together. Policy must resolve boosters, timed
+// events/fusion and override behavior; max-friendship callbacks must be ready
+// before publishing. The caller still commits the pair through NativeProgressStore.
+inline NativeFriendshipApplyResult applyNativePokemonFriendship(
+    PokemonBattleState& actor, NativeStarterCandyRecord& record, int32_t gain,
+    const PokemonFriendshipPolicy& policy, bool maxFriendshipCallbacksResolved,
+    StarterCandyAwardEvent& event) {
+    PokemonFriendshipChangePlan friendship{};
+    const auto planned = planPokemonFriendshipChange(actor.friendship, gain, policy, friendship);
+    if (planned == PokemonExperienceResult::UnresolvedPolicy)
+        return NativeFriendshipApplyResult::UnresolvedPolicy;
+    if (planned != PokemonExperienceResult::Ok) return NativeFriendshipApplyResult::InvalidProgress;
+    if (gain > 0 && friendship.requiresMaxFriendshipCallbacks && !maxFriendshipCallbacksResolved)
+        return NativeFriendshipApplyResult::UnresolvedPolicy;
+    StarterCandyAwardEvent nextEvent{};
+    auto nextRecord = record;
+    if (gain > 0) {
+        const auto* root = pokemonRootSpecies(actor.speciesDex);
+        if (!root || root->dex != record.speciesDex) return NativeFriendshipApplyResult::RootMismatch;
+        if (applyNativeStarterCandyFriendship(nextRecord, friendship.candyFriendshipGain, nextEvent) !=
+                StarterCandyApplyResult::Applied) return NativeFriendshipApplyResult::InvalidProgress;
+    }
+    actor.friendship = friendship.friendship;
+    record = nextRecord;
+    event = nextEvent;
+    return NativeFriendshipApplyResult::Applied;
+}
+
 inline constexpr size_t kStarterCandyProfileOverhead = 144;
 inline constexpr size_t kStarterCandyProfileRecordBytes = 8;
 inline constexpr size_t kStarterCandyProfileMaxBytes = kStarterCandyProfileOverhead +

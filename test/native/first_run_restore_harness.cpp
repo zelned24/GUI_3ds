@@ -2,6 +2,7 @@
 #include "content/PokerogueRuntimeContent.hpp"
 #include <cstring>
 #include "storage/IntegritySha256.hpp"
+#include "storage/NativeStarterCandyProfile.hpp"
 #include "game/PokemonExperience.hpp"
 #include "game/PokemonWeatherPhase.hpp"
 #include "game/PokerogueClassicWaveSchedule.hpp"
@@ -1837,6 +1838,40 @@ int main() {
             candyRestored.level != candyActor.level || candyRestored.maxHp != candyActor.maxHp ||
             candyRestored.hp != candyActor.hp || candyRestored.friendship != candyActor.friendship)
             return 505;
+        auto friendshipActor = currentActor.battleState;
+        const auto* friendshipRoot = pokemonRootSpecies(friendshipActor.speciesDex);
+        if (!friendshipRoot) return 506;
+        NativeStarterCandyRecord friendshipRecord{friendshipRoot->dex, 0, 0};
+        StarterCandyAwardEvent friendshipEvent{};
+        PokemonFriendshipPolicy friendshipPolicy{};
+        friendshipActor.friendship = 70;
+        if (applyNativePokemonFriendship(friendshipActor, friendshipRecord, 3, friendshipPolicy, false,
+                friendshipEvent) != NativeFriendshipApplyResult::UnresolvedPolicy ||
+            friendshipActor.friendship != 70 || friendshipRecord.friendship) return 507;
+        friendshipPolicy.resolved = true;
+        friendshipPolicy.candyMultiplier = PokerogueContent::kClassicCandyFriendshipMultiplier;
+        if (applyNativePokemonFriendship(friendshipActor, friendshipRecord,
+                PokerogueContent::kFriendshipGainFromBattle, friendshipPolicy, false, friendshipEvent) !=
+                NativeFriendshipApplyResult::Applied || friendshipActor.friendship != 73 ||
+            friendshipRecord.friendship != 9 || friendshipRecord.candyCount) return 508;
+        friendshipActor.friendship = 254;
+        const auto savedCandyFriendship = friendshipRecord.friendship;
+        if (applyNativePokemonFriendship(friendshipActor, friendshipRecord, 3, friendshipPolicy, false,
+                friendshipEvent) != NativeFriendshipApplyResult::UnresolvedPolicy ||
+            friendshipActor.friendship != 254 || friendshipRecord.friendship != savedCandyFriendship) return 509;
+        if (applyNativePokemonFriendship(friendshipActor, friendshipRecord, 3, friendshipPolicy, true,
+                friendshipEvent) != NativeFriendshipApplyResult::Applied || friendshipActor.friendship != 255 ||
+            friendshipRecord.friendship != savedCandyFriendship + 9) return 510;
+        const auto beforeLossProgress = friendshipRecord.friendship;
+        PokemonFriendshipPolicy unresolvedLossPolicy{};
+        if (applyNativePokemonFriendship(friendshipActor, friendshipRecord,
+                -static_cast<int32_t>(PokerogueContent::kFriendshipLossFromFaint), unresolvedLossPolicy, false,
+                friendshipEvent) != NativeFriendshipApplyResult::Applied || friendshipActor.friendship != 250 ||
+            friendshipRecord.friendship != beforeLossProgress || friendshipEvent.requestedAward) return 511;
+        friendshipRecord.speciesDex = 0;
+        if (applyNativePokemonFriendship(friendshipActor, friendshipRecord, 3, friendshipPolicy, true,
+                friendshipEvent) != NativeFriendshipApplyResult::RootMismatch ||
+            friendshipActor.friendship != 250) return 512;
         auto invalidActor = actorSnapshot;
         invalidActor.hp = 65535;
         const uint16_t beforeInvalidHp = restoredActor.hp;

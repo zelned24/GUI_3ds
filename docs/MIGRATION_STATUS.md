@@ -806,3 +806,9 @@
 3. Regresiones 87–89 escritas: inspección exacta, perfil ausente sin publicar run/escribir checkpoint y consumidor sin binding. Tests, compilación, Azahar y SD física permanecen pendientes.
 
 4. Una referencia ausente se comunica como InvalidRecord al consumidor de run, no NotFound: evita que el arranque la confunda con la ausencia de partida e inicie silenciosamente un progreso nuevo.
+
+## Operación conjunta de amistad y caramelos
+
+1. Fuente pinned inspeccionada: `src/battle-scene.ts` reparto de EXP concede amistad a participantes vivos con pokemonDefeated=true, incluso cuando no reciben EXP por el cap. Captura no equivale a derrota. `src/field/pokemon.ts`, `Pokemon.addFriendship`, resuelve boost, callbacks de amistad máxima, timed events/fusión y actualiza raíces.
+2. `applyNativePokemonFriendship` reutiliza planners/ledger existentes y prepara actor+registro raíz antes de publicar cualquiera. Policy no resuelta, raíz incorrecta, overflow o callbacks máximos pendientes rechazan el cambio; pérdidas no alteran el progreso de caramelos. El caller debe preparar ambas raíces para fusiones antes de publicar.
+3. Regresiones 506–512 escritas sobre un actor real: policy pendiente, ganancia Classic, callbacks de máximo, pérdida y raíz inválida. Sin ejecutar. Esta operación todavía no se invoca desde reparto de EXP ni recompensas: falta seguimiento completo de participantes, perfil vivo y conexión durable; no se concede amistad falsa a capturas ni se declara Rare Candy conectado.
