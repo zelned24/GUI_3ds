@@ -1266,3 +1266,9 @@
 2. El argumento es unlockedCaughtAttr explícito. El perfil actual contiene observedFormAttr; no se conecta como si fuera el registro upstream de desbloqueos. Persistir y derivar esos desbloqueos sigue pendiente antes de conectar preferencias al selector real.
 3. starterSelectableKeys aparece solamente declarado en pokemon-species.ts pinned; no participa en el guard ni se añade una excepción local. isUnobtainable corresponde a getFullUnlocksData, no a este guard de preferencias.
 4. Regresiones para todo el catálogo y errores de lookup añadidas al harness nativo, sin ejecutar. git diff --check revisado; tests y compilación siguen aplazados.
+
+## Filtro upstream de formas obtenibles
+
+1. pokemonObtainableFormMask implementa únicamente la componente de formas de PokemonSpecies.getFullUnlocksData: catálogo con cero/una forma usa DEFAULT_FORM; múltiples formas excluyen isUnobtainable. Metadata desconocida y capacidad excedida fallan explícitamente sin modificar output.
+2. Máscara de permisos no equivale a desbloqueos ganados. Aún falta combinar capturas, reglas especiales de battle forms/preevoluciones y perfil durable antes de conectar selección de formas. Observaciones no conceden todas las formas obtenibles.
+3. Regresión de máscara para las 1084 especies y error de especie ausente añadida al harness; pendiente de ejecución. Tests/compilación siguen aplazados.

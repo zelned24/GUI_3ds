@@ -33,6 +33,45 @@ inline PokemonObservedFormResult pokemonObservedDexFormAttr(uint16_t dex,
     return PokemonObservedFormResult::Ok;
 }
 
+enum class PokemonFormUnlockMaskResult : uint8_t {
+    Ok, MissingSpecies, MissingPermission, UnsupportedPermission, AttributeCapacityUnsupported
+};
+// Form component of PokemonSpecies.getFullUnlocksData. This is an allowed
+// mask, not the player's earned unlocks. Failure leaves output unchanged.
+inline PokemonFormUnlockMaskResult pokemonObtainableFormMask(uint16_t dex, uint64_t& output) {
+    const auto* species = PokerogueContent::findSpeciesByDex(dex);
+    if (!species) return PokemonFormUnlockMaskResult::MissingSpecies;
+    size_t formCount = 0;
+    for (const auto& form : PokerogueContent::kForms) {
+        const char* left = form.speciesId;
+        const char* right = species->id;
+        if (!left || !right) continue;
+        while (*left && *right && *left == *right) { ++left; ++right; }
+        if (!*left && !*right) ++formCount;
+    }
+    if (formCount <= 1) { output = uint64_t(128); return PokemonFormUnlockMaskResult::Ok; }
+    uint64_t mask = 0;
+    for (size_t index = 0; index < formCount; ++index) {
+        const auto* form = PokerogueContent::findFormByUpstreamIndex(dex, static_cast<uint16_t>(index));
+        if (!form) return PokemonFormUnlockMaskResult::MissingPermission;
+        const PokerogueContent::FormPermission* permission = nullptr;
+        for (const auto& entry : PokerogueContent::kFormPermissions) {
+            const char* left = entry.formId;
+            const char* right = form->id;
+            if (!left || !right) continue;
+            while (*left && *right && *left == *right) { ++left; ++right; }
+            if (!*left && !*right) { permission = &entry; break; }
+        }
+        if (!permission) return PokemonFormUnlockMaskResult::MissingPermission;
+        if (permission->isUnobtainable < 0) return PokemonFormUnlockMaskResult::UnsupportedPermission;
+        if (permission->isUnobtainable) continue;
+        if (index > 56) return PokemonFormUnlockMaskResult::AttributeCapacityUnsupported;
+        mask |= uint64_t(128) << index;
+    }
+    output = mask;
+    return PokemonFormUnlockMaskResult::Ok;
+}
+
 // StarterSelectUiHandler validates preferences using the actual caughtAttr,
 // not our separate observedFormAttr. Caller must supply resolved unlock data.
 enum class PokemonStarterFormResult : uint8_t {

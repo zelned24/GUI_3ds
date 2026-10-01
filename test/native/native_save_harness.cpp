@@ -848,6 +848,24 @@ extern "C" int runNativeSaveChecks() {
     }
     if (pokemonValidateStarterForm(0, 0, 0) != PokemonStarterFormResult::MissingSpecies ||
         pokemonValidateStarterForm(1, 65535, 0) != PokemonStarterFormResult::MissingForm) return 157;
+    for (const auto& species : PokerogueContent::kSpecies) {
+        uint64_t mask = 123;
+        if (pokemonObtainableFormMask(species.dex, mask) != PokemonFormUnlockMaskResult::Ok) return 158;
+        size_t count = 0;
+        uint64_t expected = 0;
+        for (const auto& form : PokerogueContent::kForms) {
+            if (std::strcmp(form.speciesId, species.id)) continue;
+            ++count;
+            for (const auto& permission : PokerogueContent::kFormPermissions) {
+                if (!std::strcmp(permission.formId, form.id) && permission.isUnobtainable == 0)
+                    expected |= uint64_t(128) << form.upstreamFormIndex;
+            }
+        }
+        if (mask != (count > 1 ? expected : uint64_t(128))) return 159;
+    }
+    uint64_t missingMask = 123;
+    if (pokemonObtainableFormMask(0, missingMask) != PokemonFormUnlockMaskResult::MissingSpecies ||
+        missingMask != 123) return 160;
     if (PokerogueContent::findFormByUpstreamIndex(0, 0)) return 146;
     return 0;
 }
