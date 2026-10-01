@@ -224,6 +224,9 @@ private:
     void removeParticipant(uint32_t pokemonId);
     bool executeActiveBattleMove(bool enemyActs, uint8_t moveSlot, PokerogueRngAdapter& rng);
     bool executeActiveBattleMove(uint8_t userIndex, uint8_t targetIndex, uint8_t moveSlot, PokerogueRngAdapter& rng, const PokemonPpPolicy* ppOverride = nullptr);
+    bool resolveActiveStatusRecipientPolicies(const PokemonBattleState& recipient,
+        const PokemonBattleState& source, PokemonStatusEffect effect,
+        PokemonStatusRecipientPolicies& output) const;
     void refreshTrainerBaselineMatchups();
     bool resolveActiveMoveWeather(bool enemyAttacks, PokemonMoveWeatherContext& output) const;
     bool resolveActiveMoveWeather(const PokemonBattleState& user, const PokemonBattleState& opponent,

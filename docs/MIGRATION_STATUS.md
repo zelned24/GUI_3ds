@@ -1635,3 +1635,9 @@
 1. Perfil de callbacks de estado exige constructor explícito en propiedad trigger; constructor incidental en otra parte del registro no demuestra ausencia. Compuestos permanecen sin resolver hasta parsear sus argumentos estructuralmente.
 2. Semántica inspected: SpeciesFormChangeCompoundTrigger.hasTriggerType recorre hijos; no se elimina la detección de triggers de estado anidados. Parser conservador no pretende resolver expresiones TS completas.
 3. Regeneración de contenido permitida; tests/compilación siguen aplazados.
+
+## Contexto vivo del receptor en FirstRunRuntime
+
+1. resolveActiveStatusRecipientPolicies deriva tipos desde forma canónica actual, valida pertenencia a especie y usa weather vivo para sol. Compone inmunidades/bypass/status/tag desde habilidades primarias reales.
+2. Frontera conservadora exige individual sin held modifiers y habilidades sin callbacks dinámicos de tipo/grounding bajo capability actual. Terrain/Safeguard/pasivas/overrides no representados continúan pendientes. Proveedor añadido para el comando de estados; su invocación y los movimientos de estado todavía no están habilitados.
+3. Revisión estática de campos y diff realizada. Regresiones de composición ya escritas; tests/compilación siguen aplazados.

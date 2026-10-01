@@ -966,6 +966,38 @@ double baselineEnemyMoveScore(const PokemonBattleState& user,
 
 }
 
+bool FirstRunRuntime::resolveActiveStatusRecipientPolicies(const PokemonBattleState& recipient,
+    const PokemonBattleState& source, PokemonStatusEffect effect, PokemonStatusRecipientPolicies& output) const {
+    // Current arena has weather only. Terrain/Safeguard, passive abilities,
+    // type overrides and grounding modifiers need explicit runtime state before
+    // this provider can admit actors carrying those capabilities.
+    if (m_doubleBattle || m_heldModifierCount || !recipient.statsAreBaseFormulaOnly ||
+        !source.statsAreBaseFormulaOnly) return false;
+    const auto* recipientCapability = PokerogueContent::findAbilityMovegenProfile(recipient.abilityId);
+    const auto* sourceCapability = PokerogueContent::findAbilityMovegenProfile(source.abilityId);
+    if (!recipientCapability || !sourceCapability || !recipientCapability->bossDamageCallbacksResolved ||
+        !sourceCapability->bossDamageCallbacksResolved) return false;
+    const auto* form = recipient.formId ? PokerogueContent::findFormById(recipient.formId) : nullptr;
+    const auto* species = PokerogueContent::findSpeciesByDex(recipient.speciesDex);
+    if (!form || !species || std::strcmp(form->speciesId, species->id) != 0) return false;
+    const char* types[] = {form->type1, form->type2};
+    if (!types[0] || !resolvePokemonTypeSymbol(types[0])) return false;
+    const size_t count = types[1] && types[1][0] ? 2 : 1;
+    if (count == 2 && !resolvePokemonTypeSymbol(types[1])) return false;
+    PokemonStatusFieldContext field{};
+    field.resolved = true;
+    field.effectiveTypes = field.originalIfStellarTypes = types;
+    field.effectiveTypeCount = field.originalIfStellarTypeCount = count;
+    field.grounded = std::strcmp(types[0], "FLYING") != 0 &&
+        (count == 1 || std::strcmp(types[1], "FLYING") != 0);
+    field.sunnyOrHarshSun = m_arenaWeather.type == PokemonEffectiveWeather::Sunny ||
+        m_arenaWeather.type == PokemonEffectiveWeather::HarshSun;
+    const PokemonStatusAbilityComponent own[] = {{recipient.abilityId, true, true}};
+    const PokemonStatusAbilityComponent sourceAbilities[] = {{source.abilityId, true, true}};
+    return resolvePokemonStatusRecipientPolicies(recipient, &source, effect, field,
+        own, 1, nullptr, 0, sourceAbilities, 1, output);
+}
+
 bool FirstRunRuntime::resolveActiveMoveWeather(const PokemonBattleState& user,
     const PokemonBattleState& opponent, PokemonMoveWeatherContext& output) const {
     PokemonWeatherAbilityComponent components[3] = {
