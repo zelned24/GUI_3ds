@@ -804,16 +804,11 @@ bool FirstRunRuntime::claimRewardChoiceInPlace(uint8_t heldPartyMember, bool rec
                 m_battleFeedback = "PP restore item selection could not resolve";
                 return false;
             }
-        } else if (std::strcmp(itemId, "POKEBALL") == 0) {
-            m_pokeballs[0] = std::min<uint16_t>(99, m_pokeballs[0] + 5);
-        } else if (std::strcmp(itemId, "GREAT_BALL") == 0) {
-            m_pokeballs[1] = std::min<uint16_t>(99, m_pokeballs[1] + 5);
-        } else if (std::strcmp(itemId, "ULTRA_BALL") == 0) {
-            m_pokeballs[2] = std::min<uint16_t>(99, m_pokeballs[2] + 5);
-        } else if (std::strcmp(itemId, "ROGUE_BALL") == 0) {
-            m_pokeballs[3] = std::min<uint16_t>(99, m_pokeballs[3] + 5);
-        } else if (std::strcmp(itemId, "MASTER_BALL") == 0) {
-            m_pokeballs[4] = std::min<uint16_t>(99, m_pokeballs[4] + 1);
+        } else if (const auto* ballReward = pokeballRewardProfile(itemId)) {
+            if (!applyPokeballReward(*ballReward, m_pokeballs.data(), m_pokeballs.size())) {
+                m_battleFeedback = "Pokeball reward type could not resolve";
+                return false;
+            }
         } else if (const auto* revive = reviveItemProfile(itemId)) {
             bool applied = false;
             if (revive->allParty) {

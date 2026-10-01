@@ -1064,5 +1064,13 @@ const reviveRows = collections.items.flatMap(item => {
 });
 const reviveHeader = ppRestoreHeader.replace('struct MoveAttribute {',
   `struct ReviveItemProfile { const char* itemId; uint8_t percent; bool allParty; const char* sourcePath; const char* sourceSymbol; const char* sourceHash; };\ninline constexpr ReviveItemProfile kReviveItemProfiles[] = {\n${reviveRows.join(',\n')}\n};\nstruct MoveAttribute {`);
-await fs.writeFile(outputPath, reviveHeader, 'utf8');
-console.log(JSON.stringify({ output: path.relative(root, outputPath), bytes: Buffer.byteLength(reviveHeader), hash: report.contentHash }));
+const ballRewardRows = collections.items.flatMap(item => {
+  const raw = item.extensions?.upstreamRawRecord?.value ?? '';
+  const match = raw.match(/new\s+AddPokeballModifierType\s*\(\s*"[^"\n]*"\s*,\s*PokeballType\.(\w+)\s*,\s*(\d+)\s*\)/);
+  if (!match) return [];
+  return [`    {"${field(item.id)}", "${match[1]}", ${Number(match[2])}, "${field(item.source?.sourcePath)}", "${field(item.source?.sourceSymbol)}", "${field(item.source?.sourceHash)}"}`];
+});
+const ballRewardHeader = reviveHeader.replace('struct MoveAttribute {',
+  `struct PokeballRewardProfile { const char* itemId; const char* ballSymbol; uint16_t count; const char* sourcePath; const char* sourceSymbol; const char* sourceHash; };\ninline constexpr PokeballRewardProfile kPokeballRewardProfiles[] = {\n${ballRewardRows.join(',\n')}\n};\nstruct MoveAttribute {`);
+await fs.writeFile(outputPath, ballRewardHeader, 'utf8');
+console.log(JSON.stringify({ output: path.relative(root, outputPath), bytes: Buffer.byteLength(ballRewardHeader), hash: report.contentHash }));

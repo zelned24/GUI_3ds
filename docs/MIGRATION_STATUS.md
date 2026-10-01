@@ -671,3 +671,8 @@
 
 1. Perfil AllPokemonFullReviveModifierType porta allParty/100%; adapter valida todo antes de escribir, usa activo real y solo revive debilitados. Vivos conservan HP.
 2. Regresiones 460-462 escritas; tests/compilacion aplazados. Politica baseline sin status/desafios no portados.
+
+## Recompensas Pokeball canonicas
+
+1. Generador extrae AddPokeballModifierType simbolo/cantidad con provenance. Adapter resuelve enums nativos segun pokeball.ts pinned y cap 99 segun data/pokeball.ts. Claim reemplaza constantes de cantidades por perfiles; simbolo futuro desconocido falla sin mutar.
+2. Regresiones 463-465 escritas; generacion permitida, tests/compilacion aplazados. Classic completo sigue pendiente.

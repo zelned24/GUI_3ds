@@ -19,6 +19,29 @@ enum class PokeballType : uint8_t {
     LuxuryBall = 5
 };
 
+inline const PokerogueContent::PokeballRewardProfile* pokeballRewardProfile(const char* itemId) {
+    if (!itemId) return nullptr;
+    for (const auto& profile : PokerogueContent::kPokeballRewardProfiles)
+        if (!std::strcmp(profile.itemId, itemId)) return &profile;
+    return nullptr;
+}
+inline bool applyPokeballReward(const PokerogueContent::PokeballRewardProfile& profile,
+    uint16_t* counts, size_t count) {
+    if (!counts || !profile.ballSymbol || !profile.count) return false;
+    PokeballType type{};
+    if (!std::strcmp(profile.ballSymbol, "POKEBALL")) type = PokeballType::Pokeball;
+    else if (!std::strcmp(profile.ballSymbol, "GREAT_BALL")) type = PokeballType::GreatBall;
+    else if (!std::strcmp(profile.ballSymbol, "ULTRA_BALL")) type = PokeballType::UltraBall;
+    else if (!std::strcmp(profile.ballSymbol, "ROGUE_BALL")) type = PokeballType::RogueBall;
+    else if (!std::strcmp(profile.ballSymbol, "MASTER_BALL")) type = PokeballType::MasterBall;
+    else return false;
+    const size_t index = static_cast<size_t>(type);
+    if (index >= count || counts[index] > 99) return false;
+    const uint32_t next = counts[index] + profile.count;
+    counts[index] = static_cast<uint16_t>(next > 99 ? 99 : next);
+    return true;
+}
+
 inline double getPokeballCatchMultiplier(PokeballType type) {
     switch (type) {
         case PokeballType::Pokeball: return 1.0;

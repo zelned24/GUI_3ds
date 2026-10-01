@@ -907,6 +907,14 @@ static int checkWave200FinalBossAndGameClear() {
     potionActor.hp = potionActor.maxHp + 1;
     if (applyPokemonPartyReviveItem(revivalParty, 2, *ashProfile, true, false, true) || faintedReserve.hp)
         return 462;
+    const auto* ballReward = pokeballRewardProfile("POKEBALL");
+    if (!ballReward || ballReward->count != 5) return 463;
+    uint16_t rewardBallCounts[5] = {97, 1, 2, 3, 4};
+    if (!applyPokeballReward(*ballReward, rewardBallCounts, 5) || rewardBallCounts[0] != 99 ||
+        rewardBallCounts[1] != 1) return 464;
+    auto invalidBallReward = *ballReward;
+    invalidBallReward.ballSymbol = "UNKNOWN_FUTURE_BALL";
+    if (applyPokeballReward(invalidBallReward, rewardBallCounts, 5) || rewardBallCounts[0] != 99) return 465;
     const auto preservedBoss = bossActor;
     if (applyPokemonFixedEnemyMovePp(*firstPhase, bossActor) ||
         bossActor.moves[3].maxPp != preservedBoss.moves[3].maxPp) return 338;
