@@ -1309,6 +1309,18 @@ static int checkPlayerPartyManagementAndSwitching() {
     captureFriendshipPolicy.resolved = true;
     captureFriendshipPolicy.candyMultiplier = PokerogueContent::kClassicCandyFriendshipMultiplier;
     if (!game.restoreStarterCandyProfile(nullptr, 0, 0, captureFriendshipPolicy)) return 589;
+    FirstRunRuntime freshProfileGame(1);
+    if (!freshProfileGame.initializeFreshStarterProfile(captureFriendshipPolicy) ||
+        !freshProfileGame.starterProfileReady() ||
+        freshProfileGame.initializeFreshStarterProfile(captureFriendshipPolicy)) return 613;
+    uint32_t expectedFreshCaught = 0;
+    for (const auto& species : PokerogueContent::kSpecies) {
+        if (species.freshProfileStarter) {
+            ++expectedFreshCaught;
+            if (!freshProfileGame.hasCaughtSpecies(species.dex)) return 614;
+        }
+    }
+    if (!expectedFreshCaught || freshProfileGame.caughtSpeciesCount() != expectedFreshCaught) return 615;
     const auto friendshipBeforeCapture = game.presentation().player.battleState.friendship;
     if (!game.throwPokeball(PokeballType::Pokeball)) return 168;
     const auto* captureParticipantRoot = pokemonRootSpecies(game.presentation().player.dex);

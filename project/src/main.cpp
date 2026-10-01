@@ -92,12 +92,12 @@ int main() {
         auto profileLoaded = profiles.load(PokerogueContent::kContentHash, profileStaging,
             PokerogueContent::kSpeciesCount, count, generation);
         if (profileLoaded == Pokerogue3DS::NativeSaveResult::NotFound) {
-            count = 0;
-            profileLoaded = Pokerogue3DS::NativeSaveResult::Ok;
-        }
-        if (profileLoaded == Pokerogue3DS::NativeSaveResult::Ok &&
-            !game.restoreStarterCandyProfile(profileStaging, count, 0, offlineFriendship))
+            profileLoaded = game.initializeFreshStarterProfile(offlineFriendship)
+                ? Pokerogue3DS::NativeSaveResult::Ok : Pokerogue3DS::NativeSaveResult::InvalidRecord;
+        } else if (profileLoaded == Pokerogue3DS::NativeSaveResult::Ok &&
+            !game.restoreStarterCandyProfile(profileStaging, count, 0, offlineFriendship)) {
             profileLoaded = Pokerogue3DS::NativeSaveResult::InvalidRecord;
+        }
         game.setStorageFeedback(profileLoaded == Pokerogue3DS::NativeSaveResult::Ok
             ? "X: save profile/run  Y: export  L: load"
             : Pokerogue3DS::nativeSaveResultName(profileLoaded));

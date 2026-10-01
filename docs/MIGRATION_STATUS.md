@@ -1037,3 +1037,9 @@
 1. Captura exitosa con perfil adjunto marca caught por especie y cadena prevolutionDex, antes de elegir incorporación, como setPokemonCaught/setPokemonSpeciesCaught pinned. La transacción candidata revierte el ledger si falla el comando.
 2. executeCaptureAttempt recibe el número de especies caught del perfil real en Classic. Export/journal utilizan P3CANDY2 existente; no cuentan filas de amistad como capturas. Sin perfil adjunto permanece el diagnóstico previo, sin fingir persistencia.
 3. Regresiones 590/611–612 cubren captura real, preevoluciones y codificación del perfil actualizado; sin ejecutar. Catching Charm, atributos form/nature/ability/shiny, starters iniciales y callbacks completos siguen pendientes.
+
+## Inicialización de capturas del perfil nuevo — pendiente de ejecución
+
+1. Host llama initializeFreshStarterProfile solo si no existen run ni perfil. Marca starters iniciales desde freshProfileStarter importado, siguiendo GameData.initDexData/defaultStarterSpecies.
+2. Perfiles existentes, incluso legacy vacíos, mantienen sus datos; el método rechaza reinicialización o uso sobre run activa. Transacción candidata conserva estado ante fallo.
+3. Regresiones 613–615 escritas para catálogo dinámico, conteo y rechazo de reinicialización, sin ejecutar. Flags completos de formas/género/nature/ability/IVs iniciales permanecen pendientes.

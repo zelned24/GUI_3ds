@@ -94,6 +94,7 @@ public:
     NativeSaveResult loadNativeProgress(NativeRunSaveStore& runs, NativeStarterCandyStore& profiles,
         NativeStarterCandyRecord* staging, size_t capacity, const PokemonFriendshipPolicy& policy,
         NativeRunSave* loadedRun = nullptr);
+    bool initializeFreshStarterProfile(const PokemonFriendshipPolicy& policy);
     bool restoreStarterCandyProfile(const NativeStarterCandyRecord* records, size_t count,
         uint32_t generation, const PokemonFriendshipPolicy& policy);
     NativeSaveResult saveNativeProgress(NativeProgressStore& store);

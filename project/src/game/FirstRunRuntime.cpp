@@ -261,6 +261,18 @@ bool FirstRunRuntime::restoreStarterCandyProfile(const NativeStarterCandyRecord*
     return true;
 }
 
+bool FirstRunRuntime::initializeFreshStarterProfile(const PokemonFriendshipPolicy& policy) {
+    if (m_starterProfileReady || m_starterProfileGeneration || m_runStarted) return false;
+    FirstRunRuntime candidate = *this;
+    if (!candidate.restoreStarterCandyProfile(nullptr, 0, 0, policy)) return false;
+    // GameData.initDexData marks defaultStarterSpecies caught. Canonical
+    // freshProfileStarter comes from that pinned source list, not local IDs.
+    for (const auto& species : PokerogueContent::kSpecies)
+        if (species.freshProfileStarter && !candidate.recordCaughtSpecies(species.dex)) return false;
+    *this = candidate;
+    return true;
+}
+
 uint32_t FirstRunRuntime::caughtSpeciesCount() const {
     uint32_t count = 0;
     for (size_t i = 0; i < m_starterProfileCount; ++i) count += m_starterProfileRecords[i].caught ? 1 : 0;
