@@ -1225,3 +1225,8 @@
 2. Especies con referencias de formas no default siguen rechazadas hasta persistir/resolver unlocks de forma; no se supone una forma capturada. Metadata legacy incompleta no se sustituye por atributos ficticios. Esto amplía capacidad real, no completa todo el catálogo.
 3. Restauración carga perfil antes de reconstruir actores y vuelve a cargarlo después de replay para eliminar ganancias temporales. Setup se reconstruye con ese mismo perfil. No hay escritura durante replay.
 4. Regresión de desbloqueo anterior extendida con metadata de Pokédex explícita, naturaleza/IV/habilidad efectivos y roundtrip setup. Sin ejecutar; tests/compilación aplazados. Formas/shiny/variantes, preferencias y todas las reglas de combate pendientes.
+
+## Género sin bits en desbloqueo de preevolución
+
+1. Upstream elige masculino cuando caughtAttr no contiene FEMALE-only, incluso si una captura genderless no aporta bits de género a una preevolución gendered. El resolver ahora admite ese default cuando existen metadata de naturaleza y habilidad de captura; no confunde el cero válido con perfiles legacy incompletos.
+2. Mantiene rechazo por ratios imposibles y por metadata ausente. Regresiones distinguen cero de bits con metadata completa frente a legacy sin habilidad; sin ejecutar. Form unlock propagation completa sigue pendiente.

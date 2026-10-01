@@ -719,7 +719,11 @@ extern "C" int runNativeSaveChecks() {
     femaleOnly.genderAttr = 8;
     if (!nativeStarterDefaultGender(femaleOnly, defaultGender) || defaultGender != PokemonGender::Female) return 140;
     femaleOnly.genderAttr = 0;
+    femaleOnly.abilityAttr = 0; // Legacy incomplete metadata, not a known zero-gender capture.
     if (nativeStarterDefaultGender(femaleOnly, defaultGender) || defaultGender != PokemonGender::Female) return 141;
+    auto knownNoGenderBits = purchased;
+    knownNoGenderBits.genderAttr = 0;
+    if (!nativeStarterDefaultGender(knownNoGenderBits, defaultGender) || defaultGender != PokemonGender::Male) return 144;
     bool checkedGenderless = false;
     for (const auto& species : PokerogueContent::kSpecies) {
         if (species.malePercentTenths != 65534) continue;

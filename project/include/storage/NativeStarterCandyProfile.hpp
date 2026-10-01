@@ -69,7 +69,11 @@ inline bool nativeStarterDefaultGender(const NativeStarterCandyRecord& record, P
     const auto* species = PokerogueContent::findSpeciesByDex(record.speciesDex);
     if (!species || (record.genderAttr & ~12u)) return false;
     if (species->malePercentTenths == 65534) { output = PokemonGender::Genderless; return true; }
-    if (!record.genderAttr || species->malePercentTenths > 1000) return false;
+    // A genderless capture can propagate no MALE/FEMALE bits to a gendered
+    // prevolution. Complete captured starter metadata still permits upstream's
+    // default male choice. Legacy profiles without ability/nature stay unknown.
+    if ((!record.genderAttr && (!record.abilityAttr || !record.natureAttr)) ||
+        species->malePercentTenths > 1000) return false;
     const auto selected = (record.genderAttr & 8u) && !(record.genderAttr & 4u) ?
         PokemonGender::Female : PokemonGender::Male;
     if ((selected == PokemonGender::Male && !species->malePercentTenths) ||
