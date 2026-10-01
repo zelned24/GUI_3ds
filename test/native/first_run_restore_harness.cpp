@@ -1242,6 +1242,68 @@ static int checkPlayerPartyManagementAndSwitching() {
         unknownExpGame.playerPartyMember(0)->totalExperience != unknownVictory.playerParty[0].experience ||
         unknownExpGame.playerPartyMember(1)->totalExperience != unknownVictory.playerParty[1].experience)
         return 531;
+    // Force a genuine reserve learnset boundary, retaining its captured identity.
+    NativeRunSave learningVictory = sharedVictory;
+    const auto* reserveSpecies = PokerogueContent::findSpeciesByDex(learningVictory.playerParty[1].speciesDex);
+    const auto* reserveRows = reserveSpecies ? PokerogueContent::levelMovesFor(*reserveSpecies) : nullptr;
+    uint16_t learningLevel = 0;
+    uint16_t proposedMove = 0;
+    for (uint16_t row = 0; reserveRows && row < reserveSpecies->learnsetCount; ++row) {
+        const auto* move = PokerogueContent::findMoveById(reserveRows[row].moveId);
+        if (reserveRows[row].level > 1 && reserveRows[row].level <= classicExperienceLevelCap(learningVictory.wave) &&
+            move && !(move->upstreamFlags & PokerogueContent::MoveIsUnimplemented)) {
+            learningLevel = reserveRows[row].level;
+            proposedMove = move->id;
+            break;
+        }
+    }
+    if (!learningLevel) return 532;
+    auto reserveLearningActor = restoredPartyGame.playerPartyMember(1)->battleState;
+    if (!recalculatePokemonBattleLevel(reserveLearningActor, learningLevel - 1)) return 533;
+    for (auto& move : reserveLearningActor.moves) move = {};
+    reserveLearningActor.moveCount = 0;
+    reserveLearningActor.pauseEvolutions = true;
+    for (const auto& move : PokerogueContent::kMoves) {
+        if (reserveLearningActor.moveCount == 4) break;
+        if (!move.id || move.id == proposedMove || move.pp < 1 || move.pp > 255 ||
+            (move.upstreamFlags & PokerogueContent::MoveIsUnimplemented)) continue;
+        if (learnPokemonMoveAtSlot(reserveLearningActor, move.id, reserveLearningActor.moveCount) !=
+                PokemonLearnMoveResult::Learned) return 534;
+    }
+    uint32_t nextReserveThreshold = 0;
+    if (reserveLearningActor.moveCount != 4 || pokemonTotalExperienceForLevel(reserveSpecies->growthRate,
+            learningLevel, nextReserveThreshold) != PokemonExperienceResult::Ok || !nextReserveThreshold ||
+        !captureNativePokemonActorSave(reserveLearningActor, restoredPartyGame.playerPartyMember(1)->actor,
+            nextReserveThreshold - 1, learningVictory.playerParty[1])) return 535;
+    auto cappedActive = restoredPartyGame.presentation().player.battleState;
+    const uint16_t learningCap = classicExperienceLevelCap(learningVictory.wave);
+    uint32_t cappedActiveExp = 0;
+    const auto* activeSpecies = PokerogueContent::findSpeciesByDex(cappedActive.speciesDex);
+    if (!activeSpecies || !recalculatePokemonBattleLevel(cappedActive, learningCap) ||
+        pokemonTotalExperienceForLevel(activeSpecies->growthRate, learningCap, cappedActiveExp) !=
+            PokemonExperienceResult::Ok || !captureNativePokemonActorSave(cappedActive,
+            restoredPartyGame.presentation().player.actor, cappedActiveExp, learningVictory.playerParty[0])) return 536;
+    learningVictory.playerLevel = learningCap;
+    learningVictory.playerExperience = cappedActiveExp;
+    learningVictory.playerHp = cappedActive.hp;
+    learningVictory.playerMoveCount = cappedActive.moveCount;
+    for (uint8_t slot = 0; slot < 4; ++slot) {
+        learningVictory.playerMoveIds[slot] = cappedActive.moves[slot].moveId;
+        learningVictory.playerPp[slot] = cappedActive.moves[slot].pp;
+    }
+    FirstRunRuntime reserveLearningGame(5);
+    if (!reserveLearningGame.restoreNativeRunSave(learningVictory) || !reserveLearningGame.advanceBattleTurn() ||
+        !reserveLearningGame.moveLearningPending() || reserveLearningGame.progressionPartyIndex() != 1 ||
+        reserveLearningGame.activePlayerPartyIndex() != 0) return 537;
+    const uint16_t queuedMove = reserveLearningGame.pendingLearnMoveId();
+    if (!reserveLearningGame.resolvePendingLearnMove(0) ||
+        reserveLearningGame.playerPartyMember(1)->battleState.moves[0].moveId != queuedMove ||
+        reserveLearningGame.presentation().player.battleState.moves[0].moveId != cappedActive.moves[0].moveId ||
+        reserveLearningGame.presentation().player.totalExperience != cappedActiveExp) return 538;
+    for (unsigned decision = 0; decision < 512 &&
+            (reserveLearningGame.moveLearningPending() || reserveLearningGame.evolutionPending()); ++decision)
+        if (!reserveLearningGame.skipVictoryReward()) return 539;
+    if (reserveLearningGame.moveLearningPending() || reserveLearningGame.evolutionPending()) return 540;
     // Restore a captured actor as active without granting it the starter's EXP.
     NativeRunSave reserveActiveSave = capturedPartySave;
     reserveActiveSave.activePlayerMember = 1;

@@ -1010,7 +1010,10 @@ bool FirstRunRuntime::grantVictoryExperience() {
     if (m_experienceGranted || !m_context.player.actorIdentityResolved ||
         !m_context.enemy.actorIdentityResolved) return false;
     if (m_doubleBattle && !m_secondEncounterResolved) return false;
-    if (!m_participantHistoryResolved && m_context.playerPartyCount > 1) return false;
+    if (!m_participantHistoryResolved && m_context.playerPartyCount > 1) {
+        m_battleFeedback = "Party EXP requires persisted participant history";
+        return false;
+    }
     const auto* starter = PokerogueContent::findSpeciesByDex(m_context.player.dex);
     const auto* defeated = PokerogueContent::findSpeciesByDex(m_context.enemy.dex);
     const auto* defeatedForm = m_context.enemy.formId

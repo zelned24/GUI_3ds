@@ -839,3 +839,9 @@
 
 5. Un historial legacy desconocido con varios miembros bloquea la concesión de EXP antes de publicar cambios: no inventa al participante activo como sustituto de todo el historial. La lectura de la run se conserva, pero necesita una migración explícita para conceder recompensas pendientes con ese estado.
 6. Fixtures de KO anteriores declaran ahora al actor real participante al fabricar BattleWon; sus asserts se conservan. Regresiones 530–531 añaden reserva no participante y rechazo atómico de historial desconocido con dos miembros. Todas pendientes de ejecución.
+
+## Regresión de aprendizaje de una reserva
+
+1. Regresiones 532–540 escritas a partir de una identidad capturada y su learnset canónico: reserva a un EXP del próximo movimiento, cuatro slots ocupados y actor activo en cap. La cola debe seleccionar al miembro 1; reemplazar su slot no cambia el moveset ni EXP del actor activo. Las decisiones restantes se drenan por los comandos existentes.
+2. No se cambia ningún assert previo; los niveles y movimientos se resuelven del catálogo. La policy pauseEvolutions de esta fixture aísla la selección del destinatario de los callbacks de evolución.
+3. Historial multiparty desconocido ahora muestra feedback explícito al rechazar la concesión. Regresiones sin ejecutar; tests, compilación y validación Azahar/Old 3DS siguen pendientes.
