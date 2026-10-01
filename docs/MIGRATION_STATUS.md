@@ -605,3 +605,8 @@
 
 1. Rutas nativas self-heal, clima, stat-stage y Trick Room pasan por el mismo cierre HitHealModifier que los ataques. Conserva turnDamageDealt acumulado; movimiento sin dano nuevo no sustituye el contador por cero. Fallos se propagan al comando candidato.
 2. Regresiones 434-435 escritas para acumulador conservado y ausencia de dano; tests/compilacion aplazados. Inventario sigue bloqueado hasta resolver dispatcher completo, tags/charms y multihit.
+
+## Cancelacion previa a MoveEffectPhase
+
+1. Shell Bell no cura tras cancelacion por clima primordial: MovePhase.secondFailureCheck termina antes de crear MoveEffectPhase. Rutas normal/recoil/drain respetan weatherCancelled. Conserva dano acumulado para consumidores posteriores.
+2. Revision estatica; tests/compilacion aplazados. Otras cancelaciones previas siguen pendientes.

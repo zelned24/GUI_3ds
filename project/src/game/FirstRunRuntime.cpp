@@ -1683,7 +1683,7 @@ bool FirstRunRuntime::executeActiveBattleMove(uint8_t userIndex, uint8_t targetI
         if (applyPokemonRecoil(nextUser, move->id, attack.damageApplied,
             attack.damageRoll.hit && !attack.weatherCancelled, policy, recoil) != PokemonRecoilResult::Ok)
             return false;
-        if (!applyMoveHeldHealing(nextUser)) return false;
+        if (!attack.weatherCancelled && !applyMoveHeldHealing(nextUser)) return false;
         user = nextUser;
         opponent = nextOpponent;
         rng = nextRng;
@@ -1712,7 +1712,7 @@ bool FirstRunRuntime::executeActiveBattleMove(uint8_t userIndex, uint8_t targetI
         if (attack.damageRoll.hit && !attack.weatherCancelled && attack.damageApplied &&
             applyPokemonDamageDrain(nextUser, move->id, attack.damageApplied, policy, event) !=
                 PokemonHealingResult::Ok) return false;
-        if (!applyMoveHeldHealing(nextUser)) return false;
+        if (!attack.weatherCancelled && !applyMoveHeldHealing(nextUser)) return false;
         user = nextUser;
         opponent = nextOpponent;
         rng = nextRng;
@@ -1733,7 +1733,7 @@ bool FirstRunRuntime::executeActiveBattleMove(uint8_t userIndex, uint8_t targetI
             &weather, &critical, &hit, &pp, targetIsBoss ? &nextBossState : nullptr,
             targetIsBoss ? &bossPolicy : nullptr,
             targetIsBoss ? &nextGlobalRng : nullptr) != PokemonMoveActionStatus::Ok) return false;
-    if (!applyMoveHeldHealing(nextUser)) return false;
+    if (!result.weatherCancelled && !applyMoveHeldHealing(nextUser)) return false;
     user = nextUser;
     opponent = nextOpponent;
     rng = nextRng;
