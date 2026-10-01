@@ -15,9 +15,11 @@ bool canPokemonAddConfusionTag(const PokemonConfusionTagState& tag,
 
 PokemonConfusionTagResult addPokemonConfusionTag(PokemonConfusionTagState& tag,
     uint32_t turns, const PokemonConfusionTagPolicy& policy,
-    uint16_t sourceMoveId, bool sourceMoveResolved) {
+    uint16_t sourceMoveId, bool sourceMoveResolved,
+    uint32_t sourcePokemonId, bool sourcePokemonResolved) {
     if (!turns || !validPokemonConfusionTag(tag) ||
         (!sourceMoveResolved && sourceMoveId) ||
+        (!sourcePokemonResolved && sourcePokemonId) ||
         (sourceMoveId && !PokerogueContent::findMoveById(sourceMoveId)))
         return PokemonConfusionTagResult::Invalid;
     // Existing tag's onOverlap runs before immunity callbacks; never refresh duration.
@@ -26,13 +28,14 @@ PokemonConfusionTagResult addPokemonConfusionTag(PokemonConfusionTagState& tag,
     if (policy.ownAbilityBlocks) return PokemonConfusionTagResult::OwnAbility;
     if (policy.allyAbilityBlocks) return PokemonConfusionTagResult::AllyAbility;
     if (policy.grounded && policy.mistyTerrain) return PokemonConfusionTagResult::MistyTerrain;
-    tag = {turns, true, sourceMoveId, sourceMoveResolved};
+    tag = {turns, true, sourceMoveId, sourceMoveResolved, sourcePokemonId, sourcePokemonResolved};
     return PokemonConfusionTagResult::Added;
 }
 
 bool applyPokemonMoveConfusion(PokemonBattleState& target, uint16_t moveId,
     int16_t effectiveChance, bool safeguardBlocks, const PokemonConfusionTagPolicy& policy,
-    PokerogueRngAdapter& rng, PokemonMoveConfusionEvent& output) {
+    PokerogueRngAdapter& rng, PokemonMoveConfusionEvent& output,
+    uint32_t sourcePokemonId, bool sourcePokemonResolved) {
     const PokerogueContent::MoveConfusionEffect* effect = nullptr;
     for (const auto& row : PokerogueContent::kMoveConfusionEffects)
         if (row.moveId == moveId) { if (effect) return false; effect = &row; }
@@ -54,7 +57,8 @@ bool applyPokemonMoveConfusion(PokemonBattleState& target, uint16_t moveId,
         if (passed) {
             event.duration = nextRng.randSeedIntRange(effect->minimumTurns, effect->maximumTurns);
             event.tagAttempted = true;
-            event.tagResult = addPokemonConfusionTag(nextTag, event.duration, policy, moveId, true);
+            event.tagResult = addPokemonConfusionTag(nextTag, event.duration, policy, moveId, true,
+                sourcePokemonId, sourcePokemonResolved);
             if (event.tagResult == PokemonConfusionTagResult::Invalid ||
                 event.tagResult == PokemonConfusionTagResult::Unsupported) return false;
         }
@@ -211,7 +215,8 @@ PokemonStatusImmunityResult executePokemonStatusConfusionReaction(const PokemonB
     if (result != PokemonStatusImmunityResult::Resolved) return result;
     if (event.reaction.requestConfusionTag) {
         event.tagAttempted = true;
-        event.tagResult = addPokemonConfusionTag(nextTag, event.reaction.turns, applyPolicy, 0, true);
+        event.tagResult = addPokemonConfusionTag(nextTag, event.reaction.turns, applyPolicy, 0, true,
+            recipient.pokemonId, true);
         if (event.tagResult == PokemonConfusionTagResult::Unsupported ||
             event.tagResult == PokemonConfusionTagResult::Invalid)
             return PokemonStatusImmunityResult::UnsupportedCondition;

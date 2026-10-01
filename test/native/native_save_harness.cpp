@@ -164,17 +164,20 @@ extern "C" int runNativeSaveChecks() {
     if (validateNativeRunSave(statusSave, PokerogueContent::kContentHash) != NativeSaveResult::InvalidRecord)
         return 9005;
     NativeRunSave confusionSave = trainerSave;
-    confusionSave.playerConfusion = {3, true, 109, true};
-    confusionSave.enemyConfusion = {2, true, 93, true};
+    confusionSave.playerConfusion = {3, true, 109, true, 0, true};
+    confusionSave.enemyConfusion = {2, true, 93, true, 0xffffffffu, true};
     confusionSave.trainerParty[confusionSave.activeTrainerMember].confusion = confusionSave.enemyConfusion;
-    confusionSave.trainerParty[1].confusion = {5, true, 0, true};
+    confusionSave.trainerParty[1].confusion = {5, true, 0, true, 42, true};
     if (encodeNativeRunSave(confusionSave, partyBytes, sizeof(partyBytes), partySize) != NativeSaveResult::Ok ||
         decodeNativeRunSave(partyBytes, partySize, PokerogueContent::kContentHash, restored) != NativeSaveResult::Ok ||
         restored.saveVersion != kNativeSaveVersion || restored.playerConfusion.turns != 3 ||
         restored.enemyConfusion.turns != 2 || restored.trainerParty[1].confusion.turns != 5 ||
         !restored.playerConfusion.sourceMoveResolved || restored.playerConfusion.sourceMoveId != 109 ||
         !restored.enemyConfusion.sourceMoveResolved || restored.enemyConfusion.sourceMoveId != 93 ||
-        !restored.trainerParty[1].confusion.sourceMoveResolved || restored.trainerParty[1].confusion.sourceMoveId) return 9180;
+        !restored.trainerParty[1].confusion.sourceMoveResolved || restored.trainerParty[1].confusion.sourceMoveId ||
+        !restored.playerConfusion.sourcePokemonResolved || restored.playerConfusion.sourcePokemonId ||
+        !restored.enemyConfusion.sourcePokemonResolved || restored.enemyConfusion.sourcePokemonId != 0xffffffffu ||
+        restored.trainerParty[1].confusion.sourcePokemonId != 42) return 9180;
     {
         // Build the exact v16 layout by removing only v17 source metadata.
         char legacyBytes[kNativeSaveMaxBytes]{};
@@ -183,9 +186,9 @@ extern "C" int runNativeSaveChecks() {
         const size_t legacyPayload = static_cast<size_t>(sourceStart - partyBytes);
         std::memcpy(legacyBytes, partyBytes, legacyPayload);
         for (size_t n = 0; n < legacyPayload; ++n) {
-            if (n + 16 <= legacyPayload && std::memcmp(legacyBytes + n, "saveVersion=0011", 16) == 0)
+            if (n + 16 <= legacyPayload && std::memcmp(legacyBytes + n, "saveVersion=0012", 16) == 0)
                 std::memcpy(legacyBytes + n + 12, "0010", 4);
-            if (n + 19 <= legacyPayload && std::memcmp(legacyBytes + n, "runtimeVersion=0011", 19) == 0)
+            if (n + 19 <= legacyPayload && std::memcmp(legacyBytes + n, "runtimeVersion=0012", 19) == 0)
                 std::memcpy(legacyBytes + n + 15, "0010", 4);
         }
         IntegritySha256::hashHex(legacyBytes, legacyPayload, digest);
@@ -198,6 +201,34 @@ extern "C" int runNativeSaveChecks() {
             restored.playerConfusion.sourceMoveResolved || restored.playerConfusion.sourceMoveId ||
             restored.enemyConfusion.sourceMoveResolved || restored.enemyConfusion.sourceMoveId ||
             restored.trainerParty[1].confusion.sourceMoveResolved) return 9512;
+        const char* actorStart = std::strstr(partyBytes, "playerConfusionActor=");
+        if (!actorStart) return 9521;
+        const size_t v17Payload = static_cast<size_t>(actorStart - partyBytes);
+        std::memcpy(legacyBytes, partyBytes, v17Payload);
+        for (size_t n = 0; n < v17Payload; ++n) {
+            if (n + 16 <= v17Payload && std::memcmp(legacyBytes + n, "saveVersion=0012", 16) == 0)
+                std::memcpy(legacyBytes + n + 12, "0011", 4);
+            if (n + 19 <= v17Payload && std::memcmp(legacyBytes + n, "runtimeVersion=0012", 19) == 0)
+                std::memcpy(legacyBytes + n + 15, "0011", 4);
+        }
+        IntegritySha256::hashHex(legacyBytes, v17Payload, digest);
+        std::memcpy(legacyBytes + v17Payload, "sha256=", 7);
+        std::memcpy(legacyBytes + v17Payload + 7, digest, 64);
+        legacyBytes[v17Payload + 71] = '\n';
+        if (decodeNativeRunSave(legacyBytes, v17Payload + 72, PokerogueContent::kContentHash, restored) !=
+                NativeSaveResult::Ok || restored.saveVersion != kNativeSaveVersion ||
+            restored.playerConfusion.sourceMoveId != 109 || !restored.playerConfusion.sourceMoveResolved ||
+            restored.enemyConfusion.sourceMoveId != 93 || restored.enemyConfusion.sourcePokemonResolved ||
+            restored.enemyConfusion.sourcePokemonId) return 9522;
+        auto invalidActor = confusionSave;
+        invalidActor.enemyConfusion.sourcePokemonId = 42;
+        if (validateNativeRunSave(invalidActor, PokerogueContent::kContentHash) != NativeSaveResult::InvalidRecord)
+            return 9523;
+        invalidActor = confusionSave;
+        invalidActor.enemyConfusion.sourcePokemonResolved = false;
+        invalidActor.trainerParty[0].confusion = invalidActor.enemyConfusion;
+        if (validateNativeRunSave(invalidActor, PokerogueContent::kContentHash) != NativeSaveResult::InvalidRecord)
+            return 9524;
         auto invalidSource = confusionSave;
         invalidSource.enemyConfusion.sourceMoveId = 60;
         if (validateNativeRunSave(invalidSource, PokerogueContent::kContentHash) != NativeSaveResult::InvalidRecord)

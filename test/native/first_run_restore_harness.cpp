@@ -3135,7 +3135,7 @@ int main() {
         if (captureNativePokemonActorSave(tagState, currentActor.actor, currentActor.totalExperience, tagSnapshot))
             return 9046;
         tagState.pendingStatus = PokemonStatusEffect::None;
-        tagState.confusion = {3, true, 109, true};
+        tagState.confusion = {3, true, 109, true, 0xffffffffu, true};
         if (!captureNativePokemonActorSave(tagState, currentActor.actor, currentActor.totalExperience, tagSnapshot))
             return 9161;
         char confusionBytes[512]{};
@@ -3144,17 +3144,24 @@ int main() {
         PokemonBattleState confusionRestored{};
         PokemonActorIdentity confusionIdentity{};
         if (encodeNativePokemonSave(tagSnapshot, confusionBytes, sizeof(confusionBytes), confusionSize) !=
-                NativeSaveResult::Ok || confusionBytes[8] != '9' ||
+                NativeSaveResult::Ok || confusionBytes[8] != 'a' ||
             decodeNativePokemonSave(confusionBytes, confusionSize, confusionDecoded) != NativeSaveResult::Ok ||
             !restoreNativePokemonActorSave(confusionDecoded, confusionRestored, confusionIdentity) ||
             !confusionRestored.confusion.present || confusionRestored.confusion.turns != 3 ||
-            !confusionRestored.confusion.sourceMoveResolved || confusionRestored.confusion.sourceMoveId != 109) return 9170;
+            !confusionRestored.confusion.sourceMoveResolved || confusionRestored.confusion.sourceMoveId != 109 ||
+            !confusionRestored.confusion.sourcePokemonResolved ||
+            confusionRestored.confusion.sourcePokemonId != 0xffffffffu) return 9170;
+        // Actor v9 retains move provenance but lacks source actor identity.
+        confusionBytes[8] = '9';
+        if (decodeNativePokemonSave(confusionBytes, confusionSize - 11, confusionDecoded) != NativeSaveResult::Ok ||
+            confusionDecoded.confusion.sourceMoveId != 109 || !confusionDecoded.confusion.sourceMoveResolved ||
+            confusionDecoded.confusion.sourcePokemonResolved || confusionDecoded.confusion.sourcePokemonId) return 9520;
         // Actor v8 has duration but no source fields: preserve unknown origin.
         confusionBytes[8] = '8';
-        if (decodeNativePokemonSave(confusionBytes, confusionSize - 7, confusionDecoded) != NativeSaveResult::Ok ||
+        if (decodeNativePokemonSave(confusionBytes, confusionSize - 18, confusionDecoded) != NativeSaveResult::Ok ||
             confusionDecoded.confusion.turns != 3 || confusionDecoded.confusion.sourceMoveResolved ||
             confusionDecoded.confusion.sourceMoveId) return 9510;
-        confusionBytes[8] = '9';
+        confusionBytes[8] = 'a';
         if (decodeNativePokemonSave(confusionBytes, confusionSize - 1, confusionDecoded) == NativeSaveResult::Ok)
             return 9171;
         tagSnapshot.status.present = true;

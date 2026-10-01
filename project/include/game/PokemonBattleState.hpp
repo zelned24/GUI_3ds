@@ -215,11 +215,15 @@ struct PokemonConfusionTagState {
     uint16_t sourceMoveId = 0;
     // false: legacy/unknown; true with ID zero: upstream explicitly omitted sourceMove.
     bool sourceMoveResolved = false;
+    uint32_t sourcePokemonId = 0;
+    bool sourcePokemonResolved = false; // Legacy unknown differs from a valid PID zero.
 };
 
 inline bool validPokemonConfusionTag(const PokemonConfusionTagState& tag) {
     if (tag.present != (tag.turns != 0)) return false;
-    if (!tag.present) return !tag.sourceMoveId && !tag.sourceMoveResolved;
+    if (!tag.present) return !tag.sourceMoveId && !tag.sourceMoveResolved &&
+        !tag.sourcePokemonId && !tag.sourcePokemonResolved;
+    if (!tag.sourcePokemonResolved && tag.sourcePokemonId) return false;
     if (!tag.sourceMoveResolved) return !tag.sourceMoveId;
     return !tag.sourceMoveId || PokerogueContent::findMoveById(tag.sourceMoveId);
 }
@@ -233,7 +237,7 @@ struct PokemonBattleState {
     uint8_t friendship = 0; // Persistent Pokemon friendship, initialized from pinned species.
     PokemonStatusState status{}; // Persistent nonvolatile status, stored in run v15.
     PokemonStatusEffect pendingStatus = PokemonStatusEffect::None; // PokemonTurnData; queue must drain before checkpoint.
-    PokemonConfusionTagState confusion{}; // Transient summon tag; actor v9 / run v17.
+    PokemonConfusionTagState confusion{}; // Transient summon tag; actor v10 / run v18.
     HeldItemLostTagState heldItemLostTags{}; // Transient summon data.
     uint32_t turnDamageDealt = 0; // PokemonTurnData.totalDamageDealt; reset after turn effects.
     PokemonGender gender = PokemonGender::Unspecified;
@@ -741,7 +745,8 @@ bool canPokemonAddConfusionTag(const PokemonConfusionTagState& tag,
     const PokemonConfusionTagPolicy& policy, bool& output);
 PokemonConfusionTagResult addPokemonConfusionTag(PokemonConfusionTagState& tag,
     uint32_t turns, const PokemonConfusionTagPolicy& policy,
-    uint16_t sourceMoveId = 0, bool sourceMoveResolved = false);
+    uint16_t sourceMoveId = 0, bool sourceMoveResolved = false,
+    uint32_t sourcePokemonId = 0, bool sourcePokemonResolved = false);
 bool removePokemonConfusionTag(PokemonConfusionTagState& tag);
 struct PokemonMoveConfusionEvent {
     uint16_t moveId = 0;
@@ -758,7 +763,8 @@ struct PokemonMoveConfusionEvent {
 // skip the duration draw after chance succeeds.
 bool applyPokemonMoveConfusion(PokemonBattleState& target, uint16_t moveId,
     int16_t effectiveChance, bool safeguardBlocks, const PokemonConfusionTagPolicy& policy,
-    PokerogueRngAdapter& rng, PokemonMoveConfusionEvent& output);
+    PokerogueRngAdapter& rng, PokemonMoveConfusionEvent& output,
+    uint32_t sourcePokemonId = 0, bool sourcePokemonResolved = false);
 inline bool calculatePokemonConfusionMoveAiBenefit(uint16_t moveId, int16_t chance, double& output) {
     for (const auto& profile : PokerogueContent::kMoveConfusionEffects) {
         if (profile.moveId != moveId) continue;

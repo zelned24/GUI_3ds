@@ -7,8 +7,8 @@
 
 namespace Pokerogue3DS {
 
-inline constexpr uint16_t kNativeSaveVersion = 17;
-inline constexpr uint16_t kNativeSaveRuntimeVersion = 17;
+inline constexpr uint16_t kNativeSaveVersion = 18;
+inline constexpr uint16_t kNativeSaveRuntimeVersion = 18;
 // Bounded text envelope including six trainer members and field/inventory state.
 inline constexpr size_t kNativeSaveMaxBytes = 8192;
 inline constexpr size_t kNativeHeldModifierCapacity = 32;
@@ -52,7 +52,7 @@ struct NativePokemonSave {
     uint8_t pp[4]{};
     int8_t statStages[7]{};
     PokemonStatusState status{}; // Actor payload v7; older payloads contain no status.
-    PokemonConfusionTagState confusion{}; // Actor payload v9, summon data.
+    PokemonConfusionTagState confusion{}; // Actor payload v10, summon data.
     bool ivsDerivedFromId = false;
     bool pauseEvolutions = false;
     uint8_t maxPp[4]{};

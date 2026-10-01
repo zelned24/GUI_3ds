@@ -2491,7 +2491,7 @@ bool FirstRunRuntime::executeActiveBattleMove(uint8_t userIndex, uint8_t targetI
         PokemonMoveConfusionEvent confusionEvent{};
         if (!resolvePokemonStatusMoveHit(*move, false, command.move.hit, nextRng, hitEvent)) return false;
         if (hitEvent.hit && !applyPokemonMoveConfusion(nextOpponent, move->id, command.move.effectiveChance,
-                recipient.status.safeguardBlocks, recipient.confusion, nextRng, confusionEvent)) return false;
+                recipient.status.safeguardBlocks, recipient.confusion, nextRng, confusionEvent, nextUser.pokemonId, true)) return false;
         const uint8_t consumed = pp.cost < nextUser.moves[moveSlot].pp ? pp.cost : nextUser.moves[moveSlot].pp;
         nextUser.moves[moveSlot].pp -= consumed;
         if (!applyMoveHeldHealing(nextUser)) return false;
@@ -2725,7 +2725,7 @@ bool FirstRunRuntime::executeActiveBattleMove(uint8_t userIndex, uint8_t targetI
         if (!resolveActiveStatusRecipientPolicies(nextOpponent, nextUser, PokemonStatusEffect::None, recipient) ||
             !resolvePokemonMoveEffectChance(move->id, nextUser.abilityId, nextOpponent.abilityId, false, chance) ||
             !applyPokemonMoveConfusion(nextOpponent, move->id, chance, recipient.status.safeguardBlocks,
-                recipient.confusion, nextRng, confusionEvent)) return false;
+                recipient.confusion, nextRng, confusionEvent, nextUser.pokemonId, true)) return false;
     }
     if (!result.weatherCancelled && !applyMoveHeldHealing(nextUser)) return false;
     user = nextUser;

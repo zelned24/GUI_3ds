@@ -1763,3 +1763,10 @@
 2. Actor v9 y partida/runtime v17 serializan ese origen; readers conservan v8/v16 con origen desconocido, sin inventar un ataque. Validación rechaza IDs inexistentes, metadata en tags ausentes y discrepancias entre actor activo y equipo. Overlap conserva origen; expiración/retirada limpian metadata.
 3. Regresiones escritas para creación/overlap/Puppeteer, roundtrip de actor/partida, migración v8/v16 y fuentes incoherentes. Tests y compilación siguen aplazados; no se declara validación ejecutada ni Classic completo.
 4. sourceId del Pokémon productor y otros productores/tags siguen pendientes; este cambio conserva únicamente sourceMove. Las partidas antiguas no contienen información suficiente para reconstruirlo.
+
+## Identidad sourceId de confusión: actor v10 / partida v18
+
+1. Fuente pinned 8555c08c823b856cbec4eb99ca84ea52a955836d: src/data/moves/move.ts, AddBattlerTagAttr.apply usa user.id; src/data/abilities/ab-attrs.ts, ConfusionOnStatusEffectAbAttr.apply usa opponent.id. El segundo se conserva literalmente: no se sustituye por el propietario de la habilidad.
+2. FirstRunRuntime entrega PID del usuario en ambas rutas activas ConfuseAttr (estado y daño). Reacción Puppeteer entrega PID del destinatario. PID cero es válido y se distingue de identidad desconocida con un flag; no exige que el productor siga en el equipo actual.
+3. Actor v10 (hex a) y partida/runtime v18 conservan PID. Readers admiten actor v8/v9 y partida v16/v17 con identidad desconocida, manteniendo movimiento conocido cuando existe. Overlap conserva identidad y retirada/expiración borran todos los campos.
+4. Regresiones escritas para cero/UINT32_MAX, overlap con otro productor, Puppeteer, roundtrip, migraciones y coherencia activo/equipo. Tests y compilación aplazados; Classic completo, otros tags/productores y validación en Azahar/Old 3DS siguen pendientes.
