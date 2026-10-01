@@ -56,6 +56,25 @@ extern "C" int runPokemonBattleStateChecks() {
     if (Pokerogue3DS::applyPokemonExperience(highLevelSpecies->growthRate, 200, exp200 + 7,
             10, 198, highProgress) != Pokerogue3DS::PokemonExperienceResult::Ok ||
         highProgress.level != 200 || highProgress.totalExperience != exp200 + 7) return 526;
+    const auto* rareCandy = Pokerogue3DS::levelIncrementItemProfile("RARE_CANDY");
+    const auto* rarerCandy = Pokerogue3DS::levelIncrementItemProfile("RARER_CANDY");
+    if (!rareCandy || rareCandy->allParty || !rarerCandy || !rarerCandy->allParty ||
+        !rareCandy->sourceHash || Pokerogue3DS::levelIncrementItemProfile("UNKNOWN_ITEM")) return 527;
+    Pokerogue3DS::PokemonLevelIncrementPlan candyPlan{};
+    if (Pokerogue3DS::planPokemonLevelIncrement(highLevelSpecies->growthRate, 199, exp199,
+            0, true, 10000, candyPlan) != Pokerogue3DS::PokemonExperienceResult::Ok ||
+        candyPlan.progress.level != 200 || candyPlan.progress.totalExperience != exp200 ||
+        candyPlan.previousLevel != 199 || !candyPlan.requiresFriendship ||
+        !candyPlan.requiresLevelUpPhase) return 528;
+    if (Pokerogue3DS::planPokemonLevelIncrement(highLevelSpecies->growthRate, 199, exp199,
+            2, true, 200, candyPlan) != Pokerogue3DS::PokemonExperienceResult::Ok ||
+        candyPlan.progress.level != 202 || candyPlan.progress.totalExperience != exp199) return 529;
+    if (Pokerogue3DS::planPokemonLevelIncrement(highLevelSpecies->growthRate, 199, exp199,
+            0, false, 10000, candyPlan) != Pokerogue3DS::PokemonExperienceResult::UnresolvedPolicy ||
+        candyPlan.progress.level != 202) return 530;
+    if (Pokerogue3DS::planPokemonLevelIncrement(highLevelSpecies->growthRate, 199, exp199,
+            100, true, 10000, candyPlan) != Pokerogue3DS::PokemonExperienceResult::InvalidLevel ||
+        candyPlan.progress.level != 202) return 531;
     highLevelInput.level = 65535;
     const uint16_t previousHp = highLevelActor.hp;
     if (Pokerogue3DS::initializePokemonBattleState(highLevelInput, highLevelActor) !=

@@ -687,3 +687,10 @@
 
 1. `applyPokemonExperience` acepta niveles superiores al cap de wave y EXP previa inferior al umbral del nivel actual, estados posibles tras `PokemonLevelIncrementModifier.apply`. Replica `PlayerPokemon.addExp` pinned: conserva el nivel y, al alcanzar/superar el cap, fija EXP a `max(umbral del nivel actual, EXP previa)`.
 2. Regresiones 525–526 escritas para esos estados, sin ejecutar. Esto elimina un rechazo incompatible; todavía no habilita Rare Candy sin amistad, progreso de caramelos y decisiones pendientes.
+
+## Recompensas de nivel: catálogo y planificación
+
+1. Rare Candy/Rarer Candy generan `LevelIncrementItemProfile` desde sus constructores canónicos reales, con ID, alcance individual/equipo y provenance. No se infiere el alcance desde IDs locales.
+2. `planPokemonLevelIncrement` aplica incremento de uno más stacks de Candy Jar (máximo upstream 99), calcula EXP bajo el límite sin cap solicitado y conserva EXP por encima de ese límite. La policy del booster debe estar resuelta. Las salidas indican amistad y LevelUpPhase pendientes; no consume el item.
+3. Fuentes pinned inspeccionadas: `src/modifier/modifier-type.ts`, `PokemonLevelIncrementModifierType`/`AllPokemonLevelIncrementModifierType`; `src/modifier/modifier.ts`, `PokemonLevelIncrementModifier.apply`/`LevelIncrementBoosterModifier.apply`; `src/battle-scene.ts`, `getMaxExpLevel`. Representación de EXP sigue limitada a uint32; overflow no fabrica un resultado.
+4. Regresiones 527–531 escritas, pendientes de ejecución. Recompensas de nivel todavía no habilitadas en `claimRewardChoice`: falta amistad persistente, starter candy y cola de decisiones por destinatario.

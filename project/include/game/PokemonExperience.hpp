@@ -11,6 +11,7 @@ enum class PokemonExperienceResult : uint8_t {
     InvalidLevel,
     UnknownGrowthRate,
     Overflow,
+    UnresolvedPolicy,
 };
 
 struct PokemonExperienceProgress {
@@ -64,6 +65,45 @@ inline PokemonExperienceResult pokemonTotalExperienceForLevel(
     const double result = rate == 2 ? raw : raw * 0.325 + n3 * 0.675;
     if (result < 0.0 || result > 4294967295.0) return PokemonExperienceResult::Overflow;
     output = static_cast<uint32_t>(result); // upstream Math.floor
+    return PokemonExperienceResult::Ok;
+}
+
+inline const PokerogueContent::LevelIncrementItemProfile* levelIncrementItemProfile(const char* itemId) {
+    if (!itemId) return nullptr;
+    for (const auto& profile : PokerogueContent::kLevelIncrementItemProfiles)
+        if (std::strcmp(profile.itemId, itemId) == 0) return &profile;
+    return nullptr;
+}
+
+struct PokemonLevelIncrementPlan {
+    PokemonExperienceProgress progress{};
+    uint16_t previousLevel = 0;
+    bool requiresFriendship = true;
+    bool requiresLevelUpPhase = true;
+};
+
+// Numeric part of pinned PokemonLevelIncrementModifier.apply. This is a plan,
+// not item consumption: friendship/candy progress and LevelUpPhase must follow.
+inline PokemonExperienceResult planPokemonLevelIncrement(
+    const char* growthRate, uint16_t currentLevel, uint32_t currentExperience,
+    uint16_t candyJarStacks, bool boosterPolicyResolved, uint16_t uncappedExpLimit,
+    PokemonLevelIncrementPlan& output) {
+    if (!boosterPolicyResolved) return PokemonExperienceResult::UnresolvedPolicy;
+    if (candyJarStacks > 99 || !currentLevel || !uncappedExpLimit)
+        return PokemonExperienceResult::InvalidLevel;
+    const uint32_t level = static_cast<uint32_t>(currentLevel) + 1 + candyJarStacks;
+    if (level > 10000) return PokemonExperienceResult::InvalidLevel;
+    uint8_t rate = 0;
+    if (!pokemonGrowthRateIndex(growthRate, rate)) return PokemonExperienceResult::UnknownGrowthRate;
+    uint32_t experience = currentExperience;
+    if (level <= uncappedExpLimit) {
+        const auto status = pokemonTotalExperienceForLevel(growthRate, static_cast<uint16_t>(level), experience);
+        if (status != PokemonExperienceResult::Ok) return status;
+    }
+    PokemonLevelIncrementPlan next{};
+    next.progress = {static_cast<uint16_t>(level), experience};
+    next.previousLevel = currentLevel;
+    output = next;
     return PokemonExperienceResult::Ok;
 }
 

@@ -1072,5 +1072,13 @@ const ballRewardRows = collections.items.flatMap(item => {
 });
 const ballRewardHeader = reviveHeader.replace('struct MoveAttribute {',
   `struct PokeballRewardProfile { const char* itemId; const char* ballSymbol; uint16_t count; const char* sourcePath; const char* sourceSymbol; const char* sourceHash; };\ninline constexpr PokeballRewardProfile kPokeballRewardProfiles[] = {\n${ballRewardRows.join(',\n')}\n};\nstruct MoveAttribute {`);
-await fs.writeFile(outputPath, ballRewardHeader, 'utf8');
-console.log(JSON.stringify({ output: path.relative(root, outputPath), bytes: Buffer.byteLength(ballRewardHeader), hash: report.contentHash }));
+const levelIncrementRows = collections.items.flatMap(item => {
+  const raw = item.extensions?.upstreamRawRecord?.value ?? '';
+  const match = raw.match(/new\s+(PokemonLevelIncrementModifierType|AllPokemonLevelIncrementModifierType)\s*\(/);
+  if (!match) return [];
+  return [`    {"${field(item.id)}", ${match[1] === 'AllPokemonLevelIncrementModifierType'}, "${field(item.source?.sourcePath)}", "${field(item.source?.sourceSymbol)}", "${field(item.source?.sourceHash)}"}`];
+});
+const levelIncrementHeader = ballRewardHeader.replace('struct MoveAttribute {',
+  `struct LevelIncrementItemProfile { const char* itemId; bool allParty; const char* sourcePath; const char* sourceSymbol; const char* sourceHash; };\ninline constexpr LevelIncrementItemProfile kLevelIncrementItemProfiles[] = {\n${levelIncrementRows.join(',\n')}\n};\nstruct MoveAttribute {`);
+await fs.writeFile(outputPath, levelIncrementHeader, 'utf8');
+console.log(JSON.stringify({ output: path.relative(root, outputPath), bytes: Buffer.byteLength(levelIncrementHeader), hash: report.contentHash }));
