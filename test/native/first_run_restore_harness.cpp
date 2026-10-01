@@ -438,6 +438,47 @@ static int checkWave200FinalBossAndGameClear() {
             HeldItemStackTransferResult::InvalidState || transfer.targetStack != successfulTransfer.targetStack ||
         calculateHeldItemStackTransfer(1, false, 1, 2, 1, transfer) !=
             HeldItemStackTransferResult::InvalidState) return 350;
+    const uint32_t theftOpponents[] = {1001, 1002};
+    const HeldItemTransferCandidate theftInventory[] = {
+        {1001, 11, true}, {1002, 19, false}, {1001, 13, true}, {1002, 20, true}
+    };
+    auto expectedTheftRng = rng;
+    auto actualTheftRng = rng;
+    const auto chosenOpponent = static_cast<size_t>(expectedTheftRng.randSeedInt(2));
+    const auto chosenItem = expectedTheftRng.randSeedInt(chosenOpponent ? 1 : 2);
+    const size_t expectedInventoryIndex = chosenOpponent ? 20 : chosenItem ? 13 : 11;
+    HeldItemTransferSelection theftSelection{};
+    if (selectHeldItemTransferAttempt(theftOpponents, 2, theftInventory, 4, 1,
+            actualTheftRng, theftSelection) != HeldItemTransferSelectionResult::Selected ||
+        !theftSelection.itemFound || theftSelection.opponentIndex != chosenOpponent ||
+        theftSelection.inventoryIndex != expectedInventoryIndex) return 351;
+    auto actualTheftState = actualTheftRng.state();
+    auto expectedTheftState = expectedTheftRng.state();
+    if (actualTheftState.carry != expectedTheftState.carry || actualTheftState.s0 != expectedTheftState.s0 ||
+        actualTheftState.s1 != expectedTheftState.s1 || actualTheftState.s2 != expectedTheftState.s2) return 352;
+    expectedTheftRng.randSeedInt(2);
+    if (selectHeldItemTransferAttempt(theftOpponents, 2, nullptr, 0, 1,
+            actualTheftRng, theftSelection) != HeldItemTransferSelectionResult::NoItem || theftSelection.itemFound)
+        return 353;
+    actualTheftState = actualTheftRng.state();
+    expectedTheftState = expectedTheftRng.state();
+    if (actualTheftState.carry != expectedTheftState.carry || actualTheftState.s0 != expectedTheftState.s0 ||
+        actualTheftState.s1 != expectedTheftState.s1 || actualTheftState.s2 != expectedTheftState.s2) return 354;
+    const auto beforeInvalidTheft = actualTheftRng.state();
+    if (selectHeldItemTransferAttempt(nullptr, 2, theftInventory, 4, 1,
+            actualTheftRng, theftSelection) != HeldItemTransferSelectionResult::InvalidState ||
+        actualTheftRng.state().s0 != beforeInvalidTheft.s0 ||
+        selectHeldItemTransferAttempt(nullptr, 0, nullptr, 0, 1,
+            actualTheftRng, theftSelection) != HeldItemTransferSelectionResult::NoOpponent ||
+        actualTheftRng.state().s0 != beforeInvalidTheft.s0) return 355;
+    expectedTheftRng.randSeedInt(2);
+    if (selectHeldItemTransferAttempt(theftOpponents, 2, theftInventory, 4, 0,
+            actualTheftRng, theftSelection) != HeldItemTransferSelectionResult::NoTransferCount ||
+        theftSelection.itemFound) return 356;
+    actualTheftState = actualTheftRng.state();
+    expectedTheftState = expectedTheftRng.state();
+    if (actualTheftState.carry != expectedTheftState.carry || actualTheftState.s0 != expectedTheftState.s0 ||
+        actualTheftState.s1 != expectedTheftState.s1 || actualTheftState.s2 != expectedTheftState.s2) return 357;
     const auto preservedBoss = bossActor;
     if (applyPokemonFixedEnemyMovePp(*firstPhase, bossActor) ||
         bossActor.moves[3].maxPp != preservedBoss.moves[3].maxPp) return 338;

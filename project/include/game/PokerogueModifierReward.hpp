@@ -42,6 +42,60 @@ inline HeldItemStackTransferResult calculateHeldItemStackTransfer(uint16_t sourc
     return HeldItemStackTransferResult::Transferred;
 }
 
+struct HeldItemTransferCandidate {
+    uint32_t ownerPokemonId = 0;
+    size_t inventoryIndex = 0;
+    bool transferable = false;
+};
+struct HeldItemTransferSelection {
+    size_t opponentIndex = 0;
+    size_t inventoryIndex = 0;
+    bool itemFound = false;
+};
+enum class HeldItemTransferSelectionResult : uint8_t {
+    Selected, NoOpponent, NoTransferCount, NoItem, InvalidState
+};
+
+// One-item activation (Mini Black Hole max stack one). Uses the holder's
+// battle RNG and preserves upstream findModifiers order, without a heap pool.
+inline HeldItemTransferSelectionResult selectHeldItemTransferAttempt(
+    const uint32_t* opponents, size_t opponentCount,
+    const HeldItemTransferCandidate* inventory, size_t inventoryCount,
+    uint16_t transferCount, PokerogueRngAdapter& battleRng, HeldItemTransferSelection& output) {
+    if ((opponentCount && !opponents) || (inventoryCount && !inventory) ||
+        opponentCount > 0x7FFFFFFFu || inventoryCount > 0x7FFFFFFFu || transferCount > 1)
+        return HeldItemTransferSelectionResult::InvalidState;
+    HeldItemTransferSelection selection{};
+    if (!opponentCount) { output = selection; return HeldItemTransferSelectionResult::NoOpponent; }
+    auto nextRng = battleRng;
+    selection.opponentIndex = static_cast<size_t>(nextRng.randSeedInt(static_cast<int32_t>(opponentCount)));
+    if (!transferCount) {
+        battleRng = nextRng;
+        output = selection;
+        return HeldItemTransferSelectionResult::NoTransferCount;
+    }
+    size_t eligibleCount = 0;
+    for (size_t i = 0; i < inventoryCount; ++i)
+        if (inventory[i].ownerPokemonId == opponents[selection.opponentIndex] && inventory[i].transferable)
+            ++eligibleCount;
+    if (!eligibleCount) {
+        battleRng = nextRng;
+        output = selection;
+        return HeldItemTransferSelectionResult::NoItem;
+    }
+    size_t ordinal = static_cast<size_t>(nextRng.randSeedInt(static_cast<int32_t>(eligibleCount)));
+    for (size_t i = 0; i < inventoryCount; ++i) {
+        if (inventory[i].ownerPokemonId != opponents[selection.opponentIndex] || !inventory[i].transferable) continue;
+        if (ordinal) { --ordinal; continue; }
+        selection.inventoryIndex = inventory[i].inventoryIndex;
+        selection.itemFound = true;
+        break;
+    }
+    battleRng = nextRng;
+    output = selection;
+    return HeldItemTransferSelectionResult::Selected;
+}
+
 enum class ModifierRewardRollResult : uint8_t {
     Ok, InvalidLuck, MissingWeight, InvalidWeight, EmptyPool, MissingItem
 };

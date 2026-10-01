@@ -486,3 +486,9 @@
 1. Catalog contiene MINI_BLACK_HOLE y provenance reales. No existe todavía inventario nativo de held modifiers; no se sustituye por una lista UI ni se afirma que el objeto funciona en batalla.
 2. calculateHeldItemStackTransfer en el módulo existente de modifiers porta cantidades/remoción de BattleScene.tryTransferHeldItemModifier: cantidad predeterminada del caller uno, límite del receptor con modifier coincidente y remoción del stack agotado. Capacidad ausente/estado incoherente se distinguen de receptor lleno; evento solo se publica al resolver.
 3. Regresiones 346–350 escritas para unidad transferida, límite, lleno sin mutación, agotamiento e inválidos. Falta inventario/matchType, selección seeded de oponente/item, BlockItemTheftAbAttr/PostItemLostAbAttr y conexión TurnEndPhase; Mini Black Hole/Eternamax siguen incompletos. Tests/compilación aplazados.
+
+## Selección seeded de intento de transferencia
+
+1. selectHeldItemTransferAttempt en el módulo existente porta la activación de un objeto (máximo de Mini Black Hole): usa battle RNG del holder para elegir oponente y luego ordinal de held modifier transferible. Filtra por owner PID y conserva orden del inventario sin crear pool heap.
+2. Oponente se sortea antes de verificar count/objetos, incluso sin objeto transferible; sin oponentes no consume RNG. Datos inválidos no publican RNG/selección. Activaciones de stacks mayores a uno se marcan inválidas hasta portar el loop y eliminación/reintentos upstream.
+3. Regresiones 351–357 escritas para selección/filtrado, estado completo RNG y ausencia de consumo indebido. Inventario runtime, callbacks y conexión TurnEndPhase siguen pendientes; no se declara Mini Black Hole funcional. Tests/compilación aplazados.
