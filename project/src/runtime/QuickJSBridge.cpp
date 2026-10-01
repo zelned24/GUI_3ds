@@ -76,6 +76,7 @@ bool QuickJSBridge::init(Renderer2D& renderer) {
         {"_3ds_getStarterName", getStarterName, 0}, {"_3ds_getMoveName", getMoveName, 1},
         {"_3ds_getPresentationInfo", getPresentationInfo, 0},
         {"_3ds_saveNative", saveNative, 0}, {"_3ds_loadNative", loadNative, 0},
+        {"_3ds_exportNative", exportNative, 0}, {"_3ds_importNative", importNative, 0},
         {"_3ds_submitAction", submitAction, 1}, {"_3ds_skipReward", skipReward, 0},
         {"_3ds_getCombatLog", getCombatLog, 0},
         {"_3ds_drawPokemon", drawPokemon, 5},
@@ -344,6 +345,20 @@ JSValue QuickJSBridge::loadNative(JSContext* ctx, JSValueConst, int argc, JSValu
     if (!b || !b->m_game || !b->m_saves || !b->m_inTick || argc || b->m_pendingAction != -999) return JS_FALSE;
     b->m_pendingAction = 205; return JS_TRUE;
 }
+JSValue QuickJSBridge::exportNative(JSContext* ctx, JSValueConst, int argc, JSValueConst*) {
+    auto* b = static_cast<QuickJSBridge*>(JS_GetContextOpaque(ctx));
+    if (!b || !b->m_game || !b->m_progress || !b->m_bundleStorage || !b->m_bundleWorkspace ||
+        !b->m_profileStaging || !b->m_inTick || argc || b->m_pendingAction != -999) return JS_FALSE;
+    b->m_pendingAction = 206; return JS_TRUE;
+}
+JSValue QuickJSBridge::importNative(JSContext* ctx, JSValueConst, int argc, JSValueConst*) {
+    auto* b = static_cast<QuickJSBridge*>(JS_GetContextOpaque(ctx));
+    if (!b || !b->m_game || !b->m_progress || !b->m_saves || !b->m_profiles ||
+        !b->m_friendshipPolicy || !b->m_bundleStorage || !b->m_bundleWorkspace ||
+        !b->m_profileStaging || !b->m_progressReplay || b->m_progressReplay == b->m_game ||
+        !b->m_inTick || argc || b->m_pendingAction != -999) return JS_FALSE;
+    b->m_pendingAction = 207; return JS_TRUE;
+}
 bool QuickJSBridge::processPendingAction() {
     const int action = m_pendingAction;
     m_pendingAction = -999;
@@ -380,6 +395,38 @@ bool QuickJSBridge::processPendingAction() {
                 }
             }
         }
+    } else if (action == 206 || action == 207) {
+        NativeSaveResult status = NativeSaveResult::InvalidRecord;
+        NativeRunSave save{};
+        if (m_progress && m_bundleStorage && m_bundleWorkspace && m_profileStaging) {
+            if (action == 206) {
+                status = m_game->saveNativeProgress(*m_progress);
+                if (status == NativeSaveResult::Ok)
+                    status = m_progress->exportBundle(*m_bundleStorage, PokerogueContent::kContentHash,
+                        m_bundleWorkspace, m_bundleCapacity, m_profileStaging, m_profileCapacity);
+            } else if (m_saves && m_profiles && m_friendshipPolicy && m_progressReplay && m_progressReplay != m_game) {
+                size_t count = 0;
+                status = m_progress->readBundleCandidate(*m_bundleStorage, PokerogueContent::kContentHash,
+                    m_bundleWorkspace, m_bundleCapacity, save, m_profileStaging, m_profileCapacity, count);
+                if (status == NativeSaveResult::Ok && !m_progressReplay->restoreNativeRunSave(
+                        save, m_profileStaging, count, m_friendshipPolicy))
+                    status = NativeSaveResult::InvalidRecord;
+                if (status == NativeSaveResult::Ok)
+                    status = m_progress->commitImported(save, m_profileStaging, count);
+                if (status == NativeSaveResult::Ok)
+                    status = m_game->loadNativeProgress(*m_saves, *m_profiles, m_profileStaging,
+                        m_profileCapacity, *m_friendshipPolicy, &save);
+                if (status == NativeSaveResult::Ok) {
+                    m_restartStarter = 0;
+                    m_presenterPlayer.invalidate(); m_presenterEnemy.invalidate(); m_presenterSecondEnemy.invalidate();
+                }
+            }
+            // Export saves first: refresh journal metadata even if the export failed.
+            if (m_saves && m_saves->load(PokerogueContent::kContentHash, save) == NativeSaveResult::Ok)
+                m_journalGeneration = save.generation;
+        }
+        std::snprintf(m_actionFeedback, sizeof(m_actionFeedback), "%s: %s",
+            action == 206 ? "Export" : "Import", nativeSaveResultName(status));
     } else if (action == 204 || action == 205) {
         NativeSaveResult status = NativeSaveResult::NotFound;
         NativeRunSave save{};
@@ -442,6 +489,10 @@ void QuickJSBridge::fini() {
     m_profileStaging = nullptr;
     m_profileCapacity = 0;
     m_friendshipPolicy = nullptr;
+    m_bundleStorage = nullptr;
+    m_bundleWorkspace = nullptr;
+    m_bundleCapacity = 0;
+    m_progressReplay = nullptr;
     m_restartStarter = 0;
     m_journalGeneration = 0;
     m_actionFeedback[0] = 0;

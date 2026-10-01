@@ -14,10 +14,10 @@
 #endif
 
 namespace {
-bool canReplaySave(const Pokerogue3DS::NativeRunSave& save) {
-    // Host preflight runs serially; retain workspace outside the ARM11 stack.
+Pokerogue3DS::FirstRunRuntime& progressReplay() {
+    // Native/JS preflights run serially and share workspace outside the ARM11 stack.
     static Pokerogue3DS::FirstRunRuntime replay(1);
-    return replay.restoreNativeRunSave(save);
+    return replay;
 }
 }
 
@@ -76,6 +76,7 @@ int main() {
 #if defined(POKEROGUE_ENABLE_QUICKJS)
     bridge.bindSaveStore(saves);
     bridge.bindProgressStore(progress, profiles, profileStaging, PokerogueContent::kSpeciesCount, offlineFriendship);
+    bridge.bindProgressBundle(saveStorage, bundleScratch, sizeof(bundleScratch), progressReplay());
 #endif
     static Pokerogue3DS::NativeRunSave restored{};
     const auto loaded = game.loadNativeProgress(saves, profiles, profileStaging,
@@ -132,7 +133,7 @@ int main() {
             changed = game.togglePlayerEvolutionPause(game.activePlayerPartyIndex()) || changed;
         uint32_t hostStorageKeys = pressed & (KEY_X | KEY_Y | KEY_L | KEY_R);
 #if defined(POKEROGUE_ENABLE_QUICKJS)
-        if (jsCommands) hostStorageKeys &= KEY_X | KEY_Y; // L/R now belong to bridge save/load.
+        if (jsCommands) hostStorageKeys = 0; // Bridge queues all SD actions outside rendering.
 #endif
         if (hostStorageKeys) {
             using namespace Pokerogue3DS;
@@ -148,7 +149,8 @@ int main() {
                     result = progress.readBundleCandidate(saveStorage, PokerogueContent::kContentHash,
                         bundleScratch, sizeof(bundleScratch), restored, profileStaging,
                         PokerogueContent::kSpeciesCount, count);
-                    if (result == NativeSaveResult::Ok && !canReplaySave(restored))
+                    if (result == NativeSaveResult::Ok && !progressReplay().restoreNativeRunSave(
+                            restored, profileStaging, count, &offlineFriendship))
                         result = NativeSaveResult::InvalidRecord;
                     if (result == NativeSaveResult::Ok)
                         result = progress.commitImported(restored, profileStaging, count);

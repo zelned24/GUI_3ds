@@ -9,6 +9,7 @@ namespace Pokerogue3DS {
 class FirstRunRuntime;
 class NativeRunSaveStore;
 class NativeProgressStore;
+class NativeProgressBundleStorage;
 class NativeStarterCandyStore;
 struct NativeStarterCandyRecord;
 struct PokemonFriendshipPolicy;
@@ -34,6 +35,12 @@ public:
         m_progress = &progress; m_profiles = &profiles; m_profileStaging = staging;
         m_profileCapacity = capacity; m_friendshipPolicy = &policy;
     }
+    // Borrowed bounded transport/workspace and independent replay runtime.
+    void bindProgressBundle(NativeProgressBundleStorage& storage, char* workspace, size_t capacity,
+        FirstRunRuntime& replay) {
+        m_bundleStorage = &storage; m_bundleWorkspace = workspace;
+        m_bundleCapacity = capacity; m_progressReplay = &replay;
+    }
     void setJournalGeneration(uint32_t generation) { m_journalGeneration = generation; }
     uint32_t journalGeneration() const { return m_journalGeneration; }
     uint16_t restartStarterDex() const;
@@ -44,6 +51,8 @@ public:
     static JSValue getStarterName(JSContext*, JSValueConst, int, JSValueConst*);
     static JSValue saveNative(JSContext*, JSValueConst, int, JSValueConst*);
     static JSValue loadNative(JSContext*, JSValueConst, int, JSValueConst*);
+    static JSValue exportNative(JSContext*, JSValueConst, int, JSValueConst*);
+    static JSValue importNative(JSContext*, JSValueConst, int, JSValueConst*);
     bool processPendingAction(); // Call before beginFrame; returns whether a command was attempted.
     static JSValue submitAction(JSContext*, JSValueConst, int, JSValueConst*);
     static JSValue skipReward(JSContext*, JSValueConst, int, JSValueConst*);
@@ -80,6 +89,10 @@ private:
     NativeStarterCandyRecord* m_profileStaging = nullptr;
     size_t m_profileCapacity = 0;
     const PokemonFriendshipPolicy* m_friendshipPolicy = nullptr;
+    NativeProgressBundleStorage* m_bundleStorage = nullptr;
+    char* m_bundleWorkspace = nullptr;
+    size_t m_bundleCapacity = 0;
+    FirstRunRuntime* m_progressReplay = nullptr;
     uint16_t m_restartStarter = 0;
     uint32_t m_journalGeneration = 0;
     char m_actionFeedback[128]{};

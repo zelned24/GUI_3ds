@@ -48,7 +48,9 @@ globalThis._3ds_tick = function(input) {
   // Queue one command. Host processes it before the next snapshot/render frame.
   const presentation = _3ds_getPresentationInfo() || {};
   const gameOverScreen = state.finished && !state.playerWon;
-  if (input.L) _3ds_saveNative();
+  if (input.X) _3ds_importNative();
+  else if (input.Y) _3ds_exportNative();
+  else if (input.L) _3ds_saveNative();
   else if (input.R) _3ds_loadNative();
   else if (gameOverScreen) {
     if (input.left) _3ds_cycleStarter(-1);
@@ -141,7 +143,7 @@ globalThis._3ds_tick = function(input) {
     _3ds_drawText('Party: ' + (presentation.trainerParty || []).join(' / '), 8, 183, 0.4, WHITE);
   } else _3ds_drawText('Up/Down: move  Left/Right: starter', 8, 185, 0.43, WHITE);
   _3ds_drawText('A:Confirm B:Catch/Skip Select:Party', 8, 203, 0.43, WHITE);
-  _3ds_drawText('L:Save  R:Load  Y:Export', 8, 219, 0.43, WHITE);
+  _3ds_drawText('L:Save R:Load Y:Export X:Import', 8, 219, 0.43, WHITE);
 };
 `;
 

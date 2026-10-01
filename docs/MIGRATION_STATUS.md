@@ -883,3 +883,10 @@
 2. Importación nativa con R: valida hash de contenido, checksum y referencia de perfil, reconstruye runtime antes de escribir y reasigna generaciones locales. Perfil preparado primero; partida confirma la pareja. Archivo corrupto no dispara fallback silencioso al export antiguo.
 3. Y exporta el bundle tras guardar. En modo QuickJS sano L/R todavía pertenecen al bridge save/load: falta exponer importación portable en su menú. No se declara interoperabilidad con el save web ni OTA firmada.
 4. Regresiones 103–111 escritas para transporte, generación extranjera, corrupción, exportación interrumpida y commit de partida interrumpido. Tests y compilación siguen aplazados; uso real de SD/Azahar/Old 3DS no verificado.
+
+## Bridge QuickJS y progreso portable — pendiente de ejecución
+
+1. Bindings `_3ds_exportNative` / `_3ds_importNative` encolan comandos 206/207. I/O ocurre en `processPendingAction`, antes del render; staging y replay son prestados por el host, sin filesystem ni mutación de combate desde JS.
+2. HUD diagnóstico: L guarda, R carga, Y exporta y X importa `.p3progress`. El host evita procesar esos mismos botones cuando QuickJS está sano. Modo nativo conserva X guardar/Y exportar/L cargar/R importar.
+3. Preflight compartido nativo/QuickJS reconstruye partida y adjunta el perfil validado antes del commit. La generación extranjera se reasigna localmente y los presenters se invalidan tras importación exitosa.
+4. Cuatro regresiones del script real verifican prioridad de almacenamiento sobre ataque y ausencia de repetición sin nuevos pulsos. Escritas, sin ejecutar. La validación SD/QuickJS/Azahar/Old 3DS y Classic completo siguen pendientes.

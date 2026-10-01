@@ -1,3 +1,4 @@
+import { registerQuickJsStorageTests } from './quickjs_storage_tests.js';
 import { registerMigrationContentTests } from './migration_content_tests.js';
 import { registerRngTests } from './rng_tests.js';
 import { registerBattleTests } from './battle_tests.js';
@@ -6,6 +7,7 @@ const register = (name, run) => cases.push({ name, run });
 registerMigrationContentTests(register);
 registerRngTests(register);
 registerBattleTests(register);
+registerQuickJsStorageTests(register);
 let failed = 0;
 for (const { name, run } of cases) {
   try { await run(); console.log(`PASS ${name}`); }
