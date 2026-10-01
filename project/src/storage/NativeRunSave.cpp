@@ -1,4 +1,5 @@
 #include "storage/NativeRunSave.hpp"
+#include "storage/NativeStarterCandyStore.hpp"
 #include "storage/IntegritySha256.hpp"
 #include "game/PokemonExperience.hpp"
 #include "game/PokemonBattleState.hpp"
@@ -9,7 +10,7 @@
 namespace Pokerogue3DS {
 namespace {
 // Stable envelope marker; saveVersion carries the independently migrated
-// payload schema (currently version 11).
+// payload schema (currently version 12).
 constexpr char kMagic[] = "POKEROGUE-3DS-SAVE 1\n";
 constexpr size_t kDigestLineLength = 72;
 
@@ -1005,11 +1006,26 @@ NativeSaveResult NativeRunSaveStore::load(const char* contentHash, NativeRunSave
     int selected = -1;
     const auto status = readJournal(m_storage, slots, selected);
     if (status != NativeSaveResult::Ok) return status;
-    return decodeNativeRunSave(slots[selected].bytes, slots[selected].size, contentHash, output);
+    NativeRunSave candidate{};
+    auto decoded = decodeNativeRunSave(slots[selected].bytes, slots[selected].size, contentHash, candidate);
+    if (decoded != NativeSaveResult::Ok) return decoded;
+    if (candidate.starterProfileGeneration) {
+        if (!m_profiles) return NativeSaveResult::InvalidRecord;
+        decoded = m_profiles->inspectGeneration(contentHash, candidate.starterProfileGeneration);
+        if (decoded != NativeSaveResult::Ok)
+            return decoded == NativeSaveResult::NotFound ? NativeSaveResult::InvalidRecord : decoded;
+    }
+    output = candidate;
+    return NativeSaveResult::Ok;
 }
 
 NativeSaveResult NativeRunSaveStore::save(const NativeRunSave& value) {
     auto status = validateNativeRunSave(value, value.contentHash);
+    if (status == NativeSaveResult::Ok && value.starterProfileGeneration) {
+        if (!m_profiles) return NativeSaveResult::InvalidRecord;
+        status = m_profiles->inspectGeneration(value.contentHash, value.starterProfileGeneration);
+        if (status == NativeSaveResult::NotFound) status = NativeSaveResult::InvalidRecord;
+    }
     if (status != NativeSaveResult::Ok) return status;
     JournalSlot slots[2];
     int selected = -1;

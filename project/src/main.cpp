@@ -3,6 +3,7 @@
 #include "runtime/ScenePlayer.hpp"
 #include "runtime/PokemonAtlasPresenter.hpp"
 #include "storage/NativeRunSave.hpp"
+#include "storage/NativeStarterCandyStore.hpp"
 #include "content/PokerogueRuntimeContent.hpp"
 #include <3ds.h>
 #if defined(POKEROGUE_ENABLE_QUICKJS)
@@ -58,6 +59,11 @@ int main() {
 #endif
     Pokerogue3DS::SdNativeSaveStorage saveStorage;
     Pokerogue3DS::NativeRunSaveStore saves(saveStorage);
+    // Catalog-sized journal workspace lives outside the ARM11 stack.
+    static char profileScratch[2 * Pokerogue3DS::kStarterCandyProfileMaxBytes]{};
+    Pokerogue3DS::SdNativeStarterCandyStorage profileStorage;
+    Pokerogue3DS::NativeStarterCandyStore profiles(profileStorage, profileScratch, sizeof(profileScratch));
+    saves.bindStarterProfiles(profiles);
 #if defined(POKEROGUE_ENABLE_QUICKJS)
     bridge.bindSaveStore(saves);
 #endif

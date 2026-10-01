@@ -163,9 +163,13 @@ public:
     virtual NativeSaveResult writeExport(const char* bytes, size_t length) = 0;
 };
 
+class NativeStarterCandyStore;
+
 class NativeRunSaveStore {
 public:
     explicit NativeRunSaveStore(NativeSaveStorage& storage) : m_storage(storage) {}
+    // Borrowed profile journal; host binds before SD/QuickJS operations.
+    void bindStarterProfiles(NativeStarterCandyStore& profiles) { m_profiles = &profiles; }
     NativeSaveResult load(const char* contentHash, NativeRunSave& output);
     NativeSaveResult save(const NativeRunSave& value);
     NativeSaveResult exportLatest(const char* contentHash);
@@ -173,6 +177,7 @@ public:
 
 private:
     NativeSaveStorage& m_storage;
+    NativeStarterCandyStore* m_profiles = nullptr;
 };
 
 // The production backend stores only these fixed files, without user-controlled

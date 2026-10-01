@@ -89,6 +89,21 @@ public:
             ? m_storage.writeExport(slot(selected), m_sizes[selected]) : status;
     }
 
+    NativeSaveResult inspectGeneration(const char* hash, uint32_t requiredGeneration) {
+        if (!requiredGeneration) return NativeSaveResult::InvalidRecord;
+        int selected = -1;
+        auto status = select(selected);
+        if (status != NativeSaveResult::Ok) return status;
+        for (unsigned i = 0; i < 2; ++i) {
+            if (!m_valid[i] || StarterCandyProfileCodec::get(slot(i) + 72, 4) != requiredGeneration) continue;
+            size_t count = 0;
+            uint32_t generation = 0;
+            return inspectNativeStarterCandyProfile(slot(i), m_sizes[i], hash,
+                PokerogueContent::kMaxStarterCandyCount, count, generation);
+        }
+        return NativeSaveResult::NotFound;
+    }
+
     NativeSaveResult loadGeneration(const char* hash, uint32_t requiredGeneration,
         NativeStarterCandyRecord* records, size_t capacity, size_t& count, uint32_t& generation) {
         if (!requiredGeneration) return NativeSaveResult::InvalidRecord;

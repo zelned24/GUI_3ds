@@ -798,3 +798,11 @@
 1. Inspección pinned: `src/modifier/modifier.ts`, `PokemonLevelIncrementModifier.apply`, conserva EXP si el nivel supera `getMaxExpLevel(true)`. `src/battle-scene.ts`, `getMaxExpLevel`, retorna normalmente Number.MAX_SAFE_INTEGER con ignoreLevelCap; un override positivo cambia ese límite. No se presenta la conservación de EXP como regla normal de Classic.
 2. El codec de Pokémon conserva nivel/EXP independientes y sigue validando especie, fórmula representable, identidad, HP, IVs y PP. El validator de run mantiene sus capacidades/límites actuales; no se habilitan overrides ni Rare Candy mediante esta corrección.
 3. Regresiones 501–505 escritas: especie real, plan con override explícito, recalculación de stats, captura, encode/decode y restauración sin perder EXP/HP/friendship. Pendientes de ejecución; sin compilación.
+
+## Validación de perfil conectada a SD y QuickJS
+
+1. El host crea `SdNativeStarterCandyStorage`/journal con scratch estático derivado del catálogo y lo enlaza a `NativeRunSaveStore`, compartido por comandos nativos y QuickJS. Loads y saves con referencia positiva verifican la generación exacta, checksum, hash y registros del perfil; sin journal enlazado fallan explícitamente. La salida de load no se publica si falla el perfil.
+2. Partidas legacy con referencia cero siguen legibles. El coordinador enlaza ambos stores al construirse. El guardado actual del juego todavía no aplica ganancias de perfil ni llama al commit conjunto; no se declara Rare Candy conectado.
+3. Regresiones 87–89 escritas: inspección exacta, perfil ausente sin publicar run/escribir checkpoint y consumidor sin binding. Tests, compilación, Azahar y SD física permanecen pendientes.
+
+4. Una referencia ausente se comunica como InvalidRecord al consumidor de run, no NotFound: evita que el arranque la confunda con la ausencia de partida e inicie silenciosamente un progreso nuevo.

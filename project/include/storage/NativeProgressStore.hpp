@@ -9,7 +9,7 @@ namespace Pokerogue3DS {
 class NativeProgressStore {
 public:
     NativeProgressStore(NativeRunSaveStore& runs, NativeStarterCandyStore& profiles)
-        : m_runs(runs), m_profiles(profiles) {}
+        : m_runs(runs), m_profiles(profiles) { m_runs.bindStarterProfiles(profiles); }
 
     NativeSaveResult load(const char* hash, NativeRunSave& run,
         NativeStarterCandyRecord* records, size_t capacity, size_t& count) {

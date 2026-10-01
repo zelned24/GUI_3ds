@@ -459,5 +459,16 @@ extern "C" int runNativeSaveChecks() {
             NativeSaveResult::Ok || candyGeneration != 3 || restoredCandy[0].candyCount != 10) return 85;
     if (candyStore.exportGeneration(PokerogueContent::kContentHash, 2) != NativeSaveResult::NotFound)
         return 86;
+    if (candyStore.inspectGeneration(PokerogueContent::kContentHash, 3) != NativeSaveResult::Ok ||
+        candyStore.inspectGeneration(PokerogueContent::kContentHash, 2) != NativeSaveResult::NotFound)
+        return 87;
+    const uint32_t unchangedSeed = restored.seed;
+    other.sizes[0] = other.sizes[1] = 0;
+    if (store.load(PokerogueContent::kContentHash, restored) != NativeSaveResult::InvalidRecord ||
+        restored.seed != unchangedSeed ||
+        store.save(committedRun) != NativeSaveResult::InvalidRecord) return 88;
+    NativeRunSaveStore unboundStore(disk);
+    if (unboundStore.load(PokerogueContent::kContentHash, restored) != NativeSaveResult::InvalidRecord)
+        return 89;
     return 0;
 }
