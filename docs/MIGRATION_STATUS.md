@@ -1713,3 +1713,10 @@
 3. Fase aplica chance, cola, ObtainStatus y reacciones con stream compartido; no repite PP ni daño. Fallo conserva actores/RNG; comando exterior conserva también daño y PP. IA suma beneficio de estado al daño.
 4. Política de hit de daño permite neutralizar etapas explícitas de Keen Eye para evitar admitir el ataque secundario con precisión incompleta. Resto de callbacks de daño/abilities no se declaran completos.
 5. Regresiones de Ember/Synchronize, destinatario debilitado, PP no repetido y fallo atómico escritas sin ejecutar. Tests y compilación pendientes.
+
+## Probabilidad de efectos secundarios: Serene Grace y Shield Dust
+
+1. MoveEffectAttr.getMoveChance, MoveEffectChanceMultiplierAbAttr y IgnoreMoveEffectsAbAttr inspeccionados en pinned 8555c08c823b856cbec4eb99ca84ea52a955836d. Serene Grace multiplica chance positiva y limita a 100; Shield Dust pone chance positiva a cero para efectos sobre otro actor. Chance negativa permanece intacta.
+2. Excepciones Order Up/Electro Shot se generan desde IDs canónicos, sin numeración paralela. Perfil de habilidad conserva multiplicador/bloqueo; builders, condiciones, declaraciones múltiples o callbacks pendientes siguen explícitamente no soportados. Sheer Force no se habilita por tener además callbacks de potencia pendientes.
+3. Resolver conecta comandos de estado, secundarios de daño y beneficio de IA. Chance cero no omite el draw de StatusEffectAttr.apply. Arena Pledge/passives/suppression continúan pendientes; proveedor activo mantiene frontera sin esos estados.
+4. Regresiones de chance 10→20, bloqueo, chance negativa, autoefecto, excepciones, Sheer Force pendiente y RNG de chance cero escritas sin ejecutar. Compilación/tests siguen aplazados.

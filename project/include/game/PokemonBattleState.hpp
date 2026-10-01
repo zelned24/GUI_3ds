@@ -425,6 +425,32 @@ PokemonStatusObtainResult obtainPokemonStatus(PokemonBattleState& actor, Pokemon
     const PokemonStatusApplicationPolicy& policy, bool reactionsResolved, PokerogueRngAdapter& rng,
     bool explicitSleepDuration = false, uint32_t sleepDuration = 0);
 
+// getMoveChance: primary abilities in the resolved, modifier-free arena.
+// Fractional results remain explicitly unsupported by the current int chance
+// contract; never truncate a future upstream multiplier silently.
+inline bool resolvePokemonMoveEffectChance(uint16_t moveId, uint16_t userAbilityId,
+    uint16_t targetAbilityId, bool selfEffect, int16_t& output) {
+    const auto* move = PokerogueContent::findMoveById(moveId);
+    if (!move) return false;
+    const PokerogueContent::StatusActionAbilityProfile *user = nullptr, *target = nullptr;
+    for (const auto& profile : PokerogueContent::kStatusActionAbilityProfiles) {
+        if (profile.abilityId == userAbilityId) user = &profile;
+        if (profile.abilityId == targetAbilityId) target = &profile;
+    }
+    if (!user || !user->resolved || (!selfEffect && (!target || !target->resolved))) return false;
+    double chance = move->upstreamChance;
+    bool exception = false;
+    for (const auto id : PokerogueContent::kMoveEffectChanceExceptions) exception |= id == moveId;
+    if (chance > 0 && !exception) {
+        chance *= user->effectChanceMultiplier;
+        if (chance > 100) chance = 100;
+    }
+    if (!selfEffect && chance > 0 && target->ignoresPositiveMoveEffects) chance = 0;
+    if (!std::isfinite(chance) || chance < -32768 || chance > 32767 || std::floor(chance) != chance) return false;
+    output = static_cast<int16_t>(chance);
+    return true;
+}
+
 enum class PokemonMoveStatusApplicationResult : uint8_t {
     Requested, ChanceFailed, Ineligible, Fainted, UnsupportedMove, UnresolvedPolicy, InvalidState
 };

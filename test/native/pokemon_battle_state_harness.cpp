@@ -3456,6 +3456,39 @@ extern "C" int runPokemonBattleStateChecks() {
     if (!Pokerogue3DS::composePokemonStatusAccuracyStagePolicy(accuracyUser, accuracyTarget,
             statusAccuracyBase, statusAccuracyComposed, true, false) ||
         statusAccuracyComposed.accuracyMultiplier != 0.5) return 9412;
+    int16_t resolvedEffectChance = -99;
+    if (!Pokerogue3DS::resolvePokemonMoveEffectChance(52, 32, 0, false, resolvedEffectChance) ||
+        resolvedEffectChance != 20) return 9440;
+    if (!Pokerogue3DS::resolvePokemonMoveEffectChance(52, 32, 19, false, resolvedEffectChance) ||
+        resolvedEffectChance != 0) return 9441;
+    if (!Pokerogue3DS::resolvePokemonMoveEffectChance(95, 32, 19, false, resolvedEffectChance) ||
+        resolvedEffectChance != -1) return 9442;
+    if (!Pokerogue3DS::resolvePokemonMoveEffectChance(52, 32, 19, true, resolvedEffectChance) ||
+        resolvedEffectChance != 20) return 9443;
+    for (const auto moveId : PokerogueContent::kMoveEffectChanceExceptions) {
+        const auto* exceptionMove = PokerogueContent::findMoveById(moveId);
+        if (!exceptionMove || !Pokerogue3DS::resolvePokemonMoveEffectChance(moveId, 32, 0, false,
+                resolvedEffectChance) || resolvedEffectChance != exceptionMove->upstreamChance) return 9444;
+    }
+    resolvedEffectChance = 123;
+    if (Pokerogue3DS::resolvePokemonMoveEffectChance(52, 125, 0, false, resolvedEffectChance) ||
+        resolvedEffectChance != 123) return 9445;
+    auto shieldedUser = completeStatusUser, shieldedTarget = completeStatusTarget;
+    shieldedUser.status = shieldedTarget.status = {};
+    shieldedUser.abilityId = 32;
+    shieldedTarget.abilityId = 19;
+    auto shieldedRng = statusApplicationRng, expectedShieldedRng = shieldedRng;
+    auto shieldedReactions = reactionsPolicy;
+    shieldedReactions.formsResolved = true;
+    Pokerogue3DS::PokemonMoveStatusPhaseEvent shieldedEvent{};
+    if (!Pokerogue3DS::resolvePokemonMoveEffectChance(52, 32, 19, false, resolvedEffectChance)) return 9446;
+    (void)expectedShieldedRng.randSeedInt(100); // Zero chance still consumes one draw upstream.
+    if (!Pokerogue3DS::executePokemonMoveStatusPhase(shieldedUser, shieldedTarget, 52,
+            resolvedEffectChance, completeStatusPolicy.move.application, shieldedReactions,
+            shieldedRng, shieldedEvent) || shieldedEvent.applied || shieldedTarget.status.present ||
+        !shieldedEvent.application.chanceRolled ||
+        shieldedRng.randSeedUint32() != expectedShieldedRng.randSeedUint32()) return 9447;
+
     bool foundStarterStatusCapability = false, foundPendingStatusCapability = false;
     for (const auto& profile : PokerogueContent::kStatusActionAbilityProfiles) {
         // Canonical IDs: Overgrow only changes power. Keen Eye now carries

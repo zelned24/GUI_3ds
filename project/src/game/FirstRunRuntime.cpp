@@ -1052,7 +1052,8 @@ bool FirstRunRuntime::resolveActiveStatusCommandPolicies(const PokemonBattleStat
     command.reactionsResolved = true;
     command.move.application = recipientPolicies.status;
     command.move.chanceCallbacksResolved = true;
-    command.move.effectiveChance = move->upstreamChance;
+    if (!resolvePokemonMoveEffectChance(moveId, user.abilityId, opponent.abilityId, false,
+            command.move.effectiveChance)) return false;
     command.move.ppCost = ppCost;
     PokemonMoveWeatherContext weather{};
     PokemonHitPolicy hit{};
@@ -1095,7 +1096,9 @@ bool FirstRunRuntime::supportsActiveBattleMove(const PokemonBattleState& user,
         PokemonStatusRecipientPolicies recipient{}, source{};
         PokemonPostSetStatusPolicy reactions{};
         const auto status = static_cast<PokemonStatusEffect>(effect->effectId);
-        return resolveActiveStatusRecipientPolicies(opponent, user, status, recipient) &&
+        int16_t chance = 0;
+        return resolvePokemonMoveEffectChance(moveId, user.abilityId, opponent.abilityId, false, chance) &&
+            resolveActiveStatusRecipientPolicies(opponent, user, status, recipient) &&
             resolveActiveStatusRecipientPolicies(user, opponent, status, source) &&
             resolvePokemonPostSetStatusPolicy(opponent, user, status, recipient, source, true, true, true, reactions);
     }
@@ -1109,15 +1112,17 @@ bool FirstRunRuntime::supportsActiveBattleMove(const PokemonBattleState& user,
 
 double FirstRunRuntime::scoreActiveEnemyMove(const PokemonBattleState& user,
     const PokemonBattleState& target, const PokerogueContent::Move& move) const {
+    int16_t chance = move.upstreamChance;
     const auto* effect = singleOpponentStatusEffect(move.id);
     if (!effect) {
         double score = baselineEnemyMoveScore(user, target, move);
         if (const auto* secondary = singleDamageStatusEffect(move.id)) {
             PokemonStatusRecipientPolicies policies{};
             double benefit = 0;
-            if (!resolveActiveStatusRecipientPolicies(target, user,
+            if (!resolvePokemonMoveEffectChance(move.id, user.abilityId, target.abilityId, false, chance) ||
+                !resolveActiveStatusRecipientPolicies(target, user,
                     static_cast<PokemonStatusEffect>(secondary->effectId), policies) ||
-                !calculatePokemonStatusEffectAiBenefit(target, move.id, move.upstreamChance,
+                !calculatePokemonStatusEffectAiBenefit(target, move.id, chance,
                     true, policies.status, benefit)) return -20.0;
             score -= benefit;
         }
@@ -1125,9 +1130,10 @@ double FirstRunRuntime::scoreActiveEnemyMove(const PokemonBattleState& user,
     }
     PokemonStatusRecipientPolicies policies{};
     double targetBenefit = 0;
-    if (!resolveActiveStatusRecipientPolicies(target, user,
+    if (!resolvePokemonMoveEffectChance(move.id, user.abilityId, target.abilityId, false, chance) ||
+        !resolveActiveStatusRecipientPolicies(target, user,
             static_cast<PokemonStatusEffect>(effect->effectId), policies) ||
-        !calculatePokemonStatusEffectAiBenefit(target, move.id, move.upstreamChance,
+        !calculatePokemonStatusEffectAiBenefit(target, move.id, chance,
             true, policies.status, targetBenefit)) return -20.0;
     // Pokemon.getEnemyMoveScores flips target benefit for opposing Pokemon.
     return -targetBenefit;
@@ -2633,7 +2639,9 @@ bool FirstRunRuntime::executeActiveBattleMove(uint8_t userIndex, uint8_t targetI
                 true, true, true, reactions)) return false;
         if (!result.weatherCancelled && result.damageRoll.hit && result.damageApplied) {
             PokemonMoveStatusPhaseEvent statusEvent{};
-            if (!executePokemonMoveStatusPhase(nextUser, nextOpponent, move->id, move->upstreamChance,
+            int16_t chance = 0;
+            if (!resolvePokemonMoveEffectChance(move->id, nextUser.abilityId, nextOpponent.abilityId, false, chance)) return false;
+            if (!executePokemonMoveStatusPhase(nextUser, nextOpponent, move->id, chance,
                     recipient.status, reactions, nextRng, statusEvent)) return false;
         }
     }
