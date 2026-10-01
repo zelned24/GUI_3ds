@@ -695,6 +695,11 @@ extern "C" int runNativeSaveChecks() {
     invalidDexRecord = purchased;
     invalidDexRecord.natureAttr |= 1u;
     if (StarterCandyProfileCodec::valid(invalidDexRecord, 0, PokerogueContent::kMaxStarterCandyCount)) return 128;
+    PokemonNature defaultNature = PokemonNature::Unspecified;
+    if (!nativeStarterDefaultNature(purchased, defaultNature) || defaultNature != PokemonNature::Hardy) return 134;
+    auto missingNature = purchased;
+    missingNature.natureAttr = 0;
+    if (nativeStarterDefaultNature(missingNature, defaultNature) || defaultNature != PokemonNature::Hardy) return 135;
     purchased.costReduction = 3;
     size_t invalidWritten = 999;
     if (encodeNativeStarterCandyProfile(&purchased, 1, 1, PokerogueContent::kContentHash,

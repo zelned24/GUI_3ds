@@ -34,6 +34,19 @@ inline bool seedNativeFreshStarterDexMetadata(NativeStarterCandyRecord& record) 
     return true;
 }
 
+// Pinned starter-select-ui-utils.ts/getStarterDefaultNature scans in enum
+// order. Missing metadata is explicit here; callers may use a known fresh baseline.
+inline bool nativeStarterDefaultNature(const NativeStarterCandyRecord& record, PokemonNature& output) {
+    if (!record.natureAttr || (record.natureAttr & ~0x03fffffeu)) return false;
+    for (uint8_t n = 0; n < 25; ++n) {
+        if (record.natureAttr & (1u << (n + 1))) {
+            output = static_cast<PokemonNature>(n);
+            return true;
+        }
+    }
+    return false;
+}
+
 enum class StarterCandyApplyResult : uint8_t {
     Applied = 0, InvalidRootSpecies, MissingStarterCost, InvalidCandyCount, Overflow
 };

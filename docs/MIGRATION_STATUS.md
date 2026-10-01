@@ -1200,3 +1200,9 @@
 1. `resolveFreshStarter` conserva mejoras del ledger para las especies default: parte del baseline canónico IV 15 y aplica los máximos persistidos por estadística antes de `initializePokemonBattleState`. Stats del actor se calculan con esos IV; no consume draws adicionales ni modifica el perfil. No habilita todavía especies no default ni preferencias de naturaleza/habilidad.
 2. Restauración de setup reconstruye también el caso de un solo inicial después de cargar su perfil referenciado; antes se reconstruía solo la selección múltiple en esa etapa. Así conserva los IV mejorados tanto en setup simple como múltiple. Los checkpoints de combate mantienen sus propios snapshots de actor.
 3. Regresiones escritas de IV 31/27, baseline de estadísticas restantes y restauración de stats/identidad; pendientes de ejecución. Tests y compilación siguen aplazados.
+
+## Naturaleza default resuelta desde desbloqueos
+
+1. `nativeStarterDefaultNature` sigue `getStarterDefaultNature` de `src/ui/utils/starter-select-ui-utils.ts` pinned: primera naturaleza desbloqueada en orden enum. No consume RNG. Metadata ausente/inválida falla sin modificar output; el caller mantiene el baseline canónico conocido de especies default cuando falta metadata legacy.
+2. `resolveFreshStarter` aplica naturaleza del perfil antes de construir identidad/stats. Esto conecta nuevos desbloqueos de naturaleza para iniciales default, además de IV. Preferencias/ciclo de naturaleza y especies no default todavía pendientes.
+3. Regresiones de máscara Hardy+Quirky, metadata ausente y naturaleza efectiva del actor escritas; sin ejecutar. Tests/compilación siguen aplazados.

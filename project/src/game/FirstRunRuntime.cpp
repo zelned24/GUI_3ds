@@ -3002,6 +3002,15 @@ bool FirstRunRuntime::resolveFreshStarter(uint16_t dex, PokerogueRngAdapter& rng
         PokemonNature starterNature = PokemonNature::Unspecified;
         if (pokemonFreshProfileNature(starter.dex, starterNature) != PokemonFreshProfileResult::Ok)
             return false;
+        if (m_starterProfileReady) {
+            for (size_t record = 0; record < m_starterProfileCount; ++record) {
+                const auto& dexEntry = m_starterProfileRecords[record];
+                if (dexEntry.speciesDex == starter.dex) {
+                    if (dexEntry.natureAttr && !nativeStarterDefaultNature(dexEntry, starterNature)) return false;
+                    break;
+                }
+            }
+        }
         const char* starterFormId = starter.firstFormId && *starter.firstFormId
             ? starter.firstFormId : nullptr;
 
