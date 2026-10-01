@@ -3293,6 +3293,13 @@ extern "C" int runPokemonBattleStateChecks() {
     if (Pokerogue3DS::resolvePokemonPostSetStatusPolicy(policyRecipient, policySource, Effect::Poison,
             recipientPolicies, recipientPolicies, true, true, false, derivedPostStatus) ||
         derivedPostStatus.formsResolved) return 9301;
+    bool hypnosisFlags = false, powderFlags = false, singFlags = false;
+    for (const auto& profile : PokerogueContent::kStatusMoveFlagProfiles) {
+        if (profile.moveId == 95) hypnosisFlags = profile.resolved && profile.reflectable && !profile.powder && !profile.sound;
+        if (profile.moveId == 77) powderFlags = profile.resolved && profile.reflectable && profile.powder && !profile.sound;
+        if (profile.moveId == 47) singFlags = profile.resolved && profile.reflectable && profile.sound && !profile.powder;
+    }
+    if (!hypnosisFlags || !powderFlags || !singFlags) return 9310;
     bool foundStatusConfusion = false;
     for (const auto& profile : PokerogueContent::kStatusConfusionAbilityProfiles) {
         if (!profile.resolved || !(profile.statusMask & 2)) continue;

@@ -1641,3 +1641,9 @@
 1. resolveActiveStatusRecipientPolicies deriva tipos desde forma canónica actual, valida pertenencia a especie y usa weather vivo para sol. Compone inmunidades/bypass/status/tag desde habilidades primarias reales.
 2. Frontera conservadora exige individual sin held modifiers y habilidades sin callbacks dinámicos de tipo/grounding bajo capability actual. Terrain/Safeguard/pasivas/overrides no representados continúan pendientes. Proveedor añadido para el comando de estados; su invocación y los movimientos de estado todavía no están habilitados.
 3. Revisión estática de campos y diff realizada. Regresiones de composición ya escritas; tests/compilación siguen aplazados.
+
+## Flags reales de movimientos de estado
+
+1. StatusMoveFlagProfile conserva reflectable/powder/sound desde declaraciones canónicas, separado de Move.upstreamFlags (máscara interna de selección, no enum MoveFlags). Builder desconocido conserva capacidad pendiente.
+2. Esta tabla describe propiedades, no implementa Magic Bounce, Overcoat, inmunidad Grass ni Soundproof. Comando activo debe resolverlas antes de habilitar estos movimientos.
+3. Regresiones de Hypnosis/Poison Powder/Sing escritas sin ejecutar; contenido regenerado. Tests/compilación aplazados.
