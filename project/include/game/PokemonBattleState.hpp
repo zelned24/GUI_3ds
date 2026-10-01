@@ -255,7 +255,7 @@ struct PokemonStatusApplicationPolicy {
     bool allyAbilityBlocks = false;
     bool safeguardBlocks = false;
 };
-enum class PokemonStatusImmunityResult : uint8_t { Resolved, UnknownAbility, UnsupportedCondition, InvalidEffect };
+enum class PokemonStatusImmunityResult : uint8_t { Resolved, UnknownAbility, UnsupportedCondition, InvalidEffect, InvalidType };
 inline PokemonStatusImmunityResult resolvePokemonStatusAbilityImmunity(uint16_t abilityId,
     PokemonStatusEffect effect, bool abilityActive, bool allyField, bool callbacksResolved, bool& output) {
     if (static_cast<uint8_t>(effect) > 7) return PokemonStatusImmunityResult::InvalidEffect;
@@ -266,6 +266,28 @@ inline PokemonStatusImmunityResult resolvePokemonStatusAbilityImmunity(uint16_t 
             return PokemonStatusImmunityResult::UnsupportedCondition;
         output = abilityActive && ((allyField ? profile.allyMask : profile.selfMask) &
             (1u << static_cast<uint8_t>(effect)));
+        return PokemonStatusImmunityResult::Resolved;
+    }
+    return PokemonStatusImmunityResult::UnknownAbility;
+}
+
+inline PokemonStatusImmunityResult resolvePokemonStatusTypeImmunityBypass(uint16_t abilityId,
+    PokemonStatusEffect effect, const char* defenderType, bool abilityActive, bool callbacksResolved, bool& output) {
+    if (static_cast<uint8_t>(effect) > 7) return PokemonStatusImmunityResult::InvalidEffect;
+    if (!resolvePokemonTypeSymbol(defenderType)) return PokemonStatusImmunityResult::InvalidType;
+    if (!callbacksResolved) return PokemonStatusImmunityResult::UnsupportedCondition;
+    for (const auto& profile : PokerogueContent::kStatusTypeBypassProfiles) {
+        if (profile.abilityId != abilityId) continue;
+        if (abilityActive && !profile.resolved) return PokemonStatusImmunityResult::UnsupportedCondition;
+        bool bypass = false;
+        if (abilityActive) for (const auto& entry : PokerogueContent::kStatusTypeBypassEntries) {
+            if (entry.abilityId != abilityId || !(entry.statusMask & (1u << static_cast<uint8_t>(effect)))) continue;
+            const char* a = entry.defenderType;
+            const char* b = defenderType;
+            while (*a && *a == *b) { ++a; ++b; }
+            bypass |= *a == *b;
+        }
+        output = bypass;
         return PokemonStatusImmunityResult::Resolved;
     }
     return PokemonStatusImmunityResult::UnknownAbility;

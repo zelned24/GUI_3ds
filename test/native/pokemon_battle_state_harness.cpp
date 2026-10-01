@@ -2996,5 +2996,30 @@ extern "C" int runPokemonBattleStateChecks() {
     immune = true;
     if (Pokerogue3DS::resolvePokemonStatusAbilityImmunity(65535, Effect::Sleep, true, false, true, immune) !=
             Pokerogue3DS::PokemonStatusImmunityResult::UnknownAbility || !immune) return 9069;
+    bool bypassPoison = false, bypassSteel = false;
+    if (Pokerogue3DS::resolvePokemonStatusTypeImmunityBypass(212, Effect::Poison, "POISON", true, true, bypassPoison) !=
+            Pokerogue3DS::PokemonStatusImmunityResult::Resolved || !bypassPoison ||
+        Pokerogue3DS::resolvePokemonStatusTypeImmunityBypass(212, Effect::Poison, "STEEL", true, true, bypassSteel) !=
+            Pokerogue3DS::PokemonStatusImmunityResult::Resolved || !bypassSteel) return 9070;
+    applicationPolicy = {};
+    applicationPolicy.resolved = true;
+    applicationPolicy.hasSource = true;
+    applicationPolicy.poisonType = applicationPolicy.steelType = true;
+    applicationPolicy.sourceIgnoresPoisonImmunity = bypassPoison;
+    applicationPolicy.sourceIgnoresSteelImmunity = bypassSteel;
+    if (Pokerogue3DS::canPokemonSetStatus({}, Effect::Poison, applicationPolicy) !=
+            Pokerogue3DS::PokemonStatusEligibility::Allowed) return 9071;
+    if (Pokerogue3DS::resolvePokemonStatusTypeImmunityBypass(212, Effect::Toxic, "STEEL", false, true, bypassSteel) !=
+            Pokerogue3DS::PokemonStatusImmunityResult::Resolved || bypassSteel) return 9072;
+    if (Pokerogue3DS::resolvePokemonStatusTypeImmunityBypass(212, Effect::Burn, "STEEL", true, true, bypassSteel) !=
+            Pokerogue3DS::PokemonStatusImmunityResult::Resolved || bypassSteel) return 9073;
+    bypassSteel = true;
+    if (Pokerogue3DS::resolvePokemonStatusTypeImmunityBypass(212, Effect::Poison, "UNKNOWN", true, true, bypassSteel) !=
+            Pokerogue3DS::PokemonStatusImmunityResult::InvalidType || !bypassSteel) return 9074;
+    if (Pokerogue3DS::resolvePokemonStatusTypeImmunityBypass(65535, Effect::Poison, "STEEL", true, true, bypassSteel) !=
+            Pokerogue3DS::PokemonStatusImmunityResult::UnknownAbility || !bypassSteel) return 9075;
+    applicationPolicy.hasSource = false;
+    if (Pokerogue3DS::canPokemonSetStatus({}, Effect::Poison, applicationPolicy) !=
+            Pokerogue3DS::PokemonStatusEligibility::PoisonType) return 9076;
     return 0;
 }

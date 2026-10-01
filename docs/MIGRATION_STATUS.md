@@ -1487,3 +1487,9 @@
 1. Generador importa StatusEffectImmunityAbAttr y UserFieldStatusEffectImmunityAbAttr en máscaras separadas. Constructor vacío bloquea todos salvo FAINT, conforme PreSetStatusEffectImmunityAbAttr.canApply. Parámetros dinámicos/conditionalAttr/condition y ConditionalUserFieldStatusEffectImmunityAbAttr permanecen sin resolver.
 2. resolvePokemonStatusAbilityImmunity distingue ámbito propio/aliado, habilidad activa, callbacks y capacidad desconocida. Fallo no publica output; caller compone selfAbilityBlocks/allyAbilityBlocks en policy de aplicación. Aún falta integración del proveedor completo y reacciones posteriores.
 3. Regresiones de Immunity real (poison/toxic), constructor vacío, inmunidad aliada, habilidad inactiva y condiciones desconocidas escritas sin ejecutar. Catálogo regenerado conservando hash; tests/compilación aplazados.
+
+## Bypass de inmunidad de tipo por estado
+
+1. Generador importa IgnoreTypeStatusEffectImmunityAbAttr como conjunto de estados y entradas por tipo; Corrosion pinned declara POISON/TOXIC y STEEL/POISON. Expresiones o condiciones desconocidas quedan sin resolver.
+2. resolvePokemonStatusTypeImmunityBypass consulta ID canónico/tipo/estado y distingue capacidad, activación e input inválido. Caller compone bypass de Poison y Steel por separado; fuente ausente sigue inmune conforme canSetStatus.
+3. Regresiones de Corrosion real, doble tipo, inactividad, otro estado, fuente ausente e input inválido escritas sin ejecutar. Catálogo regenerado/hash unchanged; integración del proveedor completo y reacciones pendiente. Tests/compilación aplazados.
