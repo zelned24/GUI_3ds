@@ -971,3 +971,9 @@
 
 1. El host ya no cambia `pauseEvolutions` al abrir el menú de equipo QuickJS. El toggle nativo de SELECT queda dentro del bloque de fallback sin bridge sano.
 2. Regresión del script escrita para apertura sin mutación y confirmación de cambio; comprobación estática complementaria sitúa el toggle bajo el guard del host. No sustituye prueba del ejecutable, pendiente al final.
+
+## Captura con equipo lleno — bloqueo explícito pendiente de reemplazo
+
+1. Se detectó captura que eliminaba al enemigo sin añadirlo ni pedir liberar/reemplazar cuando el equipo tenía seis miembros. El comando ahora falla antes de consumir ball/RNG o modificar el combate.
+2. Fuente pinned inspeccionada: `src/phases/attempt-capture-phase.ts`, `AttemptCapturePhase`, rama `PLAYER_PARTY_MAX_SIZE` / `addToPartyMenuConfig` / `PartyUiMode.RELEASE`. Implementar esa decisión sigue pendiente; el bloqueo no se declara soporte completo de captura.
+3. Regresiones 586–588 escritas con party checkpoint de seis actores y comparación de inventario, enemigo, wave y próximo draw RNG; sin ejecutar.

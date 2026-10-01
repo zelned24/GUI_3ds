@@ -2288,6 +2288,12 @@ bool FirstRunRuntime::throwPokeballInPlace(PokeballType ball) {
         buildScene();
         return false;
     }
+    // AttemptCapturePhase requires an explicit release/replacement decision at
+    // PLAYER_PARTY_MAX_SIZE. Never silently discard a successful capture.
+    if (m_context.playerPartyCount >= 6) {
+        m_battleFeedback = "Full-party capture requires release/replacement selection";
+        return false;
+    }
     const auto ballIdx = static_cast<uint8_t>(ball);
     if (ballIdx >= 6 || m_pokeballs[ballIdx] == 0) {
         m_battleFeedback = "No Poké Balls of that type remaining!";

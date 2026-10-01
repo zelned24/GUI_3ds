@@ -1285,6 +1285,31 @@ static int checkPlayerPartyManagementAndSwitching() {
     if (recapturedPartySave.playerPartyCount != 2 ||
         recapturedPartySave.playerParty[1].experience != capturedPartySave.playerParty[1].experience)
         return 294;
+    // Full-party capture is explicitly unsupported until release/replacement
+    // is integrated; rejecting it must not discard a Pokemon or consume RNG.
+    NativeRunSave fullPartySave = capturedPartySave;
+    fullPartySave.playerPartyCount = 6;
+    for (uint8_t member = 2; member < 6; ++member) {
+        fullPartySave.playerParty[member] = fullPartySave.playerParty[1];
+        uint32_t id = member;
+        bool collision = true;
+        while (collision) {
+            collision = false;
+            for (uint8_t prior = 0; prior < member; ++prior)
+                if (fullPartySave.playerParty[prior].pokemonId == id) { ++id; collision = true; break; }
+        }
+        fullPartySave.playerParty[member].pokemonId = id;
+    }
+    FirstRunRuntime fullPartyGame(1);
+    if (!fullPartyGame.restoreNativeRunSave(fullPartySave)) return 586;
+    const auto ballsBeforeFullCapture = fullPartyGame.pokeballCount(PokeballType::Pokeball);
+    auto rngBeforeFullCapture = *fullPartyGame.battleRng().currentStream();
+    if (fullPartyGame.throwPokeball(PokeballType::Pokeball) || fullPartyGame.playerPartyCount() != 6 ||
+        fullPartyGame.pokeballCount(PokeballType::Pokeball) != ballsBeforeFullCapture ||
+        fullPartyGame.presentation().enemy.battleState.hp != fullPartySave.enemyHp ||
+        fullPartyGame.run().wave != fullPartySave.wave) return 587;
+    auto rngAfterFullCapture = *fullPartyGame.battleRng().currentStream();
+    if (rngBeforeFullCapture.randSeedUint32() != rngAfterFullCapture.randSeedUint32()) return 588;
     // Real reconstructed enemy and captured party: both identities share EXP.
     NativeRunSave sharedVictory = capturedPartySave;
     sharedVictory.stage = NativeSaveStage::BattleWon;
