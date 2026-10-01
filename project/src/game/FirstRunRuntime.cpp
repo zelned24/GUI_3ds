@@ -942,8 +942,8 @@ const PokerogueContent::MoveStatusEffect* singleOpponentStatusEffect(uint16_t mo
 const PokerogueContent::MoveStatusEffect* singleDamageStatusEffect(uint16_t moveId) {
     const auto* move = PokerogueContent::findMoveById(moveId);
     if (!move || move->category == PokerogueContent::MoveStatus || move->power <= 0 ||
-        move->upstreamFlags || move->attributeCount != 1 || !move->target ||
-        std::strcmp(move->target, "NEAR_OTHER") || !PokerogueContent::moveHasAttribute(*move, "StatusEffectAttr")) return nullptr;
+        move->upstreamFlags || !pokemonDamageSecondaryAttributesResolved(*move, "StatusEffectAttr") || !move->target ||
+        std::strcmp(move->target, "NEAR_OTHER")) return nullptr;
     bool buildersResolved = false;
     for (const auto& profile : PokerogueContent::kStatusMoveFlagProfiles)
         if (profile.moveId == moveId) buildersResolved = profile.resolved;
@@ -959,8 +959,8 @@ const PokerogueContent::MoveStatusEffect* singleDamageStatusEffect(uint16_t move
 bool singleDamageConfusionEffect(uint16_t moveId) {
     const auto* move = PokerogueContent::findMoveById(moveId);
     if (!move || move->category == PokerogueContent::MoveStatus || move->power <= 0 || move->upstreamFlags ||
-        move->attributeCount != 1 || !move->target || std::strcmp(move->target, "NEAR_OTHER") ||
-        !PokerogueContent::moveHasAttribute(*move, "ConfuseAttr")) return false;
+        !pokemonDamageSecondaryAttributesResolved(*move, "ConfuseAttr") || !move->target ||
+        std::strcmp(move->target, "NEAR_OTHER")) return false;
     bool known = false;
     for (const auto& flags : PokerogueContent::kStatusMoveFlagProfiles)
         if (flags.moveId == moveId) known = flags.resolved;

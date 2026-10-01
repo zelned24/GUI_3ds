@@ -1770,3 +1770,9 @@
 2. FirstRunRuntime entrega PID del usuario en ambas rutas activas ConfuseAttr (estado y daño). Reacción Puppeteer entrega PID del destinatario. PID cero es válido y se distingue de identidad desconocida con un flag; no exige que el productor siga en el equipo actual.
 3. Actor v10 (hex a) y partida/runtime v18 conservan PID. Readers admiten actor v8/v9 y partida v16/v17 con identidad desconocida, manteniendo movimiento conocido cuando existe. Overlap conserva identidad y retirada/expiración borran todos los campos.
 4. Regresiones escritas para cero/UINT32_MAX, overlap con otro productor, Puppeteer, roundtrip, migraciones y coherencia activo/equipo. Tests y compilación aplazados; Classic completo, otros tags/productores y validación en Azahar/Old 3DS siguen pendientes.
+
+## Composición de críticos con estados secundarios
+
+1. Pinned 8555c08c823b856cbec4eb99ca84ea52a955836d, src/data/moves/move.ts: HighCritAttr.apply añade una etapa; Blaze Kick y Poison Tail combinan HighCritAttr con StatusEffectAttr. Datos canónicos reales conservan ambas declaraciones.
+2. Admisión C++ permite un único efecto secundario y un modificador crítico ya portado (HighCritAttr/CritOnlyAttr). Reutiliza cálculo de crítico, daño y fase POST_APPLY; no vuelve a consumir PP ni sortea el crítico después del estado. Otros atributos/flags/builders siguen necesitando su dispatcher; Cross Poison no se habilita ignorando slicingMove.
+3. Regresión de encuentro real con snapshots de test añade ambos ataques, comprueba etapa crítica y replay de PP/HP/estado. Está escrita sin ejecutar; compilación/tests y Classic completo siguen pendientes.

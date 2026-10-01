@@ -403,6 +403,39 @@ static int checkStatusActionAdmission() {
                 emberAfter.enemyHp != repeatedEmberAfter.enemyHp ||
                 emberAfter.enemyStatus.effect != repeatedEmberAfter.enemyStatus.effect ||
                 emberAfter.enemyStatus.present != repeatedEmberAfter.enemyStatus.present) return 9430;
+            // Real multi-attribute attacks use the same critical/damage/status
+            // path. Moves are injected only in this native regression snapshot.
+            for (const uint16_t id : {uint16_t(299), uint16_t(342)}) {
+                const auto* combinedMove = PokerogueContent::findMoveById(id);
+                if (!combinedMove || combinedMove->attributeCount != 2 ||
+                    !pokemonDamageSecondaryAttributesResolved(*combinedMove, "StatusEffectAttr")) return 9530;
+                const auto* hypnosis = PokerogueContent::findMoveById(95);
+                const auto* twineedle = PokerogueContent::findMoveById(41);
+                if (!hypnosis || !twineedle ||
+                    pokemonDamageSecondaryAttributesResolved(*hypnosis, "StatusEffectAttr") ||
+                    pokemonDamageSecondaryAttributesResolved(*twineedle, "StatusEffectAttr") ||
+                    pokemonDamageSecondaryAttributesResolved(*combinedMove, "ConfuseAttr")) return 9533;
+                uint8_t denominator = 0;
+                if (!pokemonMoveCriticalDenominator(id, denominator) || denominator != 8) return 9531;
+                auto combinedCheckpoint = checkpoint;
+                combinedCheckpoint.playerMoveIds[0] = id;
+                combinedCheckpoint.playerPp[0] = static_cast<uint8_t>(combinedMove->pp);
+                combinedCheckpoint.playerParty[0].moveIds[0] = id;
+                combinedCheckpoint.playerParty[0].pp[0] = combinedCheckpoint.playerParty[0].maxPp[0] =
+                    static_cast<uint8_t>(combinedMove->pp);
+                FirstRunRuntime combined(seed), repeatedCombined(seed);
+                NativeRunSave combinedAfter{}, repeatedCombinedAfter{};
+                if (!combined.restoreNativeRunSave(combinedCheckpoint) ||
+                    !repeatedCombined.restoreNativeRunSave(combinedCheckpoint) || !combined.battleInputSupported() ||
+                    !combined.advanceBattleTurn() || !repeatedCombined.advanceBattleTurn() ||
+                    combined.captureNativeRunSave(combinedAfter) != NativeSaveResult::Ok ||
+                    repeatedCombined.captureNativeRunSave(repeatedCombinedAfter) != NativeSaveResult::Ok ||
+                    combinedAfter.playerPp[0] != combinedMove->pp - 1 ||
+                    combinedAfter.enemyHp != repeatedCombinedAfter.enemyHp ||
+                    combinedAfter.playerHp != repeatedCombinedAfter.playerHp ||
+                    combinedAfter.enemyStatus.effect != repeatedCombinedAfter.enemyStatus.effect ||
+                    combinedAfter.enemyStatus.present != repeatedCombinedAfter.enemyStatus.present) return 9532;
+            }
             auto confusedEmberCheckpoint = emberCheckpoint;
             confusedEmberCheckpoint.enemyConfusion = {3, true};
             FirstRunRuntime confusedEmber(seed), repeatedConfusedEmber(seed);

@@ -507,6 +507,28 @@ struct PokemonMoveStatusApplicationEvent {
     uint8_t chanceRoll = 0;
     bool requestObtainStatusPhase = false;
 };
+// Admitted composition: one secondary effect plus an optional existing critical
+// modifier. Other effects require their own ordered dispatcher, never omission.
+inline bool pokemonDamageSecondaryAttributesResolved(const PokerogueContent::Move& move,
+    const char* secondaryAttribute) {
+    if (!secondaryAttribute || move.category == PokerogueContent::MoveStatus ||
+        move.attributeOffset > PokerogueContent::kMoveAttributeCount ||
+        move.attributeCount > PokerogueContent::kMoveAttributeCount - move.attributeOffset) return false;
+    uint16_t effects = 0, criticalModifiers = 0;
+    for (uint16_t i = 0; i < move.attributeCount; ++i) {
+        const char* attribute = PokerogueContent::kMoveAttributes[move.attributeOffset + i].id;
+        if (!attribute) return false;
+        const auto matches = [](const char* a, const char* b) {
+            while (*a && *a == *b) { ++a; ++b; }
+            return *a == *b;
+        };
+        if (matches(attribute, secondaryAttribute)) ++effects;
+        else if (matches(attribute, "HighCritAttr") || matches(attribute, "CritOnlyAttr")) ++criticalModifiers;
+        else return false;
+    }
+    return effects == 1 && criticalModifiers <= 1;
+}
+
 // StatusEffectAttr.apply only: caller has resolved hit and effective move chance.
 // Queuing/ObtainStatusEffectPhase belongs to the subsequent dispatcher step.
 PokemonMoveStatusApplicationResult resolvePokemonMoveStatusApplication(
