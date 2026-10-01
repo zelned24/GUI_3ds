@@ -451,6 +451,36 @@ inline bool resolvePokemonMoveEffectChance(uint16_t moveId, uint16_t userAbility
     return true;
 }
 
+struct PokemonPostSummonStatusHealingEvent {
+    PokemonStatusEffect previous = PokemonStatusEffect::None;
+    bool abilityActivates = false;
+    bool healed = false;
+};
+// PostSummonHealStatusAbAttr -> resetStatus(false). This does not revive,
+// remove confusion, consume RNG or clear a still-pending status phase.
+inline bool applyPokemonPostSummonStatusHealing(PokemonBattleState& actor,
+    bool abilityActive, bool callbacksResolved, PokemonPostSummonStatusHealingEvent& output) {
+    if (!pokemonStatusStateValid(actor.status) || actor.pendingStatus != PokemonStatusEffect::None) return false;
+    PokemonPostSummonStatusHealingEvent event{};
+    if (!actor.status.present || !abilityActive) { output = event; return true; }
+    if (!callbacksResolved) return false;
+    for (const auto& profile : PokerogueContent::kPostSummonStatusHealingProfiles) {
+        if (profile.abilityId != actor.abilityId) continue;
+        if (!profile.resolved) return false;
+        if (profile.statusMask & (1u << static_cast<uint8_t>(actor.status.effect))) {
+            event.abilityActivates = true;
+            event.previous = actor.status.effect;
+            if (actor.status.effect != PokemonStatusEffect::Faint) {
+                actor.status = {};
+                event.healed = true;
+            }
+        }
+        output = event;
+        return true;
+    }
+    return false;
+}
+
 enum class PokemonMoveStatusApplicationResult : uint8_t {
     Requested, ChanceFailed, Ineligible, Fainted, UnsupportedMove, UnresolvedPolicy, InvalidState
 };

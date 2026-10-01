@@ -1720,3 +1720,11 @@
 2. Excepciones Order Up/Electro Shot se generan desde IDs canónicos, sin numeración paralela. Perfil de habilidad conserva multiplicador/bloqueo; builders, condiciones, declaraciones múltiples o callbacks pendientes siguen explícitamente no soportados. Sheer Force no se habilita por tener además callbacks de potencia pendientes.
 3. Resolver conecta comandos de estado, secundarios de daño y beneficio de IA. Chance cero no omite el draw de StatusEffectAttr.apply. Arena Pledge/passives/suppression continúan pendientes; proveedor activo mantiene frontera sin esos estados.
 4. Regresiones de chance 10→20, bloqueo, chance negativa, autoefecto, excepciones, Sheer Force pendiente y RNG de chance cero escritas sin ejecutar. Compilación/tests siguen aplazados.
+
+## Inmunidad y curación de estado al entrar al campo
+
+1. StatusActionAbilityProfile admite StatusEffectImmunityAbAttr, PostSummonHealStatusAbAttr y BattlerTagImmunityAbAttr mediante los resolvers canónicos existentes; Immunity, Insomnia y Vital Spirit dejan de rechazarse por la capacidad genérica de daño.
+2. PostSummonStatusHealingProfile conserva máscaras desde argumentos reales. applyPokemonPostSummonStatusHealing reproduce canApply y resetStatus(false) del pinned: cura solo estados declarados, no revive, no elimina confusión ni drena una solicitud pendiente. Inactividad y estado ausente no disparan callback.
+3. Runtime invoca el callback al entrar reservas de entrenador (cambio/KO), cambio voluntario del jugador y reemplazo tras faint. Restaurar un checkpoint entre turnos no repite un summon ni cura silenciosamente su estado.
+4. Curación y eventos no consumen RNG. Declaraciones/condiciones desconocidas quedan pendientes; pasivas/suppression/adquisición de habilidad y otros PostSummon siguen sin dispatcher completo.
+5. Regresiones de Toxic, Insomnia, estado no cubierto, inactividad, callback pendiente, pendingStatus e inmunidades reales escritas sin ejecutar. Tests/compilación pendientes.

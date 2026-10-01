@@ -3489,6 +3489,41 @@ extern "C" int runPokemonBattleStateChecks() {
         !shieldedEvent.application.chanceRolled ||
         shieldedRng.randSeedUint32() != expectedShieldedRng.randSeedUint32()) return 9447;
 
+    auto summonHealingActor = completeStatusTarget;
+    summonHealingActor.abilityId = 17; // Immunity canonical ID.
+    summonHealingActor.status = {};
+    summonHealingActor.status.present = true;
+    summonHealingActor.status.effect = Effect::Toxic;
+    summonHealingActor.status.turnCountPresent = true;
+    summonHealingActor.status.turnCount = 3;
+    summonHealingActor.confusion = {2, true};
+    Pokerogue3DS::PokemonPostSummonStatusHealingEvent summonHealingEvent{};
+    if (!Pokerogue3DS::applyPokemonPostSummonStatusHealing(summonHealingActor, true, true, summonHealingEvent) ||
+        !summonHealingEvent.abilityActivates || !summonHealingEvent.healed ||
+        summonHealingEvent.previous != Effect::Toxic || summonHealingActor.status.present ||
+        !summonHealingActor.confusion.present || summonHealingActor.confusion.turns != 2) return 9450;
+    summonHealingActor.status.present = true;
+    summonHealingActor.status.effect = Effect::Sleep;
+    if (!Pokerogue3DS::applyPokemonPostSummonStatusHealing(summonHealingActor, true, true, summonHealingEvent) ||
+        summonHealingEvent.healed || summonHealingActor.status.effect != Effect::Sleep) return 9451;
+    summonHealingActor.abilityId = 15; // Insomnia.
+    if (!Pokerogue3DS::applyPokemonPostSummonStatusHealing(summonHealingActor, false, false, summonHealingEvent) ||
+        summonHealingEvent.healed || !summonHealingActor.status.present) return 9452;
+    summonHealingEvent.previous = Effect::Burn;
+    if (Pokerogue3DS::applyPokemonPostSummonStatusHealing(summonHealingActor, true, false, summonHealingEvent) ||
+        !summonHealingActor.status.present || summonHealingEvent.previous != Effect::Burn) return 9453;
+    if (!Pokerogue3DS::applyPokemonPostSummonStatusHealing(summonHealingActor, true, true, summonHealingEvent) ||
+        !summonHealingEvent.healed || summonHealingActor.status.present) return 9454;
+    summonHealingActor.pendingStatus = Effect::Poison;
+    if (Pokerogue3DS::applyPokemonPostSummonStatusHealing(summonHealingActor, true, true, summonHealingEvent) ||
+        summonHealingActor.pendingStatus != Effect::Poison) return 9455;
+    summonHealingActor.pendingStatus = Effect::None;
+    bool canonicalImmunity = false;
+    if (Pokerogue3DS::resolvePokemonStatusAbilityImmunity(17, Effect::Poison, true, false, true,
+            canonicalImmunity) != Pokerogue3DS::PokemonStatusImmunityResult::Resolved || !canonicalImmunity) return 9456;
+    if (Pokerogue3DS::resolvePokemonStatusAbilityImmunity(15, Effect::Sleep, true, false, true,
+            canonicalImmunity) != Pokerogue3DS::PokemonStatusImmunityResult::Resolved || !canonicalImmunity) return 9457;
+
     bool foundStarterStatusCapability = false, foundPendingStatusCapability = false;
     for (const auto& profile : PokerogueContent::kStatusActionAbilityProfiles) {
         // Canonical IDs: Overgrow only changes power. Keen Eye now carries

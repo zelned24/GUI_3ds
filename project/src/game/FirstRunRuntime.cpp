@@ -2024,6 +2024,8 @@ bool FirstRunRuntime::advanceBattleTurnInPlace() {
                 const ResolvedPokemon outgoing = m_context.enemy;
                 ResolvedPokemon incoming = m_context.trainerParty[decision.partyIndex];
                 resetPokemonSummonState(incoming.battleState);
+                PokemonPostSummonStatusHealingEvent incomingStatus{};
+                if (!applyPokemonPostSummonStatusHealing(incoming.battleState, true, true, incomingStatus)) return false;
                 PokerogueRngAdapter actionRng = *rng;
                 // Resolve abilities against the incoming actor. A rejected command
                 // leaves player HP/PP, field state and RNG untouched.
@@ -2975,6 +2977,8 @@ bool FirstRunRuntime::advanceTrainerAfterDefeat() {
     m_context.activeTrainerPartyIndex = next;
     m_context.enemy = m_context.trainerParty[next];
     resetPokemonSummonState(m_context.enemy.battleState);
+    PokemonPostSummonStatusHealingEvent incomingStatus{};
+    if (!applyPokemonPostSummonStatusHealing(m_context.enemy.battleState, true, true, incomingStatus)) return false;
     m_run.encounterDex = m_context.enemy.dex;
     m_battleRng = nextTurn;
     ++m_turn;
@@ -3398,6 +3402,8 @@ bool FirstRunRuntime::switchPlayerPokemonInPlace(uint8_t targetIndex) {
     m_context.activePlayerPartyIndex = targetIndex;
     m_context.player = m_context.playerParty[targetIndex];
     resetPokemonSummonState(m_context.player.battleState);
+    PokemonPostSummonStatusHealingEvent incomingStatus{};
+    if (!applyPokemonPostSummonStatusHealing(m_context.player.battleState, true, true, incomingStatus)) return false;
 
     m_checkpointAvailable = false;
     m_runStarted = true;
@@ -3453,6 +3459,8 @@ bool FirstRunRuntime::advancePlayerAfterDefeat() {
             m_context.activePlayerPartyIndex = i;
             m_context.player = m_context.playerParty[i];
             resetPokemonSummonState(m_context.player.battleState);
+            PokemonPostSummonStatusHealingEvent incomingStatus{};
+            if (!applyPokemonPostSummonStatusHealing(m_context.player.battleState, true, true, incomingStatus)) return false;
             m_battleFeedback = std::string("Fainted! Sent out ") +
                 (m_context.player.localizedName ? m_context.player.localizedName : "next Pokémon");
             buildScene();
