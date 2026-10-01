@@ -220,6 +220,9 @@ PokemonBattleInitResult initializePokemonBattleState(
 
 // Recalculates a real same-species form without replacing the actor identity.
 // fullRestore models PokemonHealPhase HP/PP; status/tags belong to their own state.
+// Recalculates base stats without reconstructing summon/turn state or PP.
+bool recalculatePokemonBattleLevel(PokemonBattleState& state, uint16_t level);
+
 bool changePokemonBattleForm(PokemonBattleState& state, const char* targetFormId,
     uint16_t resolvedAbilityId, bool fullRestore = false);
 

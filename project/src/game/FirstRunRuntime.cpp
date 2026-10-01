@@ -988,30 +988,7 @@ bool FirstRunRuntime::grantVictoryExperience() {
     const uint16_t oldLevel = m_context.player.level;
     PokemonBattleState next = m_context.player.battleState;
     if (progress.level != next.level) {
-        PokemonBattleInit input{};
-        input.speciesDex = next.speciesDex;
-        input.formId = next.formId;
-        input.level = progress.level;
-        input.pokemonId = next.pokemonId;
-        input.deriveIvsFromPokemonId = next.ivsWereDerivedFromPokemonId;
-        input.nature = next.nature;
-        input.gender = next.gender;
-        input.abilityId = next.abilityId;
-        input.moveCount = next.moveCount;
-        for (uint8_t i = 0; i < 6; ++i) input.ivs[i] = next.ivs[i];
-        for (uint8_t i = 0; i < next.moveCount; ++i) input.moveIds[i] = next.moves[i].moveId;
-        PokemonBattleState leveled{};
-        if (initializePokemonBattleState(input, leveled) != PokemonBattleInitResult::Ok) return false;
-        // Pinned Pokemon.calculateStats heals the max-HP increase for a living
-        // Pokemon, while retaining current PP across a level change.
-        if (next.hp && leveled.maxHp > next.maxHp)
-            leveled.hp = static_cast<uint16_t>(next.hp + leveled.maxHp - next.maxHp);
-        else if (next.hp > leveled.maxHp) leveled.hp = leveled.maxHp;
-        else leveled.hp = next.hp;
-        for (uint8_t i = 0; i < next.moveCount; ++i) leveled.moves[i].pp = next.moves[i].pp;
-        for (uint8_t stat = 0; stat < 7; ++stat) leveled.statStages[stat] = next.statStages[stat];
-        leveled.pauseEvolutions = next.pauseEvolutions;
-        next = leveled;
+        if (!recalculatePokemonBattleLevel(next, progress.level)) return false;
 
         // Learn newly available level moves if there is space in the moveset (< 4)
         std::string moveFeedback;

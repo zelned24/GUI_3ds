@@ -2303,5 +2303,24 @@ extern "C" int runPokemonBattleStateChecks() {
     unburdenActor.abilityId = 46;
     if (!Pokerogue3DS::pokemonWeatherEffectiveSpeed(unburdenActor, unburdenWeather, afterUnburden) ||
         afterUnburden != beforeUnburden) return 520;
+    auto levelActor = unburdenActor;
+    levelActor.hp = levelActor.maxHp - 1;
+    levelActor.turnDamageDealt = 19;
+    levelActor.pauseEvolutions = true;
+    levelActor.statStages[0] = 2;
+    const auto beforeLevel = levelActor;
+    if (!Pokerogue3DS::recalculatePokemonBattleLevel(levelActor, levelActor.level + 1) ||
+        levelActor.hp != levelActor.maxHp - 1 ||
+        levelActor.heldItemLostTags.unburden != beforeLevel.heldItemLostTags.unburden ||
+        levelActor.turnDamageDealt != 19 || !levelActor.pauseEvolutions ||
+        levelActor.statStages[0] != 2 || levelActor.pokemonId != beforeLevel.pokemonId ||
+        levelActor.moves[0].pp != beforeLevel.moves[0].pp ||
+        levelActor.moves[0].maxPp != beforeLevel.moves[0].maxPp) return 522;
+    levelActor.hp = 0;
+    if (!Pokerogue3DS::recalculatePokemonBattleLevel(levelActor, levelActor.level + 1) ||
+        levelActor.hp) return 523;
+    const auto validLevel = levelActor.level;
+    if (Pokerogue3DS::recalculatePokemonBattleLevel(levelActor, 0) ||
+        levelActor.level != validLevel || levelActor.turnDamageDealt != 19) return 524;
     return 0;
 }

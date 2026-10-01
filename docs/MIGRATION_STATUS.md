@@ -676,3 +676,9 @@
 
 1. Generador extrae AddPokeballModifierType simbolo/cantidad con provenance. Adapter resuelve enums nativos segun pokeball.ts pinned y cap 99 segun data/pokeball.ts. Claim reemplaza constantes de cantidades por perfiles; simbolo futuro desconocido falla sin mutar.
 2. Regresiones 463-465 escritas; generacion permitida, tests/compilacion aplazados. Classic completo sigue pendiente.
+
+## Subida de nivel: conservar el estado del actor
+
+1. `recalculatePokemonBattleLevel` actualiza únicamente nivel, estadísticas y HP, siguiendo `Pokemon.calculateStats` del snapshot pinned (`src/field/pokemon.ts`). El flujo de EXP de victoria utiliza este helper.
+2. Conserva Unburden, daño acumulado, etapas, opción de pausa de evoluciones y PP actual/máximo. Un Pokémon debilitado permanece con HP cero; entradas inválidas no publican cambios.
+3. Regresiones 522–524 escritas, pendientes de ejecución. Rare Candy sigue pendiente de amistad y de su flujo de decisiones; no se trata como una recompensa soportada.

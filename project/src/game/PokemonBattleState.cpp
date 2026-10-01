@@ -423,6 +423,38 @@ PokemonBattleInitResult initializePokemonBattleState(
     return PokemonBattleInitResult::Ok;
 }
 
+bool recalculatePokemonBattleLevel(PokemonBattleState& state, uint16_t level) {
+    if (!state.statsAreBaseFormulaOnly || !state.maxHp || state.hp > state.maxHp ||
+        state.moveCount > 4) return false;
+    PokemonBattleInit input{};
+    input.speciesDex = state.speciesDex;
+    input.formId = state.formId;
+    input.level = level;
+    input.pokemonId = state.pokemonId;
+    input.deriveIvsFromPokemonId = state.ivsWereDerivedFromPokemonId;
+    input.nature = state.nature;
+    input.gender = state.gender;
+    input.abilityId = state.abilityId;
+    input.moveCount = state.moveCount;
+    for (uint8_t i = 0; i < 6; ++i) input.ivs[i] = state.ivs[i];
+    for (uint8_t slot = 0; slot < state.moveCount; ++slot) {
+        if (state.moves[slot].pp > state.moves[slot].maxPp) return false;
+        input.moveIds[slot] = state.moves[slot].moveId;
+    }
+    PokemonBattleState calculated{};
+    if (initializePokemonBattleState(input, calculated) != PokemonBattleInitResult::Ok) return false;
+    // Pinned Pokemon.calculateStats changes stats/HP, not moves or summonData.
+    PokemonBattleState next = state;
+    next.level = calculated.level;
+    next.maxHp = calculated.maxHp;
+    for (uint8_t i = 0; i < 6; ++i) next.stats[i] = calculated.stats[i];
+    uint32_t hp = state.hp;
+    if (hp && next.maxHp > state.maxHp) hp += next.maxHp - state.maxHp;
+    next.hp = static_cast<uint16_t>(hp > next.maxHp ? next.maxHp : hp);
+    state = next;
+    return true;
+}
+
 bool changePokemonBattleForm(PokemonBattleState& state, const char* targetFormId,
     uint16_t resolvedAbilityId, bool fullRestore) {
     if (!state.statsAreBaseFormulaOnly || !state.maxHp || state.hp > state.maxHp ||
