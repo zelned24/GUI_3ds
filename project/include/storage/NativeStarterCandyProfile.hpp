@@ -25,6 +25,24 @@ struct StarterCandyAwardEvent {
     uint16_t appliedAward = 0; // Inventory may clamp at MAX_STARTER_CANDY_COUNT.
 };
 
+// GameData.addStarterCandy: clamp inventory, while presentation keeps the
+// requested amount. Zero applied at the cap is valid, not a failed capture.
+inline StarterCandyApplyResult applyNativeStarterCandyAward(NativeStarterCandyRecord& record,
+    uint32_t requested, StarterCandyAwardEvent& event) {
+    const auto* root = pokemonRootSpecies(record.speciesDex);
+    if (!root || root->dex != record.speciesDex) return StarterCandyApplyResult::InvalidRootSpecies;
+    if (!root->starterEligible) return StarterCandyApplyResult::MissingStarterCost;
+    if (record.candyCount > PokerogueContent::kMaxStarterCandyCount) return StarterCandyApplyResult::InvalidCandyCount;
+    const uint32_t remaining = PokerogueContent::kMaxStarterCandyCount - record.candyCount;
+    StarterCandyAwardEvent next{};
+    next.speciesDex = record.speciesDex;
+    next.requestedAward = requested;
+    next.appliedAward = static_cast<uint16_t>(requested > remaining ? remaining : requested);
+    record.candyCount += next.appliedAward;
+    event = next;
+    return StarterCandyApplyResult::Applied;
+}
+
 // Numeric starterData side of Pokemon.addFriendship and GameData.addStarterCandy.
 // Caller commits all fusion roots and Pokemon friendship together with its run.
 inline StarterCandyApplyResult applyNativeStarterCandyFriendship(NativeStarterCandyRecord& record,

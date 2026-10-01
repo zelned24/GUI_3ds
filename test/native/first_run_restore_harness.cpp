@@ -1338,6 +1338,18 @@ static int checkPlayerPartyManagementAndSwitching() {
         if (!caughtChainSpecies || !game.hasCaughtSpecies(caughtChainDex)) return 611;
         caughtChainDex = caughtChainSpecies->prevolutionDex;
     }
+    const auto* caughtCandyRoot = pokemonRootSpecies(wildSave.encounterDex);
+    bool foundCaptureCandy = false;
+    for (size_t i = 0; i < game.starterProfileCount(); ++i)
+        if (caughtCandyRoot && game.starterProfileRecords()[i].speciesDex == caughtCandyRoot->dex)
+            foundCaptureCandy = game.starterProfileRecords()[i].candyCount == 1;
+    if (!foundCaptureCandy) return 616;
+    NativeStarterCandyRecord cappedCaptureCandy{caughtCandyRoot->dex,
+        PokerogueContent::kMaxStarterCandyCount, 0, true};
+    StarterCandyAwardEvent cappedCaptureEvent{};
+    if (applyNativeStarterCandyAward(cappedCaptureCandy, 2, cappedCaptureEvent) != StarterCandyApplyResult::Applied ||
+        cappedCaptureEvent.appliedAward || cappedCaptureEvent.requestedAward != 2 ||
+        cappedCaptureCandy.candyCount != PokerogueContent::kMaxStarterCandyCount) return 617;
     char caughtRuntimeProfile[Pokerogue3DS::kStarterCandyProfileMaxBytes]{};
     size_t caughtRuntimeBytes = 0;
     if (encodeNativeStarterCandyProfile(game.starterProfileRecords(), game.starterProfileCount(), 1,

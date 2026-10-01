@@ -1043,3 +1043,9 @@
 1. Host llama initializeFreshStarterProfile solo si no existen run ni perfil. Marca starters iniciales desde freshProfileStarter importado, siguiendo GameData.initDexData/defaultStarterSpecies.
 2. Perfiles existentes, incluso legacy vacíos, mantienen sus datos; el método rechaza reinicialización o uso sobre run activa. Transacción candidata conserva estado ante fallo.
 3. Regresiones 613–615 escritas para catálogo dinámico, conteo y rechazo de reinicialización, sin ejecutar. Flags completos de formas/género/nature/ability/IVs iniciales permanecen pendientes.
+
+## Caramelos tras captura Classic — pendiente de ejecución
+
+1. Captura real con perfil adjunto concede al starter raíz 1 candy ordinario o 2 si el enemigo tiene boss segments, como setPokemonSpeciesCaught/addStarterCandy pinned. Se aplica antes de la decisión de incorporación, junto al registro caught.
+2. Helper valida root e inventario y conserva requested/applied; llegar al cap aplica cero sin convertir captura en error. Publicación conserva la transacción candidata existente.
+3. Regresiones 616–617 escritas para captura real y cap, sin ejecutar. El actor aún no modela shiny/variant; su bonus, huevos/Daily, log/candyBar y callbacks completos siguen pendientes.

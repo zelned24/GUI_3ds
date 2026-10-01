@@ -2431,6 +2431,19 @@ bool FirstRunRuntime::throwPokeballInPlace(PokeballType ball) {
             m_battleFeedback = "Caught species profile could not resolve";
             return false;
         }
+        if (m_starterProfileReady) {
+            const auto* root = pokemonRootSpecies(target->dex);
+            if (!root) return false;
+            size_t index = 0;
+            while (index < m_starterProfileCount && m_starterProfileRecords[index].speciesDex != root->dex) ++index;
+            if (index == m_starterProfileCount) return false;
+            StarterCandyAwardEvent candyEvent{};
+            // Current actors have no shiny/variant state. This is the ordinary
+            // Classic catch reward; shiny/egg/Daily policies remain unported.
+            const uint32_t award = target->bossState.segmentCount ? 2 : 1;
+            if (applyNativeStarterCandyAward(m_starterProfileRecords[index], award, candyEvent) !=
+                    StarterCandyApplyResult::Applied) return false;
+        }
         if (m_context.playerPartyCount > 6) return false;
         {
             ResolvedPokemon caughtMon = *target;
