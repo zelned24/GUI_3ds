@@ -1872,6 +1872,37 @@ int main() {
         if (applyNativePokemonFriendship(friendshipActor, friendshipRecord, 3, friendshipPolicy, true,
                 friendshipEvent) != NativeFriendshipApplyResult::RootMismatch ||
             friendshipActor.friendship != 250) return 512;
+        PokemonParticipantExperiencePolicy expPolicy{};
+        uint32_t memberAward = 99;
+        if (pokemonParticipantExperience(101.9, true, expPolicy, memberAward) !=
+                PokemonExperienceResult::UnresolvedPolicy || memberAward != 99) return 513;
+        expPolicy.resolved = true;
+        expPolicy.eligible = true;
+        expPolicy.participated = true;
+        expPolicy.participantCount = 2;
+        if (pokemonParticipantExperience(101.9, true, expPolicy, memberAward) !=
+                PokemonExperienceResult::Ok || memberAward != 76) return 514;
+        expPolicy.multipleParticipantBonusStacks = 1;
+        expPolicy.pokerus = true;
+        if (pokemonParticipantExperience(101.9, true, expPolicy, memberAward) !=
+                PokemonExperienceResult::Ok || memberAward != 159) return 515;
+        expPolicy.participated = false;
+        expPolicy.pokerus = false;
+        expPolicy.expShareStacks = 2;
+        if (pokemonParticipantExperience(101.9, true, expPolicy, memberAward) !=
+                PokemonExperienceResult::Ok || memberAward != 30) return 516;
+        expPolicy.hasMultiplierOverride = true;
+        expPolicy.multiplierOverride = 2.0;
+        expPolicy.boosterMultiplier = 1.5;
+        if (pokemonParticipantExperience(101.9, true, expPolicy, memberAward) !=
+                PokemonExperienceResult::Ok || memberAward != 456) return 517;
+        expPolicy.eligible = false;
+        if (pokemonParticipantExperience(101.9, true, expPolicy, memberAward) !=
+                PokemonExperienceResult::Ok || memberAward) return 518;
+        expPolicy.eligible = true;
+        expPolicy.participantCount = 0;
+        if (pokemonParticipantExperience(101.9, true, expPolicy, memberAward) !=
+                PokemonExperienceResult::Ok || memberAward) return 519;
         auto invalidActor = actorSnapshot;
         invalidActor.hp = 65535;
         const uint16_t beforeInvalidHp = restoredActor.hp;
