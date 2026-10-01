@@ -49,6 +49,7 @@ public:
     static JSValue getPresentationInfo(JSContext*, JSValueConst, int, JSValueConst*);
     static JSValue getMoveName(JSContext*, JSValueConst, int, JSValueConst*);
     static JSValue getStarterName(JSContext*, JSValueConst, int, JSValueConst*);
+    static JSValue toggleStarterTeam(JSContext*, JSValueConst, int, JSValueConst*);
     static JSValue purchaseStarterCost(JSContext*, JSValueConst, int, JSValueConst*);
     static JSValue saveNative(JSContext*, JSValueConst, int, JSValueConst*);
     static JSValue loadNative(JSContext*, JSValueConst, int, JSValueConst*);

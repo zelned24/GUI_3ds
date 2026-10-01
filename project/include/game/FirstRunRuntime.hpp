@@ -88,6 +88,9 @@ class FirstRunRuntime {
 public:
     explicit FirstRunRuntime(uint32_t seed);
     bool cycleStarter(int direction);
+    bool browseSetupStarter(int direction);
+    uint16_t selectedSetupStarterDex() const { return m_setupCursorDex ? m_setupCursorDex : m_run.starterDex; }
+    bool toggleSetupStarter();
     bool restoreSetup(uint32_t seed, uint16_t starterDex);
     bool starterUnlocked(uint16_t dex) const;
     bool restoreStarterTeamSetup(uint32_t seed, const uint16_t* dexes, size_t count);
@@ -254,6 +257,7 @@ private:
     uint8_t m_selectedCapturePartyChoice = 0;
     ResolvedPokemon m_pendingCapturedPokemon{};
     uint8_t m_doubleExperienceGrantedMask = 0;
+    uint16_t m_setupCursorDex = 0;
     uint32_t m_starterProfileGeneration = 0;
     bool m_starterProfileReady = false;
     size_t m_starterProfileCount = 0;

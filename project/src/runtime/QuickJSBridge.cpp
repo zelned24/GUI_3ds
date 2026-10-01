@@ -77,7 +77,7 @@ bool QuickJSBridge::init(Renderer2D& renderer) {
         {"_3ds_resetRun", resetRun, 0}, {"_3ds_cycleStarter", cycleStarterBinding, 1},
         {"_3ds_getStarterName", getStarterName, 0}, {"_3ds_getMoveName", getMoveName, 1},
         {"_3ds_getPresentationInfo", getPresentationInfo, 0},
-        {"_3ds_purchaseStarterCost", purchaseStarterCost, 0}, {"_3ds_saveNative", saveNative, 0}, {"_3ds_loadNative", loadNative, 0},
+        {"_3ds_toggleStarterTeam", toggleStarterTeam, 0}, {"_3ds_purchaseStarterCost", purchaseStarterCost, 0}, {"_3ds_saveNative", saveNative, 0}, {"_3ds_loadNative", loadNative, 0},
         {"_3ds_exportNative", exportNative, 0}, {"_3ds_importNative", importNative, 0},
         {"_3ds_submitAction", submitAction, 1}, {"_3ds_skipReward", skipReward, 0},
         {"_3ds_getCombatLog", getCombatLog, 0},
@@ -311,7 +311,7 @@ JSValue QuickJSBridge::getPresentationInfo(JSContext* ctx, JSValueConst, int, JS
         JS_FreeValue(ctx, info); return JS_EXCEPTION;
     }
     if (!b->m_game->runStarted()) {
-        const uint16_t dex = b->m_game->run().starterDex;
+        const uint16_t dex = b->m_game->selectedSetupStarterDex();
         const auto* species = PokerogueContent::findSpeciesByDex(dex);
         const uint8_t reduction = b->m_game->starterCostReduction(dex);
         uint16_t candy = 0, quarterCost = 0, price = 0;
@@ -322,6 +322,22 @@ JSValue QuickJSBridge::getPresentationInfo(JSContext* ctx, JSValueConst, int, JS
         if (species && reduction < 2)
             for (const auto& row : PokerogueContent::kStarterCandyPrices)
                 if (row.cost == species->starterCost) { price = row.costReduction[reduction]; break; }
+        uint16_t teamQuarterCost = 0;
+        bool inTeam = false;
+        std::string teamNames;
+        for (uint8_t i = 0; i < b->m_game->playerPartyCount(); ++i) {
+            const auto* member = b->m_game->playerPartyMember(i);
+            if (!member) continue;
+            inTeam |= member->dex == dex;
+            uint16_t cost = 0;
+            if (pokemonStarterCostQuarterUnits(member->dex, b->m_game->starterCostReduction(member->dex), cost))
+                teamQuarterCost += cost;
+            if (!teamNames.empty()) teamNames += " / ";
+            teamNames += member->localizedName ? member->localizedName : "?";
+        }
+        if (!set("starterTeamCost", JS_NewFloat64(ctx, teamQuarterCost / 4.0)) ||
+            !set("starterInTeam", JS_NewBool(ctx, inTeam)) ||
+            !set("starterTeamNames", JS_NewString(ctx, teamNames.c_str()))) { JS_FreeValue(ctx, info); return JS_EXCEPTION; }
         if (!set("starterCost", JS_NewFloat64(ctx, costResolved ? quarterCost / 4.0 : 0)) ||
             !set("starterCandy", JS_NewUint32(ctx, candy)) ||
             !set("starterReduction", JS_NewUint32(ctx, reduction)) ||
@@ -437,8 +453,15 @@ JSValue QuickJSBridge::getMoveName(JSContext* ctx, JSValueConst, int argc, JSVal
 }
 JSValue QuickJSBridge::getStarterName(JSContext* ctx, JSValueConst, int, JSValueConst*) {
     auto* b = static_cast<QuickJSBridge*>(JS_GetContextOpaque(ctx));
-    const auto* species = b ? PokerogueContent::findSpeciesByDex(b->restartStarterDex()) : nullptr;
+    const auto* species = b ? PokerogueContent::findSpeciesByDex((b->m_game && !b->m_game->runStarted() ? b->m_game->selectedSetupStarterDex() : b->restartStarterDex())) : nullptr;
     return JS_NewString(ctx, species ? species->name : "?");
+}
+JSValue QuickJSBridge::toggleStarterTeam(JSContext* ctx, JSValueConst, int argc, JSValueConst*) {
+    auto* b = static_cast<QuickJSBridge*>(JS_GetContextOpaque(ctx));
+    if (!b || !b->m_game || !b->m_inTick || argc || b->m_game->runStarted() ||
+        b->m_pendingAction != -999) return JS_FALSE;
+    b->m_pendingAction = 209;
+    return JS_TRUE;
 }
 JSValue QuickJSBridge::purchaseStarterCost(JSContext* ctx, JSValueConst, int argc, JSValueConst*) {
     auto* b = static_cast<QuickJSBridge*>(JS_GetContextOpaque(ctx));
@@ -489,7 +512,7 @@ bool QuickJSBridge::processPendingAction() {
         if (ok) { m_restartStarter = 0; m_presenterPlayer.invalidate(); m_presenterEnemy.invalidate(); m_presenterSecondEnemy.invalidate(); }
         std::snprintf(m_actionFeedback, sizeof(m_actionFeedback), "%s", ok ? "New run ready" : "Restart failed: invalid starter/RNG");
     } else if (action == 202 || action == 203) {
-        if (!m_game->runStarted()) m_game->cycleStarter(action == 202 ? -1 : 1);
+        if (!m_game->runStarted()) m_game->browseSetupStarter(action == 202 ? -1 : 1);
         else if (m_game->doubleBattle() && !m_game->battleFinished()) {
             m_game->cycleTarget(action == 202 ? -1 : 1);
         }
@@ -507,10 +530,14 @@ bool QuickJSBridge::processPendingAction() {
                 }
             }
         }
+    } else if (action == 209) {
+        const bool changed = m_game->toggleSetupStarter();
+        std::snprintf(m_actionFeedback, sizeof(m_actionFeedback), "%s", changed ?
+            "Starter team updated" : "Team unchanged: budget, capacity, last member or unresolved data");
     } else if (action == 208) {
         StarterCostPurchaseResult purchase = StarterCostPurchaseResult::InvalidRecord;
         const auto status = m_progress ? m_game->purchaseStarterCostReduction(
-            m_game->run().starterDex, *m_progress, &purchase) : NativeSaveResult::InvalidRecord;
+            m_game->selectedSetupStarterDex(), *m_progress, &purchase) : NativeSaveResult::InvalidRecord;
         const char* message = status == NativeSaveResult::Ok ? "Starter cost reduced and saved" :
             purchase == StarterCostPurchaseResult::InsufficientCandy ? "Not enough candy" :
             purchase == StarterCostPurchaseResult::MaximumReduction ? "Maximum cost reduction reached" :

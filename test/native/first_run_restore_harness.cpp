@@ -106,6 +106,15 @@ static int checkInitialStarterTeamSetup() {
         !reloaded.restoreNativeRunSave(decodedSetup) || reloaded.playerPartyCount() != 1) return 654;
     if (!first.restoreStarterTeamSetup(1, dexes, 1) || first.playerPartyCount() != 1 ||
         first.captureNativeRunSave(unsupportedSetup) != NativeSaveResult::Ok) return 649;
+    for (size_t i = 0; i < PokerogueContent::kSpeciesCount && first.selectedSetupStarterDex() != dexes[1]; ++i)
+        if (!first.browseSetupStarter(1)) return 655;
+    if (first.selectedSetupStarterDex() != dexes[1] || first.playerPartyCount() != 1 ||
+        first.run().starterDex != dexes[0] || !first.toggleSetupStarter() || first.playerPartyCount() != 2 ||
+        first.playerPartyMember(1)->dex != dexes[1]) return 656;
+    if (!first.toggleSetupStarter() || first.playerPartyCount() != 1 || first.run().starterDex != dexes[0]) return 657;
+    for (size_t i = 0; i < PokerogueContent::kSpeciesCount && first.selectedSetupStarterDex() != dexes[0]; ++i)
+        if (!first.browseSetupStarter(1)) return 658;
+    if (first.toggleSetupStarter() || first.playerPartyCount() != 1 || first.run().starterDex != dexes[0]) return 659;
     return 0;
 }
 

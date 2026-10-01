@@ -114,6 +114,41 @@ bool FirstRunRuntime::cycleStarter(int direction) {
     return false;
 }
 
+bool FirstRunRuntime::browseSetupStarter(int direction) {
+    if (m_runStarted || (direction != -1 && direction != 1)) return false;
+    size_t index = 0;
+    while (index < PokerogueContent::kSpeciesCount && PokerogueContent::kSpecies[index].dex != selectedSetupStarterDex()) ++index;
+    if (index == PokerogueContent::kSpeciesCount) return false;
+    for (size_t scanned = 0; scanned < PokerogueContent::kSpeciesCount; ++scanned) {
+        index = direction > 0 ? (index + 1) % PokerogueContent::kSpeciesCount :
+            (index + PokerogueContent::kSpeciesCount - 1) % PokerogueContent::kSpeciesCount;
+        if (starterUnlocked(PokerogueContent::kSpecies[index].dex)) {
+            m_setupCursorDex = PokerogueContent::kSpecies[index].dex;
+            return true;
+        }
+    }
+    return false;
+}
+
+bool FirstRunRuntime::toggleSetupStarter() {
+    if (m_runStarted || !m_context.playerPartyCount || m_context.playerPartyCount > 6) return false;
+    const uint16_t selected = selectedSetupStarterDex();
+    uint16_t dexes[6]{};
+    size_t count = 0;
+    bool removing = false;
+    for (uint8_t i = 0; i < m_context.playerPartyCount; ++i) {
+        if (m_context.playerParty[i].dex == selected) removing = true;
+        else dexes[count++] = m_context.playerParty[i].dex;
+    }
+    if (!removing) {
+        if (count == 6) return false;
+        dexes[count++] = selected;
+    }
+    if (!count || !restoreStarterTeamSetup(m_run.seed, dexes, count)) return false;
+    m_setupCursorDex = selected;
+    return true;
+}
+
 bool FirstRunRuntime::starterUnlocked(uint16_t dex) const {
     const auto* species = PokerogueContent::findSpeciesByDex(dex);
     return species && species->starterEligible &&
@@ -211,6 +246,7 @@ bool FirstRunRuntime::restoreSetupInPlace(uint32_t seed, uint16_t starterDex) {
     }
     if (index == PokerogueContent::kSpeciesCount) return false;
     m_run.seed = seed;
+    m_setupCursorDex = 0;
     m_arenaWeather = {};
     m_trickRoom = {};
     m_runStarted = false;

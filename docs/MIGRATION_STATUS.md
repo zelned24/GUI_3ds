@@ -1150,3 +1150,9 @@
 2. Captura setup de equipo conserva sus especies. Restauración carga el perfil referenciado y reconstruye el equipo mediante `restoreStarterTeamSetup`, que valida desbloqueos y presupuesto efectivo de ese perfil, mantiene semilla/PIDs y no publica un equipo parcial. No representa todavía preferencias avanzadas de formas, naturalezas, IVs, egg moves ni pasivas desbloqueadas.
 3. Decoder acepta v13 junto a versiones anteriores y lo normaliza a v14, manteniendo su semántica de un inicial cuando faltan campos de selección. El hash del contenido todavía debe coincidir; no hay migración entre snapshots distintos.
 4. Regresiones de setup con dos especies, encode/decode/restore, duplicados y payload legacy v13 escritas; sin ejecutar. Sustituye el rechazo temporal de setup múltiple documentado anteriormente. Selector visible múltiple y validación final pendientes.
+
+## Selector múltiple conectado al runtime
+
+1. Navegación setup usa cursor separado de la primera especie del equipo: no reemplaza ni pierde reservas. `toggleSetupStarter` añade/retira la especie del cursor y reconstruye el equipo real mediante la transacción validada. Conserva orden, presupuesto reducido y máximo seis; no permite retirar el último miembro. Esta restricción de edición difiere del borrador vacío de upstream y queda pendiente de resolver con un modelo de selección vacío.
+2. Bridge comando 209 confirma add/remove fuera del tick. Snapshot muestra nombres de equipo, cantidad y coste efectivo; compra se aplica a la especie del cursor. HUD: izquierda/derecha navega, A añade/retira, Start inicia, B confirma reducción mediante su menú.
+3. Regresiones nativas escritas de navegación sin reemplazo, incorporación/retiro y protección del último miembro; VM actualizada para A=selección y Start=inicio. Sin ejecutar. Bundle regenerado, sin compilar. Preview gráfico del cursor, selección vacía y presentación final equivalente web pendientes.

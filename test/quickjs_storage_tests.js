@@ -48,6 +48,7 @@ export function registerQuickJsStorageTests(register) {
     context._3ds_getCombatLog = () => '';
     context._3ds_drawText = text => drawn.push(text);
     context._3ds_purchaseStarterCost = () => { commands.push('buy'); return true; };
+    context._3ds_toggleStarterTeam = () => { commands.push('team'); return true; };
     context._3ds_saveNative = () => { commands.push('save'); return true; };
     context._3ds_submitAction = () => { commands.push('battle'); return true; };
     vm.createContext(context); vm.runInContext(match[1], context);
@@ -66,7 +67,9 @@ export function registerQuickJsStorageTests(register) {
     assert.deepEqual(commands, ['buy', 'save']);
     context._3ds_tick({ B: true });
     context._3ds_tick({ A: true });
-    assert.deepEqual(commands, ['buy', 'save', 'battle']);
+    assert.deepEqual(commands, ['buy', 'save', 'team']);
+    context._3ds_tick({ start: true });
+    assert.deepEqual(commands, ['buy', 'save', 'team', 'battle']);
   });
   register('QuickJS rewards: confirmation opens pool and recovery targets a reserve', () => {
     const commands = [];
