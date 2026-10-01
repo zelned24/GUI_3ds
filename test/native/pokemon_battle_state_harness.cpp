@@ -3144,6 +3144,40 @@ extern "C" int runPokemonBattleStateChecks() {
     syncEvent.abilityActivates = true;
     if (Pokerogue3DS::resolvePokemonSynchronizeReaction(28, true, false, appliedStatus, syncEvent) !=
             Pokerogue3DS::PokemonStatusImmunityResult::UnsupportedCondition || !syncEvent.abilityActivates) return 9105;
+    PokemonBattleState synchronizeActor{}, reflectedSource{};
+    synchronizeActor.abilityId = 28;
+    synchronizeActor.pokemonId = 81;
+    reflectedSource.pokemonId = 82;
+    reflectedSource.hp = reflectedSource.maxHp = 100;
+    Pokerogue3DS::PokemonQueuedStatusRequest synchronizedRequest{};
+    synchronizedRequest.recipientPokemonId = 81;
+    synchronizedRequest.sourcePokemonId = 82;
+    synchronizedRequest.hasSource = true;
+    synchronizedRequest.effect = Effect::Burn;
+    applicationPolicy = {};
+    applicationPolicy.resolved = applicationPolicy.hasSource = true;
+    Pokerogue3DS::PokemonSynchronizeCommandEvent synchronizedEvent{};
+    if (!Pokerogue3DS::executePokemonSynchronizeReaction(synchronizeActor, reflectedSource, synchronizedRequest,
+            true, true, applicationPolicy, true, statusApplicationRng, synchronizedEvent) ||
+        !synchronizedEvent.statusApplied || !reflectedSource.status.present ||
+        reflectedSource.status.effect != Effect::Burn || reflectedSource.pendingStatus != Effect::None) return 9210;
+    reflectedSource.status = {};
+    applicationPolicy.fireType = true;
+    expectedApplicationRng = statusApplicationRng;
+    if (!Pokerogue3DS::executePokemonSynchronizeReaction(synchronizeActor, reflectedSource, synchronizedRequest,
+            true, true, applicationPolicy, true, statusApplicationRng, synchronizedEvent) ||
+        !synchronizedEvent.reaction.abilityActivates || synchronizedEvent.statusApplied ||
+        synchronizedEvent.eligibility != Pokerogue3DS::PokemonStatusEligibility::FireType ||
+        reflectedSource.status.present ||
+        statusApplicationRng.randSeedUint32() != expectedApplicationRng.randSeedUint32()) return 9211;
+    applicationPolicy.fireType = false;
+    synchronizedEvent.statusApplied = true;
+    expectedApplicationRng = statusApplicationRng;
+    if (Pokerogue3DS::executePokemonSynchronizeReaction(synchronizeActor, reflectedSource, synchronizedRequest,
+            true, true, applicationPolicy, false, statusApplicationRng, synchronizedEvent) ||
+        reflectedSource.status.present || reflectedSource.pendingStatus != Effect::None ||
+        !synchronizedEvent.statusApplied ||
+        statusApplicationRng.randSeedUint32() != expectedApplicationRng.randSeedUint32()) return 9212;
     bool foundStatusConfusion = false;
     for (const auto& profile : PokerogueContent::kStatusConfusionAbilityProfiles) {
         if (!profile.resolved || !(profile.statusMask & 2)) continue;

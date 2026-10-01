@@ -1571,3 +1571,9 @@
 1. Generador deriva PostSummonRemoveBattlerTagAbAttr con parámetros variadic constantes; Own Tempo (20) declara eliminación de CONFUSED. Resolver exige activación/callbacks resueltos, elimina tag y emite activación solamente si existía.
 2. Respeta apply upstream sin inventar rama simulated. Invocación tras ganar habilidad/dispatcher post-summon completo permanece pendiente; recall ya limpia summon data independientemente de Own Tempo.
 3. Regresiones de Own Tempo, inactividad, callback pendiente y ausencia de tag escritas sin ejecutar. Tests/compilación aplazados.
+
+## Solicitud reflejada Synchronize conectada a aplicación
+
+1. executePokemonSynchronizeReaction integra reacción canónica, enqueue de estado reflejado y ObtainStatus sobre candidato. Conserva identidad de ambos actores y emite activación incluso cuando inmunidad impide aplicar status.
+2. Política reflejada/reacciones pendientes falla sin publicar actor/pendingStatus/RNG/output. No crea recursión falsa ni habilita moves de estado sin contexto completo; el dispatcher debe resolver callbacks adicionales.
+3. Regresiones Synchronize real (burn aplicado, Fire inmune sin RNG, callback pendiente atómico) escritas sin ejecutar. Tests/compilación aplazados.

@@ -114,6 +114,34 @@ PokemonStatusImmunityResult resolvePokemonStatusConfusionReaction(const PokemonB
     return PokemonStatusImmunityResult::UnknownAbility;
 }
 
+bool executePokemonSynchronizeReaction(const PokemonBattleState& statusRecipient,
+    PokemonBattleState& originalSource, const PokemonQueuedStatusRequest& applied,
+    bool abilityActive, bool callbacksResolved, const PokemonStatusApplicationPolicy& reflectedPolicy,
+    bool reflectedReactionsResolved, PokerogueRngAdapter& reflectedRecipientRng,
+    PokemonSynchronizeCommandEvent& output) {
+    if (applied.recipientPokemonId != statusRecipient.pokemonId ||
+        (applied.hasSource && applied.sourcePokemonId != originalSource.pokemonId)) return false;
+    auto nextActor = originalSource;
+    auto nextRng = reflectedRecipientRng;
+    PokemonSynchronizeCommandEvent event{};
+    if (resolvePokemonSynchronizeReaction(statusRecipient.abilityId, abilityActive, callbacksResolved,
+            applied, event.reaction) != PokemonStatusImmunityResult::Resolved) return false;
+    if (event.reaction.requestStatus) {
+        event.eligibility = enqueuePokemonStatusRequest(nextActor, event.reaction.request, reflectedPolicy);
+        if (event.eligibility == PokemonStatusEligibility::UnsupportedPolicy ||
+            event.eligibility == PokemonStatusEligibility::InvalidState) return false;
+        if (event.eligibility == PokemonStatusEligibility::Allowed) {
+            if (applyPokemonQueuedStatus(nextActor, event.reaction.request, reflectedReactionsResolved, nextRng) !=
+                    PokemonStatusObtainResult::Applied) return false;
+            event.statusApplied = true;
+        }
+    }
+    originalSource = nextActor;
+    reflectedRecipientRng = nextRng;
+    output = event;
+    return true;
+}
+
 PokemonStatusImmunityResult executePokemonStatusConfusionReaction(const PokemonBattleState& source,
     const PokemonBattleState& recipient, PokemonStatusEffect applied, bool abilityActive, bool simulated,
     const PokemonConfusionTagPolicy& probePolicy, const PokemonConfusionTagPolicy& applyPolicy,

@@ -513,6 +513,17 @@ PokemonStatusEligibility enqueuePokemonStatusRequest(PokemonBattleState& recipie
 PokemonStatusObtainResult applyPokemonQueuedStatus(PokemonBattleState& recipient,
     const PokemonQueuedStatusRequest& request, bool reactionsResolved, PokerogueRngAdapter& recipientRng);
 
+struct PokemonSynchronizeCommandEvent {
+    PokemonSynchronizeReactionEvent reaction{};
+    PokemonStatusEligibility eligibility = PokemonStatusEligibility::Allowed;
+    bool statusApplied = false;
+};
+bool executePokemonSynchronizeReaction(const PokemonBattleState& statusRecipient,
+    PokemonBattleState& originalSource, const PokemonQueuedStatusRequest& applied,
+    bool abilityActive, bool callbacksResolved, const PokemonStatusApplicationPolicy& reflectedPolicy,
+    bool reflectedReactionsResolved, PokerogueRngAdapter& reflectedRecipientRng,
+    PokemonSynchronizeCommandEvent& output);
+
 struct PokemonStatusEffectCommandPolicy {
     PokemonStatusEffectMovePolicy move{};
     bool reactionsResolved = false;
