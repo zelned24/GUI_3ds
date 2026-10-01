@@ -456,12 +456,25 @@ bool resolvePokemonStatusMoveTypeImmunity(uint16_t moveId,
 struct PokemonStatusMoveHitPolicy {
     bool resolved = false;
     bool blockedBeforeAccuracy = false;
+    bool typeImmune = false;
     bool bypassAccuracy = false;
     double accuracyMultiplier = 1.0;
 };
-struct PokemonStatusMoveHitEvent { bool hit = false; bool accuracyRolled = false; uint8_t accuracyRoll = 0; };
+struct PokemonStatusMoveHitEvent { bool hit = false; bool accuracyRolled = false; uint8_t accuracyRoll = 0; bool typeImmune = false; };
 bool resolvePokemonStatusMoveHit(const PokerogueContent::Move& move, bool self,
     const PokemonStatusMoveHitPolicy& policy, PokerogueRngAdapter& rng, PokemonStatusMoveHitEvent& output);
+inline bool composePokemonStatusMoveTypeHitPolicy(uint16_t moveId,
+    const PokemonStatusMoveHitPolicy& base, const PokemonStatusMoveTypeImmunityPolicy& types,
+    PokemonStatusMoveHitPolicy& output) {
+    if (!base.resolved) return false;
+    bool immune = false;
+    if (!resolvePokemonStatusMoveTypeImmunity(moveId, types, immune)) return false;
+    auto policy = base;
+    policy.typeImmune = immune;
+    output = policy;
+    return true;
+}
+
 struct PokemonStatusEffectMovePolicy {
     PokemonStatusMoveHitPolicy hit{};
     PokemonStatusApplicationPolicy application{};

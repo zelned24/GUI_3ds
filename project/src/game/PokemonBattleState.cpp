@@ -404,7 +404,8 @@ bool resolvePokemonStatusMoveHit(const PokerogueContent::Move& move, bool self,
         !std::isfinite(policy.accuracyMultiplier) || policy.accuracyMultiplier < 0) return false;
     auto nextRng = rng;
     PokemonStatusMoveHitEvent event{};
-    event.hit = self || !policy.blockedBeforeAccuracy;
+    event.typeImmune = !self && policy.typeImmune;
+    event.hit = self || (!policy.blockedBeforeAccuracy && !event.typeImmune);
     if (event.hit && !self && move.accuracy >= 0 && !policy.bypassAccuracy) {
         event.accuracyRolled = true;
         event.accuracyRoll = static_cast<uint8_t>(nextRng.randSeedInt(100));

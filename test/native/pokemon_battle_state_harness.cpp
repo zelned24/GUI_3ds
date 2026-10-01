@@ -3320,6 +3320,23 @@ extern "C" int runPokemonBattleStateChecks() {
     typeImmune = true;
     if (Pokerogue3DS::resolvePokemonStatusMoveTypeImmunity(95, typeImmunityPolicy, typeImmune) ||
         !typeImmune) return 9324;
+    typeImmunityPolicy.resolved = true;
+    Pokerogue3DS::PokemonStatusMoveHitPolicy baseTypeHit{}, composedTypeHit{};
+    baseTypeHit.resolved = true;
+    if (!Pokerogue3DS::composePokemonStatusMoveTypeHitPolicy(77, baseTypeHit, typeImmunityPolicy,
+            composedTypeHit) || !composedTypeHit.typeImmune) return 9330;
+    PokemonBattleState powderUser = completeStatusUser, grassTarget = completeStatusTarget;
+    powderUser.status = {};
+    grassTarget.status = {};
+    powderUser.moves[0].pp = 35;
+    completeStatusPolicy.move.hit = composedTypeHit;
+    Pokerogue3DS::PokemonStatusEffectMoveEvent powderHitEvent{};
+    expectedApplicationRng = statusApplicationRng;
+    if (!Pokerogue3DS::usePokemonStatusEffectMove(powderUser, grassTarget, 0, completeStatusPolicy.move,
+            statusApplicationRng, powderHitEvent) || powderUser.moves[0].pp != 34 ||
+        powderHitEvent.hit.hit || !powderHitEvent.hit.typeImmune || powderHitEvent.hit.accuracyRolled ||
+        powderHitEvent.application.requestObtainStatusPhase ||
+        statusApplicationRng.randSeedUint32() != expectedApplicationRng.randSeedUint32()) return 9331;
     bool foundStatusConfusion = false;
     for (const auto& profile : PokerogueContent::kStatusConfusionAbilityProfiles) {
         if (!profile.resolved || !(profile.statusMask & 2)) continue;

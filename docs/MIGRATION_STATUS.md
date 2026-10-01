@@ -1653,3 +1653,9 @@
 1. resolvePokemonStatusMoveTypeImmunity porta Move.isTypeImmune del pinned: USER bypass, Grass inmune a powder, Dark inmune a estado con Prankster solo entre oponentes. Usa vista originalIfStellar y perfil de flags canónico, no IDs locales de movimientos.
 2. Activación real de Prankster/tipos vivos requiere policy resuelta. No implementa Overcoat, Safety Goggles, Soundproof ni reflexión; integración en fase de hit sigue pendiente.
 3. Regresiones Poison Powder/Hypnosis, Prankster entre aliados/oponentes y fallo atómico escritas sin ejecutar. Tests/compilación aplazados.
+
+## Inmunidad de tipo conectada al impacto de estados
+
+1. composePokemonStatusMoveTypeHitPolicy incorpora inmunidad Grass/powder y Dark/Prankster a política de hit. resolvePokemonStatusMoveHit rechaza antes de precisión y expone typeImmune; USER conserva bypass upstream.
+2. Comando consume PP sin generar solicitud de estado ni draws de precisión/chance para objetivo inmune. Reflection/protection y otras inmunidades siguen siendo políticas previas pendientes del proveedor activo.
+3. Regresión de Poison Powder sobre Grass a través del comando real escrita sin ejecutar; tests/compilación aplazados.
