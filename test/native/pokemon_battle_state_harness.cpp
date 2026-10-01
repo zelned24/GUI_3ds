@@ -2454,5 +2454,31 @@ extern "C" int runPokemonBattleStateChecks() {
     status.sleepTurnsRemaining = 1;
     if (Pokerogue3DS::incrementPokemonStatusTurn(status) != Pokerogue3DS::PokemonStatusTickResult::InvalidStatus ||
         status.toxicTurnCount || status.sleepTurnsRemaining != 1) return 574;
+    PokemonBattleState residualActor{};
+    residualActor.maxHp = residualActor.hp = 101;
+    residualActor.status.present = true;
+    residualActor.status.effect = Pokerogue3DS::PokemonStatusEffect::Toxic;
+    Pokerogue3DS::PokemonStatusResidualPolicy residualPolicy{};
+    Pokerogue3DS::PokemonStatusResidualEvent residualEvent{};
+    if (Pokerogue3DS::applyPokemonStatusResidual(residualActor, residualPolicy, residualEvent) !=
+            Pokerogue3DS::PokemonStatusResidualResult::UnsupportedPolicy || residualActor.status.toxicTurnCount) return 575;
+    residualPolicy.resolved = true;
+    if (Pokerogue3DS::applyPokemonStatusResidual(residualActor, residualPolicy, residualEvent) !=
+            Pokerogue3DS::PokemonStatusResidualResult::Applied || residualEvent.requestedDamage != 6 ||
+        residualActor.hp != 95 || residualActor.status.toxicTurnCount != 1) return 576;
+    residualPolicy.blockStatusDamage = true;
+    if (Pokerogue3DS::applyPokemonStatusResidual(residualActor, residualPolicy, residualEvent) !=
+            Pokerogue3DS::PokemonStatusResidualResult::Blocked || residualActor.hp != 95 ||
+        residualActor.status.toxicTurnCount != 2 || !residualEvent.blocked) return 577;
+    residualPolicy.blockStatusDamage = false;
+    residualActor.status.effect = Pokerogue3DS::PokemonStatusEffect::Burn;
+    residualPolicy.burnMultiplierDenominator = 2;
+    if (Pokerogue3DS::applyPokemonStatusResidual(residualActor, residualPolicy, residualEvent) !=
+            Pokerogue3DS::PokemonStatusResidualResult::Applied || residualEvent.requestedDamage != 3) return 578;
+    residualActor.maxHp = 1;
+    residualActor.hp = 1;
+    if (Pokerogue3DS::applyPokemonStatusResidual(residualActor, residualPolicy, residualEvent) !=
+            Pokerogue3DS::PokemonStatusResidualResult::Applied || residualEvent.appliedDamage != 1 ||
+        !residualEvent.fainted || residualActor.hp) return 579;
     return 0;
 }

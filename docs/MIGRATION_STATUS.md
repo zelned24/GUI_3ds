@@ -1341,3 +1341,9 @@
 2. incrementPokemonStatusTurn reproduce Status.incrementTurn: incrementa toxicTurnCount para todo objeto Status y reduce contadores opcionales positivos. Sin RNG; overflow del adaptador uint32 falla sin modificar estado. isPostTurn clasifica Poison/Toxic/Burn, sin ejecutar todavía residuals.
 3. CapturePhase usa getStatusEffectCatchRateMultiplier: 1.5 poison/toxic/paralysis/burn, 2.5 sleep/freeze, uno sin estado. Valida metadata antes de draws de captura. FAINT con HP vivo es inválido. Todavía no existe dispatcher que aplique status desde movimientos.
 4. Save actual rechaza status presente en actores/equipos para impedir pérdida silenciosa hasta ampliar codec/restore. Inmunidades, pre-move, residuals, curación y status save pendientes. Regresiones de contadores/overflow/clasificación escritas, sin ejecutar; tests/compilación aplazados.
+
+## Resolver de daño residual de estados
+
+1. applyPokemonStatusResidual porta matemática/orden de PostTurnStatusEffectPhase: activos sin switch-out, contador incrementado antes de BlockNonDirectDamage/BlockStatusDamage, poison floor(maxHP/8), toxic floor(maxHP*turn/16), burn floor(maxHP/16), mínimo uno. ReduceBurnDamageAbAttr vuelve a aplicar mínimo uno tras multiplicador racional.
+2. Evento registra daño solicitado/aplicado, HP, bloqueo, contador y faint. Publicación atómica; policy no resuelta, overflow y bosses que requieren dispatcher no mutan actor/output. Residual no ofrece Endure/Sturdy. No realiza RNG ni callbacks inventados.
+3. Falta conectar resolución real de habilidades/post-damage/boss y orden de fases al turno; movimientos con status permanecen bloqueados y save status pendiente. Regresiones de tóxico, bloqueo con contador, quemadura reducida y mínimo/KO escritas, sin ejecutar. Tests/compilación aplazados.

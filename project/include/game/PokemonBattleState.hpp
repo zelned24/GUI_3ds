@@ -232,6 +232,68 @@ struct PokemonBattleState {
     bool statsAreBaseFormulaOnly = true;
 };
 
+struct PokemonStatusResidualPolicy {
+    bool resolved = false; // Both block attributes and post-damage callbacks resolved.
+    bool active = true;
+    bool switchingOut = false;
+    bool blockNonDirectDamage = false;
+    bool blockStatusDamage = false;
+    bool bossDamageNeedsDispatcher = false;
+    uint16_t burnMultiplierNumerator = 1;
+    uint16_t burnMultiplierDenominator = 1;
+};
+struct PokemonStatusResidualEvent {
+    PokemonStatusEffect effect = PokemonStatusEffect::None;
+    uint32_t toxicTurnCount = 0;
+    uint64_t requestedDamage = 0;
+    uint16_t appliedDamage = 0;
+    uint16_t previousHp = 0;
+    uint16_t remainingHp = 0;
+    bool blocked = false;
+    bool fainted = false;
+};
+enum class PokemonStatusResidualResult : uint8_t {
+    Applied, NoEffect, Blocked, InvalidState, UnsupportedPolicy, CounterOverflow
+};
+// PostTurnStatusEffectPhase: increment precedes damage blockers. Endure/Sturdy
+// do not prevent residual KO. Boss shields and callbacks require their dispatcher.
+inline PokemonStatusResidualResult applyPokemonStatusResidual(PokemonBattleState& actor,
+    const PokemonStatusResidualPolicy& policy, PokemonStatusResidualEvent& output) {
+    if (!pokemonStatusStateValid(actor.status) || actor.hp > actor.maxHp)
+        return PokemonStatusResidualResult::InvalidState;
+    if (!policy.active || !actor.hp || policy.switchingOut || !pokemonStatusIsPostTurn(actor.status))
+        return PokemonStatusResidualResult::NoEffect;
+    if (!policy.resolved || policy.bossDamageNeedsDispatcher || !policy.burnMultiplierDenominator)
+        return PokemonStatusResidualResult::UnsupportedPolicy;
+    auto nextStatus = actor.status;
+    const auto tick = incrementPokemonStatusTurn(nextStatus);
+    if (tick == PokemonStatusTickResult::CounterOverflow) return PokemonStatusResidualResult::CounterOverflow;
+    if (tick != PokemonStatusTickResult::Ok) return PokemonStatusResidualResult::InvalidState;
+    PokemonStatusResidualEvent event{};
+    event.effect = nextStatus.effect;
+    event.toxicTurnCount = nextStatus.toxicTurnCount;
+    event.previousHp = event.remainingHp = actor.hp;
+    event.blocked = policy.blockNonDirectDamage || policy.blockStatusDamage;
+    if (!event.blocked) {
+        uint64_t damage = nextStatus.effect == PokemonStatusEffect::Poison ? actor.maxHp / 8 :
+            nextStatus.effect == PokemonStatusEffect::Toxic ? uint64_t(actor.maxHp) * nextStatus.toxicTurnCount / 16 :
+            actor.maxHp / 16;
+        if (!damage) damage = 1; // toDmgValue
+        if (nextStatus.effect == PokemonStatusEffect::Burn) {
+            damage = damage * policy.burnMultiplierNumerator / policy.burnMultiplierDenominator;
+            if (!damage) damage = 1; // ReduceBurnDamageAbAttr applies toDmgValue again.
+        }
+        event.requestedDamage = damage;
+        event.appliedDamage = static_cast<uint16_t>(damage > actor.hp ? actor.hp : damage);
+        event.remainingHp = actor.hp - event.appliedDamage;
+        event.fainted = !event.remainingHp;
+    }
+    actor.status = nextStatus;
+    actor.hp = event.remainingHp;
+    output = event;
+    return event.blocked ? PokemonStatusResidualResult::Blocked : PokemonStatusResidualResult::Applied;
+}
+
 // Pinned PokemonSpecies.getRootSpeciesId: follow registry prevolutions, optionally
 // stopping at an eligible starter. Catalog size bounds cycles, not content capacity.
 inline const PokerogueContent::Species* pokemonRootSpecies(uint16_t dex, bool forStarter = false) {
