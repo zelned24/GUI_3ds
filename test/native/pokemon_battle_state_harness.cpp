@@ -3352,6 +3352,26 @@ extern "C" int runPokemonBattleStateChecks() {
         powderImmunityFound |= profile.powder;
     }
     if (!soundImmunityFound || !powderImmunityFound) return 9343;
+    for (const auto& profile : PokerogueContent::kStatusFlagImmunityProfiles) {
+        if (!profile.resolved || !profile.powder) continue;
+        const Pokerogue3DS::PokemonStatusAbilityComponent powderDefender[] = {{profile.abilityId, true, true}};
+        Pokerogue3DS::PokemonStatusMoveHitPolicy immuneHit{};
+        if (!Pokerogue3DS::composePokemonStatusFlagAbilityHitPolicy(77, baseTypeHit, false,
+                powderDefender, 1, immuneHit) || !immuneHit.blockedBeforeAccuracy) return 9350;
+        powderUser.moves[0].pp = 35;
+        completeStatusPolicy.move.hit = immuneHit;
+        expectedApplicationRng = statusApplicationRng;
+        if (!Pokerogue3DS::usePokemonStatusEffectMove(powderUser, grassTarget, 0, completeStatusPolicy.move,
+                statusApplicationRng, powderHitEvent) || powderUser.moves[0].pp != 34 ||
+            powderHitEvent.hit.hit || powderHitEvent.hit.accuracyRolled || powderHitEvent.hit.typeImmune ||
+            powderHitEvent.application.requestObtainStatusPhase ||
+            statusApplicationRng.randSeedUint32() != expectedApplicationRng.randSeedUint32()) return 9351;
+        const Pokerogue3DS::PokemonStatusAbilityComponent pendingDefender[] = {{profile.abilityId, true, false}};
+        immuneHit.blockedBeforeAccuracy = false;
+        if (Pokerogue3DS::composePokemonStatusFlagAbilityHitPolicy(77, baseTypeHit, false,
+                pendingDefender, 1, immuneHit) || immuneHit.blockedBeforeAccuracy) return 9352;
+    }
+
     bool foundStatusConfusion = false;
     for (const auto& profile : PokerogueContent::kStatusConfusionAbilityProfiles) {
         if (!profile.resolved || !(profile.statusMask & 2)) continue;

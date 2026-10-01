@@ -490,6 +490,24 @@ inline bool composePokemonStatusMoveTypeHitPolicy(uint16_t moveId,
     return true;
 }
 
+inline bool composePokemonStatusFlagAbilityHitPolicy(uint16_t moveId,
+    const PokemonStatusMoveHitPolicy& base, bool sameActor,
+    const PokemonStatusAbilityComponent* defenders, size_t count,
+    PokemonStatusMoveHitPolicy& output) {
+    if (!base.resolved || !defenders || !count) return false;
+    auto policy = base;
+    // getMoveEffectiveness still invokes ability callbacks after type rejection.
+    // Do not short-circuit these queries merely because typeImmune is true.
+    for (size_t i = 0; i < count; ++i) {
+        bool blocked = false;
+        if (!resolvePokemonStatusFlagAbilityImmunity(defenders[i].abilityId, moveId,
+                defenders[i].active, defenders[i].callbacksResolved, sameActor, blocked)) return false;
+        policy.blockedBeforeAccuracy |= blocked;
+    }
+    output = policy;
+    return true;
+}
+
 struct PokemonStatusEffectMovePolicy {
     PokemonStatusMoveHitPolicy hit{};
     PokemonStatusApplicationPolicy application{};

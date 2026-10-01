@@ -1665,3 +1665,9 @@
 1. Generador reconoce el predicado exacto MoveImmunityAbAttr de Soundproof/Overcoat: pokemon !== attacker y SOUND_BASED/POWDER_MOVE. Otros predicados/condiciones quedan pendientes. Resolver combina perfil real de habilidad/movimiento y activación explícita.
 2. Respeta identidad propia e inactividad; no implementa efectos adyacentes de Overcoat ni Safety Goggles. Conexión a política de hit del comando activo sigue pendiente.
 3. Regresiones de habilidades reales, autoobjetivo e inactividad escritas sin ejecutar; tests/compilación aplazados.
+
+## Inmunidad de flags conectada al impacto de estados
+
+1. composePokemonStatusFlagAbilityHitPolicy resuelve componentes defensores desde perfiles canónicos y bloquea antes de precisión. Conserva output si algún callback está pendiente; el rechazo de tipo no omite consultas de habilidad de getMoveEffectiveness.
+2. Comando de estados consume PP pero no RNG/solicitud de estado ante Overcoat. Activación/suppression y componentes vivos siguen requiriendo proveedor; no declara cobertura completa de MoveImmunityAbAttr ni reflection.
+3. Regresiones de Overcoat real atravesando comando y callback pendiente escritas sin ejecutar. Tests/compilación aplazados.
