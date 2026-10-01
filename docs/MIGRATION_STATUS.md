@@ -460,3 +460,11 @@
 1. Pokemon constructor pinned src/field/pokemon.ts almacena teraType concreto al crear actor y lo copia desde dataSource; un ordinal de tipo no equivale a ese estado tras cambiar especie. Actor C++ conserva símbolo concreto, resuelto con la tabla de tipos existente sin consumir RNG adicional.
 2. Evolución mantiene el tipo original; captura/restore no lo recalcula a partir de la forma nueva. Codec pokemon=3 incluye tipo; lectores aceptan v1/v2 y resuelven una vez el antiguo ordinal de la forma guardada. Datos históricos que ya perdieron el tipo original no son recuperables sin evidencia adicional.
 3. Regresiones 328–334 escritas para migración v2, Onix→Steelix conservando ROCK frente a STEEL y rechazo de tipo inválido sin mutar actor. Esto verifica identidad/persistencia; no porta todavía trigger de Metal Coat ni combate Terastal. Tests/compilación aplazados.
+
+## Recálculo de forma para la transición final
+
+1. changePokemonBattleForm reutiliza initializePokemonBattleState con forma real de la misma especie, habilidad resuelta y actor original. Conserva PID, IVs/procedencia, nature, stages y pausa; restaura HP/PP cuando la fase lo pide y publica únicamente tras validar. Cambio sin curación mantiene faint/PP y ajusta HP por aumento de max HP.
+2. Regresiones 510–515 escritas con Eternatus→Eternamax del catálogo pinned, incremento de HP, restauración de PP, identidad/IVs, rechazo de forma ajena y faint sin curación. Tests/compilación aplazados.
+3. Este helper todavía no está conectado a initFinalBossPhaseTwo. Faltan moveset de fase 2, Mini Black Hole, limpiar status/tags, cancelar moves encolados y dos posiciones de jugador; el combate final sigue incompleto. Fuentes: src/battle-scene.ts initFinalBossPhaseTwo; src/phases/quiet-form-change-phase.ts end; src/data/balance/species/generation-08.ts ETERNATUS.forms.
+
+4. Regresiones 516-517 adicionales para stages invalidos y PP maximos modificados no soportados; el cambio falla sin publicar un actor parcialmente recalculado. Pendientes de ejecucion.

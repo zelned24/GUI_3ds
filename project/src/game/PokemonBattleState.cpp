@@ -423,6 +423,45 @@ PokemonBattleInitResult initializePokemonBattleState(
     return PokemonBattleInitResult::Ok;
 }
 
+bool changePokemonBattleForm(PokemonBattleState& state, const char* targetFormId,
+    uint16_t resolvedAbilityId, bool fullRestore) {
+    if (!state.statsAreBaseFormulaOnly || !state.maxHp || state.hp > state.maxHp ||
+        state.moveCount > 4 || !targetFormId) return false;
+    PokemonBattleInit input{};
+    input.speciesDex = state.speciesDex;
+    for (int8_t stage : state.statStages) if (stage < -6 || stage > 6) return false;
+    input.formId = targetFormId;
+    input.level = state.level;
+    input.pokemonId = state.pokemonId;
+    input.deriveIvsFromPokemonId = state.ivsWereDerivedFromPokemonId;
+    input.nature = state.nature;
+    input.gender = state.gender;
+    input.abilityId = resolvedAbilityId;
+    input.moveCount = state.moveCount;
+    for (uint8_t i = 0; i < 6; ++i) input.ivs[i] = state.ivs[i];
+    for (uint8_t slot = 0; slot < state.moveCount; ++slot) {
+        if (state.moves[slot].pp > state.moves[slot].maxPp) return false;
+        input.moveIds[slot] = state.moves[slot].moveId;
+    }
+    PokemonBattleState next{};
+    if (initializePokemonBattleState(input, next) != PokemonBattleInitResult::Ok) return false;
+    for (uint8_t slot = 0; slot < state.moveCount; ++slot)
+        if (state.moves[slot].maxPp != next.moves[slot].maxPp) return false;
+    if (fullRestore) next.hp = next.maxHp;
+    else if (!state.hp) next.hp = 0;
+    else {
+        uint32_t hp = state.hp;
+        if (next.maxHp > state.maxHp) hp += next.maxHp - state.maxHp;
+        next.hp = static_cast<uint16_t>(hp > next.maxHp ? next.maxHp : hp);
+    }
+    for (uint8_t slot = 0; slot < state.moveCount; ++slot)
+        if (!fullRestore) next.moves[slot].pp = state.moves[slot].pp;
+    for (uint8_t stat = 0; stat < 7; ++stat) next.statStages[stat] = state.statStages[stat];
+    next.pauseEvolutions = state.pauseEvolutions;
+    state = next;
+    return true;
+}
+
 PokemonBattleInitResult initializePokemonBattleStateForActor(
     const PokemonBattleInit& nonIdentityInput,
     const PokemonActorIdentity& identity,

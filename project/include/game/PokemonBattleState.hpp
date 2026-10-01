@@ -214,6 +214,11 @@ PokemonBattleInitResult initializePokemonBattleState(
     const PokemonBattleInit& input,
     PokemonBattleState& output);
 
+// Recalculates a real same-species form without replacing the actor identity.
+// fullRestore models PokemonHealPhase HP/PP; status/tags belong to their own state.
+bool changePokemonBattleForm(PokemonBattleState& state, const char* targetFormId,
+    uint16_t resolvedAbilityId, bool fullRestore = false);
+
 // Transfers generated identity into a validated battle state; non-identity
 // inputs remain explicit until their pinned generators are ported.
 PokemonBattleInitResult initializePokemonBattleStateForActor(

@@ -2244,5 +2244,50 @@ extern "C" int runPokemonBattleStateChecks() {
         Pokerogue3DS::calculatePokemonBossSegmentDamage(1, 1, 300, 3, 1, 2, bossDamage) ||
         bossDamage.adjustedDamage != beforeBossDamage.adjustedDamage ||
         bossDamage.clearedSegmentIndex != beforeBossDamage.clearedSegmentIndex) return 474;
+    const auto* eternatus = PokerogueContent::findSpeciesByDex(890);
+    const auto* eternamax = PokerogueContent::findFormById("eternatus:eternamax");
+    if (!eternatus || !eternamax) return 510;
+    Pokerogue3DS::PokemonBattleInit finalInput{};
+    finalInput.speciesDex = eternatus->dex;
+    finalInput.formId = eternatus->firstFormId;
+    finalInput.level = 200;
+    finalInput.pokemonId = 0x12345678u;
+    finalInput.deriveIvsFromPokemonId = true;
+    finalInput.abilityId = eternatus->ability1;
+    finalInput.gender = Pokerogue3DS::PokemonGender::Genderless;
+    finalInput.nature = Pokerogue3DS::PokemonNature::Hardy;
+    finalInput.moveCount = 1;
+    finalInput.moveIds[0] = 33;
+    Pokerogue3DS::PokemonBattleState finalActor{};
+    if (Pokerogue3DS::initializePokemonBattleState(finalInput, finalActor) !=
+            Pokerogue3DS::PokemonBattleInitResult::Ok) return 511;
+    finalActor.hp = 1;
+    finalActor.moves[0].pp = 0;
+    finalActor.statStages[0] = 2;
+    finalActor.pauseEvolutions = true;
+    const auto beforeFormChange = finalActor;
+    if (!Pokerogue3DS::changePokemonBattleForm(finalActor, eternamax->id, eternamax->ability1, true) ||
+        finalActor.maxHp <= beforeFormChange.maxHp || finalActor.hp != finalActor.maxHp ||
+        finalActor.moves[0].pp != finalActor.moves[0].maxPp ||
+        finalActor.pokemonId != beforeFormChange.pokemonId || !finalActor.ivsWereDerivedFromPokemonId ||
+        finalActor.statStages[0] != 2 || !finalActor.pauseEvolutions) return 512;
+    for (uint8_t iv = 0; iv < 6; ++iv)
+        if (finalActor.ivs[iv] != beforeFormChange.ivs[iv]) return 513;
+    const auto preservedFinalActor = finalActor;
+    if (Pokerogue3DS::changePokemonBattleForm(finalActor, PokerogueContent::findSpeciesByDex(1)->firstFormId, eternamax->ability1, true) ||
+        finalActor.hp != preservedFinalActor.hp || finalActor.formId != preservedFinalActor.formId) return 514;
+    auto invalidFormActor = finalActor;
+    invalidFormActor.statStages[0] = 7;
+    if (Pokerogue3DS::changePokemonBattleForm(invalidFormActor, eternatus->firstFormId, eternatus->ability1) ||
+        invalidFormActor.statStages[0] != 7 || invalidFormActor.formId != finalActor.formId) return 516;
+    invalidFormActor = finalActor;
+    ++invalidFormActor.moves[0].maxPp;
+    if (Pokerogue3DS::changePokemonBattleForm(invalidFormActor, eternatus->firstFormId, eternatus->ability1, true) ||
+        invalidFormActor.moves[0].maxPp != finalActor.moves[0].maxPp + 1 ||
+        invalidFormActor.formId != finalActor.formId) return 517;
+    finalActor.hp = 0;
+    finalActor.moves[0].pp = 1;
+    if (!Pokerogue3DS::changePokemonBattleForm(finalActor, eternatus->firstFormId, eternatus->ability1) ||
+        finalActor.hp || finalActor.moves[0].pp != 1) return 515;
     return 0;
 }
