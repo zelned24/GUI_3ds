@@ -3133,5 +3133,46 @@ extern "C" int runPokemonBattleStateChecks() {
     syncEvent.abilityActivates = true;
     if (Pokerogue3DS::resolvePokemonSynchronizeReaction(28, true, false, appliedStatus, syncEvent) !=
             Pokerogue3DS::PokemonStatusImmunityResult::UnsupportedCondition || !syncEvent.abilityActivates) return 9105;
+    bool foundStatusConfusion = false;
+    for (const auto& profile : PokerogueContent::kStatusConfusionAbilityProfiles) {
+        if (!profile.resolved || !(profile.statusMask & 2)) continue;
+        foundStatusConfusion = true;
+        PokemonBattleState confusionSource{}, confusionRecipient{};
+        confusionSource.abilityId = profile.abilityId;
+        confusionSource.pokemonId = 41;
+        confusionRecipient.pokemonId = 42;
+        confusionRecipient.hp = confusionRecipient.maxHp = 100;
+        Pokerogue3DS::PokemonStatusConfusionReactionPolicy confusionPolicy{};
+        confusionPolicy.resolved = confusionPolicy.abilityActive = confusionPolicy.targetCanAddConfusion = true;
+        Pokerogue3DS::PokemonStatusConfusionReactionEvent confusionEvent{};
+        expectedApplicationRng = statusApplicationRng;
+        const uint32_t expectedConfusionTurns = expectedApplicationRng.randSeedIntRange(2, 5);
+        if (Pokerogue3DS::resolvePokemonStatusConfusionReaction(confusionSource, confusionRecipient, Effect::Poison,
+                confusionPolicy, statusApplicationRng, confusionEvent) !=
+                    Pokerogue3DS::PokemonStatusImmunityResult::Resolved || !confusionEvent.requestConfusionTag ||
+            confusionEvent.turns != expectedConfusionTurns || confusionEvent.targetPokemonId != 42 ||
+            confusionEvent.sourcePokemonId != 42 ||
+            statusApplicationRng.randSeedUint32() != expectedApplicationRng.randSeedUint32()) return 9110;
+        confusionPolicy.targetCanAddConfusion = false;
+        expectedApplicationRng = statusApplicationRng;
+        if (Pokerogue3DS::resolvePokemonStatusConfusionReaction(confusionSource, confusionRecipient, Effect::Poison,
+                confusionPolicy, statusApplicationRng, confusionEvent) !=
+                    Pokerogue3DS::PokemonStatusImmunityResult::Resolved || confusionEvent.requestConfusionTag ||
+            statusApplicationRng.randSeedUint32() != expectedApplicationRng.randSeedUint32()) return 9111;
+        confusionPolicy.targetCanAddConfusion = true;
+        confusionPolicy.simulated = true;
+        expectedApplicationRng = statusApplicationRng;
+        if (Pokerogue3DS::resolvePokemonStatusConfusionReaction(confusionSource, confusionRecipient, Effect::Poison,
+                confusionPolicy, statusApplicationRng, confusionEvent) !=
+                    Pokerogue3DS::PokemonStatusImmunityResult::Resolved || confusionEvent.requestConfusionTag ||
+            statusApplicationRng.randSeedUint32() != expectedApplicationRng.randSeedUint32()) return 9112;
+        confusionPolicy.resolved = false;
+        confusionEvent.turns = 123;
+        if (Pokerogue3DS::resolvePokemonStatusConfusionReaction(confusionSource, confusionRecipient, Effect::Poison,
+                confusionPolicy, statusApplicationRng, confusionEvent) !=
+                    Pokerogue3DS::PokemonStatusImmunityResult::UnsupportedCondition || confusionEvent.turns != 123)
+            return 9113;
+    }
+    if (!foundStatusConfusion) return 9114;
     return 0;
 }

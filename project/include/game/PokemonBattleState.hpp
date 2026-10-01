@@ -517,6 +517,23 @@ bool executePokemonStatusEffectCommand(PokemonBattleState& user, PokemonBattleSt
     uint8_t slot, const PokemonStatusEffectCommandPolicy& policy, PokerogueRngAdapter& sourceRng,
     PokerogueRngAdapter& recipientRng, PokemonStatusEffectMoveEvent& output);
 
+struct PokemonStatusConfusionReactionPolicy {
+    bool resolved = false; // Callback activation and target.canAddTag(CONFUSED).
+    bool abilityActive = false;
+    bool targetCanAddConfusion = false;
+    bool simulated = false;
+};
+struct PokemonStatusConfusionReactionEvent {
+    bool requestConfusionTag = false;
+    uint8_t turns = 0;
+    uint32_t targetPokemonId = 0;
+    uint32_t sourcePokemonId = 0;
+};
+PokemonStatusImmunityResult resolvePokemonStatusConfusionReaction(const PokemonBattleState& source,
+    const PokemonBattleState& recipient, PokemonStatusEffect applied,
+    const PokemonStatusConfusionReactionPolicy& policy, PokerogueRngAdapter& sourceRng,
+    PokemonStatusConfusionReactionEvent& output);
+
 struct PokemonStatusMoveCheckPolicy {
     bool resolved = false;
     bool bypassSleep = false;

@@ -4,6 +4,33 @@
 #include <cstring>
 
 namespace Pokerogue3DS {
+PokemonStatusImmunityResult resolvePokemonStatusConfusionReaction(const PokemonBattleState& source,
+    const PokemonBattleState& recipient, PokemonStatusEffect applied,
+    const PokemonStatusConfusionReactionPolicy& policy, PokerogueRngAdapter& sourceRng,
+    PokemonStatusConfusionReactionEvent& output) {
+    if (static_cast<uint8_t>(applied) > 7) return PokemonStatusImmunityResult::InvalidEffect;
+    if (!policy.resolved) return PokemonStatusImmunityResult::UnsupportedCondition;
+    for (const auto& profile : PokerogueContent::kStatusConfusionAbilityProfiles) {
+        if (profile.abilityId != source.abilityId) continue;
+        if (policy.abilityActive && !profile.resolved) return PokemonStatusImmunityResult::UnsupportedCondition;
+        auto nextRng = sourceRng;
+        PokemonStatusConfusionReactionEvent event{};
+        if (policy.abilityActive && !policy.simulated && recipient.hp && policy.targetCanAddConfusion &&
+            (profile.statusMask & (1u << static_cast<uint8_t>(applied)))) {
+            event.requestConfusionTag = true;
+            event.turns = static_cast<uint8_t>(nextRng.randSeedIntRange(2, 5));
+            event.targetPokemonId = recipient.pokemonId;
+            // Pinned ConfusionOnStatusEffectAbAttr.apply passes opponent.id,
+            // even though the source pokemon supplies the duration RNG.
+            event.sourcePokemonId = recipient.pokemonId;
+        }
+        sourceRng = nextRng;
+        output = event;
+        return PokemonStatusImmunityResult::Resolved;
+    }
+    return PokemonStatusImmunityResult::UnknownAbility;
+}
+
 bool resolvePokemonStatusApplicationEnvironment(const PokemonBattleState& recipient,
     const PokemonBattleState* source, const PokemonStatusFieldContext& field,
     PokemonStatusApplicationPolicy& output) {

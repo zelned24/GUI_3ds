@@ -1511,3 +1511,9 @@
 1. Generador deriva presencia de SynchronizeStatusAbAttr del catálogo; resolver aplica canApply pinned a burn/paralysis/poison/toxic con fuente presente. Produce nueva solicitud con identidades intercambiadas, sin mutar actor ni consumir RNG.
 2. Habilidad se activa aunque la solicitud posterior sea rechazada por elegibilidad, siguiendo upstream. No aplica status directamente ni ignora inmunidades del causante. Condiciones/callbacks desconocidos conservan output y exigen dispatcher.
 3. Regresiones Synchronize real, fuente Fire inmune, sleep, fuente ausente/inactiva y callbacks pendientes escritas sin ejecutar. Falta conexión de esta reacción a cola y proveedor completo de forms/ConfusionOnStatusEffect; tests/compilación aplazados.
+
+## Confusión provocada por aplicación de estado
+
+1. Generador deriva ConfusionOnStatusEffectAbAttr desde catálogo (Poison Puppeteer). Resolver exige canAddTag/callbacks resueltos, objetivo vivo y estado admitido; solicita CONFUSED con randBattleSeedIntRange(2,5) del causante.
+2. Preserva peculiaridad pinned: addTag recibe opponent.id como sourcePokemonId. Simulated, bloqueo de tag y efecto no elegible no consumen RNG. Solicitud no inventa implementación de BattlerTag; fase/tag runtime siguen pendientes.
+3. Regresiones de duración/stream, identidades, canAddTag bloqueado, simulated y policy desconocida escritas sin ejecutar. Catálogo regenerado con hash unchanged; tests/compilación aplazados.
