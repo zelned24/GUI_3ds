@@ -1334,6 +1334,28 @@ static int checkPlayerPartyManagementAndSwitching() {
     for (uint8_t member = 0; member < 6; ++member)
         if (declinedCapture.playerPartyMember(member)->battleState.pokemonId !=
             fullPartySave.playerParty[member].pokemonId) return 593;
+    // All six have participated; replacing the active must not require a
+    // seventh history slot or grant the incoming actor pre-capture EXP.
+    NativeRunSave allParticipantsCapture = fullPartySave;
+    allParticipantsCapture.participantHistoryResolved = true;
+    allParticipantsCapture.participantCount = 6;
+    for (uint8_t member = 0; member < 6; ++member) {
+        uint8_t position = member;
+        const uint32_t id = allParticipantsCapture.playerParty[member].pokemonId;
+        while (position && allParticipantsCapture.participantIds[position - 1] > id) {
+            allParticipantsCapture.participantIds[position] = allParticipantsCapture.participantIds[position - 1];
+            --position;
+        }
+        allParticipantsCapture.participantIds[position] = id;
+    }
+    FirstRunRuntime activeCapture(1);
+    if (!activeCapture.restoreNativeRunSave(allParticipantsCapture) ||
+        !activeCapture.throwPokeball(PokeballType::MasterBall)) return 597;
+    const auto incomingCapture = activeCapture.pendingCapturedPokemon();
+    if (!activeCapture.resolveCapturePartyChoice(allParticipantsCapture.activePlayerMember) ||
+        activeCapture.presentation().player.battleState.pokemonId != incomingCapture.battleState.pokemonId ||
+        activeCapture.presentation().player.totalExperience != incomingCapture.totalExperience ||
+        !activeCapture.playerWon()) return 598;
     // Replacement removes outgoing held items and retains captured-owner items.
     FirstRunRuntime heldReplacement(1);
     if (!heldReplacement.restoreNativeRunSave(fullPartySave)) return 594;

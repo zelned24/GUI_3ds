@@ -997,3 +997,8 @@
 1. Extiende la decisión de equipo lleno al frontier de held modifiers soportado. Retiene los propietarios del equipo final, elimina objetos del miembro liberado y conserva los del capturado con PID/stack/raw metadata originales. Rechazar incorporación elimina los objetos del enemigo sin tocar los del equipo.
 2. Reutiliza retainPartyHeldInventory. Fuente pinned: AttemptCapturePhase.addToParty/removePokemon y PartyUiHandler.doRelease/removePartyMemberModifiers.
 3. Modifiers sin dispatcher y limpieza de otros enemigos siguen rechazados explícitamente; callbacks de captura/profile completos aún pendientes. Tests y compilación aplazados.
+
+## Reemplazo del activo con seis participantes — pendiente de ejecución
+
+1. Retira la identidad liberada después del reparto de EXP y antes del registro del activo al cerrar el turno. Evita exigir siete slots temporales cuando ya participaron los seis miembros.
+2. El capturado no recibe EXP por participación anterior a su incorporación. Regresiones 597–598 escritas con historial completo ordenado y reemplazo del activo; sin ejecutar. Tests/compilación permanecen aplazados.

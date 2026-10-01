@@ -173,7 +173,7 @@ public:
 
 private:
     bool resolveCapturePartyChoiceInPlace(int partyMember);
-    bool finishSuccessfulCapture(ResolvedPokemon& target);
+    bool finishSuccessfulCapture(ResolvedPokemon& target, const uint32_t* releasedParticipant = nullptr);
     bool advanceBattleTurnInPlace();
     bool claimRewardChoiceInPlace(uint8_t heldPartyMember = 0xFF, bool recoveryTarget = false, uint8_t recoveryMove = 0);
     bool resolvePendingLearnMoveInPlace(int selectedSlot);

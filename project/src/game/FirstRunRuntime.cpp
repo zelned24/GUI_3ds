@@ -2456,7 +2456,7 @@ bool FirstRunRuntime::restoreHeldModifierInventory(const NativeHeldModifierInsta
     return true;
 }
 
-bool FirstRunRuntime::finishSuccessfulCapture(ResolvedPokemon& target) {
+bool FirstRunRuntime::finishSuccessfulCapture(ResolvedPokemon& target, const uint32_t* releasedParticipant) {
     // Capture retains the source PID. Release discards outgoing held items;
     // incorporation keeps captured items without rewriting their metadata.
     uint32_t retainedOwners[6]{};
@@ -2482,6 +2482,10 @@ bool FirstRunRuntime::finishSuccessfulCapture(ResolvedPokemon& target) {
     } else {
         m_battleFeedback = std::string("Caught ") + (target.localizedName ? target.localizedName : "Pokémon") + "! Defeat remaining foe.";
     }
+    // EXP used the original participation divisor. Remove the released identity
+    // before turn-end registers the incoming active actor: six original
+    // participants must not become a transient seven-entry history.
+    if (releasedParticipant) removeParticipant(*releasedParticipant);
     return finishBattleTurn();
 }
 
@@ -2509,10 +2513,7 @@ bool FirstRunRuntime::resolveCapturePartyChoiceInPlace(int member) {
     }
     m_capturePartyChoicePending = false;
     auto& target = m_capturePartyTarget ? m_context.secondEnemy : m_context.enemy;
-    if (!finishSuccessfulCapture(target)) return false;
-    // Preserve the original divisor for this capture's EXP; the released
-    // actor's historic participation is removed only after that allocation.
-    if (member >= 0) removeParticipant(releasedId);
+    if (!finishSuccessfulCapture(target, member >= 0 ? &releasedId : nullptr)) return false;
     m_pendingCapturedPokemon = {};
     return true;
 }
