@@ -2026,20 +2026,15 @@ bool FirstRunRuntime::finishBattleTurn() {
     const bool enemiesDownNow = m_doubleBattle
         ? (!m_context.enemy.battleState.hp && !m_context.secondEnemy.battleState.hp)
         : (!m_context.enemy.battleState.hp);
-    if (playerDown && !playerPartyDefeated()) {
-        advancePlayerAfterDefeat();
-        ++m_turn;
-        if (!m_battleRng.beginTurn(m_turn)) {
-            m_battleFeedback = "Next battle RNG turn could not initialize";
-            buildScene();
-            return false;
-        }
-        buildScene();
-        return true;
+    const auto conclusion = pokemonBattleConclusion(playerPartyDefeated(), enemiesDownNow);
+    if (playerDown && conclusion != PokemonBattleConclusion::PlayerDefeat) {
+        // A legal reserve prevents GameOver. If the last enemy also fainted,
+        // resolve victory rather than starting another turn against a dead field.
+        if (!advancePlayerAfterDefeat()) return false;
     }
-    if (playerDown || enemiesDownNow) {
+    if (conclusion != PokemonBattleConclusion::Continue) {
         m_battleFinished = true;
-        m_playerWon = enemiesDownNow && !playerDown;
+        m_playerWon = conclusion == PokemonBattleConclusion::PlayerVictory;
         m_victoryPlan = {};
         if (m_playerWon && enemyPartyDefeated() && !planClassicVictory(m_run.wave, m_victoryPlan)) {
             m_battleFeedback = "Classic victory plan unavailable";

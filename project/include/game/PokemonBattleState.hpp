@@ -8,6 +8,15 @@ namespace Pokerogue3DS {
 
 class PokerogueRngAdapter;
 
+// Pinned FaintPhase.start: GameOver takes precedence when no legal player
+// remains. Enemy-field defeat permits VictoryPhase even if the active player
+// fainted and a legal reserve still exists. Trainer reserves are handled later.
+enum class PokemonBattleConclusion : uint8_t { Continue, PlayerVictory, PlayerDefeat };
+inline PokemonBattleConclusion pokemonBattleConclusion(bool playerPartyDefeated, bool enemyFieldDefeated) {
+    if (playerPartyDefeated) return PokemonBattleConclusion::PlayerDefeat;
+    return enemyFieldDefeated ? PokemonBattleConclusion::PlayerVictory : PokemonBattleConclusion::Continue;
+}
+
 enum class PokemonGender : uint8_t { Unspecified = 0, Genderless, Male, Female };
 enum class PokemonNature : uint8_t {
     Hardy = 0, Lonely, Brave, Adamant, Naughty,

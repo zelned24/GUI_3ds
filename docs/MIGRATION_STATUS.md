@@ -890,3 +890,11 @@
 2. HUD diagnóstico: L guarda, R carga, Y exporta y X importa `.p3progress`. El host evita procesar esos mismos botones cuando QuickJS está sano. Modo nativo conserva X guardar/Y exportar/L cargar/R importar.
 3. Preflight compartido nativo/QuickJS reconstruye partida y adjunta el perfil validado antes del commit. La generación extranjera se reasigna localmente y los presenters se invalidan tras importación exitosa.
 4. Cuatro regresiones del script real verifican prioridad de almacenamiento sobre ataque y ausencia de repetición sin nuevos pulsos. Escritas, sin ejecutar. La validación SD/QuickJS/Azahar/Old 3DS y Classic completo siguen pendientes.
+
+## Caída simultánea con reserva viva — pendiente de ejecución
+
+1. `finishBattleTurn` determina victoria/derrota por equipo legal restante y enemigos activos. Si activo y último enemigo caen pero queda reserva viva, reemplaza al activo y entra en victoria pendiente; no inicia un turno adicional contra el enemigo caído.
+2. Sin reservas legales mantiene derrota, incluso con ambos campos caídos. Fuente inspeccionada: PokéRogue pinned `src/phases/faint-phase.ts`, `FaintPhase.start` (`getPokemonAllowedInBattle`, `GameOverPhase`, `VictoryPhase`). Reservas de entrenador conservan su resolución posterior.
+3. Cuatro regresiones de la decisión final escritas (555–558); sin ejecutar. No prueban todavía la cola completa de fases/animación ni los efectos de faint que siguen pendientes.
+
+4. Regresión de integración 559–564 escrita: equipo capturado real + Take Down canónico, HP de checkpoint reducido para provocar KO por recoil; exige victoria con reserva y checkpoint sin turno extra. Explora índices de turno deterministas por precisión/orden y falla si no encuentra el escenario. Pendiente de ejecución.

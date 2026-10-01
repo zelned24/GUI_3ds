@@ -1480,6 +1480,40 @@ static int checkPlayerPartyManagementAndSwitching() {
     if (game.presentation().player.totalExperience != starterExperience ||
         game.playerPartyMember(1)->totalExperience != reserveExperience) return 223;
 
+    // Canonical captured party + real Take Down: recoil knocks out the active
+    // actor at the same time as the wild enemy. A living reserve must win now.
+    NativeRunSave simultaneous = capturedPartySave;
+    simultaneous.playerHp = simultaneous.playerParty[0].hp = simultaneous.enemyHp = 1;
+    simultaneous.playerParty[0].moveCount = simultaneous.playerMoveCount = 1;
+    simultaneous.playerParty[0].maxPpResolved = true;
+    const auto* takeDown = PokerogueContent::findMoveById(36);
+    if (!takeDown || takeDown->pp <= 0 || takeDown->pp > 255) return 559;
+    for (uint8_t slot = 0; slot < 4; ++slot) {
+        simultaneous.playerMoveIds[slot] = simultaneous.playerParty[0].moveIds[slot] = slot ? 0 : takeDown->id;
+        simultaneous.playerPp[slot] = simultaneous.playerParty[0].pp[slot] = slot ? 0 : takeDown->pp;
+        simultaneous.playerParty[0].maxPp[slot] = slot ? 0 : takeDown->pp;
+    }
+    simultaneous.playerStatStages[4] = simultaneous.playerParty[0].statStages[4] = 6;
+    bool testedSimultaneous = false;
+    FirstRunRuntime simultaneousGame(1);
+    for (uint32_t turn = 1; turn <= 128 && !testedSimultaneous; ++turn) {
+        simultaneous.battleTurn = turn;
+        if (!simultaneousGame.restoreNativeRunSave(simultaneous) ||
+            !simultaneousGame.battleInputSupported()) return 560;
+        if (!simultaneousGame.advanceBattleTurn()) return 561;
+        if (simultaneousGame.playerPartyMember(0)->battleState.hp ||
+            simultaneousGame.presentation().enemy.battleState.hp) continue; // Accuracy/turn-order outcomes.
+        testedSimultaneous = true;
+        if (!simultaneousGame.battleFinished() || !simultaneousGame.playerWon() ||
+            simultaneousGame.activePlayerPartyIndex() != 1 ||
+            !simultaneousGame.presentation().player.battleState.hp || simultaneousGame.experienceGranted())
+            return 562;
+        NativeRunSave afterSimultaneous{};
+        simultaneousGame.captureNativeRunSave(afterSimultaneous);
+        if (afterSimultaneous.stage != NativeSaveStage::BattleWon || afterSimultaneous.battleTurn != turn)
+            return 563;
+    }
+    if (!testedSimultaneous) return 564; // Do not silently skip a missing real recoil scenario.
     return 0;
 }
 

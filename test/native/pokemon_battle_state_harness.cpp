@@ -2406,5 +2406,12 @@ extern "C" int runPokemonBattleStateChecks() {
     const auto validLevel = levelActor.level;
     if (Pokerogue3DS::recalculatePokemonBattleLevel(levelActor, 0) ||
         levelActor.level != validLevel || levelActor.turnDamageDealt != 19) return 524;
+    using Conclusion = Pokerogue3DS::PokemonBattleConclusion;
+    // Includes simultaneous faint with/without a living reserve. Faint itself
+    // does not make a reserve a participant or invent an EXP award.
+    if (Pokerogue3DS::pokemonBattleConclusion(false, false) != Conclusion::Continue) return 555;
+    if (Pokerogue3DS::pokemonBattleConclusion(false, true) != Conclusion::PlayerVictory) return 556;
+    if (Pokerogue3DS::pokemonBattleConclusion(true, false) != Conclusion::PlayerDefeat) return 557;
+    if (Pokerogue3DS::pokemonBattleConclusion(true, true) != Conclusion::PlayerDefeat) return 558;
     return 0;
 }
