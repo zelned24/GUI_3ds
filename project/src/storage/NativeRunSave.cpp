@@ -13,7 +13,7 @@
 namespace Pokerogue3DS {
 namespace {
 // Stable envelope marker; saveVersion carries the independently migrated
-// payload schema (currently version 14).
+// payload schema (currently version 15).
 constexpr char kMagic[] = "POKEROGUE-3DS-SAVE 1\n";
 constexpr size_t kDigestLineLength = 72;
 
@@ -140,6 +140,34 @@ struct Reader {
         return false;
     }
 };
+
+bool sameStatus(const PokemonStatusState& a, const PokemonStatusState& b) {
+    return a.present == b.present && a.effect == b.effect && a.toxicTurnCount == b.toxicTurnCount &&
+        a.sleepTurnsRemaining == b.sleepTurnsRemaining && a.freezeTurnsRemaining == b.freezeTurnsRemaining &&
+        a.hasSleepTurnsRemaining == b.hasSleepTurnsRemaining && a.hasFreezeTurnsRemaining == b.hasFreezeTurnsRemaining;
+}
+void writeStatus(Writer& writer, const PokemonStatusState& status) {
+    writer.hex((status.present ? 1 : 0) | (status.hasSleepTurnsRemaining ? 2 : 0) |
+        (status.hasFreezeTurnsRemaining ? 4 : 0), 2);
+    writer.hex(static_cast<uint8_t>(status.effect), 2);
+    writer.hex(status.toxicTurnCount, 8);
+    writer.hex(status.sleepTurnsRemaining, 8);
+    writer.hex(status.freezeTurnsRemaining, 8);
+}
+bool readStatus(Reader& reader, PokemonStatusState& output) {
+    PokemonStatusState status{};
+    uint32_t value = 0;
+    if (!reader.hex(2, value) || value > 7) return false;
+    status.present = (value & 1) != 0;
+    status.hasSleepTurnsRemaining = (value & 2) != 0;
+    status.hasFreezeTurnsRemaining = (value & 4) != 0;
+    if (!reader.hex(2, value) || value > 7) return false;
+    status.effect = static_cast<PokemonStatusEffect>(value);
+    if (!reader.hex(8, status.toxicTurnCount) || !reader.hex(8, status.sleepTurnsRemaining) ||
+        !reader.hex(8, status.freezeTurnsRemaining) || !pokemonStatusStateValid(status)) return false;
+    output = status;
+    return true;
+}
 
 // The common envelope is inspected before version-specific fields. This makes a
 // valid newer save block silent fallback or overwrite by an older runtime.
@@ -576,6 +604,17 @@ NativeSaveResult decodeNativePokemonSave(const char* bytes, size_t length,
 }
 
 NativeSaveResult validateNativeRunSave(const NativeRunSave& save, const char* expectedContentHash) {
+    if (save.playerPartyCount > 6 || save.trainerPartyCount > 6) return NativeSaveResult::InvalidRecord;
+    if (!pokemonStatusStateValid(save.playerStatus) || !pokemonStatusStateValid(save.enemyStatus) ||
+        (save.stage == NativeSaveStage::RunSetup && (save.playerStatus.present || save.enemyStatus.present)))
+        return NativeSaveResult::InvalidRecord;
+    for (uint8_t i = 0; i < 6; ++i)
+        if (!pokemonStatusStateValid(save.trainerParty[i].status) ||
+            (i >= save.trainerPartyCount && save.trainerParty[i].status.present)) return NativeSaveResult::InvalidRecord;
+    if (save.playerPartyCount && save.activePlayerMember < save.playerPartyCount &&
+        !sameStatus(save.playerStatus, save.playerParty[save.activePlayerMember].status)) return NativeSaveResult::InvalidRecord;
+    if (save.trainerPartyCount && save.activeTrainerMember < save.trainerPartyCount &&
+        !sameStatus(save.enemyStatus, save.trainerParty[save.activeTrainerMember].status)) return NativeSaveResult::InvalidRecord;
     if (save.saveVersion != kNativeSaveVersion) return NativeSaveResult::UnsupportedVersion;
     if (save.runtimeVersion != kNativeSaveRuntimeVersion) return NativeSaveResult::IncompatibleRuntime;
     const PokemonTrickRoomState room{save.trickRoomTurnsLeft, save.trickRoomMaxDuration,
@@ -878,6 +917,11 @@ NativeSaveResult encodeNativeRunSave(const NativeRunSave& save, char* output, si
     for (uint8_t i = 0; i < save.setupStarterCount; ++i) {
         writer.text("setupStarterDex="); writer.hex(save.setupStarterDexes[i], 4);
     }
+    writer.text("playerStatus="); writeStatus(writer, save.playerStatus);
+    writer.text("enemyStatus="); writeStatus(writer, save.enemyStatus);
+    for (uint8_t i = 0; i < save.trainerPartyCount; ++i) {
+        writer.text("memberStatus="); writeStatus(writer, save.trainerParty[i].status);
+    }
     if (!writer.valid) return NativeSaveResult::TooLarge;
     char hash[65];
     IntegritySha256::hashHex(output, writer.position, hash);
@@ -896,7 +940,7 @@ NativeSaveResult decodeNativeRunSave(const char* bytes, size_t length, const cha
     auto status = inspectEnvelope(bytes, length, value, payloadStart);
     if (status != NativeSaveResult::Ok) return status;
     if (value.saveVersion > kNativeSaveVersion) return NativeSaveResult::UnsupportedVersion;
-    if (value.saveVersion != 1 && value.saveVersion != 2 && value.saveVersion != 3 && value.saveVersion != 4 && value.saveVersion != 5 && value.saveVersion != 6 && value.saveVersion != 7 && value.saveVersion != 8 && value.saveVersion != 9 && value.saveVersion != 10 && value.saveVersion != 11 && value.saveVersion != 12 && value.saveVersion != 13 &&
+    if (value.saveVersion != 1 && value.saveVersion != 2 && value.saveVersion != 3 && value.saveVersion != 4 && value.saveVersion != 5 && value.saveVersion != 6 && value.saveVersion != 7 && value.saveVersion != 8 && value.saveVersion != 9 && value.saveVersion != 10 && value.saveVersion != 11 && value.saveVersion != 12 && value.saveVersion != 13 && value.saveVersion != 14 &&
         value.saveVersion != kNativeSaveVersion) return NativeSaveResult::UnsupportedVersion;
     const bool legacySetup = value.saveVersion == 1 && value.runtimeVersion == 1;
     const bool legacyBattle = value.saveVersion == 2 && value.runtimeVersion == 2;
@@ -911,9 +955,10 @@ NativeSaveResult decodeNativeRunSave(const char* bytes, size_t length, const cha
     const bool legacyHeld = value.saveVersion == 11 && value.runtimeVersion == 11;
     const bool legacyProfile = value.saveVersion == 12 && value.runtimeVersion == 12;
     const bool legacyParticipants = value.saveVersion == 13 && value.runtimeVersion == 13;
+    const bool legacySetupParty = value.saveVersion == 14 && value.runtimeVersion == 14;
     const bool currentPayload = value.saveVersion == kNativeSaveVersion &&
         value.runtimeVersion == kNativeSaveRuntimeVersion;
-    if (!currentPayload && !legacySetup && !legacyBattle && !legacyProgress && !legacyTrainer && !legacySwitch && !legacyStages && !legacyWeather && !legacyRoom && !legacyInventory && !legacyParty && !legacyHeld && !legacyProfile && !legacyParticipants)
+    if (!currentPayload && !legacySetup && !legacyBattle && !legacyProgress && !legacyTrainer && !legacySwitch && !legacyStages && !legacyWeather && !legacyRoom && !legacyInventory && !legacyParty && !legacyHeld && !legacyProfile && !legacyParticipants && !legacySetupParty)
         return NativeSaveResult::IncompatibleRuntime;
     if (!isHash(expectedContentHash)) return NativeSaveResult::InvalidFormat;
     if (!equal(value.contentHash, expectedContentHash)) return NativeSaveResult::ContentMismatch;
@@ -1089,8 +1134,15 @@ NativeSaveResult decodeNativeRunSave(const char* bytes, size_t length, const cha
                 value.setupStarterDexes[i] = static_cast<uint16_t>(parsed);
             }
         }
+        if (value.saveVersion >= 15) {
+            if (!reader.literal("playerStatus=") || !readStatus(reader, value.playerStatus) ||
+                !reader.literal("enemyStatus=") || !readStatus(reader, value.enemyStatus)) return NativeSaveResult::InvalidFormat;
+            for (uint8_t i = 0; i < value.trainerPartyCount; ++i)
+                if (!reader.literal("memberStatus=") || !readStatus(reader, value.trainerParty[i].status))
+                    return NativeSaveResult::InvalidFormat;
+        }
         if (reader.position != reader.end) return NativeSaveResult::InvalidFormat;
-        if (legacyBattle || legacyProgress || legacyTrainer || legacySwitch || legacyStages || legacyWeather || legacyRoom || legacyInventory || legacyParty || legacyHeld || legacyProfile || legacyParticipants) {
+        if (legacyBattle || legacyProgress || legacyTrainer || legacySwitch || legacyStages || legacyWeather || legacyRoom || legacyInventory || legacyParty || legacyHeld || legacyProfile || legacyParticipants || legacySetupParty) {
             value.saveVersion = kNativeSaveVersion;
             value.runtimeVersion = kNativeSaveRuntimeVersion;
         }

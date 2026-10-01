@@ -144,6 +144,25 @@ extern "C" int runNativeSaveChecks() {
         restored.playerStatStages[0] != -6 || restored.enemyStatStages[4] != 6 ||
         restored.trainerParty[1].statStages[5] != -2 || restored.enemySwitchCounter != 2 || restored.trainerPartyCount != 2 || restored.trainerParty[1].hp != 9 ||
         restored.trainerParty[1].pp[0] != 17 || restored.activeTrainerMember != 0) return 13;
+    NativeRunSave statusSave = trainerSave;
+    statusSave.playerStatus.present = true;
+    statusSave.playerStatus.effect = PokemonStatusEffect::Burn;
+    statusSave.enemyStatus.present = true;
+    statusSave.enemyStatus.effect = PokemonStatusEffect::Sleep;
+    statusSave.enemyStatus.hasSleepTurnsRemaining = true;
+    statusSave.enemyStatus.sleepTurnsRemaining = 2;
+    statusSave.trainerParty[0].status = statusSave.enemyStatus;
+    statusSave.trainerParty[1].status.present = true;
+    statusSave.trainerParty[1].status.effect = PokemonStatusEffect::Toxic;
+    statusSave.trainerParty[1].status.toxicTurnCount = 5;
+    if (encodeNativeRunSave(statusSave, partyBytes, sizeof(partyBytes), partySize) != NativeSaveResult::Ok ||
+        decodeNativeRunSave(partyBytes, partySize, PokerogueContent::kContentHash, restored) != NativeSaveResult::Ok ||
+        !restored.playerStatus.present || restored.playerStatus.effect != PokemonStatusEffect::Burn ||
+        !restored.enemyStatus.hasSleepTurnsRemaining || restored.enemyStatus.sleepTurnsRemaining != 2 ||
+        restored.trainerParty[1].status.toxicTurnCount != 5) return 9004;
+    statusSave.trainerParty[0].status.sleepTurnsRemaining = 1;
+    if (validateNativeRunSave(statusSave, PokerogueContent::kContentHash) != NativeSaveResult::InvalidRecord)
+        return 9005;
     NativeRunSave roomSave = trainerSave;
     roomSave.trickRoomTurnsLeft = 3;
     roomSave.trickRoomMaxDuration = 5;

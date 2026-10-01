@@ -1415,3 +1415,9 @@
 1. Payload Pokemon v7 conserva efecto, toxicTurnCount y presencia/valor de contadores sleep/freeze con validación y publicación atómica. Actores sin estado mantienen payload v6; lectura v1–v6 conserva ausencia de estado.
 2. Capture/restore del actor ya transportan status. El guardado completo sigue rechazando estados hasta extender enemigos/reservas y el envelope de runtime; no se declara save de estados integrado.
 3. Regresiones de contador máximo, optional cero, metadata inválida y lectura legacy escritas, sin ejecutar. Tests/compilación aplazados.
+
+## Save de partida v15: estados de combate
+
+1. Envelope/runtime v15 conserva status del jugador, enemigo y seis reservas de entrenador; equipo jugador usa payload actor v7. Lectura de v14 migra ausencia de status, sin inventar contadores.
+2. Capture/restore conecta estos campos; active status debe coincidir con el miembro activo. Setup y doubles siguen fuera de esta capacidad. Límites de waves/checkpoints anteriores permanecen.
+3. Regresiones de ida/vuelta y discrepancia activo/reserva escritas, sin ejecutar. Revisión estática/diff solamente; tests/compilación aplazados. Conexión del dispatcher de estados y validación en hardware siguen pendientes.

@@ -338,13 +338,17 @@ bool FirstRunRuntime::restoreSetupInPlace(uint32_t seed, uint16_t starterDex) {
 }
 
 NativeSaveResult FirstRunRuntime::captureNativeRunSave(NativeRunSave& output) const {
-    // Current portable save has no nonvolatile status fields. Never silently
-    // discard a real status while preparing an otherwise valid checkpoint.
-    bool hasStatus = m_context.player.battleState.status.present || m_context.enemy.battleState.status.present ||
-        m_context.secondEnemy.battleState.status.present;
-    for (const auto& member : m_context.playerParty) hasStatus |= member.battleState.status.present;
-    for (const auto& member : m_context.trainerParty) hasStatus |= member.battleState.status.present;
-    if (hasStatus) { output = {}; return NativeSaveResult::UnsupportedStage; }
+    if (!m_runStarted) {
+        for (const auto& member : m_context.playerParty)
+            if (member.battleState.status.present) { output = {}; return NativeSaveResult::UnsupportedStage; }
+        for (const auto& member : m_context.trainerParty)
+            if (member.battleState.status.present) { output = {}; return NativeSaveResult::UnsupportedStage; }
+    }
+    // Setup has no actor snapshot; doubles still require a separate save schema.
+    if ((!m_runStarted && (m_context.player.battleState.status.present ||
+            m_context.enemy.battleState.status.present)) || m_context.secondEnemy.battleState.status.present) {
+        output = {}; return NativeSaveResult::UnsupportedStage;
+    }
 
     std::unique_ptr<NativeRunSave> valueStorage(new (std::nothrow) NativeRunSave{});
     if (!valueStorage) { output = {}; return NativeSaveResult::MemoryUnavailable; }
@@ -392,6 +396,8 @@ NativeSaveResult FirstRunRuntime::captureNativeRunSave(NativeRunSave& output) co
             value.enemyStatStages[stat] = m_context.enemy.battleState.statStages[stat];
         }
         value.enemyHp = m_context.enemy.battleState.hp;
+        value.playerStatus = m_context.player.battleState.status;
+        value.enemyStatus = m_context.enemy.battleState.status;
         value.battleTurn = m_turn;
         value.weatherType = static_cast<uint8_t>(m_arenaWeather.type);
         value.weatherTurnsLeft = m_arenaWeather.turnsLeft;
@@ -426,6 +432,7 @@ NativeSaveResult FirstRunRuntime::captureNativeRunSave(NativeRunSave& output) co
                 for (uint8_t stat = 0; stat < 7; ++stat) saved.statStages[stat] = actor.battleState.statStages[stat];
                 saved.speciesDex = actor.dex;
                 saved.hp = actor.battleState.hp;
+                saved.status = actor.battleState.status;
                 saved.moveCount = actor.battleState.moveCount;
                 for (uint8_t slot = 0; slot < saved.moveCount && slot < 4; ++slot) {
                     saved.moveIds[slot] = actor.battleState.moves[slot].moveId;
@@ -450,7 +457,7 @@ NativeSaveResult FirstRunRuntime::captureNativeRunSave(NativeRunSave& output) co
     for (uint8_t member = 0; member < m_context.playerPartyCount; ++member)
         hasSummonTags |= m_context.playerParty[member].battleState.heldItemLostTags.unburden;
     if (value.stage != NativeSaveStage::RunSetup &&
-        (m_context.playerPartyCount > 1 || m_playerHistoryRequiresSnapshot || m_heldModifierCount || hasSummonTags || hasChangedFriendship || hasModifiedMaxPp)) {
+        (m_context.playerPartyCount > 1 || m_playerHistoryRequiresSnapshot || m_heldModifierCount || value.playerStatus.present || hasSummonTags || hasChangedFriendship || hasModifiedMaxPp)) {
         if (m_context.playerPartyCount > 6 ||
             m_context.activePlayerPartyIndex >= m_context.playerPartyCount) { output = {}; return NativeSaveResult::InvalidRecord; }
         value.playerPartyCount = m_context.playerPartyCount;
@@ -816,6 +823,8 @@ bool FirstRunRuntime::restoreNativeRunSaveInPlace(const NativeRunSave& save) {
         m_context.enemy.battleState.statStages[stat] = save.enemyStatStages[stat];
     }
     m_context.enemy.battleState.hp = save.enemyHp;
+    m_context.player.battleState.status = save.playerStatus;
+    m_context.enemy.battleState.status = save.enemyStatus;
     for (uint8_t i = 0; i < save.playerMoveCount; ++i)
         m_context.player.battleState.moves[i].pp = save.playerPp[i];
     for (uint8_t i = 0; i < save.enemyMoveCount; ++i)
@@ -825,6 +834,7 @@ bool FirstRunRuntime::restoreNativeRunSaveInPlace(const NativeRunSave& save) {
             auto& actor = m_context.trainerParty[member];
             const auto& saved = save.trainerParty[member];
             actor.battleState.hp = saved.hp;
+            actor.battleState.status = saved.status;
             for (uint8_t stat = 0; stat < 7; ++stat) actor.battleState.statStages[stat] = saved.statStages[stat];
             for (uint8_t slot = 0; slot < saved.moveCount; ++slot)
                 actor.battleState.moves[slot].pp = saved.pp[slot];
