@@ -748,3 +748,10 @@
 1. `NativeStarterCandyProfile.hpp` define registros por SpeciesId raíz, cantidad de caramelos y progreso de amistad, independientes de una run. El codec sin heap conserva orden canónico estricto, hash del catálogo, generación y SHA-256. Su tamaño depende del catálogo, no del límite de 8 KiB del journal de runs.
 2. Decode valida checksum, versiones, referencias raíz, duplicados, límites y capacidad antes de publicar registros. El caller debe resolver el límite pinned de caramelos; no se presupone en producción. No acepta solapamiento entre buffer y registros.
 3. Regresiones 47–50 escritas en el harness de almacenamiento: roundtrip, corrupción y duplicados; sin ejecutar. El formato existe, pero journal/SD, límite canónico generado y consumidor de gameplay siguen pendientes. No se declara perfil persistido en consola.
+
+## Journal y SD del perfil de caramelos
+
+1. `NativeStarterCandyStore` reutiliza `NativeSaveStorage`: dos slots, generación monotónica, SHA-256, slot inactivo, readback y exportación del último perfil validado. Scratch pertenece al caller y no se reserva en la pila del store; errores no publican generación ni registros. Slots íntegros con igual generación y contenido distinto fallan como ambiguos.
+2. `SdNativeStarterCandyStorage` reutiliza read/write/flush/fsync existentes, con archivos separados `saves/starters0.p3profile`, `saves/starters1.p3profile` y `exports/starters.p3profile` bajo `sdmc:/3ds/pokerogue`. El límite de bytes del perfil deriva del catálogo; los saves de run conservan su límite anterior.
+3. Regresiones 51–56 escritas: escritura interrumpida, recuperación del slot anterior, siguiente generación, exportación, corrupción y ambigüedad. Pendientes de ejecución; SD física sin validar.
+4. Falta el consumidor de gameplay, límite/umbrales de caramelos generados desde upstream, coordinación transaccional con la run e importación del perfil exportado. El journal no demuestra por sí solo que Rare Candy esté conectado.

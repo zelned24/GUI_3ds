@@ -1,4 +1,5 @@
 #include "storage/NativeRunSave.hpp"
+#include "storage/NativeStarterCandyStore.hpp"
 #include <cstdio>
 #include <cerrno>
 #include <sys/stat.h>
@@ -22,8 +23,8 @@ NativeSaveResult readFile(const char* path, char* output, size_t capacity, size_
     if (failed || !closed) return NativeSaveResult::IoError;
     return extra == EOF ? NativeSaveResult::Ok : NativeSaveResult::TooLarge;
 }
-NativeSaveResult writeFile(const char* path, const char* bytes, size_t size) {
-    if (size > kNativeSaveMaxBytes) return NativeSaveResult::TooLarge;
+NativeSaveResult writeFile(const char* path, const char* bytes, size_t size, size_t maximum = kNativeSaveMaxBytes) {
+    if (size > maximum) return NativeSaveResult::TooLarge;
     if (!directory("sdmc:/3ds") || !directory("sdmc:/3ds/pokerogue") ||
         !directory(SdNativeSaveStorage::kDirectory) || !directory("sdmc:/3ds/pokerogue/exports")) return NativeSaveResult::IoError;
     FILE* file = std::fopen(path, "wb");
@@ -52,5 +53,21 @@ NativeSaveResult SdNativeSaveStorage::readExport(char* output, size_t capacity, 
 NativeSaveResult SdNativeSaveStorage::writeExport(const char* bytes, size_t size) {
     // The journal remains authoritative if an export is interrupted.
     return writeFile(kExportPath, bytes, size);
+}
+NativeSaveResult SdNativeStarterCandyStorage::readSlot(unsigned slot, char* output, size_t capacity, size_t& read) {
+    if (slot > 1) return NativeSaveResult::InvalidRecord;
+    return readFile(slot == 0 ? "sdmc:/3ds/pokerogue/saves/starters0.p3profile"
+        : "sdmc:/3ds/pokerogue/saves/starters1.p3profile", output, capacity, read);
+}
+NativeSaveResult SdNativeStarterCandyStorage::writeSlot(unsigned slot, const char* bytes, size_t length) {
+    if (slot > 1) return NativeSaveResult::InvalidRecord;
+    return writeFile(slot == 0 ? "sdmc:/3ds/pokerogue/saves/starters0.p3profile"
+        : "sdmc:/3ds/pokerogue/saves/starters1.p3profile", bytes, length, kStarterCandyProfileMaxBytes);
+}
+NativeSaveResult SdNativeStarterCandyStorage::readExport(char* output, size_t capacity, size_t& read) {
+    return readFile(kExportPath, output, capacity, read);
+}
+NativeSaveResult SdNativeStarterCandyStorage::writeExport(const char* bytes, size_t length) {
+    return writeFile(kExportPath, bytes, length, kStarterCandyProfileMaxBytes);
 }
 } // namespace Pokerogue3DS

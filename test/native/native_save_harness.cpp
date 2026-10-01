@@ -1,5 +1,6 @@
 #include "storage/NativeRunSave.hpp"
 #include "storage/NativeStarterCandyProfile.hpp"
+#include "storage/NativeStarterCandyStore.hpp"
 #include "storage/IntegritySha256.hpp"
 #include "content/PokerogueRuntimeContent.hpp"
 #include <cstring>
@@ -293,5 +294,32 @@ extern "C" int runNativeSaveChecks() {
     candyRecords[1].speciesDex = 1;
     if (encodeNativeStarterCandyProfile(candyRecords, 2, 1, PokerogueContent::kContentHash, 9999,
             candyBytes, sizeof(candyBytes), candySize) != NativeSaveResult::InvalidRecord || candySize) return 50;
+    static char profileScratch[2 * kStarterCandyProfileMaxBytes]{};
+    other.sizes[0] = other.sizes[1] = 0;
+    other.interrupt = false;
+    NativeStarterCandyStore candyStore(other, profileScratch, sizeof(profileScratch));
+    candyRecords[1].speciesDex = 4;
+    if (candyStore.save(candyRecords, 2, PokerogueContent::kContentHash, 9999, candyGeneration) !=
+            NativeSaveResult::Ok || candyGeneration != 1) return 51;
+    candyRecords[0].candyCount = 10;
+    other.interrupt = true;
+    if (candyStore.save(candyRecords, 2, PokerogueContent::kContentHash, 9999, candyGeneration) !=
+            NativeSaveResult::IoError || candyGeneration != 1) return 52;
+    if (candyStore.load(PokerogueContent::kContentHash, 9999, restoredCandy, 2, candyCount, candyGeneration) !=
+            NativeSaveResult::Ok || restoredCandy[0].candyCount != 7 || candyGeneration != 1) return 53;
+    other.interrupt = false;
+    if (candyStore.save(candyRecords, 2, PokerogueContent::kContentHash, 9999, candyGeneration) !=
+            NativeSaveResult::Ok || candyGeneration != 2 ||
+        candyStore.exportLatest(PokerogueContent::kContentHash, 9999) != NativeSaveResult::Ok ||
+        decodeNativeStarterCandyProfile(other.exported, other.exportSize, PokerogueContent::kContentHash,
+            9999, restoredCandy, 2, candyCount, candyGeneration) != NativeSaveResult::Ok ||
+        restoredCandy[0].candyCount != 10) return 54;
+    other.slots[1][80] ^= 1;
+    if (candyStore.load(PokerogueContent::kContentHash, 9999, restoredCandy, 2, candyCount, candyGeneration) !=
+            NativeSaveResult::Ok || restoredCandy[0].candyCount != 7 || candyGeneration != 1) return 55;
+    if (encodeNativeStarterCandyProfile(candyRecords, 2, 1, PokerogueContent::kContentHash, 9999,
+            other.slots[1], sizeof(other.slots[1]), other.sizes[1]) != NativeSaveResult::Ok ||
+        candyStore.load(PokerogueContent::kContentHash, 9999, restoredCandy, 2, candyCount, candyGeneration) !=
+            NativeSaveResult::AmbiguousJournal || restoredCandy[0].candyCount != 7) return 56;
     return 0;
 }

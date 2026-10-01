@@ -84,9 +84,8 @@ inline NativeSaveResult encodeNativeStarterCandyProfile(const NativeStarterCandy
     return NativeSaveResult::Ok;
 }
 
-inline NativeSaveResult decodeNativeStarterCandyProfile(const char* input, size_t length,
-    const char* contentHash, uint16_t candyLimit, NativeStarterCandyRecord* output, size_t capacity,
-    size_t& count, uint32_t& generation) {
+inline NativeSaveResult inspectNativeStarterCandyProfile(const char* input, size_t length,
+    const char* contentHash, uint16_t candyLimit, size_t& count, uint32_t& generation) {
     if (!input || length < kStarterCandyProfileOverhead || length > kStarterCandyProfileMaxBytes ||
         !candyLimit || !StarterCandyProfileCodec::validHash(contentHash)) return NativeSaveResult::InvalidFormat;
     if (std::memcmp(input, "P3CANDY1", 8)) return NativeSaveResult::UnsupportedVersion;
@@ -100,15 +99,27 @@ inline NativeSaveResult decodeNativeStarterCandyProfile(const char* input, size_
     if (std::memcmp(contentHash, input + 8, 64)) return NativeSaveResult::ContentMismatch;
     const uint32_t sequence = StarterCandyProfileCodec::get(input + 72, 4);
     if (!sequence) return NativeSaveResult::InvalidRecord;
-    if (entries > capacity || (entries && !output)) return NativeSaveResult::TooLarge;
-    if (entries && StarterCandyProfileCodec::overlaps(input, length, output, entries * sizeof(*output)))
-        return NativeSaveResult::InvalidRecord;
     uint16_t previous = 0;
     for (size_t i = 0; i < entries; ++i) {
         const auto value = StarterCandyProfileCodec::record(input + 80 + i * kStarterCandyProfileRecordBytes);
         if (!StarterCandyProfileCodec::valid(value, previous, candyLimit)) return NativeSaveResult::InvalidRecord;
         previous = value.speciesDex;
     }
+    count = entries;
+    generation = sequence;
+    return NativeSaveResult::Ok;
+}
+
+inline NativeSaveResult decodeNativeStarterCandyProfile(const char* input, size_t length,
+    const char* contentHash, uint16_t candyLimit, NativeStarterCandyRecord* output, size_t capacity,
+    size_t& count, uint32_t& generation) {
+    size_t entries = 0;
+    uint32_t sequence = 0;
+    const auto status = inspectNativeStarterCandyProfile(input, length, contentHash, candyLimit, entries, sequence);
+    if (status != NativeSaveResult::Ok) return status;
+    if (entries > capacity || (entries && !output)) return NativeSaveResult::TooLarge;
+    if (entries && StarterCandyProfileCodec::overlaps(input, length, output, entries * sizeof(*output)))
+        return NativeSaveResult::InvalidRecord;
     for (size_t i = 0; i < entries; ++i)
         output[i] = StarterCandyProfileCodec::record(input + 80 + i * kStarterCandyProfileRecordBytes);
     count = entries;
