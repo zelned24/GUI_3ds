@@ -1090,3 +1090,9 @@
 1. NativeRunSaveStore mueve slots, envelopes candidatos y buffers de escritura/exportación a asignaciones comprobadas RAII. Decode y creación de setup también dejan sus envelopes grandes fuera de la pila.
 2. Conserva validación de checksum, generación, readback y referencia exacta de perfil. Fallo de asignación devuelve MemoryUnavailable; no se publica output parcial.
 3. Regresiones existentes de corrupción, interrupción, ambigüedad y rollback permanecen sin ejecutar. Medición de memoria/fragmentación y fallos de allocator requieren etapa final; no se afirma funcionamiento en consola.
+
+## Checkpoint con resultado explícito y memoria temporal — pendiente de ejecución
+
+1. captureNativeRunSave devuelve NativeSaveResult, distinguiendo fase no soportada, referencias inválidas y memoria insuficiente. SaveNativeProgress consume el resultado antes de tocar journals; llamadas antiguas como statement siguen válidas.
+2. Envelopes de captura/load/save y candidato del inventario held pasan a heap comprobado RAII. Fallos mantienen output inválido/estado previo y no publican candidato parcial.
+3. Regresión 626 escrita para estado intermedio de captura no guardable, sin ejecutar. Host/bridge que aún ignoran resultado pueden mostrar error genérico y requieren conexión posterior; mediciones ARM11 pendientes.

@@ -173,22 +173,25 @@ bool FirstRunRuntime::restoreSetupInPlace(uint32_t seed, uint16_t starterDex) {
     return m_encounterResolved && m_context.player.actorIdentityResolved && m_context.player.movesetResolved;
 }
 
-void FirstRunRuntime::captureNativeRunSave(NativeRunSave& output) const {
-    NativeRunSave value{};
+NativeSaveResult FirstRunRuntime::captureNativeRunSave(NativeRunSave& output) const {
+    std::unique_ptr<NativeRunSave> valueStorage(new (std::nothrow) NativeRunSave{});
+    if (!valueStorage) { output = {}; return NativeSaveResult::MemoryUnavailable; }
+    auto& value = *valueStorage;
     // v9 preserves ball inventory; doubles, captured party and later trainer history remain unsupported.
     // Never report a setup checkpoint as a successful save of an active double battle.
     if (m_capturePartyChoicePending || m_context.enemy.bossState.segmentCount || m_doubleBattle || m_pokeballs[5] ||
         m_run.wave > 9 || (m_trainerBattle && m_run.wave != 5)) {
         output = {};
-        return;
+        return NativeSaveResult::UnsupportedStage;
     }
     if (moveLearningPending() || evolutionPending() || (m_runStarted && !m_checkpointAvailable)) {
         output = {};
-        return;
+        return NativeSaveResult::UnsupportedStage;
     }
-    if (makeNativeRunSetupSave(m_run.seed, m_run.starterDex, value) != NativeSaveResult::Ok) {
+    const auto setupStatus = makeNativeRunSetupSave(m_run.seed, m_run.starterDex, value);
+    if (setupStatus != NativeSaveResult::Ok) {
         output = {};
-        return;
+        return setupStatus;
     }
     for (uint8_t ball = 0; ball < 5; ++ball) value.pokeballCounts[ball] = m_pokeballs[ball];
     value.starterProfileGeneration = m_starterProfileGeneration;
@@ -232,7 +235,7 @@ void FirstRunRuntime::captureNativeRunSave(NativeRunSave& output) const {
         if (m_trainerBattle) {
             if (!m_context.trainerPartyBattleStatesResolved ||
                 m_context.activeTrainerPartyIndex >= m_context.trainerPartyCount) {
-                output = {}; return;
+                output = {}; return NativeSaveResult::InvalidRecord;
             }
             value.enemySwitchCounter = m_enemySwitchCounter;
             value.trainerTypeId = m_context.trainerTypeId;
@@ -271,7 +274,7 @@ void FirstRunRuntime::captureNativeRunSave(NativeRunSave& output) const {
     if (value.stage != NativeSaveStage::RunSetup &&
         (m_context.playerPartyCount > 1 || m_playerHistoryRequiresSnapshot || m_heldModifierCount || hasSummonTags || hasChangedFriendship || hasModifiedMaxPp)) {
         if (m_context.playerPartyCount > 6 ||
-            m_context.activePlayerPartyIndex >= m_context.playerPartyCount) { output = {}; return; }
+            m_context.activePlayerPartyIndex >= m_context.playerPartyCount) { output = {}; return NativeSaveResult::InvalidRecord; }
         value.playerPartyCount = m_context.playerPartyCount;
         value.activePlayerMember = m_context.activePlayerPartyIndex;
         for (uint8_t member = 0; member < value.playerPartyCount; ++member) {
@@ -279,13 +282,14 @@ void FirstRunRuntime::captureNativeRunSave(NativeRunSave& output) const {
                 ? m_context.player : m_context.playerParty[member];
             if (!actor.actorIdentityResolved ||
                 !captureNativePokemonActorSave(actor.battleState, actor.actor, actor.totalExperience,
-                    value.playerParty[member])) { output = {}; return; }
+                    value.playerParty[member])) { output = {}; return NativeSaveResult::InvalidRecord; }
         }
     }
-    if (m_heldModifierCount && value.stage == NativeSaveStage::RunSetup) { output = {}; return; }
+    if (m_heldModifierCount && value.stage == NativeSaveStage::RunSetup) { output = {}; return NativeSaveResult::InvalidRecord; }
     value.heldModifierCount = static_cast<uint8_t>(m_heldModifierCount);
     for (size_t i = 0; i < m_heldModifierCount; ++i) value.heldModifiers[i] = m_heldModifiers[i];
     output = value;
+    return NativeSaveResult::Ok;
 }
 
 bool FirstRunRuntime::restoreStarterCandyProfile(const NativeStarterCandyRecord* records, size_t count,
@@ -360,8 +364,11 @@ bool FirstRunRuntime::recordCaughtSpecies(uint16_t dex) {
 
 NativeSaveResult FirstRunRuntime::saveNativeProgress(NativeProgressStore& store) {
     if (!m_starterProfileReady) return NativeSaveResult::InvalidRecord;
-    NativeRunSave snapshot{};
-    captureNativeRunSave(snapshot);
+    std::unique_ptr<NativeRunSave> snapshotStorage(new (std::nothrow) NativeRunSave{});
+    if (!snapshotStorage) return NativeSaveResult::MemoryUnavailable;
+    auto& snapshot = *snapshotStorage;
+    const auto captured = captureNativeRunSave(snapshot);
+    if (captured != NativeSaveResult::Ok) return captured;
     const auto status = store.commit(snapshot, m_starterProfileRecords.data(), m_starterProfileCount);
     if (status != NativeSaveResult::Ok) return status;
     m_starterProfileGeneration = snapshot.starterProfileGeneration;
@@ -371,7 +378,9 @@ NativeSaveResult FirstRunRuntime::saveNativeProgress(NativeProgressStore& store)
 NativeSaveResult FirstRunRuntime::loadNativeProgress(NativeRunSaveStore& runs,
     NativeStarterCandyStore& profiles, NativeStarterCandyRecord* staging, size_t capacity,
     const PokemonFriendshipPolicy& policy, NativeRunSave* loadedRun) {
-    NativeRunSave saved{};
+    std::unique_ptr<NativeRunSave> savedStorage(new (std::nothrow) NativeRunSave{});
+    if (!savedStorage) return NativeSaveResult::MemoryUnavailable;
+    auto& saved = *savedStorage;
     auto status = runs.load(PokerogueContent::kContentHash, saved);
     if (status != NativeSaveResult::Ok) return status;
     size_t count = 0;
@@ -2623,7 +2632,12 @@ bool FirstRunRuntime::restoreHeldModifierInventory(const NativeHeldModifierInsta
         if (!found) return false;
     }
     // Copy before publication also supports source slices of this inventory.
-    std::array<NativeHeldModifierInstance, kHeldModifierStorageCapacity> next{};
+    std::unique_ptr<decltype(m_heldModifiers)> nextStorage(new (std::nothrow) decltype(m_heldModifiers){});
+    if (!nextStorage) {
+        m_battleFeedback = "Held inventory allocation failed";
+        return false;
+    }
+    auto& next = *nextStorage;
     for (size_t i = 0; i < count; ++i) next[i] = records[i];
     m_heldModifiers = next;
     m_heldModifierCount = count;

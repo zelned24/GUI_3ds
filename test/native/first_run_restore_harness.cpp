@@ -1466,7 +1466,7 @@ static int checkPlayerPartyManagementAndSwitching() {
         fullPartyGame.presentation().enemy.battleState.hp != 1) return 587;
     const auto pendingActor = fullPartyGame.pendingCapturedPokemon();
     NativeRunSave intermediate{};
-    fullPartyGame.captureNativeRunSave(intermediate);
+    if (fullPartyGame.captureNativeRunSave(intermediate) != NativeSaveResult::UnsupportedStage) return 626;
     if (validateNativeRunSave(intermediate, PokerogueContent::kContentHash) == NativeSaveResult::Ok ||
         fullPartyGame.resolveCapturePartyChoice(6) || !fullPartyGame.capturePartyChoicePending() ||
         fullPartyGame.switchPlayerPokemon(1) || fullPartyGame.throwPokeball() ||
