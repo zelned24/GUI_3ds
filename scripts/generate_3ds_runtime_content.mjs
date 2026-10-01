@@ -1088,5 +1088,13 @@ const friendshipRows = collections.species.map(species => {
 });
 const friendshipHeader = levelIncrementHeader.replace('struct MoveAttribute {',
   `struct SpeciesFriendshipProfile { uint16_t speciesDex; uint8_t baseFriendship; const char* sourcePath; const char* sourceSymbol; const char* sourceHash; };\ninline constexpr SpeciesFriendshipProfile kSpeciesFriendshipProfiles[] = {\n${friendshipRows.join(',\n')}\n};\nstruct MoveAttribute {`);
-await fs.writeFile(outputPath, friendshipHeader, 'utf8');
-console.log(JSON.stringify({ output: path.relative(root, outputPath), bytes: Buffer.byteLength(friendshipHeader), hash: report.contentHash }));
+const ppUpRows = collections.items.flatMap(item => {
+  const raw = item.extensions?.upstreamRawRecord?.value ?? '';
+  const match = raw.match(/new\s+PokemonPpUpModifierType\s*\(\s*"[^"\n]*"\s*,\s*"[^"\n]*"\s*,\s*(\d+)\s*\)/);
+  if (!match) return [];
+  return [`    {"${field(item.id)}", ${Number(match[1])}, "${field(item.source?.sourcePath)}", "${field(item.source?.sourceSymbol)}", "${field(item.source?.sourceHash)}"}`];
+});
+const ppUpHeader = friendshipHeader.replace('struct MoveAttribute {',
+  `struct PpUpItemProfile { const char* itemId; uint8_t upPoints; const char* sourcePath; const char* sourceSymbol; const char* sourceHash; };\ninline constexpr PpUpItemProfile kPpUpItemProfiles[] = {\n${ppUpRows.join(',\n')}\n};\nstruct MoveAttribute {`);
+await fs.writeFile(outputPath, ppUpHeader, 'utf8');
+console.log(JSON.stringify({ output: path.relative(root, outputPath), bytes: Buffer.byteLength(ppUpHeader), hash: report.contentHash }));

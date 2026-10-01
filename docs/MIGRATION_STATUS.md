@@ -720,3 +720,10 @@
 2. Lectura de v1–v5 conserva su antiguo significado de PP base. Un miembro con máximo modificado solicita snapshot explícito al guardar, evitando perderlo por replay de semilla.
 3. Regresiones escritas: Tackle 40/42 persiste, v5 no acepta ese PP sobre el máximo base 35, máximo 41 se rechaza, v5 base conserva amistad. Fixtures v1–v4 mantienen sus layouts anteriores. Tests y compilación pendientes.
 4. Esto no habilita aún PP Up/PP Max como recompensas ni overrides de Transform. Cambio de forma con PP aumentado sigue limitado por su propio validator; snapshots especiales de jefes requieren metadata ppUp/override explícita.
+
+## PP Up y PP Max: recompensas canónicas
+
+1. `PpUpItemProfile` genera `upPoints` desde `PokemonPpUpModifierType` upstream con provenance. PP Up y PP Max utilizan el mismo helper, sin lógica basada en sus IDs en UI.
+2. `applyPokemonPpUpItem` reproduce el filtro de selección y `PokemonPpUpModifier.apply`: PP base de al menos cinco, máximo tres mejoras y PP gastado conservado. Overrides no representados y entradas inválidas se rechazan.
+3. `claimRewardChoiceInPlace` aplica el perfil al miembro/slot seleccionado mediante `claimRecoveryRewardChoice`; el payload v6 conserva el resultado. El selector de presentación sigue pendiente de conexión por la otra IA.
+4. Regresiones 474–478 escritas, sin ejecutar. Solo generación y `git diff --check`; compilación y tests permanecen aplazados.

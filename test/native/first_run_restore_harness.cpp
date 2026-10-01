@@ -1293,6 +1293,21 @@ static int checkLevelUpMoveLearningAndEvolution() {
     if (!evolvedSpecies || pokemonTotalExperienceForLevel(evolvedSpecies->growthRate, 16, evolvedExperience) !=
             PokemonExperienceResult::Ok || !captureNativePokemonActorSave(bulbaState, evolutionIdentity,
                 evolvedExperience, evolvedSnapshot)) return 299;
+    const auto* ppUpProfile = ppUpItemProfile("PP_UP");
+    const auto* ppMaxProfile = ppUpItemProfile("PP_MAX");
+    if (!ppUpProfile || !ppMaxProfile || ppUpProfile->upPoints != 1 || ppMaxProfile->upPoints != 3 ||
+        !ppUpProfile->sourceHash || ppUpItemProfile("UNKNOWN_ITEM")) return 474;
+    auto ppUpActor = bulbaState;
+    ppUpActor.moves[0].pp = 1;
+    if (!applyPokemonPpUpItem(ppUpActor, *ppUpProfile, 0) || ppUpActor.moves[0].maxPp != 42 ||
+        ppUpActor.moves[0].pp != 8) return 475;
+    if (!applyPokemonPpUpItem(ppUpActor, *ppMaxProfile, 0) || ppUpActor.moves[0].maxPp != 56 ||
+        ppUpActor.moves[0].pp != 22) return 476;
+    if (applyPokemonPpUpItem(ppUpActor, *ppUpProfile, 0) || ppUpActor.moves[0].maxPp != 56 ||
+        ppUpActor.moves[0].pp != 22 || applyPokemonPpUpItem(ppUpActor, *ppUpProfile, 1)) return 477;
+    ppUpActor.moves[0].maxPp = 41;
+    if (applyPokemonPpUpItem(ppUpActor, *ppUpProfile, 0) || ppUpActor.moves[0].maxPp != 41)
+        return 478;
     auto boostedPpActor = bulbaState;
     boostedPpActor.moves[0].maxPp = 42;
     boostedPpActor.moves[0].pp = 40;

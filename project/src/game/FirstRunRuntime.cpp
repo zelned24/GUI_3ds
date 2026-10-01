@@ -789,7 +789,7 @@ bool FirstRunRuntime::claimRewardChoiceInPlace(uint8_t heldPartyMember, bool rec
         const bool knownHeldReward = initializeHeldModifierInstance(itemId, targetState.pokemonId,
             1, true, nullptr, heldReward) == HeldModifierStorageResult::Ok &&
             heldHealingInventorySupported(&heldReward, 1);
-        if (recoveryTarget && !hpRestoreItemProfile(itemId) && !ppRestoreItemProfile(itemId) && !reviveItemProfile(itemId)) {
+        if (recoveryTarget && !hpRestoreItemProfile(itemId) && !ppRestoreItemProfile(itemId) && !ppUpItemProfile(itemId) && !reviveItemProfile(itemId)) {
             m_battleFeedback = "Selected reward has no supported recovery recipient policy";
             return false;
         }
@@ -814,6 +814,11 @@ bool FirstRunRuntime::claimRewardChoiceInPlace(uint8_t heldPartyMember, bool rec
         } else if (const auto* restore = ppRestoreItemProfile(itemId)) {
             if (!applyPokemonPpRestoreItem(targetState, *restore, recoveryTarget ? recoveryMove : m_selectedBattleMove)) {
                 m_battleFeedback = "PP restore item selection could not resolve";
+                return false;
+            }
+        } else if (const auto* ppUp = ppUpItemProfile(itemId)) {
+            if (!applyPokemonPpUpItem(targetState, *ppUp, recoveryTarget ? recoveryMove : m_selectedBattleMove)) {
+                m_battleFeedback = "PP Up requires an eligible move without an override";
                 return false;
             }
         } else if (const auto* ballReward = pokeballRewardProfile(itemId)) {

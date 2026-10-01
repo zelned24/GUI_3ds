@@ -51,6 +51,36 @@ inline bool applyPokemonHpRestoreItem(PokemonBattleState& actor,
     return true;
 }
 
+inline const PokerogueContent::PpUpItemProfile* ppUpItemProfile(const char* itemId) {
+    if (!itemId) return nullptr;
+    for (const auto& profile : PokerogueContent::kPpUpItemProfiles)
+        if (std::strcmp(profile.itemId, itemId) == 0) return &profile;
+    return nullptr;
+}
+
+// Pinned PP Up selector excludes low-base-PP, full boosts and overrides.
+// PokemonPpUpModifier changes ppUp but keeps ppUsed, so remaining PP grows too.
+inline bool applyPokemonPpUpItem(PokemonBattleState& actor,
+    const PokerogueContent::PpUpItemProfile& profile, uint8_t slot) {
+    if (actor.moveCount > 4 || slot >= actor.moveCount || !profile.upPoints || profile.upPoints > 3)
+        return false;
+    auto& move = actor.moves[slot];
+    const auto* definition = PokerogueContent::findMoveById(move.moveId);
+    if (!definition || definition->pp < 5 || move.pp > move.maxPp ||
+        !pokemonPermanentMaxPpSupported(move.moveId, move.maxPp)) return false;
+    const uint16_t increment = definition->pp / 5;
+    const uint16_t boosts = (move.maxPp - definition->pp) / increment;
+    if (boosts >= 3) return false;
+    const uint16_t requested = boosts + profile.upPoints;
+    const uint16_t nextBoosts = requested > 3 ? 3 : requested;
+    const uint16_t maximum = definition->pp + nextBoosts * increment;
+    if (maximum > 255) return false;
+    const uint16_t remaining = move.pp + maximum - move.maxPp;
+    move.maxPp = static_cast<uint8_t>(maximum);
+    move.pp = static_cast<uint8_t>(remaining);
+    return true;
+}
+
 inline const PokerogueContent::PpRestoreItemProfile* ppRestoreItemProfile(const char* itemId) {
     if (!itemId) return nullptr;
     for (const auto& profile : PokerogueContent::kPpRestoreItemProfiles)
