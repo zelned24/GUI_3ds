@@ -575,3 +575,8 @@
 
 1. Une holder vivo, seleccion seeded de rival/objeto, policy de habilidad, matching especifico del objeto robado y transferencia/callback. Matching es inyectado: el objeto robado puede pertenecer a otra clase. RNG se conserva tras cancelacion soportada/capacidad agotada/ausencia de objeto; capacidades pendientes no publican draws.
 2. Regresiones 421-423 escritas; no ejecutadas. Maximo dos rivales corresponde posiciones del campo, no limite de catalogo. Aun no conectado a finishBattleTurn ni habilitados objetos desconocidos; falta dispatcher de clases y contexto real.
+
+## Matching de Leftovers y Shell Bell
+
+1. Perfiles derivados del constructor upstream identifican TurnHealModifier/HitHealModifier; adapters portan matchType por clase y cap 4 inspeccionados en modifier.ts pinned. Resolver permite coexistencia de clases conocidas; desconocidas/argumentos no resueltos fallan. No implementa curacion.
+2. Regresiones 424-426 escritas para matching, coexistencia y transferencia parcial hasta cap. Generacion permitida; tests/compilacion aplazados. Efectos y conexion al turno pendientes.

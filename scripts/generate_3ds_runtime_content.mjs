@@ -1022,10 +1022,12 @@ const fixedMovesetHeader = evolutionCapabilityHeader.replace('struct MoveAttribu
 const heldClassRows = collections.items.map(item => {
   const raw = item.extensions?.upstreamRawRecord?.value ?? '';
   const supported = /new\s+TurnHeldItemTransferModifierType\s*\(/.test(raw);
-  return `    {"${field(item.id)}", ${supported}, "${field(item.source?.sourcePath)}", "${field(item.source?.sourceSymbol)}", "${field(item.source?.sourceHash)}"}`;
+  const matchingClass = supported ? 'TurnHeldItemTransferModifier' : /new\s+TurnHealModifier\s*\(/.test(raw) ? 'TurnHealModifier' : /new\s+HitHealModifier\s*\(/.test(raw) ? 'HitHealModifier' : '';
+  const maxHeldCount = supported ? 1 : matchingClass ? 4 : 0;
+  return `    {"${field(item.id)}", ${supported}, "${matchingClass}", ${maxHeldCount}, "${field(item.source?.sourcePath)}", "${field(item.source?.sourceSymbol)}", "${field(item.source?.sourceHash)}"}`;
 });
 const heldClassHeader = fixedMovesetHeader.replace('struct MoveAttribute {',
-  `struct HeldModifierClassProfile { const char* itemId; bool isTurnHeldItemTransfer; const char* sourcePath; const char* sourceSymbol; const char* sourceHash; };\ninline constexpr HeldModifierClassProfile kHeldModifierClassProfiles[] = {\n${heldClassRows.join(',\n')}\n};\nstruct MoveAttribute {`);
+  `struct HeldModifierClassProfile { const char* itemId; bool isTurnHeldItemTransfer; const char* matchingClass; uint16_t maxHeldCount; const char* sourcePath; const char* sourceSymbol; const char* sourceHash; };\ninline constexpr HeldModifierClassProfile kHeldModifierClassProfiles[] = {\n${heldClassRows.join(',\n')}\n};\nstruct MoveAttribute {`);
 const theftAbilityRows = collections.abilities.map(ability => {
   const raw = ability.extensions?.upstreamAttributes?.value ?? '';
   const attrs = [...new Set([...raw.matchAll(/\b([A-Za-z_$][\w$]*(?:ItemTheft|ItemLost)[\w$]*AbAttr)\b/g)].map(match => match[1]))];

@@ -771,6 +771,22 @@ static int checkWave200FinalBossAndGameClear() {
     if (activateTurnHeldItemTransfer(activationItem, activationHolder, &activationOpponent, 1,
             callbackRecords, 2, callbackCount, activationRng, callbackEvent, miniMatch) !=
             TurnHeldTransferResult::HolderFainted) return 422;
+    NativeHeldModifierInstance healingItems[3]{};
+    if (initializeHeldModifierInstance("LEFTOVERS", 1001, 2, true, nullptr, healingItems[0]) !=
+            HeldModifierStorageResult::Ok ||
+        initializeHeldModifierInstance("LEFTOVERS", 1002, 3, true, nullptr, healingItems[1]) !=
+            HeldModifierStorageResult::Ok ||
+        initializeHeldModifierInstance("SHELL_BELL", 1002, 1, true, nullptr, healingItems[2]) !=
+            HeldModifierStorageResult::Ok) return 424;
+    HeldItemTheftPolicy healingMatch{};
+    if (resolveKnownHeldModifierMatchPolicy(healingItems[0], healingItems, 3, 1002, healingMatch) !=
+        HeldItemMatchPolicyResult::Resolved || healingMatch.matchingTargetIndex != 1 ||
+        healingMatch.targetMaxStack != 4) return 425;
+    size_t healingCount = 3;
+    if (applySelectedHeldItemTheft(healingItems, 3, healingCount, 0, 1002, healingMatch, callbackEvent) !=
+        HeldItemInventoryTransferResult::Transferred || healingCount != 3 ||
+        healingItems[0].stackCount != 1 || healingItems[2].stackCount != 4 ||
+        std::strcmp(heldModifierDefinition(healingItems[1])->id, "SHELL_BELL")) return 426;
     const auto preservedBoss = bossActor;
     if (applyPokemonFixedEnemyMovePp(*firstPhase, bossActor) ||
         bossActor.moves[3].maxPp != preservedBoss.moves[3].maxPp) return 338;

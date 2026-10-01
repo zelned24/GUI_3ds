@@ -244,6 +244,45 @@ inline HeldItemMatchPolicyResult resolveTurnHeldItemTransferMatchPolicy(
     return HeldItemMatchPolicyResult::Resolved;
 }
 
+inline const PokerogueContent::HeldModifierClassProfile* heldModifierClassProfile(
+    const NativeHeldModifierInstance& instance) {
+    const auto* definition = heldModifierDefinition(instance);
+    if (!definition) return nullptr;
+    for (const auto& profile : PokerogueContent::kHeldModifierClassProfiles)
+        if (!std::strcmp(profile.itemId, definition->id)) return &profile;
+    return nullptr;
+}
+// Matching only; healing effects are not claimed by this inventory adapter.
+inline HeldItemMatchPolicyResult resolveKnownHeldModifierMatchPolicy(
+    const NativeHeldModifierInstance& source, const NativeHeldModifierInstance* records, size_t count,
+    uint32_t targetPokemonId, HeldItemTheftPolicy& output) {
+    if (!validateHeldModifierInstance(source) || (count && !records) || source.ownerPokemonId == targetPokemonId)
+        return HeldItemMatchPolicyResult::InvalidState;
+    const auto* sourceClass = heldModifierClassProfile(source);
+    if (!sourceClass || !sourceClass->maxHeldCount || !sourceClass->matchingClass[0])
+        return HeldItemMatchPolicyResult::UnsupportedModifierClass;
+    if (source.stackCount > sourceClass->maxHeldCount) return HeldItemMatchPolicyResult::InvalidState;
+    if (source.rawArguments[0] && std::strcmp(source.rawArguments, "[]"))
+        return HeldItemMatchPolicyResult::UnresolvedArguments;
+    HeldItemTheftPolicy next{};
+    next.resolved = true;
+    next.targetMaxStack = sourceClass->maxHeldCount;
+    for (size_t i = 0; i < count; ++i) {
+        if (!validateHeldModifierInstance(records[i])) return HeldItemMatchPolicyResult::InvalidState;
+        if (records[i].ownerPokemonId != targetPokemonId) continue;
+        const auto* targetClass = heldModifierClassProfile(records[i]);
+        if (!targetClass || !targetClass->matchingClass[0]) return HeldItemMatchPolicyResult::UnsupportedModifierClass;
+        if (std::strcmp(sourceClass->matchingClass, targetClass->matchingClass)) continue;
+        if (records[i].rawArguments[0] && std::strcmp(records[i].rawArguments, "[]"))
+            return HeldItemMatchPolicyResult::UnresolvedArguments;
+        if (records[i].stackCount > targetClass->maxHeldCount ||
+            next.matchingTargetIndex != static_cast<size_t>(-1)) return HeldItemMatchPolicyResult::InvalidState;
+        next.matchingTargetIndex = i;
+    }
+    output = next;
+    return HeldItemMatchPolicyResult::Resolved;
+}
+
 struct HeldItemInventoryTransferEvent {
     HeldItemStackTransferEvent stacks{};
     uint32_t sourcePokemonId = 0;
