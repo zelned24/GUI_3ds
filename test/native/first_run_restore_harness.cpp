@@ -294,6 +294,20 @@ static int checkModifierRewardGenerationAndClaim() {
         if (game.selectedRewardChoice() != 0) return 65;
         if (!game.selectBattleMove(1) || game.selectedRewardChoice() != 1) return 66;
         if (!game.selectBattleMove(-1) || game.selectedRewardChoice() != 0) return 67;
+        // Check a canonically generated choice with no current native reward adapter.
+        auto unsupportedRewardGame = game;
+        for (uint8_t option = 0; option < unsupportedRewardGame.rewardChoiceCount(); ++option) {
+            const auto* candidate = unsupportedRewardGame.rewardChoice(unsupportedRewardGame.selectedRewardChoice());
+            const char* id = candidate && candidate->poolEntry ? candidate->poolEntry->itemId : nullptr;
+            if (id && (std::strcmp(id, "BERRY") == 0 || std::strcmp(id, "RARE_CANDY") == 0)) {
+                const auto beforeWave = unsupportedRewardGame.run().wave;
+                const auto beforeHp = unsupportedRewardGame.presentation().player.battleState.hp;
+                if (unsupportedRewardGame.claimRewardChoice() || !unsupportedRewardGame.rewardsPending() ||
+                    unsupportedRewardGame.run().wave != beforeWave ||
+                    unsupportedRewardGame.presentation().player.battleState.hp != beforeHp) return 447;
+            }
+            unsupportedRewardGame.selectRewardChoice(1);
+        }
         const auto* choice0 = game.rewardChoice(0);
         if (!choice0 || !choice0->poolEntry || !choice0->poolEntry->itemId) return 68;
         if (!game.claimRewardChoice()) return 69;

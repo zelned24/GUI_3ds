@@ -641,3 +641,8 @@
 
 1. claimHeldRewardChoice(member) emite comando atomico para PID del miembro elegido; indice invalido/recompensa no equipada soportada/cap lleno no avanzan wave. claimRewardChoice conserva compatibilidad con activo. Fuente SelectModifierPhase party selection y PokemonHeldItemModifierType.selectFilter pinned.
 2. Regresion 446 escrita para comando fuera de fase e indice invalido sin cambio de inventario/wave; tests/compilacion aplazados. Presentacion del selector y cobertura end-to-end con reward real pendientes.
+
+## Recompensas pendientes sin sustitucion falsa
+
+1. claimRewardChoice rechaza items sin adapter en vez de consumir eleccion y avanzar sin efecto. Retiradas ramas Berry de curacion/PP inmediata: upstream BerryModifier es held con berryType/consumed y triggers. No se desactivaron asserts previos; prueba historica que supone cualquier reward portado podria revelar fallo en validacion final.
+2. Regresion 447 escrita para elecciones reales BERRY/RARE_CANDY cuando aparecen; cobertura condicional, no prueba exhaustiva. Tests/compilacion aplazados. Portar adapters y pesos reales sigue pendiente.

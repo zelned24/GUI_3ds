@@ -838,15 +838,9 @@ bool FirstRunRuntime::claimRewardChoiceInPlace(uint8_t heldPartyMember) {
                 }
             }
             playerState.hp = m_context.playerParty[m_context.activePlayerPartyIndex].battleState.hp;
-        } else if (std::strcmp(itemId, "SITRUS_BERRY") == 0) {
-            playerState.hp = std::min<uint16_t>(playerState.maxHp, playerState.hp + std::max<uint16_t>(1, playerState.maxHp / 4));
-        } else if (std::strcmp(itemId, "ORAN_BERRY") == 0) {
-            playerState.hp = std::min<uint16_t>(playerState.maxHp, playerState.hp + 10);
-        } else if (std::strcmp(itemId, "LEPPA_BERRY") == 0) {
-            if (m_selectedBattleMove < playerState.moveCount) {
-                auto& move = playerState.moves[m_selectedBattleMove];
-                move.pp = std::min<uint8_t>(move.maxPp, move.pp + 10);
-            }
+        } else {
+            m_battleFeedback = "Reward effect requires a canonical native adapter";
+            return false;
         }
     }
     m_rewardsPending = false;
