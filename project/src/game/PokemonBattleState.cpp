@@ -150,7 +150,17 @@ PokemonStatusImmunityResult executePokemonStatusConfusionReaction(const PokemonB
     auto nextTag = tag;
     auto nextRng = sourceRng;
     bool canAdd = false;
-    if (!canPokemonAddConfusionTag(nextTag, probePolicy, canAdd))
+    if (static_cast<uint8_t>(applied) > 7) return PokemonStatusImmunityResult::InvalidEffect;
+    const PokerogueContent::StatusConfusionAbilityProfile* profile = nullptr;
+    for (const auto& candidate : PokerogueContent::kStatusConfusionAbilityProfiles)
+        if (candidate.abilityId == source.abilityId) { profile = &candidate; break; }
+    if (!profile) return PokemonStatusImmunityResult::UnknownAbility;
+    if (abilityActive && !profile->resolved) return PokemonStatusImmunityResult::UnsupportedCondition;
+    // Do not require tag/terrain policies when canApply has already failed.
+    // Simulated apply does not add the tag or draw its duration.
+    if (abilityActive && !simulated && recipient.hp &&
+        (profile->statusMask & (1u << static_cast<uint8_t>(applied))) &&
+        !canPokemonAddConfusionTag(nextTag, probePolicy, canAdd))
         return PokemonStatusImmunityResult::UnsupportedCondition;
     PokemonStatusConfusionReactionPolicy reactionPolicy{};
     reactionPolicy.resolved = true;

@@ -1600,3 +1600,8 @@
 
 1. Dispatcher posterior omite forms/PostSetStatus/ConfusionOnStatusEffect para FAINT después de validar identidad y estado aplicado, conforme ObtainStatusEffectPhase.start pinned. No exige políticas ni consume RNG de callbacks omitidos.
 2. Regresión de FAINT con políticas pendientes escrita sin ejecutar; proveedor del comando activo y Classic completos siguen pendientes. Tests/compilación aplazados.
+
+## Evaluación condicional de reacción de confusión
+
+1. Reacción consulta política de tag solo para habilidad activa, efecto elegible y receptor vivo en ejecución real. Casos no aplicables/simulated no requieren callbacks de tag ni RNG de duración; atributos activos desconocidos siguen fallando explícitamente.
+2. Regresiones de burn no elegible, habilidad inactiva, objetivo debilitado y simulated con políticas pendientes escritas sin ejecutar. Proveedor del comando activo y validación final siguen pendientes.

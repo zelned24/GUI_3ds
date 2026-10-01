@@ -3368,6 +3368,27 @@ extern "C" int runPokemonBattleStateChecks() {
         !removalEvent.removed || ownTempoActor.confusion.present || ownTempoActor.confusion.turns) return 9202;
     if (Pokerogue3DS::applyPokemonPostSummonConfusionRemoval(ownTempoActor, true, true, removalEvent) !=
             Pokerogue3DS::PokemonStatusImmunityResult::Resolved || removalEvent.abilityActivates) return 9203;
+    probeConfusion.resolved = applyConfusion.resolved = false;
+    expectedApplicationRng = statusApplicationRng;
+    if (Pokerogue3DS::executePokemonStatusConfusionReaction(puppeteerSource, puppeteerTarget,
+            Effect::Burn, true, false, probeConfusion, applyConfusion, puppeteerTag,
+            statusApplicationRng, puppeteerEvent) != Pokerogue3DS::PokemonStatusImmunityResult::Resolved ||
+        puppeteerEvent.tagAttempted ||
+        statusApplicationRng.randSeedUint32() != expectedApplicationRng.randSeedUint32()) return 9260;
+    if (Pokerogue3DS::executePokemonStatusConfusionReaction(puppeteerSource, puppeteerTarget,
+            Effect::Poison, false, false, probeConfusion, applyConfusion, puppeteerTag,
+            statusApplicationRng, puppeteerEvent) != Pokerogue3DS::PokemonStatusImmunityResult::Resolved ||
+        puppeteerEvent.tagAttempted) return 9261;
+    puppeteerTarget.hp = 0;
+    if (Pokerogue3DS::executePokemonStatusConfusionReaction(puppeteerSource, puppeteerTarget,
+            Effect::Poison, true, false, probeConfusion, applyConfusion, puppeteerTag,
+            statusApplicationRng, puppeteerEvent) != Pokerogue3DS::PokemonStatusImmunityResult::Resolved ||
+        puppeteerEvent.tagAttempted) return 9262;
+    puppeteerTarget.hp = 100;
+    if (Pokerogue3DS::executePokemonStatusConfusionReaction(puppeteerSource, puppeteerTarget,
+            Effect::Poison, true, true, probeConfusion, applyConfusion, puppeteerTag,
+            statusApplicationRng, puppeteerEvent) != Pokerogue3DS::PokemonStatusImmunityResult::Resolved ||
+        puppeteerEvent.tagAttempted) return 9263;
     bool foundConfusionImmunity = false;
     for (const auto& profile : PokerogueContent::kConfusionImmunityAbilityProfiles) {
         if (!profile.selfResolved || !profile.selfBlocks) continue;
