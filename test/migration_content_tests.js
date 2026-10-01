@@ -162,6 +162,15 @@ export function registerMigrationContentTests(test) {
     assert.match(header, /\{3, 0, 15, 85, 10, 0, -1, 1, MoveHasMultiHit, 1, "double_slap"/, 'default MultiHitAttr maps to pinned TWO_TO_FIVE');
     assert.ok(header.includes('int8_t level; uint16_t moveId;'), 'native learnset retains upstream signed sentinel levels');
     assert.ok(header.includes('levelMovesFor(const Form& form)'), 'native runtime exposes form-specific learnset ranges');
+    assert.ok(header.includes('kFormPermissions[]'), 'form permissions reach generated C++ data');
+    for (const form of canonical.collections.forms) {
+      for (const key of ['isUnobtainable', 'isStarterSelectable']) {
+        assert.ok(typeof form.extensions[key] === 'boolean' || form.extensions[key] === null,
+          `${form.id}: explicit upstream form permission metadata ${key}`);
+      }
+    }
+    assert.strictEqual(canonical.collections.forms.find(form => form.id === 'pikachu:gigantamax')
+      .extensions.isStarterSelectable, false, 'Gigantamax is not granted starter selection by observation');
     const gigantamaxRow = header.split(/\r?\n/).find(line => line.includes('{"pikachu:gigantamax"'));
     const gigantamaxRange = gigantamaxRow?.match(/, (\d+), (\d+), "ELECTRIC"/);
     assert.ok(gigantamaxRange, 'native Pikachu Gigantamax form exposes a learnset range');

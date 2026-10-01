@@ -1250,3 +1250,12 @@
 2. Codec little endian dedicado de 64 bits evita truncar bits superiores a 31. Validator rechaza bits reservados y formas inexistentes para esa especie; admite base implícita únicamente cuando el catálogo no declara formas. Version/record width centralizados; lectura v1–v5 conserva datos presentes y deja observaciones ausentes en cero.
 3. Observación se mantiene separada de unlocks: no implementa todavía `getFullUnlocksData`, desbloqueos base de battle forms ni reglas especiales de preevoluciones. No se concede una forma de inicial por observarla. Capacidad 64 bits del adaptador rechaza índices >56 explícitamente; catálogo sigue sin ese límite.
 4. Regresiones escritas de todos los forms reales → atributo → encode/decode, legacy v5, referencias inválidas y bits reservados. Sin ejecutar. Capacidades derivadas y ledger crecen; memoria/rendimiento Old 3DS pendientes de medir. Tests/compilación aplazados.
+
+## Permisos de constructor de formas upstream
+
+1. Importer conserva isUnobtainable (default false) e isStarterSelectable (default !formKey), según PokemonForm.constructor pinned. Expresiones desconocidas quedan null y su código fuente completo permanece en raw; no se convierten en permisos.
+2. Generador C++ emite kFormPermissions con flags triestado: cero/uno conocidos y menos uno no resuelto. Es metadata de constructor, no la decisión completa del selector: starterSelectableKeys, getFullUnlocksData y reglas especiales de captura todavía deben conectarse.
+3. ObservedFormAttr sigue siendo observación, nunca autorización para seleccionar formas de combate. Regresiones de catálogo y Gigantamax añadidas, sin ejecutar. Tests y compilación aplazados.
+4. La nueva metadata cambia el hash del contenido. Perfiles y saves anteriores requieren migración explícita todavía pendiente; no se elimina su comprobación de identidad.
+
+5. Dos importaciones pinned coinciden en hash a1d122dbee31f5e6d77fcb847daff51e1879514a333c1f471a82d31c1d0675d3; conteos permanecen 1084 especies y 609 formas. Evidencia de generación determinista, no ejecución en consola.

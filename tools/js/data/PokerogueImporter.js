@@ -1262,6 +1262,17 @@ export class PokerogueImporter {
               const backIndexed = spriteAtlasKey && (spriteAtlasKey === String(numericId)
                 ? indexedBaseBack.has(numericId) : indexedFormBack.has(spriteAtlasKey));
               const levelMoves = record.extensions?.upstreamFormLevelMoves?.[formKey] ?? [];
+              // PokemonForm constructor defaults from the pinned source. Unknown expressions
+              // remain explicit; they must never be treated as an unlock permission.
+              const formBoolean = (key, fallback) => {
+                const declared = rawForm.match(new RegExp(`\\b${key}\\s*:\\s*([^,}]+)`));
+                if (!declared) return fallback;
+                const value = declared[1].trim();
+                return value === 'true' ? true : value === 'false' ? false : null;
+              };
+              const isUnobtainable = formBoolean('isUnobtainable', false);
+              const isStarterSelectable = formBoolean('isStarterSelectable',
+                typeof upstreamFormKey === 'string' ? !upstreamFormKey : null);
               forms.push({
                 id: `${record.id}:${(formKey === 'BASE' ? `base_${formIndex}` : formKey.toLowerCase())}`,
                 speciesId: record.id,
@@ -1280,7 +1291,7 @@ export class PokerogueImporter {
                   backSourcePath: backIndexed ? `images/pokemon/back/${spriteAtlasKey}.json` : null,
                   manifestVerified: false, imageVerified: false },
                 provenance: { sourceRepository: game.url, sourceRevision: game.revision, sourcePath: path, sourceSymbol: `SpeciesId.${symbol}.forms`, sourceType: CanonicalSourceType.UPSTREAM, sourceHash: sourceHash(file) },
-                extensions: { upstreamFormIndex: formIndex, upstreamRawRecord: { format: 'typescript-source-fragment', value: rawForm }, runtimeTransform: 'NOT_IMPORTED' }
+                extensions: { upstreamFormIndex: formIndex, isUnobtainable, isStarterSelectable, upstreamRawRecord: { format: 'typescript-source-fragment', value: rawForm }, runtimeTransform: 'NOT_IMPORTED' }
               });
               formIndex++;
               ctorRe.lastIndex = end + 1;
