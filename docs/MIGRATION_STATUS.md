@@ -1439,3 +1439,9 @@
 1. finishBattleTurn aplica residual poison/toxic/burn después de WeatherEffect y antes del cierre/held turn healing, conforme phase-manager.ts. Interlude omite estados. HP/contador se publican junto con la transacción del turno y KO pasa por la conclusión existente.
 2. Capacidad damageCallbacks existente prueba ausencia de callbacks pendientes para habilidades admitidas. Otras habilidades, bosses, final boss y doubles con residual fallan explícitamente; faltan políticas de bloqueos/reducción/PostDamage y orden compartido de campo. No se asume inmunidad ni se omiten callbacks.
 3. Regresión de toxic con capacidad canónica y rollback de policy boss escrita, sin ejecutar. Aplicación de estados por moves/berries y callbacks completos pendientes; tests/compilación aplazados.
+
+## Atributos canónicos para daño residual
+
+1. Generador deriva BlockNonDirectDamageAbAttr, BlockStatusDamageAbAttr y ReduceBurnDamageAbAttr desde raw pinned; guarda máscara por status y ratio de burn, y marca parámetros/builders desconocidos sin resolver. Runtime consulta perfiles por ID canónico, sin ramas por nombre de habilidad.
+2. Magic Guard bloquea residual conservando incremento del contador; Heatproof reduce burn a mitad. Poison Heal conserva máscara poison/toxic pero sigue sin resolver hasta implementar PostTurnStatusHealAbAttr. Política distingue habilidad activa y callbacks resueltos; pasivas/suppression completos pendientes.
+3. Regresiones de catálogo real, reducción/bloqueo, habilidad inactiva y rechazo de callbacks pendientes escritas, sin ejecutar. Catálogo regenerado, hash unchanged. Tests/compilación aplazados.

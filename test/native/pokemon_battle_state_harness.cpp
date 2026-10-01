@@ -2741,5 +2741,36 @@ extern "C" int runPokemonBattleStateChecks() {
             residualActor.status.toxicTurnCount != 1) return 9012;
     }
     if (!foundResidualCapability) return 9013;
+    bool foundIndirectBlock = false, foundBurnReduction = false, foundUnresolvedStatusBlock = false;
+    for (const auto& profile : PokerogueContent::kStatusResidualAbilityProfiles) {
+        Pokerogue3DS::PokemonStatusResidualPolicy policy{};
+        if (!profile.resolved) {
+            if (profile.blockedStatusMask) foundUnresolvedStatusBlock = true;
+            if (Pokerogue3DS::resolvePokemonStatusResidualPolicy(profile.abilityId, Effect::Burn, true, true, policy))
+                return 9014;
+            continue;
+        }
+        if (!Pokerogue3DS::resolvePokemonStatusResidualPolicy(profile.abilityId, Effect::Burn, true, true, policy))
+            return 9015;
+        PokemonBattleState actor{};
+        actor.hp = actor.maxHp = 160;
+        actor.status.present = true;
+        actor.status.effect = Effect::Burn;
+        Pokerogue3DS::PokemonStatusResidualEvent event{};
+        if (profile.blockNonDirectDamage) {
+            foundIndirectBlock = true;
+            if (Pokerogue3DS::applyPokemonStatusResidual(actor, policy, event) !=
+                    Pokerogue3DS::PokemonStatusResidualResult::Blocked || actor.hp != 160 ||
+                actor.status.toxicTurnCount != 1) return 9016;
+        } else if (profile.burnDenominator == 2) {
+            foundBurnReduction = true;
+            if (Pokerogue3DS::applyPokemonStatusResidual(actor, policy, event) !=
+                    Pokerogue3DS::PokemonStatusResidualResult::Applied || actor.hp != 155) return 9017;
+        }
+        if (!Pokerogue3DS::resolvePokemonStatusResidualPolicy(profile.abilityId, Effect::Burn, false, true, policy) ||
+            policy.blockNonDirectDamage || policy.blockStatusDamage || policy.burnMultiplierDenominator != 1)
+            return 9018;
+    }
+    if (!foundIndirectBlock || !foundBurnReduction || !foundUnresolvedStatusBlock) return 9019;
     return 0;
 }

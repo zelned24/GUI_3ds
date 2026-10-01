@@ -2454,11 +2454,13 @@ bool FirstRunRuntime::finishBattleTurn() {
         for (uint8_t i = 0; i < actorCount; ++i) {
             auto& actor = *statusActors[i];
             if (!actor.hp || !pokemonStatusIsPostTurn(actor.status)) continue;
-            const auto* capability = PokerogueContent::findAbilityMovegenProfile(actor.abilityId);
             PokemonStatusResidualPolicy policy{};
-            // Existing damage capability proves absence of unported block,
-            // reduction and post-damage callbacks for this primary ability.
-            policy.resolved = capability && capability->bossDamageCallbacksResolved;
+            // Resolve primary ability attributes from pinned canonical metadata.
+            // Passive/suppression dispatch remains outside this gated actor path.
+            if (!resolvePokemonStatusResidualPolicy(actor.abilityId, actor.status.effect, true, true, policy)) {
+                m_battleFeedback = "Status residual ability policy is unresolved";
+                return false;
+            }
             // PostDamage can affect other actors; doubles need phase ordering
             // and the shared callback dispatcher before enabling residuals.
             policy.bossDamageNeedsDispatcher = m_doubleBattle ||

@@ -407,6 +407,23 @@ struct PokemonStatusResidualPolicy {
     uint16_t burnMultiplierNumerator = 1;
     uint16_t burnMultiplierDenominator = 1;
 };
+inline bool resolvePokemonStatusResidualPolicy(uint16_t abilityId, PokemonStatusEffect effect,
+    bool abilityActive, bool callbacksResolved, PokemonStatusResidualPolicy& output) {
+    if (!callbacksResolved || static_cast<uint8_t>(effect) > 7) return false;
+    for (const auto& profile : PokerogueContent::kStatusResidualAbilityProfiles) {
+        if (profile.abilityId != abilityId) continue;
+        if (!profile.resolved) return false;
+        PokemonStatusResidualPolicy policy{};
+        policy.resolved = true;
+        policy.blockNonDirectDamage = abilityActive && profile.blockNonDirectDamage;
+        policy.blockStatusDamage = abilityActive && (profile.blockedStatusMask & (1u << static_cast<uint8_t>(effect)));
+        policy.burnMultiplierNumerator = abilityActive ? profile.burnNumerator : 1;
+        policy.burnMultiplierDenominator = abilityActive ? profile.burnDenominator : 1;
+        output = policy;
+        return true;
+    }
+    return false;
+}
 struct PokemonStatusResidualEvent {
     PokemonStatusEffect effect = PokemonStatusEffect::None;
     uint32_t toxicTurnCount = 0;
