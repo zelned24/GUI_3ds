@@ -83,7 +83,9 @@ enum class CaptureBlocker : uint8_t {
     TargetFainted,
     BossShieldActive,
     FinalBossUncatchable,
-    OutOfBalls
+    OutOfBalls,
+    InvalidInput,
+    MissingSpeciesData
 };
 
 struct PokemonCaptureEvent {
@@ -147,6 +149,19 @@ inline bool executeCaptureAttempt(
         return false;
     }
 
+    if (target.hp > target.maxHp || static_cast<uint8_t>(ballType) > static_cast<uint8_t>(PokeballType::LuxuryBall)) {
+        event.blocker = CaptureBlocker::InvalidInput;
+        output = event;
+        return false;
+    }
+    bool catchProfileFound = false;
+    for (const auto& row : PokerogueContent::kSpeciesCatchProfiles)
+        catchProfileFound |= row.speciesDex == target.speciesDex;
+    if (!catchProfileFound) {
+        event.blocker = CaptureBlocker::MissingSpeciesData;
+        output = event;
+        return false;
+    }
     const double ballMultiplier = getPokeballCatchMultiplier(ballType);
     // AttemptCapturePhase.start always requests randBattleSeedInt(256),
     // including a zero critical chance and guaranteed Master Ball. Current
@@ -169,20 +184,17 @@ inline bool executeCaptureAttempt(
     const double baseCatch = ((threeMax - twoHp) * catchRate * ballMultiplier) / threeMax;
     // Status multiplier: neutral = 1.0 (expandable when volatile/non-volatile statuses apply).
     const double statusMultiplier = 1.0;
-    double rawRate = baseCatch * statusMultiplier;
-    if (rawRate < 1.0) rawRate = 1.0;
+    const double rawRate = baseCatch * statusMultiplier;
     const uint32_t modifiedRate = static_cast<uint32_t>(std::round(rawRate));
     event.modifiedCatchRate = modifiedRate;
 
     // Shake probability formula from Gen 6 / upstream PokéRogue:
     // shakeProbability = round(65536 / pow(255 / modifiedCatchRate, 0.1875))
-    uint32_t shakeProb = 65535;
-    if (modifiedRate < 255) {
-        const double ratio = 255.0 / static_cast<double>(modifiedRate);
-        const double prob = 65536.0 / std::pow(ratio, 0.1875);
-        shakeProb = static_cast<uint32_t>(std::round(prob));
-        if (shakeProb > 65535) shakeProb = 65535;
-    }
+    // Zero rate has zero probability (upstream division yields Infinity).
+    // Keep the formula's reported value above 65535 for guaranteed catches;
+    // the >=255 branch below skips the actual shake RNG checks.
+    const uint32_t shakeProb = modifiedRate ? static_cast<uint32_t>(std::round(
+        65536.0 / std::pow(255.0 / static_cast<double>(modifiedRate), 0.1875))) : 0;
     event.shakeProbability = shakeProb;
 
     // Upstream 3 shake checks:
@@ -193,7 +205,7 @@ inline bool executeCaptureAttempt(
             ++shakes;
             continue;
         }
-        const uint32_t roll = rng.intInRange(0, 65535);
+        const uint32_t roll = rng.randSeedInt(65536);
         if (roll < shakeProb) {
             ++shakes;
         } else {

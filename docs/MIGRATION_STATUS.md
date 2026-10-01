@@ -1013,3 +1013,9 @@
 1. AttemptCapturePhase.start pinned consume randBattleSeedInt(256) antes de las sacudidas, también con probabilidad cero y Master Ball. El runtime ya consume esa tirada; antes la omitía y desplazaba el RNG posterior.
 2. Regresión 603 escrita comparando el siguiente draw de captura Master Ball con la secuencia upstream. Sin ejecutar. Fixtures de captura con seeds anteriores pueden cambiar de resultado legítimamente; revisar al ejecutar la suite final, sin ocultar fallos.
 3. Probabilidad crítica basada en caught-dex/Catching Charm, status y shiny event siguen pendientes. Esta corrección de secuencia no demuestra paridad completa de captura.
+
+## Fórmula y entradas de captura — pendiente de ejecución
+
+1. Sustituye llamada inexistente intInRange por randSeedInt(65536), API existente correspondiente al draw upstream. Revisión estática; sin compilación.
+2. Elimina mínimo artificial de tasa 1 y clamp de probabilidad a 65535. La fórmula upstream permite tasa cero y reporta probabilidad superior al dominio RNG en captura garantizada.
+3. Species sin perfil canónico, HP superior al máximo y tipo de ball inválido fallan antes de consumir RNG. Regresiones 604–605 escritas, sin ejecutar. Status/shiny/critical profile continúan pendientes.

@@ -1172,6 +1172,21 @@ static int checkPokeballCaptureMechanics() {
             actualMasterRng, masterRngEvent) || !masterRngEvent.caught ||
         actualMasterRng.randSeedUint32() != expectedMasterRng.randSeedUint32()) return 603;
 
+    // Invalid source data must not become an invented minimum catch rate.
+    auto invalidCaptureTarget = targetState;
+    invalidCaptureTarget.speciesDex = 65535;
+    auto missingSourceRng = rng;
+    auto missingSourceExpected = rng;
+    PokemonCaptureEvent invalidCaptureEvent{};
+    if (executeCaptureAttempt(invalidCaptureTarget, PokeballType::Pokeball, false, false, false, false,
+            missingSourceRng, invalidCaptureEvent) ||
+        invalidCaptureEvent.blocker != CaptureBlocker::MissingSpeciesData ||
+        missingSourceRng.randSeedUint32() != missingSourceExpected.randSeedUint32()) return 604;
+    invalidCaptureTarget = targetState;
+    invalidCaptureTarget.hp = invalidCaptureTarget.maxHp + 1;
+    if (executeCaptureAttempt(invalidCaptureTarget, PokeballType::Pokeball, false, false, false, false,
+            rng, invalidCaptureEvent) || invalidCaptureEvent.blocker != CaptureBlocker::InvalidInput) return 605;
+
     // Master ball guaranteed catch
     if (!executeCaptureAttempt(targetState, PokeballType::MasterBall, false, false, false, false, rng, outEvent) ||
         !outEvent.caught || outEvent.shakeCount != 3) return 143;
