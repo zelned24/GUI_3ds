@@ -416,6 +416,26 @@ static int checkStatusActionAdmission() {
                 confusedEmberAfter.enemyConfusion.turns != repeatedConfusedEmberAfter.enemyConfusion.turns ||
                 confusedEmberAfter.enemyHp != repeatedConfusedEmberAfter.enemyHp ||
                 confusedEmberAfter.playerHp != repeatedConfusedEmberAfter.playerHp) return 9463;
+            auto confusionCheckpoint = emberCheckpoint;
+            confusionCheckpoint.playerMoveIds[0] = 93;
+            confusionCheckpoint.playerParty[0].moveIds[0] = 93;
+            double confusionEffectiveness = 1.0;
+            if (calculatePokemonTypeEffectiveness(93, game.presentation().enemy.battleState,
+                    confusionEffectiveness) != PokemonTypeEffectivenessResult::Ok) return 9481;
+            FirstRunRuntime confusionAttack(seed), repeatedConfusionAttack(seed);
+            NativeRunSave confusionAfter{}, repeatedConfusionAfter{};
+            if (!confusionAttack.restoreNativeRunSave(confusionCheckpoint) ||
+                !repeatedConfusionAttack.restoreNativeRunSave(confusionCheckpoint) ||
+                !confusionAttack.battleInputSupported() || !confusionAttack.advanceBattleTurn() ||
+                !repeatedConfusionAttack.advanceBattleTurn() ||
+                confusionAttack.captureNativeRunSave(confusionAfter) != NativeSaveResult::Ok ||
+                repeatedConfusionAttack.captureNativeRunSave(repeatedConfusionAfter) != NativeSaveResult::Ok ||
+                confusionAfter.playerPp[0] != 24 ||
+                (confusionEffectiveness > 0 && confusionAfter.enemyHp >= confusionCheckpoint.enemyHp) ||
+                (confusionEffectiveness == 0 && (confusionAfter.enemyHp != confusionCheckpoint.enemyHp ||
+                    confusionAfter.enemyConfusion.present)) ||
+                confusionAfter.enemyHp != repeatedConfusionAfter.enemyHp ||
+                confusionAfter.enemyConfusion.turns != repeatedConfusionAfter.enemyConfusion.turns) return 9480;
             checkedExecution = true;
         }
         if (checkedRejection && checkedExecution) return 0;

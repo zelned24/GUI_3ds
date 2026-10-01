@@ -732,6 +732,33 @@ bool canPokemonAddConfusionTag(const PokemonConfusionTagState& tag,
 PokemonConfusionTagResult addPokemonConfusionTag(PokemonConfusionTagState& tag,
     uint32_t turns, const PokemonConfusionTagPolicy& policy);
 bool removePokemonConfusionTag(PokemonConfusionTagState& tag);
+struct PokemonMoveConfusionEvent {
+    uint16_t moveId = 0;
+    bool safeguardBlocked = false;
+    bool targetFainted = false;
+    bool chanceRolled = false;
+    uint8_t chanceRoll = 0;
+    uint32_t duration = 0;
+    bool tagAttempted = false;
+    PokemonConfusionTagResult tagResult = PokemonConfusionTagResult::Invalid;
+};
+// ConfuseAttr -> AddBattlerTagAttr. Caller owns hit, effective chance and
+// Safeguard/ability policy. Faint/Safeguard skip draws; overlap/immunity do not
+// skip the duration draw after chance succeeds.
+bool applyPokemonMoveConfusion(PokemonBattleState& target, uint16_t moveId,
+    int16_t effectiveChance, bool safeguardBlocks, const PokemonConfusionTagPolicy& policy,
+    PokerogueRngAdapter& rng, PokemonMoveConfusionEvent& output);
+inline bool calculatePokemonConfusionMoveAiBenefit(uint16_t moveId, int16_t chance, double& output) {
+    for (const auto& profile : PokerogueContent::kMoveConfusionEffects) {
+        if (profile.moveId != moveId) continue;
+        if (!profile.resolved || profile.selfTarget) return false;
+        // Inherited AddBattlerTagAttr benefit does not probe tag eligibility.
+        output = std::floor(-5.0 * ((chance < 0 ? 100 : chance) / 100.0));
+        return true;
+    }
+    return false;
+}
+
 struct PokemonConfusionRemovalEvent {
     bool abilityActivates = false;
     bool removed = false;

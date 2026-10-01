@@ -27,6 +27,41 @@ PokemonConfusionTagResult addPokemonConfusionTag(PokemonConfusionTagState& tag,
     return PokemonConfusionTagResult::Added;
 }
 
+bool applyPokemonMoveConfusion(PokemonBattleState& target, uint16_t moveId,
+    int16_t effectiveChance, bool safeguardBlocks, const PokemonConfusionTagPolicy& policy,
+    PokerogueRngAdapter& rng, PokemonMoveConfusionEvent& output) {
+    const PokerogueContent::MoveConfusionEffect* effect = nullptr;
+    for (const auto& row : PokerogueContent::kMoveConfusionEffects)
+        if (row.moveId == moveId) { if (effect) return false; effect = &row; }
+    if (!effect || !effect->resolved || effect->selfTarget || !policy.resolved ||
+        target.hp > target.maxHp || target.confusion.present != (target.confusion.turns != 0)) return false;
+    auto nextTag = target.confusion;
+    auto nextRng = rng;
+    PokemonMoveConfusionEvent event{};
+    event.moveId = moveId;
+    event.safeguardBlocked = safeguardBlocks;
+    event.targetFainted = !target.hp;
+    if (!safeguardBlocks && target.hp) {
+        bool passed = effectiveChance < 0 || effectiveChance == 100;
+        if (!passed) {
+            event.chanceRolled = true;
+            event.chanceRoll = static_cast<uint8_t>(nextRng.randSeedInt(100));
+            passed = event.chanceRoll < effectiveChance;
+        }
+        if (passed) {
+            event.duration = nextRng.randSeedIntRange(effect->minimumTurns, effect->maximumTurns);
+            event.tagAttempted = true;
+            event.tagResult = addPokemonConfusionTag(nextTag, event.duration, policy);
+            if (event.tagResult == PokemonConfusionTagResult::Invalid ||
+                event.tagResult == PokemonConfusionTagResult::Unsupported) return false;
+        }
+    }
+    target.confusion = nextTag;
+    rng = nextRng;
+    output = event;
+    return true;
+}
+
 bool removePokemonConfusionTag(PokemonConfusionTagState& tag) {
     if ((!tag.present && tag.turns) || (tag.present && !tag.turns)) return false;
     tag = {};

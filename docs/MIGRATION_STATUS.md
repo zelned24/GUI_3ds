@@ -1735,3 +1735,11 @@
 2. El runtime conecta el resolver existente de retirada de confusión en entradas por cambio/reemplazo. Inmunidad propia y reacción de Poison Puppeteer usan las políticas canónicas ya compuestas.
 3. Comprobación PRE_MOVE de confusión usa la capacidad de estados en lugar del gate de daño de jefes. Atributos admitidos no modifican ATK/DEF efectivo ni daño indirecto de self-hit; bypass de evasión solo afecta precisión. Dobles, modifiers, clima y jefes continúan requiriendo resolvers adicionales.
 4. Regresiones de perfiles reales, inmunidad/retirada Own Tempo y replay de turno con tag restaurado escritas sin ejecutar. No se han añadido ConfuseAttr ni todos los productores de confusión; tests/compilación pendientes.
+
+## ConfuseAttr de ataques reales
+
+1. MoveConfusionEffect conserva declaraciones canónicas ConfuseAttr y parámetros/selfTarget; duración 2–5 procede del constructor pinned. Builders y parámetros desconocidos no se admiten.
+2. FirstRunRuntime conecta Confusion/Psybeam y otros ataques individuales con ese único atributo a POST_APPLY después del daño efectivo. Miss/inmunidad/clima cancelado no disparan efectos. Confuse Ray y movimientos con atributos adicionales/selfTarget siguen pendientes.
+3. ConfuseAttr comprueba Safeguard antes de AddBattlerTagAttr.canApply/faint; chance y duración siguen después. Overlap/immunity/Misty conservan el draw de duración. Benefit de IA es floor(-5 * chance / 100), con chance negativa tratada como 100; no inventa probe de elegibilidad.
+4. Evento conserva moveId; tag nativo persiste duración/presencia. Persistir sourceMoveId de tags y todos los productores sigue pendiente; esta integración no declara paridad completa de tags.
+5. Regresiones de creación/overlap/inmunidad/Safeguard/faint/chance cero y replay del comando Confusion con encuentro real escritas sin ejecutar. Tests/compilación pendientes.

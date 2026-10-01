@@ -3544,6 +3544,58 @@ extern "C" int runPokemonBattleStateChecks() {
             Pokerogue3DS::PokemonStatusImmunityResult::Resolved || !ownTempoRemoval.abilityActivates ||
         !ownTempoRemoval.removed || ownTempoActor.confusion.present || ownTempoActor.confusion.turns) return 9462;
 
+    auto confuseMoveTarget = completeStatusTarget;
+    confuseMoveTarget.status = {};
+    confuseMoveTarget.confusion = {};
+    Pokerogue3DS::PokemonConfusionTagPolicy confuseMovePolicy{};
+    confuseMovePolicy.resolved = true;
+    Pokerogue3DS::PokemonMoveConfusionEvent confuseMoveEvent{};
+    auto confuseMoveRng = statusApplicationRng, expectedConfuseMoveRng = confuseMoveRng;
+    const auto confuseMoveDuration = expectedConfuseMoveRng.randSeedIntRange(2, 5);
+    if (!Pokerogue3DS::applyPokemonMoveConfusion(confuseMoveTarget, 93, 100, false,
+            confuseMovePolicy, confuseMoveRng, confuseMoveEvent) || !confuseMoveEvent.tagAttempted ||
+        confuseMoveEvent.tagResult != Pokerogue3DS::PokemonConfusionTagResult::Added ||
+        confuseMoveTarget.confusion.turns != confuseMoveDuration ||
+        confuseMoveRng.randSeedUint32() != expectedConfuseMoveRng.randSeedUint32()) return 9470;
+    expectedConfuseMoveRng = confuseMoveRng;
+    (void)expectedConfuseMoveRng.randSeedIntRange(2, 5);
+    if (!Pokerogue3DS::applyPokemonMoveConfusion(confuseMoveTarget, 60, 100, false,
+            confuseMovePolicy, confuseMoveRng, confuseMoveEvent) ||
+        confuseMoveEvent.tagResult != Pokerogue3DS::PokemonConfusionTagResult::Overlap ||
+        confuseMoveTarget.confusion.turns != confuseMoveDuration ||
+        confuseMoveRng.randSeedUint32() != expectedConfuseMoveRng.randSeedUint32()) return 9471;
+    confuseMoveTarget.confusion = {};
+    confuseMovePolicy.ownAbilityBlocks = true;
+    expectedConfuseMoveRng = confuseMoveRng;
+    (void)expectedConfuseMoveRng.randSeedIntRange(2, 5);
+    if (!Pokerogue3DS::applyPokemonMoveConfusion(confuseMoveTarget, 93, 100, false,
+            confuseMovePolicy, confuseMoveRng, confuseMoveEvent) || confuseMoveTarget.confusion.present ||
+        confuseMoveEvent.tagResult != Pokerogue3DS::PokemonConfusionTagResult::OwnAbility ||
+        confuseMoveRng.randSeedUint32() != expectedConfuseMoveRng.randSeedUint32()) return 9472;
+    expectedConfuseMoveRng = confuseMoveRng;
+    if (!Pokerogue3DS::applyPokemonMoveConfusion(confuseMoveTarget, 93, 10, true,
+            confuseMovePolicy, confuseMoveRng, confuseMoveEvent) || !confuseMoveEvent.safeguardBlocked ||
+        confuseMoveEvent.chanceRolled || confuseMoveEvent.tagAttempted ||
+        confuseMoveRng.randSeedUint32() != expectedConfuseMoveRng.randSeedUint32()) return 9473;
+    confuseMoveTarget.hp = 0;
+    expectedConfuseMoveRng = confuseMoveRng;
+    if (!Pokerogue3DS::applyPokemonMoveConfusion(confuseMoveTarget, 93, 10, false,
+            confuseMovePolicy, confuseMoveRng, confuseMoveEvent) || !confuseMoveEvent.targetFainted ||
+        confuseMoveEvent.chanceRolled ||
+        confuseMoveRng.randSeedUint32() != expectedConfuseMoveRng.randSeedUint32()) return 9474;
+    confuseMoveTarget.hp = confuseMoveTarget.maxHp;
+    confuseMovePolicy.ownAbilityBlocks = false;
+    expectedConfuseMoveRng = confuseMoveRng;
+    (void)expectedConfuseMoveRng.randSeedInt(100);
+    if (!Pokerogue3DS::applyPokemonMoveConfusion(confuseMoveTarget, 93, 0, false,
+            confuseMovePolicy, confuseMoveRng, confuseMoveEvent) || !confuseMoveEvent.chanceRolled ||
+        confuseMoveEvent.tagAttempted || confuseMoveTarget.confusion.present ||
+        confuseMoveRng.randSeedUint32() != expectedConfuseMoveRng.randSeedUint32()) return 9475;
+    double confuseAiBenefit = 123;
+    if (!Pokerogue3DS::calculatePokemonConfusionMoveAiBenefit(93, 10, confuseAiBenefit) ||
+        confuseAiBenefit != -1 || !Pokerogue3DS::calculatePokemonConfusionMoveAiBenefit(60, -1, confuseAiBenefit) ||
+        confuseAiBenefit != -5) return 9476;
+
     bool foundStarterStatusCapability = false, foundPendingStatusCapability = false;
     for (const auto& profile : PokerogueContent::kStatusActionAbilityProfiles) {
         // Canonical IDs: Overgrow only changes power. Keen Eye now carries
