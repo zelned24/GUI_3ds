@@ -138,12 +138,15 @@ struct PokemonBattleInit {
     uint16_t moveIds[4]{};
 };
 
+struct HeldItemLostTagState { bool unburden = false; };
+
 struct PokemonBattleState {
     uint16_t speciesDex = 0;
     const char* formId = nullptr;
     uint16_t level = 0;
     uint32_t pokemonId = 0;
     uint16_t abilityId = 0;
+    HeldItemLostTagState heldItemLostTags{}; // Transient summon data.
     PokemonGender gender = PokemonGender::Unspecified;
     uint16_t maxHp = 0;
     uint16_t hp = 0;

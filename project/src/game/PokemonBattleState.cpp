@@ -458,6 +458,7 @@ bool changePokemonBattleForm(PokemonBattleState& state, const char* targetFormId
         if (!fullRestore) next.moves[slot].pp = state.moves[slot].pp;
     for (uint8_t stat = 0; stat < 7; ++stat) next.statStages[stat] = state.statStages[stat];
     next.pauseEvolutions = state.pauseEvolutions;
+    next.heldItemLostTags = state.heldItemLostTags;
     state = next;
     return true;
 }
@@ -859,7 +860,11 @@ bool pokemonWeatherEffectiveSpeed(const PokemonBattleState& state,
         }
         abilityMultiplier *= profile.multiplier;
     }
-    const double value = state.stats[5] * abilityMultiplier * stageMultiplier;
+    double value = state.stats[5] * abilityMultiplier * stageMultiplier;
+    if (state.heldItemLostTags.unburden) {
+        for (const auto& profile : PokerogueContent::kHeldItemTheftAbilityProfiles)
+            if (profile.abilityId == state.abilityId && profile.appliesUnburden) { value *= 2.0; break; }
+    }
     if (!(value >= 0.0) || value > 4294967295.0) return false;
     const auto speed = static_cast<uint32_t>(value);
     output = speed ? speed : 1;

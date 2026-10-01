@@ -2289,5 +2289,17 @@ extern "C" int runPokemonBattleStateChecks() {
     finalActor.moves[0].pp = 1;
     if (!Pokerogue3DS::changePokemonBattleForm(finalActor, eternatus->firstFormId, eternatus->ability1) ||
         finalActor.hp || finalActor.moves[0].pp != 1) return 515;
+    auto unburdenActor = finalActor;
+    unburdenActor.abilityId = 84;
+    Pokerogue3DS::PokemonMoveWeatherContext unburdenWeather{};
+    unburdenWeather.resolved = true;
+    uint32_t beforeUnburden = 0, afterUnburden = 0;
+    if (!Pokerogue3DS::pokemonWeatherEffectiveSpeed(unburdenActor, unburdenWeather, beforeUnburden)) return 518;
+    unburdenActor.heldItemLostTags.unburden = true;
+    if (!Pokerogue3DS::pokemonWeatherEffectiveSpeed(unburdenActor, unburdenWeather, afterUnburden) ||
+        afterUnburden != beforeUnburden * 2) return 519;
+    unburdenActor.abilityId = 46;
+    if (!Pokerogue3DS::pokemonWeatherEffectiveSpeed(unburdenActor, unburdenWeather, afterUnburden) ||
+        afterUnburden != beforeUnburden) return 520;
     return 0;
 }

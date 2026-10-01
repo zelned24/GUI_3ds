@@ -140,7 +140,6 @@ inline HeldItemTheftAbilityPolicyResult resolveHeldItemTheftAbilityPolicy(
 }
 
 // Transient summon tag; the caller owns reset/serialization with other battle tags.
-struct HeldItemLostTagState { bool unburden = false; };
 enum class HeldItemLostCallbackResult : uint8_t {
     Applied, NoChange, InvalidState, UnknownAbility, UnresolvedApplicability, UnsupportedCallback
 };

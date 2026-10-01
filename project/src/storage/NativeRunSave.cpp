@@ -284,7 +284,8 @@ bool restoreNativePokemonSave(const NativePokemonSave& saved, PokemonBattleState
 
 bool captureNativePokemonSave(const PokemonBattleState& state, uint32_t experience,
     NativePokemonSave& output) {
-    if (!state.statsAreBaseFormulaOnly || !state.formId) return false;
+    // Schema v11 cannot serialize summon tags; never silently drop an active tag.
+    if (!state.statsAreBaseFormulaOnly || !state.formId || state.heldItemLostTags.unburden) return false;
     NativePokemonSave saved{};
     if (!copyText(saved.formId, sizeof(saved.formId), state.formId)) return false;
     saved.speciesDex = state.speciesDex;

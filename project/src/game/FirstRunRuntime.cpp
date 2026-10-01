@@ -2224,9 +2224,11 @@ bool FirstRunRuntime::switchPlayerPokemonInPlace(uint8_t targetIndex) {
     auto* rng = m_battleRng.currentStream();
     if (!rng) return false;
 
+    m_context.player.battleState.heldItemLostTags = {};
     m_context.playerParty[m_context.activePlayerPartyIndex] = m_context.player;
     m_context.activePlayerPartyIndex = targetIndex;
     m_context.player = m_context.playerParty[targetIndex];
+    m_context.player.battleState.heldItemLostTags = {};
     resetPokemonStatStages(m_context.player.battleState);
 
     m_checkpointAvailable = false;

@@ -545,3 +545,8 @@
 
 1. Perfil generado reconoce el atributo y argumento UNBURDEN desde raw canónico. Dispatcher del módulo de modifiers valida todos los IDs antes de publicar el tag, respeta simulated y no repite un tag existente. Callbacks/condiciones desconocidos fallan explícitamente.
 2. Regresiones 401–404 escritas; tests/compilación aplazados. Estado transitorio separado: falta conexión al turno, reset/serialización de tags y multiplicador de velocidad; no se habilita todavía la policy de transferencia con Unburden.
+
+## Estado y velocidad Unburden
+
+1. Tag PostItemLost pertenece al PokemonBattleState; velocidad consume tag y perfil canonico de habilidad. Cambio manual limpia tag; cambio de forma lo conserva.
+2. Captura v11 rechaza tag activo: falta payload de summon tags. Otros reset de campo, pasivas/supresion y callback en turnos siguen pendientes. Regresiones 518-520 escritas; tests/compilacion aplazados.
