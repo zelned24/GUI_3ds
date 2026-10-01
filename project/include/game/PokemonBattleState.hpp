@@ -356,6 +356,28 @@ inline PokemonStatusCureResult curePokemonStatusState(PokemonStatusState& status
         PokemonStatusCureResult::Cleared : PokemonStatusCureResult::NoEffect;
 }
 
+struct PokemonBurnDamagePolicy {
+    bool resolved = false;
+    bool ignoreSourceAbility = false;
+    bool abilityBypassesReduction = false;
+};
+// Pokemon.getAttackDamage applies burn after STAB/type and before screens.
+// This returns a multiplier, never modifies permanent attack stats.
+inline bool pokemonBurnDamageMultiplier(const PokemonBattleState& source, uint16_t moveId,
+    const PokemonBurnDamagePolicy& policy, double& output) {
+    const auto* move = PokerogueContent::findMoveById(moveId);
+    if (!move || !pokemonStatusStateValid(source.status)) return false;
+    if (move->category != PokerogueContent::MovePhysical || !source.status.present ||
+        source.status.effect != PokemonStatusEffect::Burn ||
+        PokerogueContent::moveHasAttribute(*move, "BypassBurnDamageReductionAttr")) {
+        output = 1.0;
+        return true;
+    }
+    if (!policy.resolved) return false;
+    output = !policy.ignoreSourceAbility && policy.abilityBypassesReduction ? 1.0 : 0.5;
+    return true;
+}
+
 struct PokemonStatusResidualPolicy {
     bool resolved = false; // Both block attributes and post-damage callbacks resolved.
     bool active = true;

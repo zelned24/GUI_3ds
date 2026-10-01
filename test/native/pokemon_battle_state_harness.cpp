@@ -2595,5 +2595,21 @@ extern "C" int runPokemonBattleStateChecks() {
     checkStatus.effect = Effect::Faint;
     if (Pokerogue3DS::curePokemonStatusState(checkStatus, false, true, true, false, true, true, cureEvent) !=
             Pokerogue3DS::PokemonStatusCureResult::NoEffect || !checkStatus.present) return 604;
+    PokemonBattleState burnedActor{};
+    burnedActor.status.present = true;
+    burnedActor.status.effect = Effect::Burn;
+    Pokerogue3DS::PokemonBurnDamagePolicy burnPolicy{};
+    double burnMultiplier = 123;
+    if (Pokerogue3DS::pokemonBurnDamageMultiplier(burnedActor, 33, burnPolicy, burnMultiplier) ||
+        burnMultiplier != 123) return 605;
+    burnPolicy.resolved = true;
+    if (!Pokerogue3DS::pokemonBurnDamageMultiplier(burnedActor, 33, burnPolicy, burnMultiplier) ||
+        burnMultiplier != 0.5) return 606;
+    burnPolicy.abilityBypassesReduction = true;
+    if (!Pokerogue3DS::pokemonBurnDamageMultiplier(burnedActor, 33, burnPolicy, burnMultiplier) ||
+        burnMultiplier != 1) return 607;
+    burnPolicy.ignoreSourceAbility = true;
+    if (!Pokerogue3DS::pokemonBurnDamageMultiplier(burnedActor, 33, burnPolicy, burnMultiplier) ||
+        burnMultiplier != 0.5) return 608;
     return 0;
 }

@@ -1380,3 +1380,9 @@
 
 1. curePokemonStatusState porta clearStatus/resetStatus: revive=false conserva FAINT; curación solicita Nightmare si salía de sleep, Confused si pedido, recarga visual opcional y FPS diez. Actor se limpia solamente tras política de reacciones resuelta.
 2. Evento conserva tareas pendientes para dispatcher; no elimina tags inexistentes del modelo ni inventa callbacks. Conexión a items, heal phases, pre-move cure y save aún pendiente. Regresiones de bloqueo/flags/FAINT escritas, sin ejecutar. Tests/compilación aplazados.
+
+## Política de daño por quemadura
+
+1. pokemonBurnDamageMultiplier reproduce condición de Pokemon.getAttackDamage: físico + BURN divide por dos salvo BypassBurnDamageReductionAttr del move o habilidad resuelta que no esté ignorada. No cambia attack stats; multiplicador pertenece a la etapa posterior a STAB/types y anterior a screens.
+2. Policy desconocida falla sin publicar output cuando se necesita el callback. Moves especiales/no quemados/bypass declarado conservan factor uno. Dispatcher de daño todavía no consume esta policy; estados siguen sin habilitarse por moves.
+3. Regresiones físico/bypass habilidad/ignoreSourceAbility escritas, sin ejecutar. Tests/compilación aplazados.
