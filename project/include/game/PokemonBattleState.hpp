@@ -222,7 +222,7 @@ struct PokemonBattleState {
     uint8_t friendship = 0; // Persistent Pokemon friendship, initialized from pinned species.
     PokemonStatusState status{}; // Persistent nonvolatile status, stored in run v15.
     PokemonStatusEffect pendingStatus = PokemonStatusEffect::None; // PokemonTurnData; queue must drain before checkpoint.
-    PokemonConfusionTagState confusion{}; // Transient summon tag; not yet serialized.
+    PokemonConfusionTagState confusion{}; // Transient summon tag; actor v8 / run v16.
     HeldItemLostTagState heldItemLostTags{}; // Transient summon data.
     uint32_t turnDamageDealt = 0; // PokemonTurnData.totalDamageDealt; reset after turn effects.
     PokemonGender gender = PokemonGender::Unspecified;

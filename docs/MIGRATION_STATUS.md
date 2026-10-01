@@ -1553,3 +1553,9 @@
 1. Payload pokemon=8 guarda status opcional y contador de confusión presente; formatos 1–7 conservan su lectura y ausencia explícita de tag. Restore valida presencia/contador, y encode sigue usando v6/v7 cuando no hay confusión.
 2. Run v15 continúa rechazando confusión porque aún faltan campos activos/enemigos/entrenadores; también rechaza un actor v8 con tag embebido para evitar pérdida al restaurar run. No se declara completo save/continue de confusión.
 3. Regresiones de roundtrip v8 y truncamiento escritas sin ejecutar. Tests/compilación aplazados.
+
+## Checkpoint de partida con confusión
+
+1. Run/save runtime v16 conserva contador de confusión de jugador/enemigo activos y equipo entrenador; snapshots v8 conservan equipo jugador. Validación exige coincidencia entre actor activo y miembro, presencia/contador coherentes y slots vacíos sin tag.
+2. Captura/restauración FirstRunRuntime copia tags y los repone tras cleanup de reconstrucción. Setup y segundo enemigo siguen fuera de esta frontera. Decoder migra v15 sin inventar tags; lectura anterior permanece.
+3. Regresiones de run v16 y discrepancia de actor/miembro escritas sin ejecutar. Dispatcher de confusión todavía pendiente; tests/compilación aplazados.

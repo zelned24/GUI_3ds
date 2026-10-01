@@ -163,6 +163,22 @@ extern "C" int runNativeSaveChecks() {
     statusSave.trainerParty[0].status.sleepTurnsRemaining = 1;
     if (validateNativeRunSave(statusSave, PokerogueContent::kContentHash) != NativeSaveResult::InvalidRecord)
         return 9005;
+    NativeRunSave confusionSave = trainerSave;
+    confusionSave.playerConfusion = {3, true};
+    confusionSave.enemyConfusion = {2, true};
+    confusionSave.trainerParty[confusionSave.activeTrainerMember].confusion = confusionSave.enemyConfusion;
+    confusionSave.trainerParty[1].confusion = {5, true};
+    if (encodeNativeRunSave(confusionSave, partyBytes, sizeof(partyBytes), partySize) != NativeSaveResult::Ok ||
+        decodeNativeRunSave(partyBytes, partySize, PokerogueContent::kContentHash, restored) != NativeSaveResult::Ok ||
+        restored.saveVersion != 16 || restored.playerConfusion.turns != 3 ||
+        restored.enemyConfusion.turns != 2 || restored.trainerParty[1].confusion.turns != 5) return 9180;
+    confusionSave.enemyConfusion.turns = 4;
+    if (validateNativeRunSave(confusionSave, PokerogueContent::kContentHash) != NativeSaveResult::InvalidRecord)
+        return 9181;
+    confusionSave.enemyConfusion = confusionSave.trainerParty[0].confusion;
+    confusionSave.playerConfusion.present = false;
+    if (validateNativeRunSave(confusionSave, PokerogueContent::kContentHash) != NativeSaveResult::InvalidRecord)
+        return 9182;
     NativeRunSave roomSave = trainerSave;
     roomSave.trickRoomTurnsLeft = 3;
     roomSave.trickRoomMaxDuration = 5;

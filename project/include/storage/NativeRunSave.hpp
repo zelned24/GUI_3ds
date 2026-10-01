@@ -7,8 +7,8 @@
 
 namespace Pokerogue3DS {
 
-inline constexpr uint16_t kNativeSaveVersion = 15;
-inline constexpr uint16_t kNativeSaveRuntimeVersion = 15;
+inline constexpr uint16_t kNativeSaveVersion = 16;
+inline constexpr uint16_t kNativeSaveRuntimeVersion = 16;
 // Bounded text envelope including six trainer members and field/inventory state.
 inline constexpr size_t kNativeSaveMaxBytes = 8192;
 inline constexpr size_t kNativeHeldModifierCapacity = 32;
@@ -31,6 +31,7 @@ struct NativeTrainerMemberSave {
     uint8_t pp[4]{};
     int8_t statStages[7]{};
     PokemonStatusState status{};
+    PokemonConfusionTagState confusion{};
 };
 
 // Explicit actor snapshot: canonical IDs only; computed stats are reconstructed.
@@ -100,6 +101,8 @@ struct NativeRunSave {
     uint16_t enemyHp = 0;
     PokemonStatusState playerStatus{};
     PokemonStatusState enemyStatus{};
+    PokemonConfusionTagState playerConfusion{};
+    PokemonConfusionTagState enemyConfusion{};
     uint32_t battleTurn = 0;
     uint8_t playerMoveCount = 0;
     uint8_t enemyMoveCount = 0;

@@ -343,23 +343,18 @@ NativeSaveResult FirstRunRuntime::captureNativeRunSave(NativeRunSave& output) co
         m_context.secondEnemy.battleState.pendingStatus != PokemonStatusEffect::None;
     for (const auto& member : m_context.playerParty) pending |= member.battleState.pendingStatus != PokemonStatusEffect::None;
     for (const auto& member : m_context.trainerParty) pending |= member.battleState.pendingStatus != PokemonStatusEffect::None;
-    const auto hasUnsavedTag = [](const PokemonBattleState& actor) {
-        return actor.confusion.present || actor.confusion.turns;
-    };
-    pending |= hasUnsavedTag(m_context.player.battleState) || hasUnsavedTag(m_context.enemy.battleState) ||
-        hasUnsavedTag(m_context.secondEnemy.battleState);
-    for (const auto& member : m_context.playerParty) pending |= hasUnsavedTag(member.battleState);
-    for (const auto& member : m_context.trainerParty) pending |= hasUnsavedTag(member.battleState);
     if (pending) { output = {}; return NativeSaveResult::UnsupportedStage; }
     if (!m_runStarted) {
         for (const auto& member : m_context.playerParty)
-            if (member.battleState.status.present) { output = {}; return NativeSaveResult::UnsupportedStage; }
+            if (member.battleState.status.present || member.battleState.confusion.present || member.battleState.confusion.turns) { output = {}; return NativeSaveResult::UnsupportedStage; }
         for (const auto& member : m_context.trainerParty)
-            if (member.battleState.status.present) { output = {}; return NativeSaveResult::UnsupportedStage; }
+            if (member.battleState.status.present || member.battleState.confusion.present || member.battleState.confusion.turns) { output = {}; return NativeSaveResult::UnsupportedStage; }
     }
     // Setup has no actor snapshot; doubles still require a separate save schema.
     if ((!m_runStarted && (m_context.player.battleState.status.present ||
-            m_context.enemy.battleState.status.present)) || m_context.secondEnemy.battleState.status.present) {
+            m_context.enemy.battleState.status.present || m_context.player.battleState.confusion.present ||
+            m_context.enemy.battleState.confusion.present)) || m_context.secondEnemy.battleState.status.present ||
+            m_context.secondEnemy.battleState.confusion.present) {
         output = {}; return NativeSaveResult::UnsupportedStage;
     }
 
@@ -411,6 +406,8 @@ NativeSaveResult FirstRunRuntime::captureNativeRunSave(NativeRunSave& output) co
         value.enemyHp = m_context.enemy.battleState.hp;
         value.playerStatus = m_context.player.battleState.status;
         value.enemyStatus = m_context.enemy.battleState.status;
+        value.playerConfusion = m_context.player.battleState.confusion;
+        value.enemyConfusion = m_context.enemy.battleState.confusion;
         value.battleTurn = m_turn;
         value.weatherType = static_cast<uint8_t>(m_arenaWeather.type);
         value.weatherTurnsLeft = m_arenaWeather.turnsLeft;
@@ -446,6 +443,7 @@ NativeSaveResult FirstRunRuntime::captureNativeRunSave(NativeRunSave& output) co
                 saved.speciesDex = actor.dex;
                 saved.hp = actor.battleState.hp;
                 saved.status = actor.battleState.status;
+                saved.confusion = actor.battleState.confusion;
                 saved.moveCount = actor.battleState.moveCount;
                 for (uint8_t slot = 0; slot < saved.moveCount && slot < 4; ++slot) {
                     saved.moveIds[slot] = actor.battleState.moves[slot].moveId;
@@ -470,7 +468,7 @@ NativeSaveResult FirstRunRuntime::captureNativeRunSave(NativeRunSave& output) co
     for (uint8_t member = 0; member < m_context.playerPartyCount; ++member)
         hasSummonTags |= m_context.playerParty[member].battleState.heldItemLostTags.unburden;
     if (value.stage != NativeSaveStage::RunSetup &&
-        (m_context.playerPartyCount > 1 || m_playerHistoryRequiresSnapshot || m_heldModifierCount || value.playerStatus.present || hasSummonTags || hasChangedFriendship || hasModifiedMaxPp)) {
+        (m_context.playerPartyCount > 1 || m_playerHistoryRequiresSnapshot || m_heldModifierCount || value.playerStatus.present || value.playerConfusion.present || hasSummonTags || hasChangedFriendship || hasModifiedMaxPp)) {
         if (m_context.playerPartyCount > 6 ||
             m_context.activePlayerPartyIndex >= m_context.playerPartyCount) { output = {}; return NativeSaveResult::InvalidRecord; }
         value.playerPartyCount = m_context.playerPartyCount;
@@ -744,6 +742,8 @@ bool FirstRunRuntime::restoreNativeRunSaveInPlace(const NativeRunSave& save) {
                 m_context.playerParty[member].battleState.statStages[stat] = save.playerParty[member].statStages[stat];
         for (uint8_t member = 0; member < save.playerPartyCount; ++member)
             m_context.playerParty[member].battleState.heldItemLostTags.unburden = save.playerParty[member].unburdenTag;
+        for (uint8_t member = 0; member < save.playerPartyCount; ++member)
+            m_context.playerParty[member].battleState.confusion = save.playerParty[member].confusion;
         m_context.player = m_context.playerParty[save.activePlayerMember];
     }
     for (uint16_t wave = 1; !save.playerPartyCount && wave < save.wave; ++wave) {
@@ -838,6 +838,8 @@ bool FirstRunRuntime::restoreNativeRunSaveInPlace(const NativeRunSave& save) {
     m_context.enemy.battleState.hp = save.enemyHp;
     m_context.player.battleState.status = save.playerStatus;
     m_context.enemy.battleState.status = save.enemyStatus;
+    m_context.player.battleState.confusion = save.playerConfusion;
+    m_context.enemy.battleState.confusion = save.enemyConfusion;
     for (uint8_t i = 0; i < save.playerMoveCount; ++i)
         m_context.player.battleState.moves[i].pp = save.playerPp[i];
     for (uint8_t i = 0; i < save.enemyMoveCount; ++i)
@@ -848,6 +850,7 @@ bool FirstRunRuntime::restoreNativeRunSaveInPlace(const NativeRunSave& save) {
             const auto& saved = save.trainerParty[member];
             actor.battleState.hp = saved.hp;
             actor.battleState.status = saved.status;
+            actor.battleState.confusion = saved.confusion;
             for (uint8_t stat = 0; stat < 7; ++stat) actor.battleState.statStages[stat] = saved.statStages[stat];
             for (uint8_t slot = 0; slot < saved.moveCount; ++slot)
                 actor.battleState.moves[slot].pp = saved.pp[slot];
