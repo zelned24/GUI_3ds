@@ -47,6 +47,24 @@ public:
         exportSize = size; std::memcpy(exported, in, size); return NativeSaveResult::Ok;
     }
 };
+class MemoryBundleStorage : public NativeProgressBundleStorage {
+public:
+    char bytes[kNativeProgressBundleMaxBytes]{};
+    size_t size = 0;
+    bool interrupt = false;
+    NativeSaveResult readBundle(char* out, size_t capacity, size_t& read) override {
+        read = 0;
+        if (!size) return NativeSaveResult::NotFound;
+        if (size > capacity) return NativeSaveResult::TooLarge;
+        std::memcpy(out, bytes, size); read = size; return NativeSaveResult::Ok;
+    }
+    NativeSaveResult writeBundle(const char* input, size_t length) override {
+        if (length > sizeof(bytes)) return NativeSaveResult::TooLarge;
+        size = interrupt ? length / 2 : length;
+        std::memcpy(bytes, input, size);
+        return interrupt ? NativeSaveResult::IoError : NativeSaveResult::Ok;
+    }
+};
 }
 extern "C" int runNativeSaveChecks() {
     char digest[65];
@@ -543,5 +561,50 @@ extern "C" int runNativeSaveChecks() {
     StarterCandyProfileCodec::put(0xffffffffU, bundleBytes + 8, 4);
     if (inspectNativeProgressBundle(bundleBytes, bundleSize, PokerogueContent::kContentHash, restored,
             bundleView) != NativeSaveResult::InvalidFormat) return 102;
+    // Real paired journal -> SD-like bundle transport -> foreign generation rebase.
+    disk.sizes[0] = disk.sizes[1] = other.sizes[0] = other.sizes[1] = 0;
+    NativeRunSave portable{};
+    if (makeNativeRunSetupSave(321, 1, portable) != NativeSaveResult::Ok ||
+        progress.commit(portable, candyRecords, 2) != NativeSaveResult::Ok) return 103;
+    static MemoryBundleStorage transport;
+    static char bundleWorkspace[2 * kNativeProgressBundleMaxBytes]{};
+    if (progress.exportBundle(transport, PokerogueContent::kContentHash, bundleWorkspace,
+            sizeof(bundleWorkspace), restoredCandy, 2) != NativeSaveResult::Ok) return 104;
+    size_t importedCount = 0;
+    if (progress.readBundleCandidate(transport, PokerogueContent::kContentHash, bundleWorkspace,
+            sizeof(bundleWorkspace), restored, restoredCandy, 2, importedCount) != NativeSaveResult::Ok ||
+        restored.seed != 321 || importedCount != 2 || restored.starterProfileGeneration != 1) return 105;
+    // Advance local generation independently; the portable reference stays at one.
+    portable.seed = 654;
+    if (progress.commit(portable, candyRecords, 2) != NativeSaveResult::Ok ||
+        portable.starterProfileGeneration != 2 ||
+        progress.commitImported(restored, restoredCandy, importedCount) != NativeSaveResult::Ok ||
+        restored.seed != 321 || restored.starterProfileGeneration != 3) return 106;
+    transport.bytes[16] ^= 1;
+    importedCount = 999;
+    if (progress.readBundleCandidate(transport, PokerogueContent::kContentHash, bundleWorkspace,
+            sizeof(bundleWorkspace), restored, restoredCandy, 2, importedCount) != NativeSaveResult::ChecksumMismatch ||
+        importedCount != 999 || progress.load(PokerogueContent::kContentHash, portable,
+            restoredCandy, 2, candyCount) != NativeSaveResult::Ok || portable.starterProfileGeneration != 3)
+        return 107;
+    transport.bytes[16] ^= 1;
+    transport.interrupt = true;
+    if (progress.exportBundle(transport, PokerogueContent::kContentHash, bundleWorkspace,
+            sizeof(bundleWorkspace), restoredCandy, 2) != NativeSaveResult::IoError ||
+        progress.load(PokerogueContent::kContentHash, portable, restoredCandy, 2, candyCount) !=
+            NativeSaveResult::Ok || portable.starterProfileGeneration != 3) return 108;
+    transport.interrupt = false;
+    if (progress.exportBundle(transport, PokerogueContent::kContentHash, bundleWorkspace,
+            sizeof(bundleWorkspace), restoredCandy, 2) != NativeSaveResult::Ok ||
+        progress.readBundleCandidate(transport, PokerogueContent::kContentHash, bundleWorkspace,
+            sizeof(bundleWorkspace), restored, restoredCandy, 2, importedCount) != NativeSaveResult::Ok)
+        return 109;
+    disk.interrupt = true;
+    if (progress.commitImported(restored, restoredCandy, importedCount) != NativeSaveResult::IoError)
+        return 110;
+    disk.interrupt = false;
+    if (progress.load(PokerogueContent::kContentHash, portable, restoredCandy, 2, candyCount) !=
+            NativeSaveResult::Ok || portable.starterProfileGeneration != 3 || portable.seed != 321)
+        return 111;
     return 0;
 }

@@ -1,5 +1,6 @@
 #include "storage/NativeRunSave.hpp"
 #include "storage/NativeStarterCandyStore.hpp"
+#include "storage/NativeProgressBundle.hpp"
 #include <cstdio>
 #include <cerrno>
 #include <sys/stat.h>
@@ -53,6 +54,12 @@ NativeSaveResult SdNativeSaveStorage::readExport(char* output, size_t capacity, 
 NativeSaveResult SdNativeSaveStorage::writeExport(const char* bytes, size_t size) {
     // The journal remains authoritative if an export is interrupted.
     return writeFile(kExportPath, bytes, size);
+}
+NativeSaveResult SdNativeSaveStorage::readBundle(char* output, size_t capacity, size_t& size) {
+    return readFile(kBundlePath, output, capacity, size);
+}
+NativeSaveResult SdNativeSaveStorage::writeBundle(const char* bytes, size_t size) {
+    return writeFile(kBundlePath, bytes, size, kNativeProgressBundleMaxBytes);
 }
 NativeSaveResult SdNativeStarterCandyStorage::readSlot(unsigned slot, char* output, size_t capacity, size_t& read) {
     if (slot > 1) return NativeSaveResult::InvalidRecord;

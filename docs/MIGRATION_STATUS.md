@@ -876,3 +876,10 @@
 2. El inspector devuelve vistas prestadas solo después de validar toda la pareja; el envelope de scratch es workspace mutable, no estado vivo. El encoder rechaza solapamientos y escribe bytes deterministas con buffers del caller. Límite total deriva de los límites de ambos componentes.
 3. Regresiones 95–102 escritas: pareja real codificada, inspección, reproducibilidad byte a byte, corrupción sin publicar vistas, hash incompatible, generaciones distintas, versión desconocida y longitud fuera de rango. Sin ejecutar/compilar.
 4. El formato todavía no está conectado a SD/export/import del host. Falta archivo portable único, readback, preflight de reconstrucción de run, rebase a generación local y commit conjunto. No se declara importación portable completa por la existencia del codec.
+
+## Progreso portable emparejado — pendiente de validación final
+
+1. `NativeProgressStore` conecta codec `P3PROG01` con SD: `sdmc:/3ds/pokerogue/exports/progress.p3progress`, partida y perfil exacto bajo un digest. Exporta y verifica lectura completa; journal local conserva autoridad ante exportación interrumpida.
+2. Importación nativa con R: valida hash de contenido, checksum y referencia de perfil, reconstruye runtime antes de escribir y reasigna generaciones locales. Perfil preparado primero; partida confirma la pareja. Archivo corrupto no dispara fallback silencioso al export antiguo.
+3. Y exporta el bundle tras guardar. En modo QuickJS sano L/R todavía pertenecen al bridge save/load: falta exponer importación portable en su menú. No se declara interoperabilidad con el save web ni OTA firmada.
+4. Regresiones 103–111 escritas para transporte, generación extranjera, corrupción, exportación interrumpida y commit de partida interrumpido. Tests y compilación siguen aplazados; uso real de SD/Azahar/Old 3DS no verificado.

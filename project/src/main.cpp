@@ -68,6 +68,7 @@ int main() {
     Pokerogue3DS::NativeStarterCandyStore profiles(profileStorage, profileScratch, sizeof(profileScratch));
     saves.bindStarterProfiles(profiles);
     Pokerogue3DS::NativeProgressStore progress(saves, profiles);
+    static char bundleScratch[2 * Pokerogue3DS::kNativeProgressBundleMaxBytes]{};
     static Pokerogue3DS::NativeStarterCandyRecord profileStaging[PokerogueContent::kSpeciesCount]{};
     Pokerogue3DS::PokemonFriendshipPolicy offlineFriendship{};
     offlineFriendship.resolved = true; // Explicit offline baseline: no timed event/fusion/boosters.
@@ -139,24 +140,24 @@ int main() {
             if (pressed & (KEY_X | KEY_Y)) {
                 result = game.saveNativeProgress(progress);
                 if (result == NativeSaveResult::Ok && (pressed & KEY_Y))
-                    result = progress.exportLatest(PokerogueContent::kContentHash);
+                    result = progress.exportBundle(saveStorage, PokerogueContent::kContentHash,
+                        bundleScratch, sizeof(bundleScratch), profileStaging, PokerogueContent::kSpeciesCount);
             } else {
                 if (pressed & KEY_R) {
-                    char bytes[kNativeSaveMaxBytes];
-                    std::size_t length = 0;
-                    result = saveStorage.readExport(bytes, sizeof(bytes), length);
-                    if (result == NativeSaveResult::Ok)
-                        result = decodeNativeRunSave(bytes, length, PokerogueContent::kContentHash, restored);
+                    size_t count = 0;
+                    result = progress.readBundleCandidate(saveStorage, PokerogueContent::kContentHash,
+                        bundleScratch, sizeof(bundleScratch), restored, profileStaging,
+                        PokerogueContent::kSpeciesCount, count);
                     if (result == NativeSaveResult::Ok && !canReplaySave(restored))
                         result = NativeSaveResult::InvalidRecord;
                     if (result == NativeSaveResult::Ok)
-                        result = saves.importExport(PokerogueContent::kContentHash);
+                        result = progress.commitImported(restored, profileStaging, count);
                 }
                 if (result == NativeSaveResult::Ok) result = game.loadNativeProgress(saves, profiles,
                     profileStaging, PokerogueContent::kSpeciesCount, offlineFriendship, &restored);
             }
             game.setStorageFeedback(result == NativeSaveResult::Ok
-                ? ((pressed & KEY_Y) ? "Exported progress.p3save + starters.p3profile" : "Progress saved/restored")
+                ? ((pressed & KEY_Y) ? "Exported progress.p3progress" : "Progress saved/restored")
                 : nativeSaveResultName(result));
             changed = true;
         }

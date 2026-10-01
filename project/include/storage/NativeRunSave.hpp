@@ -167,6 +167,14 @@ public:
     virtual NativeSaveResult writeExport(const char* bytes, size_t length) = 0;
 };
 
+// Portable paired progress transport, independent of the authoritative journals.
+class NativeProgressBundleStorage {
+public:
+    virtual ~NativeProgressBundleStorage() = default;
+    virtual NativeSaveResult readBundle(char* output, size_t capacity, size_t& read) = 0;
+    virtual NativeSaveResult writeBundle(const char* bytes, size_t length) = 0;
+};
+
 class NativeStarterCandyStore;
 
 class NativeRunSaveStore {
@@ -185,11 +193,14 @@ private:
 };
 
 // The production backend stores only these fixed files, without user-controlled
-// paths. Export is a portable UTF-8 .p3save file copied from the SD to another 3DS.
-class SdNativeSaveStorage final : public NativeSaveStorage {
+// paths. Paired .p3progress exports include the referenced starter profile.
+class SdNativeSaveStorage final : public NativeSaveStorage, public NativeProgressBundleStorage {
 public:
     static constexpr const char* kDirectory = "sdmc:/3ds/pokerogue/saves";
     static constexpr const char* kExportPath = "sdmc:/3ds/pokerogue/exports/progress.p3save";
+    static constexpr const char* kBundlePath = "sdmc:/3ds/pokerogue/exports/progress.p3progress";
+    NativeSaveResult readBundle(char* output, size_t capacity, size_t& read) override;
+    NativeSaveResult writeBundle(const char* bytes, size_t length) override;
     NativeSaveResult readSlot(unsigned slot, char* output, size_t capacity, size_t& read) override;
     NativeSaveResult writeSlot(unsigned slot, const char* bytes, size_t length) override;
     NativeSaveResult readExport(char* output, size_t capacity, size_t& read) override;
