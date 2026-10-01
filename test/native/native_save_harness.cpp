@@ -87,9 +87,18 @@ extern "C" int runNativeSaveChecks() {
             break;
         }
     }
+    // Codec validates canonical eligibility. Runtime regressions 618–620
+    // separately require caught-profile authorization for non-default starters.
+    NativeRunSave unlockedStarter{};
+    if (!nonProfileStarterDex || makeNativeRunSetupSave(123, nonProfileStarterDex, unlockedStarter) !=
+            NativeSaveResult::Ok || unlockedStarter.starterDex != nonProfileStarterDex ||
+        validateNativeRunSave(unlockedStarter, PokerogueContent::kContentHash) != NativeSaveResult::Ok) return 12;
+    uint16_t ineligibleStarterDex = 0;
+    for (const auto& species : PokerogueContent::kSpecies)
+        if (!species.starterEligible) { ineligibleStarterDex = species.dex; break; }
     NativeRunSave invalidStarter{};
-    if (!nonProfileStarterDex || makeNativeRunSetupSave(123, nonProfileStarterDex, invalidStarter) !=
-            NativeSaveResult::InvalidRecord) return 12;
+    if (!ineligibleStarterDex || makeNativeRunSetupSave(123, ineligibleStarterDex, invalidStarter) !=
+            NativeSaveResult::InvalidRecord) return 115;
     if (store.save(original) != NativeSaveResult::Ok || store.load(PokerogueContent::kContentHash, restored) != NativeSaveResult::Ok || restored.seed != 123) return 3;
     original.seed = 456; disk.interrupt = true;
     if (store.save(original) != NativeSaveResult::IoError) return 4;

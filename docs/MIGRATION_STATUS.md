@@ -1061,3 +1061,8 @@
 1. Extiende PokemonStarterMoveset con validación canónica de selección: 1–6 especies elegibles, sin duplicados y coste total <=10, según getRunValueLimit/selección pinned. Runtime exige además desbloqueo por perfil.
 2. Inicio actual de un starter consume este validador; codec rechaza starters cuyo coste base excede el límite. Validación no modifica output al fallar.
 3. Regresiones 621–622 escritas con especies del catálogo para duplicados y exceso de presupuesto, sin ejecutar. Equipo inicial múltiple y reducciones de coste por caramelos siguen pendientes; no se declara pantalla de selección completa.
+
+## Cobertura de codec vs permiso del perfil — pendiente de ejecución
+
+1. Regresión codec 12 actualizada por cambio de contrato: especie starterEligible no inicial es estructuralmente válida; permiso caught se prueba en runtime 618–620. Añadida 115 para mantener rechazo explícito de especie no elegible.
+2. Cambio basado en integración de desbloqueos, no en resultados de tests: suite no ejecutada y ninguna aserción desactivada. Buffers de journal/bundle siguen derivados de kStarterCandyProfileMaxBytes; perfiles evolucionados conservan candy/friendship cero.
