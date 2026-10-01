@@ -2,6 +2,7 @@
 #include "storage/NativeStarterCandyStore.hpp"
 #include "storage/IntegritySha256.hpp"
 #include "game/PokemonExperience.hpp"
+#include "game/PokemonStarterMoveset.hpp"
 #include "game/PokemonBattleState.hpp"
 #include "game/PokerogueModifierReward.hpp"
 #include "game/PokerogueTurnOrder.hpp"
@@ -40,7 +41,8 @@ bool equal(const char* first, const char* second) {
 const PokerogueContent::Species* canonicalStarter(uint16_t dex) {
     for (size_t i = 0; i < PokerogueContent::kSpeciesCount; ++i) {
         const auto& species = PokerogueContent::kSpecies[i];
-        if (species.dex == dex && species.starterEligible) return &species;
+        if (species.dex == dex && species.starterEligible && species.starterCost >= 1 &&
+            species.starterCost <= kClassicStarterValueLimit) return &species;
     }
     return nullptr;
 }

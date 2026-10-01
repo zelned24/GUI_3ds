@@ -89,6 +89,7 @@ public:
     bool cycleStarter(int direction);
     bool restoreSetup(uint32_t seed, uint16_t starterDex);
     bool starterUnlocked(uint16_t dex) const;
+    bool starterSelectionAllowed(const uint16_t* dexes, size_t count) const;
     void captureNativeRunSave(NativeRunSave& output) const;
     bool restoreNativeRunSave(const NativeRunSave& save, const NativeStarterCandyRecord* records = nullptr,
         size_t count = 0, const PokemonFriendshipPolicy* policy = nullptr);

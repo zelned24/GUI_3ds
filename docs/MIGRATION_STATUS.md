@@ -1055,3 +1055,9 @@
 1. Selección y reinicio nativo/QuickJS aceptan starterEligible canónico con caught en perfil, además de starters iniciales. No crean listas paralelas ni permiten especies no elegibles.
 2. Codec valida elegibilidad estructural; restore runtime exige perfil adjunto que acredite caught para starters no iniciales. Reconstrucción interna evita aplicar ganancias de perfil durante replay.
 3. Regresiones 618–620 escritas para bloqueo sin perfil, desbloqueo, inicio y restore autorizado, sin ejecutar. Selección de equipo múltiple, costes totales, abilities/egg moves/IVs/natures desbloqueados aún pendientes.
+
+## Validación del coste inicial Classic — pendiente de ejecución
+
+1. Extiende PokemonStarterMoveset con validación canónica de selección: 1–6 especies elegibles, sin duplicados y coste total <=10, según getRunValueLimit/selección pinned. Runtime exige además desbloqueo por perfil.
+2. Inicio actual de un starter consume este validador; codec rechaza starters cuyo coste base excede el límite. Validación no modifica output al fallar.
+3. Regresiones 621–622 escritas con especies del catálogo para duplicados y exceso de presupuesto, sin ejecutar. Equipo inicial múltiple y reducciones de coste por caramelos siguen pendientes; no se declara pantalla de selección completa.

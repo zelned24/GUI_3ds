@@ -1366,6 +1366,23 @@ static int checkPlayerPartyManagementAndSwitching() {
     if (unlockedRestored.restoreNativeRunSave(unlockedSetup) ||
         !unlockedRestored.restoreNativeRunSave(unlockedSetup, &unlockedRecord, 1, &captureFriendshipPolicy) ||
         unlockedRestored.run().starterDex != unlockableStarter) return 620;
+    const uint16_t duplicateStarters[] = {unlockableStarter, unlockableStarter};
+    uint16_t selectionValue = 999;
+    if (classicStarterSelectionValue(duplicateStarters, 2, selectionValue) !=
+            PokemonStarterSelectionResult::DuplicateSpecies || selectionValue != 999 ||
+        unlockedStarterGame.starterSelectionAllowed(duplicateStarters, 2)) return 621;
+    uint16_t costlyStarters[6]{};
+    size_t costlyCount = 0;
+    uint16_t costlyTotal = 0;
+    for (const auto& species : PokerogueContent::kSpecies)
+        if (species.starterEligible && species.starterCost >= 3 && costlyCount < 6 &&
+            costlyTotal <= kClassicStarterValueLimit) {
+            costlyStarters[costlyCount++] = species.dex;
+            costlyTotal += species.starterCost;
+        }
+    if (costlyTotal <= kClassicStarterValueLimit ||
+        classicStarterSelectionValue(costlyStarters, costlyCount, selectionValue) !=
+            PokemonStarterSelectionResult::OverBudget || selectionValue != 999) return 622;
     char caughtRuntimeProfile[Pokerogue3DS::kStarterCandyProfileMaxBytes]{};
     size_t caughtRuntimeBytes = 0;
     if (encodeNativeStarterCandyProfile(game.starterProfileRecords(), game.starterProfileCount(), 1,

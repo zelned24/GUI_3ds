@@ -293,6 +293,7 @@
 {"from":"project/src/storage/NativeRunSave.cpp","to":"project/generated/include/content/PokerogueRuntimeContent.hpp","kind":"include"},
 {"from":"project/src/storage/NativeRunSave.cpp","to":"project/include/game/PokemonBattleState.hpp","kind":"include"},
 {"from":"project/src/storage/NativeRunSave.cpp","to":"project/include/game/PokemonExperience.hpp","kind":"include"},
+{"from":"project/src/storage/NativeRunSave.cpp","to":"project/include/game/PokemonStarterMoveset.hpp","kind":"include"},
 {"from":"project/src/storage/NativeRunSave.cpp","to":"project/include/game/PokerogueModifierReward.hpp","kind":"include"},
 {"from":"project/src/storage/NativeRunSave.cpp","to":"project/include/game/PokerogueTurnOrder.hpp","kind":"include"},
 {"from":"project/src/storage/NativeRunSave.cpp","to":"project/include/storage/IntegritySha256.hpp","kind":"include"},

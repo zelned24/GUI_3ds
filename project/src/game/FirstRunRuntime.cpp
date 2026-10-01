@@ -105,8 +105,15 @@ bool FirstRunRuntime::starterUnlocked(uint16_t dex) const {
         (species->freshProfileStarter || (m_starterProfileReady && hasCaughtSpecies(dex)));
 }
 
+bool FirstRunRuntime::starterSelectionAllowed(const uint16_t* dexes, size_t count) const {
+    uint16_t value = 0;
+    if (classicStarterSelectionValue(dexes, count, value) != PokemonStarterSelectionResult::Ok) return false;
+    for (size_t i = 0; i < count; ++i) if (!starterUnlocked(dexes[i])) return false;
+    return true;
+}
+
 bool FirstRunRuntime::restoreSetup(uint32_t seed, uint16_t starterDex) {
-    if (!starterUnlocked(starterDex)) return false;
+    if (!starterSelectionAllowed(&starterDex, 1)) return false;
     return restoreSetupInPlace(seed, starterDex);
 }
 

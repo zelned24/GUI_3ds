@@ -6,6 +6,28 @@
 
 namespace Pokerogue3DS {
 
+// Pinned starter-select-ui-utils.ts/getRunValueLimit, default Classic policy.
+inline constexpr uint16_t kClassicStarterValueLimit = 10;
+enum class PokemonStarterSelectionResult : uint8_t {
+    Ok, InvalidCount, MissingSpecies, IneligibleSpecies, DuplicateSpecies, OverBudget
+};
+inline PokemonStarterSelectionResult classicStarterSelectionValue(const uint16_t* dexes,
+    size_t count, uint16_t& output) {
+    if (!dexes || !count || count > 6) return PokemonStarterSelectionResult::InvalidCount;
+    uint16_t total = 0;
+    for (size_t i = 0; i < count; ++i) {
+        const auto* species = PokerogueContent::findSpeciesByDex(dexes[i]);
+        if (!species) return PokemonStarterSelectionResult::MissingSpecies;
+        if (!species->starterEligible || species->starterCost < 1) return PokemonStarterSelectionResult::IneligibleSpecies;
+        for (size_t prior = 0; prior < i; ++prior)
+            if (dexes[prior] == dexes[i]) return PokemonStarterSelectionResult::DuplicateSpecies;
+        total += static_cast<uint16_t>(species->starterCost);
+        if (total > kClassicStarterValueLimit) return PokemonStarterSelectionResult::OverBudget;
+    }
+    output = total;
+    return PokemonStarterSelectionResult::Ok;
+}
+
 enum class PokemonStarterMovesetResult : uint8_t {
     Ok = 0, MissingSpecies, InvalidForm, InvalidPreferredMove, MissingMove,
     InvalidEggMoveMask, InsufficientCapacity
