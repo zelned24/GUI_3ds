@@ -372,6 +372,16 @@ PokemonStatusEligibility enqueuePokemonStatusRequest(PokemonBattleState& recipie
 PokemonStatusObtainResult applyPokemonQueuedStatus(PokemonBattleState& recipient,
     const PokemonQueuedStatusRequest& request, bool reactionsResolved, PokerogueRngAdapter& recipientRng);
 
+struct PokemonStatusEffectCommandPolicy {
+    PokemonStatusEffectMovePolicy move{};
+    bool reactionsResolved = false;
+};
+// Complete one-target status command. Source and recipient streams may alias.
+// Caller resolves callbacks/field/tags before declaring the policy complete.
+bool executePokemonStatusEffectCommand(PokemonBattleState& user, PokemonBattleState& target,
+    uint8_t slot, const PokemonStatusEffectCommandPolicy& policy, PokerogueRngAdapter& sourceRng,
+    PokerogueRngAdapter& recipientRng, PokemonStatusEffectMoveEvent& output);
+
 struct PokemonStatusMoveCheckPolicy {
     bool resolved = false;
     bool bypassSleep = false;

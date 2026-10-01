@@ -1475,3 +1475,9 @@
 1. PokemonBattleState conserva pendingStatus de PokemonTurnData. enqueuePokemonStatusRequest porta transición normal de trySetStatus y rechaza solicitudes duplicadas; override requiere su resolver separado. applyPokemonQueuedStatus exige coincidencia de destinatario/efecto pendiente y lo limpia al aplicar.
 2. Wrapper de obtención usa candidato para publicar solicitud/aplicación atómicamente. Run save/actor snapshot y finishBattleTurn rechazan fases pendientes; no silencian ni serializan una cola incompleta.
 3. Regresiones de enqueue sin duración, duplicado, limpieza de pending y rechazo de snapshot escritas sin ejecutar. El runtime todavía debe producir/drenar esta cola desde el comando y resolver callbacks completos; tests/compilación aplazados.
+
+## Comando completo de fases de estado
+
+1. executePokemonStatusEffectCommand integra hit/PP, solicitud, pendingStatus y ObtainStatus sobre candidato; publica actor objetivo/usuario y streams solo al terminar. Stream de duración puede ser compartido o separado del usuario, conservando orden de draws.
+2. Reacciones y políticas de campo/atributos deben estar resueltas; override pendiente se rechaza. No se habilitan silenciosamente movimientos en FirstRunRuntime: falta proveedor canónico completo de policy, inmunidades y callbacks/forms.
+3. Regresiones con Sleep Powder real de aplicación/PP/pending, streams compartidos/separados y fallo de reacciones escritas sin ejecutar. Tests/compilación aplazados.

@@ -2922,5 +2922,44 @@ extern "C" int runPokemonBattleStateChecks() {
     if (Pokerogue3DS::applyPokemonQueuedStatus(queuedRecipient, queuedStatus, false, statusApplicationRng) !=
             Pokerogue3DS::PokemonStatusObtainResult::UnsupportedReactions || queuedRecipient.status.effect != Effect::Sleep)
         return 9043;
+    PokemonBattleState commandStatusTarget{};
+    commandStatusTarget.hp = commandStatusTarget.maxHp = 100;
+    commandStatusTarget.pokemonId = 42;
+    statusMoveUser.pokemonId = 41;
+    statusMoveUser.moves[0] = {79, 15, 15}; // Real Sleep Powder.
+    Pokerogue3DS::PokemonStatusEffectCommandPolicy fullStatusPolicy{};
+    fullStatusPolicy.move.hit.resolved = true;
+    fullStatusPolicy.move.hit.bypassAccuracy = true;
+    fullStatusPolicy.move.application.resolved = true;
+    fullStatusPolicy.move.application.hasSource = true;
+    fullStatusPolicy.move.chanceCallbacksResolved = true;
+    fullStatusPolicy.reactionsResolved = true;
+    expectedApplicationRng = statusApplicationRng;
+    const uint32_t expectedSleepDraw = expectedApplicationRng.randSeedInt(3);
+    if (!Pokerogue3DS::executePokemonStatusEffectCommand(statusMoveUser, commandStatusTarget, 0,
+            fullStatusPolicy, statusApplicationRng, statusApplicationRng, statusCommandEvent) ||
+        statusMoveUser.moves[0].pp != 14 || commandStatusTarget.status.effect != Effect::Sleep ||
+        commandStatusTarget.status.sleepTurnsRemaining != (expectedSleepDraw == 0 ? 2u : 3u) ||
+        commandStatusTarget.pendingStatus != Effect::None ||
+        statusApplicationRng.randSeedUint32() != expectedApplicationRng.randSeedUint32()) return 9050;
+    commandStatusTarget.status = {};
+    fullStatusPolicy.reactionsResolved = false;
+    expectedApplicationRng = statusApplicationRng;
+    if (Pokerogue3DS::executePokemonStatusEffectCommand(statusMoveUser, commandStatusTarget, 0,
+            fullStatusPolicy, statusApplicationRng, statusApplicationRng, statusCommandEvent) ||
+        statusMoveUser.moves[0].pp != 14 || commandStatusTarget.status.present ||
+        statusApplicationRng.randSeedUint32() != expectedApplicationRng.randSeedUint32()) return 9051;
+    fullStatusPolicy.reactionsResolved = true;
+    PokerogueRngAdapter recipientStatusRng;
+    recipientStatusRng.sow(damageSeed, sizeof(damageSeed) / sizeof(damageSeed[0]));
+    auto expectedRecipientStatusRng = recipientStatusRng;
+    expectedApplicationRng = statusApplicationRng;
+    const uint32_t separateSleepDraw = expectedRecipientStatusRng.randSeedInt(3);
+    if (!Pokerogue3DS::executePokemonStatusEffectCommand(statusMoveUser, commandStatusTarget, 0,
+            fullStatusPolicy, statusApplicationRng, recipientStatusRng, statusCommandEvent) ||
+        statusMoveUser.moves[0].pp != 13 ||
+        commandStatusTarget.status.sleepTurnsRemaining != (separateSleepDraw == 0 ? 2u : 3u) ||
+        statusApplicationRng.randSeedUint32() != expectedApplicationRng.randSeedUint32() ||
+        recipientStatusRng.randSeedUint32() != expectedRecipientStatusRng.randSeedUint32()) return 9052;
     return 0;
 }

@@ -147,6 +147,38 @@ bool usePokemonStatusEffectMove(PokemonBattleState& user, const PokemonBattleSta
     return true;
 }
 
+bool executePokemonStatusEffectCommand(PokemonBattleState& user, PokemonBattleState& target,
+    uint8_t slot, const PokemonStatusEffectCommandPolicy& policy, PokerogueRngAdapter& sourceRng,
+    PokerogueRngAdapter& recipientRng, PokemonStatusEffectMoveEvent& output) {
+    if (!policy.reactionsResolved || policy.move.application.overrideStatus) return false;
+    auto nextUser = user;
+    auto nextTarget = target;
+    auto nextSourceRng = sourceRng;
+    auto nextRecipientRng = recipientRng;
+    auto& moveTarget = &user == &target ? nextUser : nextTarget;
+    PokemonStatusEffectMoveEvent event{};
+    if (!usePokemonStatusEffectMove(nextUser, moveTarget, slot, policy.move, nextSourceRng, event)) return false;
+    if (event.application.requestObtainStatusPhase) {
+        auto& recipient = event.application.selfTarget ? nextUser : nextTarget;
+        PokemonQueuedStatusRequest request{};
+        request.recipientPokemonId = recipient.pokemonId;
+        request.sourcePokemonId = nextUser.pokemonId;
+        request.hasSource = true;
+        request.effect = event.application.effect;
+        if (enqueuePokemonStatusRequest(recipient, request, policy.move.application) != PokemonStatusEligibility::Allowed)
+            return false;
+        auto& durationRng = &sourceRng == &recipientRng ? nextSourceRng : nextRecipientRng;
+        if (applyPokemonQueuedStatus(recipient, request, true, durationRng) != PokemonStatusObtainResult::Applied)
+            return false;
+    }
+    user = nextUser;
+    if (&user != &target) target = nextTarget;
+    sourceRng = nextSourceRng;
+    if (&sourceRng != &recipientRng) recipientRng = nextRecipientRng;
+    output = event;
+    return true;
+}
+
 PokemonStatusObtainResult obtainPokemonStatus(PokemonBattleState& actor, PokemonStatusEffect effect,
     const PokemonStatusApplicationPolicy& policy, bool reactionsResolved, PokerogueRngAdapter& rng,
     bool explicitSleepDuration, uint32_t sleepDuration) {
