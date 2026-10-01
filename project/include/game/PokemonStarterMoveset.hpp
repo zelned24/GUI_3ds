@@ -8,6 +8,17 @@ namespace Pokerogue3DS {
 
 // Pinned starter-select-ui-utils.ts/getRunValueLimit, default Classic policy.
 inline constexpr uint16_t kClassicStarterValueLimit = 10;
+// Pinned GameData.getSpeciesStarterValue and constants.VALUE_REDUCTION_MAX.
+// Quarter-point units exactly represent the two permitted halvings below one.
+inline bool pokemonStarterCostQuarterUnits(uint16_t dex, uint8_t reductions, uint16_t& output) {
+    const auto* species = PokerogueContent::findSpeciesByDex(dex);
+    if (!species || !species->starterEligible || species->starterCost < 1 || reductions > 2) return false;
+    uint16_t value = static_cast<uint16_t>(species->starterCost) * 4;
+    for (uint8_t i = 0; i < reductions; ++i) value = value > 4 ? value - 4 : value / 2;
+    output = value;
+    return true;
+}
+
 enum class PokemonStarterSelectionResult : uint8_t {
     Ok, InvalidCount, MissingSpecies, IneligibleSpecies, DuplicateSpecies, OverBudget
 };
@@ -21,7 +32,10 @@ inline PokemonStarterSelectionResult classicStarterSelectionValue(const uint16_t
         if (!species->starterEligible || species->starterCost < 1) return PokemonStarterSelectionResult::IneligibleSpecies;
         for (size_t prior = 0; prior < i; ++prior)
             if (dexes[prior] == dexes[i]) return PokemonStarterSelectionResult::DuplicateSpecies;
-        total += static_cast<uint16_t>(species->starterCost);
+        uint16_t baseQuarterUnits = 0;
+        if (!pokemonStarterCostQuarterUnits(dexes[i], 0, baseQuarterUnits))
+            return PokemonStarterSelectionResult::IneligibleSpecies;
+        total += baseQuarterUnits / 4;
         if (total > kClassicStarterValueLimit) return PokemonStarterSelectionResult::OverBudget;
     }
     output = total;

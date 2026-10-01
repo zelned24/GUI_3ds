@@ -1404,6 +1404,18 @@ static int checkPlayerPartyManagementAndSwitching() {
         if (before.speciesDex != after.speciesDex || before.caught != after.caught ||
             before.candyCount != after.candyCount || before.friendship != after.friendship) return 625;
     }
+    uint8_t coveredStarterCosts = 0;
+    for (const auto& species : PokerogueContent::kSpecies) {
+        if (!species.starterEligible || species.starterCost < 1 || species.starterCost > 3) continue;
+        uint16_t reducedCost = 999;
+        if (!pokemonStarterCostQuarterUnits(species.dex, 2, reducedCost)) return 628;
+        const uint16_t expectedCost = species.starterCost == 1 ? 1 : species.starterCost == 2 ? 2 : 4;
+        if (reducedCost != expectedCost) return 629;
+        coveredStarterCosts |= static_cast<uint8_t>(1 << (species.starterCost - 1));
+        reducedCost = 999;
+        if (pokemonStarterCostQuarterUnits(species.dex, 3, reducedCost) || reducedCost != 999) return 630;
+    }
+    if (coveredStarterCosts != 7) return 631;
     char caughtRuntimeProfile[Pokerogue3DS::kStarterCandyProfileMaxBytes]{};
     size_t caughtRuntimeBytes = 0;
     if (encodeNativeStarterCandyProfile(game.starterProfileRecords(), game.starterProfileCount(), 1,

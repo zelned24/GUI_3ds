@@ -1108,3 +1108,9 @@
 1. Save/load/export/import adquieren envelope en heap con nothrow antes de procesar comandos. Fallo retorna MemoryUnavailable sin escribir ni sustituir run viva.
 2. Lectura de generación después de save reutiliza el workspace del comando en lugar de un segundo envelope. Preflight del runtime importado y referencias de perfil permanecen intactos.
 3. Comprobación estática JS escrita para propiedad y orden del guard, sin ejecutar. No sustituye inyección de OOM ni pruebas del binario/hardware pendientes.
+
+## Cálculo de reducción del coste de starter — conexión al perfil pendiente
+
+1. PokemonStarterMoveset porta GameData.getSpeciesStarterValue: resta un punto por reducción mientras coste>1, después divide por dos. VALUE_REDUCTION_MAX pinned es 2; representación exacta en cuartos evita truncar 0.5/0.25.
+2. Validador actual de selección reutiliza el cálculo con reducción cero. Regresiones 628–631 escritas para costes canónicos 1–3 y rechazo de reducción inválida, sin ejecutar.
+3. Compra mediante candy prices importados, valueReduction persistente, presupuesto fraccionario de equipo y comandos de selección siguen pendientes. No se declara reducción comprable en partidas.
