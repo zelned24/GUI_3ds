@@ -717,7 +717,8 @@ PokemonMoveDamageResult resolveStandardPokemonMoveDamage(
     PokemonMoveDamageRoll& output,
     const PokemonMoveWeatherContext* weatherContext = nullptr,
     const PokemonCriticalPolicy* criticalPolicy = nullptr,
-    const PokemonHitPolicy* hitPolicy = nullptr);
+    const PokemonHitPolicy* hitPolicy = nullptr,
+    const PokemonBurnDamagePolicy* burnPolicy = nullptr);
 
 struct PokemonPpPolicy {
     bool resolved = false;
@@ -752,7 +753,8 @@ PokemonMoveActionStatus useStandardPokemonMove(
     const PokemonPpPolicy* ppPolicy = nullptr,
     PokemonBossState* targetBossState = nullptr,
     const PokemonBossDamagePolicy* bossDamagePolicy = nullptr,
-    PokerogueRngAdapter* bossGlobalRng = nullptr);
+    PokerogueRngAdapter* bossGlobalRng = nullptr,
+    const PokemonBurnDamagePolicy* burnPolicy = nullptr);
 
 enum class PokemonAbilitySelectionResult : uint8_t { Ok = 0, MissingSpecies, InvalidHiddenRate };
 PokemonAbilitySelectionResult selectPokemonAbilityIndex(

@@ -1180,13 +1180,17 @@ PokemonMoveDamageResult resolveStandardPokemonMoveDamage(
     PokemonMoveDamageRoll& output,
     const PokemonMoveWeatherContext* weatherContext,
     const PokemonCriticalPolicy* criticalPolicy,
-    const PokemonHitPolicy* hitPolicy) {
+    const PokemonHitPolicy* hitPolicy, const PokemonBurnDamagePolicy* burnPolicy) {
     const auto* move = PokerogueContent::findMoveById(moveId);
     if (!move) return PokemonMoveDamageResult::MissingMove;
     if (move->category == PokerogueContent::MoveStatus || move->power <= 0) {
         return PokemonMoveDamageResult::NonDamagingMove;
     }
     if (move->accuracy < -1 || move->accuracy > 100) return PokemonMoveDamageResult::InvalidAccuracy;
+    double burnMultiplier = 1.0;
+    const PokemonBurnDamagePolicy unknownBurnPolicy{};
+    if (!pokemonBurnDamageMultiplier(attacker, moveId, burnPolicy ? *burnPolicy : unknownBurnPolicy, burnMultiplier))
+        return PokemonMoveDamageResult::UnsupportedAbilityCondition;
     const auto* attackerSpecies = PokerogueContent::findSpeciesByDex(attacker.speciesDex);
     const auto* defenderSpecies = PokerogueContent::findSpeciesByDex(defender.speciesDex);
     if (!attackerSpecies || !defenderSpecies) return PokemonMoveDamageResult::MissingSpecies;
@@ -1300,7 +1304,7 @@ PokemonMoveDamageResult resolveStandardPokemonMoveDamage(
     const double criticalMultiplier = next.critical ? 1.5 * abilityCriticalMultiplier : 1.0;
     const double damage = baseDamage * weatherMultiplier * criticalMultiplier
         * (static_cast<double>(next.randomDamagePercent) / 100.0)
-        * stabMultiplier * next.typeEffectiveness;
+        * stabMultiplier * next.typeEffectiveness * burnMultiplier;
     if (damage > 4294967295.0) return PokemonMoveDamageResult::InvalidStats;
     const uint32_t rounded = static_cast<uint32_t>(damage);
     next.damage = rounded ? rounded : 1;
@@ -1338,7 +1342,7 @@ PokemonMoveActionStatus useStandardPokemonMove(
     const PokemonHitPolicy* hitPolicy,
     const PokemonPpPolicy* ppPolicy,
     PokemonBossState* targetBossState, const PokemonBossDamagePolicy* bossDamagePolicy,
-    PokerogueRngAdapter* bossGlobalRng) {
+    PokerogueRngAdapter* bossGlobalRng, const PokemonBurnDamagePolicy* burnPolicy) {
     if (moveSlot >= attacker.moveCount || moveSlot >= 4 || attacker.moves[moveSlot].moveId == 0) {
         return PokemonMoveActionStatus::InvalidMoveSlot;
     }
@@ -1383,7 +1387,7 @@ PokemonMoveActionStatus useStandardPokemonMove(
     PokerogueRngAdapter nextGlobalRng;
     if (bossGlobalRng) nextGlobalRng = *bossGlobalRng;
     next.damageResolutionStatus = resolveStandardPokemonMoveDamage(
-        attacker, defender, attacker.moves[moveSlot].moveId, moveIsTypeless, nextRng, next.damageRoll, weatherContext, criticalPolicy, hitPolicy);
+        attacker, defender, attacker.moves[moveSlot].moveId, moveIsTypeless, nextRng, next.damageRoll, weatherContext, criticalPolicy, hitPolicy, burnPolicy);
     if (next.damageResolutionStatus == PokemonMoveDamageResult::UnsupportedAbilityCondition)
         return PokemonMoveActionStatus::UnsupportedAbilityCondition;
     if (next.damageResolutionStatus == PokemonMoveDamageResult::UnresolvedWeather)

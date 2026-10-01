@@ -1386,3 +1386,9 @@
 1. pokemonBurnDamageMultiplier reproduce condición de Pokemon.getAttackDamage: físico + BURN divide por dos salvo BypassBurnDamageReductionAttr del move o habilidad resuelta que no esté ignorada. No cambia attack stats; multiplicador pertenece a la etapa posterior a STAB/types y anterior a screens.
 2. Policy desconocida falla sin publicar output cuando se necesita el callback. Moves especiales/no quemados/bypass declarado conservan factor uno. Dispatcher de daño todavía no consume esta policy; estados siguen sin habilitarse por moves.
 3. Regresiones físico/bypass habilidad/ignoreSourceAbility escritas, sin ejecutar. Tests/compilación aplazados.
+
+## Quemadura conectada al cálculo de daño estándar
+
+1. resolveStandardPokemonMoveDamage consume PokemonBurnDamagePolicy opcional y aplica factor después de STAB/types antes de redondear. useStandardPokemonMove transmite policy al resolver conservando API existente por default. No añade draws RNG.
+2. Actor quemado físico sin policy resuelta falla antes de precisión/crítico/RNG, en lugar de omitir la habilidad. Actors no quemados y moves bypass no requieren policy adicional. FirstRunRuntime todavía debe resolver callbacks de habilidad antes de habilitar status en combate.
+3. Revisión estática/diff; tests/compilación aplazados. Dispatcher de estados y save permanecen pendientes.
