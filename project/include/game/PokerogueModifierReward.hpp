@@ -107,6 +107,73 @@ inline HeldItemStackTransferResult calculateHeldItemStackTransfer(uint16_t sourc
     return HeldItemStackTransferResult::Transferred;
 }
 
+struct HeldItemTheftPolicy {
+    bool resolved = false; // Includes matchType, stack cap and ability/post-loss dispatch capability.
+    bool blockedByAbility = false;
+    size_t matchingTargetIndex = static_cast<size_t>(-1);
+    uint16_t targetMaxStack = 0;
+};
+struct HeldItemInventoryTransferEvent {
+    HeldItemStackTransferEvent stacks{};
+    uint32_t sourcePokemonId = 0;
+    uint32_t targetPokemonId = 0;
+    size_t canonicalItemIndex = 0;
+    size_t resultingInventoryIndex = 0;
+};
+enum class HeldItemInventoryTransferResult : uint8_t {
+    Transferred, ProtectedItem, BlockedByAbility, NoCapacity, StorageCapacity,
+    UnresolvedPolicy, InvalidState
+};
+
+// The caller resolves matchType and ability policies before invoking this
+// inventory mutation. PostItemLost dispatch consumes the returned event.
+inline HeldItemInventoryTransferResult applySelectedHeldItemTheft(
+    NativeHeldModifierInstance* records, size_t capacity, size_t& count, size_t sourceIndex,
+    uint32_t targetPokemonId, const HeldItemTheftPolicy& policy, HeldItemInventoryTransferEvent& output) {
+    if (!records || count > capacity || sourceIndex >= count) return HeldItemInventoryTransferResult::InvalidState;
+    for (size_t i = 0; i < count; ++i)
+        if (!validateHeldModifierInstance(records[i])) return HeldItemInventoryTransferResult::InvalidState;
+    const auto source = records[sourceIndex];
+    if (source.ownerPokemonId == targetPokemonId) return HeldItemInventoryTransferResult::InvalidState;
+    if (!source.transferable) return HeldItemInventoryTransferResult::ProtectedItem;
+    if (!policy.resolved) return HeldItemInventoryTransferResult::UnresolvedPolicy;
+    if (policy.blockedByAbility) return HeldItemInventoryTransferResult::BlockedByAbility;
+    const bool matching = policy.matchingTargetIndex != static_cast<size_t>(-1);
+    if (matching && (policy.matchingTargetIndex >= count || policy.matchingTargetIndex == sourceIndex ||
+        records[policy.matchingTargetIndex].ownerPokemonId != targetPokemonId))
+        return HeldItemInventoryTransferResult::InvalidState;
+    HeldItemStackTransferEvent stacks{};
+    const auto stackResult = calculateHeldItemStackTransfer(source.stackCount, matching,
+        matching ? records[policy.matchingTargetIndex].stackCount : 0, policy.targetMaxStack, 1, stacks);
+    if (stackResult == HeldItemStackTransferResult::NoCapacity) return HeldItemInventoryTransferResult::NoCapacity;
+    if (stackResult != HeldItemStackTransferResult::Transferred) return HeldItemInventoryTransferResult::InvalidState;
+    const size_t finalCount = count - (stacks.removeSource ? 1 : 0) - (matching ? 1 : 0) + 1;
+    if (finalCount > capacity) return HeldItemInventoryTransferResult::StorageCapacity;
+    auto received = source; // Clone preserves canonical definition, args and transferability.
+    received.ownerPokemonId = targetPokemonId;
+    received.stackCount = stacks.targetStack;
+    // All fallible checks finish before the first inventory write.
+    records[sourceIndex].stackCount = stacks.sourceRemaining;
+    const size_t previousCount = count;
+    size_t writeIndex = 0;
+    for (size_t readIndex = 0; readIndex < previousCount; ++readIndex) {
+        if ((stacks.removeSource && readIndex == sourceIndex) ||
+            (matching && readIndex == policy.matchingTargetIndex)) continue;
+        records[writeIndex++] = records[readIndex];
+    }
+    records[writeIndex++] = received;
+    for (size_t i = writeIndex; i < previousCount; ++i) records[i] = {};
+    count = writeIndex;
+    HeldItemInventoryTransferEvent event{};
+    event.stacks = stacks;
+    event.sourcePokemonId = source.ownerPokemonId;
+    event.targetPokemonId = targetPokemonId;
+    event.canonicalItemIndex = source.canonicalItemIndex;
+    event.resultingInventoryIndex = count - 1;
+    output = event;
+    return HeldItemInventoryTransferResult::Transferred;
+}
+
 struct HeldItemTransferCandidate {
     uint32_t ownerPokemonId = 0;
     size_t inventoryIndex = 0;

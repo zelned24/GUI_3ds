@@ -498,3 +498,9 @@
 1. NativeHeldModifierInstance en el módulo existente referencia catálogo canónico (sin IDs paralelos), owner PID, stack, transferibilidad y argumentos raw. Mantiene definición separada de instancia y no supone que ID igual implique matchType.
 2. Primitivas de almacenamiento sobre buffer del caller conservan orden, permiten remoción compacta y fallan claramente por capacidad/ID inexistente/argumentos demasiado largos, sin truncar ni publicar datos falsos. La capacidad de buffer no limita el catálogo. Índices corresponden al content hash; futura serialización debe conservar identidad canónica y validar actualización.
 3. Regresiones 358–363 escritas con MINI_BLACK_HOLE real y bandera no transferible como el boss upstream, límites/remoción/metadata. Falta conectar inventario a runtime/rewards/save, políticas matchType y callbacks; no se declara efecto de batalla funcional. Tests/compilación aplazados.
+
+## Transferencia conectada al buffer de instancias
+
+1. applySelectedHeldItemTheft conecta cálculo de stacks y almacenamiento existente: clona fuente para receptor, conserva catálogo/raw args/transferibilidad, remueve source agotada y modifier coincidente, añade receptor al final y emite evento de pérdida para dispatcher. Valida capacidad y datos antes de mutar.
+2. Policy explícita exige matchType/capacidad y capacidad del dispatcher de habilidades resueltos; no supone igualdad de IDs. Objetos protegidos, habilidad bloqueante, receptor lleno, policy pendiente y almacenamiento insuficiente tienen resultados distintos. El caller conserva RNG consumido por selección aunque la transferencia sea bloqueada.
+3. Regresiones 364–370 escritas para stacks/orden/remoción, lleno sin mutación, policy pendiente y objeto protegido. Faltan ownership del inventario en runtime, callbacks activos, rewards/save y llamada TurnEndPhase; Mini Black Hole/Eternamax no están completos. Tests/compilación aplazados.

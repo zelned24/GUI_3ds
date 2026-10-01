@@ -506,6 +506,55 @@ static int checkWave200FinalBossAndGameClear() {
     if (initializeHeldModifierInstance("MINI_BLACK_HOLE", 0, 1, true, hugeArguments, heldRecords[0]) !=
             HeldModifierStorageResult::CapacityExceeded || heldRecords[0].ownerPokemonId != heldBeforeInvalid.ownerPokemonId)
         return 363;
+    NativeHeldModifierInstance transferRecords[3]{};
+    size_t transferRecordCount = 2;
+    transferRecords[0] = otherHolder;
+    transferRecords[0].ownerPokemonId = 1001;
+    transferRecords[0].stackCount = 2;
+    transferRecords[1] = otherHolder;
+    transferRecords[1].ownerPokemonId = 1002;
+    HeldItemTheftPolicy theftPolicy{};
+    theftPolicy.resolved = true;
+    theftPolicy.matchingTargetIndex = 1;
+    theftPolicy.targetMaxStack = 3;
+    HeldItemInventoryTransferEvent inventoryTransfer{};
+    if (applySelectedHeldItemTheft(transferRecords, 3, transferRecordCount, 0, 1002, theftPolicy,
+            inventoryTransfer) != HeldItemInventoryTransferResult::Transferred || transferRecordCount != 2 ||
+        transferRecords[0].stackCount != 1 || transferRecords[1].stackCount != 2 ||
+        inventoryTransfer.stacks.transferred != 1 || inventoryTransfer.sourcePokemonId != 1001 ||
+        inventoryTransfer.targetPokemonId != 1002 || inventoryTransfer.resultingInventoryIndex != 1) return 364;
+    if (applySelectedHeldItemTheft(transferRecords, 3, transferRecordCount, 0, 1002, theftPolicy,
+            inventoryTransfer) != HeldItemInventoryTransferResult::Transferred || transferRecordCount != 1 ||
+        transferRecords[0].ownerPokemonId != 1002 || transferRecords[0].stackCount != 3 ||
+        transferRecords[1].stackCount || !inventoryTransfer.stacks.removeSource) return 365;
+    transferRecords[1] = otherHolder;
+    transferRecords[1].ownerPokemonId = 1001;
+    transferRecordCount = 2;
+    theftPolicy.matchingTargetIndex = 0;
+    const auto savedInventoryTransfer = inventoryTransfer;
+    if (applySelectedHeldItemTheft(transferRecords, 3, transferRecordCount, 1, 1002, theftPolicy,
+            inventoryTransfer) != HeldItemInventoryTransferResult::NoCapacity || transferRecordCount != 2 ||
+        transferRecords[1].stackCount != 1 || inventoryTransfer.sourcePokemonId != savedInventoryTransfer.sourcePokemonId)
+        return 366;
+    theftPolicy.resolved = false;
+    if (applySelectedHeldItemTheft(transferRecords, 3, transferRecordCount, 1, 1002, theftPolicy,
+            inventoryTransfer) != HeldItemInventoryTransferResult::UnresolvedPolicy) return 367;
+    transferRecords[1].transferable = false;
+    if (applySelectedHeldItemTheft(transferRecords, 3, transferRecordCount, 1, 1002, theftPolicy,
+            inventoryTransfer) != HeldItemInventoryTransferResult::ProtectedItem || transferRecords[1].stackCount != 1)
+        return 368;
+    transferRecords[1].transferable = true;
+    theftPolicy.resolved = true;
+    theftPolicy.blockedByAbility = true;
+    if (applySelectedHeldItemTheft(transferRecords, 3, transferRecordCount, 1, 1002, theftPolicy,
+            inventoryTransfer) != HeldItemInventoryTransferResult::BlockedByAbility || transferRecordCount != 2)
+        return 369;
+    theftPolicy.blockedByAbility = false;
+    theftPolicy.matchingTargetIndex = static_cast<size_t>(-1);
+    transferRecords[1].stackCount = 2;
+    if (applySelectedHeldItemTheft(transferRecords, 2, transferRecordCount, 1, 1003, theftPolicy,
+            inventoryTransfer) != HeldItemInventoryTransferResult::StorageCapacity || transferRecordCount != 2 ||
+        transferRecords[1].stackCount != 2 || transferRecords[1].ownerPokemonId != 1001) return 370;
     const auto preservedBoss = bossActor;
     if (applyPokemonFixedEnemyMovePp(*firstPhase, bossActor) ||
         bossActor.moves[3].maxPp != preservedBoss.moves[3].maxPp) return 338;
