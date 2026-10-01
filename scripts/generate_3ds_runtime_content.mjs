@@ -1033,9 +1033,9 @@ const theftAbilityRows = collections.abilities.map(ability => {
   const pending = attrs.some(attr => attr !== 'BlockItemTheftAbAttr' && attr !== 'PostItemLostAbAttr');
   const appliesUnburden = attrs.includes('PostItemLostApplyBattlerTagAbAttr') && /\.attr\(PostItemLostApplyBattlerTagAbAttr,\s*BattlerTagType\.UNBURDEN\s*\)/.test(raw) && attrs.every(attr => attr === 'PostItemLostApplyBattlerTagAbAttr');
   const conditional = attrs.length > 0 && /\.(?:condition|conditionalAttr)\s*\(/.test(raw);
-  return `    {${ability.abilityId}, ${blocks}, ${pending}, ${conditional}, ${appliesUnburden}, "${field(ability.source?.sourcePath)}", "${field(ability.source?.sourceSymbol)}", "${field(ability.source?.sourceHash)}"}`;
+  return `    {${ability.abilityId}, ${blocks}, ${pending}, ${conditional}, ${appliesUnburden}, ${/\.bypassFaint\s*\(/.test(raw)}, ${/\.ignorable\s*\(/.test(raw)}, ${/\.unsuppressable\s*\(/.test(raw)}, ${/\.condition\s*\(/.test(raw)}, ${/NoFusionAbilityAbAttr/.test(raw)}, ${/NoTransformAbilityAbAttr/.test(raw)}, "${field(ability.source?.sourcePath)}", "${field(ability.source?.sourceSymbol)}", "${field(ability.source?.sourceHash)}"}`;
 });
 const theftAbilityHeader = heldClassHeader.replace('struct MoveAttribute {',
-  `struct HeldItemTheftAbilityProfile { uint16_t abilityId; bool blocksTheft; bool requiresPostLostDispatcher; bool conditionalCallbacks; bool appliesUnburden; const char* sourcePath; const char* sourceSymbol; const char* sourceHash; };\ninline constexpr HeldItemTheftAbilityProfile kHeldItemTheftAbilityProfiles[] = {\n${theftAbilityRows.join(',\n')}\n};\nstruct MoveAttribute {`);
+  `struct HeldItemTheftAbilityProfile { uint16_t abilityId; bool blocksTheft; bool requiresPostLostDispatcher; bool conditionalCallbacks; bool appliesUnburden; bool bypassFaint; bool ignorable; bool unsuppressable; bool hasAbilityCondition; bool noFusion; bool noTransform; const char* sourcePath; const char* sourceSymbol; const char* sourceHash; };\ninline constexpr HeldItemTheftAbilityProfile kHeldItemTheftAbilityProfiles[] = {\n${theftAbilityRows.join(',\n')}\n};\nstruct MoveAttribute {`);
 await fs.writeFile(outputPath, theftAbilityHeader, 'utf8');
 console.log(JSON.stringify({ output: path.relative(root, outputPath), bytes: Buffer.byteLength(theftAbilityHeader), hash: report.contentHash }));

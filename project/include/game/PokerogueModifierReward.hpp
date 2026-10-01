@@ -113,6 +113,39 @@ struct HeldItemTheftPolicy {
     size_t matchingTargetIndex = static_cast<size_t>(-1);
     uint16_t targetMaxStack = 0;
 };
+struct HeldAbilityApplicabilityContext {
+    bool resolved = false; // Includes resolved Neutralizing Gas exemptions.
+    bool suppressed = false;
+    bool neutralizingGasSuppresses = false;
+    bool ignoreAbilitiesFromOtherActor = false;
+    bool fused = false;
+    bool transformed = false;
+    bool alive = true;
+};
+enum class HeldAbilitySetResult : uint8_t { Resolved, UnresolvedContext, UnknownAbility, UnsupportedCondition };
+struct HeldApplicableAbilitySet { uint16_t ids[2]{}; size_t count = 0; };
+inline HeldAbilitySetResult resolveHeldApplicableAbilities(uint16_t mainAbility, uint16_t passiveAbility,
+    bool hasPassive, const HeldAbilityApplicabilityContext& context, HeldApplicableAbilitySet& output) {
+    if (!context.resolved) return HeldAbilitySetResult::UnresolvedContext;
+    HeldApplicableAbilitySet next{};
+    const uint16_t candidates[] = {mainAbility, passiveAbility};
+    for (size_t i = 0; i < (hasPassive ? 2u : 1u); ++i) {
+        if (i && candidates[i] == mainAbility) continue;
+        const PokerogueContent::HeldItemTheftAbilityProfile* selected = nullptr;
+        for (const auto& profile : PokerogueContent::kHeldItemTheftAbilityProfiles)
+            if (profile.abilityId == candidates[i]) { selected = &profile; break; }
+        if (!selected) return HeldAbilitySetResult::UnknownAbility;
+        if ((context.fused && selected->noFusion) || (context.transformed && selected->noTransform) ||
+            (context.ignoreAbilitiesFromOtherActor && selected->ignorable) ||
+            ((context.suppressed || context.neutralizingGasSuppresses) && !selected->unsuppressable) ||
+            (!context.alive && !selected->bypassFaint)) continue;
+        if (selected->hasAbilityCondition) return HeldAbilitySetResult::UnsupportedCondition;
+        next.ids[next.count++] = candidates[i];
+    }
+    output = next;
+    return HeldAbilitySetResult::Resolved;
+}
+
 enum class HeldItemTheftAbilityPolicyResult : uint8_t {
     Resolved, InvalidState, UnknownAbility, UnresolvedApplicability, UnresolvedCallbacks
 };

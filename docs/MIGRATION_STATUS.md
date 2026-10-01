@@ -560,3 +560,8 @@
 
 1. applyHeldItemTheftWithCallbacks valida owner y policy, prepara PostItemLost en copia y publica tags/evento solo tras transferencia. Unburden conocido resuelve callbacks; metadata desconocida sigue rechazada.
 2. Regresiones 410-413 escritas para aplicabilidad pendiente, Sticky Hold y transferencia con Unburden. Falta conexion al fin de turno y aplicabilidad completa. Tests/compilacion aplazados.
+
+## Aplicabilidad de habilidades para inventario
+
+1. Perfiles canonicos preservan bypassFaint, ignorable, unsuppressable, condiciones y restricciones fusion/transform. Resolver ordena main/passive, elimina duplicado y aplica flags. Contexto requiere Neutralizing Gas/exenciones ya resueltos; predicados desconocidos fallan explicitamente. No es dispatcher general completo.
+2. Regresiones 414-418 escritas; generacion permitida, tests/compilacion aplazados. Conexion al fin de turno y resolucion del contexto de campo pendientes.

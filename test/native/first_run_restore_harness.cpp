@@ -697,6 +697,24 @@ static int checkWave200FinalBossAndGameClear() {
             callbackPolicy, &pendingLostAbility, 1, true, true, callbackEvent) !=
             HeldItemInventoryTransferResult::Transferred || !callbackActor.heldItemLostTags.unburden ||
         callbackRecords[0].ownerPokemonId != 1002 || callbackEvent.sourcePokemonId != 1001) return 412;
+    HeldAbilityApplicabilityContext abilityContext{};
+    HeldApplicableAbilitySet applicableSet{};
+    if (resolveHeldApplicableAbilities(60, 84, true, abilityContext, applicableSet) !=
+        HeldAbilitySetResult::UnresolvedContext) return 414;
+    abilityContext.resolved = true;
+    abilityContext.alive = false;
+    if (resolveHeldApplicableAbilities(60, 84, true, abilityContext, applicableSet) !=
+        HeldAbilitySetResult::Resolved || applicableSet.count != 2) return 415;
+    abilityContext.ignoreAbilitiesFromOtherActor = true;
+    if (resolveHeldApplicableAbilities(60, 84, true, abilityContext, applicableSet) !=
+        HeldAbilitySetResult::Resolved || applicableSet.count != 1 || applicableSet.ids[0] != 84) return 416;
+    abilityContext.suppressed = true;
+    if (resolveHeldApplicableAbilities(60, 84, true, abilityContext, applicableSet) !=
+        HeldAbilitySetResult::Resolved || applicableSet.count) return 417;
+    abilityContext = {};
+    abilityContext.resolved = true;
+    if (resolveHeldApplicableAbilities(84, 84, true, abilityContext, applicableSet) !=
+        HeldAbilitySetResult::Resolved || applicableSet.count != 1) return 418;
     const auto preservedBoss = bossActor;
     if (applyPokemonFixedEnemyMovePp(*firstPhase, bossActor) ||
         bossActor.moves[3].maxPp != preservedBoss.moves[3].maxPp) return 338;
