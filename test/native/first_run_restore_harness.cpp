@@ -896,6 +896,17 @@ static int checkWave200FinalBossAndGameClear() {
         return 458;
     if (applyPokemonReviveItem(potionActor, *reviveProfile, true, false, true) || potionActor.hp != 15)
         return 459;
+    const auto* ashProfile = reviveItemProfile("SACRED_ASH");
+    if (!ashProfile || !ashProfile->allParty) return 460;
+    auto faintedReserve = potionActor;
+    faintedReserve.hp = 0;
+    PokemonBattleState* revivalParty[] = {&potionActor, &faintedReserve};
+    if (!applyPokemonPartyReviveItem(revivalParty, 2, *ashProfile, true, false, true) ||
+        potionActor.hp != 15 || faintedReserve.hp != faintedReserve.maxHp) return 461;
+    faintedReserve.hp = 0;
+    potionActor.hp = potionActor.maxHp + 1;
+    if (applyPokemonPartyReviveItem(revivalParty, 2, *ashProfile, true, false, true) || faintedReserve.hp)
+        return 462;
     const auto preservedBoss = bossActor;
     if (applyPokemonFixedEnemyMovePp(*firstPhase, bossActor) ||
         bossActor.moves[3].maxPp != preservedBoss.moves[3].maxPp) return 338;

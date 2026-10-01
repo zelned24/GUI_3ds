@@ -666,3 +666,8 @@
 
 1. Perfiles derivados PokemonReviveModifierType (50/100) con provenance; claimRecoveryRewardChoice aplica al miembro elegido, no primer fainted implicitamente. Adapter exige challenge/status-reset resueltos, rechaza vivo y no aplica Healing Charm. Formula floor(percent*maxHP), minimo uno segun PokemonHpRestoreModifier.
 2. Regresiones 456-459 escritas; generacion permitida, tests/compilacion aplazados. Politica baseline Classic sin challenge/status no portado; desafios, status completo y selector visual pendientes.
+
+## Sacred Ash canonico
+
+1. Perfil AllPokemonFullReviveModifierType porta allParty/100%; adapter valida todo antes de escribir, usa activo real y solo revive debilitados. Vivos conservan HP.
+2. Regresiones 460-462 escritas; tests/compilacion aplazados. Politica baseline sin status/desafios no portados.

@@ -2667,10 +2667,11 @@ inline constexpr PpRestoreItemProfile kPpRestoreItemProfiles[] = {
     {"ELIXIR", 10, true, "src/modifier/modifier-type.ts", "modifierTypeInitObj.ELIXIR", "2d2bcbf71adec1fc80fc6a097e47118f5c9da87a22cbef4723141bbb17fd7968"},
     {"MAX_ELIXIR", -1, true, "src/modifier/modifier-type.ts", "modifierTypeInitObj.MAX_ELIXIR", "2d2bcbf71adec1fc80fc6a097e47118f5c9da87a22cbef4723141bbb17fd7968"}
 };
-struct ReviveItemProfile { const char* itemId; uint8_t percent; const char* sourcePath; const char* sourceSymbol; const char* sourceHash; };
+struct ReviveItemProfile { const char* itemId; uint8_t percent; bool allParty; const char* sourcePath; const char* sourceSymbol; const char* sourceHash; };
 inline constexpr ReviveItemProfile kReviveItemProfiles[] = {
-    {"REVIVE", 50, "src/modifier/modifier-type.ts", "modifierTypeInitObj.REVIVE", "2d2bcbf71adec1fc80fc6a097e47118f5c9da87a22cbef4723141bbb17fd7968"},
-    {"MAX_REVIVE", 100, "src/modifier/modifier-type.ts", "modifierTypeInitObj.MAX_REVIVE", "2d2bcbf71adec1fc80fc6a097e47118f5c9da87a22cbef4723141bbb17fd7968"}
+    {"REVIVE", 50, false, "src/modifier/modifier-type.ts", "modifierTypeInitObj.REVIVE", "2d2bcbf71adec1fc80fc6a097e47118f5c9da87a22cbef4723141bbb17fd7968"},
+    {"MAX_REVIVE", 100, false, "src/modifier/modifier-type.ts", "modifierTypeInitObj.MAX_REVIVE", "2d2bcbf71adec1fc80fc6a097e47118f5c9da87a22cbef4723141bbb17fd7968"},
+    {"SACRED_ASH", 100, true, "src/modifier/modifier-type.ts", "modifierTypeInitObj.SACRED_ASH", "2d2bcbf71adec1fc80fc6a097e47118f5c9da87a22cbef4723141bbb17fd7968"}
 };
 struct MoveAttribute { const char* id; };
 struct Move { uint16_t id; uint8_t category; int16_t power; int16_t accuracy; int16_t pp; int8_t priority; int16_t upstreamChance; uint8_t generation; uint16_t upstreamFlags; uint8_t multiHitType; uint32_t attributeOffset; uint16_t attributeCount; const char* key; const char* name; const char* type; const char* target; const char* sourcePath; const char* sourceSymbol; const char* sourceHash; };

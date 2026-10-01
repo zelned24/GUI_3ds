@@ -815,17 +815,20 @@ bool FirstRunRuntime::claimRewardChoiceInPlace(uint8_t heldPartyMember, bool rec
         } else if (std::strcmp(itemId, "MASTER_BALL") == 0) {
             m_pokeballs[4] = std::min<uint16_t>(99, m_pokeballs[4] + 1);
         } else if (const auto* revive = reviveItemProfile(itemId)) {
-            if (!applyPokemonReviveItem(targetState, *revive, true, false, true)) {
-                m_battleFeedback = "Revive requires a fainted selected party member";
+            bool applied = false;
+            if (revive->allParty) {
+                PokemonBattleState* party[6]{};
+                if (m_context.playerPartyCount > 6) return false;
+                for (uint8_t member = 0; member < m_context.playerPartyCount; ++member)
+                    party[member] = member == m_context.activePlayerPartyIndex ? &playerState
+                        : &m_context.playerParty[member].battleState;
+                applied = applyPokemonPartyReviveItem(party, m_context.playerPartyCount, *revive,
+                    true, false, true);
+            } else applied = applyPokemonReviveItem(targetState, *revive, true, false, true);
+            if (!applied) {
+                m_battleFeedback = "Revive requires eligible fainted party members";
                 return false;
             }
-        } else if (std::strcmp(itemId, "SACRED_ASH") == 0) {
-            for (uint8_t i = 0; i < m_context.playerPartyCount; ++i) {
-                if (m_context.playerParty[i].battleState.hp == 0) {
-                    m_context.playerParty[i].battleState.hp = m_context.playerParty[i].battleState.maxHp;
-                }
-            }
-            playerState.hp = m_context.playerParty[m_context.activePlayerPartyIndex].battleState.hp;
         } else {
             m_battleFeedback = "Reward effect requires a canonical native adapter";
             return false;
