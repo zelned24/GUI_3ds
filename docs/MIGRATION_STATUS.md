@@ -1457,3 +1457,9 @@
 1. resolvePokemonMoveStatusApplication porta StatusEffectAttr.apply: probabilidad antes de elegibilidad, draw solo cuando chance no es negativa ni exactamente 100, quiet para daño y solicitud de ObtainStatusEffectPhase. No muta actor ni aplica duración antes de la fase correspondiente.
 2. ID de status se deriva del símbolo pinned en tablas generadas; parámetros desconocidos/múltiples atributos no se simulan. Chance/eligibilidad requieren políticas resueltas; RNG/output se conservan ante error de capacidad.
 3. Regresiones con Thunder Wave real, inmunidad Electric posterior al draw, chance cero y política desconocida escritas sin ejecutar. Conexión a hit/PP/cola y políticas completas de habilidad/campo siguen pendientes; tests/compilación aplazados.
+
+## Comando PP/hit para estados
+
+1. usePokemonStatusEffectMove valida movimiento canónico de un atributo StatusEffectAttr, resuelve hit antes de chance/eligibilidad y publica PP/RNG/solicitud conjuntamente. Miss/bloqueo consume PP; error de capacidad conserva actor/RNG/output. Estado se aplica en fase posterior.
+2. resolvePokemonStatusMoveHit comparte la rutina anterior de accuracy con StatStageChange status, incluyendo USER bypass y bloqueos antes del draw. No duplica fórmulas de precisión.
+3. Regresiones Thunder Wave de hit/bypass, miss con draw y política no resuelta escritas, sin ejecutar. Integración de cola y proveedor completo de políticas aún pendiente. Tests/compilación aplazados.

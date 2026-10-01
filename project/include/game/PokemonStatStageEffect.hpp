@@ -266,13 +266,17 @@ inline PokemonStatStageEffectResult usePokemonStatStageStatusMove(
     PokemonBattleState nextUser = user, nextTarget = target;
     PokerogueRngAdapter nextRng = battleRng;
     PokemonStatStageMoveEvent event{};
-    // MoveTarget.USER bypasses all hit checks in MoveEffectPhase.hitCheck.
-    event.hit = self || !policy.blockedBeforeAccuracy;
-    if (event.hit && !self && move->accuracy >= 0 && !policy.bypassAccuracy) {
-        event.accuracyRolled = true;
-        event.accuracyRoll = static_cast<uint8_t>(nextRng.randSeedInt(100));
-        event.hit = event.accuracyRoll < move->accuracy * policy.accuracyMultiplier;
-    }
+    PokemonStatusMoveHitPolicy hitPolicy{};
+    hitPolicy.resolved = policy.hitPolicyResolved;
+    hitPolicy.blockedBeforeAccuracy = policy.blockedBeforeAccuracy;
+    hitPolicy.bypassAccuracy = policy.bypassAccuracy;
+    hitPolicy.accuracyMultiplier = policy.accuracyMultiplier;
+    PokemonStatusMoveHitEvent hitEvent{};
+    if (!resolvePokemonStatusMoveHit(*move, self, hitPolicy, nextRng, hitEvent))
+        return PokemonStatStageEffectResult::UnresolvedPolicy;
+    event.hit = hitEvent.hit;
+    event.accuracyRolled = hitEvent.accuracyRolled;
+    event.accuracyRoll = hitEvent.accuracyRoll;
     if (event.hit) {
         auto& recipient = effect->selfTarget ? nextUser : nextTarget;
         const auto result = applyPokemonStatStageEffect(recipient, *effect,

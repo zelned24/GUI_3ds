@@ -2849,5 +2849,39 @@ extern "C" int runPokemonBattleStateChecks() {
                 Pokerogue3DS::PokemonMoveStatusApplicationResult::UnresolvedPolicy ||
         applicationEvent.chanceRoll != 123 ||
         statusApplicationRng.randSeedUint32() != expectedApplicationRng.randSeedUint32()) return 9033;
+    PokemonBattleState statusMoveUser{};
+    statusMoveUser.hp = statusMoveUser.maxHp = 100;
+    statusMoveUser.moveCount = 1;
+    statusMoveUser.moves[0] = {86, 20, 20};
+    Pokerogue3DS::PokemonStatusEffectMovePolicy statusCommandPolicy{};
+    statusCommandPolicy.hit.resolved = true;
+    statusCommandPolicy.hit.bypassAccuracy = true;
+    statusCommandPolicy.application.resolved = true;
+    statusCommandPolicy.application.hasSource = true;
+    statusCommandPolicy.chanceCallbacksResolved = true;
+    Pokerogue3DS::PokemonStatusEffectMoveEvent statusCommandEvent{};
+    expectedApplicationRng = statusApplicationRng;
+    if (!Pokerogue3DS::usePokemonStatusEffectMove(statusMoveUser, statusRecipient, 0,
+            statusCommandPolicy, statusApplicationRng, statusCommandEvent) ||
+        statusMoveUser.moves[0].pp != 19 || !statusCommandEvent.application.requestObtainStatusPhase ||
+        statusRecipient.status.present || !statusCommandEvent.hit.hit ||
+        statusApplicationRng.randSeedUint32() != expectedApplicationRng.randSeedUint32()) return 9034;
+    statusCommandPolicy.hit.bypassAccuracy = false;
+    statusCommandPolicy.hit.accuracyMultiplier = 0;
+    expectedApplicationRng = statusApplicationRng;
+    const auto expectedStatusAccuracy = expectedApplicationRng.randSeedInt(100);
+    if (!Pokerogue3DS::usePokemonStatusEffectMove(statusMoveUser, statusRecipient, 0,
+            statusCommandPolicy, statusApplicationRng, statusCommandEvent) ||
+        statusMoveUser.moves[0].pp != 18 || statusCommandEvent.hit.hit ||
+        !statusCommandEvent.hit.accuracyRolled || statusCommandEvent.hit.accuracyRoll != expectedStatusAccuracy ||
+        statusCommandEvent.application.requestObtainStatusPhase ||
+        statusApplicationRng.randSeedUint32() != expectedApplicationRng.randSeedUint32()) return 9035;
+    statusCommandPolicy.application.resolved = false;
+    expectedApplicationRng = statusApplicationRng;
+    statusCommandEvent.ppConsumed = 123;
+    if (Pokerogue3DS::usePokemonStatusEffectMove(statusMoveUser, statusRecipient, 0,
+            statusCommandPolicy, statusApplicationRng, statusCommandEvent) ||
+        statusMoveUser.moves[0].pp != 18 || statusCommandEvent.ppConsumed != 123 ||
+        statusApplicationRng.randSeedUint32() != expectedApplicationRng.randSeedUint32()) return 9036;
     return 0;
 }

@@ -1,5 +1,7 @@
 #include "game/PokemonBattleState.hpp"
 #include "game/PokerogueRngAdapter.hpp"
+#include <cmath>
+#include <cstring>
 
 namespace Pokerogue3DS {
 PokemonStatusMoveCheckResult checkPokemonStatusBeforeMove(PokemonStatusState& status,
@@ -88,6 +90,60 @@ PokemonMoveStatusApplicationResult resolvePokemonMoveStatusApplication(
     userRng = nextRng;
     output = event;
     return result;
+}
+
+bool resolvePokemonStatusMoveHit(const PokerogueContent::Move& move, bool self,
+    const PokemonStatusMoveHitPolicy& policy, PokerogueRngAdapter& rng, PokemonStatusMoveHitEvent& output) {
+    if (!policy.resolved || move.accuracy < -1 || move.accuracy > 100 ||
+        !std::isfinite(policy.accuracyMultiplier) || policy.accuracyMultiplier < 0) return false;
+    auto nextRng = rng;
+    PokemonStatusMoveHitEvent event{};
+    event.hit = self || !policy.blockedBeforeAccuracy;
+    if (event.hit && !self && move.accuracy >= 0 && !policy.bypassAccuracy) {
+        event.accuracyRolled = true;
+        event.accuracyRoll = static_cast<uint8_t>(nextRng.randSeedInt(100));
+        event.hit = event.accuracyRoll < move.accuracy * policy.accuracyMultiplier;
+    }
+    rng = nextRng;
+    output = event;
+    return true;
+}
+
+bool usePokemonStatusEffectMove(PokemonBattleState& user, const PokemonBattleState& target,
+    uint8_t slot, const PokemonStatusEffectMovePolicy& policy, PokerogueRngAdapter& rng,
+    PokemonStatusEffectMoveEvent& output) {
+    if (!policy.hit.resolved || !policy.application.resolved || !policy.chanceCallbacksResolved ||
+        !user.hp || slot >= user.moveCount || slot >= 4 || (!user.moves[slot].pp && policy.ppCost) ||
+        user.moves[slot].pp > user.moves[slot].maxPp) return false;
+    const auto* move = PokerogueContent::findMoveById(user.moves[slot].moveId);
+    if (!move || move->category != PokerogueContent::MoveStatus || move->attributeCount != 1 ||
+        !PokerogueContent::moveHasAttribute(*move, "StatusEffectAttr") || !move->target) return false;
+    const bool self = std::strcmp(move->target, "USER") == 0;
+    if (!self && (std::strcmp(move->target, "NEAR_OTHER") && std::strcmp(move->target, "NEAR_ENEMY"))) return false;
+    if (!self && (!target.hp || &user == &target)) return false;
+    auto nextRng = rng;
+    PokemonStatusEffectMoveEvent event{};
+    if (!resolvePokemonStatusMoveHit(*move, self, policy.hit, nextRng, event.hit)) return false;
+    // Validate the declaration even on a miss; unsupported content is an error.
+    bool found = false;
+    for (const auto& row : PokerogueContent::kMoveStatusEffects) {
+        if (row.moveId != move->id) continue;
+        if (found || !row.parametersResolved || row.effectId > 7 || row.selfTarget != self) return false;
+        found = true;
+    }
+    if (!found) return false;
+    if (event.hit.hit) {
+        event.applicationResult = resolvePokemonMoveStatusApplication(self ? user : target, move->id,
+            policy.effectiveChance, true, policy.application, nextRng, event.application);
+        if (event.applicationResult == PokemonMoveStatusApplicationResult::UnresolvedPolicy ||
+            event.applicationResult == PokemonMoveStatusApplicationResult::UnsupportedMove ||
+            event.applicationResult == PokemonMoveStatusApplicationResult::InvalidState) return false;
+    }
+    event.ppConsumed = policy.ppCost < user.moves[slot].pp ? policy.ppCost : user.moves[slot].pp;
+    user.moves[slot].pp -= event.ppConsumed;
+    rng = nextRng;
+    output = event;
+    return true;
 }
 
 PokemonStatusObtainResult obtainPokemonStatus(PokemonBattleState& actor, PokemonStatusEffect effect,

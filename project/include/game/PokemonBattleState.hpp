@@ -329,6 +329,32 @@ PokemonMoveStatusApplicationResult resolvePokemonMoveStatusApplication(
     bool chanceCallbacksResolved, const PokemonStatusApplicationPolicy& policy,
     PokerogueRngAdapter& userRng, PokemonMoveStatusApplicationEvent& output);
 
+struct PokemonStatusMoveHitPolicy {
+    bool resolved = false;
+    bool blockedBeforeAccuracy = false;
+    bool bypassAccuracy = false;
+    double accuracyMultiplier = 1.0;
+};
+struct PokemonStatusMoveHitEvent { bool hit = false; bool accuracyRolled = false; uint8_t accuracyRoll = 0; };
+bool resolvePokemonStatusMoveHit(const PokerogueContent::Move& move, bool self,
+    const PokemonStatusMoveHitPolicy& policy, PokerogueRngAdapter& rng, PokemonStatusMoveHitEvent& output);
+struct PokemonStatusEffectMovePolicy {
+    PokemonStatusMoveHitPolicy hit{};
+    PokemonStatusApplicationPolicy application{};
+    bool chanceCallbacksResolved = false;
+    int16_t effectiveChance = 100;
+    uint8_t ppCost = 1;
+};
+struct PokemonStatusEffectMoveEvent {
+    PokemonStatusMoveHitEvent hit{};
+    PokemonMoveStatusApplicationEvent application{};
+    PokemonMoveStatusApplicationResult applicationResult = PokemonMoveStatusApplicationResult::ChanceFailed;
+    uint8_t ppConsumed = 0;
+};
+bool usePokemonStatusEffectMove(PokemonBattleState& user, const PokemonBattleState& target,
+    uint8_t slot, const PokemonStatusEffectMovePolicy& policy, PokerogueRngAdapter& rng,
+    PokemonStatusEffectMoveEvent& output);
+
 struct PokemonStatusMoveCheckPolicy {
     bool resolved = false;
     bool bypassSleep = false;
