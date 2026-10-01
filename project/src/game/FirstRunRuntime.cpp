@@ -338,6 +338,14 @@ bool FirstRunRuntime::restoreSetupInPlace(uint32_t seed, uint16_t starterDex) {
 }
 
 NativeSaveResult FirstRunRuntime::captureNativeRunSave(NativeRunSave& output) const {
+    // Current portable save has no nonvolatile status fields. Never silently
+    // discard a real status while preparing an otherwise valid checkpoint.
+    bool hasStatus = m_context.player.battleState.status.present || m_context.enemy.battleState.status.present ||
+        m_context.secondEnemy.battleState.status.present;
+    for (const auto& member : m_context.playerParty) hasStatus |= member.battleState.status.present;
+    for (const auto& member : m_context.trainerParty) hasStatus |= member.battleState.status.present;
+    if (hasStatus) { output = {}; return NativeSaveResult::UnsupportedStage; }
+
     std::unique_ptr<NativeRunSave> valueStorage(new (std::nothrow) NativeRunSave{});
     if (!valueStorage) { output = {}; return NativeSaveResult::MemoryUnavailable; }
     auto& value = *valueStorage;

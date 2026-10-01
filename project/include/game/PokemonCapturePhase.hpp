@@ -172,7 +172,9 @@ inline bool executeCaptureAttempt(
         return false;
     }
 
-    if (target.hp > target.maxHp || static_cast<uint8_t>(ballType) > static_cast<uint8_t>(PokeballType::LuxuryBall)) {
+    if (!pokemonStatusStateValid(target.status) ||
+        (target.status.present && target.status.effect == PokemonStatusEffect::Faint) ||
+        target.hp > target.maxHp || static_cast<uint8_t>(ballType) > static_cast<uint8_t>(PokeballType::LuxuryBall)) {
         event.blocker = CaptureBlocker::InvalidInput;
         output = event;
         return false;
@@ -210,8 +212,8 @@ inline bool executeCaptureAttempt(
     const double threeMax = 3.0 * target.maxHp;
     const double twoHp = 2.0 * target.hp;
     const double baseCatch = ((threeMax - twoHp) * catchRate * ballMultiplier) / threeMax;
-    // Status multiplier: neutral = 1.0 (expandable when volatile/non-volatile statuses apply).
-    const double statusMultiplier = 1.0;
+    // Pinned getStatusEffectCatchRateMultiplier; caller state is validated before RNG.
+    const double statusMultiplier = pokemonStatusCatchRateMultiplier(target.status);
     const double rawRate = baseCatch * statusMultiplier;
     const uint32_t modifiedRate = static_cast<uint32_t>(std::round(rawRate));
     event.modifiedCatchRate = modifiedRate;

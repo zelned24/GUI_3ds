@@ -2432,5 +2432,27 @@ extern "C" int runPokemonBattleStateChecks() {
             recalledActor.moves[slot].maxPp != persistentActor.moves[slot].maxPp) return 567;
     Pokerogue3DS::resetPokemonSummonState(recalledActor);
     if (recalledActor.hp != persistentActor.hp || recalledActor.turnDamageDealt) return 568;
+    Pokerogue3DS::PokemonStatusState status{};
+    if (Pokerogue3DS::incrementPokemonStatusTurn(status) != Pokerogue3DS::PokemonStatusTickResult::NoStatus) return 569;
+    status.present = true;
+    status.effect = Pokerogue3DS::PokemonStatusEffect::Sleep;
+    status.hasSleepTurnsRemaining = true;
+    status.sleepTurnsRemaining = 2;
+    if (Pokerogue3DS::incrementPokemonStatusTurn(status) != Pokerogue3DS::PokemonStatusTickResult::Ok ||
+        status.toxicTurnCount != 1 || status.sleepTurnsRemaining != 1 ||
+        Pokerogue3DS::pokemonStatusCatchRateMultiplier(status) != 2.5 || Pokerogue3DS::pokemonStatusIsPostTurn(status)) return 570;
+    if (Pokerogue3DS::incrementPokemonStatusTurn(status) != Pokerogue3DS::PokemonStatusTickResult::Ok ||
+        status.sleepTurnsRemaining || Pokerogue3DS::incrementPokemonStatusTurn(status) != Pokerogue3DS::PokemonStatusTickResult::Ok ||
+        status.sleepTurnsRemaining || status.toxicTurnCount != 3) return 571;
+    status.toxicTurnCount = UINT32_MAX;
+    if (Pokerogue3DS::incrementPokemonStatusTurn(status) != Pokerogue3DS::PokemonStatusTickResult::CounterOverflow ||
+        status.toxicTurnCount != UINT32_MAX) return 572;
+    status = {};
+    status.present = true;
+    status.effect = Pokerogue3DS::PokemonStatusEffect::Toxic;
+    if (!Pokerogue3DS::pokemonStatusIsPostTurn(status) || Pokerogue3DS::pokemonStatusCatchRateMultiplier(status) != 1.5) return 573;
+    status.sleepTurnsRemaining = 1;
+    if (Pokerogue3DS::incrementPokemonStatusTurn(status) != Pokerogue3DS::PokemonStatusTickResult::InvalidStatus ||
+        status.toxicTurnCount || status.sleepTurnsRemaining != 1) return 574;
     return 0;
 }

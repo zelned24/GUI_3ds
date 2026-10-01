@@ -160,6 +160,54 @@ struct PokemonBattleInit {
 
 struct HeldItemLostTagState { bool unburden = false; };
 
+// Pinned src/enums/status-effect.ts IDs. FAINT is preserved upstream metadata.
+enum class PokemonStatusEffect : uint8_t {
+    None = 0, Poison = 1, Toxic = 2, Paralysis = 3, Sleep = 4, Freeze = 5, Burn = 6, Faint = 7
+};
+struct PokemonStatusState {
+    PokemonStatusEffect effect = PokemonStatusEffect::None;
+    uint32_t toxicTurnCount = 0;
+    uint32_t sleepTurnsRemaining = 0;
+    uint32_t freezeTurnsRemaining = 0;
+    bool present = false;
+    bool hasSleepTurnsRemaining = false;
+    bool hasFreezeTurnsRemaining = false;
+};
+inline bool pokemonStatusStateValid(const PokemonStatusState& status) {
+    if (static_cast<uint8_t>(status.effect) > 7) return false;
+    if (!status.hasSleepTurnsRemaining && status.sleepTurnsRemaining) return false;
+    if (!status.hasFreezeTurnsRemaining && status.freezeTurnsRemaining) return false;
+    return status.present || (status.effect == PokemonStatusEffect::None && !status.toxicTurnCount &&
+        !status.hasSleepTurnsRemaining && !status.hasFreezeTurnsRemaining);
+}
+enum class PokemonStatusTickResult : uint8_t { Ok, NoStatus, InvalidStatus, CounterOverflow };
+// Status.incrementTurn increments toxicTurnCount for every existing Status,
+// and decrements optional sleep/freeze counters only when truthy. No RNG.
+inline PokemonStatusTickResult incrementPokemonStatusTurn(PokemonStatusState& status) {
+    if (!pokemonStatusStateValid(status)) return PokemonStatusTickResult::InvalidStatus;
+    if (!status.present) return PokemonStatusTickResult::NoStatus;
+    if (status.toxicTurnCount == UINT32_MAX) return PokemonStatusTickResult::CounterOverflow;
+    auto next = status;
+    ++next.toxicTurnCount;
+    if (next.hasSleepTurnsRemaining && next.sleepTurnsRemaining) --next.sleepTurnsRemaining;
+    if (next.hasFreezeTurnsRemaining && next.freezeTurnsRemaining) --next.freezeTurnsRemaining;
+    status = next;
+    return PokemonStatusTickResult::Ok;
+}
+inline bool pokemonStatusIsPostTurn(const PokemonStatusState& status) {
+    return status.present && (status.effect == PokemonStatusEffect::Poison ||
+        status.effect == PokemonStatusEffect::Toxic || status.effect == PokemonStatusEffect::Burn);
+}
+inline double pokemonStatusCatchRateMultiplier(const PokemonStatusState& status) {
+    if (!status.present) return 1.0;
+    switch (status.effect) {
+    case PokemonStatusEffect::Poison: case PokemonStatusEffect::Toxic:
+    case PokemonStatusEffect::Paralysis: case PokemonStatusEffect::Burn: return 1.5;
+    case PokemonStatusEffect::Sleep: case PokemonStatusEffect::Freeze: return 2.5;
+    default: return 1.0;
+    }
+}
+
 struct PokemonBattleState {
     uint16_t speciesDex = 0;
     const char* formId = nullptr;
@@ -167,6 +215,7 @@ struct PokemonBattleState {
     uint32_t pokemonId = 0;
     uint16_t abilityId = 0;
     uint8_t friendship = 0; // Persistent Pokemon friendship, initialized from pinned species.
+    PokemonStatusState status{}; // Persistent nonvolatile status; save integration pending.
     HeldItemLostTagState heldItemLostTags{}; // Transient summon data.
     uint32_t turnDamageDealt = 0; // PokemonTurnData.totalDamageDealt; reset after turn effects.
     PokemonGender gender = PokemonGender::Unspecified;

@@ -1334,3 +1334,10 @@
 1. Generador normaliza declaraciones StatusEffectAttr desde raw canónico real a kMoveStatusEffects: ID de move upstream, símbolo de StatusEffect, selfTarget (default false), resolución de parámetros y provenance. Expresiones no constantes quedan explícitamente parametersResolved=false, sin sustituir por un efecto inventado.
 2. Fuente inspeccionada src/data/moves/move.ts, StatusEffectAttr.constructor/apply: chance usa MoveEffectAttr.getMoveChance y luego target.trySetStatus; turnos/inmunidades/modificadores pertenecen a otras capas. MultiStatusEffectAttr y callbacks siguen en metadata canónica, no se ejecutan como efecto constante.
 3. Esta tabla prepara porting de estados; no habilita esos movimientos en combate. Faltan estado durable, inmunidades, pre-move/residuals y dispatcher antes de declararlos jugables. Regresión de Thunder Wave escrita; tests/compilación aplazados.
+
+## Estado no volátil nativo y captura
+
+1. PokemonStatusEffect conserva IDs 0–7 de src/enums/status-effect.ts. PokemonStatusState en PokemonBattleState separa ausencia de Status, toxicTurnCount y opcionales sleepTurnsRemaining/freezeTurnsRemaining. Validator rechaza IDs no soportados y contadores incoherentes.
+2. incrementPokemonStatusTurn reproduce Status.incrementTurn: incrementa toxicTurnCount para todo objeto Status y reduce contadores opcionales positivos. Sin RNG; overflow del adaptador uint32 falla sin modificar estado. isPostTurn clasifica Poison/Toxic/Burn, sin ejecutar todavía residuals.
+3. CapturePhase usa getStatusEffectCatchRateMultiplier: 1.5 poison/toxic/paralysis/burn, 2.5 sleep/freeze, uno sin estado. Valida metadata antes de draws de captura. FAINT con HP vivo es inválido. Todavía no existe dispatcher que aplique status desde movimientos.
+4. Save actual rechaza status presente en actores/equipos para impedir pérdida silenciosa hasta ampliar codec/restore. Inmunidades, pre-move, residuals, curación y status save pendientes. Regresiones de contadores/overflow/clasificación escritas, sin ejecutar; tests/compilación aplazados.
