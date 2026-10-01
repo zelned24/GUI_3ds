@@ -136,10 +136,20 @@ globalThis._3ds_tick = function(input) {
   if (state.rewardPending) {
     if (recipientMenu) {
       const party = presentation.playerParty || [];
-      for (let i = 0; i < party.length; ++i)
-        _3ds_drawText((i === partyCursor ? '> ' : '  ') + 'Pokemon #' + party[i], 10, 38 + i * 23, 0.48, WHITE);
-      if (presentation.rewardRecovery)
-        _3ds_drawText('Move slot: ' + (recoveryMove + 1) + ' Left/Right', 8, 188, 0.43, WHITE);
+      const details = presentation.playerPartyDetails || [];
+      for (let i = 0; i < party.length; ++i) {
+        const actor = details[i] || {};
+        _3ds_drawText((i === partyCursor ? '> ' : '  ') +
+          (actor.name || 'Pokemon #' + party[i]).slice(0, 16) + ' HP:' + (actor.hp || 0) + '/' + (actor.maxHp || 0),
+          10, 38 + i * 23, 0.44, WHITE);
+      }
+      if (presentation.rewardRecovery) {
+        const actor = details[partyCursor] || {};
+        const move = (actor.moves || [])[recoveryMove];
+        _3ds_drawText(move ? _3ds_getMoveName(move.id) + ' PP:' + move.pp + '/' + move.maxPp : 'No move in this slot',
+          8, 178, 0.42, WHITE);
+        _3ds_drawText('Slot ' + (recoveryMove + 1) + ' Left/Right', 8, 194, 0.4, WHITE);
+      }
       else _3ds_drawText('Choose the held item owner', 8, 188, 0.43, WHITE);
       _3ds_drawText('A: apply  B: return to rewards', 8, 207, 0.43, WHITE);
     } else {

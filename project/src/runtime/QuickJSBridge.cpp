@@ -328,6 +328,54 @@ JSValue QuickJSBridge::getPresentationInfo(JSContext* ctx, JSValueConst, int, JS
         }
     }
     if (!set("playerParty", playerParty)) { JS_FreeValue(ctx, info); return JS_EXCEPTION; }
+    // Catalog details are needed only in the reward selector; avoid per-frame
+    // move objects during ordinary combat on Old 3DS.
+    if (b->m_game->rewardsPending()) {
+        JSValue partyDetails = JS_NewArray(ctx);
+        if (JS_IsException(partyDetails)) { JS_FreeValue(ctx, info); return JS_EXCEPTION; }
+        for (uint8_t i = 0; i < view.playerPartyCount && i < 6; ++i) {
+            const auto& actor = i == view.activePlayerPartyIndex ? view.player : view.playerParty[i];
+            JSValue detail = JS_NewObject(ctx);
+            if (JS_IsException(detail)) { JS_FreeValue(ctx, partyDetails); JS_FreeValue(ctx, info); return JS_EXCEPTION; }
+            auto field = [&](const char* key, JSValue value) {
+                return !JS_IsException(value) && JS_SetPropertyStr(ctx, detail, key, value) >= 0;
+            };
+            if (!field("name", JS_NewString(ctx, actor.localizedName ? actor.localizedName : "")) ||
+                !field("hp", JS_NewUint32(ctx, actor.battleState.hp)) ||
+                !field("maxHp", JS_NewUint32(ctx, actor.battleState.maxHp))) {
+                JS_FreeValue(ctx, detail); JS_FreeValue(ctx, partyDetails); JS_FreeValue(ctx, info); return JS_EXCEPTION;
+            }
+            JSValue moves = JS_NewArray(ctx);
+            if (JS_IsException(moves)) {
+                JS_FreeValue(ctx, detail); JS_FreeValue(ctx, partyDetails); JS_FreeValue(ctx, info); return JS_EXCEPTION;
+            }
+            for (uint8_t slot = 0; slot < actor.battleState.moveCount && slot < 4; ++slot) {
+                const auto& state = actor.battleState.moves[slot];
+                JSValue move = JS_NewObject(ctx);
+                if (JS_IsException(move)) {
+                    JS_FreeValue(ctx, moves); JS_FreeValue(ctx, detail); JS_FreeValue(ctx, partyDetails); JS_FreeValue(ctx, info);
+                    return JS_EXCEPTION;
+                }
+                if (JS_SetPropertyStr(ctx, move, "id", JS_NewUint32(ctx, state.moveId)) < 0 ||
+                    JS_SetPropertyStr(ctx, move, "pp", JS_NewUint32(ctx, state.pp)) < 0 ||
+                    JS_SetPropertyStr(ctx, move, "maxPp", JS_NewUint32(ctx, state.maxPp)) < 0) {
+                    JS_FreeValue(ctx, move); JS_FreeValue(ctx, moves); JS_FreeValue(ctx, detail);
+                    JS_FreeValue(ctx, partyDetails); JS_FreeValue(ctx, info); return JS_EXCEPTION;
+                }
+                if (JS_SetPropertyUint32(ctx, moves, slot, move) < 0) {
+                    JS_FreeValue(ctx, moves); JS_FreeValue(ctx, detail); JS_FreeValue(ctx, partyDetails); JS_FreeValue(ctx, info);
+                    return JS_EXCEPTION;
+                }
+            }
+            if (!field("moves", moves)) {
+                JS_FreeValue(ctx, detail); JS_FreeValue(ctx, partyDetails); JS_FreeValue(ctx, info); return JS_EXCEPTION;
+            }
+            if (JS_SetPropertyUint32(ctx, partyDetails, i, detail) < 0) {
+                JS_FreeValue(ctx, partyDetails); JS_FreeValue(ctx, info); return JS_EXCEPTION;
+            }
+        }
+        if (!set("playerPartyDetails", partyDetails)) { JS_FreeValue(ctx, info); return JS_EXCEPTION; }
+    }
     JSValue pokeballs = JS_NewArray(ctx);
     if (JS_IsException(pokeballs)) { JS_FreeValue(ctx, info); return JS_EXCEPTION; }
     for (unsigned i = 0; i < 6; ++i) {

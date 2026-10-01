@@ -46,6 +46,12 @@ export function registerQuickJsStorageTests(register) {
     context._3ds_getBattleState = () => JSON.stringify(state);
     context._3ds_getPresentationInfo = () => presentation;
     context._3ds_getCombatLog = () => '';
+    const drawn = [];
+    context._3ds_drawText = text => drawn.push(text);
+    presentation.playerPartyDetails = [
+      { name: 'Bulbasaur', hp: 20, maxHp: 20, moves: [{id: 33, pp: 10, maxPp: 35}] },
+      { name: 'Pidgey', hp: 3, maxHp: 19, moves: [{id: 33, pp: 4, maxPp: 35}, {id: 16, pp: 2, maxPp: 35}] }
+    ];
     context._3ds_getMoveName = () => 'Move';
     context._3ds_submitAction = (...args) => { commands.push(['action', ...args]); return true; };
     context._3ds_skipReward = () => { commands.push(['skip']); return true; };
@@ -61,6 +67,8 @@ export function registerQuickJsStorageTests(register) {
     context._3ds_tick({ right: true });
     context._3ds_tick({ A: true });
     assert.deepEqual(commands, [['action', 305]], 'reserve index one, move slot one');
+    assert.ok(drawn.some(text => text.includes('Pidgey HP:3/19')));
+    assert.ok(drawn.some(text => text.includes('Move PP:2/35')));
     commands.length = 0;
     context._3ds_tick({ B: true });
     assert.deepEqual(commands, [], 'cancel recipient selection keeps the pending reward');

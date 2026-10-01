@@ -930,3 +930,9 @@
 1. El snapshot clasifica rewards held mediante `initializeHeldModifierInstance` + el dispatch soportado, igual que el engine. No se clasifican por strings dentro del HUD.
 2. Confirmar abre el selector de miembro y encola 330–335; el host ejecuta `claimHeldRewardChoice`, conservando propietario por identidad, stacks y aplicación atómica existentes. Left/Right no elige moves para held items.
 3. Regresión del script real escrita para selección de reserva, cancelación y skip explícito; sin ejecutar. Familias held sin dispatch, reemplazo de stacks y presentación final permanecen pendientes.
+
+## Estado de destinatarios en el HUD — pendiente de ejecución
+
+1. Snapshot QuickJS expone nombre localizado, HP/maxHP y moves/PP/maxPP por miembro desde actores reales. El activo usa su estado de campo, no una copia de reserva potencialmente atrasada.
+2. Selector de rewards muestra HP del equipo y nombre/PP del slot elegido. Son datos de presentación; validación de elegibilidad permanece en el comando C++.
+3. Regresión del script ampliada para comprobar HP y PP de una reserva. Sin ejecutar; bundle regenerado. Diseño visual definitivo y validación de memoria/rendimiento en consola siguen pendientes.
