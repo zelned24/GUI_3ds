@@ -166,7 +166,13 @@ const statusFormRows = collections.species.map(species => {
   for (const change of changes) {
     const raw = change.raw ?? '';
     const triggers = [...raw.matchAll(/new\s+([A-Za-z_$][\w$]*Trigger)\s*\(/g)].map(m => m[1]);
-    if (!triggers.length) resolved = false;
+    const rootTrigger = raw.match(/\btrigger\s*:\s*new\s+([A-Za-z_$][\w$]*Trigger)\s*\(/)?.[1];
+    // A helper/dynamic root can conceal status triggers even if another
+    // constructor happens to appear elsewhere in the record.
+    if (!triggers.length || !rootTrigger) resolved = false;
+    // Nested constructor argument parsing is not a TypeScript AST. Until
+    // compound children are parsed structurally, do not certify their absence.
+    if (triggers.includes('SpeciesFormChangeCompoundTrigger')) resolved = false;
     for (const trigger of triggers) {
       if (trigger === 'SpeciesFormChangeStatusEffectTrigger') hasStatusTrigger = true;
       else if (!knownNonStatusFormTriggers.has(trigger)) resolved = false;

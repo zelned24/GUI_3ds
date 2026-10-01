@@ -1629,3 +1629,9 @@
 1. resolvePokemonPostSetStatusPolicy conecta políticas compuestas de receptor/fuente con perfiles Synchronize/Confusion y capacidad de forms de la especie. Publica policy solo con perfiles conocidos/resueltos; no infiere reflectedReactionsResolved.
 2. Proveedor actual es de habilidad primaria con activación explícita; pasivas/suppression y callbacks distintos entre probe simulated/aplicación real requieren el dispatcher completo. FirstRunRuntime sigue pendiente de conexión del contexto vivo.
 3. Regresiones de perfiles reales y especie desconocida con output preservado escritas sin ejecutar. Tests/compilación aplazados.
+
+## Registro de triggers de forma dinámicos
+
+1. Perfil de callbacks de estado exige constructor explícito en propiedad trigger; constructor incidental en otra parte del registro no demuestra ausencia. Compuestos permanecen sin resolver hasta parsear sus argumentos estructuralmente.
+2. Semántica inspected: SpeciesFormChangeCompoundTrigger.hasTriggerType recorre hijos; no se elimina la detección de triggers de estado anidados. Parser conservador no pretende resolver expresiones TS completas.
+3. Regeneración de contenido permitida; tests/compilación siguen aplazados.
