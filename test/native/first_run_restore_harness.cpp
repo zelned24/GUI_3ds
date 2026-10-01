@@ -1136,6 +1136,11 @@ static int checkPlayerPartyManagementAndSwitching() {
         healingSwitchGame.heldModifier(0)->ownerPokemonId != outgoingPid ||
         healingSwitchGame.heldModifier(1)->ownerPokemonId != incomingPid ||
         healingSwitchGame.presentation().player.battleState.turnDamageDealt) return 440;
+    const auto heldRecipientWave = healingSwitchGame.run().wave;
+    if (healingSwitchGame.claimHeldRewardChoice(255) ||
+        healingSwitchGame.claimHeldRewardChoice(0) || healingSwitchGame.run().wave != heldRecipientWave ||
+        healingSwitchGame.heldModifierCount() != 2 ||
+        healingSwitchGame.heldModifier(0)->ownerPokemonId != outgoingPid) return 446;
     // Switch to reserve member (index 1):
     if (!game.switchPlayerPokemon(1)) return 176;
     if (game.activePlayerPartyIndex() != 1) return 177;

@@ -636,3 +636,8 @@
 
 1. addKnownHealingHeldReward porta PersistentModifier.add/incrementStack: fusion por clase/owner, sin truncar exceso. Stack lleno retorna FullStackNeedsReplacement hasta portar fallback. claimRewardChoice conecta recompensa canonica curativa al inventario del actor seleccionado actualmente; inventario curativo previo ya no bloquea claim.
 2. Regresiones 443-445 escritas; tests/compilacion aplazados. Selector de miembro, pesos reward completos, fallback y efectos restantes pendientes. No certifica Classic completo.
+
+## Destinatario de recompensa equipada
+
+1. claimHeldRewardChoice(member) emite comando atomico para PID del miembro elegido; indice invalido/recompensa no equipada soportada/cap lleno no avanzan wave. claimRewardChoice conserva compatibilidad con activo. Fuente SelectModifierPhase party selection y PokemonHeldItemModifierType.selectFilter pinned.
+2. Regresion 446 escrita para comando fuera de fase e indice invalido sin cambio de inventario/wave; tests/compilacion aplazados. Presentacion del selector y cobertura end-to-end con reward real pendientes.

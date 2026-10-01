@@ -98,6 +98,7 @@ public:
     }
     bool selectRewardChoice(int direction);
     bool claimRewardChoice();
+    bool claimHeldRewardChoice(uint8_t partyMember); // Explicit party target for supported held rewards.
     bool selectBattleMove(int direction);
     bool evolutionPending() const { return m_pendingEvolutionSpeciesId != nullptr || m_evolutionPauseConfirmation; }
     bool moveLearningPending() const { return m_pendingLevelMoves.count != 0; }
@@ -147,7 +148,7 @@ public:
 
 private:
     bool advanceBattleTurnInPlace();
-    bool claimRewardChoiceInPlace();
+    bool claimRewardChoiceInPlace(uint8_t heldPartyMember = 0xFF);
     bool resolvePendingLearnMoveInPlace(int selectedSlot);
     bool finishPendingEvolution(bool accepted = false);
     bool skipVictoryRewardInPlace();

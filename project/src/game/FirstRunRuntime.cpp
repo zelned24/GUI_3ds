@@ -731,7 +731,20 @@ bool FirstRunRuntime::claimRewardChoice() {
     return true;
 }
 
-bool FirstRunRuntime::claimRewardChoiceInPlace() {
+bool FirstRunRuntime::claimHeldRewardChoice(uint8_t partyMember) {
+    if (partyMember >= m_context.playerPartyCount) return false;
+    FirstRunRuntime candidate = *this;
+    if (!candidate.claimRewardChoiceInPlace(partyMember)) {
+        m_battleFeedback = candidate.m_battleFeedback;
+        buildScene();
+        return false;
+    }
+    *this = candidate;
+    buildScene();
+    return true;
+}
+
+bool FirstRunRuntime::claimRewardChoiceInPlace(uint8_t heldPartyMember) {
     if (!heldHealingInventorySupported(m_heldModifiers.data(), m_heldModifierCount)) {
         m_battleFeedback = "Held modifier effects require native dispatch";
         return false;
@@ -739,13 +752,22 @@ bool FirstRunRuntime::claimRewardChoiceInPlace() {
     if (moveLearningPending() || evolutionPending()) return false;
     if (!m_rewardsPending || m_selectedRewardChoice >= m_rewardChoiceCount) return false;
     const auto& choice = m_rewardChoices[m_selectedRewardChoice];
+    if (!choice.poolEntry || !choice.poolEntry->itemId) return false;
     if (choice.poolEntry && choice.poolEntry->itemId) {
         const char* itemId = choice.poolEntry->itemId;
         auto& playerState = m_context.player.battleState;
+        const uint8_t targetMember = heldPartyMember == 0xFF ? m_context.activePlayerPartyIndex : heldPartyMember;
+        if (targetMember >= m_context.playerPartyCount) return false;
+        const auto& targetState = targetMember == m_context.activePlayerPartyIndex ? playerState
+            : m_context.playerParty[targetMember].battleState;
         NativeHeldModifierInstance heldReward{};
-        const bool knownHeldReward = initializeHeldModifierInstance(itemId, playerState.pokemonId,
+        const bool knownHeldReward = initializeHeldModifierInstance(itemId, targetState.pokemonId,
             1, true, nullptr, heldReward) == HeldModifierStorageResult::Ok &&
             heldHealingInventorySupported(&heldReward, 1);
+        if (heldPartyMember != 0xFF && !knownHeldReward) {
+            m_battleFeedback = "Selected reward has no supported held recipient policy";
+            return false;
+        }
         if (knownHeldReward) {
             const auto added = addKnownHealingHeldReward(m_heldModifiers.data(), m_heldModifiers.size(),
                 m_heldModifierCount, heldReward);
