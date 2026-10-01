@@ -646,3 +646,8 @@
 
 1. claimRewardChoice rechaza items sin adapter en vez de consumir eleccion y avanzar sin efecto. Retiradas ramas Berry de curacion/PP inmediata: upstream BerryModifier es held con berryType/consumed y triggers. No se desactivaron asserts previos; prueba historica que supone cualquier reward portado podria revelar fallo en validacion final.
 2. Regresion 447 escrita para elecciones reales BERRY/RARE_CANDY cuando aparecen; cobertura condicional, no prueba exhaustiva. Tests/compilacion aplazados. Portar adapters y pesos reales sigue pendiente.
+
+## Pociones desde perfiles canonicos
+
+1. Generador extrae PokemonHpRestoreModifierType(points,percent,healStatus) del raw canonico con provenance. Claim usa max(floor(points*mult),floor(percent*maxHP)), minimo uno y cap HP segun modifier.ts pinned; reemplaza constantes falsas que ignoraban porcentaje.
+2. Regresiones 448-450 escritas para Hyper Potion y politica de status pendiente. Politica baseline sin status/charms; motor de status real aun pendiente. Tests/compilacion aplazados.

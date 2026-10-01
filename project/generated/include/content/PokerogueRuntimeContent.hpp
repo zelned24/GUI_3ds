@@ -2652,6 +2652,14 @@ inline constexpr HeldItemTheftAbilityProfile kHeldItemTheftAbilityProfiles[] = {
     {318, false, false, false, false, true, false, false, false, false, false, "src/data/abilities/init-abilities.ts", "AbilityId.SPICY_SPRAY", "040ccf2ca2e00a2111ef0acf54878ec67c45d98c831e35dda3e0bac52f1ee8e6"},
     {319, false, false, false, false, false, true, false, false, false, false, "src/data/abilities/init-abilities.ts", "AbilityId.AURA_GUARD", "040ccf2ca2e00a2111ef0acf54878ec67c45d98c831e35dda3e0bac52f1ee8e6"}
 };
+struct HpRestoreItemProfile { const char* itemId; uint16_t points; uint8_t percent; bool healsStatus; const char* sourcePath; const char* sourceSymbol; const char* sourceHash; };
+inline constexpr HpRestoreItemProfile kHpRestoreItemProfiles[] = {
+    {"POTION", 20, 10, false, "src/modifier/modifier-type.ts", "modifierTypeInitObj.POTION", "2d2bcbf71adec1fc80fc6a097e47118f5c9da87a22cbef4723141bbb17fd7968"},
+    {"SUPER_POTION", 50, 25, false, "src/modifier/modifier-type.ts", "modifierTypeInitObj.SUPER_POTION", "2d2bcbf71adec1fc80fc6a097e47118f5c9da87a22cbef4723141bbb17fd7968"},
+    {"HYPER_POTION", 200, 50, false, "src/modifier/modifier-type.ts", "modifierTypeInitObj.HYPER_POTION", "2d2bcbf71adec1fc80fc6a097e47118f5c9da87a22cbef4723141bbb17fd7968"},
+    {"MAX_POTION", 0, 100, false, "src/modifier/modifier-type.ts", "modifierTypeInitObj.MAX_POTION", "2d2bcbf71adec1fc80fc6a097e47118f5c9da87a22cbef4723141bbb17fd7968"},
+    {"FULL_RESTORE", 0, 100, true, "src/modifier/modifier-type.ts", "modifierTypeInitObj.FULL_RESTORE", "2d2bcbf71adec1fc80fc6a097e47118f5c9da87a22cbef4723141bbb17fd7968"}
+};
 struct MoveAttribute { const char* id; };
 struct Move { uint16_t id; uint8_t category; int16_t power; int16_t accuracy; int16_t pp; int8_t priority; int16_t upstreamChance; uint8_t generation; uint16_t upstreamFlags; uint8_t multiHitType; uint32_t attributeOffset; uint16_t attributeCount; const char* key; const char* name; const char* type; const char* target; const char* sourcePath; const char* sourceSymbol; const char* sourceHash; };
 struct PokemonSpriteAtlas { uint16_t speciesDex; uint16_t width; uint16_t height; uint32_t frameOffset; uint16_t frameCount; const char* manifestPath; const char* imagePath; const char* manifestHash; }; struct PokemonSpriteFrame { const char* filename; uint16_t x; uint16_t y; uint16_t width; uint16_t height; uint16_t sourceWidth; uint16_t sourceHeight; uint16_t trimX; uint16_t trimY; }; struct SpeciesLevelMove { uint16_t speciesDex; int8_t level; uint16_t moveId; }; struct SpeciesEggMove { uint16_t speciesDex; uint16_t moveId; };

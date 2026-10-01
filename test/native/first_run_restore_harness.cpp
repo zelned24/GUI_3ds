@@ -863,6 +863,18 @@ static int checkWave200FinalBossAndGameClear() {
     healingReward.stackCount = 3;
     if (addKnownHealingHeldReward(rewardItems, 2, rewardItemCount, healingReward) !=
         HeldRewardAddResult::FullStackNeedsReplacement || rewardItems[0].stackCount != 2) return 445;
+    const auto* hyperRestore = hpRestoreItemProfile("HYPER_POTION");
+    const auto* fullRestore = hpRestoreItemProfile("FULL_RESTORE");
+    if (!hyperRestore || !fullRestore || hyperRestore->points != 200 || hyperRestore->percent != 50)
+        return 448;
+    auto potionActor = heldHealActor;
+    potionActor.maxHp = 1000;
+    potionActor.hp = 1;
+    uint16_t potionHealed = 0;
+    if (!applyPokemonHpRestoreItem(potionActor, *hyperRestore, 1.5, true, potionHealed) ||
+        potionHealed != 500 || potionActor.hp != 501) return 449;
+    if (applyPokemonHpRestoreItem(potionActor, *fullRestore, 1.0, false, potionHealed) ||
+        potionActor.hp != 501) return 450;
     const auto preservedBoss = bossActor;
     if (applyPokemonFixedEnemyMovePp(*firstPhase, bossActor) ||
         bossActor.moves[3].maxPp != preservedBoss.moves[3].maxPp) return 338;

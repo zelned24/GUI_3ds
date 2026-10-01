@@ -1039,5 +1039,13 @@ const theftAbilityRows = collections.abilities.map(ability => {
 });
 const theftAbilityHeader = heldClassHeader.replace('struct MoveAttribute {',
   `struct HeldItemTheftAbilityProfile { uint16_t abilityId; bool blocksTheft; bool requiresPostLostDispatcher; bool conditionalCallbacks; bool appliesUnburden; bool bypassFaint; bool ignorable; bool unsuppressable; bool hasAbilityCondition; bool noFusion; bool noTransform; const char* sourcePath; const char* sourceSymbol; const char* sourceHash; };\ninline constexpr HeldItemTheftAbilityProfile kHeldItemTheftAbilityProfiles[] = {\n${theftAbilityRows.join(',\n')}\n};\nstruct MoveAttribute {`);
-await fs.writeFile(outputPath, theftAbilityHeader, 'utf8');
-console.log(JSON.stringify({ output: path.relative(root, outputPath), bytes: Buffer.byteLength(theftAbilityHeader), hash: report.contentHash }));
+const hpRestoreRows = collections.items.flatMap(item => {
+  const raw = item.extensions?.upstreamRawRecord?.value ?? '';
+  const match = raw.match(/new\s+PokemonHpRestoreModifierType\s*\(\s*"[^"\n]*"\s*,\s*"[^"\n]*"\s*,\s*(\d+)\s*,\s*(\d+)(?:\s*,\s*(true|false))?\s*\)/);
+  if (!match) return [];
+  return [`    {"${field(item.id)}", ${Number(match[1])}, ${Number(match[2])}, ${match[3] === 'true'}, "${field(item.source?.sourcePath)}", "${field(item.source?.sourceSymbol)}", "${field(item.source?.sourceHash)}"}`];
+});
+const hpRestoreHeader = theftAbilityHeader.replace('struct MoveAttribute {',
+  `struct HpRestoreItemProfile { const char* itemId; uint16_t points; uint8_t percent; bool healsStatus; const char* sourcePath; const char* sourceSymbol; const char* sourceHash; };\ninline constexpr HpRestoreItemProfile kHpRestoreItemProfiles[] = {\n${hpRestoreRows.join(',\n')}\n};\nstruct MoveAttribute {`);
+await fs.writeFile(outputPath, hpRestoreHeader, 'utf8');
+console.log(JSON.stringify({ output: path.relative(root, outputPath), bytes: Buffer.byteLength(hpRestoreHeader), hash: report.contentHash }));

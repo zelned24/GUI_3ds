@@ -775,14 +775,13 @@ bool FirstRunRuntime::claimRewardChoiceInPlace(uint8_t heldPartyMember) {
                 m_battleFeedback = "Held reward requires stack replacement or storage policy";
                 return false;
             }
-        } else if (std::strcmp(itemId, "POTION") == 0) {
-            playerState.hp = std::min<uint16_t>(playerState.maxHp, playerState.hp + 20);
-        } else if (std::strcmp(itemId, "SUPER_POTION") == 0) {
-            playerState.hp = std::min<uint16_t>(playerState.maxHp, playerState.hp + 50);
-        } else if (std::strcmp(itemId, "HYPER_POTION") == 0) {
-            playerState.hp = std::min<uint16_t>(playerState.maxHp, playerState.hp + 200);
-        } else if (std::strcmp(itemId, "MAX_POTION") == 0 || std::strcmp(itemId, "FULL_RESTORE") == 0) {
-            playerState.hp = playerState.maxHp;
+        } else if (const auto* restore = hpRestoreItemProfile(itemId)) {
+            uint16_t healed = 0;
+            // Current baseline actor has no unresolved status or Healing Charm.
+            if (!applyPokemonHpRestoreItem(playerState, *restore, 1.0, true, healed)) {
+                m_battleFeedback = "HP restore item policy could not resolve";
+                return false;
+            }
         } else if (std::strcmp(itemId, "ETHER") == 0) {
             if (m_selectedBattleMove < playerState.moveCount) {
                 auto& move = playerState.moves[m_selectedBattleMove];

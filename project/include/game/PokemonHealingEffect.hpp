@@ -27,6 +27,30 @@ struct PokemonHealingPolicy {
     double ratioMultiplier = 1.0; // MoveHealBoostAbAttr before half-up rounding.
     double healingMultiplier = 1.0; // HealingBoosterModifier after base rounding, floored.
 };
+inline const PokerogueContent::HpRestoreItemProfile* hpRestoreItemProfile(const char* itemId) {
+    if (!itemId) return nullptr;
+    for (const auto& profile : PokerogueContent::kHpRestoreItemProfiles)
+        if (!std::strcmp(profile.itemId, itemId)) return &profile;
+    return nullptr;
+}
+// PokemonHpRestoreModifier.apply: points multiplier precedes max(points, percent).
+inline bool applyPokemonHpRestoreItem(PokemonBattleState& actor,
+    const PokerogueContent::HpRestoreItemProfile& profile, double pointsMultiplier,
+    bool statusPolicyResolved, uint16_t& healed) {
+    if (!actor.hp || !actor.maxHp || actor.hp > actor.maxHp || profile.percent > 100 ||
+        !std::isfinite(pointsMultiplier) || pointsMultiplier <= 0 ||
+        (profile.healsStatus && !statusPolicyResolved)) return false;
+    const double points = std::floor(profile.points * pointsMultiplier);
+    const double percent = std::floor(profile.percent * 0.01 * actor.maxHp);
+    const double amount = std::fmax(std::fmax(points, percent), 1.0);
+    if (!std::isfinite(amount)) return false;
+    const uint16_t missing = actor.maxHp - actor.hp;
+    const uint16_t restored = amount >= missing ? missing : static_cast<uint16_t>(amount);
+    actor.hp += restored;
+    healed = restored;
+    return true;
+}
+
 enum class PokemonHealingResult : uint8_t { Ok, InvalidState, UnsupportedMove, UnresolvedPolicy };
 struct PokemonHealingEvent {
     bool failedFullHp = false;
