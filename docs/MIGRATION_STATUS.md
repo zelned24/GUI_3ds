@@ -1595,3 +1595,8 @@
 1. executePokemonStatusAction une hit/chance/PP, pendingStatus/ObtainStatus y dispatcher de reacciones. Publica actores/tags/streams juntos; fallo posterior revierte también PP y el estado inicial.
 2. Alcance de dos actores distintos y efecto sobre oponente; self-target requiere su dispatcher. Políticas explícitas de hit/campo/forms/callbacks no se sustituyen por defaults. FirstRunRuntime aún necesita proveedor para habilitar estos movimientos.
 3. Regresiones de Poison Powder real con Synchronize/Poison Puppeteer y rollback tardío escritas sin ejecutar. Tests/compilación aplazados.
+
+## Frontera FAINT en reacciones de estado
+
+1. Dispatcher posterior omite forms/PostSetStatus/ConfusionOnStatusEffect para FAINT después de validar identidad y estado aplicado, conforme ObtainStatusEffectPhase.start pinned. No exige políticas ni consume RNG de callbacks omitidos.
+2. Regresión de FAINT con políticas pendientes escrita sin ejecutar; proveedor del comando activo y Classic completos siguen pendientes. Tests/compilación aplazados.

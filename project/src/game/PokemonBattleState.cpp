@@ -178,11 +178,14 @@ bool executePokemonPostSetStatusReactions(PokemonBattleState& recipient, Pokemon
     const PokemonQueuedStatusRequest& applied, const PokemonPostSetStatusPolicy& policy,
     PokerogueRngAdapter& recipientRng, PokerogueRngAdapter& sourceRng,
     PokemonPostSetStatusEvent& output) {
-    if (&recipient == &source || !policy.formsResolved || !applied.hasSource ||
+    if (&recipient == &source || !applied.hasSource ||
         !pokemonStatusStateValid(recipient.status) || !recipient.status.present ||
         recipient.status.effect != applied.effect || recipient.pendingStatus != PokemonStatusEffect::None ||
         applied.recipientPokemonId != recipient.pokemonId || applied.sourcePokemonId != source.pokemonId)
         return false;
+    // ObtainStatusEffectPhase skips all follow-up callbacks for FAINT.
+    if (applied.effect == PokemonStatusEffect::Faint) { output = {}; return true; }
+    if (!policy.formsResolved) return false;
     auto nextRecipient = recipient;
     auto nextSource = source;
     auto nextRecipientRng = recipientRng;

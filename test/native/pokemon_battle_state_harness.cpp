@@ -3265,6 +3265,15 @@ extern "C" int runPokemonBattleStateChecks() {
         completeStatusUser.moves[0].pp != 34 || completeStatusUser.status.present ||
         completeStatusTarget.status.present || completeStatusTarget.pendingStatus != Effect::None ||
         statusApplicationRng.randSeedUint32() != expectedApplicationRng.randSeedUint32()) return 9241;
+    reactionRecipient.status.effect = Effect::Faint;
+    synchronizedRequest.effect = Effect::Faint;
+    reactionsPolicy = {};
+    expectedApplicationRng = statusApplicationRng;
+    if (!Pokerogue3DS::executePokemonPostSetStatusReactions(reactionRecipient, reactionSource,
+            synchronizedRequest, reactionsPolicy, statusApplicationRng, statusApplicationRng, reactionsEvent) ||
+        reactionsEvent.synchronize.reaction.abilityActivates || reactionsEvent.confusion.tagAttempted ||
+        reactionSource.status.present || reactionRecipient.confusion.present ||
+        statusApplicationRng.randSeedUint32() != expectedApplicationRng.randSeedUint32()) return 9250;
     bool foundStatusConfusion = false;
     for (const auto& profile : PokerogueContent::kStatusConfusionAbilityProfiles) {
         if (!profile.resolved || !(profile.statusMask & 2)) continue;
