@@ -15,7 +15,8 @@
 
 namespace {
 bool canReplaySave(const Pokerogue3DS::NativeRunSave& save) {
-    Pokerogue3DS::FirstRunRuntime replay(save.seed);
+    // Host preflight runs serially; retain workspace outside the ARM11 stack.
+    static Pokerogue3DS::FirstRunRuntime replay(1);
     return replay.restoreNativeRunSave(save);
 }
 }
@@ -54,7 +55,8 @@ int main() {
     }
     // An unavailable/invalid bundle retains the existing native path.
 #endif
-    Pokerogue3DS::FirstRunRuntime game(0x3D5C0DEu);
+    // The live runtime includes a catalog-sized starter ledger.
+    static Pokerogue3DS::FirstRunRuntime game(0x3D5C0DEu);
 #if defined(POKEROGUE_ENABLE_QUICKJS)
     bridge.bindRuntime(game);
 #endif
@@ -74,7 +76,7 @@ int main() {
     bridge.bindSaveStore(saves);
     bridge.bindProgressStore(progress, profiles, profileStaging, PokerogueContent::kSpeciesCount, offlineFriendship);
 #endif
-    Pokerogue3DS::NativeRunSave restored{};
+    static Pokerogue3DS::NativeRunSave restored{};
     const auto loaded = game.loadNativeProgress(saves, profiles, profileStaging,
         PokerogueContent::kSpeciesCount, offlineFriendship, &restored);
     if (loaded == Pokerogue3DS::NativeSaveResult::Ok) {

@@ -43,17 +43,19 @@ public:
             ? m_profiles.prepareFromCommitted(records, count, run.contentHash, committed, prepared)
             : m_profiles.save(records, count, run.contentHash, prepared);
         if (status != NativeSaveResult::Ok) return status;
-        NativeRunSave candidate = run;
-        candidate.starterProfileGeneration = prepared;
-        status = m_runs.save(candidate);
+        // The prior envelope is no longer needed. Reuse its bounded storage
+        // for the candidate and readback instead of stacking three envelopes.
+        previous = run;
+        previous.starterProfileGeneration = prepared;
+        status = m_runs.save(previous);
         if (status != NativeSaveResult::Ok) return status;
         // NativeRunSaveStore assigns the journal generation; read its committed
         // envelope rather than publishing the caller's stale generation.
-        NativeRunSave verified{};
-        status = m_runs.load(run.contentHash, verified);
+        previous = {};
+        status = m_runs.load(run.contentHash, previous);
         if (status != NativeSaveResult::Ok) return status;
-        if (verified.starterProfileGeneration != prepared) return NativeSaveResult::InvalidRecord;
-        run = verified;
+        if (previous.starterProfileGeneration != prepared) return NativeSaveResult::InvalidRecord;
+        run = previous;
         return NativeSaveResult::Ok;
     }
 

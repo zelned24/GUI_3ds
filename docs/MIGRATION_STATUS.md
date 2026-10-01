@@ -863,3 +863,9 @@
 2. El host declara policy offline explícita con multiplicador Classic generado, sin timed events, fusión ni boosters no representados. Perfil inexistente de una nueva/legacy run se inicializa vacío; corrupción/content mismatch no se convierte en perfil falso.
 3. Exportación escribe y verifica el perfil confirmado y la run (`starters.p3profile` + `progress.p3save`); todavía son dos archivos, no un bundle portable atómico. Import linked aislado se rechaza: secuencia extranjera puede coincidir con un perfil local distinto. Import legacy sin referencia permanece disponible; empaquetado/import conjunto pendiente.
 4. Regresiones 545–554 escritas: derrota real con dos participantes → amistad/ledger → commit → reload, interrupción entre perfil/run → perfil anterior, export de generación confirmada e import linked aislado rechazado. Sin ejecutar/compilar; SD física y consumo de stack pendientes de validar en Old 3DS.
+
+## Reducción del estado persistente en la pila del host
+
+1. El runtime vivo, el envelope usado por el host y el runtime de preflight se mantienen en almacenamiento estático; el preflight es serial en el loop principal. El ledger derivado del catálogo no queda ocupado permanentemente en la pila de main.
+2. NativeProgressStore.commit reutiliza un solo envelope para estado previo, candidato y readback; conserva el orden perfil → run → readback y la publicación de referencia solo tras éxito. No añade heap ni modifica el formato de SD.
+3. Siguen existiendo snapshots, actores candidatos y buffers de journal temporales; este cambio no prueba el máximo real de pila. Las regresiones de commit/interrupción escritas anteriormente cubren la semántica que debe conservarse; ejecución, compilación y medición Old 3DS siguen aplazadas.
