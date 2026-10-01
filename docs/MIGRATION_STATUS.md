@@ -1174,3 +1174,10 @@
 1. Añadida cadena setup de dos especies fresh canónicas → encuentro/movimiento declarado soportado → turno real → checkpoint de party → encode/decode → restauración. Comprueba identidad por miembro, reserva sin gasto de HP/PP, participación exclusiva del activo y ownership de escena restaurada.
 2. Busca únicamente un candidato declarado soportado entre semillas acotadas; después de seleccionar ese candidato cualquier error de turno/guardado/restauración falla, sin continuar buscando otro que pase. Si no existe candidato, falla explícitamente.
 3. Prueba escrita y pendiente de ejecución; no constituye evidencia de combate exitoso todavía. Revisión detectó también que iniciales capturados no default requieren metadata de Pokédex (naturaleza/IVs/atributos) que el perfil actual no almacena: su resolver fresh los rechaza. Desbloqueo visible no demuestra que esos iniciales sean jugables; esta integración permanece pendiente.
+
+## Metadata de captura: naturalezas e IVs en perfil v4
+
+1. `P3CANDY4` amplía registro de nueve a diecinueve bytes: conserva `natureAttr` con bits upstream n+1 y seis máximos de IV. Captura actualiza especie y preevoluciones a partir de naturaleza/IV reales del actor, mediante OR y máximo por estadística. Fuentes pinned: `src/system/game-data.ts`, `setPokemonCaught`/`updateSpeciesDexIvs`/`getNaturesForAttr`. No cambia IVs del actor ni consume RNG.
+2. Lectura v1/v2/v3 conserva sus campos y deja naturaleza/IV desconocidos en cero; no fabrica atributos. Validator rechaza bits de naturaleza fuera de 1–25 e IV fuera de 0–31. Journal acepta v4; capacidades de scratch/bundle derivan del nuevo máximo. El tamaño del ledger C++ y memoria retenida crecen: rendimiento/memoria Old 3DS aún requieren medición final.
+3. Regresiones escritas de roundtrip v4, límites, lectura legacy sin atributos ficticios y conservación de reducción. Sin ejecutar.
+4. Esto conserva datos reales pero no completa el Pokédex ni habilita por sí solo iniciales capturados no default: habilidades, género, formas/shiny y conexión al resolver siguen pendientes. El perfil inicial todavía usa sus atributos fresh canónicos existentes.

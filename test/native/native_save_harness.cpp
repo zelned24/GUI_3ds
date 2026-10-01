@@ -638,6 +638,9 @@ extern "C" int runNativeSaveChecks() {
     if (applyNativeStarterCostReduction(purchased) != StarterCostPurchaseResult::Applied ||
         purchased.costReduction != 2 || purchased.candyCount !=
             999 - starterPrice->costReduction[0] - starterPrice->costReduction[1]) return 118;
+    purchased.natureAttr = (1u << 1) | (1u << 25);
+    const uint8_t savedIvs[] = {31, 0, 7, 15, 22, 30};
+    for (uint8_t i = 0; i < 6; ++i) purchased.dexIvs[i] = savedIvs[i];
     const uint16_t remainingCandy = purchased.candyCount;
     if (applyNativeStarterCostReduction(purchased) != StarterCostPurchaseResult::MaximumReduction ||
         purchased.candyCount != remainingCandy || purchased.costReduction != 2) return 119;
@@ -646,17 +649,37 @@ extern "C" int runNativeSaveChecks() {
         poor.candyCount || poor.costReduction || poor.friendship != 42 || !poor.caught) return 120;
     if (encodeNativeStarterCandyProfile(&purchased, 1, 1, PokerogueContent::kContentHash,
             PokerogueContent::kMaxStarterCandyCount, caughtEncoded, sizeof(caughtEncoded), caughtWritten) !=
-            NativeSaveResult::Ok || std::memcmp(caughtEncoded, "P3CANDY3", 8) ||
+            NativeSaveResult::Ok || std::memcmp(caughtEncoded, "P3CANDY4", 8) ||
         decodeNativeStarterCandyProfile(caughtEncoded, caughtWritten, PokerogueContent::kContentHash,
             PokerogueContent::kMaxStarterCandyCount, caughtDecoded, 1, caughtCount, caughtGeneration) !=
             NativeSaveResult::Ok || caughtDecoded[0].costReduction != 2 || !caughtDecoded[0].caught ||
         caughtDecoded[0].candyCount != remainingCandy || caughtDecoded[0].friendship != 321) return 121;
+    if (caughtDecoded[0].natureAttr != purchased.natureAttr) return 125;
+    for (uint8_t i = 0; i < 6; ++i) if (caughtDecoded[0].dexIvs[i] != savedIvs[i]) return 126;
+    char v3Bytes[256]{};
+    std::memcpy(v3Bytes, caughtEncoded, 89);
+    std::memcpy(v3Bytes, "P3CANDY3", 8);
+    const size_t v3Size = kStarterCandyProfileOverhead + 9;
+    char v3Digest[65]{};
+    IntegritySha256::hashHex(v3Bytes, v3Size - 64, v3Digest);
+    std::memcpy(v3Bytes + v3Size - 64, v3Digest, 64);
+    NativeStarterCandyRecord v3Decoded[1]{};
+    if (decodeNativeStarterCandyProfile(v3Bytes, v3Size, PokerogueContent::kContentHash,
+            PokerogueContent::kMaxStarterCandyCount, v3Decoded, 1, caughtCount, caughtGeneration) !=
+            NativeSaveResult::Ok || v3Decoded[0].costReduction != 2 || !v3Decoded[0].caught ||
+        v3Decoded[0].natureAttr) return 130;
+    auto invalidDexRecord = purchased;
+    invalidDexRecord.dexIvs[0] = 32;
+    if (StarterCandyProfileCodec::valid(invalidDexRecord, 0, PokerogueContent::kMaxStarterCandyCount)) return 127;
+    invalidDexRecord = purchased;
+    invalidDexRecord.natureAttr |= 1u;
+    if (StarterCandyProfileCodec::valid(invalidDexRecord, 0, PokerogueContent::kMaxStarterCandyCount)) return 128;
     purchased.costReduction = 3;
     size_t invalidWritten = 999;
     if (encodeNativeStarterCandyProfile(&purchased, 1, 1, PokerogueContent::kContentHash,
             PokerogueContent::kMaxStarterCandyCount, caughtEncoded, sizeof(caughtEncoded), invalidWritten) !=
             NativeSaveResult::InvalidRecord || invalidWritten) return 122;
-    // A checksum-valid v3 record still rejects reserved bits and reduction three.
+    // A checksum-valid v4 record still rejects reserved bits and reduction three.
     const uint8_t invalidFlags[] = {8, 7};
     for (const uint8_t flags : invalidFlags) {
         caughtEncoded[88] = static_cast<char>(flags);
@@ -671,12 +694,15 @@ extern "C" int runNativeSaveChecks() {
     // v2 carries only caught: importing it must not invent a purchased reduction.
     std::memcpy(caughtEncoded, "P3CANDY2", 8);
     caughtEncoded[88] = 1;
+    caughtWritten = kStarterCandyProfileOverhead + 9;
     char v2Digest[65]{};
     IntegritySha256::hashHex(caughtEncoded, caughtWritten - 64, v2Digest);
     std::memcpy(caughtEncoded + caughtWritten - 64, v2Digest, 64);
     if (decodeNativeStarterCandyProfile(caughtEncoded, caughtWritten, PokerogueContent::kContentHash,
             PokerogueContent::kMaxStarterCandyCount, caughtDecoded, 1, caughtCount, caughtGeneration) !=
-            NativeSaveResult::Ok || caughtDecoded[0].costReduction || !caughtDecoded[0].caught) return 123;
+            NativeSaveResult::Ok || caughtDecoded[0].costReduction || !caughtDecoded[0].caught ||
+        caughtDecoded[0].natureAttr) return 123;
+    for (uint8_t iv : caughtDecoded[0].dexIvs) if (iv) return 129;
     // Legacy records retain candy/friendship but do not invent caught metadata.
     std::memcpy(caughtEncoded, "P3CANDY1", 8);
     --caughtWritten;

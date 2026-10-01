@@ -443,7 +443,11 @@ bool FirstRunRuntime::hasCaughtSpecies(uint16_t dex) const {
     return false;
 }
 
-bool FirstRunRuntime::recordCaughtSpecies(uint16_t dex) {
+bool FirstRunRuntime::recordCaughtSpecies(uint16_t dex, const PokemonBattleState* captured) {
+    if (captured) {
+        if (static_cast<uint8_t>(captured->nature) >= 25) return false;
+        for (uint8_t iv : captured->ivs) if (iv > 31) return false;
+    }
     // Legacy diagnostics without an attached profile do not fabricate durable data.
     if (!m_starterProfileReady) return true;
     size_t depth = 0;
@@ -461,6 +465,12 @@ bool FirstRunRuntime::recordCaughtSpecies(uint16_t dex) {
             ++m_starterProfileCount;
         }
         m_starterProfileRecords[index].caught = true;
+        if (captured) {
+            auto& entry = m_starterProfileRecords[index];
+            entry.natureAttr |= 1u << (static_cast<uint8_t>(captured->nature) + 1);
+            for (uint8_t i = 0; i < 6; ++i)
+                entry.dexIvs[i] = std::max(entry.dexIvs[i], captured->ivs[i]);
+        }
         dex = species->prevolutionDex;
     }
     return true;
@@ -2646,7 +2656,7 @@ bool FirstRunRuntime::throwPokeballInPlace(PokeballType ball) {
 
     if (captureEvent.caught) {
         // GameData.setPokemonCaught precedes the full-party incorporation choice.
-        if (!recordCaughtSpecies(target->dex)) {
+        if (!recordCaughtSpecies(target->dex, &target->battleState)) {
             m_battleFeedback = "Caught species profile could not resolve";
             return false;
         }
