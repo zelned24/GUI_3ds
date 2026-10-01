@@ -148,6 +148,11 @@ inline bool executeCaptureAttempt(
     }
 
     const double ballMultiplier = getPokeballCatchMultiplier(ballType);
+    // AttemptCapturePhase.start always requests randBattleSeedInt(256),
+    // including a zero critical chance and guaranteed Master Ball. Current
+    // runtime has no caught-dex/charm policy yet, so critical probability stays
+    // explicitly unsupported, but the ordinary-capture draw must not disappear.
+    rng.randSeedInt(256);
     if (ballMultiplier < 0.0) {
         // Master Ball guarantees capture immediately.
         event.caught = true;

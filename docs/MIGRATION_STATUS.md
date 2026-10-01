@@ -1007,3 +1007,9 @@
 
 1. Regresiones 599–602 escriben y restauran el checkpoint posterior a una captura con equipo lleno. Comprueban PID, HP, PP, coste único de Master Ball y ausencia del participante liberado.
 2. El estado de selección sigue sin ser serializable; se guarda únicamente después de resolver la decisión. Suite sin ejecutar por aplazamiento del usuario; no se declara compatibilidad verificada.
+
+## Consumo RNG de captura crítica — pendiente de ejecución
+
+1. AttemptCapturePhase.start pinned consume randBattleSeedInt(256) antes de las sacudidas, también con probabilidad cero y Master Ball. El runtime ya consume esa tirada; antes la omitía y desplazaba el RNG posterior.
+2. Regresión 603 escrita comparando el siguiente draw de captura Master Ball con la secuencia upstream. Sin ejecutar. Fixtures de captura con seeds anteriores pueden cambiar de resultado legítimamente; revisar al ejecutar la suite final, sin ocultar fallos.
+3. Probabilidad crítica basada en caught-dex/Catching Charm, status y shiny event siguen pendientes. Esta corrección de secuencia no demuestra paridad completa de captura.

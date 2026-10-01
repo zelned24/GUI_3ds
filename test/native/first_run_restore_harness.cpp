@@ -1163,6 +1163,15 @@ static int checkPokeballCaptureMechanics() {
     if (!executeCaptureAttempt(targetState, PokeballType::MasterBall, false, false, true, false, rng, outEvent) ||
         !outEvent.caught) return 260;
 
+    // Even a guaranteed catch consumes upstream's critical-capture draw.
+    auto expectedMasterRng = rng;
+    expectedMasterRng.randSeedInt(256);
+    auto actualMasterRng = rng;
+    PokemonCaptureEvent masterRngEvent{};
+    if (!executeCaptureAttempt(targetState, PokeballType::MasterBall, false, false, false, false,
+            actualMasterRng, masterRngEvent) || !masterRngEvent.caught ||
+        actualMasterRng.randSeedUint32() != expectedMasterRng.randSeedUint32()) return 603;
+
     // Master ball guaranteed catch
     if (!executeCaptureAttempt(targetState, PokeballType::MasterBall, false, false, false, false, rng, outEvent) ||
         !outEvent.caught || outEvent.shakeCount != 3) return 143;
