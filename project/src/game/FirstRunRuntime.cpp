@@ -90,8 +90,16 @@ bool FirstRunRuntime::cycleStarter(int direction) {
             ? (index + 1) % PokerogueContent::kSpeciesCount
             : (index + PokerogueContent::kSpeciesCount - 1) % PokerogueContent::kSpeciesCount;
         if (starterUnlocked(PokerogueContent::kSpecies[index].dex)) {
-            m_starterIndex = index;
-            resolve();
+            FirstRunRuntime candidate = *this;
+            candidate.m_starterIndex = index;
+            candidate.resolve();
+            if (!candidate.m_encounterResolved || !candidate.m_context.player.actorIdentityResolved ||
+                !candidate.m_context.player.movesetResolved) {
+                m_battleFeedback = "Starter setup could not resolve";
+                buildScene();
+                return false;
+            }
+            *this = candidate;
             buildScene();
             return true;
         }
@@ -114,7 +122,14 @@ bool FirstRunRuntime::starterSelectionAllowed(const uint16_t* dexes, size_t coun
 
 bool FirstRunRuntime::restoreSetup(uint32_t seed, uint16_t starterDex) {
     if (!starterSelectionAllowed(&starterDex, 1)) return false;
-    return restoreSetupInPlace(seed, starterDex);
+    FirstRunRuntime candidate = *this;
+    if (!candidate.restoreSetupInPlace(seed, starterDex)) {
+        m_battleFeedback = "New run setup could not resolve";
+        buildScene();
+        return false;
+    }
+    *this = candidate;
+    return true;
 }
 
 bool FirstRunRuntime::restoreSetupInPlace(uint32_t seed, uint16_t starterDex) {
@@ -143,7 +158,7 @@ bool FirstRunRuntime::restoreSetupInPlace(uint32_t seed, uint16_t starterDex) {
     m_starterIndex = index;
     resolve();
     buildScene();
-    return true;
+    return m_encounterResolved && m_context.player.actorIdentityResolved && m_context.player.movesetResolved;
 }
 
 void FirstRunRuntime::captureNativeRunSave(NativeRunSave& output) const {

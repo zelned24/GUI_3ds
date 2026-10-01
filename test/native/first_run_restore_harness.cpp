@@ -1384,6 +1384,24 @@ static int checkPlayerPartyManagementAndSwitching() {
     if (costlyTotal <= kClassicStarterValueLimit ||
         classicStarterSelectionValue(costlyStarters, costlyCount, selectionValue) !=
             PokemonStarterSelectionResult::OverBudget || selectionValue != 999) return 622;
+    FirstRunRuntime restartCaptureGame = game;
+    const auto restartProfileCount = restartCaptureGame.starterProfileCount();
+    const auto restartCaughtCount = restartCaptureGame.caughtSpeciesCount();
+    const uint32_t restartSeed = restartCaptureGame.run().seed;
+    if (restartCaptureGame.restoreSetup(0, restartCaptureGame.run().starterDex) ||
+        restartCaptureGame.run().seed != restartSeed ||
+        restartCaptureGame.starterProfileCount() != restartProfileCount ||
+        restartCaptureGame.caughtSpeciesCount() != restartCaughtCount) return 623;
+    if (!restartCaptureGame.restoreSetup(123, restartCaptureGame.run().starterDex) ||
+        restartCaptureGame.runStarted() || restartCaptureGame.run().wave != 1 ||
+        restartCaptureGame.starterProfileCount() != restartProfileCount ||
+        restartCaptureGame.caughtSpeciesCount() != restartCaughtCount) return 624;
+    for (size_t i = 0; i < restartProfileCount; ++i) {
+        const auto& before = game.starterProfileRecords()[i];
+        const auto& after = restartCaptureGame.starterProfileRecords()[i];
+        if (before.speciesDex != after.speciesDex || before.caught != after.caught ||
+            before.candyCount != after.candyCount || before.friendship != after.friendship) return 625;
+    }
     char caughtRuntimeProfile[Pokerogue3DS::kStarterCandyProfileMaxBytes]{};
     size_t caughtRuntimeBytes = 0;
     if (encodeNativeStarterCandyProfile(game.starterProfileRecords(), game.starterProfileCount(), 1,

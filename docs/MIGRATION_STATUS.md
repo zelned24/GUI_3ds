@@ -1066,3 +1066,9 @@
 
 1. Regresión codec 12 actualizada por cambio de contrato: especie starterEligible no inicial es estructuralmente válida; permiso caught se prueba en runtime 618–620. Añadida 115 para mantener rechazo explícito de especie no elegible.
 2. Cambio basado en integración de desbloqueos, no en resultados de tests: suite no ejecutada y ninguna aserción desactivada. Buffers de journal/bundle siguen derivados de kStarterCandyProfileMaxBytes; perfiles evolucionados conservan candy/friendship cero.
+
+## Reconstrucción transaccional del inicio/reinicio — pendiente de ejecución
+
+1. restoreSetup publica una run nueva solo cuando encuentro, identidad y moveset se resuelven. Selección de otro starter también trabaja en candidato; fallo mantiene estado anterior y comunica error.
+2. Conserva el perfil capturas/candy/friendship al reiniciar; reconstrucción interna de checkpoints sigue separada del permiso del perfil. No afirma battleInputSupported para reglas aún no portadas.
+3. Regresiones 623–625 escritas para seed inválido sin mutación, reinicio y conservación exacta del perfil; sin ejecutar. Tests y compilación aplazados.
