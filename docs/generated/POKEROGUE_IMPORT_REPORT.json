@@ -37,7 +37,7 @@
     "trainersWithSpeciesPools": 34,
     "trainersWithStaticPartyTemplates": 46
   },
-  "contentHash": "480b1150389ea156949fad9e04ea31bb80f026d4ddbe4703c7846b14a7dacef3",
+  "contentHash": "90f3866eb2663f7c79773f01288b2aa9cf56d4fa14bbf611c881464ed4ac2863",
   "deterministicReimport": true,
   "provenance": [
     {
@@ -51,6 +51,12 @@
       "repository": "pokerogue",
       "revision": "8555c08c823b856cbec4eb99ca84ea52a955836d",
       "sourcePath": "src/constants.ts"
+    },
+    {
+      "hash": "fc7f777d6400226e1b213e459d836aa89bc9a9f6e06f7a74b88a03b1a2617be8",
+      "repository": "pokerogue",
+      "revision": "8555c08c823b856cbec4eb99ca84ea52a955836d",
+      "sourcePath": "src/constants/game-constants.ts"
     },
     {
       "hash": "040ccf2ca2e00a2111ef0acf54878ec67c45d98c831e35dda3e0bac52f1ee8e6",

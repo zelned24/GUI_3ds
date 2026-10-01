@@ -2,6 +2,7 @@
 #include "storage/NativeRunSave.hpp"
 #include "storage/IntegritySha256.hpp"
 #include "game/PokemonBattleState.hpp"
+#include "game/PokemonExperience.hpp"
 #include <cstdint>
 #include <cstddef>
 #include <cstring>
@@ -13,6 +14,45 @@ struct NativeStarterCandyRecord {
     uint16_t candyCount = 0;
     uint32_t friendship = 0; // Starter progress, separate from Pokemon friendship.
 };
+
+enum class StarterCandyApplyResult : uint8_t {
+    Applied = 0, InvalidRootSpecies, MissingStarterCost, InvalidCandyCount, Overflow
+};
+struct StarterCandyAwardEvent {
+    uint16_t speciesDex = 0;
+    uint32_t requestedAward = 0; // Upstream candyBar receives the requested amount.
+    uint16_t appliedAward = 0; // Inventory may clamp at MAX_STARTER_CANDY_COUNT.
+};
+
+// Numeric starterData side of Pokemon.addFriendship and GameData.addStarterCandy.
+// Caller commits all fusion roots and Pokemon friendship together with its run.
+inline StarterCandyApplyResult applyNativeStarterCandyFriendship(NativeStarterCandyRecord& record,
+    uint32_t gain, StarterCandyAwardEvent& event) {
+    const auto* root = pokemonRootSpecies(record.speciesDex);
+    if (!root || root->dex != record.speciesDex) return StarterCandyApplyResult::InvalidRootSpecies;
+    if (!root->starterEligible || root->starterCost < 1) return StarterCandyApplyResult::MissingStarterCost;
+    if (record.candyCount > PokerogueContent::kMaxStarterCandyCount)
+        return StarterCandyApplyResult::InvalidCandyCount;
+    uint32_t cap = PokerogueContent::kStarterCandyFriendshipFallback;
+    for (const auto& entry : PokerogueContent::kStarterCandyFriendshipCaps)
+        if (entry.cost == root->starterCost) { cap = entry.value; break; }
+    StarterCandyProgressPlan progress{};
+    if (planStarterCandyProgress(record.friendship, gain, cap, true,
+            record.candyCount < PokerogueContent::kMaxStarterCandyCount, progress) != PokemonExperienceResult::Ok)
+        return StarterCandyApplyResult::Overflow;
+    auto next = record;
+    next.friendship = progress.friendship;
+    const uint64_t total = static_cast<uint64_t>(record.candyCount) + progress.candyAward;
+    next.candyCount = static_cast<uint16_t>(total > PokerogueContent::kMaxStarterCandyCount
+        ? PokerogueContent::kMaxStarterCandyCount : total);
+    StarterCandyAwardEvent nextEvent{};
+    nextEvent.speciesDex = record.speciesDex;
+    nextEvent.requestedAward = progress.candyAward;
+    nextEvent.appliedAward = static_cast<uint16_t>(next.candyCount - record.candyCount);
+    record = next;
+    event = nextEvent;
+    return StarterCandyApplyResult::Applied;
+}
 
 inline constexpr size_t kStarterCandyProfileOverhead = 144;
 inline constexpr size_t kStarterCandyProfileRecordBytes = 8;

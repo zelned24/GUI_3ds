@@ -321,5 +321,32 @@ extern "C" int runNativeSaveChecks() {
             other.slots[1], sizeof(other.slots[1]), other.sizes[1]) != NativeSaveResult::Ok ||
         candyStore.load(PokerogueContent::kContentHash, 9999, restoredCandy, 2, candyCount, candyGeneration) !=
             NativeSaveResult::AmbiguousJournal || restoredCandy[0].candyCount != 7) return 56;
+    const auto* candySpecies = PokerogueContent::findSpeciesByDex(1);
+    if (!candySpecies || PokerogueContent::kMaxStarterCandyCount != 9999 ||
+        PokerogueContent::kClassicCandyFriendshipMultiplier != 3) return 57;
+    uint32_t rootCap = 0;
+    for (const auto& entry : PokerogueContent::kStarterCandyFriendshipCaps)
+        if (entry.cost == candySpecies->starterCost) rootCap = entry.value;
+    if (!rootCap) return 58;
+    NativeStarterCandyRecord awarding{1, 7, rootCap - 1};
+    StarterCandyAwardEvent award{};
+    if (applyNativeStarterCandyFriendship(awarding, rootCap + 2, award) != StarterCandyApplyResult::Applied ||
+        awarding.candyCount != 9 || awarding.friendship != 1 || award.requestedAward != 2 ||
+        award.appliedAward != 2) return 59;
+    awarding.candyCount = PokerogueContent::kMaxStarterCandyCount;
+    if (applyNativeStarterCandyFriendship(awarding, rootCap, award) != StarterCandyApplyResult::Applied ||
+        awarding.friendship != rootCap - 1 || award.requestedAward || award.appliedAward) return 60;
+    awarding.candyCount = PokerogueContent::kMaxStarterCandyCount - 1;
+    if (applyNativeStarterCandyFriendship(awarding, rootCap * 3, award) != StarterCandyApplyResult::Applied ||
+        awarding.candyCount != PokerogueContent::kMaxStarterCandyCount || award.requestedAward != 3 ||
+        award.appliedAward != 1) return 61;
+    awarding.friendship = 0xffffffffU;
+    if (applyNativeStarterCandyFriendship(awarding, 1, award) != StarterCandyApplyResult::Overflow ||
+        awarding.friendship != 0xffffffffU || award.appliedAward != 1) return 62;
+    other.sizes[0] = other.sizes[1] = 0;
+    if (candyStore.save(candyRecords, 2, PokerogueContent::kContentHash, candyGeneration) != NativeSaveResult::Ok ||
+        candyStore.load(PokerogueContent::kContentHash, restoredCandy, 2, candyCount, candyGeneration) !=
+            NativeSaveResult::Ok || restoredCandy[0].candyCount != 10 ||
+        candyStore.exportLatest(PokerogueContent::kContentHash) != NativeSaveResult::Ok) return 63;
     return 0;
 }

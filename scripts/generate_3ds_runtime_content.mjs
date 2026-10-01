@@ -1105,5 +1105,25 @@ const friendshipRuleRows = ['battleGain', 'rareCandyGain', 'faintLoss', 'rareCan
 });
 const friendshipRulesHeader = ppUpHeader.replace('struct MoveAttribute {',
   `struct PokemonFriendshipRule { const char* id; uint8_t value; const char* sourcePath; const char* sourceSymbol; const char* sourceHash; };\ninline constexpr PokemonFriendshipRule kPokemonFriendshipRules[] = {\n${friendshipRuleRows.join(',\n')}\n};\ninline constexpr uint8_t kFriendshipLossFromFaint = ${friendshipRules.faintLoss.value};\ninline constexpr uint8_t kFriendshipGainFromBattle = ${friendshipRules.battleGain.value};\ninline constexpr uint8_t kFriendshipGainFromRareCandy = ${friendshipRules.rareCandyGain.value};\ninline constexpr uint8_t kRareCandyFriendshipCap = ${friendshipRules.rareCandyCap.value};\nstruct MoveAttribute {`);
-await fs.writeFile(outputPath, friendshipRulesHeader, 'utf8');
-console.log(JSON.stringify({ output: path.relative(root, outputPath), bytes: Buffer.byteLength(friendshipRulesHeader), hash: report.contentHash }));
+const candyRules = content.extensions?.starterCandyRules;
+if (!Number.isInteger(candyRules?.maxCandyCount?.value) || candyRules.maxCandyCount.value < 1 || candyRules.maxCandyCount.value > 65535 ||
+    !Number.isInteger(candyRules?.classicMultiplier?.value) || candyRules.classicMultiplier.value < 0 ||
+    !Array.isArray(candyRules?.friendshipCaps?.entries) || !candyRules.friendshipCaps.entries.length ||
+    !Number.isInteger(candyRules.friendshipCaps.fallback) || candyRules.friendshipCaps.fallback < 1)
+  throw new Error('Missing/invalid canonical starter candy rules');
+const candyRuleRows = ['maxCandyCount', 'classicMultiplier'].map(key => {
+  const rule = candyRules[key];
+  if (!rule.provenance?.sourceHash) throw new Error(`Missing candy rule provenance: ${key}`);
+  return `    {"${key}", ${rule.value}, "${field(rule.provenance.sourcePath)}", "${field(rule.provenance.sourceSymbol)}", "${field(rule.provenance.sourceHash)}"}`;
+});
+const candyCapRows = candyRules.friendshipCaps.entries.map(entry => {
+  if (!Number.isInteger(entry.cost) || entry.cost < 1 || entry.cost > 255 || !Number.isInteger(entry.value) || entry.value < 1 || entry.value > 0xffffffff)
+    throw new Error('Invalid canonical starter candy threshold');
+  const source = candyRules.friendshipCaps.provenance;
+  if (!source?.sourceHash) throw new Error('Missing candy threshold provenance');
+  return `    {${entry.cost}, ${entry.value}, "${field(source.sourcePath)}", "${field(source.sourceSymbol)}", "${field(source.sourceHash)}"}`;
+});
+const candyHeader = friendshipRulesHeader.replace('struct MoveAttribute {',
+  `struct StarterCandyRule { const char* id; uint32_t value; const char* sourcePath; const char* sourceSymbol; const char* sourceHash; };\ninline constexpr StarterCandyRule kStarterCandyRules[] = {\n${candyRuleRows.join(',\n')}\n};\nstruct StarterCandyFriendshipCap { uint8_t cost; uint32_t value; const char* sourcePath; const char* sourceSymbol; const char* sourceHash; };\ninline constexpr StarterCandyFriendshipCap kStarterCandyFriendshipCaps[] = {\n${candyCapRows.join(',\n')}\n};\ninline constexpr uint16_t kMaxStarterCandyCount = ${candyRules.maxCandyCount.value};\ninline constexpr uint32_t kClassicCandyFriendshipMultiplier = ${candyRules.classicMultiplier.value};\ninline constexpr uint32_t kStarterCandyFriendshipFallback = ${candyRules.friendshipCaps.fallback};\nstruct MoveAttribute {`);
+await fs.writeFile(outputPath, candyHeader, 'utf8');
+console.log(JSON.stringify({ output: path.relative(root, outputPath), bytes: Buffer.byteLength(candyHeader), hash: report.contentHash }));

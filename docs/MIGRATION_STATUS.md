@@ -755,3 +755,12 @@
 2. `SdNativeStarterCandyStorage` reutiliza read/write/flush/fsync existentes, con archivos separados `saves/starters0.p3profile`, `saves/starters1.p3profile` y `exports/starters.p3profile` bajo `sdmc:/3ds/pokerogue`. El límite de bytes del perfil deriva del catálogo; los saves de run conservan su límite anterior.
 3. Regresiones 51–56 escritas: escritura interrumpida, recuperación del slot anterior, siguiente generación, exportación, corrupción y ambigüedad. Pendientes de ejecución; SD física sin validar.
 4. Falta el consumidor de gameplay, límite/umbrales de caramelos generados desde upstream, coordinación transaccional con la run e importación del perfil exportado. El journal no demuestra por sí solo que Rare Candy esté conectado.
+
+## Límites y premios de caramelos desde upstream
+
+1. `starterCandyRules` normaliza `MAX_STARTER_CANDY_COUNT` desde `src/constants/game-constants.ts`, el multiplicador Classic y la tabla/fallback de `getStarterValueFriendshipCap` desde `src/data/balance/starters.ts`, preservando repository/revision/ruta/símbolo/SHA-256 y cuerpo original. El parser reconoce fallthrough y rechaza sintaxis no representada, sin fabricar thresholds.
+2. Las tablas C++ generan el límite, multiplicador y umbrales por coste. Los overloads de producción del journal usan el límite generado; APIs con policy explícita siguen disponibles para overrides/fixtures.
+3. `applyNativeStarterCandyFriendship` actualiza un registro raíz según el coste canónico: premios múltiples, residuo, cap de inventario y progreso `cap - 1` si no se acepta el premio. Emite cantidad solicitada/aplicada; errores no publican registro/evento.
+4. Regresiones de importación/provenance y nativas 57–63 escritas, sin ejecutar. Falta consumidor de gameplay, timed events/fusión, coordinación durable con la run y callbacks; aún no se habilita Rare Candy por la existencia del store.
+
+5. Reimportación completa duplicada con pins intactos: hash `90f3866eb2663f7c79773f01288b2aa9cf56d4fa14bbf611c881464ed4ac2863`, reproducible entre ambas pasadas. El cambio de contenido sigue requiriendo migración explícita de saves/perfiles con hash anterior; no se relaja esa validación.

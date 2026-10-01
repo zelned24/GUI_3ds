@@ -19,6 +19,15 @@ export function registerMigrationContentTests(test) {
     assert.strictEqual(friendship.faintLoss.provenance.sourceSymbol, 'FRIENDSHIP_LOSS_FROM_FAINT');
     assert.strictEqual(friendship.faintLoss.provenance.revision, imported.canonicalContent.sourceSnapshot.revision);
     assert.match(friendship.faintLoss.provenance.sourceHash, /^[a-f0-9]{64}$/);
+    const candyRules = imported.canonicalContent.extensions.starterCandyRules;
+    assert.strictEqual(candyRules.maxCandyCount.value, 9999);
+    assert.strictEqual(candyRules.maxCandyCount.provenance.sourcePath, 'src/constants/game-constants.ts');
+    assert.strictEqual(candyRules.classicMultiplier.value, 3);
+    assert.deepStrictEqual(candyRules.friendshipCaps.entries.map(entry => [entry.cost, entry.value]),
+      [[1,25],[2,50],[3,75],[4,100],[5,150],[6,200],[7,300],[8,450],[9,450],[10,600]]);
+    assert.strictEqual(candyRules.friendshipCaps.fallback, 600);
+    assert.strictEqual(candyRules.friendshipCaps.provenance.sourceSymbol, 'getStarterValueFriendshipCap');
+    assert.match(candyRules.friendshipCaps.provenance.sourceHash, /^[a-f0-9]{64}$/);
     const fixed = imported.canonicalContent.extensions.fixedEnemyMovesets;
     assert.strictEqual(fixed.provenance.sourcePath, 'src/field/pokemon.ts');
     assert.strictEqual(fixed.provenance.sourceSymbol, 'EnemyPokemon.generateAndPopulateMoveset:ETERNATUS');

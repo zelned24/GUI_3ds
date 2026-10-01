@@ -75,6 +75,20 @@ public:
             ? m_storage.writeExport(slot(selected), m_sizes[selected]) : status;
     }
 
+    // Production callers use the generated pinned limit; explicit-limit overloads
+    // remain available for separately resolved overrides and offline fixtures.
+    NativeSaveResult load(const char* hash, NativeStarterCandyRecord* records, size_t capacity,
+        size_t& count, uint32_t& generation) {
+        return load(hash, PokerogueContent::kMaxStarterCandyCount, records, capacity, count, generation);
+    }
+    NativeSaveResult save(const NativeStarterCandyRecord* records, size_t count,
+        const char* hash, uint32_t& generation) {
+        return save(records, count, hash, PokerogueContent::kMaxStarterCandyCount, generation);
+    }
+    NativeSaveResult exportLatest(const char* hash) {
+        return exportLatest(hash, PokerogueContent::kMaxStarterCandyCount);
+    }
+
 private:
     char* slot(unsigned index) { return m_scratch + index * kStarterCandyProfileMaxBytes; }
     NativeSaveResult select(int& selected) {

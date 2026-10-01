@@ -1015,7 +1015,7 @@ export class PokerogueImporter {
       'src/enums/party-member-strength.ts', 'src/enums/evo-level-threshold-kind.ts', 'src/enums/trainer-pool-tier.ts', 'src/data/species-data-registry.ts',
       'src/data/balance/moves/moveset-generation.ts', 'src/data/balance/moves/egg-moves.ts',
       'src/data/balance/moves/superceded-moves.ts', 'src/data/balance/moves/forbidden-moves.ts',
-      'src/data/balance/moves/signature-moves.ts', 'src/data/balance/starters.ts'
+      'src/data/balance/moves/signature-moves.ts', 'src/data/balance/starters.ts', 'src/constants/game-constants.ts'
     ];
     const requests = [
       ...fixedPaths.map(path => ({ repo: 'pokerogue', path })),
@@ -1443,12 +1443,12 @@ export class PokerogueImporter {
     }
     const friendshipSource = byPath.get('pokerogue:src/data/balance/starters.ts');
     const friendshipConstants = byPath.get('pokerogue:src/constants.ts');
-    const friendshipValue = (file, symbol) => {
+    const friendshipValue = (file, symbol, maximum = 255) => {
       const match = [...file.content.matchAll(/export\s+const\s+([A-Z0-9_]+)\s*=\s*(\d+)\s*;/g)]
         .find(entry => entry[1] === symbol);
       if (!match) throw new Error(`Missing pinned friendship rule: ${symbol}`);
       const value = Number(match[2]);
-      if (!Number.isSafeInteger(value) || value > 255) throw new Error(`Invalid pinned friendship rule: ${symbol}`);
+      if (!Number.isSafeInteger(value) || value > maximum) throw new Error(`Invalid pinned friendship rule: ${symbol}`);
       return { value, provenance: { repository: game.url, revision: game.revision, sourcePath: file.path,
         sourceSymbol: symbol, sourceHash: sourceHash(file) } };
     };
@@ -1458,7 +1458,46 @@ export class PokerogueImporter {
       faintLoss: friendshipValue(friendshipSource, 'FRIENDSHIP_LOSS_FROM_FAINT'),
       rareCandyCap: friendshipValue(friendshipConstants, 'RARE_CANDY_FRIENDSHIP_CAP')
     };
-    const canonicalContent = new CanonicalContent({ schemaVersion: '1.0.0', contentVersion: '1.0.0', sourceSnapshot: snapshot, provenance, collections: { gameModes, species, forms, moves, abilities, items, trainers, trainerPartyTemplates, locales: localeEntries, assetReferences: [...canonicalAssetBySpecies.values()] }, extensions: { pokemonFriendshipRules, importer: 'PokerogueImporter.importCanonicalContent', unknownFieldPolicy: 'preserve-in-upstreamRawRecord', unsupportedBehavior: 'NOT_IMPORTED', modifierPools: { entries: modifierPools, dynamicWeights: modifierPools.filter(entry => entry.weight === null).length }, trainerMoveSupercedence: { pairs: supercededMovePairs, provenance: { repository: game.url, revision: game.revision, sourcePath: 'src/data/balance/moves/superceded-moves.ts', sourceSymbol: 'SUPERCEDED_MOVES', sourceHash: sourceHash(supercededMoveFile) } }, freshProfile: { defaultStarterSpecies: defaultStarterSymbols, provenance: { repository: game.url, revision: game.revision, sourcePath: 'src/constants.ts', sourceSymbol: 'defaultStarterSpecies', sourceHash: sourceHash(byPath.get('pokerogue:src/constants.ts')) } }, pokemonExperience: { growthRates: experienceGrowthRates, provenance: { repository: game.url, revision: game.revision, sourcePath: 'src/data/exp.ts', sourceSymbol: 'GrowthRate/expLevels/getLevelTotalExp', sourceHash: sourceHash(experienceSource) } }, classicFixedBossWaves: { entries: classicFixedBossWaves, provenance: { repository: game.url, revision: game.revision, sourcePath: 'src/enums/fixed-boss-waves.ts', sourceSymbol: 'ClassicFixedBossWaves', sourceHash: sourceHash(fixedBossWaveSource) }, finalWave: { wave: classicModeDefinition.rules.maxWave, provenance: { repository: game.url, revision: game.revision, sourcePath: classicModeDefinition.provenance.sourcePath, sourceSymbol: 'GameMode.isWaveFinal:classic', sourceHash: classicModeDefinition.provenance.sourceHash } } }, classicFixedBattleWaves: { entries: classicFixedBattleWaves, provenance: { repository: game.url, revision: game.revision, sourcePath: 'src/data/trainers/fixed-battle-configs.ts', sourceSymbol: 'classicFixedBattles', sourceHash: sourceHash(fixedBattleSource) } }, trainerPartyTemplateCatalog: { provenance: { repository: game.url, revision: game.revision, sourcePath: 'src/data/trainers/trainer-party-template.ts', sourceSymbol: 'trainerPartyTemplates', sourceHash: sourceHash(byPath.get('pokerogue:src/data/trainers/trainer-party-template.ts')) }, partyStrengthSource: { sourcePath: 'src/enums/party-member-strength.ts', sourceHash: sourceHash(byPath.get('pokerogue:src/enums/party-member-strength.ts')) }, evolutionThresholdSource: { sourcePath: 'src/enums/evo-level-threshold-kind.ts', sourceHash: sourceHash(byPath.get('pokerogue:src/enums/evo-level-threshold-kind.ts')) }, trainerPoolTierSource: { sourcePath: 'src/enums/trainer-pool-tier.ts', sourceHash: sourceHash(byPath.get('pokerogue:src/enums/trainer-pool-tier.ts')) } }, skippedMoveRecords: parsedMoves.filter(move => enumCatalogs.move.getId(move.id.toUpperCase()) === undefined).map(move => ({ sourceSymbol: move.id, raw: move.extensions?.upstreamRawRecord || null })) } });
+    const capSymbol = 'getStarterValueFriendshipCap';
+    const capStart = friendshipSource.content.indexOf(`export function ${capSymbol}(`);
+    if (capStart < 0) throw new Error('Missing pinned starter friendship cap function');
+    const capOpen = friendshipSource.content.indexOf('{', capStart);
+    const capRaw = extractBalancedLiteral(friendshipSource.content, capOpen);
+    if (!capRaw) throw new Error('Unclosed pinned starter friendship cap function');
+    const capClean = capRaw.slice(1, -1).replace(/\/\/[^\n]*|\/\*[\s\S]*?\*\//g, '');
+    const capSwitch = /^\s*switch\s*\(\s*starterCost\s*\)\s*\{([\s\S]*)\}\s*$/.exec(capClean);
+    if (!capSwitch) throw new Error('Unsupported pinned starter friendship cap body');
+    const capEntries = [];
+    let pendingCosts = [], pendingDefault = false, capFallback = null, capCursor = 0;
+    for (const token of capSwitch[1].matchAll(/case\s+(\d+)\s*:|default\s*:|return\s+(\d+)\s*;/g)) {
+      if (capSwitch[1].slice(capCursor, token.index).trim()) throw new Error('Unsupported starter cap branch syntax');
+      capCursor = token.index + token[0].length;
+      if (token[1] !== undefined) pendingCosts.push(Number(token[1]));
+      else if (token[2] !== undefined) {
+        const value = Number(token[2]);
+        if (!Number.isSafeInteger(value) || value <= 0 || value > 0xffffffff) throw new Error('Invalid starter friendship threshold');
+        for (const cost of pendingCosts) {
+          if (!Number.isInteger(cost) || cost < 1 || cost > 255 || capEntries.some(entry => entry.cost === cost))
+            throw new Error('Invalid/duplicate starter friendship cost');
+          capEntries.push({ cost, value });
+        }
+        if (pendingDefault) {
+          if (capFallback !== null) throw new Error('Duplicate starter friendship fallback');
+          capFallback = value;
+        }
+        pendingCosts = []; pendingDefault = false;
+      } else pendingDefault = true;
+    }
+    if (pendingCosts.length || pendingDefault || capFallback === null || !capEntries.length ||
+        capSwitch[1].slice(capCursor).trim()) throw new Error('Incomplete starter friendship cap normalization');
+    const starterCandyRules = {
+      maxCandyCount: friendshipValue(byPath.get('pokerogue:src/constants/game-constants.ts'), 'MAX_STARTER_CANDY_COUNT', 65535),
+      classicMultiplier: friendshipValue(friendshipSource, 'CLASSIC_CANDY_FRIENDSHIP_MULTIPLIER'),
+      friendshipCaps: { entries: capEntries.sort((a, b) => a.cost - b.cost), fallback: capFallback,
+        provenance: { repository: game.url, revision: game.revision, sourcePath: friendshipSource.path,
+          sourceSymbol: capSymbol, sourceHash: sourceHash(friendshipSource) }, raw: capRaw }
+    };
+    const canonicalContent = new CanonicalContent({ schemaVersion: '1.0.0', contentVersion: '1.0.0', sourceSnapshot: snapshot, provenance, collections: { gameModes, species, forms, moves, abilities, items, trainers, trainerPartyTemplates, locales: localeEntries, assetReferences: [...canonicalAssetBySpecies.values()] }, extensions: { pokemonFriendshipRules, starterCandyRules, importer: 'PokerogueImporter.importCanonicalContent', unknownFieldPolicy: 'preserve-in-upstreamRawRecord', unsupportedBehavior: 'NOT_IMPORTED', modifierPools: { entries: modifierPools, dynamicWeights: modifierPools.filter(entry => entry.weight === null).length }, trainerMoveSupercedence: { pairs: supercededMovePairs, provenance: { repository: game.url, revision: game.revision, sourcePath: 'src/data/balance/moves/superceded-moves.ts', sourceSymbol: 'SUPERCEDED_MOVES', sourceHash: sourceHash(supercededMoveFile) } }, freshProfile: { defaultStarterSpecies: defaultStarterSymbols, provenance: { repository: game.url, revision: game.revision, sourcePath: 'src/constants.ts', sourceSymbol: 'defaultStarterSpecies', sourceHash: sourceHash(byPath.get('pokerogue:src/constants.ts')) } }, pokemonExperience: { growthRates: experienceGrowthRates, provenance: { repository: game.url, revision: game.revision, sourcePath: 'src/data/exp.ts', sourceSymbol: 'GrowthRate/expLevels/getLevelTotalExp', sourceHash: sourceHash(experienceSource) } }, classicFixedBossWaves: { entries: classicFixedBossWaves, provenance: { repository: game.url, revision: game.revision, sourcePath: 'src/enums/fixed-boss-waves.ts', sourceSymbol: 'ClassicFixedBossWaves', sourceHash: sourceHash(fixedBossWaveSource) }, finalWave: { wave: classicModeDefinition.rules.maxWave, provenance: { repository: game.url, revision: game.revision, sourcePath: classicModeDefinition.provenance.sourcePath, sourceSymbol: 'GameMode.isWaveFinal:classic', sourceHash: classicModeDefinition.provenance.sourceHash } } }, classicFixedBattleWaves: { entries: classicFixedBattleWaves, provenance: { repository: game.url, revision: game.revision, sourcePath: 'src/data/trainers/fixed-battle-configs.ts', sourceSymbol: 'classicFixedBattles', sourceHash: sourceHash(fixedBattleSource) } }, trainerPartyTemplateCatalog: { provenance: { repository: game.url, revision: game.revision, sourcePath: 'src/data/trainers/trainer-party-template.ts', sourceSymbol: 'trainerPartyTemplates', sourceHash: sourceHash(byPath.get('pokerogue:src/data/trainers/trainer-party-template.ts')) }, partyStrengthSource: { sourcePath: 'src/enums/party-member-strength.ts', sourceHash: sourceHash(byPath.get('pokerogue:src/enums/party-member-strength.ts')) }, evolutionThresholdSource: { sourcePath: 'src/enums/evo-level-threshold-kind.ts', sourceHash: sourceHash(byPath.get('pokerogue:src/enums/evo-level-threshold-kind.ts')) }, trainerPoolTierSource: { sourcePath: 'src/enums/trainer-pool-tier.ts', sourceHash: sourceHash(byPath.get('pokerogue:src/enums/trainer-pool-tier.ts')) } }, skippedMoveRecords: parsedMoves.filter(move => enumCatalogs.move.getId(move.id.toUpperCase()) === undefined).map(move => ({ sourceSymbol: move.id, raw: move.extensions?.upstreamRawRecord || null })) } });
     canonicalContent.extensions.trainerMoveBlocklists = {
       singles: forbiddenSinglesMoveIds,
       levelBased: levelBasedDenylistMoveIds,

@@ -227,6 +227,7 @@
 {"from":"project/include/runtime/ScenePlayer.hpp","to":"project/include/runtime/RuntimeAssetManager.hpp","kind":"include"},
 {"from":"project/include/storage/NativeRunSave.hpp","to":"project/include/game/PokerogueModifierReward.hpp","kind":"include"},
 {"from":"project/include/storage/NativeStarterCandyProfile.hpp","to":"project/include/game/PokemonBattleState.hpp","kind":"include"},
+{"from":"project/include/storage/NativeStarterCandyProfile.hpp","to":"project/include/game/PokemonExperience.hpp","kind":"include"},
 {"from":"project/include/storage/NativeStarterCandyProfile.hpp","to":"project/include/storage/IntegritySha256.hpp","kind":"include"},
 {"from":"project/include/storage/NativeStarterCandyProfile.hpp","to":"project/include/storage/NativeRunSave.hpp","kind":"include"},
 {"from":"project/include/storage/NativeStarterCandyStore.hpp","to":"project/include/storage/NativeStarterCandyProfile.hpp","kind":"include"},
