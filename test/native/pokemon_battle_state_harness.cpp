@@ -3174,6 +3174,33 @@ extern "C" int runPokemonBattleStateChecks() {
             return 9113;
     }
     if (!foundStatusConfusion) return 9114;
+    Pokerogue3DS::PokemonConfusionTagState addedConfusion{};
+    Pokerogue3DS::PokemonConfusionTagPolicy tagPolicy{};
+    tagPolicy.resolved = tagPolicy.grounded = tagPolicy.mistyTerrain = true;
+    bool canAddConfusion = false;
+    using TagResult = Pokerogue3DS::PokemonConfusionTagResult;
+    if (!Pokerogue3DS::canPokemonAddConfusionTag(addedConfusion, tagPolicy, canAddConfusion) ||
+        !canAddConfusion || Pokerogue3DS::addPokemonConfusionTag(addedConfusion, 3, tagPolicy) !=
+            TagResult::MistyTerrain || addedConfusion.present) return 9130;
+    tagPolicy.grounded = false;
+    if (Pokerogue3DS::addPokemonConfusionTag(addedConfusion, 3, tagPolicy) != TagResult::Added ||
+        addedConfusion.turns != 3 || !addedConfusion.present) return 9131;
+    tagPolicy.resolved = false;
+    if (Pokerogue3DS::addPokemonConfusionTag(addedConfusion, 5, tagPolicy) != TagResult::Overlap ||
+        addedConfusion.turns != 3 ||
+        !Pokerogue3DS::canPokemonAddConfusionTag(addedConfusion, tagPolicy, canAddConfusion) ||
+        canAddConfusion) return 9132;
+    if (!Pokerogue3DS::removePokemonConfusionTag(addedConfusion) || addedConfusion.present ||
+        addedConfusion.turns) return 9133;
+    if (Pokerogue3DS::addPokemonConfusionTag(addedConfusion, 3, tagPolicy) != TagResult::Unsupported ||
+        addedConfusion.present) return 9134;
+    tagPolicy.resolved = tagPolicy.ownAbilityBlocks = true;
+    if (Pokerogue3DS::addPokemonConfusionTag(addedConfusion, 3, tagPolicy) != TagResult::OwnAbility)
+        return 9135;
+    tagPolicy.ownAbilityBlocks = false;
+    tagPolicy.allyAbilityBlocks = true;
+    if (Pokerogue3DS::addPokemonConfusionTag(addedConfusion, 3, tagPolicy) != TagResult::AllyAbility)
+        return 9136;
     // Expiration removes the tag before RNG; unsupported callbacks are atomic.
     PokemonBattleState confusedActor{};
     confusedActor.hp = confusedActor.maxHp = 100;

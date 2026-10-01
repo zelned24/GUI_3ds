@@ -4,6 +4,35 @@
 #include <cstring>
 
 namespace Pokerogue3DS {
+bool canPokemonAddConfusionTag(const PokemonConfusionTagState& tag,
+    const PokemonConfusionTagPolicy& policy, bool& output) {
+    if ((!tag.present && tag.turns) || (tag.present && !tag.turns)) return false;
+    if (tag.present) { output = false; return true; }
+    if (!policy.resolved) return false;
+    output = !policy.ownAbilityBlocks && !policy.allyAbilityBlocks;
+    return true;
+}
+
+PokemonConfusionTagResult addPokemonConfusionTag(PokemonConfusionTagState& tag,
+    uint32_t turns, const PokemonConfusionTagPolicy& policy) {
+    if (!turns || (!tag.present && tag.turns) || (tag.present && !tag.turns))
+        return PokemonConfusionTagResult::Invalid;
+    // Existing tag's onOverlap runs before immunity callbacks; never refresh duration.
+    if (tag.present) return PokemonConfusionTagResult::Overlap;
+    if (!policy.resolved) return PokemonConfusionTagResult::Unsupported;
+    if (policy.ownAbilityBlocks) return PokemonConfusionTagResult::OwnAbility;
+    if (policy.allyAbilityBlocks) return PokemonConfusionTagResult::AllyAbility;
+    if (policy.grounded && policy.mistyTerrain) return PokemonConfusionTagResult::MistyTerrain;
+    tag = {turns, true};
+    return PokemonConfusionTagResult::Added;
+}
+
+bool removePokemonConfusionTag(PokemonConfusionTagState& tag) {
+    if ((!tag.present && tag.turns) || (tag.present && !tag.turns)) return false;
+    tag = {};
+    return true;
+}
+
 bool checkPokemonConfusionBeforeMove(PokemonBattleState& actor, PokemonConfusionTagState& tag,
     const PokemonConfusionMovePolicy& policy, PokerogueRngAdapter& actorRng,
     PokemonConfusionMoveEvent& output) {

@@ -523,6 +523,22 @@ struct PokemonConfusionTagState {
     uint32_t turns = 0;
     bool present = false;
 };
+struct PokemonConfusionTagPolicy {
+    bool resolved = false; // Own/ally immunity callbacks and terrain resolved.
+    bool ownAbilityBlocks = false;
+    bool allyAbilityBlocks = false;
+    bool grounded = false;
+    bool mistyTerrain = false;
+};
+enum class PokemonConfusionTagResult : uint8_t {
+    Added, Overlap, OwnAbility, AllyAbility, MistyTerrain, Unsupported, Invalid,
+};
+// canAddTag's simulated probe deliberately omits ConfusedTag.canAdd terrain.
+bool canPokemonAddConfusionTag(const PokemonConfusionTagState& tag,
+    const PokemonConfusionTagPolicy& policy, bool& output);
+PokemonConfusionTagResult addPokemonConfusionTag(PokemonConfusionTagState& tag,
+    uint32_t turns, const PokemonConfusionTagPolicy& policy);
+bool removePokemonConfusionTag(PokemonConfusionTagState& tag);
 struct PokemonConfusionMovePolicy {
     bool resolved = false;
     double effectiveAttack = 0;
