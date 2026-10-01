@@ -715,6 +715,19 @@ static int checkWave200FinalBossAndGameClear() {
     abilityContext.resolved = true;
     if (resolveHeldApplicableAbilities(84, 84, true, abilityContext, applicableSet) !=
         HeldAbilitySetResult::Resolved || applicableSet.count != 1) return 418;
+    callbackRecords[0].ownerPokemonId = callbackActor.pokemonId;
+    callbackActor.heldItemLostTags = {};
+    const uint16_t sameSideAbilities[] = {blockingTheftAbility, pendingLostAbility};
+    if (applyHeldItemTheftWithCallbacks(callbackRecords, 2, callbackCount, 0, callbackActor, 1002,
+            callbackPolicy, sameSideAbilities, 2, true, true, callbackEvent, false) !=
+            HeldItemInventoryTransferResult::Transferred || !callbackActor.heldItemLostTags.unburden)
+        return 419;
+    callbackRecords[0].ownerPokemonId = callbackActor.pokemonId;
+    callbackActor.heldItemLostTags = {};
+    if (applyHeldItemTheftWithCallbacks(callbackRecords, 2, callbackCount, 0, callbackActor, 1002,
+            callbackPolicy, &pendingLostAbility, 1, true, false, callbackEvent, false) !=
+            HeldItemInventoryTransferResult::Transferred || callbackActor.heldItemLostTags.unburden)
+        return 420;
     const auto preservedBoss = bossActor;
     if (applyPokemonFixedEnemyMovePp(*firstPhase, bossActor) ||
         bossActor.moves[3].maxPp != preservedBoss.moves[3].maxPp) return 338;

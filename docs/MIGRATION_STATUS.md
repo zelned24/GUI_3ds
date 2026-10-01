@@ -565,3 +565,8 @@
 
 1. Perfiles canonicos preservan bypassFaint, ignorable, unsuppressable, condiciones y restricciones fusion/transform. Resolver ordena main/passive, elimina duplicado y aplica flags. Contexto requiere Neutralizing Gas/exenciones ya resueltos; predicados desconocidos fallan explicitamente. No es dispatcher general completo.
 2. Regresiones 414-418 escritas; generacion permitida, tests/compilacion aplazados. Conexion al fin de turno y resolucion del contexto de campo pendientes.
+
+## Transferencias dentro del equipo
+
+1. Wrapper distingue crossSide: BlockItemTheft cancela solo entre bandos, segun BattleScene.tryTransferHeldItemModifier pinned. PostItemLost sigue controlado por itemLost tambien dentro del equipo.
+2. Regresiones 419-420 escritas para Sticky Hold + Unburden dentro del equipo y itemLost=false. Tests/compilacion aplazados. Dispatcher de fin de turno sigue pendiente.

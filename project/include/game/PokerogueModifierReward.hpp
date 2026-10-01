@@ -311,7 +311,7 @@ inline HeldItemInventoryTransferResult applyHeldItemTheftWithCallbacks(
     NativeHeldModifierInstance* records, size_t capacity, size_t& count, size_t sourceIndex,
     PokemonBattleState& sourceActor, uint32_t targetPokemonId, const HeldItemTheftPolicy& matchPolicy,
     const uint16_t* activeAbilityIds, size_t abilityCount, bool applicabilityResolved,
-    bool itemLost, HeldItemInventoryTransferEvent& output) {
+    bool itemLost, HeldItemInventoryTransferEvent& output, bool crossSide = true) {
     if (!records || count > capacity || sourceIndex >= count ||
         records[sourceIndex].ownerPokemonId != sourceActor.pokemonId)
         return HeldItemInventoryTransferResult::InvalidState;
@@ -320,6 +320,8 @@ inline HeldItemInventoryTransferResult applyHeldItemTheftWithCallbacks(
     if (resolveHeldItemTheftAbilityPolicy(activeAbilityIds, abilityCount, applicabilityResolved,
             blocked, true) != HeldItemTheftAbilityPolicyResult::Resolved)
         return HeldItemInventoryTransferResult::UnresolvedPolicy;
+    // BattleScene only invokes BlockItemTheftAbAttr when the sides differ.
+    if (!crossSide) blocked = false;
     auto nextTags = sourceActor.heldItemLostTags;
     if (!blocked && itemLost) {
         const auto callback = applyHeldItemLostCallbacks(activeAbilityIds, abilityCount,
