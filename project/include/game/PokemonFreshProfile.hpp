@@ -10,6 +10,12 @@ enum class PokemonFreshProfileResult : uint8_t {
     Ok = 0, MissingSpecies, NotDefaultStarter, InvalidStarterOrder
 };
 
+// addFriendship credits the root species, including a fusion's own root separately.
+// This identifies the canonical ledger key; it does not create or persist a profile.
+inline const PokerogueContent::Species* pokemonFriendshipStarterSpecies(uint16_t dex) {
+    return pokemonRootSpecies(dex);
+}
+
 // Reproduces GameData.initDexData()'s isolated executeWithSeedOffset(0,
 // "default") nature stream, preserving the pinned defaultStarterSpecies order.
 inline PokemonFreshProfileResult pokemonFreshProfileNature(

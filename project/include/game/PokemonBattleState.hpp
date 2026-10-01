@@ -174,6 +174,17 @@ struct PokemonBattleState {
     bool statsAreBaseFormulaOnly = true;
 };
 
+// Pinned PokemonSpecies.getRootSpeciesId: follow registry prevolutions, optionally
+// stopping at an eligible starter. Catalog size bounds cycles, not content capacity.
+inline const PokerogueContent::Species* pokemonRootSpecies(uint16_t dex, bool forStarter = false) {
+    const auto* current = PokerogueContent::findSpeciesByDex(dex);
+    for (std::size_t depth = 0; current && depth < PokerogueContent::kSpeciesCount; ++depth) {
+        if (!current->prevolutionDex || (forStarter && current->starterEligible)) return current;
+        current = PokerogueContent::findSpeciesByDex(current->prevolutionDex);
+    }
+    return nullptr; // Missing reference or cycle; do not substitute the input species.
+}
+
 // Source Pokemon.setStatStage clamps to [-6, 6]. IDs follow upstream Stat;
 // HP (0) has no battle stage. Effects/abilities must resolve their policy first.
 inline bool setPokemonStatStage(PokemonBattleState& state, uint8_t stat, int32_t value) {

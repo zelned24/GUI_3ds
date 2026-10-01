@@ -6,6 +6,7 @@
 #include <cmath>
 
 #include "content/PokerogueRuntimeContent.hpp"
+#include "game/PokemonBattleState.hpp"
 #include "game/PokerogueEncounterResolver.hpp"
 #include "game/PokerogueRngAdapter.hpp"
 
@@ -50,12 +51,8 @@ inline const PokerogueContent::Species* trainerPartySpeciesById(const char* id) 
 }
 
 inline uint16_t trainerPartyRootDex(const PokerogueContent::Species& species) {
-  const auto* current = &species;
-  for (uint8_t depth = 0; depth < 16 && current->prevolutionDex; ++depth) {
-    current = PokerogueContent::findSpeciesByDex(current->prevolutionDex);
-    if (!current) return 0;
-  }
-  return current->prevolutionDex ? 0 : current->dex;
+  const auto* root = pokemonRootSpecies(species.dex);
+  return root ? root->dex : 0;
 }
 
 // Trainer.checkDuplicateSpecies also reserves every root from signatureSpecies.

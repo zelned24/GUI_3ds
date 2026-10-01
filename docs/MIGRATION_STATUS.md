@@ -736,3 +736,9 @@
 4. Regresiones 541–543 escritas, pendientes de ejecución. No aplica una pérdida durante la restauración de un checkpoint ya debilitado. Ganancias positivas y perfil persistente de starter candy siguen pendientes.
 
 5. Reimportación local completa ejecutada dos veces con los mismos pins: hash `480b1150389ea156949fad9e04ea31bb80f026d4ddbe4703c7846b14a7dacef3`, igualdad comprobada por el pipeline. El hash cambió al añadir reglas canónicas; la migración de saves ligados al hash anterior sigue pendiente. No se ejecutaron suites ni se compiló el programa.
+
+## Especie raíz para progreso de caramelos
+
+1. `pokemonRootSpecies` reproduce `PokemonSpecies.getRootSpeciesId` pinned (`src/data/pokemon-species.ts`) usando las preevoluciones canónicas de SpeciesDataRegistry. La opción `forStarter` termina ante un starter elegible; amistad usa el recorrido completo, como `addFriendship`.
+2. `trainerPartyRootDex` reutiliza ese resolver y deja de imponer 16 pasos. Referencias ausentes/ciclos fallan; el límite de recorrido viene del número de registros del catálogo. `pokemonFriendshipStarterSpecies` expone la clave canónica para el futuro ledger del perfil.
+3. Regresiones 544–545 escritas sobre Ivysaur/Bulbasaur y todas las especies reales, pendientes de ejecución. Esto identifica destinatarios de progreso; el almacenamiento persistente de starter candy y la raíz de fusión siguen pendientes.

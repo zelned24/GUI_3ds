@@ -122,6 +122,15 @@ extern "C" int runPokemonBattleStateChecks() {
     faintFriendshipActor.friendship = 1;
     if (!Pokerogue3DS::applyPokemonFaintFriendship(faintFriendshipActor) ||
         faintFriendshipActor.friendship) return 543;
+    const auto* bulbasaurRoot = Pokerogue3DS::pokemonFriendshipStarterSpecies(2);
+    if (!bulbasaurRoot || bulbasaurRoot->dex != 1 ||
+        Pokerogue3DS::pokemonFriendshipStarterSpecies(0)) return 544;
+    for (const auto& species : PokerogueContent::kSpecies) {
+        const auto* root = Pokerogue3DS::pokemonFriendshipStarterSpecies(species.dex);
+        const auto* starterRoot = Pokerogue3DS::pokemonRootSpecies(species.dex, true);
+        if (!root || root->prevolutionDex || !starterRoot ||
+            (starterRoot->prevolutionDex && !starterRoot->starterEligible)) return 545;
+    }
     highLevelInput.level = 65535;
     const uint16_t previousHp = highLevelActor.hp;
     if (Pokerogue3DS::initializePokemonBattleState(highLevelInput, highLevelActor) !=
