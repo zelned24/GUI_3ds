@@ -459,6 +459,7 @@ bool changePokemonBattleForm(PokemonBattleState& state, const char* targetFormId
     for (uint8_t stat = 0; stat < 7; ++stat) next.statStages[stat] = state.statStages[stat];
     next.pauseEvolutions = state.pauseEvolutions;
     next.heldItemLostTags = state.heldItemLostTags;
+    next.turnDamageDealt = state.turnDamageDealt;
     state = next;
     return true;
 }
@@ -1304,12 +1305,15 @@ PokemonMoveActionStatus useStandardPokemonMove(
         }
         next.targetFainted = nextDefender.hp == 0;
     }
+    if (attacker.turnDamageDealt > 0xFFFFFFFFu - next.damageApplied)
+        return PokemonMoveActionStatus::DamageResolutionFailed;
     // Commit resolved PP, target/shields/stages and RNG together after all phases succeed.
     defender = nextDefender;
     if (targetBossState) {
         *targetBossState = nextBossState;
         *bossGlobalRng = nextGlobalRng;
     }
+    attacker.turnDamageDealt += next.damageApplied;
     attacker.moves[moveSlot].pp = static_cast<uint8_t>(attacker.moves[moveSlot].pp - next.ppConsumed);
     battleRng = nextRng;
     output = next;

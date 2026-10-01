@@ -147,6 +147,7 @@ struct PokemonBattleState {
     uint32_t pokemonId = 0;
     uint16_t abilityId = 0;
     HeldItemLostTagState heldItemLostTags{}; // Transient summon data.
+    uint32_t turnDamageDealt = 0; // PokemonTurnData.totalDamageDealt; reset after turn effects.
     PokemonGender gender = PokemonGender::Unspecified;
     uint16_t maxHp = 0;
     uint16_t hp = 0;

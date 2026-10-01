@@ -1782,6 +1782,8 @@ bool FirstRunRuntime::finishBattleTurn() {
         buildScene();
         return false;
     }
+    // Reset PokemonTurnData after all end-of-turn consumers.
+    nextPlayer.turnDamageDealt = nextEnemy.turnDamageDealt = nextSecondEnemy.turnDamageDealt = 0;
     m_context.player.battleState = nextPlayer;
     m_context.enemy.battleState = nextEnemy;
     m_context.enemy.bossState = nextEnemyBoss;

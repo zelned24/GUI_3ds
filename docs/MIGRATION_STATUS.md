@@ -585,3 +585,8 @@
 
 1. Adapter existente de inventario reutiliza PokemonHealingPolicy/Event. Leftovers redondea maxHP/16 antes de stacks; Shell Bell redondea dano*stacks/8. HealingBooster se aplica despues; Heal Block y actividad son entradas resueltas. No revive ni consume PP.
 2. Regresiones 427-430 escritas para policy pendiente, ambos redondeos y bloqueo. Tests/compilacion aplazados; dispatcher, acumulador real de dano y presentacion de eventos pendientes.
+
+## Acumulador de dano del turno
+
+1. useStandardPokemonMove suma damageApplied confirmado en turnDamageDealt, con overflow antes de commit. Recoil/drain preservan el contador via copias existentes. finishBattleTurn limpia tras consumidores; cambio de forma conserva.
+2. Actor save rechaza contador no cero hasta portar payload turnData. Checkpoints lo limpian. Tests/compilacion aplazados; falta conexion Shell Bell, sustitutos y multihit.

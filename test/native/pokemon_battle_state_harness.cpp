@@ -1176,11 +1176,13 @@ extern "C" int runPokemonBattleStateChecks() {
     PokemonMoveDamageRoll actionExpectedRoll{};
     if (Pokerogue3DS::resolveStandardPokemonMoveDamage(moveActor, oneHpTarget, 33, false,
         actionExpectedRng, actionExpectedRoll) != PokemonMoveDamageResult::Ok) return 51;
+    moveActor.turnDamageDealt = 7;
     PokemonMoveActionResult actionResult{};
     if (Pokerogue3DS::useStandardPokemonMove(moveActor, oneHpTarget, 0, false, actionRng,
         actionResult) != PokemonMoveActionStatus::Ok || !actionResult.damageRoll.hit ||
         actionResult.damageRoll.damage != actionExpectedRoll.damage || actionResult.damageApplied != 1 ||
         !actionResult.targetFainted || oneHpTarget.hp != 0 || moveActor.moves[0].pp != 34) return 52;
+    if (moveActor.turnDamageDealt != 8) return 521;
     const auto actualActionState = actionRng.state();
     const auto expectedActionState = actionExpectedRng.state();
     if (actualActionState.carry != expectedActionState.carry || actualActionState.s0 != expectedActionState.s0 ||
