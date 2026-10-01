@@ -105,6 +105,8 @@ globalThis._3ds_tick = function(input) {
   else if (state.runStarted && !state.finished && presentation.doubleBattle && input.right) _3ds_cycleStarter(1);
   else if (!state.runStarted && input.left) _3ds_cycleStarter(-1);
   else if (!state.runStarted && input.right) _3ds_cycleStarter(1);
+  else if (!state.runStarted && input.up) _3ds_cycleStarterForm(-1);
+  else if (!state.runStarted && input.down) _3ds_cycleStarterForm(1);
   else if (!state.runStarted && input.A) _3ds_toggleStarterTeam();
   else if (input.start || input.A) {
     if (!state.finished || state.playerWon) _3ds_submitAction(state.selectedMove || 0);
@@ -228,12 +230,14 @@ globalThis._3ds_tick = function(input) {
   if (!state.runStarted) {
     _3ds_drawText('Starter: ' + _3ds_getStarterName(), 10, 42, 0.55, GREEN);
     _3ds_drawText('Cost: ' + (presentation.starterCost || 0) + ' / 10   Candy: ' + (presentation.starterCandy || 0), 10, 70, 0.48, WHITE);
+    _3ds_drawText('Form: ' + (presentation.starterFormName || 'Base'), 10, 90, 0.42, WHITE);
     if (starterCostMenu) {
       _3ds_drawText('Reduce cost: ' + (presentation.starterReductionPrice || 0) + ' candy', 10, 105, 0.5, WHITE);
       _3ds_drawText(presentation.starterCanReduce ? 'A: buy and save   B: cancel' :
         (presentation.starterReduction >= 2 ? 'Maximum reduction reached' : 'Purchase unavailable'), 10, 135, 0.45, presentation.starterCanReduce ? GREEN : RED);
     } else {
       _3ds_drawText('Left/Right: browse  A: add/remove', 10, 110, 0.45, WHITE);
+      _3ds_drawText('Up/Down: unlocked form', 10, 125, 0.4, WHITE);
       _3ds_drawText('Start: begin   B: reduce cost', 10, 140, 0.5, GREEN);
     }
     _3ds_drawText('Team ' + (presentation.playerPartyCount || 1) + '/6  Cost: ' + (presentation.starterTeamCost || 0) + '/10', 10, 170, 0.45, WHITE);

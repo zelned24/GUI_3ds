@@ -77,7 +77,7 @@ bool QuickJSBridge::init(Renderer2D& renderer) {
         {"_3ds_resetRun", resetRun, 0}, {"_3ds_cycleStarter", cycleStarterBinding, 1},
         {"_3ds_drawStarter", drawStarter, 0}, {"_3ds_getStarterName", getStarterName, 0}, {"_3ds_getMoveName", getMoveName, 1},
         {"_3ds_getPresentationInfo", getPresentationInfo, 0},
-        {"_3ds_toggleStarterTeam", toggleStarterTeam, 0}, {"_3ds_purchaseStarterCost", purchaseStarterCost, 0}, {"_3ds_saveNative", saveNative, 0}, {"_3ds_loadNative", loadNative, 0},
+        {"_3ds_cycleStarterForm", cycleStarterForm, 1}, {"_3ds_toggleStarterTeam", toggleStarterTeam, 0}, {"_3ds_purchaseStarterCost", purchaseStarterCost, 0}, {"_3ds_saveNative", saveNative, 0}, {"_3ds_loadNative", loadNative, 0},
         {"_3ds_exportNative", exportNative, 0}, {"_3ds_importNative", importNative, 0},
         {"_3ds_submitAction", submitAction, 1}, {"_3ds_skipReward", skipReward, 0},
         {"_3ds_getCombatLog", getCombatLog, 0},
@@ -189,7 +189,9 @@ JSValue QuickJSBridge::drawStarter(JSContext* ctx, JSValueConst, int argc, JSVal
     ResolvedPokemon preview{};
     preview.dex = species->dex;
     preview.speciesId = species->id;
-    preview.formId = species->firstFormId;
+    const auto* form = PokerogueContent::findFormByUpstreamIndex(species->dex,
+        bridge->m_game->setupStarterFormIndex(species->dex));
+    preview.formId = form ? form->id : species->firstFormId;
     preview.assetSourcePath = species->assetSourcePath;
     // Setup does not display the enemy. Reuse its front cache instead of
     // retaining an extra texture page on Old 3DS; battle reloads its own key.
@@ -331,6 +333,10 @@ JSValue QuickJSBridge::getPresentationInfo(JSContext* ctx, JSValueConst, int, JS
     if (!b->m_game->runStarted()) {
         const uint16_t dex = b->m_game->selectedSetupStarterDex();
         const auto* species = PokerogueContent::findSpeciesByDex(dex);
+        const auto* selectedForm = PokerogueContent::findFormByUpstreamIndex(dex, b->m_game->setupStarterFormIndex(dex));
+        if (!set("starterFormName", JS_NewString(ctx, selectedForm && selectedForm->name ? selectedForm->name : ""))) {
+            JS_FreeValue(ctx, info); return JS_EXCEPTION;
+        }
         const uint8_t reduction = b->m_game->starterCostReduction(dex);
         uint16_t candy = 0, quarterCost = 0, price = 0;
         for (size_t i = 0; i < b->m_game->starterProfileCount(); ++i)
@@ -474,6 +480,16 @@ JSValue QuickJSBridge::getStarterName(JSContext* ctx, JSValueConst, int, JSValue
     const auto* species = b ? PokerogueContent::findSpeciesByDex((b->m_game && !b->m_game->runStarted() ? b->m_game->selectedSetupStarterDex() : b->restartStarterDex())) : nullptr;
     return JS_NewString(ctx, species ? species->name : "?");
 }
+JSValue QuickJSBridge::cycleStarterForm(JSContext* ctx, JSValueConst, int argc, JSValueConst* argv) {
+    auto* b = static_cast<QuickJSBridge*>(JS_GetContextOpaque(ctx));
+    double direction;
+    if (!b || !b->m_game || !b->m_progress || !b->m_inTick || argc != 1 ||
+        b->m_game->runStarted() || b->m_pendingAction != -999) return JS_FALSE;
+    if (!number(ctx, argv[0], direction) || (direction != -1 && direction != 1))
+        return JS_ThrowRangeError(ctx, "Form direction must be -1 or 1");
+    b->m_pendingAction = direction < 0 ? 226 : 227;
+    return JS_TRUE;
+}
 JSValue QuickJSBridge::toggleStarterTeam(JSContext* ctx, JSValueConst, int argc, JSValueConst*) {
     auto* b = static_cast<QuickJSBridge*>(JS_GetContextOpaque(ctx));
     if (!b || !b->m_game || !b->m_inTick || argc || b->m_game->runStarted() ||
@@ -548,6 +564,11 @@ bool QuickJSBridge::processPendingAction() {
                 }
             }
         }
+    } else if (action == 226 || action == 227) {
+        const auto result = m_progress ? m_game->cycleSetupStarterForm(action == 226 ? -1 : 1, *m_progress)
+            : NativeSaveResult::InvalidRecord;
+        std::snprintf(m_actionFeedback, sizeof(m_actionFeedback), "%s", result == NativeSaveResult::Ok ?
+            "Starter form saved" : nativeSaveResultName(result));
     } else if (action == 209) {
         const bool changed = m_game->toggleSetupStarter();
         std::snprintf(m_actionFeedback, sizeof(m_actionFeedback), "%s", changed ?

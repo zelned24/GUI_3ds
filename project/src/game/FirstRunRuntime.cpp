@@ -176,6 +176,39 @@ bool FirstRunRuntime::starterSelectionAllowed(const uint16_t* dexes, size_t coun
     return true;
 }
 
+uint16_t FirstRunRuntime::setupStarterFormIndex(uint16_t dex) const {
+    if (m_starterProfileReady) for (size_t i = 0; i < m_starterProfileCount; ++i) {
+        const auto& record = m_starterProfileRecords[i];
+        if (record.speciesDex == dex && record.preferredFormIndex != 65535) return record.preferredFormIndex;
+    }
+    return 0;
+}
+
+NativeSaveResult FirstRunRuntime::cycleSetupStarterForm(int direction, NativeProgressStore& store) {
+    if (m_runStarted) return NativeSaveResult::UnsupportedStage;
+    if (direction != -1 && direction != 1) return NativeSaveResult::InvalidRecord;
+    const uint16_t dex = selectedSetupStarterDex();
+    const auto* species = PokerogueContent::findSpeciesByDex(dex);
+    if (!species || !m_starterProfileReady) return NativeSaveResult::InvalidRecord;
+    const NativeStarterCandyRecord* record = nullptr;
+    for (size_t i = 0; i < m_starterProfileCount; ++i)
+        if (m_starterProfileRecords[i].speciesDex == dex) { record = &m_starterProfileRecords[i]; break; }
+    if (!record) return NativeSaveResult::InvalidRecord;
+    uint16_t count = 0;
+    for (const auto& form : PokerogueContent::kForms)
+        if (pokemonFormTextEquals(form.speciesId, species->id)) ++count;
+    if (count < 2) return NativeSaveResult::InvalidRecord;
+    const uint16_t current = setupStarterFormIndex(dex);
+    if (current >= count) return NativeSaveResult::InvalidRecord;
+    uint16_t next = current;
+    for (uint16_t scanned = 1; scanned < count; ++scanned) {
+        next = direction > 0 ? (next + 1) % count : (next + count - 1) % count;
+        if (pokemonValidateStarterForm(dex, next, record->unlockedFormAttr) != PokemonStarterFormResult::Ok) continue;
+        return selectSetupStarterForm(dex, next, store);
+    }
+    return NativeSaveResult::InvalidRecord;
+}
+
 NativeSaveResult FirstRunRuntime::selectSetupStarterForm(uint16_t dex, uint16_t formIndex,
     NativeProgressStore& store) {
     if (m_runStarted) return NativeSaveResult::UnsupportedStage;
@@ -194,6 +227,10 @@ NativeSaveResult FirstRunRuntime::selectSetupStarterForm(uint16_t dex, uint16_t 
         break;
     }
     if (!found) return NativeSaveResult::InvalidRecord;
+    PokerogueRngAdapter previewRng;
+    previewRng.sow(m_seedCodeUnits.data(), m_seedLength);
+    ResolvedPokemon selectedPreview{};
+    if (!prepared->resolveStarterFromDex(dex, previewRng, selectedPreview)) return NativeSaveResult::InvalidRecord;
     uint16_t dexes[6]{};
     const uint8_t count = m_context.playerPartyCount;
     for (uint8_t i = 0; i < count; ++i) dexes[i] = m_context.playerParty[i].dex;
