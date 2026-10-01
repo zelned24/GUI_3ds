@@ -1230,3 +1230,10 @@
 
 1. Upstream elige masculino cuando caughtAttr no contiene FEMALE-only, incluso si una captura genderless no aporta bits de género a una preevolución gendered. El resolver ahora admite ese default cuando existen metadata de naturaleza y habilidad de captura; no confunde el cero válido con perfiles legacy incompletos.
 2. Mantiene rechazo por ratios imposibles y por metadata ausente. Regresiones distinguen cero de bits con metadata completa frente a legacy sin habilidad; sin ejecutar. Form unlock propagation completa sigue pendiente.
+
+## Índices de forma upstream en catálogo y C++
+
+1. Importer conserva `extensions.upstreamFormIndex` de cada constructor `PokemonForm` en orden fuente, sin asignar IDs paralelos. Generador emite `Form.upstreamFormIndex` y `findFormByUpstreamIndex(speciesDex,index)`; rechaza índices ausentes/invalidos/duplicados por especie. ID/clave de forma, raw, provenance y referencias de assets permanecen.
+2. Dos importaciones completas coincidieron en hash `bcc2ae431359522ca9c6c0441bd06e257ce28ccb940e7dbb31d31099cfd38bbe`; pins y conteos siguen iguales: 1084 especies/609 formas. Esta evidencia demuestra generación determinista, no ejecución del juego.
+3. El snapshot previo `d2e27cf94a29826157bed69b788e807a9bb30ee05a44de3f4369a51146a9b4ff` deja de coincidir; guardados/perfiles vinculados a ese hash requieren migración explícita todavía pendiente. No se neutraliza la protección de hash.
+4. Regresiones de orden de constructor y lookup por especie/índice para todo el catálogo de formas escritas; sin ejecutar. Persistir/desbloquear formas y reglas de battle forms siguen pendientes; tests/compilación aplazados.

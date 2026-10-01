@@ -1280,7 +1280,7 @@ export class PokerogueImporter {
                   backSourcePath: backIndexed ? `images/pokemon/back/${spriteAtlasKey}.json` : null,
                   manifestVerified: false, imageVerified: false },
                 provenance: { sourceRepository: game.url, sourceRevision: game.revision, sourcePath: path, sourceSymbol: `SpeciesId.${symbol}.forms`, sourceType: CanonicalSourceType.UPSTREAM, sourceHash: sourceHash(file) },
-                extensions: { upstreamRawRecord: { format: 'typescript-source-fragment', value: rawForm }, runtimeTransform: 'NOT_IMPORTED' }
+                extensions: { upstreamFormIndex: formIndex, upstreamRawRecord: { format: 'typescript-source-fragment', value: rawForm }, runtimeTransform: 'NOT_IMPORTED' }
               });
               formIndex++;
               ctorRe.lastIndex = end + 1;

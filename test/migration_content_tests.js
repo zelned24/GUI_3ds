@@ -60,6 +60,10 @@ export function registerMigrationContentTests(test) {
     assert.strictEqual(pikachu.growthRate, 'MEDIUM_FAST', 'growth-rate identifier is normalized without a gameplay port');
     const pikachuGigantamax = imported.canonicalContent.collections.forms.find(form => form.speciesId === 'pikachu' && form.formKey === 'GIGANTAMAX');
     assert.ok(pikachuGigantamax.levelMoves.some(move => move.move === 'zippy_zap' && move.level === 20), 'pinned form-specific level moves reach the matching canonical form record');
+    const indexedForms = imported.canonicalContent.collections.forms.filter(form => form.speciesId === 'pikachu');
+    assert.deepStrictEqual(indexedForms.map(form => form.extensions.upstreamFormIndex),
+      indexedForms.map((_, index) => index), 'form indexes preserve source constructor order');
+
     assert.deepStrictEqual(pikachu.rarity, { legendary: null, subLegendary: null, mythical: null }, 'absent upstream rarity fields remain distinguishable from explicit false');
     const legendary = imported.species.find(species => species.rarity.legendary === true);
     assert.ok(legendary, 'explicit upstream legendary classification is retained');

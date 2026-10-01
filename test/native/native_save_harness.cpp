@@ -776,5 +776,12 @@ extern "C" int runNativeSaveChecks() {
             "Insufficient memory for save transaction") ||
         !std::strcmp(nativeSaveResultName(NativeSaveResult::MemoryUnavailable),
             nativeSaveResultName(NativeSaveResult::InvalidRecord))) return 116;
+    for (const auto& form : PokerogueContent::kForms) {
+        uint16_t speciesDex = 0;
+        for (const auto& species : PokerogueContent::kSpecies)
+            if (!std::strcmp(species.id, form.speciesId)) { speciesDex = species.dex; break; }
+        if (!speciesDex || PokerogueContent::findFormByUpstreamIndex(speciesDex, form.upstreamFormIndex) != &form) return 145;
+    }
+    if (PokerogueContent::findFormByUpstreamIndex(0, 0)) return 146;
     return 0;
 }
