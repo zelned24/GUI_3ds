@@ -33,6 +33,25 @@ bool removePokemonConfusionTag(PokemonConfusionTagState& tag) {
     return true;
 }
 
+PokemonStatusImmunityResult applyPokemonPostSummonConfusionRemoval(PokemonBattleState& actor,
+    bool abilityActive, bool callbacksResolved, PokemonConfusionRemovalEvent& output) {
+    if (actor.confusion.present != (actor.confusion.turns != 0) || !callbacksResolved)
+        return PokemonStatusImmunityResult::UnsupportedCondition;
+    for (const auto& profile : PokerogueContent::kConfusionImmunityAbilityProfiles) {
+        if (profile.abilityId != actor.abilityId) continue;
+        if (abilityActive && !profile.removalResolved) return PokemonStatusImmunityResult::UnsupportedCondition;
+        PokemonConfusionRemovalEvent event{};
+        if (abilityActive && profile.removesConfusion && actor.confusion.present) {
+            // Pinned apply has no simulated branch: caller controls invocation.
+            event.abilityActivates = event.removed = true;
+            actor.confusion = {};
+        }
+        output = event;
+        return PokemonStatusImmunityResult::Resolved;
+    }
+    return PokemonStatusImmunityResult::UnknownAbility;
+}
+
 bool checkPokemonConfusionBeforeMove(PokemonBattleState& actor, PokemonConfusionTagState& tag,
     const PokemonConfusionMovePolicy& policy, PokerogueRngAdapter& actorRng,
     PokemonConfusionMoveEvent& output) {

@@ -553,6 +553,13 @@ bool canPokemonAddConfusionTag(const PokemonConfusionTagState& tag,
 PokemonConfusionTagResult addPokemonConfusionTag(PokemonConfusionTagState& tag,
     uint32_t turns, const PokemonConfusionTagPolicy& policy);
 bool removePokemonConfusionTag(PokemonConfusionTagState& tag);
+struct PokemonConfusionRemovalEvent {
+    bool abilityActivates = false;
+    bool removed = false;
+};
+PokemonStatusImmunityResult applyPokemonPostSummonConfusionRemoval(PokemonBattleState& actor,
+    bool abilityActive, bool callbacksResolved, PokemonConfusionRemovalEvent& output);
+
 struct PokemonConfusionMovePolicy {
     bool resolved = false;
     double effectiveAttack = 0;

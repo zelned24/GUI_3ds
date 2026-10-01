@@ -1565,3 +1565,9 @@
 1. executeActiveBattleMove aplica confusión después de sleep/freeze y antes de paralysis; autogolpe cancela sin consumir PP. Usa tag propiedad del actor y RNG del usuario. Sleep/freeze que cancelan no adelantan contador/RNG de confusión.
 2. Proveedor conservador exige combate individual, sin held modifiers/clima/boss del usuario, y habilidades de ambos actores con callbacks de estadísticas/daño cubiertos por la frontera actual. No finge soporte de tags/abilities/campo pendientes; creación por Poison Puppeteer todavía requiere conexión del dispatcher de estados.
 3. Regresiones de restore/recapture de tags de ambos activos escritas sin ejecutar; checks de resolver ya cubren contador/autogolpe/RNG. Tests/compilación y validación del flujo completo siguen aplazados.
+
+## Eliminación de confusión por habilidad adquirida/summon
+
+1. Generador deriva PostSummonRemoveBattlerTagAbAttr con parámetros variadic constantes; Own Tempo (20) declara eliminación de CONFUSED. Resolver exige activación/callbacks resueltos, elimina tag y emite activación solamente si existía.
+2. Respeta apply upstream sin inventar rama simulated. Invocación tras ganar habilidad/dispatcher post-summon completo permanece pendiente; recall ya limpia summon data independientemente de Own Tempo.
+3. Regresiones de Own Tempo, inactividad, callback pendiente y ausencia de tag escritas sin ejecutar. Tests/compilación aplazados.

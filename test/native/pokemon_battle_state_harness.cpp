@@ -3223,6 +3223,21 @@ extern "C" int runPokemonBattleStateChecks() {
             statusApplicationRng, puppeteerEvent) != Pokerogue3DS::PokemonStatusImmunityResult::UnsupportedCondition ||
         puppeteerTag.present || puppeteerEvent.tagAttempted ||
         statusApplicationRng.randSeedUint32() != expectedApplicationRng.randSeedUint32()) return 9153;
+    PokemonBattleState ownTempoActor{};
+    ownTempoActor.abilityId = 20;
+    ownTempoActor.confusion = {3, true};
+    Pokerogue3DS::PokemonConfusionRemovalEvent removalEvent{};
+    if (Pokerogue3DS::applyPokemonPostSummonConfusionRemoval(ownTempoActor, false, true, removalEvent) !=
+            Pokerogue3DS::PokemonStatusImmunityResult::Resolved || removalEvent.removed ||
+        ownTempoActor.confusion.turns != 3) return 9200;
+    if (Pokerogue3DS::applyPokemonPostSummonConfusionRemoval(ownTempoActor, true, false, removalEvent) !=
+            Pokerogue3DS::PokemonStatusImmunityResult::UnsupportedCondition || ownTempoActor.confusion.turns != 3)
+        return 9201;
+    if (Pokerogue3DS::applyPokemonPostSummonConfusionRemoval(ownTempoActor, true, true, removalEvent) !=
+            Pokerogue3DS::PokemonStatusImmunityResult::Resolved || !removalEvent.abilityActivates ||
+        !removalEvent.removed || ownTempoActor.confusion.present || ownTempoActor.confusion.turns) return 9202;
+    if (Pokerogue3DS::applyPokemonPostSummonConfusionRemoval(ownTempoActor, true, true, removalEvent) !=
+            Pokerogue3DS::PokemonStatusImmunityResult::Resolved || removalEvent.abilityActivates) return 9203;
     bool foundConfusionImmunity = false;
     for (const auto& profile : PokerogueContent::kConfusionImmunityAbilityProfiles) {
         if (!profile.selfResolved || !profile.selfBlocks) continue;
