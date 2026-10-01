@@ -1347,3 +1347,9 @@
 1. applyPokemonStatusResidual porta matemática/orden de PostTurnStatusEffectPhase: activos sin switch-out, contador incrementado antes de BlockNonDirectDamage/BlockStatusDamage, poison floor(maxHP/8), toxic floor(maxHP*turn/16), burn floor(maxHP/16), mínimo uno. ReduceBurnDamageAbAttr vuelve a aplicar mínimo uno tras multiplicador racional.
 2. Evento registra daño solicitado/aplicado, HP, bloqueo, contador y faint. Publicación atómica; policy no resuelta, overflow y bosses que requieren dispatcher no mutan actor/output. Residual no ofrece Endure/Sturdy. No realiza RNG ni callbacks inventados.
 3. Falta conectar resolución real de habilidades/post-damage/boss y orden de fases al turno; movimientos con status permanecen bloqueados y save status pendiente. Regresiones de tóxico, bloqueo con contador, quemadura reducida y mínimo/KO escritas, sin ejecutar. Tests/compilación aplazados.
+
+## Elegibilidad upstream de estados
+
+1. canPokemonSetStatus reproduce Pokemon.canSetStatus: estado existente/pending, override de Rest, Misty grounded, poison/steel con bypass de fuente por tipo, Electric paralysis, Electric terrain sleep, Ice/sun freeze, Fire burn, bloqueo propio/aliado y Safeguard solo para fuente externa.
+2. Política exige tipos efectivos, grounding, campo y callbacks resueltos; no presupone que falta de representación implica ausencia. Sleep conserva detalle pinned de no consultar ignoreField. Predicate no muta actor ni consume RNG.
+3. Faltan el proveedor real de policy, trySetStatus/ObtainStatusEffectPhase, durations, reactions y fases del turno antes de habilitar moves con estados. Regresiones de Corrosion parcial, fuente ausente, terrenos, sol y override escritas; sin ejecutar. Tests/compilación aplazados.

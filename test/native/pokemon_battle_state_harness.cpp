@@ -2480,5 +2480,35 @@ extern "C" int runPokemonBattleStateChecks() {
     if (Pokerogue3DS::applyPokemonStatusResidual(residualActor, residualPolicy, residualEvent) !=
             Pokerogue3DS::PokemonStatusResidualResult::Applied || residualEvent.appliedDamage != 1 ||
         !residualEvent.fainted || residualActor.hp) return 579;
+    Pokerogue3DS::PokemonStatusApplicationPolicy statusPolicy{};
+    Pokerogue3DS::PokemonStatusState absentStatus{};
+    using Effect = Pokerogue3DS::PokemonStatusEffect;
+    using Eligibility = Pokerogue3DS::PokemonStatusEligibility;
+    if (Pokerogue3DS::canPokemonSetStatus(absentStatus, Effect::Burn, statusPolicy) != Eligibility::UnsupportedPolicy) return 580;
+    statusPolicy.resolved = true;
+    statusPolicy.poisonType = statusPolicy.steelType = true;
+    statusPolicy.hasSource = statusPolicy.sourceIgnoresPoisonImmunity = true;
+    if (Pokerogue3DS::canPokemonSetStatus(absentStatus, Effect::Toxic, statusPolicy) != Eligibility::SteelType) return 581;
+    statusPolicy.sourceIgnoresSteelImmunity = true;
+    if (Pokerogue3DS::canPokemonSetStatus(absentStatus, Effect::Toxic, statusPolicy) != Eligibility::Allowed) return 582;
+    statusPolicy.hasSource = false;
+    if (Pokerogue3DS::canPokemonSetStatus(absentStatus, Effect::Toxic, statusPolicy) != Eligibility::PoisonType) return 583;
+    statusPolicy = {};
+    statusPolicy.resolved = statusPolicy.grounded = statusPolicy.mistyTerrain = true;
+    if (Pokerogue3DS::canPokemonSetStatus(absentStatus, Effect::Burn, statusPolicy) != Eligibility::MistyTerrain) return 584;
+    statusPolicy.ignoreField = true;
+    statusPolicy.electricTerrain = true;
+    if (Pokerogue3DS::canPokemonSetStatus(absentStatus, Effect::Sleep, statusPolicy) != Eligibility::ElectricTerrain) return 585;
+    statusPolicy = {};
+    statusPolicy.resolved = statusPolicy.sunnyOrHarshSun = true;
+    if (Pokerogue3DS::canPokemonSetStatus(absentStatus, Effect::Freeze, statusPolicy) != Eligibility::SunnyWeather) return 586;
+    statusPolicy.ignoreField = true;
+    if (Pokerogue3DS::canPokemonSetStatus(absentStatus, Effect::Freeze, statusPolicy) != Eligibility::Allowed) return 587;
+    absentStatus.present = true;
+    absentStatus.effect = Effect::Poison;
+    statusPolicy.overrideStatus = true;
+    statusPolicy.pendingStatus = true;
+    if (Pokerogue3DS::canPokemonSetStatus(absentStatus, Effect::Poison, statusPolicy) != Eligibility::ExistingStatus ||
+        Pokerogue3DS::canPokemonSetStatus(absentStatus, Effect::Sleep, statusPolicy) != Eligibility::Allowed) return 588;
     return 0;
 }

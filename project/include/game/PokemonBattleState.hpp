@@ -232,6 +232,77 @@ struct PokemonBattleState {
     bool statsAreBaseFormulaOnly = true;
 };
 
+struct PokemonStatusApplicationPolicy {
+    bool resolved = false; // Live types, grounding, field, abilities and Safeguard resolved.
+    bool overrideStatus = false;
+    bool pendingStatus = false;
+    bool ignoreField = false;
+    bool grounded = false;
+    bool mistyTerrain = false;
+    bool electricTerrain = false;
+    bool sunnyOrHarshSun = false;
+    bool poisonType = false;
+    bool steelType = false;
+    bool electricType = false;
+    bool iceType = false;
+    bool fireType = false;
+    bool hasSource = false;
+    bool sourceIsTarget = false;
+    bool sourceIgnoresPoisonImmunity = false;
+    bool sourceIgnoresSteelImmunity = false;
+    bool selfAbilityBlocks = false;
+    bool allyAbilityBlocks = false;
+    bool safeguardBlocks = false;
+};
+enum class PokemonStatusEligibility : uint8_t {
+    Allowed, InvalidState, UnsupportedPolicy, ExistingStatus, PendingStatus, MistyTerrain,
+    PoisonType, SteelType, ElectricType, ElectricTerrain, IceType, SunnyWeather,
+    FireType, SelfAbility, AllyAbility, Safeguard
+};
+// Pokemon.canSetStatus predicate only. trySetStatus's faint check, queued
+// ObtainStatusEffectPhase, duration draws and reactions are separate stages.
+inline PokemonStatusEligibility canPokemonSetStatus(const PokemonStatusState& current,
+    PokemonStatusEffect requested, const PokemonStatusApplicationPolicy& policy) {
+    if (!pokemonStatusStateValid(current) || static_cast<uint8_t>(requested) > 7)
+        return PokemonStatusEligibility::InvalidState;
+    if (requested != PokemonStatusEffect::Faint) {
+        if (policy.overrideStatus ? current.present && current.effect == requested : current.present)
+            return PokemonStatusEligibility::ExistingStatus;
+        if (!policy.overrideStatus && policy.pendingStatus) return PokemonStatusEligibility::PendingStatus;
+    }
+    if (!policy.resolved) return PokemonStatusEligibility::UnsupportedPolicy;
+    if (requested != PokemonStatusEffect::Faint && policy.grounded && !policy.ignoreField && policy.mistyTerrain)
+        return PokemonStatusEligibility::MistyTerrain;
+    switch (requested) {
+    case PokemonStatusEffect::Poison: case PokemonStatusEffect::Toxic:
+        if (policy.poisonType && (!policy.hasSource || !policy.sourceIgnoresPoisonImmunity))
+            return PokemonStatusEligibility::PoisonType;
+        if (policy.steelType && (!policy.hasSource || !policy.sourceIgnoresSteelImmunity))
+            return PokemonStatusEligibility::SteelType;
+        break;
+    case PokemonStatusEffect::Paralysis:
+        if (policy.electricType) return PokemonStatusEligibility::ElectricType;
+        break;
+    case PokemonStatusEffect::Sleep:
+        // Pinned sleep branch does not consult ignoreField.
+        if (policy.grounded && policy.electricTerrain) return PokemonStatusEligibility::ElectricTerrain;
+        break;
+    case PokemonStatusEffect::Freeze:
+        if (policy.iceType) return PokemonStatusEligibility::IceType;
+        if (!policy.ignoreField && policy.sunnyOrHarshSun) return PokemonStatusEligibility::SunnyWeather;
+        break;
+    case PokemonStatusEffect::Burn:
+        if (policy.fireType) return PokemonStatusEligibility::FireType;
+        break;
+    default: break;
+    }
+    if (policy.selfAbilityBlocks) return PokemonStatusEligibility::SelfAbility;
+    if (policy.allyAbilityBlocks) return PokemonStatusEligibility::AllyAbility;
+    if (policy.hasSource && !policy.sourceIsTarget && policy.safeguardBlocks)
+        return PokemonStatusEligibility::Safeguard;
+    return PokemonStatusEligibility::Allowed;
+}
+
 struct PokemonStatusResidualPolicy {
     bool resolved = false; // Both block attributes and post-damage callbacks resolved.
     bool active = true;
