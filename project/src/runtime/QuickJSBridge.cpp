@@ -217,8 +217,8 @@ JSValue QuickJSBridge::submitAction(JSContext* ctx, JSValueConst, int argc, JSVa
         return JS_ThrowTypeError(ctx, "submitAction requires runtime and one command");
     double value;
     if (!number(ctx, argv[0], value) || std::floor(value) != value ||
-        !((value >= 0 && value <= 3) || value == -1 || value == 100 || (value >= 210 && value <= 216) || (value >= 220 && value <= 225)))
-        return JS_ThrowRangeError(ctx, "Use slots 0..3, cursor -1/+100, capture 210, party 211..216 or evolution pause 220..225");
+        !((value >= 0 && value <= 3) || value == -1 || value == 100 || (value >= 210 && value <= 216) || (value >= 220 && value <= 225) || (value >= 300 && value <= 323)))
+        return JS_ThrowRangeError(ctx, "Use slots 0..3, cursor -1/+100, capture 210, party 211..216 evolution pause 220..225, or recovery recipient 300..323");
     if (bridge->m_pendingAction != -999) return JS_FALSE;
     if (value >= 0 && value <= 3 && !bridge->m_game->battleFinished() &&
         value >= bridge->m_game->presentation().player.battleState.moveCount) return JS_FALSE;
@@ -297,6 +297,24 @@ JSValue QuickJSBridge::getPresentationInfo(JSContext* ctx, JSValueConst, int, JS
         !set("activePlayerPartyIndex", JS_NewUint32(ctx, b->m_game->activePlayerPartyIndex()))) {
         JS_FreeValue(ctx, info); return JS_EXCEPTION;
     }
+    const auto* selectedReward = b->m_game->rewardChoice(b->m_game->selectedRewardChoice());
+    const char* selectedItem = selectedReward && selectedReward->poolEntry ? selectedReward->poolEntry->itemId : nullptr;
+    const bool recovery = selectedItem && (hpRestoreItemProfile(selectedItem) || ppRestoreItemProfile(selectedItem) ||
+        ppUpItemProfile(selectedItem) || reviveItemProfile(selectedItem));
+    if (!set("rewardRecovery", JS_NewBool(ctx, recovery)) ||
+        !set("selectedRewardChoice", JS_NewUint32(ctx, b->m_game->selectedRewardChoice()))) {
+        JS_FreeValue(ctx, info); return JS_EXCEPTION;
+    }
+    JSValue rewards = JS_NewArray(ctx);
+    if (JS_IsException(rewards)) { JS_FreeValue(ctx, info); return JS_EXCEPTION; }
+    for (uint8_t i = 0; i < b->m_game->rewardChoiceCount(); ++i) {
+        const auto* choice = b->m_game->rewardChoice(i);
+        const char* id = choice && choice->poolEntry ? choice->poolEntry->itemId : nullptr;
+        if (JS_SetPropertyUint32(ctx, rewards, i, JS_NewString(ctx, id ? id : "")) < 0) {
+            JS_FreeValue(ctx, rewards); JS_FreeValue(ctx, info); return JS_EXCEPTION;
+        }
+    }
+    if (!set("rewardChoices", rewards)) { JS_FreeValue(ctx, info); return JS_EXCEPTION; }
     JSValue playerParty = JS_NewArray(ctx);
     if (JS_IsException(playerParty)) { JS_FreeValue(ctx, info); return JS_EXCEPTION; }
     for (unsigned i = 0; i < view.playerPartyCount && i < 6; ++i) {
@@ -475,6 +493,10 @@ bool QuickJSBridge::processPendingAction() {
         m_game->throwPokeball(PokeballType::Pokeball);
     } else if (action >= 211 && action <= 216) {
         m_game->switchPlayerPokemon(static_cast<uint8_t>(action - 211));
+    } else if (action >= 300 && action <= 323) {
+        const uint8_t recipient = static_cast<uint8_t>((action - 300) / 4);
+        const uint8_t moveSlot = static_cast<uint8_t>((action - 300) % 4);
+        return m_game->claimRecoveryRewardChoice(recipient, moveSlot);
     } else if (action >= 220 && action <= 225) {
         return m_game->togglePlayerEvolutionPause(static_cast<uint8_t>(action - 220));
     }

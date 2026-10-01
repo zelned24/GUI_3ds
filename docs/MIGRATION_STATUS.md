@@ -917,3 +917,10 @@
 1. Pesos Common de Poké Ball y Great de Great Ball leen inventario real: peso cero al máximo Classic, seis por debajo; inventario superior al límite falla explícitamente.
 2. Límite 99 compartido con la aplicación del reward desde `src/data/pokeball.ts`, `MAX_PER_TYPE_POKEBALLS`; decisión de pool desde `src/modifier/init-modifier-pools.ts`, `hasMaximumBalls`. No es capacidad máxima del engine ni regla aplicada a otros modos.
 3. Regresiones 575–577 escritas para 98/99, independencia por tipo e inventario inválido. Sin ejecutar. Pesos completos Ultra/Rogue/Master siguen pendientes junto a sus otros modificadores.
+
+## Recompensas interactivas QuickJS — pendiente de ejecución
+
+1. Confirmar tras EXP abre el pool nativo en lugar de saltarlo. El HUD proyecta IDs de opciones y selección desde el runtime; Up/Down selecciona, B salta explícitamente.
+2. Recuperación soportada abre elección de miembro y slot: Up/Down elige actor, Left/Right slot, A encola 300–323. El host llama `claimRecoveryRewardChoice`; valida/aplica atómicamente y conserva el reward ante destinatario inválido.
+3. Regresión JS escrita sobre el script real: generación sin skip automático, reserve + slot, cancelación y skip explícito. Bundle regenerado sin compilar; pruebas pendientes.
+4. HUD sigue diagnóstico: nombres/locales finales, información detallada de HP/PP para cada destinatario, selección de destinatarios held y todas las familias de rewards todavía requieren integración.

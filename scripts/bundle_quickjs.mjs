@@ -40,7 +40,7 @@ function biomeColor(id) {
   for (let i = 0; i < id.length; ++i) hash = ((hash * 31) + id.charCodeAt(i)) >>> 0;
   return palette[hash % palette.length];
 }
-let previousJson = '', state = {}, partyMenu = false, partyCursor = 0;
+let previousJson = '', state = {}, partyMenu = false, partyCursor = 0, recoveryMenu = false, recoveryMove = 0;
 globalThis._3ds_tick = function(input) {
   const json = _3ds_getBattleState();
   if (json !== previousJson) { state = JSON.parse(json); previousJson = json; }
@@ -48,6 +48,7 @@ globalThis._3ds_tick = function(input) {
   // Queue one command. Host processes it before the next snapshot/render frame.
   const presentation = _3ds_getPresentationInfo() || {};
   const gameOverScreen = state.finished && !state.playerWon;
+  if (!state.rewardPending) recoveryMenu = false;
   if (input.X) _3ds_importNative();
   else if (input.Y) _3ds_exportNative();
   else if (input.L) _3ds_saveNative();
@@ -56,6 +57,18 @@ globalThis._3ds_tick = function(input) {
     if (input.left) _3ds_cycleStarter(-1);
     else if (input.right) _3ds_cycleStarter(1);
     else if (input.start || input.A) _3ds_resetRun();
+  } else if (state.rewardPending && recoveryMenu) {
+    const count = presentation.playerPartyCount || 1;
+    if (input.up) partyCursor = (partyCursor + count - 1) % count;
+    else if (input.down) partyCursor = (partyCursor + 1) % count;
+    else if (input.left) recoveryMove = (recoveryMove + 3) % 4;
+    else if (input.right) recoveryMove = (recoveryMove + 1) % 4;
+    else if (input.B) recoveryMenu = false;
+    else if (input.A || input.start) _3ds_submitAction(300 + partyCursor * 4 + recoveryMove);
+  } else if (state.rewardPending && (input.A || input.start) && presentation.rewardRecovery) {
+    recoveryMenu = true;
+    partyCursor = presentation.activePlayerPartyIndex || 0;
+    recoveryMove = 0;
   } else if (!state.finished && input.select) {
     partyMenu = !partyMenu;
     partyCursor = presentation.activePlayerPartyIndex || 0;
@@ -71,8 +84,7 @@ globalThis._3ds_tick = function(input) {
   else if (!state.runStarted && input.left) _3ds_cycleStarter(-1);
   else if (!state.runStarted && input.right) _3ds_cycleStarter(1);
   else if (input.start || input.A) {
-    if (state.finished && state.playerWon && state.experienceGranted) _3ds_skipReward();
-    else if (!state.finished || state.playerWon) _3ds_submitAction(state.selectedMove || 0);
+    if (!state.finished || state.playerWon) _3ds_submitAction(state.selectedMove || 0);
   } else if (input.up) _3ds_submitAction(-1);
   else if (input.down) _3ds_submitAction(100);
   else if (input.B && state.finished && state.playerWon && state.experienceGranted) _3ds_skipReward();
@@ -120,6 +132,21 @@ globalThis._3ds_tick = function(input) {
   _3ds_beginBottom();
   _3ds_clear(0xFF16213E);
   _3ds_drawText('Wave: ' + (state.wave || 0) + (presentation.doubleBattle ? ' - Doble batalla' : ''), 10, 10, 0.55, 0xFF00FFFF);
+  if (state.rewardPending) {
+    if (recoveryMenu) {
+      const party = presentation.playerParty || [];
+      for (let i = 0; i < party.length; ++i)
+        _3ds_drawText((i === partyCursor ? '> ' : '  ') + 'Pokemon #' + party[i], 10, 38 + i * 23, 0.48, WHITE);
+      _3ds_drawText('Move slot: ' + (recoveryMove + 1) + ' Left/Right', 8, 188, 0.43, WHITE);
+      _3ds_drawText('A: apply  B: return to rewards', 8, 207, 0.43, WHITE);
+    } else {
+      const choices = presentation.rewardChoices || [];
+      for (let i = 0; i < choices.length; ++i)
+        _3ds_drawText((i === presentation.selectedRewardChoice ? '> ' : '  ') + choices[i], 10, 42 + i * 32, 0.5, WHITE);
+      _3ds_drawText('Up/Down: reward A: claim B: skip', 8, 185, 0.43, WHITE);
+    }
+    return;
+  }
   if (partyMenu && !state.finished) {
     const party = presentation.playerParty || [];
     for (let i = 0; i < party.length; ++i)
@@ -134,7 +161,7 @@ globalThis._3ds_tick = function(input) {
   }
   const phaseText = state.finished
     ? state.playerWon
-      ? state.experienceGranted ? state.rewardPending ? 'Reward pending - Start: skip (no item)' : 'Victory transition needs remaining phases' : 'Victory - Start: collect EXP'
+      ? state.experienceGranted ? state.rewardPending ? 'Reward pending - A: choose B: skip' : 'Victory transition needs remaining phases' : 'Victory - Start: collect EXP'
       : 'Defeat - Start: restart'
     : state.supported ? 'Start/A: execute selected move' : 'Pending rules block this battle';
   _3ds_drawText(phaseText, 10, 147, 0.43, state.playerWon || state.supported ? GREEN : RED);
