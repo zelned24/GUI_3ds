@@ -782,23 +782,10 @@ bool FirstRunRuntime::claimRewardChoiceInPlace(uint8_t heldPartyMember) {
                 m_battleFeedback = "HP restore item policy could not resolve";
                 return false;
             }
-        } else if (std::strcmp(itemId, "ETHER") == 0) {
-            if (m_selectedBattleMove < playerState.moveCount) {
-                auto& move = playerState.moves[m_selectedBattleMove];
-                move.pp = std::min<uint8_t>(move.maxPp, move.pp + 10);
-            }
-        } else if (std::strcmp(itemId, "MAX_ETHER") == 0) {
-            if (m_selectedBattleMove < playerState.moveCount) {
-                auto& move = playerState.moves[m_selectedBattleMove];
-                move.pp = move.maxPp;
-            }
-        } else if (std::strcmp(itemId, "ELIXIR") == 0) {
-            for (uint8_t i = 0; i < playerState.moveCount; ++i) {
-                playerState.moves[i].pp = std::min<uint8_t>(playerState.moves[i].maxPp, playerState.moves[i].pp + 10);
-            }
-        } else if (std::strcmp(itemId, "MAX_ELIXIR") == 0) {
-            for (uint8_t i = 0; i < playerState.moveCount; ++i) {
-                playerState.moves[i].pp = playerState.moves[i].maxPp;
+        } else if (const auto* restore = ppRestoreItemProfile(itemId)) {
+            if (!applyPokemonPpRestoreItem(playerState, *restore, m_selectedBattleMove)) {
+                m_battleFeedback = "PP restore item selection could not resolve";
+                return false;
             }
         } else if (std::strcmp(itemId, "POKEBALL") == 0) {
             m_pokeballs[0] = std::min<uint16_t>(99, m_pokeballs[0] + 5);

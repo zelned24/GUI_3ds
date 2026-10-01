@@ -875,6 +875,18 @@ static int checkWave200FinalBossAndGameClear() {
         potionHealed != 500 || potionActor.hp != 501) return 449;
     if (applyPokemonHpRestoreItem(potionActor, *fullRestore, 1.0, false, potionHealed) ||
         potionActor.hp != 501) return 450;
+    const auto* etherRestore = ppRestoreItemProfile("ETHER");
+    const auto* maxElixirRestore = ppRestoreItemProfile("MAX_ELIXIR");
+    if (!etherRestore || !maxElixirRestore || etherRestore->allMoves || !maxElixirRestore->allMoves)
+        return 451;
+    potionActor.moveCount = 2;
+    potionActor.moves[0].maxPp = 20; potionActor.moves[0].pp = 5;
+    potionActor.moves[1].maxPp = 10; potionActor.moves[1].pp = 0;
+    if (!applyPokemonPpRestoreItem(potionActor, *etherRestore, 0) || potionActor.moves[0].pp != 15 ||
+        potionActor.moves[1].pp) return 452;
+    if (applyPokemonPpRestoreItem(potionActor, *etherRestore, 2) || potionActor.moves[0].pp != 15) return 453;
+    if (!applyPokemonPpRestoreItem(potionActor, *maxElixirRestore, 255) || potionActor.moves[0].pp != 20 ||
+        potionActor.moves[1].pp != 10) return 454;
     const auto preservedBoss = bossActor;
     if (applyPokemonFixedEnemyMovePp(*firstPhase, bossActor) ||
         bossActor.moves[3].maxPp != preservedBoss.moves[3].maxPp) return 338;

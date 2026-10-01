@@ -51,6 +51,27 @@ inline bool applyPokemonHpRestoreItem(PokemonBattleState& actor,
     return true;
 }
 
+inline const PokerogueContent::PpRestoreItemProfile* ppRestoreItemProfile(const char* itemId) {
+    if (!itemId) return nullptr;
+    for (const auto& profile : PokerogueContent::kPpRestoreItemProfiles)
+        if (!std::strcmp(profile.itemId, itemId)) return &profile;
+    return nullptr;
+}
+inline bool applyPokemonPpRestoreItem(PokemonBattleState& actor,
+    const PokerogueContent::PpRestoreItemProfile& profile, uint8_t selectedSlot) {
+    if (actor.moveCount > 4 || profile.points < -1 ||
+        (!profile.allMoves && selectedSlot >= actor.moveCount)) return false;
+    for (uint8_t i = 0; i < actor.moveCount; ++i)
+        if (actor.moves[i].pp > actor.moves[i].maxPp) return false;
+    for (uint8_t i = 0; i < actor.moveCount; ++i) {
+        if (!profile.allMoves && i != selectedSlot) continue;
+        auto& move = actor.moves[i];
+        const uint32_t restored = profile.points < 0 ? move.maxPp : move.pp + profile.points;
+        move.pp = static_cast<uint8_t>(restored > move.maxPp ? move.maxPp : restored);
+    }
+    return true;
+}
+
 enum class PokemonHealingResult : uint8_t { Ok, InvalidState, UnsupportedMove, UnresolvedPolicy };
 struct PokemonHealingEvent {
     bool failedFullHp = false;

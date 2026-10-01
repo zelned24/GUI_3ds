@@ -1047,5 +1047,13 @@ const hpRestoreRows = collections.items.flatMap(item => {
 });
 const hpRestoreHeader = theftAbilityHeader.replace('struct MoveAttribute {',
   `struct HpRestoreItemProfile { const char* itemId; uint16_t points; uint8_t percent; bool healsStatus; const char* sourcePath; const char* sourceSymbol; const char* sourceHash; };\ninline constexpr HpRestoreItemProfile kHpRestoreItemProfiles[] = {\n${hpRestoreRows.join(',\n')}\n};\nstruct MoveAttribute {`);
-await fs.writeFile(outputPath, hpRestoreHeader, 'utf8');
-console.log(JSON.stringify({ output: path.relative(root, outputPath), bytes: Buffer.byteLength(hpRestoreHeader), hash: report.contentHash }));
+const ppRestoreRows = collections.items.flatMap(item => {
+  const raw = item.extensions?.upstreamRawRecord?.value ?? '';
+  const match = raw.match(/new\s+(PokemonPpRestoreModifierType|PokemonAllMovePpRestoreModifierType)\s*\(\s*"[^"\n]*"\s*,\s*"[^"\n]*"\s*,\s*(-?\d+)\s*\)/);
+  if (!match) return [];
+  return [`    {"${field(item.id)}", ${Number(match[2])}, ${match[1] === 'PokemonAllMovePpRestoreModifierType'}, "${field(item.source?.sourcePath)}", "${field(item.source?.sourceSymbol)}", "${field(item.source?.sourceHash)}"}`];
+});
+const ppRestoreHeader = hpRestoreHeader.replace('struct MoveAttribute {',
+  `struct PpRestoreItemProfile { const char* itemId; int16_t points; bool allMoves; const char* sourcePath; const char* sourceSymbol; const char* sourceHash; };\ninline constexpr PpRestoreItemProfile kPpRestoreItemProfiles[] = {\n${ppRestoreRows.join(',\n')}\n};\nstruct MoveAttribute {`);
+await fs.writeFile(outputPath, ppRestoreHeader, 'utf8');
+console.log(JSON.stringify({ output: path.relative(root, outputPath), bytes: Buffer.byteLength(ppRestoreHeader), hash: report.contentHash }));

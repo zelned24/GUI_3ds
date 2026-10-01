@@ -651,3 +651,8 @@
 
 1. Generador extrae PokemonHpRestoreModifierType(points,percent,healStatus) del raw canonico con provenance. Claim usa max(floor(points*mult),floor(percent*maxHP)), minimo uno y cap HP segun modifier.ts pinned; reemplaza constantes falsas que ignoraban porcentaje.
 2. Regresiones 448-450 escritas para Hyper Potion y politica de status pendiente. Politica baseline sin status/charms; motor de status real aun pendiente. Tests/compilacion aplazados.
+
+## Recuperacion PP canonica
+
+1. Generador extrae points/allMoves de PokemonPpRestoreModifierType/PokemonAllMovePpRestoreModifierType con provenance. Adapter valida slots/PP antes de mutar, usa -1 para restauracion completa y conserva otros slots de Ether. Claim reutiliza perfiles en vez de listas de constantes.
+2. Regresiones 451-454 escritas; generacion permitida, tests/compilacion aplazados. Selector de destinatario/movimiento en presentacion y PP Ups persistentes pendientes.
