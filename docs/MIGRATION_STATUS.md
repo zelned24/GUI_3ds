@@ -1705,3 +1705,11 @@
 2. StatusActionAbilityProfile conserva flags explícitos de bypass. Importer admite la declaración exacta [Stat.EVA]; listas que afectan daño como Unaware siguen pendientes. ProtectStatAbAttr pertenece a PreStatStageChange y no cambia el estado de estas acciones StatusEffectAttr.
 3. Runtime usa el perfil del usuario para ignorar evasión del objetivo antes de componer precisión. Se neutralizan etapas positivas y negativas. No declara paridad de ataques de daño ni otros callbacks.
 4. Regresiones de bypass en ambos sentidos y perfiles reales escritas sin ejecutar. Contenido regenerado; tests/compilación pendientes.
+
+## Estados secundarios después de daño
+
+1. FirstRunRuntime admite ataques individuales con un único StatusEffectAttr normalizado y sin flags pendientes, como Ember y Thunder Shock. Preflight resuelve capacidades de los actores y reacciones; dobles/modifiers permanecen pendientes.
+2. MoveEffectPhase.applyOnTargetEffects del pinned dispara POST_APPLY después de daño. Runtime invoca executePokemonMoveStatusPhase tras hit efectivo, antes de curación posterior al movimiento; miss/inmunidad/clima cancelado no aplican efecto secundario. El resolver preserva chance antes de comprobación de faint y presentación quiet.
+3. Fase aplica chance, cola, ObtainStatus y reacciones con stream compartido; no repite PP ni daño. Fallo conserva actores/RNG; comando exterior conserva también daño y PP. IA suma beneficio de estado al daño.
+4. Política de hit de daño permite neutralizar etapas explícitas de Keen Eye para evitar admitir el ataque secundario con precisión incompleta. Resto de callbacks de daño/abilities no se declaran completos.
+5. Regresiones de Ember/Synchronize, destinatario debilitado, PP no repetido y fallo atómico escritas sin ejecutar. Tests y compilación pendientes.

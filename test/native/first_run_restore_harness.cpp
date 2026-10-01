@@ -387,6 +387,22 @@ static int checkStatusActionAdmission() {
                 afterAction.enemyStatus.effect != repeatedAction.enemyStatus.effect ||
                 afterAction.enemyStatus.sleepTurnsRemaining != repeatedAction.enemyStatus.sleepTurnsRemaining)
                 return 9387;
+            NativeRunSave emberCheckpoint = checkpoint;
+            emberCheckpoint.playerMoveIds[0] = 52;
+            emberCheckpoint.playerPp[0] = 25;
+            emberCheckpoint.playerParty[0].moveIds[0] = 52;
+            emberCheckpoint.playerParty[0].pp[0] = emberCheckpoint.playerParty[0].maxPp[0] = 25;
+            FirstRunRuntime ember(seed), repeatedEmber(seed);
+            NativeRunSave emberAfter{}, repeatedEmberAfter{};
+            if (!ember.restoreNativeRunSave(emberCheckpoint) ||
+                !repeatedEmber.restoreNativeRunSave(emberCheckpoint) || !ember.battleInputSupported() ||
+                !ember.advanceBattleTurn() || !repeatedEmber.advanceBattleTurn() ||
+                ember.captureNativeRunSave(emberAfter) != NativeSaveResult::Ok ||
+                repeatedEmber.captureNativeRunSave(repeatedEmberAfter) != NativeSaveResult::Ok ||
+                emberAfter.playerPp[0] != 24 || emberAfter.enemyHp >= checkpoint.enemyHp ||
+                emberAfter.enemyHp != repeatedEmberAfter.enemyHp ||
+                emberAfter.enemyStatus.effect != repeatedEmberAfter.enemyStatus.effect ||
+                emberAfter.enemyStatus.present != repeatedEmberAfter.enemyStatus.present) return 9430;
             checkedExecution = true;
         }
         if (checkedRejection && checkedExecution) return 0;

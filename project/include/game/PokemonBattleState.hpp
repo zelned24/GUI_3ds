@@ -788,6 +788,19 @@ bool executePokemonPostSetStatusReactions(PokemonBattleState& recipient, Pokemon
     PokerogueRngAdapter& recipientRng, PokerogueRngAdapter& sourceRng,
     PokemonPostSetStatusEvent& output);
 
+struct PokemonMoveStatusPhaseEvent {
+    PokemonMoveStatusApplicationEvent application{};
+    PokemonMoveStatusApplicationResult result = PokemonMoveStatusApplicationResult::ChanceFailed;
+    PokemonPostSetStatusEvent reactions{};
+    bool applied = false;
+};
+// POST_APPLY StatusEffectAttr, after a successful damage hit. No PP or damage
+// is repeated here; phase publication is atomic with its shared battle stream.
+bool executePokemonMoveStatusPhase(PokemonBattleState& user, PokemonBattleState& target,
+    uint16_t moveId, int16_t effectiveChance, const PokemonStatusApplicationPolicy& application,
+    const PokemonPostSetStatusPolicy& reactions, PokerogueRngAdapter& rng,
+    PokemonMoveStatusPhaseEvent& output);
+
 struct PokemonStatusActionEvent {
     PokemonStatusEffectMoveEvent move{};
     PokemonPostSetStatusEvent reactions{};
@@ -1235,6 +1248,8 @@ struct PokemonHitPolicy {
     bool blockedByAbility = false;
     bool resolved = false;
     bool bypassAccuracy = false;
+    bool ignoreAttackerAccuracyStage = false;
+    bool ignoreDefenderEvasionStage = false;
     double accuracyMultiplier = 1.0; // Additional resolved multiplier; stages remain separate.
 };
 bool composePokemonAlwaysHitPolicy(const PokemonWeatherAbilityComponent* components,

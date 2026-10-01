@@ -3255,6 +3255,37 @@ extern "C" int runPokemonBattleStateChecks() {
         !completeStatusTarget.status.present || completeStatusTarget.confusion.turns != completeTagDuration ||
         !completeStatusEvent.reactionsExecuted ||
         statusApplicationRng.randSeedUint32() != expectedApplicationRng.randSeedUint32()) return 9240;
+    auto secondaryUser = completeStatusUser;
+    auto secondaryTarget = completeStatusTarget;
+    secondaryUser.status = secondaryTarget.status = {};
+    secondaryTarget.confusion = {};
+    auto secondaryReactions = reactionsPolicy;
+    secondaryReactions.formsResolved = true;
+    auto secondaryRng = statusApplicationRng;
+    auto expectedSecondaryRng = secondaryRng;
+    const auto ppBeforeSecondary = secondaryUser.moves[0].pp;
+    Pokerogue3DS::PokemonMoveStatusPhaseEvent secondaryEvent{};
+    if (!Pokerogue3DS::executePokemonMoveStatusPhase(secondaryUser, secondaryTarget, 52, 100,
+            completeStatusPolicy.move.application, secondaryReactions, secondaryRng, secondaryEvent) ||
+        !secondaryEvent.applied || !secondaryEvent.application.quiet ||
+        secondaryTarget.status.effect != Effect::Burn || secondaryUser.status.effect != Effect::Burn ||
+        secondaryUser.moves[0].pp != ppBeforeSecondary ||
+        secondaryRng.randSeedUint32() != expectedSecondaryRng.randSeedUint32()) return 9420;
+    secondaryUser.status = secondaryTarget.status = {};
+    secondaryTarget.hp = 0;
+    expectedSecondaryRng = secondaryRng;
+    (void)expectedSecondaryRng.randSeedInt(100);
+    if (!Pokerogue3DS::executePokemonMoveStatusPhase(secondaryUser, secondaryTarget, 52, 25,
+            completeStatusPolicy.move.application, secondaryReactions, secondaryRng, secondaryEvent) ||
+        secondaryEvent.applied || secondaryTarget.status.present ||
+        secondaryRng.randSeedUint32() != expectedSecondaryRng.randSeedUint32()) return 9421;
+    secondaryTarget.hp = secondaryTarget.maxHp;
+    secondaryReactions.formsResolved = false;
+    expectedSecondaryRng = secondaryRng;
+    if (Pokerogue3DS::executePokemonMoveStatusPhase(secondaryUser, secondaryTarget, 52, 100,
+            completeStatusPolicy.move.application, secondaryReactions, secondaryRng, secondaryEvent) ||
+        secondaryTarget.status.present || secondaryUser.status.present ||
+        secondaryRng.randSeedUint32() != expectedSecondaryRng.randSeedUint32()) return 9422;
     // currentBattle owns both actors' duration draws; no actor-local stream.
     auto sleepActionUser = completeStatusUser;
     auto sleepActionTarget = completeStatusTarget;

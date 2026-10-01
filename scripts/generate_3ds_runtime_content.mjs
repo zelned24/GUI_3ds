@@ -169,7 +169,8 @@ const statusFlagImmunityRows = collections.abilities.map(ability => {
   return `    {${ability.abilityId}, ${resolved}, ${declarations.some(d => d[1] === 'SOUND_BASED')}, ${declarations.some(d => d[1] === 'POWDER_MOVE')}}`;
 }).join(',\n');
 
-const statusMoveFlagRows = collections.moves.filter(move => move.category === 'Status').map(move => {
+const statusMoveFlagRows = collections.moves.filter(move => move.category === 'Status' ||
+  /\bStatusEffectAttr\b/.test(move.extensions?.upstreamRawRecord?.value ?? '')).map(move => {
   const raw = move.extensions?.upstreamRawRecord?.value ?? '';
   const calls = [...raw.matchAll(/\.([A-Za-z_$][\w$]*)\s*\(/g)].map(m => m[1]);
   const known = new Set(['attr', 'target', 'reflectable', 'powderMove', 'soundBased']);

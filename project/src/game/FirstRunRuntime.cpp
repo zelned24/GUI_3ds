@@ -939,8 +939,25 @@ const PokerogueContent::MoveStatusEffect* singleOpponentStatusEffect(uint16_t mo
     }
     return result;
 }
+const PokerogueContent::MoveStatusEffect* singleDamageStatusEffect(uint16_t moveId) {
+    const auto* move = PokerogueContent::findMoveById(moveId);
+    if (!move || move->category == PokerogueContent::MoveStatus || move->power <= 0 ||
+        move->upstreamFlags || move->attributeCount != 1 || !move->target ||
+        std::strcmp(move->target, "NEAR_OTHER") || !PokerogueContent::moveHasAttribute(*move, "StatusEffectAttr")) return nullptr;
+    bool buildersResolved = false;
+    for (const auto& profile : PokerogueContent::kStatusMoveFlagProfiles)
+        if (profile.moveId == moveId) buildersResolved = profile.resolved;
+    if (!buildersResolved) return nullptr;
+    const PokerogueContent::MoveStatusEffect* result = nullptr;
+    for (const auto& row : PokerogueContent::kMoveStatusEffects) {
+        if (row.moveId != moveId) continue;
+        if (result || !row.parametersResolved || row.selfTarget || !row.effectId || row.effectId >= 7) return nullptr;
+        result = &row;
+    }
+    return result;
+}
 bool supportsBaselineBattleMove(uint16_t moveId) {
-    if (singleOpponentStatusEffect(moveId) || pokemonWeatherChangeProfile(moveId) || supportsPokemonTrickRoomMove(moveId) || supportsPokemonStatStageMove(moveId) || selfHealingProfile(moveId) || damageDrainProfile(moveId) || damageRecoilProfile(moveId)) return true;
+    if (singleOpponentStatusEffect(moveId) || singleDamageStatusEffect(moveId) || pokemonWeatherChangeProfile(moveId) || supportsPokemonTrickRoomMove(moveId) || supportsPokemonStatStageMove(moveId) || selfHealingProfile(moveId) || damageDrainProfile(moveId) || damageRecoilProfile(moveId)) return true;
     const auto* move = PokerogueContent::findMoveById(moveId);
     // This first resolver only executes plain, single-target damaging moves.
     // Only plain damage or a single migrated weather/critical attribute is
@@ -1074,6 +1091,14 @@ bool FirstRunRuntime::resolveActiveStatusCommandPolicies(const PokemonBattleStat
 bool FirstRunRuntime::supportsActiveBattleMove(const PokemonBattleState& user,
     const PokemonBattleState& opponent, uint16_t moveId) const {
     if (!supportsBaselineBattleMove(moveId)) return false;
+    if (const auto* effect = singleDamageStatusEffect(moveId)) {
+        PokemonStatusRecipientPolicies recipient{}, source{};
+        PokemonPostSetStatusPolicy reactions{};
+        const auto status = static_cast<PokemonStatusEffect>(effect->effectId);
+        return resolveActiveStatusRecipientPolicies(opponent, user, status, recipient) &&
+            resolveActiveStatusRecipientPolicies(user, opponent, status, source) &&
+            resolvePokemonPostSetStatusPolicy(opponent, user, status, recipient, source, true, true, true, reactions);
+    }
     if (!singleOpponentStatusEffect(moveId)) return true;
     uint8_t ppCost = 1;
     PokemonStatusEffectCommandPolicy command{};
@@ -1085,7 +1110,19 @@ bool FirstRunRuntime::supportsActiveBattleMove(const PokemonBattleState& user,
 double FirstRunRuntime::scoreActiveEnemyMove(const PokemonBattleState& user,
     const PokemonBattleState& target, const PokerogueContent::Move& move) const {
     const auto* effect = singleOpponentStatusEffect(move.id);
-    if (!effect) return baselineEnemyMoveScore(user, target, move);
+    if (!effect) {
+        double score = baselineEnemyMoveScore(user, target, move);
+        if (const auto* secondary = singleDamageStatusEffect(move.id)) {
+            PokemonStatusRecipientPolicies policies{};
+            double benefit = 0;
+            if (!resolveActiveStatusRecipientPolicies(target, user,
+                    static_cast<PokemonStatusEffect>(secondary->effectId), policies) ||
+                !calculatePokemonStatusEffectAiBenefit(target, move.id, move.upstreamChance,
+                    true, policies.status, benefit)) return -20.0;
+            score -= benefit;
+        }
+        return score;
+    }
     PokemonStatusRecipientPolicies policies{};
     double targetBenefit = 0;
     if (!resolveActiveStatusRecipientPolicies(target, user,
@@ -2491,6 +2528,11 @@ bool FirstRunRuntime::executeActiveBattleMove(uint8_t userIndex, uint8_t targetI
     if (!resolveActiveMoveWeather(user, opponent, weather) ||
         !composePokemonAlwaysHitPolicy(activeAbilities, 2, hit, move->id, &weather) ||
         !resolveActiveMoveCritical(user, opponent, critical)) return false;
+    for (const auto& profile : PokerogueContent::kStatusActionAbilityProfiles) {
+        if (!profile.resolved) continue;
+        if (profile.abilityId == user.abilityId) hit.ignoreDefenderEvasionStage = profile.ignoresOpponentEvasion;
+        if (profile.abilityId == opponent.abilityId) hit.ignoreAttackerAccuracyStage = profile.ignoresOpponentAccuracy;
+    }
     ResolvedPokemon* resolvedActors[] = {&m_context.player, &m_context.enemy, &m_context.secondEnemy};
     auto* targetBossState = &resolvedActors[targetIndex]->bossState;
     auto nextBossState = *targetBossState;
@@ -2581,6 +2623,20 @@ bool FirstRunRuntime::executeActiveBattleMove(uint8_t userIndex, uint8_t targetI
             &weather, &critical, &hit, &pp, targetIsBoss ? &nextBossState : nullptr,
             targetIsBoss ? &bossPolicy : nullptr,
             targetIsBoss ? &nextGlobalRng : nullptr, &burn) != PokemonMoveActionStatus::Ok) return false;
+    if (const auto* effect = singleDamageStatusEffect(move->id)) {
+        PokemonStatusRecipientPolicies recipient{}, source{};
+        PokemonPostSetStatusPolicy reactions{};
+        const auto status = static_cast<PokemonStatusEffect>(effect->effectId);
+        if (!resolveActiveStatusRecipientPolicies(nextOpponent, nextUser, status, recipient) ||
+            !resolveActiveStatusRecipientPolicies(nextUser, nextOpponent, status, source) ||
+            !resolvePokemonPostSetStatusPolicy(nextOpponent, nextUser, status, recipient, source,
+                true, true, true, reactions)) return false;
+        if (!result.weatherCancelled && result.damageRoll.hit && result.damageApplied) {
+            PokemonMoveStatusPhaseEvent statusEvent{};
+            if (!executePokemonMoveStatusPhase(nextUser, nextOpponent, move->id, move->upstreamChance,
+                    recipient.status, reactions, nextRng, statusEvent)) return false;
+        }
+    }
     if (!result.weatherCancelled && !applyMoveHeldHealing(nextUser)) return false;
     user = nextUser;
     opponent = nextOpponent;

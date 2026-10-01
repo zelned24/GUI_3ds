@@ -376,6 +376,40 @@ PokemonMoveStatusApplicationResult resolvePokemonMoveStatusApplication(
     return result;
 }
 
+bool executePokemonMoveStatusPhase(PokemonBattleState& user, PokemonBattleState& target,
+    uint16_t moveId, int16_t effectiveChance, const PokemonStatusApplicationPolicy& application,
+    const PokemonPostSetStatusPolicy& reactions, PokerogueRngAdapter& rng,
+    PokemonMoveStatusPhaseEvent& output) {
+    if (&user == &target || !user.hp || !reactions.formsResolved ||
+        application.overrideStatus) return false;
+    auto nextUser = user;
+    auto nextTarget = target;
+    auto nextRng = rng;
+    PokemonMoveStatusPhaseEvent event{};
+    event.result = resolvePokemonMoveStatusApplication(nextTarget, moveId, effectiveChance,
+        true, application, nextRng, event.application);
+    if (event.result == PokemonMoveStatusApplicationResult::UnsupportedMove ||
+        event.result == PokemonMoveStatusApplicationResult::UnresolvedPolicy ||
+        event.result == PokemonMoveStatusApplicationResult::InvalidState || event.application.selfTarget) return false;
+    if (event.application.requestObtainStatusPhase) {
+        PokemonQueuedStatusRequest request{};
+        request.recipientPokemonId = nextTarget.pokemonId;
+        request.sourcePokemonId = nextUser.pokemonId;
+        request.hasSource = true;
+        request.effect = event.application.effect;
+        if (enqueuePokemonStatusRequest(nextTarget, request, application) != PokemonStatusEligibility::Allowed ||
+            applyPokemonQueuedStatus(nextTarget, request, true, nextRng) != PokemonStatusObtainResult::Applied ||
+            !executePokemonPostSetStatusReactions(nextTarget, nextUser, request, reactions,
+                nextRng, nextRng, event.reactions)) return false;
+        event.applied = true;
+    }
+    user = nextUser;
+    target = nextTarget;
+    rng = nextRng;
+    output = event;
+    return true;
+}
+
 bool calculatePokemonStatusEffectAiBenefit(const PokemonBattleState& recipient, uint16_t moveId,
     int16_t effectiveChance, bool chanceCallbacksResolved,
     const PokemonStatusApplicationPolicy& application, double& output) {
@@ -1753,7 +1787,11 @@ PokemonMoveDamageResult resolveStandardPokemonMoveDamage(
     }
     if (weatherAccuracy >= 0 && !alwaysHits) {
         double accuracyStage = 1.0;
-        if (!pokemonAccuracyStageMultiplier(attacker, defender, accuracyStage))
+        if (attacker.statStages[5] < -6 || attacker.statStages[5] > 6 ||
+            defender.statStages[6] < -6 || defender.statStages[6] > 6) return PokemonMoveDamageResult::InvalidAccuracy;
+        const int accuracy = hitPolicy && hitPolicy->ignoreAttackerAccuracyStage ? 0 : attacker.statStages[5];
+        const int evasion = hitPolicy && hitPolicy->ignoreDefenderEvasionStage ? 0 : defender.statStages[6];
+        if (!pokemonAccuracyStageMultiplier(accuracy, evasion, accuracyStage))
             return PokemonMoveDamageResult::InvalidAccuracy;
         next.accuracyWasRolled = true;
         next.accuracyRoll = static_cast<uint8_t>(battleRng.randSeedInt(100));
