@@ -1322,3 +1322,9 @@
 1. Up/Down en setup emite _3ds_cycleStarterForm y cola de comando nativa 226/227, fuera del tick. Ciclo conserva índices upstream y ofrece solamente formas seleccionables/desbloqueadas.
 2. Transacción valida también el actor del cursor aunque no esté en equipo, reconstruye miembros y persiste antes de publicar. Preview front y etiqueta usan preferencia canónica sin construir actor/PID ni consumir RNG durante dibujo.
 3. Prioridad de almacenamiento y modal de compra permanece. Regresión template JS escrita para Up/Down y prioridad sobre A; sin ejecutar. Bundle diagnóstico regenerado; tests/compilación aplazados. Validación nativa de interrupciones de guardado de preferencias y visual/hardware pendientes.
+
+## Regresión nativa de selección y guardado de forma
+
+1. Harness prepara una especie/forma alternativa seleccionable desde el catálogo real y metadata de perfil explícita de test; no busca otro caso después de una falla del runtime.
+2. Cubre selección → actor/learnset de forma → commit pareado, interrupción de escritura de perfil, interrupción del run, reload de última generación válida, rollback vivo, rechazo de índice inválido y eliminación de preferencia con retorno a default. Comprueba ownership de escena y conserva PID/HP al fallar.
+3. Prueba escrita y registrada, sin ejecutar. No demuestra todavía que el guardado/selección funcionen en Azahar o Old 3DS; tests/compilación siguen aplazados por el usuario.

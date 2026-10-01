@@ -238,6 +238,83 @@ static int checkStarterCostPurchasePersistence() {
     return 0;
 }
 
+static int checkStarterFormPreferencePersistence() {
+    using namespace Pokerogue3DS;
+    const PokerogueContent::Species* chosen = nullptr;
+    const PokerogueContent::Form* alternate = nullptr;
+    for (const auto& species : PokerogueContent::kSpecies) {
+        if (!species.starterEligible || species.starterCost > 10) continue;
+        for (const auto& form : PokerogueContent::kForms) {
+            if (!form.upstreamFormIndex || form.upstreamFormIndex > 56 ||
+                std::strcmp(form.speciesId, species.id) || !std::strcmp(form.formKey, "FEMALE")) continue;
+            const uint64_t unlocks = uint64_t(128) | (uint64_t(128) << form.upstreamFormIndex);
+            if (pokemonValidateStarterForm(species.dex, 0, unlocks) != PokemonStarterFormResult::Ok ||
+                pokemonValidateStarterForm(species.dex, form.upstreamFormIndex, unlocks) != PokemonStarterFormResult::Ok)
+                continue;
+            chosen = &species;
+            alternate = &form;
+            break;
+        }
+        if (chosen) break;
+    }
+    if (!chosen || !alternate) return 683;
+    NativeStarterCandyRecord profile{chosen->dex, 0, 0, true};
+    profile.natureAttr = 2;
+    profile.abilityAttr = 1;
+    profile.genderAttr = 12;
+    for (uint8_t& iv : profile.dexIvs) iv = 15;
+    profile.unlockedFormAttr = uint64_t(128) | (uint64_t(128) << alternate->upstreamFormIndex);
+    PokemonFriendshipPolicy policy{};
+    policy.resolved = true;
+    policy.candyMultiplier = PokerogueContent::kClassicCandyFriendshipMultiplier;
+    FirstRunRuntime game(1);
+    if (!game.restoreStarterCandyProfile(&profile, 1, 0, policy) || !game.restoreSetup(1, chosen->dex)) return 684;
+    static ProgressMemoryStorage runDisk, profileDisk;
+    static char scratch[2 * kStarterCandyProfileMaxBytes]{};
+    NativeRunSaveStore runs(runDisk);
+    NativeStarterCandyStore profiles(profileDisk, scratch, sizeof(scratch));
+    NativeProgressStore store(runs, profiles);
+    if (game.selectSetupStarterForm(chosen->dex, alternate->upstreamFormIndex, store) != NativeSaveResult::Ok ||
+        game.setupStarterFormIndex(chosen->dex) != alternate->upstreamFormIndex ||
+        !game.presentation().player.formId || std::strcmp(game.presentation().player.formId, alternate->id) ||
+        !sceneNodesOwnedBy(game)) return 685;
+    uint16_t expectedMoves[4]{};
+    uint8_t expectedCount = 0;
+    if (selectPokemonStarterMoveset(chosen->dex, alternate->id, 0, nullptr, 0, expectedMoves, expectedCount) !=
+            PokemonStarterMovesetResult::Ok || expectedCount != game.presentation().player.moveCount) return 686;
+    for (uint8_t i = 0; i < expectedCount; ++i)
+        if (game.presentation().player.moveIds[i] != expectedMoves[i]) return 687;
+    const uint32_t pid = game.presentation().player.actor.pokemonId;
+    const uint16_t hp = game.presentation().player.battleState.hp;
+    profileDisk.interrupt = true;
+    if (game.selectSetupStarterForm(chosen->dex, 0, store) != NativeSaveResult::IoError ||
+        game.setupStarterFormIndex(chosen->dex) != alternate->upstreamFormIndex ||
+        game.presentation().player.actor.pokemonId != pid || game.presentation().player.battleState.hp != hp)
+        return 688;
+    profileDisk.interrupt = false;
+    runDisk.interrupt = true;
+    if (game.selectSetupStarterForm(chosen->dex, 0, store) != NativeSaveResult::IoError ||
+        game.setupStarterFormIndex(chosen->dex) != alternate->upstreamFormIndex ||
+        !sceneNodesOwnedBy(game)) return 689;
+    runDisk.interrupt = false;
+    FirstRunRuntime restored(2);
+    static NativeStarterCandyRecord staging[PokerogueContent::kSpeciesCount]{};
+    NativeRunSave loaded{};
+    if (restored.loadNativeProgress(runs, profiles, staging, PokerogueContent::kSpeciesCount, policy, &loaded) !=
+            NativeSaveResult::Ok || loaded.starterProfileGeneration != 1 ||
+        restored.setupStarterFormIndex(chosen->dex) != alternate->upstreamFormIndex ||
+        !restored.presentation().player.formId ||
+        std::strcmp(restored.presentation().player.formId, alternate->id) ||
+        restored.presentation().player.actor.pokemonId != pid || restored.presentation().player.battleState.hp != hp)
+        return 690;
+    if (restored.selectSetupStarterForm(chosen->dex, 65534, store) != NativeSaveResult::InvalidRecord ||
+        restored.setupStarterFormIndex(chosen->dex) != alternate->upstreamFormIndex) return 691;
+    if (restored.selectSetupStarterForm(chosen->dex, 65535, store) != NativeSaveResult::Ok ||
+        restored.setupStarterFormIndex(chosen->dex) ||
+        restored.starterProfileRecords()[0].preferredFormIndex != 65535 || !sceneNodesOwnedBy(restored)) return 692;
+    return 0;
+}
+
 // Synthetic KO checkpoints still represent a real active battle participant.
 static void setSingleParticipantFixture(Pokerogue3DS::NativeRunSave& save,
         const Pokerogue3DS::FirstRunRuntime& game) {
@@ -3100,6 +3177,8 @@ int main() {
         if (initialTeamCheck) return initialTeamCheck;
         const int firstTeamTurn = checkInitialTeamFirstTurnRoundtrip();
         if (firstTeamTurn) return firstTeamTurn;
+        const int formPreferenceCheck = checkStarterFormPreferencePersistence();
+        if (formPreferenceCheck) return formPreferenceCheck;
         const int purchaseCheck = checkStarterCostPurchasePersistence();
         if (purchaseCheck) return purchaseCheck;
         return checkExtendedWaveAndBiomeSaveValidation();
