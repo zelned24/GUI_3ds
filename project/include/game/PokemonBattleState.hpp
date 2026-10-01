@@ -443,6 +443,21 @@ PokemonMoveStatusApplicationResult resolvePokemonMoveStatusApplication(
     bool chanceCallbacksResolved, const PokemonStatusApplicationPolicy& policy,
     PokerogueRngAdapter& userRng, PokemonMoveStatusApplicationEvent& output);
 
+inline bool resolvePokemonStatusFlagAbilityImmunity(uint16_t abilityId, uint16_t moveId,
+    bool active, bool callbacksResolved, bool sameActor, bool& output) {
+    if (!callbacksResolved) return false;
+    const PokerogueContent::StatusMoveFlagProfile* flags = nullptr;
+    for (const auto& profile : PokerogueContent::kStatusMoveFlagProfiles)
+        if (profile.moveId == moveId) { flags = &profile; break; }
+    if (!flags || !flags->resolved) return false;
+    for (const auto& profile : PokerogueContent::kStatusFlagImmunityProfiles) {
+        if (profile.abilityId != abilityId) continue;
+        if (active && !profile.resolved) return false;
+        output = active && !sameActor && ((profile.sound && flags->sound) || (profile.powder && flags->powder));
+        return true;
+    }
+    return false;
+}
 struct PokemonStatusMoveTypeImmunityPolicy {
     bool resolved = false;
     const char* const* originalIfStellarTypes = nullptr;

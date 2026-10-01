@@ -1659,3 +1659,9 @@
 1. composePokemonStatusMoveTypeHitPolicy incorpora inmunidad Grass/powder y Dark/Prankster a política de hit. resolvePokemonStatusMoveHit rechaza antes de precisión y expone typeImmune; USER conserva bypass upstream.
 2. Comando consume PP sin generar solicitud de estado ni draws de precisión/chance para objetivo inmune. Reflection/protection y otras inmunidades siguen siendo políticas previas pendientes del proveedor activo.
 3. Regresión de Poison Powder sobre Grass a través del comando real escrita sin ejecutar; tests/compilación aplazados.
+
+## Inmunidad de habilidad por flags de estado
+
+1. Generador reconoce el predicado exacto MoveImmunityAbAttr de Soundproof/Overcoat: pokemon !== attacker y SOUND_BASED/POWDER_MOVE. Otros predicados/condiciones quedan pendientes. Resolver combina perfil real de habilidad/movimiento y activación explícita.
+2. Respeta identidad propia e inactividad; no implementa efectos adyacentes de Overcoat ni Safety Goggles. Conexión a política de hit del comando activo sigue pendiente.
+3. Regresiones de habilidades reales, autoobjetivo e inactividad escritas sin ejecutar; tests/compilación aplazados.

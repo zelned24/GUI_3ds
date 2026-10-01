@@ -3337,6 +3337,21 @@ extern "C" int runPokemonBattleStateChecks() {
         powderHitEvent.hit.hit || !powderHitEvent.hit.typeImmune || powderHitEvent.hit.accuracyRolled ||
         powderHitEvent.application.requestObtainStatusPhase ||
         statusApplicationRng.randSeedUint32() != expectedApplicationRng.randSeedUint32()) return 9331;
+    bool soundImmunityFound = false, powderImmunityFound = false;
+    for (const auto& profile : PokerogueContent::kStatusFlagImmunityProfiles) {
+        if (!profile.resolved || (!profile.sound && !profile.powder)) continue;
+        bool blocked = false;
+        const uint16_t immunityMove = profile.sound ? 47 : 77;
+        if (!Pokerogue3DS::resolvePokemonStatusFlagAbilityImmunity(profile.abilityId, immunityMove,
+                true, true, false, blocked) || !blocked) return 9340;
+        if (!Pokerogue3DS::resolvePokemonStatusFlagAbilityImmunity(profile.abilityId, immunityMove,
+                true, true, true, blocked) || blocked) return 9341;
+        if (!Pokerogue3DS::resolvePokemonStatusFlagAbilityImmunity(profile.abilityId, immunityMove,
+                false, true, false, blocked) || blocked) return 9342;
+        soundImmunityFound |= profile.sound;
+        powderImmunityFound |= profile.powder;
+    }
+    if (!soundImmunityFound || !powderImmunityFound) return 9343;
     bool foundStatusConfusion = false;
     for (const auto& profile : PokerogueContent::kStatusConfusionAbilityProfiles) {
         if (!profile.resolved || !(profile.statusMask & 2)) continue;
