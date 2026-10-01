@@ -255,6 +255,22 @@ struct PokemonStatusApplicationPolicy {
     bool allyAbilityBlocks = false;
     bool safeguardBlocks = false;
 };
+enum class PokemonStatusImmunityResult : uint8_t { Resolved, UnknownAbility, UnsupportedCondition, InvalidEffect };
+inline PokemonStatusImmunityResult resolvePokemonStatusAbilityImmunity(uint16_t abilityId,
+    PokemonStatusEffect effect, bool abilityActive, bool allyField, bool callbacksResolved, bool& output) {
+    if (static_cast<uint8_t>(effect) > 7) return PokemonStatusImmunityResult::InvalidEffect;
+    if (!callbacksResolved) return PokemonStatusImmunityResult::UnsupportedCondition;
+    for (const auto& profile : PokerogueContent::kStatusImmunityAbilityProfiles) {
+        if (profile.abilityId != abilityId) continue;
+        if (abilityActive && !(allyField ? profile.allyResolved : profile.selfResolved))
+            return PokemonStatusImmunityResult::UnsupportedCondition;
+        output = abilityActive && ((allyField ? profile.allyMask : profile.selfMask) &
+            (1u << static_cast<uint8_t>(effect)));
+        return PokemonStatusImmunityResult::Resolved;
+    }
+    return PokemonStatusImmunityResult::UnknownAbility;
+}
+
 enum class PokemonStatusEligibility : uint8_t {
     Allowed, InvalidState, UnsupportedPolicy, ExistingStatus, PendingStatus, MistyTerrain,
     PoisonType, SteelType, ElectricType, ElectricTerrain, IceType, SunnyWeather,

@@ -1481,3 +1481,9 @@
 1. executePokemonStatusEffectCommand integra hit/PP, solicitud, pendingStatus y ObtainStatus sobre candidato; publica actor objetivo/usuario y streams solo al terminar. Stream de duración puede ser compartido o separado del usuario, conservando orden de draws.
 2. Reacciones y políticas de campo/atributos deben estar resueltas; override pendiente se rechaza. No se habilitan silenciosamente movimientos en FirstRunRuntime: falta proveedor canónico completo de policy, inmunidades y callbacks/forms.
 3. Regresiones con Sleep Powder real de aplicación/PP/pending, streams compartidos/separados y fallo de reacciones escritas sin ejecutar. Tests/compilación aplazados.
+
+## Inmunidades canónicas de estado por habilidad
+
+1. Generador importa StatusEffectImmunityAbAttr y UserFieldStatusEffectImmunityAbAttr en máscaras separadas. Constructor vacío bloquea todos salvo FAINT, conforme PreSetStatusEffectImmunityAbAttr.canApply. Parámetros dinámicos/conditionalAttr/condition y ConditionalUserFieldStatusEffectImmunityAbAttr permanecen sin resolver.
+2. resolvePokemonStatusAbilityImmunity distingue ámbito propio/aliado, habilidad activa, callbacks y capacidad desconocida. Fallo no publica output; caller compone selfAbilityBlocks/allyAbilityBlocks en policy de aplicación. Aún falta integración del proveedor completo y reacciones posteriores.
+3. Regresiones de Immunity real (poison/toxic), constructor vacío, inmunidad aliada, habilidad inactiva y condiciones desconocidas escritas sin ejecutar. Catálogo regenerado conservando hash; tests/compilación aplazados.

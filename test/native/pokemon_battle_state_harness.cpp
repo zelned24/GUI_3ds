@@ -2961,5 +2961,40 @@ extern "C" int runPokemonBattleStateChecks() {
         commandStatusTarget.status.sleepTurnsRemaining != (separateSleepDraw == 0 ? 2u : 3u) ||
         statusApplicationRng.randSeedUint32() != expectedApplicationRng.randSeedUint32() ||
         recipientStatusRng.randSeedUint32() != expectedRecipientStatusRng.randSeedUint32()) return 9052;
+    bool immune = false;
+    if (Pokerogue3DS::resolvePokemonStatusAbilityImmunity(17, Effect::Poison, true, false, true, immune) !=
+            Pokerogue3DS::PokemonStatusImmunityResult::Resolved || !immune) return 9060; // Immunity.
+    if (Pokerogue3DS::resolvePokemonStatusAbilityImmunity(17, Effect::Toxic, true, false, true, immune) !=
+            Pokerogue3DS::PokemonStatusImmunityResult::Resolved || !immune) return 9061;
+    if (Pokerogue3DS::resolvePokemonStatusAbilityImmunity(17, Effect::Sleep, true, false, true, immune) !=
+            Pokerogue3DS::PokemonStatusImmunityResult::Resolved || immune) return 9062;
+    if (Pokerogue3DS::resolvePokemonStatusAbilityImmunity(17, Effect::Poison, false, false, true, immune) !=
+            Pokerogue3DS::PokemonStatusImmunityResult::Resolved || immune) return 9063;
+    bool foundAllImmunity = false, foundAllyImmunity = false, foundConditionalImmunity = false;
+    for (const auto& profile : PokerogueContent::kStatusImmunityAbilityProfiles) {
+        if (profile.selfResolved && profile.selfMask == 127) {
+            foundAllImmunity = true;
+            if (Pokerogue3DS::resolvePokemonStatusAbilityImmunity(profile.abilityId, Effect::Sleep, true, false, true, immune) !=
+                    Pokerogue3DS::PokemonStatusImmunityResult::Resolved || !immune) return 9064;
+            if (Pokerogue3DS::resolvePokemonStatusAbilityImmunity(profile.abilityId, Effect::Faint, true, false, true, immune) !=
+                    Pokerogue3DS::PokemonStatusImmunityResult::Resolved || immune) return 9065;
+        }
+        if (profile.allyResolved && (profile.allyMask & (1u << static_cast<uint8_t>(Effect::Sleep)))) {
+            foundAllyImmunity = true;
+            if (Pokerogue3DS::resolvePokemonStatusAbilityImmunity(profile.abilityId, Effect::Sleep, true, true, true, immune) !=
+                    Pokerogue3DS::PokemonStatusImmunityResult::Resolved || !immune) return 9066;
+        }
+        if (!profile.selfResolved || !profile.allyResolved) {
+            foundConditionalImmunity = true;
+            immune = true;
+            if (Pokerogue3DS::resolvePokemonStatusAbilityImmunity(profile.abilityId, Effect::Sleep, true,
+                    profile.selfResolved, true, immune) != Pokerogue3DS::PokemonStatusImmunityResult::UnsupportedCondition ||
+                !immune) return 9067;
+        }
+    }
+    if (!foundAllImmunity || !foundAllyImmunity || !foundConditionalImmunity) return 9068;
+    immune = true;
+    if (Pokerogue3DS::resolvePokemonStatusAbilityImmunity(65535, Effect::Sleep, true, false, true, immune) !=
+            Pokerogue3DS::PokemonStatusImmunityResult::UnknownAbility || !immune) return 9069;
     return 0;
 }
