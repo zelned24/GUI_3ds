@@ -474,3 +474,9 @@
 1. Importer inspecciona src/field/pokemon.ts EnemyPokemon.generateAndPopulateMoveset:ETERNATUS del snapshot pinned; conserva ambos arrays, ppUsed/ppUp, raw y provenance/SHA-256. IDs se resuelven contra movimientos canónicos. Overrides Inverse Battle quedan preservados explícitamente como no soportados.
 2. Generated Runtime expone kFixedEnemyMovesets. Constructor enemigo usa esos cuatro IDs para Eternatus, sin consumir selección/ponderación salvaje. PokemonMove.getMovePp aplica ppUp negativo: Recover de fase 2 tiene máximo 1 PP. Transición completa a fase 2 todavía pendiente.
 3. Regresiones de importación y 335–338 nativas escritas para ambos sets, Recover y rechazo sin mutación. Importación doble verifica reproducibilidad del contenido; no constituye ejecución de tests ni compilación. Classic y transición final no se declaran completos.
+
+## Preparación atómica del actor Eternamax
+
+1. preparePokemonFinalBossSecondPhase porta condición de wave final, actor vivo, primera forma/boss y último segmento despejado. Reutiliza forma y moveset canónicos, restaura HP/PP, conserva identidad/stages y fija cinco segmentos/index cuatro como QuietFormChangePhase.end. Validación fallida no publica actor ni boss.
+2. Regresiones 339–345 escritas para trigger prematuro, wave incorrecta, Eternamax real, ambos movesets/Recover, cinco segmentos y rechazo de repetición. No ejecutadas.
+3. Helper todavía no entra en el turno nativo: Mini Black Hole, status/tags, cancelación del move pendiente y segunda posición del jugador deben conectarse antes de declarar initFinalBossPhaseTwo completo. Tests y compilación aplazados; Classic sigue incompleto.

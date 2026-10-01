@@ -3,6 +3,7 @@
 #include "game/PokemonBattleState.hpp"
 #include "game/PokemonMoveEffectivePower.hpp"
 #include "game/PokemonMovesetWeights.hpp"
+#include <cstring>
 
 namespace Pokerogue3DS {
 
@@ -27,6 +28,42 @@ inline bool applyPokemonFixedEnemyMovePp(const PokerogueContent::FixedEnemyMoves
         next.moves[slot].pp = static_cast<uint8_t>(maxPp - profile.ppUsed[slot]);
     }
     state = next;
+    return true;
+}
+
+// BattleScene.initFinalBossPhaseTwo / QuietFormChangePhase.end actor portion.
+// Caller owns status/tags, queued actions, Mini Black Hole and player positions.
+inline bool preparePokemonFinalBossSecondPhase(uint32_t wave, PokemonBattleState& state,
+    PokemonBossState& boss) {
+    if (wave != PokerogueContent::kClassicFinalWave || !boss.classicFinalBossFirstPhase ||
+        !boss.segmentCount || boss.segmentIndex || boss.hasTrainer || !state.hp) return false;
+    const auto* species = PokerogueContent::findSpeciesByDex(state.speciesDex);
+    const auto* profile = findPokemonFixedEnemyMoveset(state.speciesDex, 1);
+    const auto* currentForm = state.formId ? PokerogueContent::findFormById(state.formId) : nullptr;
+    if (!species || !profile || !currentForm || !species->firstFormId ||
+        std::strcmp(currentForm->id, species->firstFormId)) return false;
+    const PokerogueContent::Form* target = nullptr;
+    for (const auto& form : PokerogueContent::kForms)
+        if (!std::strcmp(form.speciesId, species->id) && !std::strcmp(form.formKey, "ETERNAMAX")) {
+            target = &form;
+            break;
+        }
+    if (!target) return false;
+    auto next = state;
+    if (!changePokemonBattleForm(next, target->id, state.abilityId, true)) return false;
+    next.moveCount = 4;
+    for (uint8_t slot = 0; slot < 4; ++slot) {
+        const auto* move = PokerogueContent::findMoveById(profile->moveIds[slot]);
+        if (!move || move->pp < 1 || move->pp > 255) return false;
+        next.moves[slot] = {move->id, static_cast<uint8_t>(move->pp), static_cast<uint8_t>(move->pp)};
+    }
+    if (!applyPokemonFixedEnemyMovePp(*profile, next)) return false;
+    auto nextBoss = boss;
+    nextBoss.segmentCount = 5;
+    nextBoss.segmentIndex = 4;
+    nextBoss.classicFinalBossFirstPhase = false;
+    state = next;
+    boss = nextBoss;
     return true;
 }
 

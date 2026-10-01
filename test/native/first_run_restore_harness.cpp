@@ -396,6 +396,29 @@ static int checkWave200FinalBossAndGameClear() {
     if (initializePokemonBattleState(bossInput, bossActor) != PokemonBattleInitResult::Ok ||
         !applyPokemonFixedEnemyMovePp(*secondPhase, bossActor) ||
         bossActor.moves[3].maxPp != 1 || bossActor.moves[3].pp != 1) return 337;
+    PokemonBattleState phaseOneActor{};
+    for (uint8_t slot = 0; slot < 4; ++slot) bossInput.moveIds[slot] = firstPhase->moveIds[slot];
+    if (initializePokemonBattleState(bossInput, phaseOneActor) != PokemonBattleInitResult::Ok) return 339;
+    phaseOneActor.hp = 1;
+    phaseOneActor.moves[0].pp = 0;
+    phaseOneActor.statStages[0] = 2;
+    PokemonBossState phaseOneBoss{};
+    if (!initializeClassicPokemonBossState(890, 200, 200, true, true, phaseOneBoss)) return 340;
+    const auto unreachedBoss = phaseOneBoss;
+    if (preparePokemonFinalBossSecondPhase(200, phaseOneActor, phaseOneBoss) ||
+        phaseOneActor.hp != 1 || phaseOneBoss.segmentIndex != unreachedBoss.segmentIndex) return 341;
+    phaseOneBoss.segmentIndex = 0;
+    if (preparePokemonFinalBossSecondPhase(199, phaseOneActor, phaseOneBoss) || phaseOneActor.hp != 1)
+        return 342;
+    if (!preparePokemonFinalBossSecondPhase(200, phaseOneActor, phaseOneBoss) ||
+        phaseOneActor.hp != phaseOneActor.maxHp || std::strcmp(phaseOneActor.formId, "eternatus:eternamax") ||
+        phaseOneBoss.segmentCount != 5 || phaseOneBoss.segmentIndex != 4 ||
+        phaseOneBoss.classicFinalBossFirstPhase || phaseOneActor.statStages[0] != 2 ||
+        phaseOneActor.moves[3].maxPp != 1 || phaseOneActor.moves[3].pp != 1) return 343;
+    for (uint8_t slot = 0; slot < 4; ++slot)
+        if (phaseOneActor.moves[slot].moveId != secondPhase->moveIds[slot]) return 344;
+    if (preparePokemonFinalBossSecondPhase(200, phaseOneActor, phaseOneBoss) ||
+        phaseOneBoss.segmentIndex != 4) return 345;
     const auto preservedBoss = bossActor;
     if (applyPokemonFixedEnemyMovePp(*firstPhase, bossActor) ||
         bossActor.moves[3].maxPp != preservedBoss.moves[3].maxPp) return 338;
