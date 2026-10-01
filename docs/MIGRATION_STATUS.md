@@ -898,3 +898,9 @@
 3. Cuatro regresiones de la decisión final escritas (555–558); sin ejecutar. No prueban todavía la cola completa de fases/animación ni los efectos de faint que siguen pendientes.
 
 4. Regresión de integración 559–564 escrita: equipo capturado real + Take Down canónico, HP de checkpoint reducido para provocar KO por recoil; exige victoria con reserva y checkpoint sin turno extra. Explora índices de turno deterministas por precisión/orden y falla si no encuentra el escenario. Pendiente de ejecución.
+
+## Limpieza de estado de summon — pendiente de ejecución
+
+1. `resetPokemonSummonState` reutiliza la limpieza de stages y limpia Unburden/daño del turno; no cambia HP, PP, amistad, identidad, forma persistente ni pausa de evolución. Fuente pinned: `src/field/pokemon.ts`, `Pokemon.resetSummonData`.
+2. Conectado a cambios voluntarios/forzados, entrada y retirada de entrenadores y recalls en transiciones de arena. La reserva saliente conserva su estado persistente y pierde los campos transitorios soportados.
+3. Regresiones 565–568 escritas para limpieza, preservación e idempotencia. Pendientes de ejecución; tags/transformaciones y callbacks completos siguen pendientes.

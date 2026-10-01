@@ -2413,5 +2413,24 @@ extern "C" int runPokemonBattleStateChecks() {
     if (Pokerogue3DS::pokemonBattleConclusion(false, true) != Conclusion::PlayerVictory) return 556;
     if (Pokerogue3DS::pokemonBattleConclusion(true, false) != Conclusion::PlayerDefeat) return 557;
     if (Pokerogue3DS::pokemonBattleConclusion(true, true) != Conclusion::PlayerDefeat) return 558;
+    auto recalledActor = beforeLevel;
+    const auto persistentActor = recalledActor;
+    recalledActor.heldItemLostTags.unburden = true;
+    recalledActor.turnDamageDealt = 19;
+    for (auto& stage : recalledActor.statStages) stage = 3;
+    Pokerogue3DS::resetPokemonSummonState(recalledActor);
+    for (auto stage : recalledActor.statStages) if (stage) return 565;
+    if (recalledActor.heldItemLostTags.unburden || recalledActor.turnDamageDealt ||
+        recalledActor.hp != persistentActor.hp || recalledActor.maxHp != persistentActor.maxHp ||
+        recalledActor.friendship != persistentActor.friendship ||
+        recalledActor.pauseEvolutions != persistentActor.pauseEvolutions ||
+        recalledActor.pokemonId != persistentActor.pokemonId || recalledActor.level != persistentActor.level ||
+        recalledActor.formId != persistentActor.formId) return 566;
+    for (uint8_t slot = 0; slot < recalledActor.moveCount; ++slot)
+        if (recalledActor.moves[slot].moveId != persistentActor.moves[slot].moveId ||
+            recalledActor.moves[slot].pp != persistentActor.moves[slot].pp ||
+            recalledActor.moves[slot].maxPp != persistentActor.moves[slot].maxPp) return 567;
+    Pokerogue3DS::resetPokemonSummonState(recalledActor);
+    if (recalledActor.hp != persistentActor.hp || recalledActor.turnDamageDealt) return 568;
     return 0;
 }

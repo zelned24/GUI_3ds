@@ -206,6 +206,14 @@ inline void resetPokemonStatStages(PokemonBattleState& state) {
     for (auto& stage : state.statStages) stage = 0;
 }
 
+// Supported summon/turn fields only. Persistent actor state survives a recall.
+// Source: pinned Pokemon.resetSummonData; other tags/forms need their own dispatch.
+inline void resetPokemonSummonState(PokemonBattleState& state) {
+    resetPokemonStatStages(state);
+    state.heldItemLostTags = {};
+    state.turnDamageDealt = 0;
+}
+
 // Baseline getStatStageMultiplier without abilities/move overrides/held items.
 // Critical hits ignore negative attack stages and positive defense stages.
 inline bool pokemonStatStageMultiplier(const PokemonBattleState& state, uint8_t stat,

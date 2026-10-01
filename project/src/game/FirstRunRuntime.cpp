@@ -1402,7 +1402,7 @@ bool FirstRunRuntime::advanceBattleTurnInPlace() {
                 // actor; the trainer consumes its command by switching, not attacking.
                 const ResolvedPokemon outgoing = m_context.enemy;
                 ResolvedPokemon incoming = m_context.trainerParty[decision.partyIndex];
-                resetPokemonStatStages(incoming.battleState);
+                resetPokemonSummonState(incoming.battleState);
                 PokerogueRngAdapter actionRng = *rng;
                 // Resolve abilities against the incoming actor. A rejected command
                 // leaves player HP/PP, field state and RNG untouched.
@@ -1411,7 +1411,9 @@ bool FirstRunRuntime::advanceBattleTurnInPlace() {
                     m_context.enemy = outgoing;
                     return false;
                 }
-                m_context.trainerParty[m_context.activeTrainerPartyIndex] = outgoing;
+                auto recalled = outgoing;
+                resetPokemonSummonState(recalled.battleState);
+                m_context.trainerParty[m_context.activeTrainerPartyIndex] = recalled;
                 m_context.activeTrainerPartyIndex = decision.partyIndex;
                 m_run.encounterDex = incoming.dex;
                 *rng = actionRng;
@@ -2156,7 +2158,7 @@ bool FirstRunRuntime::advanceTrainerAfterDefeat() {
     m_context.trainerParty[m_context.activeTrainerPartyIndex] = m_context.enemy;
     m_context.activeTrainerPartyIndex = next;
     m_context.enemy = m_context.trainerParty[next];
-    resetPokemonStatStages(m_context.enemy.battleState);
+    resetPokemonSummonState(m_context.enemy.battleState);
     m_run.encounterDex = m_context.enemy.dex;
     m_battleRng = nextTurn;
     ++m_turn;
@@ -2477,14 +2479,11 @@ bool FirstRunRuntime::switchPlayerPokemonInPlace(uint8_t targetIndex) {
     if (!rng) return false;
 
     if (!recordActiveParticipant()) return false;
-    m_context.player.battleState.heldItemLostTags = {};
-    m_context.player.battleState.turnDamageDealt = 0;
+    resetPokemonSummonState(m_context.player.battleState);
     m_context.playerParty[m_context.activePlayerPartyIndex] = m_context.player;
     m_context.activePlayerPartyIndex = targetIndex;
     m_context.player = m_context.playerParty[targetIndex];
-    m_context.player.battleState.heldItemLostTags = {};
-    m_context.player.battleState.turnDamageDealt = 0;
-    resetPokemonStatStages(m_context.player.battleState);
+    resetPokemonSummonState(m_context.player.battleState);
 
     m_checkpointAvailable = false;
     m_runStarted = true;
@@ -2532,13 +2531,14 @@ bool FirstRunRuntime::playerPartyDefeated() const {
 
 bool FirstRunRuntime::advancePlayerAfterDefeat() {
     if (m_context.player.battleState.hp > 0) return true;
+    resetPokemonSummonState(m_context.player.battleState);
     m_context.playerParty[m_context.activePlayerPartyIndex] = m_context.player;
 
     for (uint8_t i = 0; i < m_context.playerPartyCount; ++i) {
         if (m_context.playerParty[i].battleState.hp > 0) {
             m_context.activePlayerPartyIndex = i;
             m_context.player = m_context.playerParty[i];
-            resetPokemonStatStages(m_context.player.battleState);
+            resetPokemonSummonState(m_context.player.battleState);
             m_battleFeedback = std::string("Fainted! Sent out ") +
                 (m_context.player.localizedName ? m_context.player.localizedName : "next Pokémon");
             buildScene();
@@ -2726,9 +2726,9 @@ void FirstRunRuntime::resolve(bool carryPlayer) {
     // ReturnPhase.resetSummonData removes stat stages while HP/PP/EXP persist.
     const auto resetPlayerArenaState = [&]() {
         m_trickRoom = {};
-        resetPokemonStatStages(m_context.player.battleState);
+        resetPokemonSummonState(m_context.player.battleState);
         for (uint8_t i = 0; i < m_context.playerPartyCount; ++i)
-            resetPokemonStatStages(m_context.playerParty[i].battleState);
+            resetPokemonSummonState(m_context.playerParty[i].battleState);
         if (m_context.activePlayerPartyIndex < m_context.playerPartyCount)
             m_context.playerParty[m_context.activePlayerPartyIndex] = m_context.player;
     };
