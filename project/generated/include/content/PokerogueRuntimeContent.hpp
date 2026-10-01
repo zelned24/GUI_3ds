@@ -2667,6 +2667,11 @@ inline constexpr PpRestoreItemProfile kPpRestoreItemProfiles[] = {
     {"ELIXIR", 10, true, "src/modifier/modifier-type.ts", "modifierTypeInitObj.ELIXIR", "2d2bcbf71adec1fc80fc6a097e47118f5c9da87a22cbef4723141bbb17fd7968"},
     {"MAX_ELIXIR", -1, true, "src/modifier/modifier-type.ts", "modifierTypeInitObj.MAX_ELIXIR", "2d2bcbf71adec1fc80fc6a097e47118f5c9da87a22cbef4723141bbb17fd7968"}
 };
+struct ReviveItemProfile { const char* itemId; uint8_t percent; const char* sourcePath; const char* sourceSymbol; const char* sourceHash; };
+inline constexpr ReviveItemProfile kReviveItemProfiles[] = {
+    {"REVIVE", 50, "src/modifier/modifier-type.ts", "modifierTypeInitObj.REVIVE", "2d2bcbf71adec1fc80fc6a097e47118f5c9da87a22cbef4723141bbb17fd7968"},
+    {"MAX_REVIVE", 100, "src/modifier/modifier-type.ts", "modifierTypeInitObj.MAX_REVIVE", "2d2bcbf71adec1fc80fc6a097e47118f5c9da87a22cbef4723141bbb17fd7968"}
+};
 struct MoveAttribute { const char* id; };
 struct Move { uint16_t id; uint8_t category; int16_t power; int16_t accuracy; int16_t pp; int8_t priority; int16_t upstreamChance; uint8_t generation; uint16_t upstreamFlags; uint8_t multiHitType; uint32_t attributeOffset; uint16_t attributeCount; const char* key; const char* name; const char* type; const char* target; const char* sourcePath; const char* sourceSymbol; const char* sourceHash; };
 struct PokemonSpriteAtlas { uint16_t speciesDex; uint16_t width; uint16_t height; uint32_t frameOffset; uint16_t frameCount; const char* manifestPath; const char* imagePath; const char* manifestHash; }; struct PokemonSpriteFrame { const char* filename; uint16_t x; uint16_t y; uint16_t width; uint16_t height; uint16_t sourceWidth; uint16_t sourceHeight; uint16_t trimX; uint16_t trimY; }; struct SpeciesLevelMove { uint16_t speciesDex; int8_t level; uint16_t moveId; }; struct SpeciesEggMove { uint16_t speciesDex; uint16_t moveId; };

@@ -1055,5 +1055,13 @@ const ppRestoreRows = collections.items.flatMap(item => {
 });
 const ppRestoreHeader = hpRestoreHeader.replace('struct MoveAttribute {',
   `struct PpRestoreItemProfile { const char* itemId; int16_t points; bool allMoves; const char* sourcePath; const char* sourceSymbol; const char* sourceHash; };\ninline constexpr PpRestoreItemProfile kPpRestoreItemProfiles[] = {\n${ppRestoreRows.join(',\n')}\n};\nstruct MoveAttribute {`);
-await fs.writeFile(outputPath, ppRestoreHeader, 'utf8');
-console.log(JSON.stringify({ output: path.relative(root, outputPath), bytes: Buffer.byteLength(ppRestoreHeader), hash: report.contentHash }));
+const reviveRows = collections.items.flatMap(item => {
+  const raw = item.extensions?.upstreamRawRecord?.value ?? '';
+  const match = raw.match(/new\s+PokemonReviveModifierType\s*\(\s*"[^"\n]*"\s*,\s*"[^"\n]*"\s*,\s*(\d+)\s*\)/);
+  if (!match) return [];
+  return [`    {"${field(item.id)}", ${Number(match[1])}, "${field(item.source?.sourcePath)}", "${field(item.source?.sourceSymbol)}", "${field(item.source?.sourceHash)}"}`];
+});
+const reviveHeader = ppRestoreHeader.replace('struct MoveAttribute {',
+  `struct ReviveItemProfile { const char* itemId; uint8_t percent; const char* sourcePath; const char* sourceSymbol; const char* sourceHash; };\ninline constexpr ReviveItemProfile kReviveItemProfiles[] = {\n${reviveRows.join(',\n')}\n};\nstruct MoveAttribute {`);
+await fs.writeFile(outputPath, reviveHeader, 'utf8');
+console.log(JSON.stringify({ output: path.relative(root, outputPath), bytes: Buffer.byteLength(reviveHeader), hash: report.contentHash }));

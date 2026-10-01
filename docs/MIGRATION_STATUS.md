@@ -661,3 +661,8 @@
 
 1. claimRecoveryRewardChoice(member,move) agrega comando atomico para HP/PP restore canonico; reserva se modifica por referencia a su actor y activo conserva alias correcto. Ether usa slot explicito; Elixir aplica todos. Otras clases se rechazan sin consumir reward.
 2. Regresion 455 escrita para comando fuera de fase/indice invalido. Selector visual y demostracion end-to-end con reward real pendientes; tests/compilacion aplazados.
+
+## Revive canonico por destinatario
+
+1. Perfiles derivados PokemonReviveModifierType (50/100) con provenance; claimRecoveryRewardChoice aplica al miembro elegido, no primer fainted implicitamente. Adapter exige challenge/status-reset resueltos, rechaza vivo y no aplica Healing Charm. Formula floor(percent*maxHP), minimo uno segun PokemonHpRestoreModifier.
+2. Regresiones 456-459 escritas; generacion permitida, tests/compilacion aplazados. Politica baseline Classic sin challenge/status no portado; desafios, status completo y selector visual pendientes.

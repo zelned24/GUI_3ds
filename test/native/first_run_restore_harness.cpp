@@ -887,6 +887,15 @@ static int checkWave200FinalBossAndGameClear() {
     if (applyPokemonPpRestoreItem(potionActor, *etherRestore, 2) || potionActor.moves[0].pp != 15) return 453;
     if (!applyPokemonPpRestoreItem(potionActor, *maxElixirRestore, 255) || potionActor.moves[0].pp != 20 ||
         potionActor.moves[1].pp != 10) return 454;
+    const auto* reviveProfile = reviveItemProfile("REVIVE");
+    if (!reviveProfile || reviveProfile->percent != 50) return 456;
+    potionActor.maxHp = 31; potionActor.hp = 0;
+    if (applyPokemonReviveItem(potionActor, *reviveProfile, false, false, true) || potionActor.hp)
+        return 457;
+    if (!applyPokemonReviveItem(potionActor, *reviveProfile, true, false, true) || potionActor.hp != 15)
+        return 458;
+    if (applyPokemonReviveItem(potionActor, *reviveProfile, true, false, true) || potionActor.hp != 15)
+        return 459;
     const auto preservedBoss = bossActor;
     if (applyPokemonFixedEnemyMovePp(*firstPhase, bossActor) ||
         bossActor.moves[3].maxPp != preservedBoss.moves[3].maxPp) return 338;

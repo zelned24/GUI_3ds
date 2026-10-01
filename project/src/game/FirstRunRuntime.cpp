@@ -777,7 +777,7 @@ bool FirstRunRuntime::claimRewardChoiceInPlace(uint8_t heldPartyMember, bool rec
         const bool knownHeldReward = initializeHeldModifierInstance(itemId, targetState.pokemonId,
             1, true, nullptr, heldReward) == HeldModifierStorageResult::Ok &&
             heldHealingInventorySupported(&heldReward, 1);
-        if (recoveryTarget && !hpRestoreItemProfile(itemId) && !ppRestoreItemProfile(itemId)) {
+        if (recoveryTarget && !hpRestoreItemProfile(itemId) && !ppRestoreItemProfile(itemId) && !reviveItemProfile(itemId)) {
             m_battleFeedback = "Selected reward has no supported recovery recipient policy";
             return false;
         }
@@ -814,25 +814,10 @@ bool FirstRunRuntime::claimRewardChoiceInPlace(uint8_t heldPartyMember, bool rec
             m_pokeballs[3] = std::min<uint16_t>(99, m_pokeballs[3] + 5);
         } else if (std::strcmp(itemId, "MASTER_BALL") == 0) {
             m_pokeballs[4] = std::min<uint16_t>(99, m_pokeballs[4] + 1);
-        } else if (std::strcmp(itemId, "REVIVE") == 0) {
-            for (uint8_t i = 0; i < m_context.playerPartyCount; ++i) {
-                if (m_context.playerParty[i].battleState.hp == 0) {
-                    m_context.playerParty[i].battleState.hp = std::max<uint16_t>(1, m_context.playerParty[i].battleState.maxHp / 2);
-                    if (i == m_context.activePlayerPartyIndex) {
-                        playerState.hp = m_context.playerParty[i].battleState.hp;
-                    }
-                    break;
-                }
-            }
-        } else if (std::strcmp(itemId, "MAX_REVIVE") == 0) {
-            for (uint8_t i = 0; i < m_context.playerPartyCount; ++i) {
-                if (m_context.playerParty[i].battleState.hp == 0) {
-                    m_context.playerParty[i].battleState.hp = m_context.playerParty[i].battleState.maxHp;
-                    if (i == m_context.activePlayerPartyIndex) {
-                        playerState.hp = m_context.playerParty[i].battleState.hp;
-                    }
-                    break;
-                }
+        } else if (const auto* revive = reviveItemProfile(itemId)) {
+            if (!applyPokemonReviveItem(targetState, *revive, true, false, true)) {
+                m_battleFeedback = "Revive requires a fainted selected party member";
+                return false;
             }
         } else if (std::strcmp(itemId, "SACRED_ASH") == 0) {
             for (uint8_t i = 0; i < m_context.playerPartyCount; ++i) {

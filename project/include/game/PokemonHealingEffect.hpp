@@ -72,6 +72,22 @@ inline bool applyPokemonPpRestoreItem(PokemonBattleState& actor,
     return true;
 }
 
+inline const PokerogueContent::ReviveItemProfile* reviveItemProfile(const char* itemId) {
+    if (!itemId) return nullptr;
+    for (const auto& profile : PokerogueContent::kReviveItemProfiles)
+        if (!std::strcmp(profile.itemId, itemId)) return &profile;
+    return nullptr;
+}
+inline bool applyPokemonReviveItem(PokemonBattleState& actor,
+    const PokerogueContent::ReviveItemProfile& profile, bool challengePolicyResolved,
+    bool revivePrevented, bool statusResetResolved) {
+    if (!challengePolicyResolved || revivePrevented || !statusResetResolved || actor.hp ||
+        !actor.maxHp || !profile.percent || profile.percent > 100) return false;
+    const uint32_t amount = static_cast<uint32_t>(std::floor(profile.percent * 0.01 * actor.maxHp));
+    actor.hp = static_cast<uint16_t>(amount ? amount : 1);
+    return true;
+}
+
 enum class PokemonHealingResult : uint8_t { Ok, InvalidState, UnsupportedMove, UnresolvedPolicy };
 struct PokemonHealingEvent {
     bool failedFullHp = false;
