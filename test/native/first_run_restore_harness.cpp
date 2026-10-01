@@ -2982,6 +2982,10 @@ int main() {
             NativeSaveResult::Ok || decodeNativePokemonSave(tagBytes, tagSize, decodedActor) != NativeSaveResult::Ok ||
             !restoreNativePokemonActorSave(decodedActor, restoredActor, restoredIdentity) ||
             !restoredActor.heldItemLostTags.unburden) return 405;
+        tagState.pendingStatus = PokemonStatusEffect::Sleep;
+        if (captureNativePokemonActorSave(tagState, currentActor.actor, currentActor.totalExperience, tagSnapshot))
+            return 9046;
+        tagState.pendingStatus = PokemonStatusEffect::None;
         tagState.friendship = 173;
         if (!captureNativePokemonActorSave(tagState, currentActor.actor, currentActor.totalExperience, tagSnapshot) ||
             encodeNativePokemonSave(tagSnapshot, tagBytes, sizeof(tagBytes), tagSize) != NativeSaveResult::Ok ||

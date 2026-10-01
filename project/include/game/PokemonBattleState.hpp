@@ -215,7 +215,8 @@ struct PokemonBattleState {
     uint32_t pokemonId = 0;
     uint16_t abilityId = 0;
     uint8_t friendship = 0; // Persistent Pokemon friendship, initialized from pinned species.
-    PokemonStatusState status{}; // Persistent nonvolatile status; save integration pending.
+    PokemonStatusState status{}; // Persistent nonvolatile status, stored in run v15.
+    PokemonStatusEffect pendingStatus = PokemonStatusEffect::None; // PokemonTurnData; queue must drain before checkpoint.
     HeldItemLostTagState heldItemLostTags{}; // Transient summon data.
     uint32_t turnDamageDealt = 0; // PokemonTurnData.totalDamageDealt; reset after turn effects.
     PokemonGender gender = PokemonGender::Unspecified;
@@ -363,6 +364,9 @@ struct PokemonQueuedStatusRequest {
     bool explicitSleepDuration = false;
     uint32_t sleepDuration = 0;
 };
+// trySetStatus's normal (non-override) queue transition; no duration RNG here.
+PokemonStatusEligibility enqueuePokemonStatusRequest(PokemonBattleState& recipient,
+    const PokemonQueuedStatusRequest& request, const PokemonStatusApplicationPolicy& policy);
 // ObtainStatusEffectPhase uses an already accepted request, never repeats canSetStatus.
 // Caller resolves pendingStatus, hit cancellation, form changes and ability reactions.
 PokemonStatusObtainResult applyPokemonQueuedStatus(PokemonBattleState& recipient,

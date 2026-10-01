@@ -338,6 +338,12 @@ bool FirstRunRuntime::restoreSetupInPlace(uint32_t seed, uint16_t starterDex) {
 }
 
 NativeSaveResult FirstRunRuntime::captureNativeRunSave(NativeRunSave& output) const {
+    bool pending = m_context.player.battleState.pendingStatus != PokemonStatusEffect::None ||
+        m_context.enemy.battleState.pendingStatus != PokemonStatusEffect::None ||
+        m_context.secondEnemy.battleState.pendingStatus != PokemonStatusEffect::None;
+    for (const auto& member : m_context.playerParty) pending |= member.battleState.pendingStatus != PokemonStatusEffect::None;
+    for (const auto& member : m_context.trainerParty) pending |= member.battleState.pendingStatus != PokemonStatusEffect::None;
+    if (pending) { output = {}; return NativeSaveResult::UnsupportedStage; }
     if (!m_runStarted) {
         for (const auto& member : m_context.playerParty)
             if (member.battleState.status.present) { output = {}; return NativeSaveResult::UnsupportedStage; }
@@ -2419,6 +2425,12 @@ void FirstRunRuntime::removeParticipant(uint32_t id) {
 }
 
 bool FirstRunRuntime::finishBattleTurn() {
+    if (m_context.player.battleState.pendingStatus != PokemonStatusEffect::None ||
+        m_context.enemy.battleState.pendingStatus != PokemonStatusEffect::None ||
+        (m_doubleBattle && m_context.secondEnemy.battleState.pendingStatus != PokemonStatusEffect::None)) {
+        m_battleFeedback = "Pending status phase must finish before turn end";
+        return false;
+    }
     // TurnEndPhase lapses arena tags except during a biome interlude.
     // Current checkpoint progression ends before the first X0 transition.
     // Resolve both field clocks before committing either. TurnEndPhase lapses

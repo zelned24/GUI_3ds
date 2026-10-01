@@ -1469,3 +1469,9 @@
 1. applyPokemonQueuedStatus separa ObtainStatusEffectPhase/doSetStatus de trySetStatus: no repite canSetStatus, conserva ID de destinatario/fuente, RNG de duración y reemplaza status tal como la fase upstream. Caller debe resolver pendingStatus, cancelación de hits, forms y reacciones antes de ejecutar.
 2. Solicitud por movimiento y wrapper de elegibilidad rechazan NONE, conforme trySetStatus. Request con destinatario distinto o reacciones sin resolver conserva estado/RNG.
 3. Regresiones de solicitud aceptada que no vuelve a consultar elegibilidad, duración seeded, identidad incorrecta y NONE escritas sin ejecutar. Cola activa/pendingStatus y callbacks completos siguen pendientes; tests/compilación aplazados.
+
+## Estado pendiente y frontera de checkpoints
+
+1. PokemonBattleState conserva pendingStatus de PokemonTurnData. enqueuePokemonStatusRequest porta transición normal de trySetStatus y rechaza solicitudes duplicadas; override requiere su resolver separado. applyPokemonQueuedStatus exige coincidencia de destinatario/efecto pendiente y lo limpia al aplicar.
+2. Wrapper de obtención usa candidato para publicar solicitud/aplicación atómicamente. Run save/actor snapshot y finishBattleTurn rechazan fases pendientes; no silencian ni serializan una cola incompleta.
+3. Regresiones de enqueue sin duración, duplicado, limpieza de pending y rechazo de snapshot escritas sin ejecutar. El runtime todavía debe producir/drenar esta cola desde el comando y resolver callbacks completos; tests/compilación aplazados.

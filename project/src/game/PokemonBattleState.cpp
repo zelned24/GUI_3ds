@@ -151,7 +151,9 @@ PokemonStatusObtainResult obtainPokemonStatus(PokemonBattleState& actor, Pokemon
     const PokemonStatusApplicationPolicy& policy, bool reactionsResolved, PokerogueRngAdapter& rng,
     bool explicitSleepDuration, uint32_t sleepDuration) {
     if (effect == PokemonStatusEffect::None) return PokemonStatusObtainResult::Ineligible;
-    if (canPokemonSetStatus(actor.status, effect, policy) != PokemonStatusEligibility::Allowed)
+    auto eligibilityPolicy = policy;
+    eligibilityPolicy.pendingStatus = policy.pendingStatus || actor.pendingStatus != PokemonStatusEffect::None;
+    if (canPokemonSetStatus(actor.status, effect, eligibilityPolicy) != PokemonStatusEligibility::Allowed)
         return PokemonStatusObtainResult::Ineligible;
     if (!actor.hp && effect != PokemonStatusEffect::Faint) return PokemonStatusObtainResult::Fainted;
     if (!reactionsResolved) return PokemonStatusObtainResult::UnsupportedReactions;
@@ -160,12 +162,35 @@ PokemonStatusObtainResult obtainPokemonStatus(PokemonBattleState& actor, Pokemon
     request.effect = effect;
     request.explicitSleepDuration = explicitSleepDuration;
     request.sleepDuration = sleepDuration;
-    return applyPokemonQueuedStatus(actor, request, reactionsResolved, rng);
+    auto nextActor = actor;
+    auto nextRng = rng;
+    nextActor.pendingStatus = effect;
+    const auto result = applyPokemonQueuedStatus(nextActor, request, reactionsResolved, nextRng);
+    if (result != PokemonStatusObtainResult::Applied) return result;
+    actor = nextActor;
+    rng = nextRng;
+    return result;
+}
+
+PokemonStatusEligibility enqueuePokemonStatusRequest(PokemonBattleState& recipient,
+    const PokemonQueuedStatusRequest& request, const PokemonStatusApplicationPolicy& policy) {
+    if (request.recipientPokemonId != recipient.pokemonId || static_cast<uint8_t>(request.effect) > 7 ||
+        static_cast<uint8_t>(recipient.pendingStatus) > 7 || recipient.hp > recipient.maxHp ||
+        (!request.hasSource && request.sourcePokemonId)) return PokemonStatusEligibility::InvalidState;
+    if (request.effect == PokemonStatusEffect::None) return PokemonStatusEligibility::NoEffect;
+    if (policy.overrideStatus) return PokemonStatusEligibility::UnsupportedPolicy;
+    auto pendingPolicy = policy;
+    pendingPolicy.pendingStatus = policy.pendingStatus || recipient.pendingStatus != PokemonStatusEffect::None;
+    const auto eligibility = canPokemonSetStatus(recipient.status, request.effect, pendingPolicy);
+    if (eligibility != PokemonStatusEligibility::Allowed) return eligibility;
+    if (!recipient.hp && request.effect != PokemonStatusEffect::Faint) return PokemonStatusEligibility::InvalidState;
+    recipient.pendingStatus = request.effect;
+    return PokemonStatusEligibility::Allowed;
 }
 
 PokemonStatusObtainResult applyPokemonQueuedStatus(PokemonBattleState& recipient,
     const PokemonQueuedStatusRequest& request, bool reactionsResolved, PokerogueRngAdapter& recipientRng) {
-    if (request.recipientPokemonId != recipient.pokemonId ||
+    if (request.recipientPokemonId != recipient.pokemonId || recipient.pendingStatus != request.effect ||
         request.effect == PokemonStatusEffect::None || static_cast<uint8_t>(request.effect) > 7 ||
         (!request.hasSource && request.sourcePokemonId)) return PokemonStatusObtainResult::Ineligible;
     if (!reactionsResolved) return PokemonStatusObtainResult::UnsupportedReactions;
@@ -180,6 +205,7 @@ PokemonStatusObtainResult applyPokemonQueuedStatus(PokemonBattleState& recipient
     status.hasFreezeTurnsRemaining = request.effect == PokemonStatusEffect::Freeze;
     status.freezeTurnsRemaining = status.hasFreezeTurnsRemaining ? 3 : 0;
     recipient.status = status;
+    recipient.pendingStatus = PokemonStatusEffect::None;
     recipientRng = nextRng;
     return PokemonStatusObtainResult::Applied;
 }
