@@ -108,4 +108,25 @@ export function registerQuickJsStorageTests(register) {
     assert.deepEqual(commands, [['skip']], 'only explicit skip advances without an item');
   });
 
+  for (const phase of ['moveLearningPending', 'evolutionPending']) {
+    register(`QuickJS progression: ${phase} precedes capture and party commands`, () => {
+      const commands = [];
+      const context = { JSON, Math };
+      for (const name of new Set(match[1].match(/_3ds_[A-Za-z]+/g))) context[name] = () => undefined;
+      context._3ds_getBattleState = () => JSON.stringify({runStarted: true, finished: false, selectedMove: 3});
+      context._3ds_getPresentationInfo = () => ({[phase]: true, progressionName: 'Pidgey', pendingLearnMoveId: 16});
+      context._3ds_getCombatLog = () => '';
+      context._3ds_getMoveName = () => 'Move';
+      context._3ds_submitAction = id => commands.push(['action', id]);
+      context._3ds_skipReward = () => commands.push(['decline']);
+      vm.createContext(context);
+      vm.runInContext(match[1], context);
+      context._3ds_tick({ B: true, select: true });
+      assert.deepEqual(commands, [['decline']], 'declines progression instead of throwing a ball');
+      commands.length = 0;
+      context._3ds_tick({ A: true });
+      assert.deepEqual(commands, [['action', 3]], 'selected learning slot reaches the native progression handler');
+    });
+  }
+
 }

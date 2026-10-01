@@ -53,6 +53,12 @@ globalThis._3ds_tick = function(input) {
   else if (input.Y) _3ds_exportNative();
   else if (input.L) _3ds_saveNative();
   else if (input.R) _3ds_loadNative();
+  else if (presentation.moveLearningPending || presentation.evolutionPending) {
+    if (input.B) _3ds_skipReward();
+    else if (input.A || input.start) _3ds_submitAction(state.selectedMove || 0);
+    else if (presentation.moveLearningPending && input.up) _3ds_submitAction(-1);
+    else if (presentation.moveLearningPending && input.down) _3ds_submitAction(100);
+  }
   else if (gameOverScreen) {
     if (input.left) _3ds_cycleStarter(-1);
     else if (input.right) _3ds_cycleStarter(1);
@@ -133,6 +139,23 @@ globalThis._3ds_tick = function(input) {
   _3ds_beginBottom();
   _3ds_clear(0xFF16213E);
   _3ds_drawText('Wave: ' + (state.wave || 0) + (presentation.doubleBattle ? ' - Doble batalla' : ''), 10, 10, 0.55, 0xFF00FFFF);
+  if (presentation.moveLearningPending || presentation.evolutionPending) {
+    _3ds_drawText((presentation.progressionName || '').slice(0, 26), 10, 34, 0.55, WHITE);
+    if (presentation.moveLearningPending) {
+      _3ds_drawText('Learn: ' + _3ds_getMoveName(presentation.pendingLearnMoveId), 10, 57, 0.48, GREEN);
+      const moves = state.playerMoves || [];
+      for (let i = 0; i < 4; ++i)
+        _3ds_drawText((i === state.selectedMove ? '> ' : '  ') + (i + 1) + ': ' + _3ds_getMoveName(moves[i] || 0),
+          10, 85 + i * 24, 0.48, WHITE);
+      _3ds_drawText('Up/Down: slot A: learn B: reject', 8, 199, 0.43, WHITE);
+    } else {
+      _3ds_drawText(presentation.evolutionPauseConfirmation ? 'Pause future evolutions?' : 'Evolution ready',
+        10, 90, 0.6, GREEN);
+      _3ds_drawText(presentation.evolutionPauseConfirmation ? 'A: pause  B: keep enabled' : 'A: evolve  B: cancel',
+        10, 142, 0.48, WHITE);
+    }
+    return;
+  }
   if (state.rewardPending) {
     if (recipientMenu) {
       const party = presentation.playerParty || [];

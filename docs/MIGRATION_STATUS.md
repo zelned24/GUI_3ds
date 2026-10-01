@@ -960,3 +960,9 @@
 4. La cola por faint dentro del mismo turno, antes de movimientos posteriores, aún requiere refactor de fases; dos caídas simultáneas siguen usando la agregación existente. No se declara paridad completa de EXP/dobles con upstream.
 
 5. Revisión estática corrigió la copia de equipo para EXP: `PresentationContext.playerParty` es array C; se prepara ahora un `std::array` independiente y se publica miembro a miembro después de resolver todo. Evita decaimiento a puntero, asignación inválida de arrays y mutaciones prematuras. Las regresiones de rollback de EXP existentes siguen pendientes de ejecución.
+
+## Decisiones de nivel durante combate QuickJS — pendiente de ejecución
+
+1. Snapshot identifica aprendizaje/evolución y confirmación de pausa desde el runtime. HUD da prioridad a esos estados antes de captura/cambio/ataque, incluso en la caída intermedia de dobles.
+2. Slots de aprendizaje no se filtran según moveset del activo: `resolvePendingLearnMove` valida el destinatario de la progresión. B puede rechazar aprendizajes/evoluciones durante combate a través del comando 200 existente.
+3. Regresiones JS escritas para ambas decisiones durante combate, rechazo sin captura y confirmación del slot elegido. Sin ejecutar. Presentación final de evoluciones y fase completa upstream aún pendientes.

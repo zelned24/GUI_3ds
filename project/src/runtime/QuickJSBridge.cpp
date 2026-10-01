@@ -221,6 +221,7 @@ JSValue QuickJSBridge::submitAction(JSContext* ctx, JSValueConst, int argc, JSVa
         return JS_ThrowRangeError(ctx, "Use slots 0..3, cursor -1/+100, capture 210, party 211..216 evolution pause 220..225, recovery recipient 300..323, or held recipient 330..335");
     if (bridge->m_pendingAction != -999) return JS_FALSE;
     if (value >= 0 && value <= 3 && !bridge->m_game->battleFinished() &&
+        !bridge->m_game->moveLearningPending() && !bridge->m_game->evolutionPending() &&
         value >= bridge->m_game->presentation().player.battleState.moveCount) return JS_FALSE;
     bridge->m_pendingAction = static_cast<int>(value);
     return JS_TRUE; // Accepted for processing before the next frame, not a claimed successful turn.
@@ -229,8 +230,9 @@ JSValue QuickJSBridge::skipReward(JSContext* ctx, JSValueConst, int argc, JSValu
     auto* bridge = static_cast<QuickJSBridge*>(JS_GetContextOpaque(ctx));
     if (!bridge || !bridge->m_game || !bridge->m_inTick || argc != 0)
         return JS_ThrowTypeError(ctx, "skipReward requires bound runtime");
-    if (bridge->m_pendingAction != -999 || !bridge->m_game->battleFinished() ||
-        !bridge->m_game->playerWon() || !bridge->m_game->experienceGranted()) return JS_FALSE;
+    const bool progression = bridge->m_game->moveLearningPending() || bridge->m_game->evolutionPending();
+    if (bridge->m_pendingAction != -999 || (!progression && (!bridge->m_game->battleFinished() ||
+        !bridge->m_game->playerWon() || !bridge->m_game->experienceGranted()))) return JS_FALSE;
     bridge->m_pendingAction = 200;
     return JS_TRUE;
 }
@@ -273,7 +275,13 @@ JSValue QuickJSBridge::getPresentationInfo(JSContext* ctx, JSValueConst, int, JS
         if (JS_IsException(value)) return false;
         return JS_SetPropertyStr(ctx, info, key, value) >= 0;
     };
-    if (!set("classicClearPending", JS_NewBool(ctx, b->m_game->battleFinished() && b->m_game->playerWon() &&
+    if (!set("moveLearningPending", JS_NewBool(ctx, b->m_game->moveLearningPending())) ||
+        !set("evolutionPending", JS_NewBool(ctx, b->m_game->evolutionPending())) ||
+        !set("evolutionPauseConfirmation", JS_NewBool(ctx, b->m_game->evolutionPauseConfirmationPending())) ||
+        !set("pendingLearnMoveId", JS_NewUint32(ctx, b->m_game->pendingLearnMoveId())) ||
+        !set("progressionName", JS_NewString(ctx, b->m_game->progressionPokemon().localizedName
+            ? b->m_game->progressionPokemon().localizedName : "")) ||
+        !set("classicClearPending", JS_NewBool(ctx, b->m_game->battleFinished() && b->m_game->playerWon() &&
             b->m_game->experienceGranted() && b->m_game->run().wave == PokerogueContent::kClassicFinalWave &&
             b->m_game->victoryPlan().completedWave == b->m_game->run().wave &&
             b->m_game->victoryPlan().contains(ClassicVictoryStep::GameClear))) ||
@@ -533,6 +541,7 @@ bool QuickJSBridge::processPendingAction() {
     }
     else if (action >= 0 && action <= 3) {
         if (m_game->moveLearningPending()) return m_game->resolvePendingLearnMove(action);
+        if (m_game->evolutionPending()) return m_game->advanceBattleTurn();
         if (!m_game->battleFinished()) {
             const auto count = m_game->presentation().player.battleState.moveCount;
             if (action >= count) return false;

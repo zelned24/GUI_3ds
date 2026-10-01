@@ -115,6 +115,7 @@ public:
     bool claimRecoveryRewardChoice(uint8_t partyMember, uint8_t moveSlot = 0);
     bool selectBattleMove(int direction);
     bool evolutionPending() const { return m_pendingEvolutionSpeciesId != nullptr || m_evolutionPauseConfirmation; }
+    bool evolutionPauseConfirmationPending() const { return m_evolutionPauseConfirmation; }
     bool moveLearningPending() const { return m_pendingLevelMoves.count != 0; }
     uint8_t progressionPartyIndex() const { return m_progressionPartyIndex; }
     const ResolvedPokemon& progressionPokemon() const {
