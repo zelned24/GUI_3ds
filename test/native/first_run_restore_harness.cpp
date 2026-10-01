@@ -581,6 +581,31 @@ static int checkWave200FinalBossAndGameClear() {
         actualTheftRng.state().s0 != beforeInvalidInventorySelection.s0 ||
         selectNativeHeldItemTransferAttempt(theftOpponents, 2, nativeTheftRecords, 2, 3, 1,
             actualTheftRng, theftSelection) != HeldItemTransferSelectionResult::InvalidState) return 373;
+    auto heldForCodec = blackHoleInstance;
+    std::strcpy(heldForCodec.rawArguments, "{\n\"unknown\": [1, 2]\n}");
+    char heldPayload[1024]{};
+    size_t heldPayloadSize = 0;
+    NativeHeldModifierInstance decodedHeld{};
+    if (encodeNativeHeldModifier(heldForCodec, heldPayload, sizeof(heldPayload), heldPayloadSize) !=
+            NativeSaveResult::Ok || decodeNativeHeldModifier(heldPayload, heldPayloadSize, decodedHeld) !=
+            NativeSaveResult::Ok || decodedHeld.ownerPokemonId != heldForCodec.ownerPokemonId ||
+        decodedHeld.stackCount != heldForCodec.stackCount || decodedHeld.transferable ||
+        std::strcmp(decodedHeld.rawArguments, heldForCodec.rawArguments) ||
+        std::strcmp(heldModifierDefinition(decodedHeld)->id, "MINI_BLACK_HOLE")) return 379;
+    char repeatedHeldPayload[1024]{};
+    size_t repeatedHeldSize = 0;
+    if (encodeNativeHeldModifier(decodedHeld, repeatedHeldPayload, sizeof(repeatedHeldPayload), repeatedHeldSize) !=
+            NativeSaveResult::Ok || repeatedHeldSize != heldPayloadSize ||
+        std::memcmp(repeatedHeldPayload, heldPayload, heldPayloadSize)) return 380;
+    const auto beforeInvalidHeldDecode = decodedHeld;
+    if (decodeNativeHeldModifier(heldPayload, heldPayloadSize - 1, decodedHeld) != NativeSaveResult::InvalidFormat ||
+        decodedHeld.ownerPokemonId != beforeInvalidHeldDecode.ownerPokemonId) return 381;
+    heldPayload[7] = 'X'; // Unknown canonical ID cannot silently resolve to another catalog row.
+    if (decodeNativeHeldModifier(heldPayload, heldPayloadSize, decodedHeld) != NativeSaveResult::InvalidRecord ||
+        decodedHeld.canonicalItemIndex != beforeInvalidHeldDecode.canonicalItemIndex) return 382;
+    size_t tooSmallHeldSize = 99;
+    if (encodeNativeHeldModifier(heldForCodec, repeatedHeldPayload, 1, tooSmallHeldSize) !=
+            NativeSaveResult::TooLarge || tooSmallHeldSize) return 383;
     const auto preservedBoss = bossActor;
     if (applyPokemonFixedEnemyMovePp(*firstPhase, bossActor) ||
         bossActor.moves[3].maxPp != preservedBoss.moves[3].maxPp) return 338;

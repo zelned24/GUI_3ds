@@ -2,6 +2,7 @@
 #include "storage/IntegritySha256.hpp"
 #include "game/PokemonExperience.hpp"
 #include "game/PokemonBattleState.hpp"
+#include "game/PokerogueModifierReward.hpp"
 #include "game/PokerogueTurnOrder.hpp"
 #include "content/PokerogueRuntimeContent.hpp"
 
@@ -366,6 +367,53 @@ bool captureNativePokemonActorSave(const PokemonBattleState& state,
     if (!copyText(saved.initialTeraType, sizeof(saved.initialTeraType), restoredIdentity.initialTeraType)) return false;
     output = saved;
     return true;
+}
+
+NativeSaveResult encodeNativeHeldModifier(const NativeHeldModifierInstance& instance,
+    char* output, size_t capacity, size_t& written) {
+    written = 0;
+    if (!validateHeldModifierInstance(instance)) return NativeSaveResult::InvalidRecord;
+    if (!output) return NativeSaveResult::InvalidFormat;
+    const auto* definition = heldModifierDefinition(instance);
+    Writer writer{output, capacity};
+    writer.text("held=1\n");
+    writer.text(definition->id); writer.character('\n');
+    writer.hex(instance.ownerPokemonId, 8);
+    writer.hex(instance.stackCount, 4);
+    writer.hex(instance.transferable ? 1 : 0, 2);
+    size_t argumentBytes = 0;
+    while (instance.rawArguments[argumentBytes]) ++argumentBytes;
+    writer.hex(static_cast<uint32_t>(argumentBytes), 2);
+    for (size_t i = 0; i < argumentBytes; ++i)
+        writer.hex(static_cast<unsigned char>(instance.rawArguments[i]), 2);
+    if (!writer.valid) return NativeSaveResult::TooLarge;
+    written = writer.position;
+    return NativeSaveResult::Ok;
+}
+
+NativeSaveResult decodeNativeHeldModifier(const char* bytes, size_t length,
+    NativeHeldModifierInstance& output) {
+    if (!bytes || !length || length > 1024) return NativeSaveResult::InvalidFormat;
+    Reader reader{bytes, length};
+    char canonicalId[128]{};
+    char arguments[128]{};
+    uint32_t owner = 0, stack = 0, transferable = 0, argumentBytes = 0;
+    if (!reader.literal("held=1\n") || !reader.line(canonicalId, sizeof(canonicalId)) ||
+        !reader.hex(8, owner) || !reader.hex(4, stack) || !reader.hex(2, transferable) ||
+        transferable > 1 || !reader.hex(2, argumentBytes) || argumentBytes >= sizeof(arguments))
+        return NativeSaveResult::InvalidFormat;
+    for (uint32_t i = 0; i < argumentBytes; ++i) {
+        uint32_t value = 0;
+        if (!reader.hex(2, value) || !value) return NativeSaveResult::InvalidFormat;
+        arguments[i] = static_cast<char>(value);
+    }
+    if (reader.position != reader.end) return NativeSaveResult::InvalidFormat;
+    NativeHeldModifierInstance next{};
+    if (initializeHeldModifierInstance(canonicalId, owner, static_cast<uint16_t>(stack),
+            transferable != 0, arguments, next) != HeldModifierStorageResult::Ok)
+        return NativeSaveResult::InvalidRecord;
+    output = next;
+    return NativeSaveResult::Ok;
 }
 
 NativeSaveResult encodeNativePokemonSave(const NativePokemonSave& saved, char* output,

@@ -117,6 +117,13 @@ enum class NativeSaveResult : uint8_t {
 
 const char* nativeSaveResultName(NativeSaveResult result);
 // Bounded member payload; enclosing run journal supplies version/hash/checksum.
+struct NativeHeldModifierInstance;
+// Component payload; enclosing run journal owns checksum/content hash/version.
+NativeSaveResult encodeNativeHeldModifier(const NativeHeldModifierInstance& instance,
+    char* output, size_t capacity, size_t& written);
+NativeSaveResult decodeNativeHeldModifier(const char* bytes, size_t length,
+    NativeHeldModifierInstance& output);
+
 NativeSaveResult encodeNativePokemonSave(const NativePokemonSave& saved, char* output,
     size_t capacity, size_t& written);
 NativeSaveResult decodeNativePokemonSave(const char* bytes, size_t length,

@@ -516,3 +516,9 @@
 1. FirstRunRuntime conserva buffer de held modifiers y consulta read-only; hidratación valida catálogo/raw/stacks y owner PID entre actores resueltos del equipo/enemigos, con publicación atómica. Reiniciar setup elimina inventario del run anterior. Presupuesto provisional 32 registros (~4.6 KiB) falla explícitamente al excederse; requiere revisión de memoria y ampliación para catálogo completo.
 2. Guardados rechazan inventario no serializado. Comandos de combate/captura/cambio/rewards rechazan efectos todavía sin dispatcher; no ejecutan turnos ignorando los objetos. La hidratación no concede un reward ni afirma que un efecto ya funciona.
 3. Regresiones 374–378 escritas para ownership, índice/capacidad inválidos, aislamiento del turno, frontera de save y reset. Faltan codec, policies matchType/abilities y conexión Mini Black Hole/TurnEndPhase. Tests/compilación aplazados; Classic sigue incompleto.
+
+## Codec de held modifier independiente del orden del catálogo
+
+1. encode/decodeNativeHeldModifier reutiliza Writer/Reader de NativeRunSave: held=1, ID canónico textual, owner PID, stack, transferibilidad y raw arguments codificados por bytes. Decodifica ID contra catálogo pinned y solo publica registro válido; no guarda índices susceptibles a reordenamiento.
+2. Regresiones 379–383 escritas para roundtrip de metadata desconocida con saltos de línea, determinismo byte a byte, truncamiento/ID inexistente sin mutación y capacidad insuficiente. El componente no aporta checksum propio; lo debe envolver el journal de run.
+3. Falta incluir registros en payload de run y migrar schema, ampliar/verificar presupuesto y conectar dispatcher. Save de inventario todavía se rechaza explícitamente. Tests/compilación aplazados; Classic sigue incompleto.
