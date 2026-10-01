@@ -4,6 +4,41 @@
 #include <cstring>
 
 namespace Pokerogue3DS {
+bool checkPokemonConfusionBeforeMove(PokemonBattleState& actor, PokemonConfusionTagState& tag,
+    const PokemonConfusionMovePolicy& policy, PokerogueRngAdapter& actorRng,
+    PokemonConfusionMoveEvent& output) {
+    if ((!tag.present && tag.turns) || (tag.present && !tag.turns) || actor.hp > actor.maxHp)
+        return false;
+    PokemonConfusionMoveEvent event{};
+    if (!tag.present) { output = event; return true; }
+    if (!policy.resolved || !actor.hp || !actor.level ||
+        !std::isfinite(policy.effectiveAttack) || !std::isfinite(policy.effectiveDefense) ||
+        policy.effectiveAttack <= 0 || policy.effectiveDefense <= 0) return false;
+    auto nextTag = tag;
+    auto nextRng = actorRng;
+    if (--nextTag.turns == 0) {
+        nextTag.present = false;
+        event.removed = true;
+    } else {
+        event.activationRolled = true;
+        if (nextRng.randSeedInt(3) == 0) {
+            const double damage = std::floor(((((2.0 * actor.level / 5 + 2) * 40 *
+                policy.effectiveAttack) / policy.effectiveDefense / 50 + 2) *
+                (nextRng.randSeedIntRange(85, 100) / 100.0)));
+            if (!std::isfinite(damage) || damage > UINT32_MAX) return false;
+            event.requestedDamage = damage < 1 ? 1 : static_cast<uint32_t>(damage);
+            event.hpLost = event.requestedDamage < actor.hp ? event.requestedDamage : actor.hp;
+            event.hurtItself = event.moveCancelled = true;
+        }
+    }
+    // No move PP, Rage Fist hitCount, or turnDamageDealt increments for confusion.
+    actor.hp -= event.hpLost;
+    tag = nextTag;
+    actorRng = nextRng;
+    output = event;
+    return true;
+}
+
 PokemonStatusImmunityResult resolvePokemonStatusConfusionReaction(const PokemonBattleState& source,
     const PokemonBattleState& recipient, PokemonStatusEffect applied,
     const PokemonStatusConfusionReactionPolicy& policy, PokerogueRngAdapter& sourceRng,

@@ -3174,5 +3174,40 @@ extern "C" int runPokemonBattleStateChecks() {
             return 9113;
     }
     if (!foundStatusConfusion) return 9114;
+    // Expiration removes the tag before RNG; unsupported callbacks are atomic.
+    PokemonBattleState confusedActor{};
+    confusedActor.hp = confusedActor.maxHp = 100;
+    confusedActor.level = 50;
+    Pokerogue3DS::PokemonConfusionTagState confusedTag{1, true};
+    Pokerogue3DS::PokemonConfusionMovePolicy confusedPolicy{true, 100, 100};
+    Pokerogue3DS::PokemonConfusionMoveEvent confusedEvent{};
+    expectedApplicationRng = statusApplicationRng;
+    if (!Pokerogue3DS::checkPokemonConfusionBeforeMove(confusedActor, confusedTag, confusedPolicy,
+            statusApplicationRng, confusedEvent) || !confusedEvent.removed || confusedTag.present ||
+        confusedEvent.activationRolled || confusedActor.hp != 100 ||
+        statusApplicationRng.randSeedUint32() != expectedApplicationRng.randSeedUint32()) return 9120;
+    confusedTag = {3, true};
+    expectedApplicationRng = statusApplicationRng;
+    const bool expectedSelfHit = expectedApplicationRng.randSeedInt(3) == 0;
+    uint32_t expectedSelfDamage = 0;
+    if (expectedSelfHit) {
+        // At level 50 with equal stats: floor(19.6 * seeded percentage / 100).
+        expectedSelfDamage = static_cast<uint32_t>(19.6 *
+            expectedApplicationRng.randSeedIntRange(85, 100) / 100.0);
+    }
+    if (!Pokerogue3DS::checkPokemonConfusionBeforeMove(confusedActor, confusedTag, confusedPolicy,
+            statusApplicationRng, confusedEvent) || confusedTag.turns != 2 ||
+        confusedEvent.hurtItself != expectedSelfHit || confusedEvent.moveCancelled != expectedSelfHit ||
+        confusedEvent.requestedDamage != expectedSelfDamage || confusedActor.hp != 100 - expectedSelfDamage ||
+        statusApplicationRng.randSeedUint32() != expectedApplicationRng.randSeedUint32()) return 9121;
+    confusedPolicy.resolved = false;
+    confusedEvent.requestedDamage = 123;
+    expectedApplicationRng = statusApplicationRng;
+    const auto previousConfusedHp = confusedActor.hp;
+    if (Pokerogue3DS::checkPokemonConfusionBeforeMove(confusedActor, confusedTag, confusedPolicy,
+            statusApplicationRng, confusedEvent) || confusedTag.turns != 2 ||
+        confusedActor.hp != previousConfusedHp || confusedEvent.requestedDamage != 123 ||
+        statusApplicationRng.randSeedUint32() != expectedApplicationRng.randSeedUint32()) return 9122;
+
     return 0;
 }

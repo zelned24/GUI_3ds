@@ -1517,3 +1517,9 @@
 1. Generador deriva ConfusionOnStatusEffectAbAttr desde catálogo (Poison Puppeteer). Resolver exige canAddTag/callbacks resueltos, objetivo vivo y estado admitido; solicita CONFUSED con randBattleSeedIntRange(2,5) del causante.
 2. Preserva peculiaridad pinned: addTag recibe opponent.id como sourcePokemonId. Simulated, bloqueo de tag y efecto no elegible no consumen RNG. Solicitud no inventa implementación de BattlerTag; fase/tag runtime siguen pendientes.
 3. Regresiones de duración/stream, identidades, canAddTag bloqueado, simulated y policy desconocida escritas sin ejecutar. Catálogo regenerado con hash unchanged; tests/compilación aplazados.
+
+## Confusión antes del movimiento
+
+1. checkPokemonConfusionBeforeMove porta ConfusedTag.lapse PRE_MOVE del upstream pinned: decrementa primero, expira sin RNG, probabilidad 1/3 y daño físico de potencia 40 con variación 85–100. No consume PP ni incrementa Rage Fist/turnDamageDealt.
+2. Estadísticas efectivas y callbacks de damageAndUpdate requieren política resuelta; falla atómicamente ante capacidad pendiente. Tag explícito todavía requiere lifecycle, checkpoint y conexión al dispatcher de FirstRunRuntime. No se declara confusión integrada al juego.
+3. Regresiones de expiración/RNG, secuencia seeded y fallo atómico escritas sin ejecutar. Tests y compilación siguen aplazados.

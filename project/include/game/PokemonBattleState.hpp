@@ -517,6 +517,29 @@ bool executePokemonStatusEffectCommand(PokemonBattleState& user, PokemonBattleSt
     uint8_t slot, const PokemonStatusEffectCommandPolicy& policy, PokerogueRngAdapter& sourceRng,
     PokerogueRngAdapter& recipientRng, PokemonStatusEffectMoveEvent& output);
 
+// Pinned src/data/battler-tags.ts ConfusedTag.lapse, PRE_MOVE only.
+// Caller owns tag lifecycle and resolves effective stats/damage callbacks.
+struct PokemonConfusionTagState {
+    uint32_t turns = 0;
+    bool present = false;
+};
+struct PokemonConfusionMovePolicy {
+    bool resolved = false;
+    double effectiveAttack = 0;
+    double effectiveDefense = 0;
+};
+struct PokemonConfusionMoveEvent {
+    bool removed = false;
+    bool activationRolled = false;
+    bool hurtItself = false;
+    bool moveCancelled = false;
+    uint32_t requestedDamage = 0;
+    uint32_t hpLost = 0;
+};
+bool checkPokemonConfusionBeforeMove(PokemonBattleState& actor, PokemonConfusionTagState& tag,
+    const PokemonConfusionMovePolicy& policy, PokerogueRngAdapter& actorRng,
+    PokemonConfusionMoveEvent& output);
+
 struct PokemonStatusConfusionReactionPolicy {
     bool resolved = false; // Callback activation and target.canAddTag(CONFUSED).
     bool abilityActive = false;
