@@ -2654,6 +2654,23 @@ extern "C" int runPokemonBattleStateChecks() {
     if (Pokerogue3DS::checkPokemonStatusBeforeMove(checkStatus, moveStatusPolicy, paraCheckRng, moveStatusEvent) !=
             Pokerogue3DS::PokemonStatusMoveCheckResult::Ok || !moveStatusEvent.cured || checkStatus.present ||
         paraCheckRng.randSeedUint32() != expectedThawRng.randSeedUint32()) return 9008;
+    bool foundSleepReduction = false;
+    for (const auto& profile : PokerogueContent::kStatusDurationAbilityProfiles) {
+        if (!profile.resolved || !profile.sleepReduction) continue;
+        foundSleepReduction = true;
+        moveStatusPolicy = {};
+        moveStatusPolicy.resolved = true;
+        moveStatusPolicy.sleepDurationReduction = profile.sleepReduction;
+        checkStatus = {};
+        checkStatus.present = true;
+        checkStatus.effect = Effect::Sleep;
+        checkStatus.hasSleepTurnsRemaining = true;
+        checkStatus.sleepTurnsRemaining = 2;
+        if (Pokerogue3DS::checkPokemonStatusBeforeMove(checkStatus, moveStatusPolicy, paraCheckRng, moveStatusEvent) !=
+                Pokerogue3DS::PokemonStatusMoveCheckResult::Ok || !moveStatusEvent.cured ||
+            moveStatusEvent.cancelled || checkStatus.present) return 9009;
+    }
+    if (!foundSleepReduction) return 9010;
     PokemonBattleState paralyzedSpeed{};
     paralyzedSpeed.stats[5] = 101;
     paralyzedSpeed.status.present = true;

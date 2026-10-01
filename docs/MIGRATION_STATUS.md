@@ -1427,3 +1427,9 @@
 1. Inspección pinned de MovePhase.checkFreeze/doThawCheck encontró curación demasiado temprana en el resolver. Ahora distingue indirect (cure inmediato sin draws), self-heal cualificado (evento thaw pendiente, sin contador/RNG) y rama de heal posterior al incremento (cure sin draw).
 2. Dispatcher deberá aplicar thaw solo tras superar demás failure checks, incluyendo condición de tipo Fire para Burn Up. No se habilitan moves por asumir resueltas estas condiciones.
 3. Regresiones de las tres ramas escritas, sin ejecutar. Tests/compilación aplazados.
+
+## Chequeos de estados conectados al turno simple
+
+1. executeActiveBattleMove aplica checkPokemonStatusBeforeMove antes del comando/PP; cancelación sleep/freeze/paralysis conserva PP y permite continuar el turno rival. La transacción externa advanceBattleTurn descarta mutaciones si otra fase falla.
+2. Reducción de sueño se obtiene de declaraciones constantes ReduceStatusEffectDurationAbAttr de abilities canónicas; parámetros desconocidos fallan. Source pinned ab-attrs.ts reduce duración en uno. No se habilitan doubles, modos indirectos ni movimientos con bypass/curación de estado en esta ruta.
+3. Catálogo regenerado con hash unchanged; regresión de reducción canónica escrita, sin ejecutar. Residuales, aplicación de estados por move, callbacks/tags completos y UI localizada aún pendientes. Tests/compilación aplazados.

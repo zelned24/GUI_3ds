@@ -2127,6 +2127,39 @@ bool FirstRunRuntime::executeActiveBattleMove(uint8_t userIndex, uint8_t targetI
     if (moveSlot >= user.moveCount || moveSlot >= 4) return false;
     const auto* move = PokerogueContent::findMoveById(user.moves[moveSlot].moveId);
     if (!move || !supportsBaselineBattleMove(move->id)) return false;
+    if (user.status.present && (user.status.effect == PokemonStatusEffect::Sleep ||
+            user.status.effect == PokemonStatusEffect::Freeze || user.status.effect == PokemonStatusEffect::Paralysis)) {
+        // Area attacks visit each target; status checks belong to one MovePhase,
+        // so doubles require the shared action dispatcher before enabling this.
+        if (m_doubleBattle || PokerogueContent::moveHasAttribute(*move, "BypassSleepAttr") ||
+            PokerogueContent::moveHasAttribute(*move, "HealStatusEffectAttr")) {
+            m_battleFeedback = "Status move-use conditions require dispatcher";
+            return false;
+        }
+        PokemonStatusMoveCheckPolicy statusPolicy{};
+        statusPolicy.resolved = true;
+        if (user.status.effect == PokemonStatusEffect::Sleep) {
+            statusPolicy.resolved = false;
+            for (const auto& profile : PokerogueContent::kStatusDurationAbilityProfiles)
+                if (profile.abilityId == user.abilityId) {
+                    statusPolicy.resolved = profile.resolved;
+                    statusPolicy.sleepDurationReduction = profile.sleepReduction;
+                    break;
+                }
+        }
+        // Current gated actor path has no Nightmare/Confused tags or indirect
+        // use modes. Unknown ability conditions fail before publishing the turn.
+        PokemonStatusMoveCheckEvent statusEvent{};
+        if (checkPokemonStatusBeforeMove(user.status, statusPolicy, rng, statusEvent) !=
+                PokemonStatusMoveCheckResult::Ok) {
+            m_battleFeedback = "Status callbacks require dispatcher";
+            return false;
+        }
+        if (statusEvent.cancelled) {
+            m_battleFeedback = "Status prevented the move";
+            return true; // First failure check cancels without consuming PP.
+        }
+    }
     const auto applyMoveHeldHealing = [this](PokemonBattleState& actor) {
         PokemonHealingPolicy policy{};
         policy.resolved = true; // Current gated frontier has no Heal Block/Healing Charms.
