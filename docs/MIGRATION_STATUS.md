@@ -682,3 +682,8 @@
 1. `recalculatePokemonBattleLevel` actualiza únicamente nivel, estadísticas y HP, siguiendo `Pokemon.calculateStats` del snapshot pinned (`src/field/pokemon.ts`). El flujo de EXP de victoria utiliza este helper.
 2. Conserva Unburden, daño acumulado, etapas, opción de pausa de evoluciones y PP actual/máximo. Un Pokémon debilitado permanece con HP cero; entradas inválidas no publican cambios.
 3. Regresiones 522–524 escritas, pendientes de ejecución. Rare Candy sigue pendiente de amistad y de su flujo de decisiones; no se trata como una recompensa soportada.
+
+## EXP después de Rare Candy
+
+1. `applyPokemonExperience` acepta niveles superiores al cap de wave y EXP previa inferior al umbral del nivel actual, estados posibles tras `PokemonLevelIncrementModifier.apply`. Replica `PlayerPokemon.addExp` pinned: conserva el nivel y, al alcanzar/superar el cap, fija EXP a `max(umbral del nivel actual, EXP previa)`.
+2. Regresiones 525–526 escritas para esos estados, sin ejecutar. Esto elimina un rechazo incompatible; todavía no habilita Rare Candy sin amistad, progreso de caramelos y decisiones pendientes.

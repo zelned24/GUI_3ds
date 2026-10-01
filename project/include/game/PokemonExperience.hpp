@@ -129,13 +129,10 @@ inline PokemonExperienceResult applyPokemonExperience(
     output = {};
     uint8_t ignoredRate = 0;
     if (!pokemonGrowthRateIndex(growthRate, ignoredRate)) return PokemonExperienceResult::UnknownGrowthRate;
-    if (!currentLevel || currentLevel > 10000 || !levelCap || levelCap > 10000 || currentLevel > levelCap)
+    if (!currentLevel || currentLevel > 10000 || !levelCap || levelCap > 10000)
         return PokemonExperienceResult::InvalidLevel;
 
-    uint32_t currentThreshold = 0;
-    auto status = pokemonTotalExperienceForLevel(growthRate, currentLevel, currentThreshold);
-    if (status != PokemonExperienceResult::Ok) return status;
-    if (currentTotalExperience < currentThreshold) return PokemonExperienceResult::InvalidLevel;
+    auto status = PokemonExperienceResult::Ok;
 
     const uint64_t gainedTotal = static_cast<uint64_t>(currentTotalExperience) + gainedExperience;
     if (gainedTotal > 0xFFFFFFFFull) return PokemonExperienceResult::Overflow;

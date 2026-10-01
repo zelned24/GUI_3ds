@@ -49,6 +49,13 @@ extern "C" int runPokemonBattleStateChecks() {
         Pokerogue3DS::applyPokemonExperience(highLevelSpecies->growthRate, 199, exp199,
             exp200 - exp199, 200, highProgress) != Pokerogue3DS::PokemonExperienceResult::Ok ||
         highProgress.level != 200 || highProgress.totalExperience != exp200) return 462;
+    // Rare Candy can place level above the wave cap with EXP below its threshold.
+    if (Pokerogue3DS::applyPokemonExperience(highLevelSpecies->growthRate, 200, exp199,
+            1, 198, highProgress) != Pokerogue3DS::PokemonExperienceResult::Ok ||
+        highProgress.level != 200 || highProgress.totalExperience != exp200) return 525;
+    if (Pokerogue3DS::applyPokemonExperience(highLevelSpecies->growthRate, 200, exp200 + 7,
+            10, 198, highProgress) != Pokerogue3DS::PokemonExperienceResult::Ok ||
+        highProgress.level != 200 || highProgress.totalExperience != exp200 + 7) return 526;
     highLevelInput.level = 65535;
     const uint16_t previousHp = highLevelActor.hp;
     if (Pokerogue3DS::initializePokemonBattleState(highLevelInput, highLevelActor) !=
