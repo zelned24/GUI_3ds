@@ -3372,6 +3372,22 @@ extern "C" int runPokemonBattleStateChecks() {
                 pendingDefender, 1, immuneHit) || immuneHit.blockedBeforeAccuracy) return 9352;
     }
 
+    PokemonBattleState scoredStatusActor{};
+    scoredStatusActor.hp = scoredStatusActor.maxHp = 100;
+    Pokerogue3DS::PokemonStatusApplicationPolicy scoredStatusPolicy{};
+    scoredStatusPolicy.resolved = scoredStatusPolicy.grounded = scoredStatusPolicy.mistyTerrain = true;
+    double statusAiBenefit = 123;
+    if (!Pokerogue3DS::calculatePokemonStatusEffectAiBenefit(scoredStatusActor, 95, -1, true,
+            scoredStatusPolicy, statusAiBenefit) || statusAiBenefit != -10) return 9360;
+    if (!Pokerogue3DS::calculatePokemonStatusEffectAiBenefit(scoredStatusActor, 95, 25, true,
+            scoredStatusPolicy, statusAiBenefit) || statusAiBenefit != -3) return 9361;
+    scoredStatusActor.status.present = true;
+    scoredStatusActor.status.effect = Effect::Burn;
+    if (!Pokerogue3DS::calculatePokemonStatusEffectAiBenefit(scoredStatusActor, 95, 100, true,
+            scoredStatusPolicy, statusAiBenefit) || statusAiBenefit != 0) return 9362;
+    statusAiBenefit = 123;
+    if (Pokerogue3DS::calculatePokemonStatusEffectAiBenefit(scoredStatusActor, 95, 100, false,
+            scoredStatusPolicy, statusAiBenefit) || statusAiBenefit != 123) return 9363;
     bool foundStatusConfusion = false;
     for (const auto& profile : PokerogueContent::kStatusConfusionAbilityProfiles) {
         if (!profile.resolved || !(profile.statusMask & 2)) continue;

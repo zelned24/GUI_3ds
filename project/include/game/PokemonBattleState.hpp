@@ -458,6 +458,10 @@ inline bool resolvePokemonStatusFlagAbilityImmunity(uint16_t abilityId, uint16_t
     }
     return false;
 }
+bool calculatePokemonStatusEffectAiBenefit(const PokemonBattleState& recipient, uint16_t moveId,
+    int16_t effectiveChance, bool chanceCallbacksResolved,
+    const PokemonStatusApplicationPolicy& application, double& output);
+
 struct PokemonStatusMoveTypeImmunityPolicy {
     bool resolved = false;
     const char* const* originalIfStellarTypes = nullptr;

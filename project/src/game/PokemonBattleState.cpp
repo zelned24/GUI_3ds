@@ -376,6 +376,28 @@ PokemonMoveStatusApplicationResult resolvePokemonMoveStatusApplication(
     return result;
 }
 
+bool calculatePokemonStatusEffectAiBenefit(const PokemonBattleState& recipient, uint16_t moveId,
+    int16_t effectiveChance, bool chanceCallbacksResolved,
+    const PokemonStatusApplicationPolicy& application, double& output) {
+    if (!chanceCallbacksResolved || !application.resolved) return false;
+    const PokerogueContent::MoveStatusEffect* effect = nullptr;
+    for (const auto& row : PokerogueContent::kMoveStatusEffects) {
+        if (row.moveId != moveId) continue;
+        if (effect || !row.parametersResolved || row.effectId > 7) return false;
+        effect = &row;
+    }
+    if (!effect) return false;
+    auto policy = application;
+    policy.ignoreField = true; // Pinned getTargetBenefitScore canSetStatus argument.
+    const auto eligibility = canPokemonSetStatus(recipient.status,
+        static_cast<PokemonStatusEffect>(effect->effectId), policy);
+    if (eligibility == PokemonStatusEligibility::InvalidState ||
+        eligibility == PokemonStatusEligibility::UnsupportedPolicy) return false;
+    output = eligibility == PokemonStatusEligibility::Allowed ?
+        (effectiveChance < 0 ? -10.0 : std::floor(effectiveChance * -0.1)) : 0.0;
+    return true;
+}
+
 bool resolvePokemonStatusMoveTypeImmunity(uint16_t moveId,
     const PokemonStatusMoveTypeImmunityPolicy& policy, bool& output) {
     const auto* move = PokerogueContent::findMoveById(moveId);

@@ -1671,3 +1671,9 @@
 1. composePokemonStatusFlagAbilityHitPolicy resuelve componentes defensores desde perfiles canónicos y bloquea antes de precisión. Conserva output si algún callback está pendiente; el rechazo de tipo no omite consultas de habilidad de getMoveEffectiveness.
 2. Comando de estados consume PP pero no RNG/solicitud de estado ante Overcoat. Activación/suppression y componentes vivos siguen requiriendo proveedor; no declara cobertura completa de MoveImmunityAbAttr ni reflection.
 3. Regresiones de Overcoat real atravesando comando y callback pendiente escritas sin ejecutar. Tests/compilación aplazados.
+
+## Beneficio canónico de estados para IA
+
+1. calculatePokemonStatusEffectAiBenefit porta StatusEffectAttr.getTargetBenefitScore: chance negativa -10, otra floor(chance * -0.1), cero cuando canSetStatus rechaza. Consulta ignoreField=true sin RNG ni mutación, conservando otras inmunidades.
+2. Probabilidad y policy necesitan callbacks resueltos; múltiples atributos/datos desconocidos no reciben puntuación ficticia. Convención de signo del selector y conexión al runtime siguen pendientes.
+3. Regresiones Hypnosis de chance negativa/fraccional, estado existente, Misty ignorado y callback pendiente escritas sin ejecutar. Tests/compilación aplazados.
