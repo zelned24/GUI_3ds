@@ -983,7 +983,8 @@ static int checkWave200FinalBossAndGameClear() {
         rewardActors[member].moves[0].pp = member ? 2 : 20;
         rewardParty[member] = &rewardActors[member];
     }
-    InitialClassicRewardWeights partyWeights(rewardActors[0], false, rewardParty, 6);
+    uint16_t partyBalls[5] = {98, 99, 0, 0, 0};
+    InitialClassicRewardWeights partyWeights(rewardActors[0], false, rewardParty, 6, partyBalls, 5);
     const auto weightMatches = [&](const char* id, uint32_t expected) {
         for (const auto& entry : PokerogueContent::kModifierPoolEntries) {
             if (std::strcmp(entry.pool, "modifierPool") || std::strcmp(entry.itemId, id)) continue;
@@ -1003,6 +1004,12 @@ static int checkWave200FinalBossAndGameClear() {
         !weightMatches("SACRED_ASH", 1) || !weightMatches("POTION", 6)) return 572;
     rewardActors[3].hp = 50;
     if (!weightMatches("SACRED_ASH", 0)) return 573;
+    if (!weightMatches("POKEBALL", 6) || !weightMatches("GREAT_BALL", 0)) return 575;
+    partyBalls[0] = kClassicPokeballLimit;
+    partyBalls[1] = kClassicPokeballLimit - 1;
+    if (!weightMatches("POKEBALL", 0) || !weightMatches("GREAT_BALL", 6)) return 576;
+    partyBalls[0] = kClassicPokeballLimit + 1;
+    if (weightMatches("POKEBALL", 6) || weightMatches("POKEBALL", 0)) return 577;
     rewardActors[5].hp = 201;
     if (weightMatches("POTION", 9)) return 574;
     return 0;

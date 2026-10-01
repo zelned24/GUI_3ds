@@ -214,6 +214,7 @@
 {"from":"project/include/game/PokerogueEncounterResolver.hpp","to":"project/include/game/PokerogueRngAdapter.hpp","kind":"include"},
 {"from":"project/include/game/PokerogueModifierReward.hpp","to":"project/generated/include/content/PokerogueRuntimeContent.hpp","kind":"include"},
 {"from":"project/include/game/PokerogueModifierReward.hpp","to":"project/include/game/PokemonBattleState.hpp","kind":"include"},
+{"from":"project/include/game/PokerogueModifierReward.hpp","to":"project/include/game/PokemonCapturePhase.hpp","kind":"include"},
 {"from":"project/include/game/PokerogueModifierReward.hpp","to":"project/include/game/PokemonHealingEffect.hpp","kind":"include"},
 {"from":"project/include/game/PokerogueModifierReward.hpp","to":"project/include/game/PokerogueRngAdapter.hpp","kind":"include"},
 {"from":"project/include/game/PokerogueTrainerPartyLevels.hpp","to":"project/generated/include/content/PokerogueRuntimeContent.hpp","kind":"include"},

@@ -3,6 +3,7 @@
 #include "content/PokerogueRuntimeContent.hpp"
 #include "game/PokemonBattleState.hpp"
 #include "game/PokemonHealingEffect.hpp"
+#include "game/PokemonCapturePhase.hpp"
 #include <cmath>
 #include "game/PokerogueRngAdapter.hpp"
 #include <cstdint>
@@ -694,8 +695,9 @@ public:
                                 bool hasLearnableLevelMoves)
         : m_starter(starter), m_hasLearnableLevelMoves(hasLearnableLevelMoves) {}
     InitialClassicRewardWeights(const PokemonBattleState& starter, bool hasLearnableLevelMoves,
-        const PokemonBattleState* const* party, uint8_t count)
-        : m_starter(starter), m_hasLearnableLevelMoves(hasLearnableLevelMoves), m_party(party), m_partyCount(count) {}
+        const PokemonBattleState* const* party, uint8_t count, const uint16_t* balls = nullptr, size_t ballCount = 0)
+        : m_starter(starter), m_hasLearnableLevelMoves(hasLearnableLevelMoves), m_party(party), m_partyCount(count),
+          m_balls(balls), m_ballCount(ballCount) {}
 
 
     bool weightFor(const PokerogueContent::ModifierPoolEntry& entry,
@@ -712,7 +714,7 @@ public:
         if (std::strcmp(entry.tier, "GREAT") == 0)
             return greatWeight(entry, weight);
         if (std::strcmp(entry.tier, "COMMON") != 0) return false;
-        if (std::strcmp(entry.itemId, "POKEBALL") == 0) { weight = 6; return true; }
+        if (std::strcmp(entry.itemId, "POKEBALL") == 0) return ballWeight(0, 6, weight);
         const bool living = m_starter.hp != 0;
         const uint32_t missingHp = m_starter.maxHp - m_starter.hp;
         if (std::strcmp(entry.itemId, "POTION") == 0) {
@@ -743,6 +745,13 @@ public:
     }
 
 private:
+    bool ballWeight(size_t index, uint32_t base, uint32_t& weight) const {
+        // Legacy single-starter fixture constructor has no inventory; production supplies it.
+        if (!m_balls) { weight = base; return true; }
+        if (index >= m_ballCount || m_balls[index] > kClassicPokeballLimit) return false;
+        weight = m_balls[index] >= kClassicPokeballLimit ? 0 : base;
+        return true;
+    }
     // Pinned init-modifier-pools.ts: count eligible party members, capped at three.
     // PP weights currently assume no Leppa berries (unsupported held frontier).
     bool partyRecoveryWeight(const char* id, uint32_t& weight, bool& handled) const {
@@ -796,7 +805,7 @@ private:
         const char* id = entry.itemId;
         const bool living = m_starter.hp != 0;
         const uint32_t missingHp = m_starter.maxHp - m_starter.hp;
-        if (std::strcmp(id, "GREAT_BALL") == 0) { weight = 6; return true; }
+        if (std::strcmp(id, "GREAT_BALL") == 0) return ballWeight(1, 6, weight);
         // The supported first battle has one living starter and no status,
         // held items, fusion, lures, rerolls, or existing modifiers.
         if (std::strcmp(id, "FULL_HEAL") == 0 ||
@@ -850,6 +859,8 @@ private:
     bool m_hasLearnableLevelMoves;
     const PokemonBattleState* const* m_party = nullptr; // Borrowed for synchronous reward rolls.
     uint8_t m_partyCount = 0;
+    const uint16_t* m_balls = nullptr;
+    size_t m_ballCount = 0;
 };
 
 inline bool hasPlayerModifierTier(uint8_t tier) {

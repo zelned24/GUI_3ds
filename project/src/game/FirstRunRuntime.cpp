@@ -786,7 +786,8 @@ bool FirstRunRuntime::generateVictoryRewards() {
     for (uint8_t member = 0; member < m_context.playerPartyCount; ++member)
         party[member] = member == m_context.activePlayerPartyIndex ? &m_context.player.battleState
             : &m_context.playerParty[member].battleState;
-    InitialClassicRewardWeights weights(m_context.player.battleState, true, party, m_context.playerPartyCount);
+    InitialClassicRewardWeights weights(m_context.player.battleState, true, party, m_context.playerPartyCount,
+        m_pokeballs.data(), 5);
     for (uint8_t slot = 0; slot < 3; ++slot) {
         ModifierRewardRoll roll{};
         if (rollPlayerModifierReward(rewardRng, 0, weights, roll) == ModifierRewardRollResult::Ok &&

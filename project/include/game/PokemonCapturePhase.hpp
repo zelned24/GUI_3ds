@@ -10,6 +10,9 @@
 
 namespace Pokerogue3DS {
 
+// Pinned src/data/pokeball.ts, MAX_PER_TYPE_POKEBALLS (Classic rule, not engine capacity).
+inline constexpr uint16_t kClassicPokeballLimit = 99;
+
 enum class PokeballType : uint8_t {
     Pokeball = 0,
     GreatBall = 1,
@@ -36,9 +39,9 @@ inline bool applyPokeballReward(const PokerogueContent::PokeballRewardProfile& p
     else if (!std::strcmp(profile.ballSymbol, "MASTER_BALL")) type = PokeballType::MasterBall;
     else return false;
     const size_t index = static_cast<size_t>(type);
-    if (index >= count || counts[index] > 99) return false;
+    if (index >= count || counts[index] > kClassicPokeballLimit) return false;
     const uint32_t next = counts[index] + profile.count;
-    counts[index] = static_cast<uint16_t>(next > 99 ? 99 : next);
+    counts[index] = static_cast<uint16_t>(next > kClassicPokeballLimit ? kClassicPokeballLimit : next);
     return true;
 }
 

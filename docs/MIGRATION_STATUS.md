@@ -911,3 +911,9 @@
 2. Revive pesa nueve por caído hasta tres; Max Revive tres por caído hasta tres; Sacred Ash se habilita desde ceil(tamaño/2) caídos. Fuente inspeccionada: `src/modifier/init-modifier-pools.ts`, `initCommonModifierPool` / `initGreatModifierPool`.
 3. Regresiones 569–574 escritas con entradas canónicas reales, activo sano/reservas heridas, PP bajos, cap de tres, revives y estado inválido. Sin ejecutar.
 4. Pesos de PP asumen ausencia de Leppa, coherente con el inventario held actualmente soportado. Status, lures existentes, economía, otras familias y supresión por límite de stacks siguen pendientes; el provider no es aún el pool upstream completo.
+
+## Pool e inventario de balls — pendiente de ejecución
+
+1. Pesos Common de Poké Ball y Great de Great Ball leen inventario real: peso cero al máximo Classic, seis por debajo; inventario superior al límite falla explícitamente.
+2. Límite 99 compartido con la aplicación del reward desde `src/data/pokeball.ts`, `MAX_PER_TYPE_POKEBALLS`; decisión de pool desde `src/modifier/init-modifier-pools.ts`, `hasMaximumBalls`. No es capacidad máxima del engine ni regla aplicada a otros modos.
+3. Regresiones 575–577 escritas para 98/99, independencia por tipo e inventario inválido. Sin ejecutar. Pesos completos Ultra/Rogue/Master siguen pendientes junto a sus otros modificadores.
