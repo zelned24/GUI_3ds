@@ -1658,6 +1658,13 @@ bool FirstRunRuntime::executeActiveBattleMove(uint8_t userIndex, uint8_t targetI
         m_battleFeedback = "Boss damage callbacks require dispatcher";
         return false;
     }
+    const auto applyMoveHeldHealing = [this](PokemonBattleState& actor) {
+        PokemonHealingPolicy policy{};
+        policy.resolved = true; // Current gated frontier has no Heal Block/Healing Charms.
+        PokemonHealingEvent event{};
+        return applyHeldMoveHealingPhase(m_heldModifiers.data(), m_heldModifierCount,
+            actor, actor.hp != 0, policy, event) == HeldHealingResult::Resolved;
+    };
     if (damageRecoilProfile(move->id)) {
         auto nextUser = user;
         auto nextOpponent = opponent;
@@ -1672,6 +1679,7 @@ bool FirstRunRuntime::executeActiveBattleMove(uint8_t userIndex, uint8_t targetI
         if (applyPokemonRecoil(nextUser, move->id, attack.damageApplied,
             attack.damageRoll.hit && !attack.weatherCancelled, policy, recoil) != PokemonRecoilResult::Ok)
             return false;
+        if (!applyMoveHeldHealing(nextUser)) return false;
         user = nextUser;
         opponent = nextOpponent;
         rng = nextRng;
@@ -1700,6 +1708,7 @@ bool FirstRunRuntime::executeActiveBattleMove(uint8_t userIndex, uint8_t targetI
         if (attack.damageRoll.hit && !attack.weatherCancelled && attack.damageApplied &&
             applyPokemonDamageDrain(nextUser, move->id, attack.damageApplied, policy, event) !=
                 PokemonHealingResult::Ok) return false;
+        if (!applyMoveHeldHealing(nextUser)) return false;
         user = nextUser;
         opponent = nextOpponent;
         rng = nextRng;
@@ -1712,11 +1721,18 @@ bool FirstRunRuntime::executeActiveBattleMove(uint8_t userIndex, uint8_t targetI
             attack.damageRoll.hit ? "Attack hit" : "Attack missed";
         return true;
     }
+    auto nextUser = user;
+    auto nextOpponent = opponent;
+    auto nextRng = rng;
     PokemonMoveActionResult result{};
-    if (useStandardPokemonMove(user, opponent, moveSlot, false, rng, result,
+    if (useStandardPokemonMove(nextUser, nextOpponent, moveSlot, false, nextRng, result,
             &weather, &critical, &hit, &pp, targetIsBoss ? &nextBossState : nullptr,
             targetIsBoss ? &bossPolicy : nullptr,
             targetIsBoss ? &nextGlobalRng : nullptr) != PokemonMoveActionStatus::Ok) return false;
+    if (!applyMoveHeldHealing(nextUser)) return false;
+    user = nextUser;
+    opponent = nextOpponent;
+    rng = nextRng;
     if (targetIsBoss) {
         *targetBossState = nextBossState;
         m_globalRng = nextGlobalRng;

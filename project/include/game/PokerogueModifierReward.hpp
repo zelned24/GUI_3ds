@@ -564,9 +564,10 @@ inline HeldHealingResult applyHeldHealingModifier(const NativeHeldModifierInstan
 
 // Caller validates the full effect set separately; this phase visits only
 // TurnHealModifier records in inventory order. Other classes have other phases.
-inline HeldHealingResult applyHeldTurnHealingPhase(const NativeHeldModifierInstance* records,
+enum class HeldHealingPhase : uint8_t { TurnEnd, MoveEnd };
+inline HeldHealingResult applyHeldHealingPhase(const NativeHeldModifierInstance* records,
     size_t count, PokemonBattleState& actor, bool active, const PokemonHealingPolicy& policy,
-    PokemonHealingEvent& output) {
+    PokemonHealingEvent& output, HeldHealingPhase phase) {
     if (count && !records) return HeldHealingResult::InvalidState;
     auto nextActor = actor;
     PokemonHealingEvent aggregate{};
@@ -575,9 +576,10 @@ inline HeldHealingResult applyHeldTurnHealingPhase(const NativeHeldModifierInsta
         if (!validateHeldModifierInstance(records[i])) return HeldHealingResult::InvalidState;
         if (records[i].ownerPokemonId != actor.pokemonId) continue;
         const auto* profile = heldModifierClassProfile(records[i]);
-        if (!profile || std::strcmp(profile->matchingClass, "TurnHealModifier")) continue;
+        const char* expectedClass = phase == HeldHealingPhase::TurnEnd ? "TurnHealModifier" : "HitHealModifier";
+        if (!profile || std::strcmp(profile->matchingClass, expectedClass)) continue;
         PokemonHealingEvent event{};
-        const auto result = applyHeldHealingModifier(records[i], nextActor, 0, active, policy, event);
+        const auto result = applyHeldHealingModifier(records[i], nextActor, actor.turnDamageDealt, active, policy, event);
         if (result != HeldHealingResult::Resolved) return result;
         aggregate.blocked |= event.blocked;
         aggregate.showAnimation |= event.showAnimation;
@@ -587,6 +589,17 @@ inline HeldHealingResult applyHeldTurnHealingPhase(const NativeHeldModifierInsta
     actor = nextActor;
     output = aggregate;
     return HeldHealingResult::Resolved;
+}
+
+inline HeldHealingResult applyHeldTurnHealingPhase(const NativeHeldModifierInstance* records,
+    size_t count, PokemonBattleState& actor, bool active, const PokemonHealingPolicy& policy,
+    PokemonHealingEvent& output) {
+    return applyHeldHealingPhase(records, count, actor, active, policy, output, HeldHealingPhase::TurnEnd);
+}
+inline HeldHealingResult applyHeldMoveHealingPhase(const NativeHeldModifierInstance* records,
+    size_t count, PokemonBattleState& actor, bool active, const PokemonHealingPolicy& policy,
+    PokemonHealingEvent& output) {
+    return applyHeldHealingPhase(records, count, actor, active, policy, output, HeldHealingPhase::MoveEnd);
 }
 
 enum class ModifierRewardRollResult : uint8_t {

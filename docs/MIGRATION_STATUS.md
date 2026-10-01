@@ -595,3 +595,8 @@
 
 1. finishBattleTurn ejecuta fase TurnHealModifier para actores activos fuera de interlude, antes de limpiar turnData. Fase conserva orden de inventario y prepara actor en copia: error posterior no publica curacion parcial. Politica baseline sin tags/charms solo corresponde al frontier actual.
 2. Regresiones 431-432 escritas para filtrar Shell Bell y fallo atomico. El bloqueo de comandos con inventario sigue activo hasta dispatcher completo: conexion no demuestra jugabilidad con items. Shell Bell pertenece al fin de MoveEffectPhase, no a TurnEndPhase; aun pendiente. Tests/compilacion aplazados.
+
+## Shell Bell al final del movimiento
+
+1. Fase compartida de curacion filtra HitHealModifier al fin del movimiento; runtime la conecta en ataques normales, recoil y drain antes de commit de actores/RNG/boss. Usa turnDamageDealt acumulado y conserva el contador hasta TurnEnd.
+2. Regresion 433 escrita; tests/compilacion aplazados. Inventario sigue bloqueado hasta dispatcher completo; status/multihit y politica de tags/charms pendientes.
