@@ -1365,3 +1365,8 @@
 1. checkPokemonStatusBeforeMove porta actor/RNG de MovePhase.checkSleep/checkFreeze/checkPara: sleep decrementa contador y aplica reducción resuelta, indirect despierta, bypass no cancela; freeze consume randBattleSeedInt(4) antes de comprobar expiración salvo movimiento de curación inmediata; paralysis usa randBattleSeedInt(8), no probabilidad inventada de generaciones anteriores.
 2. Política requiere atributos y modo de uso resueltos. Actor, RNG y evento se publican conjuntamente; overflow/metadata inválida no mutan. Overrides de debug no se exponen como regla de producción.
 3. Resolver todavía no conectado al dispatcher real; cola/cancelación/PP/mensajes y estado durable siguen pendientes. Tests/compilación aplazados.
+
+## Regresiones de chequeo previo de estados
+
+1. Harness comprueba sleep bloqueado/curado sin draws, bypass sleep con contador real, indirect wake, freeze expirado que aún consume randSeedInt(4), y paralysis con randSeedInt(8) sin incrementar toxicTurnCount.
+2. Compara siguiente uint32 del stream esperado y real para detectar draws omitidos/adicionales; policy no resuelta conserva estado. Pruebas escritas/registradas, sin ejecutar. Conexión al turno y save continúa pendiente; tests/compilación aplazados.

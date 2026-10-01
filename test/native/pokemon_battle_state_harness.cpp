@@ -2525,5 +2525,51 @@ extern "C" int runPokemonBattleStateChecks() {
     if (Pokerogue3DS::obtainPokemonStatus(obtainActor, Effect::Freeze, statusPolicy, true, obtainRng) !=
             Pokerogue3DS::PokemonStatusObtainResult::Applied || obtainActor.status.freezeTurnsRemaining != 3 ||
         obtainActor.status.sleepTurnsRemaining || !obtainActor.status.hasSleepTurnsRemaining) return 591;
+    Pokerogue3DS::PokemonStatusMoveCheckPolicy moveStatusPolicy{};
+    Pokerogue3DS::PokemonStatusMoveCheckEvent moveStatusEvent{};
+    Pokerogue3DS::PokemonStatusState checkStatus{};
+    checkStatus.present = true;
+    checkStatus.effect = Effect::Sleep;
+    checkStatus.hasSleepTurnsRemaining = true;
+    checkStatus.sleepTurnsRemaining = 2;
+    Pokerogue3DS::PokerogueRngAdapter checkRng, unchangedCheckRng;
+    if (Pokerogue3DS::checkPokemonStatusBeforeMove(checkStatus, moveStatusPolicy, checkRng, moveStatusEvent) !=
+            Pokerogue3DS::PokemonStatusMoveCheckResult::UnsupportedPolicy || checkStatus.sleepTurnsRemaining != 2) return 592;
+    moveStatusPolicy.resolved = true;
+    if (Pokerogue3DS::checkPokemonStatusBeforeMove(checkStatus, moveStatusPolicy, checkRng, moveStatusEvent) !=
+            Pokerogue3DS::PokemonStatusMoveCheckResult::Ok || !moveStatusEvent.cancelled || moveStatusEvent.cured ||
+        checkStatus.sleepTurnsRemaining != 1 || checkStatus.toxicTurnCount != 1) return 593;
+    if (Pokerogue3DS::checkPokemonStatusBeforeMove(checkStatus, moveStatusPolicy, checkRng, moveStatusEvent) !=
+            Pokerogue3DS::PokemonStatusMoveCheckResult::Ok || moveStatusEvent.cancelled || !moveStatusEvent.cured ||
+        checkStatus.present || checkRng.randSeedUint32() != unchangedCheckRng.randSeedUint32()) return 594;
+    checkStatus = {};
+    checkStatus.present = true;
+    checkStatus.effect = Effect::Freeze;
+    checkStatus.hasFreezeTurnsRemaining = true;
+    checkStatus.freezeTurnsRemaining = 1;
+    Pokerogue3DS::PokerogueRngAdapter freezeCheckRng, expectedFreezeCheckRng;
+    expectedFreezeCheckRng.randSeedInt(4); // Draw still occurs on guaranteed expiry.
+    if (Pokerogue3DS::checkPokemonStatusBeforeMove(checkStatus, moveStatusPolicy, freezeCheckRng, moveStatusEvent) !=
+            Pokerogue3DS::PokemonStatusMoveCheckResult::Ok || !moveStatusEvent.cured || checkStatus.present ||
+        freezeCheckRng.randSeedUint32() != expectedFreezeCheckRng.randSeedUint32()) return 595;
+    checkStatus = {};
+    checkStatus.present = true;
+    checkStatus.effect = Effect::Paralysis;
+    Pokerogue3DS::PokerogueRngAdapter paraCheckRng, expectedParaCheckRng;
+    const bool expectedCancelled = expectedParaCheckRng.randSeedInt(8) == 0;
+    if (Pokerogue3DS::checkPokemonStatusBeforeMove(checkStatus, moveStatusPolicy, paraCheckRng, moveStatusEvent) !=
+            Pokerogue3DS::PokemonStatusMoveCheckResult::Ok || moveStatusEvent.cancelled != expectedCancelled ||
+        checkStatus.toxicTurnCount || !checkStatus.present ||
+        paraCheckRng.randSeedUint32() != expectedParaCheckRng.randSeedUint32()) return 596;
+    checkStatus.effect = Effect::Sleep;
+    checkStatus.hasSleepTurnsRemaining = true;
+    checkStatus.sleepTurnsRemaining = 3;
+    moveStatusPolicy.bypassSleep = true;
+    if (Pokerogue3DS::checkPokemonStatusBeforeMove(checkStatus, moveStatusPolicy, paraCheckRng, moveStatusEvent) !=
+            Pokerogue3DS::PokemonStatusMoveCheckResult::Ok || moveStatusEvent.cancelled ||
+        checkStatus.sleepTurnsRemaining != 2 || !checkStatus.present) return 597;
+    moveStatusPolicy.indirectSleepWake = true;
+    if (Pokerogue3DS::checkPokemonStatusBeforeMove(checkStatus, moveStatusPolicy, paraCheckRng, moveStatusEvent) !=
+            Pokerogue3DS::PokemonStatusMoveCheckResult::Ok || !moveStatusEvent.cured || checkStatus.present) return 598;
     return 0;
 }
