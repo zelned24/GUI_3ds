@@ -44,6 +44,52 @@ PokemonStatusMoveCheckResult checkPokemonStatusBeforeMove(PokemonStatusState& st
     return PokemonStatusMoveCheckResult::Ok;
 }
 
+PokemonMoveStatusApplicationResult resolvePokemonMoveStatusApplication(
+    const PokemonBattleState& recipient, uint16_t moveId, int16_t effectiveChance,
+    bool chanceCallbacksResolved, const PokemonStatusApplicationPolicy& policy,
+    PokerogueRngAdapter& userRng, PokemonMoveStatusApplicationEvent& output) {
+    if (!pokemonStatusStateValid(recipient.status) || recipient.hp > recipient.maxHp)
+        return PokemonMoveStatusApplicationResult::InvalidState;
+    if (!chanceCallbacksResolved || !policy.resolved)
+        return PokemonMoveStatusApplicationResult::UnresolvedPolicy;
+    const auto* move = PokerogueContent::findMoveById(moveId);
+    if (!move) return PokemonMoveStatusApplicationResult::UnsupportedMove;
+    const PokerogueContent::MoveStatusEffect* declaration = nullptr;
+    for (const auto& row : PokerogueContent::kMoveStatusEffects) {
+        if (row.moveId != moveId) continue;
+        if (declaration || !row.parametersResolved || row.effectId > 7)
+            return PokemonMoveStatusApplicationResult::UnsupportedMove;
+        declaration = &row;
+    }
+    if (!declaration) return PokemonMoveStatusApplicationResult::UnsupportedMove;
+    auto nextRng = userRng;
+    PokemonMoveStatusApplicationEvent event{};
+    event.effect = static_cast<PokemonStatusEffect>(declaration->effectId);
+    event.selfTarget = declaration->selfTarget;
+    event.quiet = move->category != PokerogueContent::MoveStatus;
+    bool chancePassed = effectiveChance < 0 || effectiveChance == 100;
+    if (!chancePassed) {
+        event.chanceRolled = true;
+        event.chanceRoll = static_cast<uint8_t>(nextRng.randSeedInt(100));
+        chancePassed = event.chanceRoll < effectiveChance;
+    }
+    auto result = PokemonMoveStatusApplicationResult::ChanceFailed;
+    if (chancePassed) {
+        event.eligibility = canPokemonSetStatus(recipient.status, event.effect, policy);
+        if (event.eligibility != PokemonStatusEligibility::Allowed)
+            result = PokemonMoveStatusApplicationResult::Ineligible;
+        else if (!recipient.hp && event.effect != PokemonStatusEffect::Faint)
+            result = PokemonMoveStatusApplicationResult::Fainted;
+        else {
+            event.requestObtainStatusPhase = true;
+            result = PokemonMoveStatusApplicationResult::Requested;
+        }
+    }
+    userRng = nextRng;
+    output = event;
+    return result;
+}
+
 PokemonStatusObtainResult obtainPokemonStatus(PokemonBattleState& actor, PokemonStatusEffect effect,
     const PokemonStatusApplicationPolicy& policy, bool reactionsResolved, PokerogueRngAdapter& rng,
     bool explicitSleepDuration, uint32_t sleepDuration) {

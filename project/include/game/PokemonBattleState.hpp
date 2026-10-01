@@ -310,6 +310,25 @@ PokemonStatusObtainResult obtainPokemonStatus(PokemonBattleState& actor, Pokemon
     const PokemonStatusApplicationPolicy& policy, bool reactionsResolved, PokerogueRngAdapter& rng,
     bool explicitSleepDuration = false, uint32_t sleepDuration = 0);
 
+enum class PokemonMoveStatusApplicationResult : uint8_t {
+    Requested, ChanceFailed, Ineligible, Fainted, UnsupportedMove, UnresolvedPolicy, InvalidState
+};
+struct PokemonMoveStatusApplicationEvent {
+    PokemonStatusEffect effect = PokemonStatusEffect::None;
+    PokemonStatusEligibility eligibility = PokemonStatusEligibility::Allowed;
+    bool selfTarget = false;
+    bool quiet = false;
+    bool chanceRolled = false;
+    uint8_t chanceRoll = 0;
+    bool requestObtainStatusPhase = false;
+};
+// StatusEffectAttr.apply only: caller has resolved hit and effective move chance.
+// Queuing/ObtainStatusEffectPhase belongs to the subsequent dispatcher step.
+PokemonMoveStatusApplicationResult resolvePokemonMoveStatusApplication(
+    const PokemonBattleState& recipient, uint16_t moveId, int16_t effectiveChance,
+    bool chanceCallbacksResolved, const PokemonStatusApplicationPolicy& policy,
+    PokerogueRngAdapter& userRng, PokemonMoveStatusApplicationEvent& output);
+
 struct PokemonStatusMoveCheckPolicy {
     bool resolved = false;
     bool bypassSleep = false;

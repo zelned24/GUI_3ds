@@ -2811,5 +2811,43 @@ extern "C" int runPokemonBattleStateChecks() {
                 Pokerogue3DS::PokemonHealingResult::UnresolvedPolicy || actor.hp != 100) return 9026;
     }
     if (!foundStatusHealing) return 9027;
+    PokemonBattleState statusRecipient{};
+    statusRecipient.hp = statusRecipient.maxHp = 100;
+    Pokerogue3DS::PokemonStatusApplicationPolicy applicationPolicy{};
+    applicationPolicy.resolved = true;
+    applicationPolicy.hasSource = true;
+    Pokerogue3DS::PokemonMoveStatusApplicationEvent applicationEvent{};
+    PokerogueRngAdapter statusApplicationRng;
+    statusApplicationRng.sow(damageSeed, sizeof(damageSeed) / sizeof(damageSeed[0]));
+    auto expectedApplicationRng = statusApplicationRng;
+    if (Pokerogue3DS::resolvePokemonMoveStatusApplication(statusRecipient, 86, 100, true,
+            applicationPolicy, statusApplicationRng, applicationEvent) !=
+                Pokerogue3DS::PokemonMoveStatusApplicationResult::Requested ||
+        applicationEvent.effect != Effect::Paralysis || applicationEvent.quiet ||
+        applicationEvent.chanceRolled || !applicationEvent.requestObtainStatusPhase ||
+        statusRecipient.status.present ||
+        statusApplicationRng.randSeedUint32() != expectedApplicationRng.randSeedUint32()) return 9030;
+    applicationPolicy.electricType = true;
+    expectedApplicationRng = statusApplicationRng;
+    const uint8_t expectedStatusChanceRoll = static_cast<uint8_t>(expectedApplicationRng.randSeedInt(100));
+    if (Pokerogue3DS::resolvePokemonMoveStatusApplication(statusRecipient, 86, 101, true,
+            applicationPolicy, statusApplicationRng, applicationEvent) !=
+                Pokerogue3DS::PokemonMoveStatusApplicationResult::Ineligible ||
+        !applicationEvent.chanceRolled || applicationEvent.chanceRoll != expectedStatusChanceRoll ||
+        applicationEvent.eligibility != Pokerogue3DS::PokemonStatusEligibility::ElectricType ||
+        applicationEvent.requestObtainStatusPhase ||
+        statusApplicationRng.randSeedUint32() != expectedApplicationRng.randSeedUint32()) return 9031;
+    applicationPolicy.electricType = false;
+    if (Pokerogue3DS::resolvePokemonMoveStatusApplication(statusRecipient, 86, 0, true,
+            applicationPolicy, statusApplicationRng, applicationEvent) !=
+                Pokerogue3DS::PokemonMoveStatusApplicationResult::ChanceFailed ||
+        applicationEvent.requestObtainStatusPhase) return 9032;
+    expectedApplicationRng = statusApplicationRng;
+    applicationEvent.chanceRoll = 123;
+    if (Pokerogue3DS::resolvePokemonMoveStatusApplication(statusRecipient, 86, 100, false,
+            applicationPolicy, statusApplicationRng, applicationEvent) !=
+                Pokerogue3DS::PokemonMoveStatusApplicationResult::UnresolvedPolicy ||
+        applicationEvent.chanceRoll != 123 ||
+        statusApplicationRng.randSeedUint32() != expectedApplicationRng.randSeedUint32()) return 9033;
     return 0;
 }

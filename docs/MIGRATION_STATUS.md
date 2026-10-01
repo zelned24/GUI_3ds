@@ -1451,3 +1451,9 @@
 1. PostTurnStatusHealAbAttr deriva máscara poison/toxic del catálogo y cura toDmgValue(maxHP/8) mediante política explícita de Heal Block/multiplicador. No cura status ni modifica counters; respeta HP máximo/faint.
 2. finishBattleTurn aplica este efecto después de held turn healing y antes del reset de turno; interlude lo omite. Poison Heal deja de ser capability pendiente en este dominio porque ahora están ambos atributos de bloqueo/curación. No declara completa su interacción con pasivas/suppression ni doubles.
 3. Regresiones de bloqueo toxic + curación, cap, Heal Block, efecto no elegible y policy desconocida escritas sin ejecutar. Catálogo regenerado conservando hash. Tests/compilación aplazados.
+
+## Solicitud de estados por movimiento
+
+1. resolvePokemonMoveStatusApplication porta StatusEffectAttr.apply: probabilidad antes de elegibilidad, draw solo cuando chance no es negativa ni exactamente 100, quiet para daño y solicitud de ObtainStatusEffectPhase. No muta actor ni aplica duración antes de la fase correspondiente.
+2. ID de status se deriva del símbolo pinned en tablas generadas; parámetros desconocidos/múltiples atributos no se simulan. Chance/eligibilidad requieren políticas resueltas; RNG/output se conservan ante error de capacidad.
+3. Regresiones con Thunder Wave real, inmunidad Electric posterior al draw, chance cero y política desconocida escritas sin ejecutar. Conexión a hit/PP/cola y políticas completas de habilidad/campo siguen pendientes; tests/compilación aplazados.
