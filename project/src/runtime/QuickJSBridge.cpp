@@ -75,7 +75,7 @@ bool QuickJSBridge::init(Renderer2D& renderer) {
         {"_3ds_beginTop", beginTop, 0}, {"_3ds_beginBottom", beginBottom, 0},
         {"_3ds_clear", clear, 1}, {"_3ds_drawImage", drawImage, 6},
         {"_3ds_resetRun", resetRun, 0}, {"_3ds_cycleStarter", cycleStarterBinding, 1},
-        {"_3ds_getStarterName", getStarterName, 0}, {"_3ds_getMoveName", getMoveName, 1},
+        {"_3ds_drawStarter", drawStarter, 0}, {"_3ds_getStarterName", getStarterName, 0}, {"_3ds_getMoveName", getMoveName, 1},
         {"_3ds_getPresentationInfo", getPresentationInfo, 0},
         {"_3ds_toggleStarterTeam", toggleStarterTeam, 0}, {"_3ds_purchaseStarterCost", purchaseStarterCost, 0}, {"_3ds_saveNative", saveNative, 0}, {"_3ds_loadNative", loadNative, 0},
         {"_3ds_exportNative", exportNative, 0}, {"_3ds_importNative", importNative, 0},
@@ -178,6 +178,24 @@ void QuickJSBridge::setPokemonPresentation(const ResolvedPokemon& player,
     m_player = &player;
     m_enemy = &enemy;
     m_animationTimeMs = animationTimeMs; // Visual time only, never game/RNG state.
+}
+JSValue QuickJSBridge::drawStarter(JSContext* ctx, JSValueConst, int argc, JSValueConst*) {
+    auto* bridge = static_cast<QuickJSBridge*>(JS_GetContextOpaque(ctx));
+    if (!bridge || !bridge->m_game || !bridge->m_renderer || !bridge->m_inTick ||
+        bridge->m_screenWidth != 400 || argc || bridge->m_game->runStarted()) return JS_FALSE;
+    const auto* species = PokerogueContent::findSpeciesByDex(bridge->m_game->selectedSetupStarterDex());
+    if (!species || !bridge->m_game->starterUnlocked(species->dex)) return JS_FALSE;
+    // Render identity only: no actor construction, PID, moves or RNG draws.
+    ResolvedPokemon preview{};
+    preview.dex = species->dex;
+    preview.speciesId = species->id;
+    preview.formId = species->firstFormId;
+    preview.assetSourcePath = species->assetSourcePath;
+    // Setup does not display the enemy. Reuse its front cache instead of
+    // retaining an extra texture page on Old 3DS; battle reloads its own key.
+    bridge->m_presenterEnemy.draw(*bridge->m_renderer, preview, false, 140, 65, 120, 120,
+        bridge->m_animationTimeMs);
+    return JS_TRUE;
 }
 JSValue QuickJSBridge::drawPokemon(JSContext* ctx, JSValueConst, int argc, JSValueConst* argv) {
     auto* bridge = static_cast<QuickJSBridge*>(JS_GetContextOpaque(ctx));

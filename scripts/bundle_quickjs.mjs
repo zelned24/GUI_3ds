@@ -136,6 +136,12 @@ globalThis._3ds_tick = function(input) {
   }
   _3ds_beginTop();
   _3ds_clear(biomeColor(presentation.biomeId || ''));
+  if (!state.runStarted) {
+    _3ds_drawText('Selecciona tu equipo', 100, 15, 0.65, GREEN);
+    _3ds_drawStarter();
+    _3ds_drawText(_3ds_getStarterName(), 145, 195, 0.55, WHITE);
+    _3ds_drawText(presentation.starterInTeam ? 'En tu equipo' : 'A: incorporar', 145, 215, 0.45, GREEN);
+  } else {
   if (state.enemyDex) _3ds_drawPokemon(state.enemyDex, false, presentation.doubleBattle ? 185 : 230, 42, presentation.doubleBattle ? 0.9 : 1.2);
   if (presentation.doubleBattle && presentation.secondEnemyDex)
     _3ds_drawPokemon(presentation.secondEnemyDex, false, 245, 88, 0.9, 2);
@@ -152,6 +158,7 @@ globalThis._3ds_tick = function(input) {
   _3ds_drawText((presentation.playerName || 'Player #' + (state.playerDex || 0)).slice(0, 23), 10, 193, 0.48, WHITE);
   _3ds_drawText(hpBar(state.playerHp, state.playerMaxHp), 10, 208, 0.48, GREEN);
   if (combatLog) _3ds_drawText(combatLog.slice(0, 65), 10, 225, 0.38, 0xFFFFDD44);
+  }
   _3ds_beginBottom();
   _3ds_clear(0xFF16213E);
   _3ds_drawText('Wave: ' + (state.wave || 0) + (presentation.doubleBattle ? ' - Doble batalla' : ''), 10, 10, 0.55, 0xFF00FFFF);

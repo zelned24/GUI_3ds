@@ -47,6 +47,8 @@ export function registerQuickJsStorageTests(register) {
     context._3ds_getStarterName = () => 'Canonical starter';
     context._3ds_getCombatLog = () => '';
     context._3ds_drawText = text => drawn.push(text);
+    let starterDraws = 0;
+    context._3ds_drawStarter = () => { ++starterDraws; return true; };
     context._3ds_purchaseStarterCost = () => { commands.push('buy'); return true; };
     context._3ds_toggleStarterTeam = () => { commands.push('team'); return true; };
     context._3ds_saveNative = () => { commands.push('save'); return true; };
@@ -55,6 +57,7 @@ export function registerQuickJsStorageTests(register) {
     context._3ds_tick({ B: true });
     assert.deepEqual(commands, []);
     assert.ok(drawn.some(text => text.includes('Cost: 0.5')));
+    assert.equal(starterDraws, 1, 'setup draws the cursor preview without a gameplay command');
     context._3ds_tick({ A: true, start: true });
     assert.deepEqual(commands, ['buy']);
     context._3ds_tick({});

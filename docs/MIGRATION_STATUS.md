@@ -1156,3 +1156,9 @@
 1. Navegación setup usa cursor separado de la primera especie del equipo: no reemplaza ni pierde reservas. `toggleSetupStarter` añade/retira la especie del cursor y reconstruye el equipo real mediante la transacción validada. Conserva orden, presupuesto reducido y máximo seis; no permite retirar el último miembro. Esta restricción de edición difiere del borrador vacío de upstream y queda pendiente de resolver con un modelo de selección vacío.
 2. Bridge comando 209 confirma add/remove fuera del tick. Snapshot muestra nombres de equipo, cantidad y coste efectivo; compra se aplica a la especie del cursor. HUD: izquierda/derecha navega, A añade/retira, Start inicia, B confirma reducción mediante su menú.
 3. Regresiones nativas escritas de navegación sin reemplazo, incorporación/retiro y protección del último miembro; VM actualizada para A=selección y Start=inicio. Sin ejecutar. Bundle regenerado, sin compilar. Preview gráfico del cursor, selección vacía y presentación final equivalente web pendientes.
+
+## Preview del cursor de iniciales
+
+1. `_3ds_drawStarter` resuelve especie/forma del cursor desde catálogo, verifica desbloqueo y dibuja su atlas frontal existente en la pantalla superior. No construye un actor ni modifica party, estado de combate, PID o RNG.
+2. Reutiliza el cache frontal del enemigo mientras setup oculta el combate; no añade otra página de textura retenida. Al entrar en batalla, el presenter resuelve la clave del enemigo como antes. Asset ausente sigue el tratamiento explícito existente del presenter, sin generar sprites falsos.
+3. HUD setup superior muestra nombre y pertenencia al equipo; inferior conserva selección y presupuesto. Regresión VM escrita del preview sin comando de gameplay. Bundle regenerado. Tests/compilación/Azahar/hardware siguen aplazados; equivalencia visual final y selección vacía pendientes.

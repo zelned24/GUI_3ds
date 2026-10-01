@@ -27,6 +27,7 @@ public:
     void fini();
     void setPokemonPresentation(const ResolvedPokemon& player, const ResolvedPokemon& enemy,
                                 uint64_t animationTimeMs);
+    static JSValue drawStarter(JSContext*, JSValueConst, int, JSValueConst*);
     static JSValue drawPokemon(JSContext*, JSValueConst, int, JSValueConst*);
     void bindRuntime(FirstRunRuntime& game) { m_game = &game; }
     void bindSaveStore(NativeRunSaveStore& saves) { m_saves = &saves; }
