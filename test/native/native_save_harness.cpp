@@ -751,10 +751,10 @@ extern "C" int runNativeSaveChecks() {
     if (!nativeStarterDefaultGender(purchased, defaultGender) || defaultGender != PokemonGender::Male) return 139;
     auto femaleOnly = purchased;
     femaleOnly.genderAttr = 8;
-    if (!nativeStarterDefaultGender(femaleOnly, defaultGender) || defaultGender != PokemonGender::Female) return 140;
+    if (!nativeStarterDefaultGender(femaleOnly, defaultGender) || defaultGender != PokemonGender::Male) return 140;
     femaleOnly.genderAttr = 0;
     femaleOnly.abilityAttr = 0; // Legacy incomplete metadata, not a known zero-gender capture.
-    if (nativeStarterDefaultGender(femaleOnly, defaultGender) || defaultGender != PokemonGender::Female) return 141;
+    if (nativeStarterDefaultGender(femaleOnly, defaultGender) || defaultGender != PokemonGender::Male) return 141;
     auto knownNoGenderBits = purchased;
     knownNoGenderBits.genderAttr = 0;
     if (!nativeStarterDefaultGender(knownNoGenderBits, defaultGender) || defaultGender != PokemonGender::Male) return 144;
@@ -907,6 +907,17 @@ extern "C" int runNativeSaveChecks() {
     PokemonActorIdentity noActor{};
     if (pokemonCaptureFormUnlocks(0, noActor, 1, failedUnlock) != PokemonCaptureFormUnlockResult::InvalidSpecies ||
         failedUnlock != 123) return 166;
+    for (const auto& species : PokerogueContent::kSpecies) {
+        NativeStarterCandyRecord record{};
+        record.speciesDex = species.dex;
+        record.genderAttr = 8; // Only a female observed must not override species default.
+        record.abilityAttr = 1;
+        record.natureAttr = 2;
+        PokemonGender actual = PokemonGender::Unspecified;
+        const PokemonGender expected = species.malePercentTenths == 65534 ? PokemonGender::Genderless :
+            species.malePercentTenths == 0 ? PokemonGender::Female : PokemonGender::Male;
+        if (!nativeStarterDefaultGender(record, actual) || actual != expected) return 167;
+    }
     if (PokerogueContent::findFormByUpstreamIndex(0, 0)) return 146;
     return 0;
 }

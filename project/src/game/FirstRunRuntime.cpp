@@ -3066,8 +3066,8 @@ bool FirstRunRuntime::resolveStarterFromDex(uint16_t dex, PokerogueRngAdapter& r
             }
         }
 
-        starterActor.gender = starter.malePercentTenths == 65534
-            ? PokemonGender::Genderless : PokemonGender::Male;
+        starterActor.gender = starter.malePercentTenths == 65534 ? PokemonGender::Genderless :
+            starter.malePercentTenths == 0 ? PokemonGender::Female : PokemonGender::Male;
         if (m_starterProfileReady) {
             for (size_t record = 0; record < m_starterProfileCount; ++record) {
                 const auto& entry = m_starterProfileRecords[record];

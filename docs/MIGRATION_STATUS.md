@@ -1297,3 +1297,9 @@
 2. pokemonCaptureFormUnlocks aplica máscara obtenible y ramas de GameData.setPokemonSpeciesCaught: Pikachu/Pichu, Urshifu índices 2/3, Zygarde 4/5 y registro de cambios cuyo destino coincide con la forma capturada. recordCaughtSpecies prevalida toda la cadena y combina unlocks durables; observación sigue separada.
 3. Excepciones recursivas que producen bits sin forma concreta para una preevolución quedan UnsupportedReference; captura se rechaza antes de modificar el ledger. Ampliar representación de esos atributos upstream sigue pendiente. Triggers de transformación en combate y selector de formas aún no portados.
 4. Importación doble coincide en 400fb84aa16a460c6d3eb6260240e8eae948acb9fab0f5467fd81521b6630e49. Cambia identidad del contenido; migración de perfiles/saves anteriores pendiente. Tests de import y casos reales especiales escritos, sin ejecutar; compilación aplazada.
+
+## Corrección de género por defecto del selector
+
+1. Inspección de getStarterDexAttrPropsFromPreferences confirmó que usa GameData.getSpeciesDefaultDexAttrProps: female es malePercent === 0. No usa getDexAttrProps(caughtAttr) para elegir el género por defecto. La implementación anterior confundía esas dos rutas y daba preferencia a FEMALE-only capturado.
+2. nativeStarterDefaultGender y fallback del actor ahora usan la proporción canónica de la especie; genderless se conserva. Bits capturados permanecen intactos para futuras preferencias explícitas. Metadata incompleta legacy y ratios no resueltos continúan rechazados.
+3. Regresiones corregidas según la fuente inspeccionada y ampliadas a todo el catálogo; ninguna fue ejecutada. Tests/compilación aplazados. FormIndex upstream por defecto es cero; selección alternativa requiere preferencia explícita todavía pendiente.
