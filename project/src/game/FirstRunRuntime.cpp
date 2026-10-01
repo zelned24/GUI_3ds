@@ -2391,7 +2391,9 @@ bool FirstRunRuntime::throwPokeballInPlace(PokeballType ball) {
         m_runStarted = true;
 
         if (enemyPartyDefeated()) {
-            if (!grantVictoryExperience(false) || !planClassicVictory(m_run.wave, m_victoryPlan)) {
+            // Pinned AttemptCapturePhase queues VictoryPhase, whose start calls
+            // applyPartyExp(expValue, true), including friendship for participants.
+            if (!grantVictoryExperience(true) || !planClassicVictory(m_run.wave, m_victoryPlan)) {
                 m_battleFeedback = "Capture victory could not resolve";
                 return false;
             }

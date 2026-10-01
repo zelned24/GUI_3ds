@@ -977,3 +977,10 @@
 1. Se detectó captura que eliminaba al enemigo sin añadirlo ni pedir liberar/reemplazar cuando el equipo tenía seis miembros. El comando ahora falla antes de consumir ball/RNG o modificar el combate.
 2. Fuente pinned inspeccionada: `src/phases/attempt-capture-phase.ts`, `AttemptCapturePhase`, rama `PLAYER_PARTY_MAX_SIZE` / `addToPartyMenuConfig` / `PartyUiMode.RELEASE`. Implementar esa decisión sigue pendiente; el bloqueo no se declara soporte completo de captura.
 3. Regresiones 586–588 escritas con party checkpoint de seis actores y comparación de inventario, enemigo, wave y próximo draw RNG; sin ejecutar.
+
+## Corrección de semántica pinned: amistad tras captura
+
+1. La inspección completa de `src/phases/attempt-capture-phase.ts`, callback `end`, mostró que captura exitosa encola `VictoryPhase`. `src/phases/victory-phase.ts`, `VictoryPhase.start`, llama `applyPartyExp(expValue, true)` sin excepción por captura.
+2. Corrige la decisión anterior de `grantVictoryExperience(false)`: ahora aplica la ganancia de amistad y ledger del participante también tras captura exitosa. En dobles el mask ya concedido evita repetir la primera derrota.
+3. Retirado helper numérico sin consumidor cuya hipótesis "captura no da amistad" era incorrecta; referencias de tests sustituidas por máscaras actuales. Regresiones 589–590 escritas sobre captura real + profile adjunto, sin ejecutar.
+4. Las notas anteriores que excluían amistad por captura quedan supersedidas por esta evidencia pinned. Decisión con equipo lleno, estadísticas de capturas y callback completo de captura aún pendientes.

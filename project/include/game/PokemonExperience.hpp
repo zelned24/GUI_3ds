@@ -213,13 +213,6 @@ inline PokemonExperienceResult pokemonExperienceForDefeat(
     return PokemonExperienceResult::Ok;
 }
 
-// Current wild-double frontier forbids capture while both enemies are alive.
-// VictoryPhase applies friendship once per defeated enemy; capture does not.
-// This count does not replace the future per-faint EXP/phase queue.
-inline uint8_t pokemonVictoryFriendshipDefeats(bool doubleBattle, bool finalEnemyDefeated) {
-    return static_cast<uint8_t>((doubleBattle ? 1 : 0) + (finalEnemyDefeated ? 1 : 0));
-}
-
 inline uint8_t pokemonPendingDoubleExperienceMask(bool primaryFainted, bool secondaryFainted, uint8_t granted) {
     const uint8_t fainted = static_cast<uint8_t>((primaryFainted ? 1 : 0) | (secondaryFainted ? 2 : 0));
     return static_cast<uint8_t>(fainted & ~granted & 3);

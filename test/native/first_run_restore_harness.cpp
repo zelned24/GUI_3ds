@@ -417,10 +417,6 @@ static int checkBiomeTransitionProgression() {
 
 static int checkDoubleBattleTargetingAndMechanics() {
     using namespace Pokerogue3DS;
-    if (pokemonVictoryFriendshipDefeats(false, true) != 1 ||
-        pokemonVictoryFriendshipDefeats(false, false) != 0 ||
-        pokemonVictoryFriendshipDefeats(true, true) != 2 ||
-        pokemonVictoryFriendshipDefeats(true, false) != 1) return 581;
     if (pokemonPendingDoubleExperienceMask(true, false, 0) != 1 ||
         pokemonPendingDoubleExperienceMask(false, true, 0) != 2 ||
         pokemonPendingDoubleExperienceMask(true, true, 1) != 2 ||
@@ -436,7 +432,9 @@ static int checkDoubleBattleTargetingAndMechanics() {
     PokemonFriendshipPolicy friendshipPolicy{};
     friendshipPolicy.resolved = true;
     friendshipPolicy.candyMultiplier = PokerogueContent::kClassicCandyFriendshipMultiplier;
-    for (uint8_t defeat = 0; defeat < pokemonVictoryFriendshipDefeats(true, true); ++defeat) {
+    const auto bothVictories = pokemonPendingDoubleExperienceMask(true, true, 0);
+    if (bothVictories != 3) return 581;
+    for (uint8_t defeat = 0; defeat < 2; ++defeat) {
         StarterCandyAwardEvent event{};
         if (applyNativePokemonFriendship(friendshipActor, friendshipRecord,
             PokerogueContent::kFriendshipGainFromBattle, friendshipPolicy, false, event) !=
@@ -1249,7 +1247,16 @@ static int checkPlayerPartyManagementAndSwitching() {
     wildSave.encounterDex = game.presentation().enemy.dex;
     wildSave.enemyHp = 1;
     if (!game.restoreNativeRunSave(wildSave)) return 167;
+    PokemonFriendshipPolicy captureFriendshipPolicy{};
+    captureFriendshipPolicy.resolved = true;
+    captureFriendshipPolicy.candyMultiplier = PokerogueContent::kClassicCandyFriendshipMultiplier;
+    if (!game.restoreStarterCandyProfile(nullptr, 0, 0, captureFriendshipPolicy)) return 589;
+    const auto friendshipBeforeCapture = game.presentation().player.battleState.friendship;
     if (!game.throwPokeball(PokeballType::Pokeball)) return 168;
+    if (game.presentation().player.battleState.friendship != friendshipBeforeCapture +
+            PokerogueContent::kFriendshipGainFromBattle || game.starterProfileCount() != 1 ||
+        game.starterProfileRecords()[0].friendship != PokerogueContent::kFriendshipGainFromBattle *
+            PokerogueContent::kClassicCandyFriendshipMultiplier) return 590;
     if (game.playerPartyCount() != 2) return 169;
     const uint16_t caughtDex = game.playerPartyMember(1)->dex;
     if (caughtDex != wildSave.encounterDex) return 170;
