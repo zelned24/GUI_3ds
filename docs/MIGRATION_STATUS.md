@@ -1499,3 +1499,9 @@
 1. composePokemonStatusApplicationPolicy une listas explícitas de habilidades propias/pasivas, aliados y fuente; deriva bloqueos por ámbito y bypass de ambos tipos desde tablas canónicas. Campo/tipos efectivos/grounding/Safeguard requieren contexto resuelto del caller.
 2. No infiere activación/suppression ni omite componentes desconocidos. Error conserva output; fuente ausente limpia bypass. Corrosion nunca sustituye inmunidad por habilidad.
 3. Regresiones de Corrosion vs Immunity, fuente ausente, fallo de callback y aliado real escritas sin ejecutar. Falta proveedor de contexto y reacciones/forms en FirstRunRuntime para habilitar moves de estado; tests/compilación aplazados.
+
+## Contexto de tipos/campo para aplicación de estados
+
+1. resolvePokemonStatusApplicationEnvironment combina identidad real de fuente, pendingStatus del actor y campo explícitamente resuelto (grounding, terreno, sol, Safeguard). Valida símbolos de tipos canónicos y publica policy atómicamente.
+2. Preserva diferencia pinned de canSetStatus: poison/steel usan getTypes(returnOriginalTypesIfStellar=true), mientras paralysis/ice/fire usan isOfType por defecto. Contexto no infiere tipos vivos a partir de especie si existen overrides de runtime.
+3. Regresiones de vistas Stellar, sleep en Electric terrain pese a ignoreField, identidad propia, pendingStatus y contexto inválido escritas sin ejecutar. Falta proveedor desde arena/actor dinámico y reacciones completas para habilitar moves en FirstRunRuntime; tests/compilación aplazados.

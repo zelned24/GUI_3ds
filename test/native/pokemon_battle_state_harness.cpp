@@ -3063,5 +3063,40 @@ extern "C" int runPokemonBattleStateChecks() {
             Pokerogue3DS::canPokemonSetStatus({}, Effect::Sleep, composedPolicy) !=
                     Pokerogue3DS::PokemonStatusEligibility::AllyAbility) return 9084;
     }
+    Pokerogue3DS::PokemonStatusFieldContext statusField{};
+    statusField.resolved = true;
+    const char* statusLiveTypes[] = {"STELLAR"};
+    const char* statusOriginalTypes[] = {"POISON", "ELECTRIC"};
+    statusField.effectiveTypes = statusLiveTypes;
+    statusField.effectiveTypeCount = 1;
+    statusField.originalIfStellarTypes = statusOriginalTypes;
+    statusField.originalIfStellarTypeCount = 2;
+    PokemonBattleState environmentActor{};
+    environmentActor.hp = environmentActor.maxHp = 100;
+    if (!Pokerogue3DS::resolvePokemonStatusApplicationEnvironment(environmentActor, nullptr, statusField, environment) ||
+        !environment.poisonType || environment.electricType || environment.hasSource || environment.sourceIsTarget ||
+        Pokerogue3DS::canPokemonSetStatus({}, Effect::Poison, environment) !=
+            Pokerogue3DS::PokemonStatusEligibility::PoisonType ||
+        Pokerogue3DS::canPokemonSetStatus({}, Effect::Paralysis, environment) !=
+            Pokerogue3DS::PokemonStatusEligibility::Allowed) return 9090;
+    statusField.grounded = statusField.electricTerrain = true;
+    statusField.ignoreField = true;
+    if (!Pokerogue3DS::resolvePokemonStatusApplicationEnvironment(environmentActor, &environmentActor, statusField, environment) ||
+        !environment.hasSource || !environment.sourceIsTarget ||
+        Pokerogue3DS::canPokemonSetStatus({}, Effect::Sleep, environment) !=
+            Pokerogue3DS::PokemonStatusEligibility::ElectricTerrain) return 9091;
+    environmentActor.pendingStatus = Effect::Sleep;
+    if (!Pokerogue3DS::resolvePokemonStatusApplicationEnvironment(environmentActor, nullptr, statusField, environment) ||
+        !environment.pendingStatus || Pokerogue3DS::canPokemonSetStatus({}, Effect::Burn, environment) !=
+            Pokerogue3DS::PokemonStatusEligibility::PendingStatus) return 9092;
+    const char* invalidLiveTypes[] = {"NOT_A_TYPE"};
+    statusField.effectiveTypes = invalidLiveTypes;
+    environment.fireType = true;
+    if (Pokerogue3DS::resolvePokemonStatusApplicationEnvironment(environmentActor, nullptr, statusField, environment) ||
+        !environment.fireType) return 9093;
+    statusField.effectiveTypes = statusLiveTypes;
+    statusField.resolved = false;
+    if (Pokerogue3DS::resolvePokemonStatusApplicationEnvironment(environmentActor, nullptr, statusField, environment) ||
+        !environment.fireType) return 9094;
     return 0;
 }

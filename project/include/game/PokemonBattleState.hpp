@@ -293,6 +293,24 @@ inline PokemonStatusImmunityResult resolvePokemonStatusTypeImmunityBypass(uint16
     return PokemonStatusImmunityResult::UnknownAbility;
 }
 
+struct PokemonStatusFieldContext {
+    bool resolved = false; // Live types, grounding, weather, terrain and Safeguard.
+    const char* const* effectiveTypes = nullptr; // isOfType default view.
+    size_t effectiveTypeCount = 0;
+    const char* const* originalIfStellarTypes = nullptr; // getTypes(returnOriginalTypesIfStellar=true).
+    size_t originalIfStellarTypeCount = 0;
+    bool grounded = false;
+    bool mistyTerrain = false;
+    bool electricTerrain = false;
+    bool sunnyOrHarshSun = false;
+    bool safeguardBlocks = false;
+    bool ignoreField = false;
+    bool overrideStatus = false;
+};
+bool resolvePokemonStatusApplicationEnvironment(const PokemonBattleState& recipient,
+    const PokemonBattleState* source, const PokemonStatusFieldContext& field,
+    PokemonStatusApplicationPolicy& output);
+
 struct PokemonStatusAbilityComponent {
     uint16_t abilityId = 0;
     bool active = false;

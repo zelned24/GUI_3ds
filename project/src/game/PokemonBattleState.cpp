@@ -4,6 +4,42 @@
 #include <cstring>
 
 namespace Pokerogue3DS {
+bool resolvePokemonStatusApplicationEnvironment(const PokemonBattleState& recipient,
+    const PokemonBattleState* source, const PokemonStatusFieldContext& field,
+    PokemonStatusApplicationPolicy& output) {
+    if (!field.resolved || !pokemonStatusStateValid(recipient.status) ||
+        static_cast<uint8_t>(recipient.pendingStatus) > 7 || recipient.hp > recipient.maxHp ||
+        !field.effectiveTypes || !field.effectiveTypeCount || !field.originalIfStellarTypes ||
+        !field.originalIfStellarTypeCount) return false;
+    PokemonStatusApplicationPolicy policy{};
+    policy.resolved = true;
+    policy.pendingStatus = recipient.pendingStatus != PokemonStatusEffect::None;
+    policy.hasSource = source != nullptr;
+    policy.sourceIsTarget = source == &recipient;
+    policy.overrideStatus = field.overrideStatus;
+    policy.ignoreField = field.ignoreField;
+    policy.grounded = field.grounded;
+    policy.mistyTerrain = field.mistyTerrain;
+    policy.electricTerrain = field.electricTerrain;
+    policy.sunnyOrHarshSun = field.sunnyOrHarshSun;
+    policy.safeguardBlocks = field.safeguardBlocks;
+    for (size_t i = 0; i < field.effectiveTypeCount; ++i) {
+        const char* type = resolvePokemonTypeSymbol(field.effectiveTypes[i]);
+        if (!type) return false;
+        policy.electricType |= std::strcmp(type, "ELECTRIC") == 0;
+        policy.iceType |= std::strcmp(type, "ICE") == 0;
+        policy.fireType |= std::strcmp(type, "FIRE") == 0;
+    }
+    for (size_t i = 0; i < field.originalIfStellarTypeCount; ++i) {
+        const char* type = resolvePokemonTypeSymbol(field.originalIfStellarTypes[i]);
+        if (!type) return false;
+        policy.poisonType |= std::strcmp(type, "POISON") == 0;
+        policy.steelType |= std::strcmp(type, "STEEL") == 0;
+    }
+    output = policy;
+    return true;
+}
+
 PokemonStatusMoveCheckResult checkPokemonStatusBeforeMove(PokemonStatusState& status,
     const PokemonStatusMoveCheckPolicy& policy, PokerogueRngAdapter& rng, PokemonStatusMoveCheckEvent& output) {
     if (!pokemonStatusStateValid(status)) return PokemonStatusMoveCheckResult::InvalidStatus;
