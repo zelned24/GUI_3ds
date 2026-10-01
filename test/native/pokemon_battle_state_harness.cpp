@@ -3098,5 +3098,40 @@ extern "C" int runPokemonBattleStateChecks() {
     statusField.resolved = false;
     if (Pokerogue3DS::resolvePokemonStatusApplicationEnvironment(environmentActor, nullptr, statusField, environment) ||
         !environment.fireType) return 9094;
+    Pokerogue3DS::PokemonQueuedStatusRequest appliedStatus{};
+    appliedStatus.recipientPokemonId = 42;
+    appliedStatus.sourcePokemonId = 41;
+    appliedStatus.hasSource = true;
+    appliedStatus.effect = Effect::Burn;
+    Pokerogue3DS::PokemonSynchronizeReactionEvent syncEvent{};
+    if (Pokerogue3DS::resolvePokemonSynchronizeReaction(28, true, true, appliedStatus, syncEvent) !=
+            Pokerogue3DS::PokemonStatusImmunityResult::Resolved || !syncEvent.abilityActivates ||
+        !syncEvent.requestStatus || syncEvent.request.recipientPokemonId != 41 ||
+        syncEvent.request.sourcePokemonId != 42 || syncEvent.request.effect != Effect::Burn) return 9100;
+    PokemonBattleState reflectedRecipient{};
+    reflectedRecipient.pokemonId = 41;
+    reflectedRecipient.hp = reflectedRecipient.maxHp = 100;
+    applicationPolicy = {};
+    applicationPolicy.resolved = true;
+    applicationPolicy.hasSource = true;
+    applicationPolicy.fireType = true;
+    if (Pokerogue3DS::enqueuePokemonStatusRequest(reflectedRecipient, syncEvent.request, applicationPolicy) !=
+            Pokerogue3DS::PokemonStatusEligibility::FireType ||
+        reflectedRecipient.pendingStatus != Effect::None || !syncEvent.abilityActivates) return 9101;
+    appliedStatus.effect = Effect::Sleep;
+    if (Pokerogue3DS::resolvePokemonSynchronizeReaction(28, true, true, appliedStatus, syncEvent) !=
+            Pokerogue3DS::PokemonStatusImmunityResult::Resolved || syncEvent.abilityActivates || syncEvent.requestStatus)
+        return 9102;
+    appliedStatus.effect = Effect::Toxic;
+    appliedStatus.hasSource = false;
+    appliedStatus.sourcePokemonId = 0;
+    if (Pokerogue3DS::resolvePokemonSynchronizeReaction(28, true, true, appliedStatus, syncEvent) !=
+            Pokerogue3DS::PokemonStatusImmunityResult::Resolved || syncEvent.requestStatus) return 9103;
+    appliedStatus.hasSource = true;
+    if (Pokerogue3DS::resolvePokemonSynchronizeReaction(28, false, true, appliedStatus, syncEvent) !=
+            Pokerogue3DS::PokemonStatusImmunityResult::Resolved || syncEvent.requestStatus) return 9104;
+    syncEvent.abilityActivates = true;
+    if (Pokerogue3DS::resolvePokemonSynchronizeReaction(28, true, false, appliedStatus, syncEvent) !=
+            Pokerogue3DS::PokemonStatusImmunityResult::UnsupportedCondition || !syncEvent.abilityActivates) return 9105;
     return 0;
 }

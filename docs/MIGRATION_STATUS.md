@@ -1505,3 +1505,9 @@
 1. resolvePokemonStatusApplicationEnvironment combina identidad real de fuente, pendingStatus del actor y campo explícitamente resuelto (grounding, terreno, sol, Safeguard). Valida símbolos de tipos canónicos y publica policy atómicamente.
 2. Preserva diferencia pinned de canSetStatus: poison/steel usan getTypes(returnOriginalTypesIfStellar=true), mientras paralysis/ice/fire usan isOfType por defecto. Contexto no infiere tipos vivos a partir de especie si existen overrides de runtime.
 3. Regresiones de vistas Stellar, sleep en Electric terrain pese a ignoreField, identidad propia, pendingStatus y contexto inválido escritas sin ejecutar. Falta proveedor desde arena/actor dinámico y reacciones completas para habilitar moves en FirstRunRuntime; tests/compilación aplazados.
+
+## Reacción canónica Synchronize
+
+1. Generador deriva presencia de SynchronizeStatusAbAttr del catálogo; resolver aplica canApply pinned a burn/paralysis/poison/toxic con fuente presente. Produce nueva solicitud con identidades intercambiadas, sin mutar actor ni consumir RNG.
+2. Habilidad se activa aunque la solicitud posterior sea rechazada por elegibilidad, siguiendo upstream. No aplica status directamente ni ignora inmunidades del causante. Condiciones/callbacks desconocidos conservan output y exigen dispatcher.
+3. Regresiones Synchronize real, fuente Fire inmune, sleep, fuente ausente/inactiva y callbacks pendientes escritas sin ejecutar. Falta conexión de esta reacción a cola y proveedor completo de forms/ConfusionOnStatusEffect; tests/compilación aplazados.

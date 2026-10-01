@@ -471,6 +471,34 @@ struct PokemonQueuedStatusRequest {
     bool explicitSleepDuration = false;
     uint32_t sleepDuration = 0;
 };
+struct PokemonSynchronizeReactionEvent {
+    bool abilityActivates = false; // Upstream shows the ability even if eligibility later fails.
+    bool requestStatus = false;
+    PokemonQueuedStatusRequest request{};
+};
+inline PokemonStatusImmunityResult resolvePokemonSynchronizeReaction(uint16_t abilityId,
+    bool abilityActive, bool callbacksResolved, const PokemonQueuedStatusRequest& applied,
+    PokemonSynchronizeReactionEvent& output) {
+    if (static_cast<uint8_t>(applied.effect) > 7) return PokemonStatusImmunityResult::InvalidEffect;
+    if (!callbacksResolved) return PokemonStatusImmunityResult::UnsupportedCondition;
+    for (const auto& profile : PokerogueContent::kSynchronizeAbilityProfiles) {
+        if (profile.abilityId != abilityId) continue;
+        if (abilityActive && !profile.resolved) return PokemonStatusImmunityResult::UnsupportedCondition;
+        PokemonSynchronizeReactionEvent event{};
+        if (abilityActive && applied.hasSource &&
+            (profile.statusMask & (1u << static_cast<uint8_t>(applied.effect)))) {
+            event.abilityActivates = event.requestStatus = true;
+            event.request.recipientPokemonId = applied.sourcePokemonId;
+            event.request.sourcePokemonId = applied.recipientPokemonId;
+            event.request.hasSource = true;
+            event.request.effect = applied.effect;
+        }
+        output = event;
+        return PokemonStatusImmunityResult::Resolved;
+    }
+    return PokemonStatusImmunityResult::UnknownAbility;
+}
+
 // trySetStatus's normal (non-override) queue transition; no duration RNG here.
 PokemonStatusEligibility enqueuePokemonStatusRequest(PokemonBattleState& recipient,
     const PokemonQueuedStatusRequest& request, const PokemonStatusApplicationPolicy& policy);
