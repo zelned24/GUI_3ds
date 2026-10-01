@@ -558,6 +558,32 @@ inline PokemonStatusImmunityResult resolvePokemonConfusionAbilityImmunity(uint16
     }
     return PokemonStatusImmunityResult::UnknownAbility;
 }
+inline PokemonStatusImmunityResult composePokemonConfusionTagPolicy(
+    const PokemonConfusionTagPolicy& environment,
+    const PokemonStatusAbilityComponent* own, size_t ownCount,
+    const PokemonStatusAbilityComponent* allies, size_t allyCount,
+    PokemonConfusionTagPolicy& output) {
+    if (!environment.resolved || !ownCount || !own || (allyCount && !allies))
+        return PokemonStatusImmunityResult::UnsupportedCondition;
+    auto policy = environment;
+    policy.ownAbilityBlocks = policy.allyAbilityBlocks = false;
+    for (size_t i = 0; i < ownCount; ++i) {
+        bool blocked = false;
+        const auto result = resolvePokemonConfusionAbilityImmunity(own[i].abilityId,
+            own[i].active, false, own[i].callbacksResolved, blocked);
+        if (result != PokemonStatusImmunityResult::Resolved) return result;
+        policy.ownAbilityBlocks |= blocked;
+    }
+    for (size_t i = 0; i < allyCount; ++i) {
+        bool blocked = false;
+        const auto result = resolvePokemonConfusionAbilityImmunity(allies[i].abilityId,
+            allies[i].active, true, allies[i].callbacksResolved, blocked);
+        if (result != PokemonStatusImmunityResult::Resolved) return result;
+        policy.allyAbilityBlocks |= blocked;
+    }
+    output = policy;
+    return PokemonStatusImmunityResult::Resolved;
+}
 // canAddTag's simulated probe deliberately omits ConfusedTag.canAdd terrain.
 bool canPokemonAddConfusionTag(const PokemonConfusionTagState& tag,
     const PokemonConfusionTagPolicy& policy, bool& output);

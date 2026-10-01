@@ -1605,3 +1605,9 @@
 
 1. Reacción consulta política de tag solo para habilidad activa, efecto elegible y receptor vivo en ejecución real. Casos no aplicables/simulated no requieren callbacks de tag ni RNG de duración; atributos activos desconocidos siguen fallando explícitamente.
 2. Regresiones de burn no elegible, habilidad inactiva, objetivo debilitado y simulated con políticas pendientes escritas sin ejecutar. Proveedor del comando activo y validación final siguen pendientes.
+
+## Composición canónica de inmunidades de confusión
+
+1. composePokemonConfusionTagPolicy reutiliza componentes de habilidad propia/pasiva y aliados, resuelve cada ámbito desde catálogo y conserva contexto explícito de grounding/Misty. No hereda booleans de inmunidad manuales ni omite callbacks desconocidos.
+2. Output se publica solo tras resolver todos los componentes. Activación/suppression y campo siguen siendo responsabilidad del proveedor vivo; esta composición no declara doubles/pasivas completos.
+3. Regresiones de Own Tempo propio, ámbito aliado, inactividad y fallo atómico escritas sin ejecutar. Tests/compilación aplazados.

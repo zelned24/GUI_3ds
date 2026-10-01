@@ -3389,6 +3389,22 @@ extern "C" int runPokemonBattleStateChecks() {
             Effect::Poison, true, true, probeConfusion, applyConfusion, puppeteerTag,
             statusApplicationRng, puppeteerEvent) != Pokerogue3DS::PokemonStatusImmunityResult::Resolved ||
         puppeteerEvent.tagAttempted) return 9263;
+    Pokerogue3DS::PokemonConfusionTagPolicy confusionEnvironment{}, composedConfusion{};
+    confusionEnvironment.resolved = confusionEnvironment.grounded = confusionEnvironment.mistyTerrain = true;
+    const Pokerogue3DS::PokemonStatusAbilityComponent tempoComponents[] = {{20, true, true}};
+    if (Pokerogue3DS::composePokemonConfusionTagPolicy(confusionEnvironment, tempoComponents, 1, nullptr, 0,
+            composedConfusion) != Pokerogue3DS::PokemonStatusImmunityResult::Resolved ||
+        !composedConfusion.ownAbilityBlocks || composedConfusion.allyAbilityBlocks ||
+        !composedConfusion.grounded || !composedConfusion.mistyTerrain) return 9270;
+    const Pokerogue3DS::PokemonStatusAbilityComponent unknownTempo[] = {{20, true, false}};
+    composedConfusion.ownAbilityBlocks = false;
+    if (Pokerogue3DS::composePokemonConfusionTagPolicy(confusionEnvironment, unknownTempo, 1, nullptr, 0,
+            composedConfusion) != Pokerogue3DS::PokemonStatusImmunityResult::UnsupportedCondition ||
+        composedConfusion.ownAbilityBlocks) return 9271;
+    const Pokerogue3DS::PokemonStatusAbilityComponent inactiveTempo[] = {{20, false, true}};
+    if (Pokerogue3DS::composePokemonConfusionTagPolicy(confusionEnvironment, inactiveTempo, 1, tempoComponents, 1,
+            composedConfusion) != Pokerogue3DS::PokemonStatusImmunityResult::Resolved ||
+        composedConfusion.ownAbilityBlocks || composedConfusion.allyAbilityBlocks) return 9272;
     bool foundConfusionImmunity = false;
     for (const auto& profile : PokerogueContent::kConfusionImmunityAbilityProfiles) {
         if (!profile.selfResolved || !profile.selfBlocks) continue;
