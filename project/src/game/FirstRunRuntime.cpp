@@ -131,7 +131,7 @@ void FirstRunRuntime::captureNativeRunSave(NativeRunSave& output) const {
     NativeRunSave value{};
     // v9 preserves ball inventory; doubles, captured party and later trainer history remain unsupported.
     // Never report a setup checkpoint as a successful save of an active double battle.
-    if (m_heldModifierCount || m_context.enemy.bossState.segmentCount || m_doubleBattle || m_pokeballs[5] ||
+    if (m_context.enemy.bossState.segmentCount || m_doubleBattle || m_pokeballs[5] ||
         m_run.wave > 9 || (m_trainerBattle && m_run.wave != 5)) {
         output = {};
         return;
@@ -204,7 +204,7 @@ void FirstRunRuntime::captureNativeRunSave(NativeRunSave& output) const {
         }
     }
     if (value.stage != NativeSaveStage::RunSetup &&
-        (m_context.playerPartyCount > 1 || m_playerHistoryRequiresSnapshot)) {
+        (m_context.playerPartyCount > 1 || m_playerHistoryRequiresSnapshot || m_heldModifierCount)) {
         if (m_context.playerPartyCount > 6 ||
             m_context.activePlayerPartyIndex >= m_context.playerPartyCount) { output = {}; return; }
         value.playerPartyCount = m_context.playerPartyCount;
@@ -217,6 +217,9 @@ void FirstRunRuntime::captureNativeRunSave(NativeRunSave& output) const {
                     value.playerParty[member])) { output = {}; return; }
         }
     }
+    if (m_heldModifierCount && value.stage == NativeSaveStage::RunSetup) { output = {}; return; }
+    value.heldModifierCount = static_cast<uint8_t>(m_heldModifierCount);
+    for (size_t i = 0; i < m_heldModifierCount; ++i) value.heldModifiers[i] = m_heldModifiers[i];
     output = value;
 }
 
@@ -390,6 +393,7 @@ bool FirstRunRuntime::restoreNativeRunSaveInPlace(const NativeRunSave& save) {
     for (uint8_t ball = 0; ball < 5; ++ball) m_pokeballs[ball] = save.pokeballCounts[ball];
     m_pokeballs[5] = 0;
     m_context.playerParty[m_context.activePlayerPartyIndex] = m_context.player;
+    if (!restoreHeldModifierInventory(save.heldModifiers, save.heldModifierCount)) return false;
     m_turn = save.battleTurn;
     m_enemySwitchCounter = save.enemySwitchCounter;
     if (save.trainerPartyCount) refreshTrainerBaselineMatchups();

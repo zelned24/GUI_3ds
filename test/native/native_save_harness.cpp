@@ -133,9 +133,9 @@ extern "C" int runNativeSaveChecks() {
         if (n + 18 <= roomSize && std::memcmp(versionSevenBytes + n, "trickRoomTurnsLeft=", 18) == 0) {
             versionSevenSize = n; break;
         }
-        if (n + 16 <= roomSize && std::memcmp(versionSevenBytes + n, "saveVersion=000a", 16) == 0)
+        if (n + 16 <= roomSize && std::memcmp(versionSevenBytes + n, "saveVersion=000b", 16) == 0)
             versionSevenBytes[n + 15] = '7';
-        if (n + 19 <= roomSize && std::memcmp(versionSevenBytes + n, "runtimeVersion=000a", 19) == 0)
+        if (n + 19 <= roomSize && std::memcmp(versionSevenBytes + n, "runtimeVersion=000b", 19) == 0)
             versionSevenBytes[n + 18] = '7';
     }
     if (!versionSevenSize) return 40;
@@ -160,9 +160,9 @@ extern "C" int runNativeSaveChecks() {
         if (n + 12 <= partySize && std::memcmp(versionSixBytes + n, "weatherType=", 12) == 0) {
             versionSixSize = n; break;
         }
-        if (n + 16 <= partySize && std::memcmp(versionSixBytes + n, "saveVersion=000a", 16) == 0)
+        if (n + 16 <= partySize && std::memcmp(versionSixBytes + n, "saveVersion=000b", 16) == 0)
             versionSixBytes[n + 15] = '6';
-        if (n + 19 <= partySize && std::memcmp(versionSixBytes + n, "runtimeVersion=000a", 19) == 0)
+        if (n + 19 <= partySize && std::memcmp(versionSixBytes + n, "runtimeVersion=000b", 19) == 0)
             versionSixBytes[n + 18] = '6';
     }
     if (!versionSixSize) return 36;
@@ -183,9 +183,9 @@ extern "C" int runNativeSaveChecks() {
         legacyTrainerBytes[legacyTrainerSize++] = partyBytes[n++];
     }
     for (size_t n = 0; n < legacyTrainerSize; ++n) {
-        if (n + 16 <= legacyTrainerSize && std::memcmp(legacyTrainerBytes + n, "saveVersion=000a", 16) == 0)
+        if (n + 16 <= legacyTrainerSize && std::memcmp(legacyTrainerBytes + n, "saveVersion=000b", 16) == 0)
             legacyTrainerBytes[n + 15] = '4';
-        if (n + 19 <= legacyTrainerSize && std::memcmp(legacyTrainerBytes + n, "runtimeVersion=000a", 19) == 0)
+        if (n + 19 <= legacyTrainerSize && std::memcmp(legacyTrainerBytes + n, "runtimeVersion=000b", 19) == 0)
             legacyTrainerBytes[n + 18] = '4';
     }
     IntegritySha256::hashHex(legacyTrainerBytes, legacyTrainerSize, digest);
@@ -220,9 +220,9 @@ extern "C" int runNativeSaveChecks() {
         if (n + 19 <= partySize && std::memcmp(partyBytes + n, "enemySwitchCounter=", 19) == 0) {
             legacyBodySize = n; break;
         }
-        if (n + 16 <= partySize && std::memcmp(partyBytes + n, "saveVersion=000a", 16) == 0)
+        if (n + 16 <= partySize && std::memcmp(partyBytes + n, "saveVersion=000b", 16) == 0)
             partyBytes[n + 15] = '3';
-        if (n + 19 <= partySize && std::memcmp(partyBytes + n, "runtimeVersion=000a", 19) == 0)
+        if (n + 19 <= partySize && std::memcmp(partyBytes + n, "runtimeVersion=000b", 19) == 0)
             partyBytes[n + 18] = '3';
     }
     if (!legacyBodySize) return 19;
@@ -255,9 +255,9 @@ extern "C" int runNativeSaveChecks() {
         if (n + 14 <= roomSize && std::memcmp(versionEightBytes + n, "pokeballCount=", 14) == 0) {
             versionEightSize = n; break;
         }
-        if (n + 16 <= roomSize && std::memcmp(versionEightBytes + n, "saveVersion=000a", 16) == 0)
+        if (n + 16 <= roomSize && std::memcmp(versionEightBytes + n, "saveVersion=000b", 16) == 0)
             versionEightBytes[n + 15] = '8';
-        if (n + 19 <= roomSize && std::memcmp(versionEightBytes + n, "runtimeVersion=000a", 19) == 0)
+        if (n + 19 <= roomSize && std::memcmp(versionEightBytes + n, "runtimeVersion=000b", 19) == 0)
             versionEightBytes[n + 18] = '8';
     }
     if (!versionEightSize) return 43;

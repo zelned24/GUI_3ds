@@ -522,3 +522,9 @@
 1. encode/decodeNativeHeldModifier reutiliza Writer/Reader de NativeRunSave: held=1, ID canónico textual, owner PID, stack, transferibilidad y raw arguments codificados por bytes. Decodifica ID contra catálogo pinned y solo publica registro válido; no guarda índices susceptibles a reordenamiento.
 2. Regresiones 379–383 escritas para roundtrip de metadata desconocida con saltos de línea, determinismo byte a byte, truncamiento/ID inexistente sin mutación y capacidad insuficiente. El componente no aporta checksum propio; lo debe envolver el journal de run.
 3. Falta incluir registros en payload de run y migrar schema, ampliar/verificar presupuesto y conectar dispatcher. Save de inventario todavía se rechaza explícitamente. Tests/compilación aplazados; Classic sigue incompleto.
+
+## Guardado de inventario en schema v11
+
+1. NativeRunSave v11 añade count y componentes held=1 dentro del payload protegido por SHA-256/content hash. IDs canónicos se resuelven al decodificar; límite 32 registros y envelope 8192 bytes fallan explícitamente por capacidad. No se aumentó silenciosamente el presupuesto de stack del journal; su perfil de memoria sigue pendiente de hardware.
+2. Migración v10 preserva actores explícitos y añade inventario vacío; rutas v1–v9 se conservan. Runtime capture fuerza snapshot de equipo cuando hay objetos, restore valida propietarios contra actores reconstruidos antes de publicar y setup no admite inventario. Efectos no soportados siguen bloqueados al jugar.
+3. Regresiones 384–388 escritas para run roundtrip, restauración de owner/metadata y fixture histórica v10 con checksum válido. Fixtures de versiones anteriores identifican ahora el writer v11 antes de construir su layout histórico. Tests/compilación aplazados; dispatcher y Classic completo siguen pendientes.

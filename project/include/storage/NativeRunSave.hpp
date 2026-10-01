@@ -2,13 +2,15 @@
 
 #include <cstddef>
 #include <cstdint>
+#include "game/PokerogueModifierReward.hpp"
 
 namespace Pokerogue3DS {
 
-inline constexpr uint16_t kNativeSaveVersion = 10;
-inline constexpr uint16_t kNativeSaveRuntimeVersion = 10;
+inline constexpr uint16_t kNativeSaveVersion = 11;
+inline constexpr uint16_t kNativeSaveRuntimeVersion = 11;
 // Bounded text envelope including six trainer members and field/inventory state.
 inline constexpr size_t kNativeSaveMaxBytes = 8192;
+inline constexpr size_t kNativeHeldModifierCapacity = 32;
 
 enum class NativeSaveStage : uint16_t {
     RunSetup = 1,
@@ -105,6 +107,8 @@ struct NativeRunSave {
     uint8_t playerPartyCount = 0; // Zero retains the legacy seed-replayed actor path.
     uint8_t activePlayerMember = 0xFF;
     NativePokemonSave playerParty[6]{};
+    uint8_t heldModifierCount = 0;
+    NativeHeldModifierInstance heldModifiers[kNativeHeldModifierCapacity]{};
     char modeId[32]{};
     char biomeId[48]{};
 };

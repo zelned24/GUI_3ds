@@ -1,6 +1,7 @@
 #include "game/FirstRunRuntime.hpp"
 #include "content/PokerogueRuntimeContent.hpp"
 #include <cstring>
+#include "storage/IntegritySha256.hpp"
 #include "game/PokemonExperience.hpp"
 #include "game/PokemonWeatherPhase.hpp"
 #include "game/PokerogueClassicWaveSchedule.hpp"
@@ -1553,8 +1554,41 @@ int main() {
             singleSnapshotRuntime.presentation().player.battleState.hp != beforeUnsupportedHeldTurn) return 376;
         NativeRunSave unsupportedHeldSave{};
         singleSnapshotRuntime.captureNativeRunSave(unsupportedHeldSave);
-        if (validateNativeRunSave(unsupportedHeldSave, PokerogueContent::kContentHash) == NativeSaveResult::Ok)
-            return 377;
+        if (validateNativeRunSave(unsupportedHeldSave, PokerogueContent::kContentHash) != NativeSaveResult::Ok ||
+            unsupportedHeldSave.heldModifierCount != 1 || !unsupportedHeldSave.playerPartyCount) return 377;
+        char heldRunPayload[kNativeSaveMaxBytes]{};
+        size_t heldRunSize = 0;
+        NativeRunSave decodedHeldRun{};
+        if (encodeNativeRunSave(unsupportedHeldSave, heldRunPayload, sizeof(heldRunPayload), heldRunSize) !=
+                NativeSaveResult::Ok || decodeNativeRunSave(heldRunPayload, heldRunSize,
+                PokerogueContent::kContentHash, decodedHeldRun) != NativeSaveResult::Ok ||
+            decodedHeldRun.heldModifierCount != 1 || decodedHeldRun.heldModifiers[0].ownerPokemonId !=
+                runtimeHeld.ownerPokemonId || decodedHeldRun.heldModifiers[0].transferable) return 384;
+        FirstRunRuntime restoredHeldGame(7);
+        if (!restoredHeldGame.restoreNativeRunSave(decodedHeldRun) || restoredHeldGame.heldModifierCount() != 1 ||
+            std::strcmp(restoredHeldGame.heldModifier(0)->rawArguments, runtimeHeld.rawArguments)) return 385;
+        // Historical v10 ends after explicit player members, before held inventory.
+        char versionTenPayload[kNativeSaveMaxBytes]{};
+        const char* heldSection = std::strstr(heldRunPayload, "heldModifierCount=");
+        if (!heldSection) return 386;
+        size_t versionTenSize = static_cast<size_t>(heldSection - heldRunPayload);
+        std::memcpy(versionTenPayload, heldRunPayload, versionTenSize);
+        char* tenSaveVersion = std::strstr(versionTenPayload, "saveVersion=000b");
+        char* tenRuntimeVersion = std::strstr(versionTenPayload, "runtimeVersion=000b");
+        if (!tenSaveVersion || !tenRuntimeVersion) return 387;
+        tenSaveVersion[std::strlen("saveVersion=") + 3] = 'a';
+        tenRuntimeVersion[std::strlen("runtimeVersion=") + 3] = 'a';
+        char tenHash[65]{};
+        IntegritySha256::hashHex(versionTenPayload, versionTenSize, tenHash);
+        std::memcpy(versionTenPayload + versionTenSize, "sha256=", 7);
+        std::memcpy(versionTenPayload + versionTenSize + 7, tenHash, 64);
+        versionTenPayload[versionTenSize + 71] = '\n';
+        versionTenSize += 72;
+        NativeRunSave migratedTen{};
+        if (decodeNativeRunSave(versionTenPayload, versionTenSize, PokerogueContent::kContentHash, migratedTen) !=
+                NativeSaveResult::Ok || migratedTen.saveVersion != 11 || migratedTen.runtimeVersion != 11 ||
+            migratedTen.heldModifierCount || migratedTen.playerPartyCount != unsupportedHeldSave.playerPartyCount ||
+            migratedTen.playerParty[0].pokemonId != unsupportedHeldSave.playerParty[0].pokemonId) return 388;
         if (!singleSnapshotRuntime.restoreSetup(singleRecaptured.seed, singleRecaptured.starterDex) ||
             singleSnapshotRuntime.heldModifierCount()) return 378;
         explicitParty.activePlayerMember = 1;

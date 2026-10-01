@@ -129,7 +129,7 @@ public:
         return index < m_context.playerPartyCount ? &m_context.playerParty[index] : nullptr;
     }
     // Provisional Old 3DS storage budget; exceeding it fails explicitly.
-    static constexpr size_t kHeldModifierStorageCapacity = 32;
+    static constexpr size_t kHeldModifierStorageCapacity = kNativeHeldModifierCapacity;
     size_t heldModifierCount() const { return m_heldModifierCount; }
     const NativeHeldModifierInstance* heldModifier(size_t index) const {
         return index < m_heldModifierCount ? &m_heldModifiers[index] : nullptr;
