@@ -107,6 +107,75 @@ inline PokemonExperienceResult planPokemonLevelIncrement(
     return PokemonExperienceResult::Ok;
 }
 
+struct PokemonFriendshipPolicy {
+    bool resolved = false; // Includes timed events, fusion and held booster applicability.
+    uint8_t boosterStacks = 0;
+    bool capped = false;
+    uint8_t friendshipCap = 0; // Caller resolves the pinned Rare Candy cap.
+    double candyMultiplier = 1.0;
+};
+
+struct PokemonFriendshipChangePlan {
+    uint8_t friendship = 0;
+    uint32_t candyFriendshipGain = 0; // Each resolved root species receives this gain.
+    bool requiresMaxFriendshipCallbacks = false;
+};
+
+// Pinned Pokemon.addFriendship / PokemonFriendshipBoosterModifier.apply.
+// Does not publish an actor change before the starter ledger/callbacks are ready.
+inline PokemonExperienceResult planPokemonFriendshipChange(uint8_t currentFriendship,
+    int32_t gain, const PokemonFriendshipPolicy& policy, PokemonFriendshipChangePlan& output) {
+    PokemonFriendshipChangePlan next{};
+    if (gain <= 0) {
+        const int64_t value = static_cast<int64_t>(currentFriendship) + gain;
+        next.friendship = static_cast<uint8_t>(value > 0 ? value : 0);
+        output = next;
+        return PokemonExperienceResult::Ok;
+    }
+    if (!policy.resolved) return PokemonExperienceResult::UnresolvedPolicy;
+    if (policy.boosterStacks > 3 || !(policy.candyMultiplier >= 0.0))
+        return PokemonExperienceResult::UnresolvedPolicy;
+    const double boosted = gain * (1.0 + 0.5 * policy.boosterStacks);
+    if (!(boosted <= 4294967295.0)) return PokemonExperienceResult::Overflow;
+    const uint32_t boostedGain = static_cast<uint32_t>(boosted);
+    uint64_t friendship = static_cast<uint64_t>(currentFriendship) + boostedGain;
+    if (policy.capped && friendship > policy.friendshipCap)
+        friendship = currentFriendship > policy.friendshipCap ? currentFriendship : policy.friendshipCap;
+    next.friendship = static_cast<uint8_t>(friendship > 255 ? 255 : friendship);
+    next.requiresMaxFriendshipCallbacks = next.friendship == 255;
+    const double candy = boostedGain * policy.candyMultiplier;
+    if (!(candy >= 0.0 && candy <= 4294967295.0)) return PokemonExperienceResult::Overflow;
+    next.candyFriendshipGain = static_cast<uint32_t>(candy);
+    output = next;
+    return PokemonExperienceResult::Ok;
+}
+
+struct StarterCandyProgressPlan {
+    uint32_t friendship = 0;
+    uint32_t candyAward = 0;
+};
+
+// Pinned starterData update: rejected candy awards leave progress at cap - 1.
+// A fused actor must apply this independently to both resolved root species.
+inline PokemonExperienceResult planStarterCandyProgress(uint32_t currentFriendship,
+    uint32_t gain, uint32_t friendshipCap, bool awardPolicyResolved, bool awardAccepted,
+    StarterCandyProgressPlan& output) {
+    if (!friendshipCap) return PokemonExperienceResult::InvalidLevel;
+    const uint64_t total = static_cast<uint64_t>(currentFriendship) + gain;
+    if (total > 0xffffffffULL) return PokemonExperienceResult::Overflow;
+    StarterCandyProgressPlan next{};
+    next.friendship = static_cast<uint32_t>(total);
+    if (total >= friendshipCap) {
+        if (!awardPolicyResolved) return PokemonExperienceResult::UnresolvedPolicy;
+        if (awardAccepted) {
+            next.candyAward = static_cast<uint32_t>(total / friendshipCap);
+            next.friendship = static_cast<uint32_t>(total % friendshipCap);
+        } else next.friendship = friendshipCap - 1;
+    }
+    output = next;
+    return PokemonExperienceResult::Ok;
+}
+
 inline PokemonExperienceResult pokemonExperienceForDefeat(
     const PokerogueContent::Species& defeated, uint16_t defeatedLevel, double& output,
     const PokerogueContent::Form* defeatedForm = nullptr) {

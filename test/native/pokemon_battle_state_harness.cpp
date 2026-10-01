@@ -75,6 +75,42 @@ extern "C" int runPokemonBattleStateChecks() {
     if (Pokerogue3DS::planPokemonLevelIncrement(highLevelSpecies->growthRate, 199, exp199,
             100, true, 10000, candyPlan) != Pokerogue3DS::PokemonExperienceResult::InvalidLevel ||
         candyPlan.progress.level != 202) return 531;
+    Pokerogue3DS::PokemonFriendshipPolicy friendshipPolicy{};
+    friendshipPolicy.resolved = true;
+    friendshipPolicy.capped = true;
+    friendshipPolicy.friendshipCap = 200;
+    Pokerogue3DS::PokemonFriendshipChangePlan friendshipPlan{};
+    if (Pokerogue3DS::planPokemonFriendshipChange(198, 6, friendshipPolicy, friendshipPlan) !=
+            Pokerogue3DS::PokemonExperienceResult::Ok || friendshipPlan.friendship != 200 ||
+        friendshipPlan.candyFriendshipGain != 6) return 532;
+    friendshipPolicy.boosterStacks = 1;
+    friendshipPolicy.candyMultiplier = 1.5;
+    if (Pokerogue3DS::planPokemonFriendshipChange(212, 6, friendshipPolicy, friendshipPlan) !=
+            Pokerogue3DS::PokemonExperienceResult::Ok || friendshipPlan.friendship != 212 ||
+        friendshipPlan.candyFriendshipGain != 13) return 533;
+    friendshipPolicy.resolved = false;
+    if (Pokerogue3DS::planPokemonFriendshipChange(3, -5, friendshipPolicy, friendshipPlan) !=
+            Pokerogue3DS::PokemonExperienceResult::Ok || friendshipPlan.friendship ||
+        friendshipPlan.candyFriendshipGain) return 534;
+    if (Pokerogue3DS::planPokemonFriendshipChange(198, 6, friendshipPolicy, friendshipPlan) !=
+            Pokerogue3DS::PokemonExperienceResult::UnresolvedPolicy || friendshipPlan.friendship) return 535;
+    friendshipPolicy.resolved = true;
+    friendshipPolicy.capped = false;
+    if (Pokerogue3DS::planPokemonFriendshipChange(250, 6, friendshipPolicy, friendshipPlan) !=
+            Pokerogue3DS::PokemonExperienceResult::Ok || friendshipPlan.friendship != 255 ||
+        !friendshipPlan.requiresMaxFriendshipCallbacks) return 536;
+    Pokerogue3DS::StarterCandyProgressPlan candyProgress{};
+    if (Pokerogue3DS::planStarterCandyProgress(24, 52, 25, true, true, candyProgress) !=
+            Pokerogue3DS::PokemonExperienceResult::Ok || candyProgress.friendship != 1 ||
+        candyProgress.candyAward != 3) return 537;
+    if (Pokerogue3DS::planStarterCandyProgress(24, 52, 25, true, false, candyProgress) !=
+            Pokerogue3DS::PokemonExperienceResult::Ok || candyProgress.friendship != 24 ||
+        candyProgress.candyAward) return 538;
+    if (Pokerogue3DS::planStarterCandyProgress(24, 52, 25, false, false, candyProgress) !=
+            Pokerogue3DS::PokemonExperienceResult::UnresolvedPolicy || candyProgress.friendship != 24)
+        return 539;
+    if (Pokerogue3DS::planStarterCandyProgress(0xffffffffU, 1, 25, true, true, candyProgress) !=
+            Pokerogue3DS::PokemonExperienceResult::Overflow || candyProgress.friendship != 24) return 540;
     highLevelInput.level = 65535;
     const uint16_t previousHp = highLevelActor.hp;
     if (Pokerogue3DS::initializePokemonBattleState(highLevelInput, highLevelActor) !=

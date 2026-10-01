@@ -701,3 +701,9 @@
 2. El actor inicializa amistad desde ese perfil. Subida de nivel, evolución y cambio de forma conservan su valor, en lugar de reiniciarlo al valor de la nueva especie.
 3. Payload de Pokémon `pokemon=5` añade amistad. Lee versiones 1–4 con migración explícita a amistad base pinned; esos formatos nunca guardaron el valor. Captura/restauración de actor preserva la amistad. Un único miembro con amistad modificada exige snapshot explícito de equipo.
 4. Regresiones de v5/v4 y conservación al subir de nivel escritas, pendientes de ejecución. Todavía faltan ganancias/pérdidas de amistad, starter candy, amistad de fusión y condiciones evolutivas; Rare Candy permanece bloqueado.
+
+## Amistad y caramelos: reglas separadas
+
+1. `planPokemonFriendshipChange` conserva la semántica de `Pokemon.addFriendship` y `PokemonFriendshipBoosterModifier.apply`: pérdida sin multiplicadores/caramelos, booster con floor, cap sin reducir amistad ya superior, límite 255 y señal de callbacks de amistad máxima. El progreso de caramelos usa la ganancia completa después del booster, no la diferencia de amistad del actor.
+2. `planStarterCandyProgress` prepara premios múltiples y residuo; si `GameData.addStarterCandy` rechaza el premio, conserva `cap - 1`. Policy desconocida y overflow fallan sin publicar resultados. Fuentes pinned: `src/field/pokemon.ts`, `addFriendship`; `src/modifier/modifier.ts`, `PokemonFriendshipBoosterModifier.apply`.
+3. Son planes para una transacción, no persistencia del perfil de jugador. Faltan ledger de starter candy, raíces de fusión/timed events, awards/ribbons y conexión a victoria/faint/Rare Candy. Regresiones 532–540 escritas, pendientes de ejecución.
