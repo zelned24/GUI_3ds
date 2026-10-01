@@ -904,3 +904,10 @@
 1. `resetPokemonSummonState` reutiliza la limpieza de stages y limpia Unburden/daño del turno; no cambia HP, PP, amistad, identidad, forma persistente ni pausa de evolución. Fuente pinned: `src/field/pokemon.ts`, `Pokemon.resetSummonData`.
 2. Conectado a cambios voluntarios/forzados, entrada y retirada de entrenadores y recalls en transiciones de arena. La reserva saliente conserva su estado persistente y pierde los campos transitorios soportados.
 3. Regresiones 565–568 escritas para limpieza, preservación e idempotencia. Pendientes de ejecución; tags/transformaciones y callbacks completos siguen pendientes.
+
+## Pesos de recuperación para el equipo — pendiente de ejecución
+
+1. `InitialClassicRewardWeights` recibe los actores reales del equipo en `generateVictoryRewards`; Potion/Super/Hyper/Max, Ether/Elixir y variantes cuentan miembros elegibles hasta tres, con umbrales pinned.
+2. Revive pesa nueve por caído hasta tres; Max Revive tres por caído hasta tres; Sacred Ash se habilita desde ceil(tamaño/2) caídos. Fuente inspeccionada: `src/modifier/init-modifier-pools.ts`, `initCommonModifierPool` / `initGreatModifierPool`.
+3. Regresiones 569–574 escritas con entradas canónicas reales, activo sano/reservas heridas, PP bajos, cap de tres, revives y estado inválido. Sin ejecutar.
+4. Pesos de PP asumen ausencia de Leppa, coherente con el inventario held actualmente soportado. Status, lures existentes, economía, otras familias y supresión por límite de stacks siguen pendientes; el provider no es aún el pool upstream completo.

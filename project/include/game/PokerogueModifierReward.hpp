@@ -693,6 +693,10 @@ public:
     InitialClassicRewardWeights(const PokemonBattleState& starter,
                                 bool hasLearnableLevelMoves)
         : m_starter(starter), m_hasLearnableLevelMoves(hasLearnableLevelMoves) {}
+    InitialClassicRewardWeights(const PokemonBattleState& starter, bool hasLearnableLevelMoves,
+        const PokemonBattleState* const* party, uint8_t count)
+        : m_starter(starter), m_hasLearnableLevelMoves(hasLearnableLevelMoves), m_party(party), m_partyCount(count) {}
+
 
     bool weightFor(const PokerogueContent::ModifierPoolEntry& entry,
                    uint32_t& weight) const override {
@@ -700,6 +704,11 @@ public:
         if (std::strcmp(entry.pool, "modifierPool") != 0) return false;
         if (!m_starter.maxHp || m_starter.hp > m_starter.maxHp ||
             m_starter.moveCount > 4) return false;
+        if (m_party && (std::strcmp(entry.tier, "GREAT") == 0 || std::strcmp(entry.tier, "COMMON") == 0)) {
+            bool handled = false;
+            if (!partyRecoveryWeight(entry.itemId, weight, handled)) return false;
+            if (handled) return true;
+        }
         if (std::strcmp(entry.tier, "GREAT") == 0)
             return greatWeight(entry, weight);
         if (std::strcmp(entry.tier, "COMMON") != 0) return false;
@@ -734,6 +743,43 @@ public:
     }
 
 private:
+    // Pinned init-modifier-pools.ts: count eligible party members, capped at three.
+    // PP weights currently assume no Leppa berries (unsupported held frontier).
+    bool partyRecoveryWeight(const char* id, uint32_t& weight, bool& handled) const {
+        const bool potion = !std::strcmp(id, "POTION"), super = !std::strcmp(id, "SUPER_POTION");
+        const bool hyper = !std::strcmp(id, "HYPER_POTION"), max = !std::strcmp(id, "MAX_POTION");
+        const bool ether = !std::strcmp(id, "ETHER") || !std::strcmp(id, "MAX_ETHER");
+        const bool elixir = !std::strcmp(id, "ELIXIR") || !std::strcmp(id, "MAX_ELIXIR");
+        const bool revive = !std::strcmp(id, "REVIVE"), maxRevive = !std::strcmp(id, "MAX_REVIVE");
+        const bool ash = !std::strcmp(id, "SACRED_ASH");
+        handled = potion || super || hyper || max || ether || elixir || revive || maxRevive || ash;
+        if (!handled) return true;
+        if (!m_partyCount || m_partyCount > 6) return false;
+        uint8_t eligible = 0;
+        for (uint8_t member = 0; member < m_partyCount; ++member) {
+            const auto* actor = m_party[member];
+            if (!actor || !actor->maxHp || actor->hp > actor->maxHp || actor->moveCount > 4) return false;
+            if (revive || maxRevive || ash) { eligible += !actor->hp; continue; }
+            const uint32_t missing = actor->maxHp - actor->hp;
+            bool lowPp = false;
+            for (uint8_t slot = 0; slot < actor->moveCount; ++slot) {
+                const auto& move = actor->moves[slot];
+                if (move.pp > move.maxPp) return false;
+                const uint32_t used = move.maxPp - move.pp;
+                lowPp |= used && move.pp <= 5 && used > move.maxPp / 2;
+            }
+            eligible += actor->hp && ((potion && missing >= 10 && 8u * actor->hp <= 7u * actor->maxHp) ||
+                (super && missing >= 25 && 4u * actor->hp <= 3u * actor->maxHp) ||
+                (hyper && missing >= 100 && 8u * actor->hp <= 5u * actor->maxHp) ||
+                (max && missing >= 100 && 2u * actor->hp <= actor->maxHp) || ((ether || elixir) && lowPp));
+        }
+        if (ash) { weight = eligible >= (m_partyCount + 1) / 2 ? 1 : 0; return true; }
+        const uint32_t capped = eligible > 3 ? 3 : eligible;
+        const uint32_t multiplier = revive ? 9 : maxRevive ? 3 :
+            (potion || hyper || !std::strcmp(id, "ETHER") || !std::strcmp(id, "ELIXIR")) ? 3 : 1;
+        weight = capped * multiplier;
+        return true;
+    }
     bool hasLowPp(bool& lowPp) const {
         lowPp = false;
         for (uint8_t i = 0; i < m_starter.moveCount; ++i) {
@@ -802,6 +848,8 @@ private:
 
     const PokemonBattleState& m_starter;
     bool m_hasLearnableLevelMoves;
+    const PokemonBattleState* const* m_party = nullptr; // Borrowed for synchronous reward rolls.
+    uint8_t m_partyCount = 0;
 };
 
 inline bool hasPlayerModifierTier(uint8_t tier) {

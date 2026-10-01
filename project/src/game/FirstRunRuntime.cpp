@@ -780,7 +780,13 @@ bool FirstRunRuntime::generateVictoryRewards() {
     PokerogueSeedOffsetScope scope(rewardRng, waveSeed, m_seedLength, 0x1000u + (static_cast<uint32_t>(m_run.wave) << 4));
     if (!scope.valid()) return false;
 
-    InitialClassicRewardWeights weights(m_context.player.battleState, true);
+    const PokemonBattleState* party[6]{};
+    if (!m_context.playerPartyCount || m_context.playerPartyCount > 6 ||
+        m_context.activePlayerPartyIndex >= m_context.playerPartyCount) return false;
+    for (uint8_t member = 0; member < m_context.playerPartyCount; ++member)
+        party[member] = member == m_context.activePlayerPartyIndex ? &m_context.player.battleState
+            : &m_context.playerParty[member].battleState;
+    InitialClassicRewardWeights weights(m_context.player.battleState, true, party, m_context.playerPartyCount);
     for (uint8_t slot = 0; slot < 3; ++slot) {
         ModifierRewardRoll roll{};
         if (rollPlayerModifierReward(rewardRng, 0, weights, roll) == ModifierRewardRollResult::Ok &&

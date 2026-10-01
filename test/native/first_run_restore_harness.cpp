@@ -972,6 +972,39 @@ static int checkWave200FinalBossAndGameClear() {
         bossActor.moves[3].maxPp != preservedBoss.moves[3].maxPp) return 338;
 
 
+    // Recovery weights include reserves; current active can be completely healthy.
+    PokemonBattleState rewardActors[6]{};
+    const PokemonBattleState* rewardParty[6]{};
+    for (uint8_t member = 0; member < 6; ++member) {
+        rewardActors[member].maxHp = 200;
+        rewardActors[member].hp = member ? 50 : 200;
+        rewardActors[member].moveCount = 1;
+        rewardActors[member].moves[0].maxPp = 20;
+        rewardActors[member].moves[0].pp = member ? 2 : 20;
+        rewardParty[member] = &rewardActors[member];
+    }
+    InitialClassicRewardWeights partyWeights(rewardActors[0], false, rewardParty, 6);
+    const auto weightMatches = [&](const char* id, uint32_t expected) {
+        for (const auto& entry : PokerogueContent::kModifierPoolEntries) {
+            if (std::strcmp(entry.pool, "modifierPool") || std::strcmp(entry.itemId, id)) continue;
+            uint32_t weight = 999;
+            return partyWeights.weightFor(entry, weight) && weight == expected;
+        }
+        return false;
+    };
+    if (!weightMatches("POTION", 9) || !weightMatches("SUPER_POTION", 3) ||
+        !weightMatches("HYPER_POTION", 9) || !weightMatches("MAX_POTION", 3)) return 569;
+    if (!weightMatches("ETHER", 9) || !weightMatches("MAX_ETHER", 3) ||
+        !weightMatches("ELIXIR", 9) || !weightMatches("MAX_ELIXIR", 3)) return 570;
+    if (!weightMatches("REVIVE", 0) || !weightMatches("MAX_REVIVE", 0) ||
+        !weightMatches("SACRED_ASH", 0)) return 571;
+    for (uint8_t member = 1; member < 4; ++member) rewardActors[member].hp = 0;
+    if (!weightMatches("REVIVE", 27) || !weightMatches("MAX_REVIVE", 9) ||
+        !weightMatches("SACRED_ASH", 1) || !weightMatches("POTION", 6)) return 572;
+    rewardActors[3].hp = 50;
+    if (!weightMatches("SACRED_ASH", 0)) return 573;
+    rewardActors[5].hp = 201;
+    if (weightMatches("POTION", 9)) return 574;
     return 0;
 }
 
