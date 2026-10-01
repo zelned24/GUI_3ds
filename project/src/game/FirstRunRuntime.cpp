@@ -3021,6 +3021,16 @@ bool FirstRunRuntime::resolveFreshStarter(uint16_t dex, PokerogueRngAdapter& rng
 
         starterActor.pokemonId = nextRng.randSeedUint32();
         starterActor.abilityIndex = 0;
+        uint16_t starterAbility = starter.ability1;
+        if (m_starterProfileReady) {
+            for (size_t record = 0; record < m_starterProfileCount; ++record) {
+                const auto& entry = m_starterProfileRecords[record];
+                if (entry.speciesDex != starter.dex) continue;
+                if (entry.abilityAttr && !nativeStarterDefaultAbility(entry, starterActor.abilityIndex, starterAbility)) return false;
+                break;
+            }
+        }
+
         starterActor.gender = starter.malePercentTenths == 65534
             ? PokemonGender::Genderless : PokemonGender::Male;
         starterActor.nature = starterNature;
@@ -3058,8 +3068,12 @@ bool FirstRunRuntime::resolveFreshStarter(uint16_t dex, PokerogueRngAdapter& rng
         starterInput.pokemonId = starterActor.pokemonId;
         starterInput.nature = starterActor.nature;
         starterInput.gender = starterActor.gender;
-        starterInput.abilityId = starterForm && starterForm->ability1
-            ? starterForm->ability1 : starter.ability1;
+        starterInput.abilityId = starterAbility;
+        if (starterForm) {
+            const uint16_t formAbility = starterActor.abilityIndex == 0 ? starterForm->ability1 :
+                starterActor.abilityIndex == 1 && starter.ability2 ? starterForm->ability2 : starterForm->abilityHidden;
+            if (formAbility) starterInput.abilityId = formAbility;
+        }
         for (uint8_t i = 0; i < 6; ++i) starterInput.ivs[i] = starterActor.ivs[i];
         starterInput.moveCount = prepared.moveCount;
         for (uint8_t i = 0; i < starterInput.moveCount; ++i)

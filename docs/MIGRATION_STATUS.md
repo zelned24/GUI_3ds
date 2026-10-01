@@ -1206,3 +1206,9 @@
 1. `nativeStarterDefaultNature` sigue `getStarterDefaultNature` de `src/ui/utils/starter-select-ui-utils.ts` pinned: primera naturaleza desbloqueada en orden enum. No consume RNG. Metadata ausente/inválida falla sin modificar output; el caller mantiene el baseline canónico conocido de especies default cuando falta metadata legacy.
 2. `resolveFreshStarter` aplica naturaleza del perfil antes de construir identidad/stats. Esto conecta nuevos desbloqueos de naturaleza para iniciales default, además de IV. Preferencias/ciclo de naturaleza y especies no default todavía pendientes.
 3. Regresiones de máscara Hardy+Quirky, metadata ausente y naturaleza efectiva del actor escritas; sin ejecutar. Tests/compilación siguen aplazados.
+
+## Habilidad default resuelta desde desbloqueos
+
+1. `nativeStarterDefaultAbility` sigue `getStarterDefaultAbilityIndex` de `src/ui/utils/starter-select-ui-utils.ts` pinned: primera habilidad si está desbloqueada, segunda cuando corresponde, oculta en slot uno sin segunda regular o slot dos con ella. Resuelve IDs canónicos reales y falla sin modificar output cuando falta metadata/definición.
+2. Resolver fresh usa habilidad/slot del perfil y atributos de la forma canónica cuando existen; fallback legacy conserva la primera habilidad conocida del baseline default. Sin draws RNG nuevos. No habilita todavía especies no default ni triggers de habilidad pendientes.
+3. Regresiones escritas de prioridad de primera habilidad, hidden-only, índice upstream y metadata ausente; sin ejecutar. Tests/compilación siguen aplazados.

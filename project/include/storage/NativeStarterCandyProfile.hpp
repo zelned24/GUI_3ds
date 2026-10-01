@@ -47,6 +47,22 @@ inline bool nativeStarterDefaultNature(const NativeStarterCandyRecord& record, P
     return false;
 }
 
+// Pinned getStarterDefaultAbilityIndex: hidden uses slot one when there is
+// no second regular ability, otherwise slot two. Keep the upstream slot ID.
+inline bool nativeStarterDefaultAbility(const NativeStarterCandyRecord& record,
+    uint8_t& outputIndex, uint16_t& outputAbility) {
+    const auto* species = PokerogueContent::findSpeciesByDex(record.speciesDex);
+    if (!species || !record.abilityAttr || (record.abilityAttr & ~7u)) return false;
+    const uint8_t index = (record.abilityAttr & 1u) ? 0 :
+        (!species->ability2 || (record.abilityAttr & 2u)) ? 1 : 2;
+    const uint16_t ability = index == 0 ? species->ability1 :
+        index == 1 && species->ability2 ? species->ability2 : species->abilityHidden;
+    if (!ability) return false;
+    outputIndex = index;
+    outputAbility = ability;
+    return true;
+}
+
 enum class StarterCandyApplyResult : uint8_t {
     Applied = 0, InvalidRootSpecies, MissingStarterCost, InvalidCandyCount, Overflow
 };

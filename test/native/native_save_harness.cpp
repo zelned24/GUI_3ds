@@ -700,6 +700,19 @@ extern "C" int runNativeSaveChecks() {
     auto missingNature = purchased;
     missingNature.natureAttr = 0;
     if (nativeStarterDefaultNature(missingNature, defaultNature) || defaultNature != PokemonNature::Hardy) return 135;
+    uint8_t defaultAbilityIndex = 255;
+    uint16_t defaultAbility = 65535;
+    if (!nativeStarterDefaultAbility(purchased, defaultAbilityIndex, defaultAbility) ||
+        defaultAbilityIndex != 0 || defaultAbility != purchasedSpecies->ability1) return 136;
+    auto hiddenOnly = purchased;
+    hiddenOnly.abilityAttr = 4;
+    if (!nativeStarterDefaultAbility(hiddenOnly, defaultAbilityIndex, defaultAbility) ||
+        defaultAbilityIndex != (purchasedSpecies->ability2 ? 2 : 1) || defaultAbility != purchasedSpecies->abilityHidden) return 137;
+    hiddenOnly.abilityAttr = 0;
+    const uint8_t retainedIndex = defaultAbilityIndex;
+    const uint16_t retainedAbility = defaultAbility;
+    if (nativeStarterDefaultAbility(hiddenOnly, defaultAbilityIndex, defaultAbility) ||
+        defaultAbilityIndex != retainedIndex || defaultAbility != retainedAbility) return 138;
     purchased.costReduction = 3;
     size_t invalidWritten = 999;
     if (encodeNativeStarterCandyProfile(&purchased, 1, 1, PokerogueContent::kContentHash,
