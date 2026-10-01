@@ -931,7 +931,12 @@ bool FirstRunRuntime::claimRewardChoiceInPlace(uint8_t heldPartyMember, bool rec
     m_rewardsPending = false;
     m_run.wave = m_victoryPlan.nextWave;
     resolve(true);
-    if (!m_encounterResolved) m_checkpointAvailable = false;
+    if (!m_encounterResolved) {
+        m_checkpointAvailable = false;
+        if (m_battleFeedback.empty()) m_battleFeedback = "Next canonical encounter could not resolve";
+        buildScene();
+        return false;
+    }
     m_battleFeedback = "Reward claimed - next Classic wave";
     buildScene();
     return m_encounterResolved;
@@ -2629,11 +2634,14 @@ void FirstRunRuntime::resolve(bool carryPlayer) {
     // Segment transitions: every 10 waves in Classic, transition to next biome.
     if (m_run.wave > 1 && (m_run.wave - 1) % 10 == 0) {
         const char* nextBiomeId = nullptr;
-        if (resolveClassicNextBiome(m_run.biomeId, m_run.wave, true,
-                m_seedCodeUnits.data(), m_seedLength, false, nullptr,
-                nextBiomeId) == ClassicBiomeTransitionResult::Ok && nextBiomeId) {
-            m_run.biomeId = nextBiomeId;
+        const auto transition = resolveClassicNextBiome(m_run.biomeId, m_run.wave, true,
+            m_seedCodeUnits.data(), m_seedLength, false, nullptr, nextBiomeId);
+        if (transition != ClassicBiomeTransitionResult::Ok || !nextBiomeId) {
+            m_battleFeedback = classicBiomeTransitionResultName(transition == ClassicBiomeTransitionResult::Ok
+                ? ClassicBiomeTransitionResult::MissingBiome : transition);
+            return; // Candidate command rolls back; never reuse the prior biome silently.
         }
+        m_run.biomeId = nextBiomeId;
     }
     const auto* biomeEntry = findBiomeById(m_run.biomeId);
     const std::string biomeLocaleId = std::string("biomes:") + m_run.biomeId;

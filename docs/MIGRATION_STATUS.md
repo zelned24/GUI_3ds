@@ -936,3 +936,9 @@
 1. Snapshot QuickJS expone nombre localizado, HP/maxHP y moves/PP/maxPP por miembro desde actores reales. El activo usa su estado de campo, no una copia de reserva potencialmente atrasada.
 2. Selector de rewards muestra HP del equipo y nombre/PP del slot elegido. Son datos de presentación; validación de elegibilidad permanece en el comando C++.
 3. Regresión del script ampliada para comprobar HP y PP de una reserva. Sin ejecutar; bundle regenerado. Diseño visual definitivo y validación de memoria/rendimiento en consola siguen pendientes.
+
+## Fallos de transición de bioma — pendiente de ejecución
+
+1. `resolve` deja el encuentro sin resolver si la transición canónica falla, con motivo explícito; no conserva silenciosamente el bioma anterior. Los comandos de reward/skip conservan su rollback por candidato existente.
+2. Claim no sustituye un error de transición por el mensaje de éxito. Diferencia ruta/bioma faltante, modo no soportado, elección pendiente/inválida y entrada inválida.
+3. Regresiones 578–580 escritas para ruta faltante, modo no soportado y motivos distintos de elección; sin ejecutar. Guardado completo de historia de rutas y elección Map aún pendientes.

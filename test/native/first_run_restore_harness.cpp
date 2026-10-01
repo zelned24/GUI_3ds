@@ -7,6 +7,7 @@
 #include "game/PokemonExperience.hpp"
 #include "game/PokemonWeatherPhase.hpp"
 #include "game/PokerogueClassicWaveSchedule.hpp"
+#include "game/PokerogueBiomeTransition.hpp"
 #include "game/PokerogueEncounterResolver.hpp"
 #include "game/PokerogueTrainerPartyLevels.hpp"
 #include "game/PokemonWildMovesetGenerator.hpp"
@@ -369,6 +370,18 @@ static int checkModifierRewardGenerationAndClaim() {
 
 static int checkBiomeTransitionProgression() {
     using namespace Pokerogue3DS;
+    const uint16_t rootSeed[] = {49};
+    const char* destination = "unchanged";
+    const auto missing = resolveClassicNextBiome("TEST_FIXTURE_INVALID_BIOME", 11, true,
+        rootSeed, 1, false, nullptr, destination);
+    if (missing != ClassicBiomeTransitionResult::MissingRoute || destination ||
+        std::strcmp(classicBiomeTransitionResultName(missing), "Canonical biome route missing")) return 578;
+    destination = "unchanged";
+    const auto unsupported = resolveClassicNextBiome("town", 11, false, rootSeed, 1, false, nullptr, destination);
+    if (unsupported != ClassicBiomeTransitionResult::UnsupportedMode || destination ||
+        std::strcmp(classicBiomeTransitionResultName(unsupported), "Biome transition mode unsupported")) return 579;
+    if (!std::strcmp(classicBiomeTransitionResultName(ClassicBiomeTransitionResult::AwaitingMapChoice),
+        classicBiomeTransitionResultName(ClassicBiomeTransitionResult::InvalidMapChoice))) return 580;
     for (uint32_t seed = 1; seed <= 64; ++seed) {
         FirstRunRuntime game(seed);
         bool eligible = true;

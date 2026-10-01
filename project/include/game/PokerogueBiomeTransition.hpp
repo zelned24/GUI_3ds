@@ -22,6 +22,20 @@ enum class ClassicBiomeTransitionResult : uint8_t {
     InvalidMapChoice,
 };
 
+inline const char* classicBiomeTransitionResultName(ClassicBiomeTransitionResult result) {
+    switch (result) {
+    case ClassicBiomeTransitionResult::Ok: return "Biome transition resolved";
+    case ClassicBiomeTransitionResult::InvalidInput: return "Invalid biome transition input";
+    case ClassicBiomeTransitionResult::UnsupportedMode: return "Biome transition mode unsupported";
+    case ClassicBiomeTransitionResult::MissingBiome: return "Canonical destination biome missing";
+    case ClassicBiomeTransitionResult::MissingRoute: return "Canonical biome route missing";
+    case ClassicBiomeTransitionResult::NoEligibleRoute: return "No eligible canonical biome route";
+    case ClassicBiomeTransitionResult::AwaitingMapChoice: return "Biome map choice pending";
+    case ClassicBiomeTransitionResult::InvalidMapChoice: return "Invalid biome map choice";
+    }
+    return "Unknown biome transition result";
+}
+
 // Resolves the data and RNG part of upstream SelectBiomePhase for Classic.
 // The caller must pass nextWaveIndex (current wave + 1) and the run's root seed;
 // SelectBiomePhase calls resetSeed() with the completed wave before evaluating

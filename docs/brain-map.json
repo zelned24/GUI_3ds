@@ -328,6 +328,7 @@
 {"from":"test/native/first_run_restore_harness.cpp","to":"project/include/game/PokemonExperience.hpp","kind":"include"},
 {"from":"test/native/first_run_restore_harness.cpp","to":"project/include/game/PokemonWeatherPhase.hpp","kind":"include"},
 {"from":"test/native/first_run_restore_harness.cpp","to":"project/include/game/PokemonWildMovesetGenerator.hpp","kind":"include"},
+{"from":"test/native/first_run_restore_harness.cpp","to":"project/include/game/PokerogueBiomeTransition.hpp","kind":"include"},
 {"from":"test/native/first_run_restore_harness.cpp","to":"project/include/game/PokerogueClassicWaveSchedule.hpp","kind":"include"},
 {"from":"test/native/first_run_restore_harness.cpp","to":"project/include/game/PokerogueEncounterResolver.hpp","kind":"include"},
 {"from":"test/native/first_run_restore_harness.cpp","to":"project/include/game/PokerogueTrainerPartyLevels.hpp","kind":"include"},
