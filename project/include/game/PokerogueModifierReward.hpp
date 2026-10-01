@@ -190,11 +190,12 @@ enum class HeldItemTransferSelectionResult : uint8_t {
 
 // One-item activation (Mini Black Hole max stack one). Uses the holder's
 // battle RNG and preserves upstream findModifiers order, without a heap pool.
-inline HeldItemTransferSelectionResult selectHeldItemTransferAttempt(
-    const uint32_t* opponents, size_t opponentCount,
-    const HeldItemTransferCandidate* inventory, size_t inventoryCount,
-    uint16_t transferCount, PokerogueRngAdapter& battleRng, HeldItemTransferSelection& output) {
-    if ((opponentCount && !opponents) || (inventoryCount && !inventory) ||
+template <typename CandidateAt>
+inline HeldItemTransferSelectionResult selectHeldItemTransferAttemptCore(
+    const uint32_t* opponents, size_t opponentCount, size_t inventoryCount,
+    uint16_t transferCount, PokerogueRngAdapter& battleRng, HeldItemTransferSelection& output,
+    const CandidateAt& candidateAt) {
+    if ((opponentCount && !opponents) ||
         opponentCount > 0x7FFFFFFFu || inventoryCount > 0x7FFFFFFFu || transferCount > 1)
         return HeldItemTransferSelectionResult::InvalidState;
     HeldItemTransferSelection selection{};
@@ -208,7 +209,7 @@ inline HeldItemTransferSelectionResult selectHeldItemTransferAttempt(
     }
     size_t eligibleCount = 0;
     for (size_t i = 0; i < inventoryCount; ++i)
-        if (inventory[i].ownerPokemonId == opponents[selection.opponentIndex] && inventory[i].transferable)
+        if (candidateAt(i).ownerPokemonId == opponents[selection.opponentIndex] && candidateAt(i).transferable)
             ++eligibleCount;
     if (!eligibleCount) {
         battleRng = nextRng;
@@ -217,15 +218,38 @@ inline HeldItemTransferSelectionResult selectHeldItemTransferAttempt(
     }
     size_t ordinal = static_cast<size_t>(nextRng.randSeedInt(static_cast<int32_t>(eligibleCount)));
     for (size_t i = 0; i < inventoryCount; ++i) {
-        if (inventory[i].ownerPokemonId != opponents[selection.opponentIndex] || !inventory[i].transferable) continue;
+        if (candidateAt(i).ownerPokemonId != opponents[selection.opponentIndex] || !candidateAt(i).transferable) continue;
         if (ordinal) { --ordinal; continue; }
-        selection.inventoryIndex = inventory[i].inventoryIndex;
+        selection.inventoryIndex = candidateAt(i).inventoryIndex;
         selection.itemFound = true;
         break;
     }
     battleRng = nextRng;
     output = selection;
     return HeldItemTransferSelectionResult::Selected;
+}
+
+inline HeldItemTransferSelectionResult selectHeldItemTransferAttempt(
+    const uint32_t* opponents, size_t opponentCount,
+    const HeldItemTransferCandidate* inventory, size_t inventoryCount,
+    uint16_t transferCount, PokerogueRngAdapter& battleRng, HeldItemTransferSelection& output) {
+    if (inventoryCount && !inventory) return HeldItemTransferSelectionResult::InvalidState;
+    return selectHeldItemTransferAttemptCore(opponents, opponentCount, inventoryCount,
+        transferCount, battleRng, output, [inventory](size_t i) { return inventory[i]; });
+}
+
+inline HeldItemTransferSelectionResult selectNativeHeldItemTransferAttempt(
+    const uint32_t* opponents, size_t opponentCount,
+    const NativeHeldModifierInstance* records, size_t capacity, size_t count,
+    uint16_t transferCount, PokerogueRngAdapter& battleRng, HeldItemTransferSelection& output) {
+    if ((capacity && !records) || count > capacity || count > 0x7FFFFFFFu)
+        return HeldItemTransferSelectionResult::InvalidState;
+    for (size_t i = 0; i < count; ++i)
+        if (!validateHeldModifierInstance(records[i])) return HeldItemTransferSelectionResult::InvalidState;
+    return selectHeldItemTransferAttemptCore(opponents, opponentCount, count,
+        transferCount, battleRng, output, [records](size_t i) {
+            return HeldItemTransferCandidate{records[i].ownerPokemonId, i, records[i].transferable};
+        });
 }
 
 enum class ModifierRewardRollResult : uint8_t {

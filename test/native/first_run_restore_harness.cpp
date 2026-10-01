@@ -555,6 +555,32 @@ static int checkWave200FinalBossAndGameClear() {
     if (applySelectedHeldItemTheft(transferRecords, 2, transferRecordCount, 1, 1003, theftPolicy,
             inventoryTransfer) != HeldItemInventoryTransferResult::StorageCapacity || transferRecordCount != 2 ||
         transferRecords[1].stackCount != 2 || transferRecords[1].ownerPokemonId != 1001) return 370;
+    NativeHeldModifierInstance nativeTheftRecords[3]{};
+    nativeTheftRecords[0] = otherHolder;
+    nativeTheftRecords[0].ownerPokemonId = 1001;
+    nativeTheftRecords[1] = blackHoleInstance; // The boss-held copy cannot be stolen.
+    nativeTheftRecords[1].ownerPokemonId = 1001;
+    nativeTheftRecords[2] = otherHolder;
+    nativeTheftRecords[2].ownerPokemonId = 1002;
+    actualTheftRng = rng;
+    expectedTheftRng = rng;
+    const auto nativeOpponent = static_cast<size_t>(expectedTheftRng.randSeedInt(2));
+    expectedTheftRng.randSeedInt(1);
+    if (selectNativeHeldItemTransferAttempt(theftOpponents, 2, nativeTheftRecords, 3, 3, 1,
+            actualTheftRng, theftSelection) != HeldItemTransferSelectionResult::Selected ||
+        !theftSelection.itemFound || theftSelection.opponentIndex != nativeOpponent ||
+        theftSelection.inventoryIndex != (nativeOpponent ? 2u : 0u)) return 371;
+    actualTheftState = actualTheftRng.state();
+    expectedTheftState = expectedTheftRng.state();
+    if (actualTheftState.carry != expectedTheftState.carry || actualTheftState.s0 != expectedTheftState.s0 ||
+        actualTheftState.s1 != expectedTheftState.s1 || actualTheftState.s2 != expectedTheftState.s2) return 372;
+    nativeTheftRecords[0].stackCount = 0;
+    const auto beforeInvalidInventorySelection = actualTheftRng.state();
+    if (selectNativeHeldItemTransferAttempt(theftOpponents, 2, nativeTheftRecords, 3, 3, 1,
+            actualTheftRng, theftSelection) != HeldItemTransferSelectionResult::InvalidState ||
+        actualTheftRng.state().s0 != beforeInvalidInventorySelection.s0 ||
+        selectNativeHeldItemTransferAttempt(theftOpponents, 2, nativeTheftRecords, 2, 3, 1,
+            actualTheftRng, theftSelection) != HeldItemTransferSelectionResult::InvalidState) return 373;
     const auto preservedBoss = bossActor;
     if (applyPokemonFixedEnemyMovePp(*firstPhase, bossActor) ||
         bossActor.moves[3].maxPp != preservedBoss.moves[3].maxPp) return 338;

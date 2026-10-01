@@ -504,3 +504,9 @@
 1. applySelectedHeldItemTheft conecta cálculo de stacks y almacenamiento existente: clona fuente para receptor, conserva catálogo/raw args/transferibilidad, remueve source agotada y modifier coincidente, añade receptor al final y emite evento de pérdida para dispatcher. Valida capacidad y datos antes de mutar.
 2. Policy explícita exige matchType/capacidad y capacidad del dispatcher de habilidades resueltos; no supone igualdad de IDs. Objetos protegidos, habilidad bloqueante, receptor lleno, policy pendiente y almacenamiento insuficiente tienen resultados distintos. El caller conserva RNG consumido por selección aunque la transferencia sea bloqueada.
 3. Regresiones 364–370 escritas para stacks/orden/remoción, lleno sin mutación, policy pendiente y objeto protegido. Faltan ownership del inventario en runtime, callbacks activos, rewards/save y llamada TurnEndPhase; Mini Black Hole/Eternamax no están completos. Tests/compilación aplazados.
+
+## Selección seeded sobre inventario nativo
+
+1. selectNativeHeldItemTransferAttempt conecta registros reales al selector ya existente mediante acceso sin pool temporal/heap. Conserva índices y orden de inventario, owner PID y bandera transferible; las dos interfaces comparten el mismo algoritmo RNG.
+2. Valida capacidad, referencias canónicas, stacks y raw metadata antes de consumir RNG. Mini Black Hole no transferible del boss queda excluido por la misma bandera almacenada.
+3. Regresiones 371–373 escritas para selección por propietario, exclusión de copia protegida, estado completo RNG e inventario inválido sin consumo. Falta ownership del inventario en FirstRunRuntime/serialización, policies de habilidades y TurnEndPhase. Tests/compilación aplazados.
