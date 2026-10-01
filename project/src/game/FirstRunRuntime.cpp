@@ -459,18 +459,16 @@ bool FirstRunRuntime::recordCaughtSpecies(uint16_t dex, const ResolvedPokemon* c
         if (static_cast<uint8_t>(captured->battleState.nature) >= 25) return false;
         for (uint8_t iv : captured->battleState.ivs) if (iv > 31) return false;
     }
-    // Upstream masks the captured actor's form bit against each species in
-    // the prevolution chain. Index zero has no battle-form special branches.
-    // Nonzero forms require the form-change registry before awarding unlocks.
-    if (captured && observedForm == uint64_t(128)) {
+    // Prepare every recipient's unlock metadata before modifying the ledger.
+    if (captured) {
         uint16_t ancestor = dex;
         size_t visited = 0;
         while (ancestor) {
             if (++visited > PokerogueContent::kSpeciesCount) return false;
             const auto* definition = PokerogueContent::findSpeciesByDex(ancestor);
-            uint64_t allowed = 0;
-            if (!definition || pokemonObtainableFormMask(ancestor, allowed) != PokemonFormUnlockMaskResult::Ok)
-                return false;
+            uint64_t unlocked = 0;
+            if (!definition || pokemonCaptureFormUnlocks(captured->dex, captured->actor, ancestor, unlocked) !=
+                    PokemonCaptureFormUnlockResult::Ok) return false;
             ancestor = definition->prevolutionDex;
         }
     }
@@ -494,11 +492,10 @@ bool FirstRunRuntime::recordCaughtSpecies(uint16_t dex, const ResolvedPokemon* c
         if (captured) {
             auto& entry = m_starterProfileRecords[index];
             if (dex == captured->dex) entry.observedFormAttr |= observedForm;
-            if (observedForm == uint64_t(128)) {
-                uint64_t allowed = 0;
-                if (pokemonObtainableFormMask(dex, allowed) != PokemonFormUnlockMaskResult::Ok) return false;
-                entry.unlockedFormAttr |= observedForm & allowed;
-            }
+            uint64_t unlocked = 0;
+            if (pokemonCaptureFormUnlocks(captured->dex, captured->actor, dex, unlocked) !=
+                    PokemonCaptureFormUnlockResult::Ok) return false;
+            entry.unlockedFormAttr |= unlocked;
 
             if (species->freshProfileStarter && !seedNativeFreshStarterDexMetadata(entry)) return false;
             entry.natureAttr |= 1u << (static_cast<uint8_t>(captured->battleState.nature) + 1);

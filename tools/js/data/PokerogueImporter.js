@@ -1209,6 +1209,26 @@ export class PokerogueImporter {
         // SpeciesDataRegistry.isStarter checks the cost declared on this record;
         // `starter` alone identifies an evolution line and does not grant eligibility.
         const sourceRecord = record.extensions?.upstreamRawRecord?.value || '';
+        const changeDeclaration = /\bformChanges\s*:\s*\[/.exec(sourceRecord);
+        const changeText = changeDeclaration
+          ? extractBalancedLiteral(sourceRecord, changeDeclaration.index + changeDeclaration[0].lastIndexOf('[')) : '[]';
+        if (!changeText) throw new Error(`Invalid import: unclosed form changes for ${record.id}`);
+        const changes = [];
+        const changeConstructor = /new\s+SpeciesFormChange\s*\(\s*\{/g;
+        let changeMatch;
+        while ((changeMatch = changeConstructor.exec(changeText))) {
+          const opening = changeMatch.index + changeMatch[0].lastIndexOf('{');
+          const raw = extractBalancedLiteral(changeText, opening);
+          if (!raw) throw new Error(`Invalid import: unclosed SpeciesFormChange for ${record.id}`);
+          const key = raw.match(/\bevoFormKey\s*:\s*(?:SpeciesFormKey\.([A-Z0-9_]+)|"([^"]*)"|'([^']*)')/);
+          const owner = raw.match(/\bspeciesId\s*:\s*SpeciesId\.([A-Z0-9_]+)/)?.[1];
+          if (!key || owner !== symbol)
+            throw new Error(`Unsupported form change identity for ${record.id}: ${raw}`);
+          changes.push({ formKey: key[1] || (key[2] ?? key[3]).toUpperCase() || 'BASE',
+            sourceSymbol: `SpeciesId.${symbol}.formChanges`, raw });
+          changeConstructor.lastIndex = opening + raw.length;
+        }
+        record.extensions.upstreamFormChanges = changes;
         const starterCost = sourceRecord.match(/\bstarterCost\s*:\s*(\d+)/);
         record.starterCost = starterCost ? Number(starterCost[1]) : null;
         record.starterEligible = Boolean(record.starterCost);

@@ -162,6 +162,11 @@ export function registerMigrationContentTests(test) {
     assert.match(header, /\{3, 0, 15, 85, 10, 0, -1, 1, MoveHasMultiHit, 1, "double_slap"/, 'default MultiHitAttr maps to pinned TWO_TO_FIVE');
     assert.ok(header.includes('int8_t level; uint16_t moveId;'), 'native learnset retains upstream signed sentinel levels');
     assert.ok(header.includes('levelMovesFor(const Form& form)'), 'native runtime exposes form-specific learnset ranges');
+    assert.ok(header.includes('kFormChangeReferences[]'), 'form-change targets reach native capture rules');
+    const venusaurChanges = canonical.collections.species.find(species => species.id === 'venusaur')
+      .extensions.upstreamFormChanges;
+    assert.ok(venusaurChanges.some(change => change.formKey === 'MEGA' && change.raw.includes('SpeciesFormChangeItemTrigger')),
+      'real Venusaur transformation retains target identity and unported trigger source');
     assert.ok(header.includes('kFormPermissions[]'), 'form permissions reach generated C++ data');
     for (const form of canonical.collections.forms) {
       for (const key of ['isUnobtainable', 'isStarterSelectable']) {

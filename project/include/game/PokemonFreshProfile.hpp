@@ -72,6 +72,59 @@ inline PokemonFormUnlockMaskResult pokemonObtainableFormMask(uint16_t dex, uint6
     return PokemonFormUnlockMaskResult::Ok;
 }
 
+enum class PokemonCaptureFormUnlockResult : uint8_t {
+    Ok, InvalidActor, InvalidSpecies, UnsupportedMask, UnsupportedReference
+};
+inline bool pokemonFormTextEquals(const char* left, const char* right) {
+    if (!left || !right) return false;
+    while (*left && *right && *left == *right) { ++left; ++right; }
+    return !*left && !*right;
+}
+// GameData.setPokemonSpeciesCaught form component, for each recursive recipient.
+inline PokemonCaptureFormUnlockResult pokemonCaptureFormUnlocks(uint16_t capturedDex,
+    const PokemonActorIdentity& actor, uint16_t recipientDex, uint64_t& output) {
+    const auto* original = PokerogueContent::findSpeciesByDex(capturedDex);
+    const auto* recipient = PokerogueContent::findSpeciesByDex(recipientDex);
+    if (!original || !recipient) return PokemonCaptureFormUnlockResult::InvalidSpecies;
+    uint64_t observed = 0, allowed = 0;
+    if (pokemonObservedDexFormAttr(capturedDex, actor, observed) != PokemonObservedFormResult::Ok)
+        return PokemonCaptureFormUnlockResult::InvalidActor;
+    if (pokemonObtainableFormMask(recipientDex, allowed) != PokemonFormUnlockMaskResult::Ok)
+        return PokemonCaptureFormUnlockResult::UnsupportedMask;
+    uint64_t unlocked = observed & allowed;
+    const auto* capturedForm = actor.formId && *actor.formId
+        ? PokerogueContent::findFormById(actor.formId) : nullptr;
+    const uint16_t index = capturedForm ? capturedForm->upstreamFormIndex : 0;
+    if (index) {
+        if (pokemonFormTextEquals(original->id, "pikachu") && pokemonFormTextEquals(recipient->id, "pichu"))
+            unlocked |= uint64_t(128);
+        if (pokemonFormTextEquals(original->id, "urshifu")) {
+            if (index == 2) unlocked |= uint64_t(128);
+            else if (index == 3) unlocked |= uint64_t(256);
+        } else if (pokemonFormTextEquals(original->id, "zygarde")) {
+            if (index == 4) unlocked |= uint64_t(512);
+            else if (index == 5) unlocked |= uint64_t(1024);
+        } else {
+            for (const auto& change : PokerogueContent::kFormChangeReferences)
+                if (change.speciesDex == recipientDex && capturedForm &&
+                    pokemonFormTextEquals(change.formKey, capturedForm->formKey)) {
+                    unlocked |= uint64_t(128);
+                    break;
+                }
+        }
+    }
+    // The current durable schema requires concrete form references. Report the
+    // upstream recursive exceptions explicitly until that schema supports them.
+    for (uint8_t i = 0; i <= 56; ++i) {
+        if (!(unlocked & (uint64_t(128) << i))) continue;
+        if (PokerogueContent::findFormByUpstreamIndex(recipientDex, i)) continue;
+        if (!i && (!recipient->firstFormId || !*recipient->firstFormId)) continue;
+        return PokemonCaptureFormUnlockResult::UnsupportedReference;
+    }
+    output = unlocked;
+    return PokemonCaptureFormUnlockResult::Ok;
+}
+
 // StarterSelectUiHandler validates preferences using the actual caughtAttr,
 // not our separate observedFormAttr. Caller must supply resolved unlock data.
 enum class PokemonStarterFormResult : uint8_t {

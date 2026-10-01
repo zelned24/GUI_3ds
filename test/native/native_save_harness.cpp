@@ -882,6 +882,31 @@ extern "C" int runNativeSaveChecks() {
     uint64_t missingMask = 123;
     if (pokemonObtainableFormMask(0, missingMask) != PokemonFormUnlockMaskResult::MissingSpecies ||
         missingMask != 123) return 160;
+    struct FormCaptureCase { const char* original; const char* recipient; uint16_t index; uint64_t extra; };
+    const FormCaptureCase cases[] = {
+        {"venusaur", "venusaur", 1, 128}, {"pikachu", "pichu", 1, 128},
+        {"urshifu", "urshifu", 2, 128}, {"urshifu", "urshifu", 3, 256},
+        {"zygarde", "zygarde", 4, 512}, {"zygarde", "zygarde", 5, 1024}
+    };
+    for (const auto& sample : cases) {
+        uint16_t original = 0, recipient = 0;
+        for (const auto& species : PokerogueContent::kSpecies) {
+            if (!std::strcmp(species.id, sample.original)) original = species.dex;
+            if (!std::strcmp(species.id, sample.recipient)) recipient = species.dex;
+        }
+        const auto* form = PokerogueContent::findFormByUpstreamIndex(original, sample.index);
+        if (!form) return 164;
+        PokemonActorIdentity actor{};
+        actor.formId = form->id;
+        uint64_t unlocked = 0, allowed = 0;
+        if (pokemonObtainableFormMask(recipient, allowed) != PokemonFormUnlockMaskResult::Ok ||
+            pokemonCaptureFormUnlocks(original, actor, recipient, unlocked) != PokemonCaptureFormUnlockResult::Ok ||
+            unlocked != (((uint64_t(128) << sample.index) & allowed) | sample.extra)) return 165;
+    }
+    uint64_t failedUnlock = 123;
+    PokemonActorIdentity noActor{};
+    if (pokemonCaptureFormUnlocks(0, noActor, 1, failedUnlock) != PokemonCaptureFormUnlockResult::InvalidSpecies ||
+        failedUnlock != 123) return 166;
     if (PokerogueContent::findFormByUpstreamIndex(0, 0)) return 146;
     return 0;
 }

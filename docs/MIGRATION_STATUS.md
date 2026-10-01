@@ -1290,3 +1290,10 @@
 1. recordCaughtSpecies combina el bit de forma cero capturado con pokemonObtainableFormMask de cada especie de la cadena de preevoluciones, y lo persiste en unlockedFormAttr. Prevalida máscaras/recorrido antes de modificar el ledger. Sigue GameData.setPokemonSpeciesCaught para formIndex cero, donde no se ejecutan ramas especiales de battle forms.
 2. resolveStarterFromDex admite inicial no-default con forma base declarada cuando existe metadata completa y pokemonValidateStarterForm confirma permiso y unlock. Perfiles legacy no reciben ese permiso por inferencia.
 3. Capturas de índices no cero mantienen observación; sus unlocks especiales siguen pendientes del registro de form changes y ramas pinned. No se conceden permisos basados solamente en la observación. Selector de otras formas aún pendiente. Tests y compilación aplazados.
+
+## Registro real de cambios de forma y captura
+
+1. SpeciesFormChange.evoFormKey (constructor asigna formKey) importado desde generation-01..09 en extensions.upstreamFormChanges; se conserva constructor completo con triggers/conditions raw y provenance de la especie. C++ kFormChangeReferences registra destinos por especie con sourcePath/symbol/SHA-256.
+2. pokemonCaptureFormUnlocks aplica máscara obtenible y ramas de GameData.setPokemonSpeciesCaught: Pikachu/Pichu, Urshifu índices 2/3, Zygarde 4/5 y registro de cambios cuyo destino coincide con la forma capturada. recordCaughtSpecies prevalida toda la cadena y combina unlocks durables; observación sigue separada.
+3. Excepciones recursivas que producen bits sin forma concreta para una preevolución quedan UnsupportedReference; captura se rechaza antes de modificar el ledger. Ampliar representación de esos atributos upstream sigue pendiente. Triggers de transformación en combate y selector de formas aún no portados.
+4. Importación doble coincide en 400fb84aa16a460c6d3eb6260240e8eae948acb9fab0f5467fd81521b6630e49. Cambia identidad del contenido; migración de perfiles/saves anteriores pendiente. Tests de import y casos reales especiales escritos, sin ejecutar; compilación aplazada.
