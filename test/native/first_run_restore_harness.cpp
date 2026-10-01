@@ -74,7 +74,36 @@ static int checkInitialStarterTeamSetup() {
         first.restoreStarterTeamSetup(0, dexes, 2) || first.playerPartyCount() != 2 ||
         first.playerPartyMember(1)->battleState.pokemonId != reservePid) return 647;
     NativeRunSave unsupportedSetup{};
-    if (first.captureNativeRunSave(unsupportedSetup) != NativeSaveResult::UnsupportedStage) return 648;
+    if (first.captureNativeRunSave(unsupportedSetup) != NativeSaveResult::Ok ||
+        unsupportedSetup.setupStarterCount != 2 || unsupportedSetup.setupStarterDexes[1] != dexes[1]) return 648;
+    char encodedSetup[kNativeSaveMaxBytes]{};
+    size_t encodedSetupBytes = 0;
+    NativeRunSave decodedSetup{};
+    if (encodeNativeRunSave(unsupportedSetup, encodedSetup, sizeof(encodedSetup), encodedSetupBytes) != NativeSaveResult::Ok ||
+        decodeNativeRunSave(encodedSetup, encodedSetupBytes, PokerogueContent::kContentHash, decodedSetup) != NativeSaveResult::Ok ||
+        decodedSetup.setupStarterCount != 2 || decodedSetup.setupStarterDexes[1] != dexes[1]) return 650;
+    FirstRunRuntime reloaded(3);
+    if (!reloaded.restoreNativeRunSave(decodedSetup) || reloaded.playerPartyCount() != 2 ||
+        reloaded.playerPartyMember(1)->battleState.pokemonId != reservePid) return 651;
+    decodedSetup.setupStarterDexes[1] = dexes[0];
+    if (validateNativeRunSave(decodedSetup, PokerogueContent::kContentHash) != NativeSaveResult::InvalidRecord ||
+        reloaded.restoreNativeRunSave(decodedSetup) || reloaded.playerPartyCount() != 2) return 652;
+    // v13 had no selection fields and restores its original single starter.
+    char* selection = std::strstr(encodedSetup, "setupStarterCount=");
+    char* saveVersion = std::strstr(encodedSetup, "saveVersion=");
+    char* runtimeVersion = std::strstr(encodedSetup, "runtimeVersion=");
+    if (!selection || !saveVersion || !runtimeVersion) return 653;
+    saveVersion[15] = 'D';
+    runtimeVersion[18] = 'D';
+    const size_t legacyBody = static_cast<size_t>(selection - encodedSetup);
+    char legacyHash[65]{};
+    IntegritySha256::hashHex(encodedSetup, legacyBody, legacyHash);
+    std::memcpy(selection, "sha256=", 7);
+    std::memcpy(selection + 7, legacyHash, 64);
+    selection[71] = '\n';
+    if (decodeNativeRunSave(encodedSetup, legacyBody + 72, PokerogueContent::kContentHash, decodedSetup) !=
+            NativeSaveResult::Ok || decodedSetup.setupStarterCount || decodedSetup.saveVersion != kNativeSaveVersion ||
+        !reloaded.restoreNativeRunSave(decodedSetup) || reloaded.playerPartyCount() != 1) return 654;
     if (!first.restoreStarterTeamSetup(1, dexes, 1) || first.playerPartyCount() != 1 ||
         first.captureNativeRunSave(unsupportedSetup) != NativeSaveResult::Ok) return 649;
     return 0;

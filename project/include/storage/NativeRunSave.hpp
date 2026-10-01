@@ -6,8 +6,8 @@
 
 namespace Pokerogue3DS {
 
-inline constexpr uint16_t kNativeSaveVersion = 13;
-inline constexpr uint16_t kNativeSaveRuntimeVersion = 13;
+inline constexpr uint16_t kNativeSaveVersion = 14;
+inline constexpr uint16_t kNativeSaveRuntimeVersion = 14;
 // Bounded text envelope including six trainer members and field/inventory state.
 inline constexpr size_t kNativeSaveMaxBytes = 8192;
 inline constexpr size_t kNativeHeldModifierCapacity = 32;
@@ -87,6 +87,8 @@ struct NativeRunSave {
     uint32_t seed = 0;
     uint16_t wave = 1;
     uint16_t starterDex = 0;
+    uint8_t setupStarterCount = 0; // Zero retains the legacy single-starter setup.
+    uint16_t setupStarterDexes[6]{};
     uint16_t playerLevel = 5;
     uint32_t playerExperience = 0;
     uint16_t encounterDex = 0;

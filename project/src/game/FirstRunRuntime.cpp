@@ -235,9 +235,6 @@ NativeSaveResult FirstRunRuntime::captureNativeRunSave(NativeRunSave& output) co
     std::unique_ptr<NativeRunSave> valueStorage(new (std::nothrow) NativeRunSave{});
     if (!valueStorage) { output = {}; return NativeSaveResult::MemoryUnavailable; }
     auto& value = *valueStorage;
-    if (!m_runStarted && m_context.playerPartyCount > 1) {
-        output = {}; return NativeSaveResult::UnsupportedStage; // Setup team serialization pending; never lose reserves.
-    }
     // v9 preserves ball inventory; doubles, captured party and later trainer history remain unsupported.
     // Never report a setup checkpoint as a successful save of an active double battle.
     if (m_capturePartyChoicePending || m_context.enemy.bossState.segmentCount || m_doubleBattle || m_pokeballs[5] ||
@@ -256,6 +253,12 @@ NativeSaveResult FirstRunRuntime::captureNativeRunSave(NativeRunSave& output) co
     }
     for (uint8_t ball = 0; ball < 5; ++ball) value.pokeballCounts[ball] = m_pokeballs[ball];
     value.starterProfileGeneration = m_starterProfileGeneration;
+    if (!m_runStarted && m_context.playerPartyCount > 1) {
+        if (m_context.playerPartyCount > 6) { output = {}; return NativeSaveResult::InvalidRecord; }
+        value.setupStarterCount = m_context.playerPartyCount;
+        for (uint8_t i = 0; i < value.setupStarterCount; ++i)
+            value.setupStarterDexes[i] = m_context.playerParty[i].dex;
+    }
     value.participantHistoryResolved = m_participantHistoryResolved;
     value.participantCount = m_participantCount;
     for (uint8_t i = 0; i < m_participantCount; ++i) value.participantIds[i] = m_participantIds[i];
@@ -494,6 +497,8 @@ bool FirstRunRuntime::restoreNativeRunSave(const NativeRunSave& save,
     if (policy && !candidate.restoreStarterCandyProfile(records, count, save.starterProfileGeneration, *policy))
         return false;
     if (!policy && (records || count)) return false;
+    if (save.setupStarterCount && !candidate.restoreStarterTeamSetup(
+            save.seed, save.setupStarterDexes, save.setupStarterCount)) return false;
     *this = candidate;
     // Scene nodes and text pointers belong to their runtime instance. Rebuild
     // after committing so none point at the temporary candidate's storage.

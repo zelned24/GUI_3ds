@@ -1143,3 +1143,10 @@
 2. `resolveFreshStarter` reutiliza la creación anterior. Sigue el perfil inicial con IV 15, naturaleza default, habilidad inicial y sin egg moves desbloqueados. Un único RNG seeded se consume en orden para PID/Tera de cada actor; no reinicia la semilla por miembro. Fuente de orden: `src/phases/select-starter-phase.ts`, `SelectStarterPhase.initBattle`, pinned. No equivale todavía al perfil Pokédex completo.
 3. Guardar setup con varios miembros devuelve `UnsupportedStage`: formato actual no representa esa selección. No se degrada a un solo inicial. Checkpoints de combate ya tienen snapshot de party; falta guardar/restaurar selección inicial, interfaz múltiple y verificar el flujo completo.
 4. Regresiones escritas con dos especies reales, identidad distinta, reproducibilidad, datos por miembro, rollback y rechazo de guardado incompleto. Sin ejecutar; compilación y validación final aplazadas.
+
+## Guardado de selección inicial múltiple v14
+
+1. Run/save runtime v14 añade `setupStarterCount` y `setupStarterDexes` ordenados al final del payload, con hasta seis especies. Cero mantiene setup legacy de un inicial. Selecciones solo se permiten en RunSetup; validator rechaza duplicados, especies inválidas, primer miembro discordante y campos fuera del conteo.
+2. Captura setup de equipo conserva sus especies. Restauración carga el perfil referenciado y reconstruye el equipo mediante `restoreStarterTeamSetup`, que valida desbloqueos y presupuesto efectivo de ese perfil, mantiene semilla/PIDs y no publica un equipo parcial. No representa todavía preferencias avanzadas de formas, naturalezas, IVs, egg moves ni pasivas desbloqueadas.
+3. Decoder acepta v13 junto a versiones anteriores y lo normaliza a v14, manteniendo su semántica de un inicial cuando faltan campos de selección. El hash del contenido todavía debe coincidir; no hay migración entre snapshots distintos.
+4. Regresiones de setup con dos especies, encode/decode/restore, duplicados y payload legacy v13 escritas; sin ejecutar. Sustituye el rechazo temporal de setup múltiple documentado anteriormente. Selector visible múltiple y validación final pendientes.
