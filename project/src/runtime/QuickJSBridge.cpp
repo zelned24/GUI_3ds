@@ -450,7 +450,7 @@ bool QuickJSBridge::processPendingAction() {
         auto* stream = m_game->battleRng().currentStream();
         const auto* species = PokerogueContent::findSpeciesByDex(restartStarterDex());
         bool ok = false;
-        if (stream && species && species->freshProfileStarter) {
+        if (stream && species && m_game->starterUnlocked(species->dex)) {
             auto next = *stream;
             uint32_t seed = 0;
             for (unsigned i = 0; i < 8 && !seed; ++i) seed = next.randSeedUint32();
@@ -471,7 +471,7 @@ bool QuickJSBridge::processPendingAction() {
                 for (size_t scanned = 0; scanned < PokerogueContent::kSpeciesCount; ++scanned) {
                     index = action == 202 ? (index + PokerogueContent::kSpeciesCount - 1) % PokerogueContent::kSpeciesCount
                         : (index + 1) % PokerogueContent::kSpeciesCount;
-                    if (PokerogueContent::kSpecies[index].freshProfileStarter) {
+                    if (m_game->starterUnlocked(PokerogueContent::kSpecies[index].dex)) {
                         m_restartStarter = PokerogueContent::kSpecies[index].dex; break;
                     }
                 }

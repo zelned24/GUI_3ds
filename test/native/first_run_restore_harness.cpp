@@ -1350,6 +1350,22 @@ static int checkPlayerPartyManagementAndSwitching() {
     if (applyNativeStarterCandyAward(cappedCaptureCandy, 2, cappedCaptureEvent) != StarterCandyApplyResult::Applied ||
         cappedCaptureEvent.appliedAward || cappedCaptureEvent.requestedAward != 2 ||
         cappedCaptureCandy.candyCount != PokerogueContent::kMaxStarterCandyCount) return 617;
+    uint16_t unlockableStarter = 0;
+    for (const auto& species : PokerogueContent::kSpecies)
+        if (species.starterEligible && !species.freshProfileStarter) { unlockableStarter = species.dex; break; }
+    FirstRunRuntime unlockedStarterGame(1);
+    if (!unlockableStarter || unlockedStarterGame.starterUnlocked(unlockableStarter) ||
+        unlockedStarterGame.restoreSetup(1, unlockableStarter)) return 618;
+    NativeStarterCandyRecord unlockedRecord{unlockableStarter, 0, 0, true};
+    if (!unlockedStarterGame.restoreStarterCandyProfile(&unlockedRecord, 1, 0, captureFriendshipPolicy) ||
+        !unlockedStarterGame.starterUnlocked(unlockableStarter) ||
+        !unlockedStarterGame.restoreSetup(1, unlockableStarter)) return 619;
+    NativeRunSave unlockedSetup{};
+    unlockedStarterGame.captureNativeRunSave(unlockedSetup);
+    FirstRunRuntime unlockedRestored(1);
+    if (unlockedRestored.restoreNativeRunSave(unlockedSetup) ||
+        !unlockedRestored.restoreNativeRunSave(unlockedSetup, &unlockedRecord, 1, &captureFriendshipPolicy) ||
+        unlockedRestored.run().starterDex != unlockableStarter) return 620;
     char caughtRuntimeProfile[Pokerogue3DS::kStarterCandyProfileMaxBytes]{};
     size_t caughtRuntimeBytes = 0;
     if (encodeNativeStarterCandyProfile(game.starterProfileRecords(), game.starterProfileCount(), 1,

@@ -1049,3 +1049,9 @@
 1. Captura real con perfil adjunto concede al starter raíz 1 candy ordinario o 2 si el enemigo tiene boss segments, como setPokemonSpeciesCaught/addStarterCandy pinned. Se aplica antes de la decisión de incorporación, junto al registro caught.
 2. Helper valida root e inventario y conserva requested/applied; llegar al cap aplica cero sin convertir captura en error. Publicación conserva la transacción candidata existente.
 3. Regresiones 616–617 escritas para captura real y cap, sin ejecutar. El actor aún no modela shiny/variant; su bonus, huevos/Daily, log/candyBar y callbacks completos siguen pendientes.
+
+## Starters desbloqueados por captura — pendiente de ejecución
+
+1. Selección y reinicio nativo/QuickJS aceptan starterEligible canónico con caught en perfil, además de starters iniciales. No crean listas paralelas ni permiten especies no elegibles.
+2. Codec valida elegibilidad estructural; restore runtime exige perfil adjunto que acredite caught para starters no iniciales. Reconstrucción interna evita aplicar ganancias de perfil durante replay.
+3. Regresiones 618–620 escritas para bloqueo sin perfil, desbloqueo, inicio y restore autorizado, sin ejecutar. Selección de equipo múltiple, costes totales, abilities/egg moves/IVs/natures desbloqueados aún pendientes.

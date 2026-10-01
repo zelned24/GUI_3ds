@@ -37,16 +37,16 @@ bool equal(const char* first, const char* second) {
     return *first == *second;
 }
 
-const PokerogueContent::Species* freshStarter(uint16_t dex) {
+const PokerogueContent::Species* canonicalStarter(uint16_t dex) {
     for (size_t i = 0; i < PokerogueContent::kSpeciesCount; ++i) {
         const auto& species = PokerogueContent::kSpecies[i];
-        if (species.dex == dex && species.freshProfileStarter) return &species;
+        if (species.dex == dex && species.starterEligible) return &species;
     }
     return nullptr;
 }
 
 bool starterExperienceAtLevelFive(uint16_t dex, uint32_t& experience) {
-    const auto* starter = freshStarter(dex);
+    const auto* starter = canonicalStarter(dex);
     return starter && pokemonTotalExperienceForLevel(starter->growthRate, 5, experience)
         == PokemonExperienceResult::Ok;
 }
@@ -628,7 +628,7 @@ NativeSaveResult validateNativeRunSave(const NativeRunSave& save, const char* ex
         return NativeSaveResult::InvalidRecord;
     if (!PokerogueContent::findBiomeById(save.biomeId))
         return NativeSaveResult::InvalidRecord;
-    const auto* starter = freshStarter(save.starterDex);
+    const auto* starter = canonicalStarter(save.starterDex);
     if (!starter) return NativeSaveResult::InvalidRecord;
     uint32_t initialExperience = 0, currentThreshold = 0;
     const auto* experienceSpecies = save.playerPartyCount

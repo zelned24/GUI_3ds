@@ -89,7 +89,7 @@ bool FirstRunRuntime::cycleStarter(int direction) {
         index = direction > 0
             ? (index + 1) % PokerogueContent::kSpeciesCount
             : (index + PokerogueContent::kSpeciesCount - 1) % PokerogueContent::kSpeciesCount;
-        if (PokerogueContent::kSpecies[index].freshProfileStarter) {
+        if (starterUnlocked(PokerogueContent::kSpecies[index].dex)) {
             m_starterIndex = index;
             resolve();
             buildScene();
@@ -99,12 +99,23 @@ bool FirstRunRuntime::cycleStarter(int direction) {
     return false;
 }
 
+bool FirstRunRuntime::starterUnlocked(uint16_t dex) const {
+    const auto* species = PokerogueContent::findSpeciesByDex(dex);
+    return species && species->starterEligible &&
+        (species->freshProfileStarter || (m_starterProfileReady && hasCaughtSpecies(dex)));
+}
+
 bool FirstRunRuntime::restoreSetup(uint32_t seed, uint16_t starterDex) {
+    if (!starterUnlocked(starterDex)) return false;
+    return restoreSetupInPlace(seed, starterDex);
+}
+
+bool FirstRunRuntime::restoreSetupInPlace(uint32_t seed, uint16_t starterDex) {
     if (!seed) return false;
     std::size_t index = 0;
     for (; index < PokerogueContent::kSpeciesCount; ++index) {
         const auto& species = PokerogueContent::kSpecies[index];
-        if (species.dex == starterDex && species.freshProfileStarter) break;
+        if (species.dex == starterDex && species.starterEligible) break;
     }
     if (index == PokerogueContent::kSpeciesCount) return false;
     m_run.seed = seed;
@@ -344,6 +355,13 @@ bool FirstRunRuntime::restoreNativeRunSave(const NativeRunSave& save,
     const NativeStarterCandyRecord* records, size_t count, const PokemonFriendshipPolicy* policy) {
     if (validateNativeRunSave(save, PokerogueContent::kContentHash) != NativeSaveResult::Ok)
         return false;
+    const auto* starter = PokerogueContent::findSpeciesByDex(save.starterDex);
+    if (!starter || !starter->starterEligible || count > PokerogueContent::kSpeciesCount || (count && !records)) return false;
+    bool unlocked = starter->freshProfileStarter;
+    if (policy && policy->resolved)
+        for (size_t i = 0; i < count; ++i)
+            unlocked |= records[i].speciesDex == save.starterDex && records[i].caught;
+    if (!unlocked) return false;
     FirstRunRuntime candidate(save.seed);
     if (!candidate.restoreNativeRunSaveInPlace(save)) return false;
     candidate.m_starterProfileGeneration = save.starterProfileGeneration;
@@ -375,7 +393,7 @@ bool FirstRunRuntime::restoreNativeRunSaveInPlace(const NativeRunSave& save) {
         save.stage > NativeSaveStage::ExperienceGranted) return false;
     // Wave five is currently the only complete deterministic trainer party.
     if (save.trainerPartyCount && save.wave != 5) return false;
-    if (!restoreSetup(save.seed, save.starterDex)) return false;
+    if (!restoreSetupInPlace(save.seed, save.starterDex)) return false;
     m_participantHistoryResolved = false; // Seed replay is the legacy single-starter path.
     // A skipped reward adds no modifier or party member. Replay each earlier
     // supported wild/fixed trainer victory to reconstruct level/EXP;

@@ -88,6 +88,7 @@ public:
     explicit FirstRunRuntime(uint32_t seed);
     bool cycleStarter(int direction);
     bool restoreSetup(uint32_t seed, uint16_t starterDex);
+    bool starterUnlocked(uint16_t dex) const;
     void captureNativeRunSave(NativeRunSave& output) const;
     bool restoreNativeRunSave(const NativeRunSave& save, const NativeStarterCandyRecord* records = nullptr,
         size_t count = 0, const PokemonFriendshipPolicy* policy = nullptr);
@@ -175,6 +176,7 @@ public:
     bool throwPokeball(PokeballType type = PokeballType::Pokeball);
 
 private:
+    bool restoreSetupInPlace(uint32_t seed, uint16_t starterDex);
     bool recordCaughtSpecies(uint16_t dex);
     bool resolveCapturePartyChoiceInPlace(int partyMember);
     bool finishSuccessfulCapture(ResolvedPokemon& target, const uint32_t* releasedParticipant = nullptr);
