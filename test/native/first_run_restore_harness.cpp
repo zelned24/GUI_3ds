@@ -1566,14 +1566,25 @@ static int checkPlayerPartyManagementAndSwitching() {
         cappedCaptureCandy.candyCount != PokerogueContent::kMaxStarterCandyCount) return 617;
     uint16_t unlockableStarter = 0;
     for (const auto& species : PokerogueContent::kSpecies)
-        if (species.starterEligible && !species.freshProfileStarter) { unlockableStarter = species.dex; break; }
+        if (species.starterEligible && !species.freshProfileStarter &&
+            (!species.firstFormId || !*species.firstFormId)) { unlockableStarter = species.dex; break; }
     FirstRunRuntime unlockedStarterGame(1);
     if (!unlockableStarter || unlockedStarterGame.starterUnlocked(unlockableStarter) ||
         unlockedStarterGame.restoreSetup(1, unlockableStarter)) return 618;
     NativeStarterCandyRecord unlockedRecord{unlockableStarter, 0, 0, true};
+    unlockedRecord.natureAttr = 1u << 1;
+    unlockedRecord.abilityAttr = 1;
+    const auto* unlockSpecies = PokerogueContent::findSpeciesByDex(unlockableStarter);
+    unlockedRecord.genderAttr = unlockSpecies->malePercentTenths == 65534 ? 0 :
+        unlockSpecies->malePercentTenths == 0 ? 8 : 4;
+    for (uint8_t& iv : unlockedRecord.dexIvs) iv = 23;
+
     if (!unlockedStarterGame.restoreStarterCandyProfile(&unlockedRecord, 1, 0, captureFriendshipPolicy) ||
         !unlockedStarterGame.starterUnlocked(unlockableStarter) ||
         !unlockedStarterGame.restoreSetup(1, unlockableStarter)) return 619;
+    if (unlockedStarterGame.presentation().player.actor.nature != PokemonNature::Hardy ||
+        unlockedStarterGame.presentation().player.battleState.ivs[0] != 23 ||
+        unlockedStarterGame.presentation().player.battleState.abilityId != unlockSpecies->ability1) return 679;
     NativeRunSave unlockedSetup{};
     unlockedStarterGame.captureNativeRunSave(unlockedSetup);
     FirstRunRuntime unlockedRestored(1);

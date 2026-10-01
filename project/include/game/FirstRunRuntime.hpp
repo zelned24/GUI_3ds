@@ -208,7 +208,7 @@ private:
     bool executeEnemyResponse(uint8_t userIndex, PokerogueRngAdapter& rng);
     bool enemyPartyDefeated() const;
     bool weatherBattleSupported() const;
-    bool resolveFreshStarter(uint16_t dex, PokerogueRngAdapter& rng, ResolvedPokemon& output);
+    bool resolveStarterFromDex(uint16_t dex, PokerogueRngAdapter& rng, ResolvedPokemon& output);
     void resolve(bool carryPlayer = false);
     bool restoreNativeRunSaveInPlace(const NativeRunSave& save);
     bool grantVictoryExperience(bool pokemonDefeated = true, uint8_t enemyMask = 0);

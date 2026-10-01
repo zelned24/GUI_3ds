@@ -1218,3 +1218,10 @@
 1. `nativeStarterDefaultGender` sigue selección default de `src/ui/utils/starter-select-ui-utils.ts` pinned: femenino si solo FEMALE está desbloqueado, masculino con MALE; especies canónicas genderless usan Genderless. Rechaza metadata ausente para especies con género, bits ajenos y selección imposible por ratio. Fallo no modifica output.
 2. Resolver fresh aplica género del ledger antes de inicializar actor/stats; legacy sin datos mantiene baseline default conocido. No consume draws RNG ni habilita todavía especies no default. Preferencias explícitas siguen pendientes.
 3. Regresiones de ambos géneros, female-only, metadata ausente, genderless real y género efectivo del inicial escritas; sin ejecutar. Tests/compilación aplazados.
+
+## Iniciales capturados sin formas alternativas
+
+1. `resolveStarterFromDex` amplía el resolver existente a especies no default cuando tienen caught, naturaleza, habilidad y género/IV resolubles desde perfil. Usa IV reales sin baseline artificial 15, naturaleza/slot/género desbloqueados e IDs canónicos. Mantiene draws de constructor y selección del equipo real.
+2. Especies con referencias de formas no default siguen rechazadas hasta persistir/resolver unlocks de forma; no se supone una forma capturada. Metadata legacy incompleta no se sustituye por atributos ficticios. Esto amplía capacidad real, no completa todo el catálogo.
+3. Restauración carga perfil antes de reconstruir actores y vuelve a cargarlo después de replay para eliminar ganancias temporales. Setup se reconstruye con ese mismo perfil. No hay escritura durante replay.
+4. Regresión de desbloqueo anterior extendida con metadata de Pokédex explícita, naturaleza/IV/habilidad efectivos y roundtrip setup. Sin ejecutar; tests/compilación aplazados. Formas/shiny/variantes, preferencias y todas las reglas de combate pendientes.

@@ -207,7 +207,7 @@ bool FirstRunRuntime::restoreStarterTeamSetup(uint32_t seed, const uint16_t* dex
     PokerogueRngAdapter starterRng;
     starterRng.sow(prepared->m_seedCodeUnits.data(), prepared->m_seedLength);
     for (size_t i = 0; i < count; ++i) {
-        if (!prepared->resolveFreshStarter(dexes[i], starterRng, prepared->m_context.playerParty[i])) return false;
+        if (!prepared->resolveStarterFromDex(dexes[i], starterRng, prepared->m_context.playerParty[i])) return false;
         for (size_t prior = 0; prior < i; ++prior)
             if (prepared->m_context.playerParty[prior].battleState.pokemonId ==
                 prepared->m_context.playerParty[i].battleState.pokemonId) return false;
@@ -548,6 +548,9 @@ bool FirstRunRuntime::restoreNativeRunSave(const NativeRunSave& save,
         return false;
     }
     auto& candidate = *candidateStorage;
+    candidate.m_starterProfileGeneration = save.starterProfileGeneration;
+    if (policy && !candidate.restoreStarterCandyProfile(records, count, save.starterProfileGeneration, *policy)) return false;
+    if (!policy && (records || count)) return false;
     if (!candidate.restoreNativeRunSaveInPlace(save)) return false;
     candidate.m_starterProfileGeneration = save.starterProfileGeneration;
     // Reload the referenced durable profile explicitly; live uncommitted gains
@@ -2983,10 +2986,17 @@ bool FirstRunRuntime::advancePlayerAfterDefeat() {
     return false;
 }
 
-bool FirstRunRuntime::resolveFreshStarter(uint16_t dex, PokerogueRngAdapter& rng, ResolvedPokemon& output) {
+bool FirstRunRuntime::resolveStarterFromDex(uint16_t dex, PokerogueRngAdapter& rng, ResolvedPokemon& output) {
     const auto* entry = PokerogueContent::findSpeciesByDex(dex);
     if (!entry || !entry->starterEligible) return false;
     const auto& starter = *entry;
+    const NativeStarterCandyRecord* dexMetadata = nullptr;
+    if (m_starterProfileReady)
+        for (size_t i = 0; i < m_starterProfileCount; ++i)
+            if (m_starterProfileRecords[i].speciesDex == dex) { dexMetadata = &m_starterProfileRecords[i]; break; }
+    if (!starter.freshProfileStarter && (!dexMetadata || !dexMetadata->caught ||
+        !dexMetadata->natureAttr || !dexMetadata->abilityAttr ||
+        (starter.firstFormId && *starter.firstFormId))) return false; // Form unlock metadata not yet resolved.
     const std::string starterLocaleId = std::string("pokemon:") + starter.id;
     ResolvedPokemon prepared{starter.dex, 5, starter.id, locale(starterLocaleId.c_str(), starter.name),
         starter.firstFormId, starter.assetSourcePath};
@@ -3000,8 +3010,9 @@ bool FirstRunRuntime::resolveFreshStarter(uint16_t dex, PokerogueRngAdapter& rng
       if (prepared.movesetResolved) {
         PokemonActorIdentity starterActor{};
         PokemonNature starterNature = PokemonNature::Unspecified;
-        if (pokemonFreshProfileNature(starter.dex, starterNature) != PokemonFreshProfileResult::Ok)
-            return false;
+        if (starter.freshProfileStarter) {
+            if (pokemonFreshProfileNature(starter.dex, starterNature) != PokemonFreshProfileResult::Ok) return false;
+        } else if (!nativeStarterDefaultNature(*dexMetadata, starterNature)) return false;
         if (m_starterProfileReady) {
             for (size_t record = 0; record < m_starterProfileCount; ++record) {
                 const auto& dexEntry = m_starterProfileRecords[record];
@@ -3041,9 +3052,10 @@ bool FirstRunRuntime::resolveFreshStarter(uint16_t dex, PokerogueRngAdapter& rng
                 break;
             }
         }
+        if (!starter.freshProfileStarter && !nativeStarterDefaultGender(*dexMetadata, starterActor.gender)) return false;
         starterActor.nature = starterNature;
         starterActor.formId = starterFormId;
-        for (uint8_t& iv : starterActor.ivs) iv = 15;
+        for (uint8_t& iv : starterActor.ivs) iv = starter.freshProfileStarter ? 15 : 0;
         // Default starters already own the canonical 15-IV baseline. Preserve
         // improvements accumulated in their durable Pokédex, without RNG draws.
         if (m_starterProfileReady) {
@@ -3192,7 +3204,7 @@ void FirstRunRuntime::resolve(bool carryPlayer) {
         m_heldModifierCount = 0;
         PokerogueRngAdapter starterRng;
         starterRng.sow(m_seedCodeUnits.data(), m_seedLength);
-        if (!resolveFreshStarter(starter.dex, starterRng, m_context.player)) return;
+        if (!resolveStarterFromDex(starter.dex, starterRng, m_context.player)) return;
         m_context.playerParty[0] = m_context.player;
         m_context.playerPartyCount = 1;
         m_context.activePlayerPartyIndex = 0;
