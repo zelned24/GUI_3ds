@@ -1259,3 +1259,10 @@
 4. La nueva metadata cambia el hash del contenido. Perfiles y saves anteriores requieren migración explícita todavía pendiente; no se elimina su comprobación de identidad.
 
 5. Dos importaciones pinned coinciden en hash a1d122dbee31f5e6d77fcb847daff51e1879514a333c1f471a82d31c1d0675d3; conteos permanecen 1084 especies y 609 formas. Evidencia de generación determinista, no ejecución en consola.
+
+## Validación C++ de preferencias de forma
+
+1. pokemonValidateStarterForm reproduce el guard de StarterSelectUiHandler: forma existente de la especie, isStarterSelectable verdadero y bit de forma presente en caughtAttr desbloqueado. Distingue metadata desconocida, forma no seleccionable, bloqueada y capacidad de bits excedida. Sin RNG ni mutación.
+2. El argumento es unlockedCaughtAttr explícito. El perfil actual contiene observedFormAttr; no se conecta como si fuera el registro upstream de desbloqueos. Persistir y derivar esos desbloqueos sigue pendiente antes de conectar preferencias al selector real.
+3. starterSelectableKeys aparece solamente declarado en pokemon-species.ts pinned; no participa en el guard ni se añade una excepción local. isUnobtainable corresponde a getFullUnlocksData, no a este guard de preferencias.
+4. Regresiones para todo el catálogo y errores de lookup añadidas al harness nativo, sin ejecutar. git diff --check revisado; tests y compilación siguen aplazados.

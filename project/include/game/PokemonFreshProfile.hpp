@@ -33,6 +33,36 @@ inline PokemonObservedFormResult pokemonObservedDexFormAttr(uint16_t dex,
     return PokemonObservedFormResult::Ok;
 }
 
+// StarterSelectUiHandler validates preferences using the actual caughtAttr,
+// not our separate observedFormAttr. Caller must supply resolved unlock data.
+enum class PokemonStarterFormResult : uint8_t {
+    Ok, MissingSpecies, MissingForm, MissingPermission, UnsupportedPermission,
+    NotSelectable, NotUnlocked, AttributeCapacityUnsupported
+};
+inline PokemonStarterFormResult pokemonValidateStarterForm(uint16_t dex,
+    uint16_t formIndex, uint64_t unlockedCaughtAttr) {
+    const auto* species = PokerogueContent::findSpeciesByDex(dex);
+    if (!species) return PokemonStarterFormResult::MissingSpecies;
+    const auto* form = PokerogueContent::findFormByUpstreamIndex(dex, formIndex);
+    if (!form) return PokemonStarterFormResult::MissingForm;
+    const PokerogueContent::FormPermission* permission = nullptr;
+    for (const auto& entry : PokerogueContent::kFormPermissions) {
+        const char* left = entry.formId;
+        const char* right = form->id;
+        if (!left || !right) continue;
+        while (*left && *right && *left == *right) { ++left; ++right; }
+        if (!*left && !*right) { permission = &entry; break; }
+    }
+    if (!permission) return PokemonStarterFormResult::MissingPermission;
+    if (permission->isStarterSelectable < 0)
+        return PokemonStarterFormResult::UnsupportedPermission;
+    if (!permission->isStarterSelectable) return PokemonStarterFormResult::NotSelectable;
+    if (formIndex > 56) return PokemonStarterFormResult::AttributeCapacityUnsupported;
+    if (!(unlockedCaughtAttr & (uint64_t(128) << formIndex)))
+        return PokemonStarterFormResult::NotUnlocked;
+    return PokemonStarterFormResult::Ok;
+}
+
 enum class PokemonFreshProfileResult : uint8_t {
     Ok = 0, MissingSpecies, NotDefaultStarter, InvalidStarterOrder
 };

@@ -823,6 +823,31 @@ extern "C" int runNativeSaveChecks() {
             observed != 123) return 148;
 
     }
+    for (const auto& form : PokerogueContent::kForms) {
+        uint16_t dex = 0;
+        for (const auto& species : PokerogueContent::kSpecies) {
+            if (PokerogueContent::findFormByUpstreamIndex(species.dex, form.upstreamFormIndex) == &form) {
+                dex = species.dex;
+                break;
+            }
+        }
+        const PokerogueContent::FormPermission* permission = nullptr;
+        for (const auto& entry : PokerogueContent::kFormPermissions)
+            if (std::strcmp(entry.formId, form.id) == 0) { permission = &entry; break; }
+        if (!permission) return 153;
+        const auto locked = pokemonValidateStarterForm(dex, form.upstreamFormIndex, 0);
+        const auto unlocked = pokemonValidateStarterForm(dex, form.upstreamFormIndex,
+            uint64_t(128) << form.upstreamFormIndex);
+        if (permission->isStarterSelectable == 1) {
+            if (locked != PokemonStarterFormResult::NotUnlocked ||
+                unlocked != PokemonStarterFormResult::Ok) return 154;
+        } else if (permission->isStarterSelectable == 0) {
+            if (locked != PokemonStarterFormResult::NotSelectable ||
+                unlocked != PokemonStarterFormResult::NotSelectable) return 155;
+        } else if (locked != PokemonStarterFormResult::UnsupportedPermission) return 156;
+    }
+    if (pokemonValidateStarterForm(0, 0, 0) != PokemonStarterFormResult::MissingSpecies ||
+        pokemonValidateStarterForm(1, 65535, 0) != PokemonStarterFormResult::MissingForm) return 157;
     if (PokerogueContent::findFormByUpstreamIndex(0, 0)) return 146;
     return 0;
 }
