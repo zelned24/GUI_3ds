@@ -193,7 +193,7 @@ public:
 
 private:
     bool restoreSetupInPlace(uint32_t seed, uint16_t starterDex);
-    bool recordCaughtSpecies(uint16_t dex, const PokemonBattleState* captured = nullptr);
+    bool recordCaughtSpecies(uint16_t dex, const ResolvedPokemon* captured = nullptr);
     bool resolveCapturePartyChoiceInPlace(int partyMember);
     bool finishSuccessfulCapture(ResolvedPokemon& target, const uint32_t* releasedParticipant = nullptr);
     bool advanceBattleTurnInPlace();

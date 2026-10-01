@@ -638,6 +638,8 @@ extern "C" int runNativeSaveChecks() {
     if (applyNativeStarterCostReduction(purchased) != StarterCostPurchaseResult::Applied ||
         purchased.costReduction != 2 || purchased.candyCount !=
             999 - starterPrice->costReduction[0] - starterPrice->costReduction[1]) return 118;
+    purchased.abilityAttr = 5;
+    purchased.genderAttr = 12;
     purchased.natureAttr = (1u << 1) | (1u << 25);
     const uint8_t savedIvs[] = {31, 0, 7, 15, 22, 30};
     for (uint8_t i = 0; i < 6; ++i) purchased.dexIvs[i] = savedIvs[i];
@@ -649,12 +651,13 @@ extern "C" int runNativeSaveChecks() {
         poor.candyCount || poor.costReduction || poor.friendship != 42 || !poor.caught) return 120;
     if (encodeNativeStarterCandyProfile(&purchased, 1, 1, PokerogueContent::kContentHash,
             PokerogueContent::kMaxStarterCandyCount, caughtEncoded, sizeof(caughtEncoded), caughtWritten) !=
-            NativeSaveResult::Ok || std::memcmp(caughtEncoded, "P3CANDY4", 8) ||
+            NativeSaveResult::Ok || std::memcmp(caughtEncoded, "P3CANDY5", 8) ||
         decodeNativeStarterCandyProfile(caughtEncoded, caughtWritten, PokerogueContent::kContentHash,
             PokerogueContent::kMaxStarterCandyCount, caughtDecoded, 1, caughtCount, caughtGeneration) !=
             NativeSaveResult::Ok || caughtDecoded[0].costReduction != 2 || !caughtDecoded[0].caught ||
         caughtDecoded[0].candyCount != remainingCandy || caughtDecoded[0].friendship != 321) return 121;
-    if (caughtDecoded[0].natureAttr != purchased.natureAttr) return 125;
+    if (caughtDecoded[0].natureAttr != purchased.natureAttr || caughtDecoded[0].abilityAttr != 5 ||
+        caughtDecoded[0].genderAttr != 12) return 125;
     for (uint8_t i = 0; i < 6; ++i) if (caughtDecoded[0].dexIvs[i] != savedIvs[i]) return 126;
     char v3Bytes[256]{};
     std::memcpy(v3Bytes, caughtEncoded, 89);
@@ -668,6 +671,24 @@ extern "C" int runNativeSaveChecks() {
             PokerogueContent::kMaxStarterCandyCount, v3Decoded, 1, caughtCount, caughtGeneration) !=
             NativeSaveResult::Ok || v3Decoded[0].costReduction != 2 || !v3Decoded[0].caught ||
         v3Decoded[0].natureAttr) return 130;
+    char v4Bytes[256]{};
+    std::memcpy(v4Bytes, caughtEncoded, 99);
+    std::memcpy(v4Bytes, "P3CANDY4", 8);
+    const size_t v4Size = kStarterCandyProfileOverhead + 19;
+    char v4Digest[65]{};
+    IntegritySha256::hashHex(v4Bytes, v4Size - 64, v4Digest);
+    std::memcpy(v4Bytes + v4Size - 64, v4Digest, 64);
+    NativeStarterCandyRecord v4Decoded[1]{};
+    if (decodeNativeStarterCandyProfile(v4Bytes, v4Size, PokerogueContent::kContentHash,
+            PokerogueContent::kMaxStarterCandyCount, v4Decoded, 1, caughtCount, caughtGeneration) !=
+            NativeSaveResult::Ok || v4Decoded[0].natureAttr != purchased.natureAttr ||
+        v4Decoded[0].abilityAttr || v4Decoded[0].genderAttr || v4Decoded[0].dexIvs[0] != 31) return 131;
+    auto invalidAttributes = purchased;
+    invalidAttributes.abilityAttr = 8;
+    if (StarterCandyProfileCodec::valid(invalidAttributes, 0, PokerogueContent::kMaxStarterCandyCount)) return 132;
+    invalidAttributes = purchased;
+    invalidAttributes.genderAttr = 1;
+    if (StarterCandyProfileCodec::valid(invalidAttributes, 0, PokerogueContent::kMaxStarterCandyCount)) return 133;
     auto invalidDexRecord = purchased;
     invalidDexRecord.dexIvs[0] = 32;
     if (StarterCandyProfileCodec::valid(invalidDexRecord, 0, PokerogueContent::kMaxStarterCandyCount)) return 127;
@@ -679,7 +700,7 @@ extern "C" int runNativeSaveChecks() {
     if (encodeNativeStarterCandyProfile(&purchased, 1, 1, PokerogueContent::kContentHash,
             PokerogueContent::kMaxStarterCandyCount, caughtEncoded, sizeof(caughtEncoded), invalidWritten) !=
             NativeSaveResult::InvalidRecord || invalidWritten) return 122;
-    // A checksum-valid v4 record still rejects reserved bits and reduction three.
+    // A checksum-valid v5 record still rejects reserved bits and reduction three.
     const uint8_t invalidFlags[] = {8, 7};
     for (const uint8_t flags : invalidFlags) {
         caughtEncoded[88] = static_cast<char>(flags);

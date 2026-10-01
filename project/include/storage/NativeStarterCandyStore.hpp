@@ -222,7 +222,7 @@ private:
             }
             // A valid but unsupported version must not cause silent rollback.
             if (std::memcmp(slot(i), "P3CANDY1", 8) && std::memcmp(slot(i), "P3CANDY2", 8) &&
-                std::memcmp(slot(i), "P3CANDY3", 8) && std::memcmp(slot(i), "P3CANDY4", 8))
+                std::memcmp(slot(i), "P3CANDY3", 8) && std::memcmp(slot(i), "P3CANDY4", 8) && std::memcmp(slot(i), "P3CANDY5", 8))
                 return NativeSaveResult::UnsupportedVersion;
             sequence[i] = StarterCandyProfileCodec::get(slot(i) + 72, 4);
             if (!sequence[i]) { statuses[i] = NativeSaveResult::InvalidRecord; continue; }

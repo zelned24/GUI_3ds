@@ -1181,3 +1181,10 @@
 2. Lectura v1/v2/v3 conserva sus campos y deja naturaleza/IV desconocidos en cero; no fabrica atributos. Validator rechaza bits de naturaleza fuera de 1–25 e IV fuera de 0–31. Journal acepta v4; capacidades de scratch/bundle derivan del nuevo máximo. El tamaño del ledger C++ y memoria retenida crecen: rendimiento/memoria Old 3DS aún requieren medición final.
 3. Regresiones escritas de roundtrip v4, límites, lectura legacy sin atributos ficticios y conservación de reducción. Sin ejecutar.
 4. Esto conserva datos reales pero no completa el Pokédex ni habilita por sí solo iniciales capturados no default: habilidades, género, formas/shiny y conexión al resolver siguen pendientes. El perfil inicial todavía usa sus atributos fresh canónicos existentes.
+
+## Metadata de captura: habilidades y género en perfil v5
+
+1. `P3CANDY5` añade `abilityAttr` (bits upstream 1/2/4) y `genderAttr` (MALE/FEMALE 4/8), total veintiún bytes por registro. Captura usa identidad real del actor: habilidad en especies elegibles y regla upstream de hidden cuando índice uno sin segunda habilidad; género masculino/femenino OR, genderless sin esos bits. No inventa shiny, variante o formas.
+2. Fuente pinned inspeccionada: `src/system/game-data.ts`, `setPokemonSpeciesCaught`; `src/field/pokemon.ts`, `getDexAttr`; `src/enums/ability-attr.ts`/`dex-attr.ts`. El perfil mantiene ambos grupos por separado, no afirma implementar todo `caughtAttr` ni `getFullUnlocksData`. Propagación completa de formas/battle forms y restricciones de especies requieren su resolver.
+3. Lectura v1–v4 conserva campos presentes y deja atributos no existentes en cero; v4 preserva naturaleza/IV. Validator rechaza bits ajenos. Pruebas v5 roundtrip, legacy v4 y bits inválidos escritas, sin ejecutar. Capacidades derivadas aumentan; medición de memoria Old 3DS pendiente.
+4. Falta conectar atributos al resolver de iniciales y persistir formas/shiny/variantes. Iniciales capturados no default siguen sin integración jugable completa. Tests/compilación aplazados.

@@ -443,10 +443,13 @@ bool FirstRunRuntime::hasCaughtSpecies(uint16_t dex) const {
     return false;
 }
 
-bool FirstRunRuntime::recordCaughtSpecies(uint16_t dex, const PokemonBattleState* captured) {
+bool FirstRunRuntime::recordCaughtSpecies(uint16_t dex, const ResolvedPokemon* captured) {
     if (captured) {
-        if (static_cast<uint8_t>(captured->nature) >= 25) return false;
-        for (uint8_t iv : captured->ivs) if (iv > 31) return false;
+        if (!captured->actorIdentityResolved || captured->actor.abilityIndex > 2 ||
+            captured->actor.gender == PokemonGender::Unspecified ||
+            static_cast<uint8_t>(captured->actor.gender) > static_cast<uint8_t>(PokemonGender::Female)) return false;
+        if (static_cast<uint8_t>(captured->battleState.nature) >= 25) return false;
+        for (uint8_t iv : captured->battleState.ivs) if (iv > 31) return false;
     }
     // Legacy diagnostics without an attached profile do not fabricate durable data.
     if (!m_starterProfileReady) return true;
@@ -467,9 +470,18 @@ bool FirstRunRuntime::recordCaughtSpecies(uint16_t dex, const PokemonBattleState
         m_starterProfileRecords[index].caught = true;
         if (captured) {
             auto& entry = m_starterProfileRecords[index];
-            entry.natureAttr |= 1u << (static_cast<uint8_t>(captured->nature) + 1);
+            entry.natureAttr |= 1u << (static_cast<uint8_t>(captured->battleState.nature) + 1);
+            const auto* originalSpecies = PokerogueContent::findSpeciesByDex(captured->dex);
+            if (!originalSpecies) return false;
+            if (species->starterEligible) {
+                const uint8_t index = captured->actor.abilityIndex;
+                entry.abilityAttr |= index == 1 && !originalSpecies->ability2 ? 4u : static_cast<uint8_t>(1u << index);
+            }
+            if (captured->actor.gender == PokemonGender::Male) entry.genderAttr |= 4u;
+            else if (captured->actor.gender == PokemonGender::Female) entry.genderAttr |= 8u;
+
             for (uint8_t i = 0; i < 6; ++i)
-                entry.dexIvs[i] = std::max(entry.dexIvs[i], captured->ivs[i]);
+                entry.dexIvs[i] = std::max(entry.dexIvs[i], captured->battleState.ivs[i]);
         }
         dex = species->prevolutionDex;
     }
@@ -2656,7 +2668,7 @@ bool FirstRunRuntime::throwPokeballInPlace(PokeballType ball) {
 
     if (captureEvent.caught) {
         // GameData.setPokemonCaught precedes the full-party incorporation choice.
-        if (!recordCaughtSpecies(target->dex, &target->battleState)) {
+        if (!recordCaughtSpecies(target->dex, target)) {
             m_battleFeedback = "Caught species profile could not resolve";
             return false;
         }
