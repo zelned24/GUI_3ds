@@ -100,6 +100,10 @@ public:
     bool starterProfileReady() const { return m_starterProfileReady; }
     size_t starterProfileCount() const { return m_starterProfileCount; }
     const NativeStarterCandyRecord* starterProfileRecords() const { return m_starterProfileRecords.data(); }
+    bool capturePartyChoicePending() const { return m_capturePartyChoicePending; }
+    uint8_t selectedCapturePartyChoice() const { return m_selectedCapturePartyChoice; }
+    const ResolvedPokemon& pendingCapturedPokemon() const { return m_pendingCapturedPokemon; }
+    bool resolveCapturePartyChoice(int partyMember); // -1 declines incorporation, 0..5 replaces.
     bool battleInputSupported() const;
     bool trainerBattleSupported() const;
     bool doubleBattleSupported() const;
@@ -168,6 +172,8 @@ public:
     bool throwPokeball(PokeballType type = PokeballType::Pokeball);
 
 private:
+    bool resolveCapturePartyChoiceInPlace(int partyMember);
+    bool finishSuccessfulCapture(ResolvedPokemon& target);
     bool advanceBattleTurnInPlace();
     bool claimRewardChoiceInPlace(uint8_t heldPartyMember = 0xFF, bool recoveryTarget = false, uint8_t recoveryMove = 0);
     bool resolvePendingLearnMoveInPlace(int selectedSlot);
@@ -223,6 +229,10 @@ private:
     bool m_secondEncounterResolved = false;
     uint8_t m_selectedBattleMove = 0;
     uint8_t m_selectedTarget = 0;
+    bool m_capturePartyChoicePending = false;
+    uint8_t m_capturePartyTarget = 0;
+    uint8_t m_selectedCapturePartyChoice = 0;
+    ResolvedPokemon m_pendingCapturedPokemon{};
     uint8_t m_doubleExperienceGrantedMask = 0;
     uint32_t m_starterProfileGeneration = 0;
     bool m_starterProfileReady = false;

@@ -984,3 +984,10 @@
 2. Corrige la decisión anterior de `grantVictoryExperience(false)`: ahora aplica la ganancia de amistad y ledger del participante también tras captura exitosa. En dobles el mask ya concedido evita repetir la primera derrota.
 3. Retirado helper numérico sin consumidor cuya hipótesis "captura no da amistad" era incorrecta; referencias de tests sustituidas por máscaras actuales. Regresiones 589–590 escritas sobre captura real + profile adjunto, sin ejecutar.
 4. Las notas anteriores que excluían amistad por captura quedan supersedidas por esta evidencia pinned. Decisión con equipo lleno, estadísticas de capturas y callback completo de captura aún pendientes.
+
+## Decisión tras captura con equipo lleno — pendiente de ejecución
+
+1. Sustituye el bloqueo anterior para inventario sin held modifiers: captura exitosa consume una ball y pausa antes de retirar al enemigo. A confirma reemplazo de uno de los seis miembros; B rechaza incorporación y completa la captura. No descarta silenciosamente al capturado.
+2. Runtime C++ conserva el actor capturado, decide mediante comandos y termina Victory/EXP una sola vez. QuickJS proyecta nombres/HP y selección nativa; no decide gameplay. Guardado rechaza este estado intermedio; cambio, captura adicional y mutación de held/evolution pause quedan bloqueados.
+3. Regresiones nativas 586–588 y 591–593 y routing JS escritas, sin ejecutar. Fuente pinned: AttemptCapturePhase / addToPartyMenuConfig / PartyUiMode.RELEASE y PartyUiHandler.processReleaseOption.
+4. Captura con equipo lleno y held modifiers sigue bloqueada hasta implementar eliminación/transferencia por propietario. Estadísticas, shiny/unlocks y callback completo de captura siguen pendientes. No se declara Classic completo.

@@ -155,4 +155,23 @@ export function registerQuickJsStorageTests(register) {
     assert.ok(ownershipBlock.indexOf('togglePlayerEvolutionPause') < ownershipBlock.indexOf('\n        }\n'));
   });
 
+  register('QuickJS capture: full party choice owns buttons before combat', () => {
+    const commands = [];
+    const context = { JSON, Math };
+    for (const name of new Set(match[1].match(/_3ds_[A-Za-z]+/g))) context[name] = () => undefined;
+    context._3ds_getBattleState = () => JSON.stringify({runStarted: true, finished: false});
+    context._3ds_getPresentationInfo = () => ({capturePartyChoicePending: true,
+      selectedCapturePartyChoice: 2, capturedName: 'Captured', playerPartyDetails: []});
+    context._3ds_getCombatLog = () => '';
+    context._3ds_submitAction = id => commands.push(id);
+    vm.createContext(context);
+    vm.runInContext(match[1], context);
+    context._3ds_tick({up: true});
+    context._3ds_tick({down: true});
+    context._3ds_tick({A: true});
+    context._3ds_tick({B: true});
+    context._3ds_tick({select: true});
+    assert.deepEqual(commands, [-1, 100, 342, 346]);
+  });
+
 }

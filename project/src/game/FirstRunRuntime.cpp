@@ -132,7 +132,7 @@ void FirstRunRuntime::captureNativeRunSave(NativeRunSave& output) const {
     NativeRunSave value{};
     // v9 preserves ball inventory; doubles, captured party and later trainer history remain unsupported.
     // Never report a setup checkpoint as a successful save of an active double battle.
-    if (m_context.enemy.bossState.segmentCount || m_doubleBattle || m_pokeballs[5] ||
+    if (m_capturePartyChoicePending || m_context.enemy.bossState.segmentCount || m_doubleBattle || m_pokeballs[5] ||
         m_run.wave > 9 || (m_trainerBattle && m_run.wave != 5)) {
         output = {};
         return;
@@ -740,6 +740,7 @@ bool FirstRunRuntime::doubleBattleSupported() const {
 }
 
 bool FirstRunRuntime::battleInputSupported() const {
+    if (m_capturePartyChoicePending) return false;
     if (m_doubleBattle) return doubleBattleSupported();
     if (!m_encounterResolved || !m_context.player.actorIdentityResolved ||
         !m_context.enemy.actorIdentityResolved || m_battleFinished ||
@@ -1026,6 +1027,14 @@ bool FirstRunRuntime::resolvePendingLearnMoveInPlace(int selectedSlot) {
 }
 
 bool FirstRunRuntime::selectBattleMove(int direction) {
+    if (m_capturePartyChoicePending) {
+        if (!direction) return false;
+        m_selectedCapturePartyChoice = static_cast<uint8_t>((m_selectedCapturePartyChoice + (direction > 0 ? 1 : 5)) % 6);
+        const auto& selected = m_context.playerParty[m_selectedCapturePartyChoice];
+        m_battleFeedback = std::string("Replace: ") + (selected.localizedName ? selected.localizedName : "Pokemon") + " A: replace B: decline";
+        buildScene();
+        return true;
+    }
     if (moveLearningPending()) {
         if (!direction) return false;
         m_selectedBattleMove = static_cast<uint8_t>((m_selectedBattleMove + (direction > 0 ? 1 : 3)) % 4);
@@ -1055,6 +1064,7 @@ bool FirstRunRuntime::selectBattleMove(int direction) {
 }
 
 bool FirstRunRuntime::cycleTarget(int direction) {
+    if (m_capturePartyChoicePending) return false;
     if (!m_doubleBattle || m_battleFinished || !m_encounterResolved || !m_secondEncounterResolved) return false;
     if (m_context.enemy.battleState.hp == 0 && m_context.secondEnemy.battleState.hp == 0) return false;
     if (m_context.enemy.battleState.hp == 0) {
@@ -1304,6 +1314,7 @@ bool FirstRunRuntime::advanceBattleTurn() {
 }
 
 bool FirstRunRuntime::advanceBattleTurnInPlace() {
+    if (m_capturePartyChoicePending) return resolveCapturePartyChoiceInPlace(m_selectedCapturePartyChoice);
     if (!heldHealingInventorySupported(m_heldModifiers.data(), m_heldModifierCount)) {
         m_battleFeedback = "Held modifier effects require native dispatch";
         return false;
@@ -2132,6 +2143,7 @@ bool FirstRunRuntime::skipVictoryReward() {
 }
 
 bool FirstRunRuntime::skipVictoryRewardInPlace() {
+    if (m_capturePartyChoicePending) return resolveCapturePartyChoiceInPlace(-1);
     if (!heldHealingInventorySupported(m_heldModifiers.data(), m_heldModifierCount)) {
         m_battleFeedback = "Held modifier effects require native dispatch";
         return false;
@@ -2273,6 +2285,7 @@ bool FirstRunRuntime::throwPokeball(PokeballType ball) {
 }
 
 bool FirstRunRuntime::throwPokeballInPlace(PokeballType ball) {
+    if (m_capturePartyChoicePending) return false;
     if (!heldHealingInventorySupported(m_heldModifiers.data(), m_heldModifierCount)) {
         m_battleFeedback = "Held modifier effects require native dispatch";
         return false;
@@ -2286,12 +2299,6 @@ bool FirstRunRuntime::throwPokeballInPlace(PokeballType ball) {
     if (m_trainerBattle) {
         m_battleFeedback = "Cannot catch a trainer's Pokémon!";
         buildScene();
-        return false;
-    }
-    // AttemptCapturePhase requires an explicit release/replacement decision at
-    // PLAYER_PARTY_MAX_SIZE. Never silently discard a successful capture.
-    if (m_context.playerPartyCount >= 6) {
-        m_battleFeedback = "Full-party capture requires release/replacement selection";
         return false;
     }
     const auto ballIdx = static_cast<uint8_t>(ball);
@@ -2371,7 +2378,8 @@ bool FirstRunRuntime::throwPokeballInPlace(PokeballType ball) {
     }
 
     if (captureEvent.caught) {
-        if (m_context.playerPartyCount < 6) {
+        if (m_context.playerPartyCount > 6) return false;
+        {
             ResolvedPokemon caughtMon = *target;
             caughtMon.bossState = {}; // PlayerPokemon is not an EnemyPokemon boss.
             const auto* caughtSpecies = PokerogueContent::findSpeciesByDex(caughtMon.dex);
@@ -2383,27 +2391,20 @@ bool FirstRunRuntime::throwPokeballInPlace(PokeballType ball) {
             // EnemyPokemon.addToParty passes the source into PlayerPokemon:
             // preserve capture HP/PP; remove the enemy only after copying it.
             resetPokemonSummonState(caughtMon.battleState);
+            if (m_context.playerPartyCount == 6) {
+                m_pendingCapturedPokemon = caughtMon;
+                m_capturePartyTarget = target == &m_context.secondEnemy ? 1 : 0;
+                m_selectedCapturePartyChoice = 0;
+                m_capturePartyChoicePending = true;
+                m_checkpointAvailable = false;
+                m_runStarted = true;
+                m_battleFeedback = "Party full: UP/DOWN recipient, A replace, B decline";
+                buildScene();
+                return true;
+            }
             m_context.playerParty[m_context.playerPartyCount++] = caughtMon;
         }
-        target->battleState.hp = 0;
-
-        m_checkpointAvailable = false;
-        m_runStarted = true;
-
-        if (enemyPartyDefeated()) {
-            // Pinned AttemptCapturePhase queues VictoryPhase, whose start calls
-            // applyPartyExp(expValue, true), including friendship for participants.
-            if (!grantVictoryExperience(true) || !planClassicVictory(m_run.wave, m_victoryPlan)) {
-                m_battleFeedback = "Capture victory could not resolve";
-                return false;
-            }
-            m_playerWon = true;
-            m_battleFinished = true;
-            m_battleFeedback = std::string("Gotcha! ") + (target->localizedName ? target->localizedName : "Pokémon") + " was caught!";
-        } else {
-            m_battleFeedback = std::string("Caught ") + (target->localizedName ? target->localizedName : "Pokémon") + "! Defeat remaining foe.";
-        }
-        return finishBattleTurn();
+        return finishSuccessfulCapture(*target);
     } else {
         m_checkpointAvailable = false;
         m_runStarted = true;
@@ -2433,6 +2434,7 @@ bool FirstRunRuntime::throwPokeballInPlace(PokeballType ball) {
 }
 
 bool FirstRunRuntime::restoreHeldModifierInventory(const NativeHeldModifierInstance* records, size_t count) {
+    if (m_capturePartyChoicePending) return false;
     if ((count && !records) || count > m_heldModifiers.size() || moveLearningPending() || evolutionPending())
         return false;
     for (size_t i = 0; i < count; ++i) {
@@ -2458,8 +2460,62 @@ bool FirstRunRuntime::restoreHeldModifierInventory(const NativeHeldModifierInsta
     return true;
 }
 
+bool FirstRunRuntime::finishSuccessfulCapture(ResolvedPokemon& target) {
+    target.battleState.hp = 0;
+
+    m_checkpointAvailable = false;
+    m_runStarted = true;
+
+    if (enemyPartyDefeated()) {
+        // Pinned AttemptCapturePhase queues VictoryPhase, whose start calls
+        // applyPartyExp(expValue, true), including friendship for participants.
+        if (!grantVictoryExperience(true) || !planClassicVictory(m_run.wave, m_victoryPlan)) {
+            m_battleFeedback = "Capture victory could not resolve";
+            return false;
+        }
+        m_playerWon = true;
+        m_battleFinished = true;
+        m_battleFeedback = std::string("Gotcha! ") + (target.localizedName ? target.localizedName : "Pokémon") + " was caught!";
+    } else {
+        m_battleFeedback = std::string("Caught ") + (target.localizedName ? target.localizedName : "Pokémon") + "! Defeat remaining foe.";
+    }
+    return finishBattleTurn();
+}
+
+bool FirstRunRuntime::resolveCapturePartyChoice(int member) {
+    FirstRunRuntime candidate = *this;
+    if (!candidate.resolveCapturePartyChoiceInPlace(member)) {
+        m_battleFeedback = candidate.m_battleFeedback;
+        buildScene();
+        return false;
+    }
+    *this = candidate;
+    buildScene();
+    return true;
+}
+
+bool FirstRunRuntime::resolveCapturePartyChoiceInPlace(int member) {
+    if (!m_capturePartyChoicePending || m_context.playerPartyCount != 6 || member < -1 || member >= 6 ||
+        m_heldModifierCount) return false; // Full-party held transfer remains explicitly gated.
+    uint32_t releasedId = 0;
+    if (member >= 0) {
+        releasedId = m_context.playerParty[member].battleState.pokemonId;
+        m_context.playerParty[member] = m_pendingCapturedPokemon;
+        if (member == m_context.activePlayerPartyIndex) m_context.player = m_pendingCapturedPokemon;
+        m_playerHistoryRequiresSnapshot = true;
+    }
+    m_capturePartyChoicePending = false;
+    auto& target = m_capturePartyTarget ? m_context.secondEnemy : m_context.enemy;
+    if (!finishSuccessfulCapture(target)) return false;
+    // Preserve the original divisor for this capture's EXP; the released
+    // actor's historic participation is removed only after that allocation.
+    if (member >= 0) removeParticipant(releasedId);
+    m_pendingCapturedPokemon = {};
+    return true;
+}
+
 bool FirstRunRuntime::togglePlayerEvolutionPause(uint8_t memberIndex) {
-    if (!m_runStarted || moveLearningPending() || evolutionPending() ||
+    if (m_capturePartyChoicePending || !m_runStarted || moveLearningPending() || evolutionPending() ||
         memberIndex >= m_context.playerPartyCount) return false;
     auto& member = memberIndex == m_context.activePlayerPartyIndex
         ? m_context.player : m_context.playerParty[memberIndex];
@@ -2497,6 +2553,7 @@ bool FirstRunRuntime::switchPlayerPokemon(uint8_t targetIndex) {
 }
 
 bool FirstRunRuntime::switchPlayerPokemonInPlace(uint8_t targetIndex) {
+    if (m_capturePartyChoicePending) return false;
     if (!heldHealingInventorySupported(m_heldModifiers.data(), m_heldModifierCount)) {
         m_battleFeedback = "Held modifier effects require native dispatch";
         return false;
@@ -2616,6 +2673,8 @@ void FirstRunRuntime::resolve(bool carryPlayer) {
     m_rewardChoiceCount = 0;
     m_selectedRewardChoice = 0;
     m_rewardsPending = false;
+    m_capturePartyChoicePending = false;
+    m_pendingCapturedPokemon = {};
     m_runStarted = carryPlayer;
     m_checkpointAvailable = !carryPlayer;
     m_battleFeedback.clear();

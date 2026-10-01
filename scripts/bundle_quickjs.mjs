@@ -53,6 +53,13 @@ globalThis._3ds_tick = function(input) {
   else if (input.Y) _3ds_exportNative();
   else if (input.L) _3ds_saveNative();
   else if (input.R) _3ds_loadNative();
+  else if (presentation.capturePartyChoicePending) {
+    partyMenu = false;
+    if (input.up) _3ds_submitAction(-1);
+    else if (input.down) _3ds_submitAction(100);
+    else if (input.A || input.start) _3ds_submitAction(340 + (presentation.selectedCapturePartyChoice || 0));
+    else if (input.B) _3ds_submitAction(346);
+  }
   else if (presentation.moveLearningPending || presentation.evolutionPending) {
     if (input.B) _3ds_skipReward();
     else if (input.A || input.start) _3ds_submitAction(state.selectedMove || 0);
@@ -139,6 +146,18 @@ globalThis._3ds_tick = function(input) {
   _3ds_beginBottom();
   _3ds_clear(0xFF16213E);
   _3ds_drawText('Wave: ' + (state.wave || 0) + (presentation.doubleBattle ? ' - Doble batalla' : ''), 10, 10, 0.55, 0xFF00FFFF);
+  if (presentation.capturePartyChoicePending) {
+    _3ds_drawText("Caught: " + (presentation.capturedName || ""), 10, 34, 0.5, GREEN);
+    const details = presentation.playerPartyDetails || [];
+    for (let i = 0; i < details.length; ++i) {
+      const actor = details[i];
+      _3ds_drawText((i === presentation.selectedCapturePartyChoice ? "> " : "  ") +
+        (actor.name || "").slice(0, 18) + " HP:" + actor.hp + "/" + actor.maxHp,
+        10,  60 + i * 21, 0.44, WHITE);
+    }
+    _3ds_drawText("Up/Down: member A: replace B: decline", 8, 199, 0.4, WHITE);
+    return;
+  }
   if (presentation.moveLearningPending || presentation.evolutionPending) {
     _3ds_drawText((presentation.progressionName || '').slice(0, 26), 10, 34, 0.55, WHITE);
     if (presentation.moveLearningPending) {
