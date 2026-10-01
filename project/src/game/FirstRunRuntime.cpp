@@ -145,6 +145,7 @@ void FirstRunRuntime::captureNativeRunSave(NativeRunSave& output) const {
         return;
     }
     for (uint8_t ball = 0; ball < 5; ++ball) value.pokeballCounts[ball] = m_pokeballs[ball];
+    value.starterProfileGeneration = m_starterProfileGeneration;
     value.wave = m_run.wave;
     value.playerLevel = m_context.player.level;
     value.playerExperience = m_context.player.totalExperience;
@@ -243,6 +244,7 @@ bool FirstRunRuntime::restoreNativeRunSave(const NativeRunSave& save) {
         return false;
     FirstRunRuntime candidate(save.seed);
     if (!candidate.restoreNativeRunSaveInPlace(save)) return false;
+    candidate.m_starterProfileGeneration = save.starterProfileGeneration;
     *this = candidate;
     // Scene nodes and text pointers belong to their runtime instance. Rebuild
     // after committing so none point at the temporary candidate's storage.

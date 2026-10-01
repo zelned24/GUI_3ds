@@ -782,3 +782,13 @@
 1. Envelope/runtime v12 almacena `starterProfileGeneration` dentro del contenido protegido por SHA-256. Cero identifica una run legacy o todavía sin perfil asociado; una referencia positiva exige cargar esa generación exacta.
 2. Lectura v1–v11 conservada; v11 mantiene inventario y migra la referencia a cero. El codec no consulta SD ni sustituye una generación ausente.
 3. Regresiones 73–75 escritas para roundtrip de la referencia y migración v11, pendientes de ejecución. Falta conectar el coordinador al arranque/checkpoints/exportación y preservar la referencia al capturar snapshots de gameplay; no se declara transacción conjunta completa.
+
+## Commit conjunto de run y perfil
+
+1. `NativeProgressStore` compone los journals existentes: valida snapshot, comprueba la referencia confirmada en disco, prepara perfil preservando la generación anterior y publica la nueva referencia mediante el journal de run. Rechaza una referencia obsoleta antes de escribir. Un único owner debe serializar estas operaciones.
+2. `load` resuelve exactamente el perfil de la run; una run sin referencia exige bootstrap explícito y no recibe recompensas retroactivas. Tras un error de I/O se debe recargar antes del reintento, porque el error puede ocurrir después de una escritura durable.
+3. FirstRunRuntime conserva la referencia al restaurar/capturar, incluso para snapshots de setup. El coordinador todavía no sustituye los consumidores SD/QuickJS del programa; la exportación conjunta y el perfil vivo de gameplay siguen pendientes.
+4. Regresiones 76–83 escritas: bootstrap, interrupción entre perfil/run, reintento, referencia obsoleta y fallo de perfil con recuperación anterior. Roundtrip de runtime amplía la prueba existente. Sin ejecución ni compilación por instrucción del usuario.
+
+5. `exportGeneration` exporta el perfil confirmado por referencia, aunque exista un candidato más reciente, y verifica el archivo leído después de escribirlo. Regresiones 84–86 escritas, no ejecutadas. Esto no hace atómica una exportación de dos archivos: falta empaquetar/importar ambos como una unidad portable y conectar consumidores.
+6. La fixture de migración v10 ahora parte de una cabecera v12 y comprueba las constantes de versión actuales; conserva las comprobaciones del inventario y del Pokémon anterior.

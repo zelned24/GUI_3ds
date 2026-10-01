@@ -1789,6 +1789,7 @@ int main() {
         if (encodeNativeRunSave(setup, beforeBytes, sizeof(beforeBytes), beforeSize) != NativeSaveResult::Ok ||
             encodeNativeRunSave(afterRejected, afterBytes, sizeof(afterBytes), afterSize) != NativeSaveResult::Ok ||
             beforeSize != afterSize || std::memcmp(beforeBytes, afterBytes, beforeSize)) return 3;
+        active.starterProfileGeneration = 17;
         if (!game.restoreNativeRunSave(active)) return 4;
         if (!game.scene().nodes || !game.scene().nodeCount ||
             !game.scene().nodes[0].text || std::strcmp(game.scene().nodes[0].text,
@@ -1797,7 +1798,7 @@ int main() {
         game.captureNativeRunSave(loaded);
         if (loaded.stage != NativeSaveStage::BattleActive || loaded.enemyHp != active.enemyHp ||
             loaded.seed != seed || loaded.playerStatStages[0] != -2 ||
-            loaded.enemyStatStages[4] != 3) return 6;
+            loaded.enemyStatStages[4] != 3 || loaded.starterProfileGeneration != 17) return 6;
         NativePokemonSave actorSnapshot{};
         const auto& currentActor = game.presentation().player;
         if (!captureNativePokemonSave(currentActor.battleState, currentActor.totalExperience,
@@ -2008,8 +2009,8 @@ int main() {
         if (!heldSection) return 386;
         size_t versionTenSize = static_cast<size_t>(heldSection - heldRunPayload);
         std::memcpy(versionTenPayload, heldRunPayload, versionTenSize);
-        char* tenSaveVersion = std::strstr(versionTenPayload, "saveVersion=000b");
-        char* tenRuntimeVersion = std::strstr(versionTenPayload, "runtimeVersion=000b");
+        char* tenSaveVersion = std::strstr(versionTenPayload, "saveVersion=000c");
+        char* tenRuntimeVersion = std::strstr(versionTenPayload, "runtimeVersion=000c");
         if (!tenSaveVersion || !tenRuntimeVersion) return 387;
         tenSaveVersion[std::strlen("saveVersion=") + 3] = 'a';
         tenRuntimeVersion[std::strlen("runtimeVersion=") + 3] = 'a';
@@ -2021,7 +2022,7 @@ int main() {
         versionTenSize += 72;
         NativeRunSave migratedTen{};
         if (decodeNativeRunSave(versionTenPayload, versionTenSize, PokerogueContent::kContentHash, migratedTen) !=
-                NativeSaveResult::Ok || migratedTen.saveVersion != 11 || migratedTen.runtimeVersion != 11 ||
+                NativeSaveResult::Ok || migratedTen.saveVersion != kNativeSaveVersion || migratedTen.runtimeVersion != kNativeSaveRuntimeVersion ||
             migratedTen.heldModifierCount || migratedTen.playerPartyCount != unsupportedHeldSave.playerPartyCount ||
             migratedTen.playerParty[0].pokemonId != unsupportedHeldSave.playerParty[0].pokemonId) return 388;
         if (!singleSnapshotRuntime.restoreSetup(singleRecaptured.seed, singleRecaptured.starterDex) ||

@@ -1,6 +1,7 @@
 #include "storage/NativeRunSave.hpp"
 #include "storage/NativeStarterCandyProfile.hpp"
 #include "storage/NativeStarterCandyStore.hpp"
+#include "storage/NativeProgressStore.hpp"
 #include "storage/IntegritySha256.hpp"
 #include "content/PokerogueRuntimeContent.hpp"
 #include <cstring>
@@ -419,5 +420,44 @@ extern "C" int runNativeSaveChecks() {
             NativeSaveResult::Ok || restored.starterProfileGeneration != 0 ||
         restored.saveVersion != kNativeSaveVersion || restored.runtimeVersion != kNativeSaveRuntimeVersion)
         return 75;
+    disk.sizes[0] = disk.sizes[1] = 0;
+    other.sizes[0] = other.sizes[1] = 0;
+    NativeProgressStore progress(store, candyStore);
+    NativeRunSave committedRun{};
+    if (makeNativeRunSetupSave(123, 1, committedRun) != NativeSaveResult::Ok) return 76;
+    candyRecords[0].candyCount = 7;
+    if (progress.commit(committedRun, candyRecords, 2) != NativeSaveResult::Ok ||
+        committedRun.starterProfileGeneration != 1 || committedRun.generation != 1) return 77;
+    candyRecords[0].candyCount = 10;
+    disk.interrupt = true;
+    if (progress.commit(committedRun, candyRecords, 2) != NativeSaveResult::IoError ||
+        committedRun.starterProfileGeneration != 1) return 78;
+    disk.interrupt = false;
+    if (progress.load(PokerogueContent::kContentHash, restored, restoredCandy, 2, candyCount) !=
+            NativeSaveResult::Ok || restored.starterProfileGeneration != 1 ||
+        restoredCandy[0].candyCount != 7) return 79;
+    if (progress.commit(committedRun, candyRecords, 2) != NativeSaveResult::Ok ||
+        committedRun.starterProfileGeneration != 3 ||
+        progress.load(PokerogueContent::kContentHash, restored, restoredCandy, 2, candyCount) !=
+            NativeSaveResult::Ok || restoredCandy[0].candyCount != 10) return 80;
+    NativeRunSave staleRun = committedRun;
+    staleRun.starterProfileGeneration = 1;
+    if (progress.commit(staleRun, candyRecords, 2) != NativeSaveResult::InvalidRecord) return 81;
+    other.interrupt = true;
+    candyRecords[0].candyCount = 11;
+    if (progress.commit(committedRun, candyRecords, 2) != NativeSaveResult::IoError) return 82;
+    other.interrupt = false;
+    if (progress.load(PokerogueContent::kContentHash, restored, restoredCandy, 2, candyCount) !=
+            NativeSaveResult::Ok || restored.starterProfileGeneration != 3 ||
+        restoredCandy[0].candyCount != 10) return 83;
+    candyRecords[0].candyCount = 12;
+    if (candyStore.prepareFromCommitted(candyRecords, 2, PokerogueContent::kContentHash, 3,
+            preparedGeneration) != NativeSaveResult::Ok ||
+        candyStore.exportGeneration(PokerogueContent::kContentHash, 3) != NativeSaveResult::Ok) return 84;
+    if (decodeNativeStarterCandyProfile(other.exported, other.exportSize, PokerogueContent::kContentHash,
+            PokerogueContent::kMaxStarterCandyCount, restoredCandy, 2, candyCount, candyGeneration) !=
+            NativeSaveResult::Ok || candyGeneration != 3 || restoredCandy[0].candyCount != 10) return 85;
+    if (candyStore.exportGeneration(PokerogueContent::kContentHash, 2) != NativeSaveResult::NotFound)
+        return 86;
     return 0;
 }

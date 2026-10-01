@@ -105,6 +105,37 @@ public:
         return NativeSaveResult::NotFound;
     }
 
+    // Export the committed profile, even when a newer pending candidate exists.
+    NativeSaveResult exportGeneration(const char* hash, uint32_t requiredGeneration) {
+        if (!requiredGeneration) return NativeSaveResult::InvalidRecord;
+        int selected = -1;
+        auto status = select(selected);
+        if (status != NativeSaveResult::Ok) return status;
+        for (unsigned i = 0; i < 2; ++i) {
+            if (!m_valid[i] || StarterCandyProfileCodec::get(slot(i) + 72, 4) != requiredGeneration) continue;
+            size_t count = 0;
+            uint32_t generation = 0;
+            status = inspectNativeStarterCandyProfile(slot(i), m_sizes[i], hash,
+                PokerogueContent::kMaxStarterCandyCount, count, generation);
+            if (status != NativeSaveResult::Ok) return status;
+            char expectedDigest[64];
+            std::memcpy(expectedDigest, slot(i) + m_sizes[i] - 64, 64);
+            const size_t expectedSize = m_sizes[i];
+            status = m_storage.writeExport(slot(i), expectedSize);
+            if (status != NativeSaveResult::Ok) return status;
+            size_t read = 0;
+            status = m_storage.readExport(slot(i), kStarterCandyProfileMaxBytes, read);
+            if (status != NativeSaveResult::Ok) return status;
+            if (read != expectedSize || std::memcmp(expectedDigest, slot(i) + read - 64, 64))
+                return NativeSaveResult::ChecksumMismatch;
+            status = inspectNativeStarterCandyProfile(slot(i), read, hash,
+                PokerogueContent::kMaxStarterCandyCount, count, generation);
+            if (status != NativeSaveResult::Ok) return status;
+            return generation == requiredGeneration ? NativeSaveResult::Ok : NativeSaveResult::InvalidRecord;
+        }
+        return NativeSaveResult::NotFound;
+    }
+
     NativeSaveResult prepareFromCommitted(const NativeStarterCandyRecord* records, size_t count,
         const char* hash, uint32_t committedGeneration, uint32_t& preparedGeneration) {
         if (!committedGeneration) return NativeSaveResult::InvalidRecord;
