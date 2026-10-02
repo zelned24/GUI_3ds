@@ -942,6 +942,33 @@ extern "C" int runPokemonBattleStateChecks() {
                 stages->copiesRaises != (ability == 290)) return 9640;
         }
     }
+    {
+        for (const uint16_t ability : {uint16_t(128), uint16_t(172)}) {
+            bool resolved = false;
+            for (const auto& row : PokerogueContent::kStatusActionAbilityProfiles)
+                if (row.abilityId == ability) resolved = row.resolved;
+            const PokerogueContent::AbilityStatStageReaction* reaction = nullptr;
+            for (const auto& row : PokerogueContent::kAbilityStatStageReactions)
+                if (row.abilityId == ability) reaction = &row;
+            if (!resolved || !reaction || reaction->stagesPerRequestedStat != 2 ||
+                reaction->stat != (ability == 128 ? 1 : 3)) return 9650;
+            auto reactionUser = state, reactionTarget = state;
+            for (auto& stage : reactionTarget.statStages) stage = 0;
+            reactionUser.moveCount = 1;
+            reactionUser.moves[0] = {45, 40, 40};
+            Pokerogue3DS::PokemonStatStageCommandPolicy reactionPolicy{};
+            reactionPolicy.move.hitPolicyResolved = reactionPolicy.move.stagePolicy.resolved = true;
+            reactionPolicy.postChangePoliciesResolved = reactionPolicy.recipientReaction.resolved = true;
+            reactionPolicy.recipientReactions[0] = reaction;
+            Pokerogue3DS::PokemonStatStageCommandEvent reactionEvent{};
+            auto reactionRng = replacementRng;
+            if (Pokerogue3DS::usePokemonStatStageStatusCommand(reactionUser, reactionTarget, 0,
+                    reactionPolicy, reactionRng, reactionEvent) != Pokerogue3DS::PokemonStatStageEffectResult::Ok ||
+                !reactionEvent.move.hit || reactionUser.moves[0].pp != 39 ||
+                reactionTarget.statStages[0] != (ability == 128 ? 1 : -1) ||
+                (ability == 172 && reactionTarget.statStages[2] != 2)) return 9651;
+        }
+    }
     const uint8_t mixedSlots[] = {0, 1};
     const uint32_t mixedDamage[] = {0, 10};
     uint8_t mixedFiltered[4]{}, mixedCount = 0;

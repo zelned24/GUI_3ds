@@ -33,7 +33,7 @@ const statusActionAbilityRows = collections.abilities.map(ability => {
   const known = new Set(['IncreasePpUsedAbAttr', 'LowHpMoveTypePowerBoostAbAttr',
     'SyncEncounterNatureAbAttr', 'SynchronizeStatusAbAttr', 'RunSuccessAbAttr',
     'ProtectStatAbAttr', 'IgnoreOpponentStatStagesAbAttr', 'StatStageChangeMultiplierAbAttr',
-    'ReflectStatStageChangeAbAttr', 'StatStageChangeCopyAbAttr',
+    'ReflectStatStageChangeAbAttr', 'StatStageChangeCopyAbAttr', 'PostStatStageChangeStatStageChangeAbAttr',
     'MoveEffectChanceMultiplierAbAttr', 'IgnoreMoveEffectsAbAttr',
     'StatusEffectImmunityAbAttr', 'PostSummonHealStatusAbAttr', 'BattlerTagImmunityAbAttr',
     'PostSummonRemoveBattlerTagAbAttr', 'IntimidateImmunityAbAttr', 'ConfusionOnStatusEffectAbAttr']);
@@ -58,10 +58,13 @@ const statusActionAbilityRows = collections.abilities.map(ability => {
     const declarations = [...raw.matchAll(new RegExp(`\\.attr\\s*\\(\\s*${name}\\s*\\)`, 'g'))].length;
     return mentions === declarations && declarations <= 1;
   });
+  const postStageMentions = [...raw.matchAll(/\bPostStatStageChangeStatStageChangeAbAttr\b/g)].length;
+  const postStageDeclarations = [...raw.matchAll(/\.attr\s*\(\s*PostStatStageChangeStatStageChangeAbAttr\s*,\s*\(\s*_target\s*,\s*changes\s*\)\s*=>\s*\(\s*\{\s*stat\s*:\s*Stat\.(ATK|SPATK)\s*,\s*stages\s*:\s*changes\[0\]\.stages\s*<\s*0\s*\?\s*2\s*\*\s*changes\.length\s*:\s*0\s*,?\s*\}\s*\)\s*\)/g)].length;
+  const postStageResolved = postStageMentions === postStageDeclarations && postStageDeclarations <= 1;
   const resolved = !!raw && /new AbBuilder\(/.test(raw) && attrCalls === attrs.length &&
     calls.every(c => builders.has(c)) && attrs.every(a => known.has(a)) && ignoreMentions === ignoreDeclarations &&
     chanceMentions === chanceDeclarations.length && chanceDeclarations.length <= 1 && Number.isFinite(chanceMultiplier) &&
-    ignoreEffectMentions === ignoreEffectDeclarations && removalMentions === removalDeclarations && stageMultipliersResolved && simpleStageCallbacksResolved;
+    ignoreEffectMentions === ignoreEffectDeclarations && removalMentions === removalDeclarations && stageMultipliersResolved && simpleStageCallbacksResolved && postStageResolved;
   return `    {${ability.abilityId}, ${resolved}, false, ${ignoreDeclarations > 0}, ${chanceMultiplier}, ${ignoreEffectDeclarations > 0}}`;
 }).join(',\n');
 

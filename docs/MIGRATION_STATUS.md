@@ -1853,3 +1853,9 @@
 1. Perfiles de capacidad admiten las declaraciones exactas sin parámetros ReflectStatStageChangeAbAttr y StatStageChangeCopyAbAttr, ya representadas en tablas/reacciones nativas. Builders, argumentos y múltiples callbacks desconocidos se rechazan.
 2. Proveedor de estadísticas exige capacidad resuelta para ambos actores incluso en USER: ausencia de AbilityStatStageProfile ya no equivale silenciosamente a habilidad neutra desconocida. Mirror Armor/Opportunist usan el dispatcher compartido existente; el resto del daño sigue sujeto a sus resolvers propios.
 3. Regresiones de perfiles reales escritas junto con regresiones existentes de reflexión/copia. Contenido regenerado sin cambiar hash canónico; tests/compilación y Classic completo siguen pendientes.
+
+## Defiant y Competitive en acciones activas
+
+1. Pinned src/data/abilities/ab-attrs.ts PostStatStageChangeStatStageChangeAbAttr.canApply exige cambio no propio y callback no cero. Declaraciones reales Defiant/Competitive usan ATK/SPATK y 2 * changes.length ante primera etapa negativa.
+2. Capacidad de acciones de estado admite únicamente ese callback exacto inspeccionado, reutilizando tablas y dispatcher existentes de reacciones. Otras funciones/argumentos se mantienen pendientes; no se habilita una función arbitraria por nombre de clase.
+3. Regresiones Growl reales comprueban caída ATK y reacción +2 en ATK/SPATK, PP y perfiles canónicos. Escritas sin ejecutar; contenido regenerado, hash intacto, tests/compilación y Classic completo pendientes.
