@@ -3172,6 +3172,50 @@ static int checkCanonicalTrainerSignatureSlots() {
     return checked ? 0 : 231; // Real catalog coverage, not a synthetic trainer.
 }
 
+static int checkDoubleSingleTargetDropReactions() {
+    using namespace Pokerogue3DS;
+    const auto* screech = PokerogueContent::findMoveById(103);
+    if (!screech || !screech->target || std::strcmp(screech->target, "NEAR_OTHER")) return 10420;
+    const uint16_t abilities[] = {128, 172}; // Canonical Defiant and Competitive.
+    const uint8_t boostedStats[] = {0, 2}; // ATK / SPATK stage indices.
+    for (uint32_t seed = 1; seed <= 1024; ++seed) {
+        FirstRunRuntime source(seed);
+        if (!source.doubleBattle()) continue;
+        auto& field = const_cast<PresentationContext&>(source.presentation());
+        auto& player = field.player.battleState;
+        player.moveCount = 1;
+        player.moves[0] = {screech->id, 1, static_cast<uint8_t>(screech->pp)};
+        player.statStages[5] = 6; // Test-only guarantee via accuracy threshold, no bypass RNG.
+        bool durationResolved = true;
+        PokemonBattleState* enemies[] = {&field.enemy.battleState, &field.secondEnemy.battleState};
+        for (auto* enemy : enemies) {
+            bool resolved = false;
+            for (const auto& profile : PokerogueContent::kStatusDurationAbilityProfiles)
+                if (profile.abilityId == enemy->abilityId) resolved = profile.resolved;
+            durationResolved &= resolved;
+            enemy->status = {};
+            enemy->status.present = enemy->status.hasSleepTurnsRemaining = true;
+            enemy->status.effect = PokemonStatusEffect::Sleep;
+            enemy->status.sleepTurnsRemaining = 8;
+            for (auto& stage : enemy->statStages) stage = 0;
+            for (uint8_t slot = 0; slot < enemy->moveCount; ++slot) enemy->moves[slot].pp = 0;
+        }
+        if (!durationResolved || !source.doubleBattleSupported()) continue;
+        for (uint8_t i = 0; i < 2; ++i) {
+            FirstRunRuntime game = source;
+            auto& target = const_cast<PresentationContext&>(game.presentation()).enemy.battleState;
+            target.abilityId = abilities[i]; // Canonical capability injected only for this regression.
+            const uint16_t hp = target.hp;
+            if (!game.doubleBattleSupported() || !game.advanceBattleTurn()) return 10421;
+            if (target.statStages[1] != -2 || target.statStages[boostedStats[i]] != 2 || target.hp != hp ||
+                game.presentation().player.battleState.moves[0].pp ||
+                game.presentation().secondEnemy.battleState.statStages[1]) return 10422;
+        }
+        return 0;
+    }
+    return 10423;
+}
+
 static int checkDoubleLocalStageAbilities() {
     using namespace Pokerogue3DS;
     const uint16_t abilityIds[] = {86, 126, 29}; // Canonical Simple, Contrary, Clear Body.
@@ -3817,6 +3861,8 @@ static int checkExhaustedPpStruggleReplay() {
 }
 
 int main() {
+    const int dropReactions = checkDoubleSingleTargetDropReactions();
+    if (dropReactions) return dropReactions;
     const int doubleStageAbilities = checkDoubleLocalStageAbilities();
     if (doubleStageAbilities) return doubleStageAbilities;
     const int enemyAreaStats = checkEnemyAreaStatAction();

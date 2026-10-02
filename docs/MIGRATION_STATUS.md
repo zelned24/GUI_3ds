@@ -2292,3 +2292,9 @@
 1. StatStageChangePhase pinned aplica StatStageChangeMultiplierAbAttr antes de ProtectStatAbAttr; el resolver existente conserva ese orden, por lo que una subida convertida por Contrary no se bloquea como bajada. Se retira el gate de perfiles estrictamente neutrales para categoría status y se admiten multiplicadores/protección propios.
 2. Todos los actores vivos siguen requiriendo capacidad status resuelta. Reflexión, copiesRaises, PostStatStageChange y capacidades desconocidas (incluida protección condicional de aliado) permanecen gated; daño con efectos secundarios en dobles sigue pendiente.
 3. Regresión 10410–10413 usa campo real con Growl y habilidades canónicas Simple/Contrary/Clear Body inyectadas exclusivamente como contexto de test; verifica -2/+1/bloqueo en segundo objetivo, efecto del primero y PP único. Escrita sin ejecutar; no demuestra generación natural de cada habilidad ni cobertura completa de dobles.
+
+## Reacción local a bajadas en acciones de un objetivo de dobles
+
+1. PostStatStageChangeStatStageChangeAbAttr pinned (ab-attrs.ts) prepara una fase del mismo Pokémon con sourcePokemon propio; canApply excluye selfTarget. En comandos status NEAR_OTHER/NEAR_ENEMY del campo doble se reutiliza el resolver existente de reacción y sus políticas completas.
+2. Reflexión/copia y callbacks desconocidos siguen gated. Ataques de área con reacciones permanecen rechazados: su cola entre destinatarios todavía no está representada; no se extiende este permiso a daño con secundarios.
+3. Regresión 10420–10423 configura Screech canónico y capacidades Defiant/Competitive exclusivamente en contexto de test sobre campo real, verifica DEF -2, ATK/SPATK +2, PP único, HP/aliado intactos. Escrita sin ejecutar; pasivas/supresión y validación final pendientes.

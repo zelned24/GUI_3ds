@@ -1255,8 +1255,13 @@ bool FirstRunRuntime::resolveActiveStatStageCommandPolicy(const PokemonBattleSta
             if (!statusActionAbilitySupported(actor->abilityId)) return false;
             const auto* profile = PokerogueContent::findAbilityStatStageProfile(actor->abilityId);
             if (profile && (profile->reflectDrops || profile->copiesRaises)) return false;
-            for (const auto& reaction : PokerogueContent::kAbilityStatStageReactions)
-                if (reaction.abilityId == actor->abilityId) return false;
+            // Area effects enqueue multiple recipient phases; do not execute
+            // their post-change reactions inline until field queue order exists.
+            const bool singleTarget = move->target &&
+                (!std::strcmp(move->target, "NEAR_OTHER") || !std::strcmp(move->target, "NEAR_ENEMY"));
+            if (!singleTarget)
+                for (const auto& reaction : PokerogueContent::kAbilityStatStageReactions)
+                    if (reaction.abilityId == actor->abilityId) return false;
         }
     }
     const PokerogueContent::MoveStatStageEffect* effect = nullptr;

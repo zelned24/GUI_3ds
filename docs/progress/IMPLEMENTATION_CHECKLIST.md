@@ -550,3 +550,8 @@ Para cada entrega actualizar esta tabla con IDs, commit, alcance conectado, excl
 
 - Multiplicadores Simple/Contrary y protección propia se componen por objetivo en ataques status dobles, reutilizando el resolver de singles. Reflexión/copia/reacciones posteriores permanecen gated en todo el campo vivo.
 - Regresiones de perfiles canónicos en campo real escritas sin ejecutar; callbacks de campo, pasivas/supresión y validación final pendientes.
+
+### Avance HAB-05 / MOV-09: reacciones locales de un objetivo
+
+- Comandos status de un objetivo en dobles admiten reacciones de etapas canónicas como Defiant/Competitive mediante resolver existente. Reacciones de área, reflexión/copia y callbacks desconocidos siguen gated.
+- Regresiones Screech → bajada → reacción escritas sin ejecutar; no se cierra cobertura completa de habilidades.
