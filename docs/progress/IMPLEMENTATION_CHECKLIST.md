@@ -545,3 +545,8 @@ Para cada entrega actualizar esta tabla con IDs, commit, alcance conectado, excl
 
 - Growl enemigo usa acción compartida también en respuestas a cambio/captura; aliado queda fuera de ALL_NEAR_ENEMIES. Gates de perfiles neutrales conservados.
 - Regresión de comando real/último PP/HP escrita sin ejecutar. Campo de cuatro actores y reacciones de etapas pendientes.
+
+### Avance HAB-05 / MOV-09 / TUR-05: etapas locales en dobles
+
+- Multiplicadores Simple/Contrary y protección propia se componen por objetivo en ataques status dobles, reutilizando el resolver de singles. Reflexión/copia/reacciones posteriores permanecen gated en todo el campo vivo.
+- Regresiones de perfiles canónicos en campo real escritas sin ejecutar; callbacks de campo, pasivas/supresión y validación final pendientes.

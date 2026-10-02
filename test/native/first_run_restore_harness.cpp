@@ -3172,6 +3172,51 @@ static int checkCanonicalTrainerSignatureSlots() {
     return checked ? 0 : 231; // Real catalog coverage, not a synthetic trainer.
 }
 
+static int checkDoubleLocalStageAbilities() {
+    using namespace Pokerogue3DS;
+    const uint16_t abilityIds[] = {86, 126, 29}; // Canonical Simple, Contrary, Clear Body.
+    const int8_t expectedStages[] = {-2, 1, 0};
+    for (uint32_t seed = 1; seed <= 1024; ++seed) {
+        FirstRunRuntime source(seed);
+        if (!source.doubleBattle()) continue;
+        auto& field = const_cast<PresentationContext&>(source.presentation());
+        field.player.battleState.moveCount = 1;
+        field.player.battleState.moves[0] = {45, 1, 40};
+        bool durationResolved = true;
+        PokemonBattleState* enemies[] = {&field.enemy.battleState, &field.secondEnemy.battleState};
+        for (auto* enemy : enemies) {
+            bool duration = false;
+            for (const auto& profile : PokerogueContent::kStatusDurationAbilityProfiles)
+                if (profile.abilityId == enemy->abilityId) duration = profile.resolved;
+            durationResolved &= duration;
+            enemy->status = {};
+            enemy->status.present = enemy->status.hasSleepTurnsRemaining = true;
+            enemy->status.effect = PokemonStatusEffect::Sleep;
+            enemy->status.sleepTurnsRemaining = 8;
+            for (uint8_t slot = 0; slot < enemy->moveCount; ++slot) enemy->moves[slot].pp = 0;
+            for (auto& stage : enemy->statStages) stage = 0;
+        }
+        const auto* firstProfile = PokerogueContent::findAbilityStatStageProfile(field.enemy.battleState.abilityId);
+        if (firstProfile && (firstProfile->multiplier != 1 || firstProfile->protectedMask)) continue;
+        if (!durationResolved || !source.doubleBattleSupported()) continue;
+        for (uint8_t caseIndex = 0; caseIndex < 3; ++caseIndex) {
+            const auto* profile = PokerogueContent::findAbilityStatStageProfile(abilityIds[caseIndex]);
+            if (!profile) return 10410;
+            FirstRunRuntime game = source;
+            auto& target = const_cast<PresentationContext&>(game.presentation()).secondEnemy.battleState;
+            // Canonical ability IDs in test-only context; no production actor identity changes.
+            target.abilityId = abilityIds[caseIndex];
+            const uint16_t beforeHp = target.hp;
+            if (!game.doubleBattleSupported() || !game.advanceBattleTurn()) return 10411;
+            if (target.statStages[0] != expectedStages[caseIndex] || target.hp != beforeHp ||
+                game.presentation().enemy.battleState.statStages[0] != -1 ||
+                game.presentation().player.battleState.moves[0].pp) return 10412;
+        }
+        return 0;
+    }
+    return 10413; // Require a real field with neutral surrounding callbacks.
+}
+
 static int checkEnemyAreaStatAction() {
     using namespace Pokerogue3DS;
     const auto* growl = PokerogueContent::findMoveById(45);
@@ -3772,6 +3817,8 @@ static int checkExhaustedPpStruggleReplay() {
 }
 
 int main() {
+    const int doubleStageAbilities = checkDoubleLocalStageAbilities();
+    if (doubleStageAbilities) return doubleStageAbilities;
     const int enemyAreaStats = checkEnemyAreaStatAction();
     if (enemyAreaStats) return enemyAreaStats;
     const int enemyArea = checkEnemyAreaAllyDamage();

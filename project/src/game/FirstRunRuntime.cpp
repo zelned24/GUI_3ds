@@ -1246,15 +1246,15 @@ bool FirstRunRuntime::resolveActiveStatStageCommandPolicy(const PokemonBattleSta
     if (m_doubleBattle) {
         if (damaging) return false;
         // The current field dispatcher has no queued cross-actor stage reactions.
-        // Neutral profiles are admissible; reflection/copy/reactions stay gated.
+        // Recipient-local multipliers/protection compose per target. Reflection,
+        // opponent copy and post-change reactions still need queued field phases.
         const PokemonBattleState* field[] = {&m_context.player.battleState,
             &m_context.enemy.battleState, &m_context.secondEnemy.battleState};
         for (const auto* actor : field) {
             if (!actor->hp) continue;
             if (!statusActionAbilitySupported(actor->abilityId)) return false;
             const auto* profile = PokerogueContent::findAbilityStatStageProfile(actor->abilityId);
-            if (profile && (profile->multiplier != 1 || profile->protectedMask ||
-                    profile->reflectDrops || profile->copiesRaises)) return false;
+            if (profile && (profile->reflectDrops || profile->copiesRaises)) return false;
             for (const auto& reaction : PokerogueContent::kAbilityStatStageReactions)
                 if (reaction.abilityId == actor->abilityId) return false;
         }

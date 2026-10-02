@@ -2286,3 +2286,9 @@
 
 1. La admisión de cambios de etapas status neutrales ya permitía Growl enemigo, pero su ejecución requería acción compartida. Se unifica la clasificación usada por turnos normales y respuestas a captura/cambio: ALL_NEAR_ENEMIES de etapas recorre oponentes exclusivamente, con checks y PP únicos.
 2. Regresión 10400–10403 conecta Growl enemigo real contra el jugador, conserva aliado/HP y gasta el último PP sin cambiar identidad. Setup de sueño/slots exclusivo de test. Escrita sin ejecutar; perfiles no neutrales, callbacks, segundo jugador y validación final siguen pendientes.
+
+## Multiplicadores y protección propia de etapas en dobles
+
+1. StatStageChangePhase pinned aplica StatStageChangeMultiplierAbAttr antes de ProtectStatAbAttr; el resolver existente conserva ese orden, por lo que una subida convertida por Contrary no se bloquea como bajada. Se retira el gate de perfiles estrictamente neutrales para categoría status y se admiten multiplicadores/protección propios.
+2. Todos los actores vivos siguen requiriendo capacidad status resuelta. Reflexión, copiesRaises, PostStatStageChange y capacidades desconocidas (incluida protección condicional de aliado) permanecen gated; daño con efectos secundarios en dobles sigue pendiente.
+3. Regresión 10410–10413 usa campo real con Growl y habilidades canónicas Simple/Contrary/Clear Body inyectadas exclusivamente como contexto de test; verifica -2/+1/bloqueo en segundo objetivo, efecto del primero y PP único. Escrita sin ejecutar; no demuestra generación natural de cada habilidad ni cobertura completa de dobles.
