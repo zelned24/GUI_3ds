@@ -526,7 +526,8 @@ inline const PokerogueContent::MoveFixedDamageProfile* pokemonFixedDamageMovePro
     if (!move || move->category == PokerogueContent::MoveStatus || move->attributeCount != 1 ||
         move->upstreamFlags || !move->target || std::strcmp(move->target, "NEAR_OTHER")) return nullptr;
     if (!PokerogueContent::moveHasAttribute(*move, "FixedDamageAttr") &&
-        !PokerogueContent::moveHasAttribute(*move, "LevelDamageAttr")) return nullptr;
+        !PokerogueContent::moveHasAttribute(*move, "LevelDamageAttr") &&
+        !PokerogueContent::moveHasAttribute(*move, "TargetHalfHpDamageAttr")) return nullptr;
     bool buildersResolved = false;
     for (const auto& flags : PokerogueContent::kStatusMoveFlagProfiles)
         if (flags.moveId == moveId) buildersResolved = flags.resolved;
@@ -534,7 +535,8 @@ inline const PokerogueContent::MoveFixedDamageProfile* pokemonFixedDamageMovePro
     const PokerogueContent::MoveFixedDamageProfile* found = nullptr;
     for (const auto& row : PokerogueContent::kMoveFixedDamageProfiles)
         if (row.moveId == moveId) {
-            if (found || (row.userLevel ? row.amount != 0 : row.amount == 0)) return nullptr;
+            if (found || (row.userLevel && row.targetHalfHp) ||
+                ((row.userLevel || row.targetHalfHp) ? row.amount != 0 : row.amount == 0)) return nullptr;
             found = &row;
         }
     return found;

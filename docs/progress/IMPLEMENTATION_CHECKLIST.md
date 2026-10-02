@@ -360,3 +360,8 @@ Los ejemplos describen infraestructura y límites; no son tareas cerradas. Actua
 
 - Añadidos casos de los cuatro ataques de daño fijo en FirstRunRuntime: dos restores, comandos reales, comparación de HP/PP/stage/turno y battle RNG.
 - Son snapshots exclusivamente de test; casos escritos sin ejecución. No se marcan casillas como verificadas.
+
+### Avance MOV-02: daño de mitad de HP
+
+- Perfiles y cálculo conectados para Super Fang, Nature’s Madness y Ruination: floor(HP/2), mínimo uno, sin modificadores ordinarios.
+- Multi Lens/contextos adicionales no habilitados; límites y RNG tienen regresiones escritas sin ejecutar.

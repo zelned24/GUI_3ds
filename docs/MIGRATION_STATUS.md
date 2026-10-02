@@ -2004,3 +2004,9 @@
 1. Harness de restore incorpora Sonic Boom, Dragon Rage, Seismic Toss y Night Shade en snapshots de test derivados de encuentros reales; no altera learnsets ni datos de producción.
 2. Dos restauraciones ejecutan advanceBattleTurn y comparan PP, HP, stage, turno y estado íntegro del battle RNG. Regresiones 9870–9872 escritas, pendientes de ejecución.
 3. La existencia de estos casos no demuestra Classic completo ni compatibilidad Old 3DS. Tests, compilación, Azahar y hardware siguen para la etapa final.
+
+## Daño de mitad de HP canónico
+
+1. TargetHalfHpDamageAttr pinned usa toDmgValue(target.hp / 2), con floor y mínimo uno sin Multi Lens. Generador conserva provenance para Super Fang 162, Nature’s Madness 717 y Ruination 877.
+2. Perfil se conecta a predicción, resolver, selección y ejecución existentes de daño fijo. El gate FirstRunRuntime mantiene modifiers/dobles no resueltos fuera de esta frontera. No se implementa Multi Lens ni Parental Bond mediante esta fórmula simple.
+3. Regresiones 9880–9882 escritas para HP 1/2/3 y bypass de precisión sin draws. Tests, compilación y validación de dispositivo siguen pendientes; MOV-02 permanece parcial.

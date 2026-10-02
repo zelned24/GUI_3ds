@@ -1651,7 +1651,8 @@ PokemonDamageCoreResult calculatePokemonDamageCore(
         if (!pokemonFixedDamageAbilityCapabilitiesResolved(attacker.abilityId, defender.abilityId))
             return PokemonDamageCoreResult::UnsupportedAbilityCondition;
         if (fixedDamage->userLevel && !attacker.level) return PokemonDamageCoreResult::InvalidStats;
-        outputDamage = fixedDamage->userLevel ? attacker.level : fixedDamage->amount;
+        outputDamage = fixedDamage->targetHalfHp ? (defender.hp > 1 ? defender.hp / 2 : 1) :
+            fixedDamage->userLevel ? attacker.level : fixedDamage->amount;
         return PokemonDamageCoreResult::Ok;
     }
     double baseDamage = 0.0;
@@ -1870,7 +1871,8 @@ PokemonMoveDamageResult resolveStandardPokemonMoveDamage(
     }
     next.hit = true;
     if (fixedDamage) {
-        next.damage = fixedDamage->userLevel ? attacker.level : fixedDamage->amount;
+        next.damage = fixedDamage->targetHalfHp ? (defender.hp > 1 ? defender.hp / 2 : 1) :
+            fixedDamage->userLevel ? attacker.level : fixedDamage->amount;
         output = next;
         return PokemonMoveDamageResult::Ok;
     }

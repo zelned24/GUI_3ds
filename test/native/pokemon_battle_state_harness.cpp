@@ -1720,6 +1720,30 @@ extern "C" int runPokemonBattleStateChecks() {
                 fixedRng.randSeedUint32() != expectedFixedRng.randSeedUint32()) return 9820;
         }
     }
+    // TargetHalfHpDamageAttr: floor, minimum one, no ordinary damage modifiers.
+    for (const uint16_t id : {uint16_t(162), uint16_t(717), uint16_t(877)}) {
+        const auto* profile = Pokerogue3DS::pokemonFixedDamageMoveProfile(id);
+        if (!profile || !profile->targetHalfHp || profile->userLevel || profile->amount) return 9880;
+        for (const uint16_t hp : {uint16_t(1), uint16_t(2), uint16_t(3)}) {
+            auto user = state, target = state;
+            user.abilityId = target.abilityId = 65;
+            user.status = target.status = {};
+            target.hp = hp;
+            uint32_t predicted = 0;
+            if (Pokerogue3DS::calculatePokemonDamageCore(user, target, id, false, predicted) !=
+                    Pokerogue3DS::PokemonDamageCoreResult::Ok || predicted != 1) return 9881;
+            Pokerogue3DS::PokemonHitPolicy hit{};
+            hit.resolved = true;
+            hit.bypassAccuracy = true;
+            auto rng = damageRng, expectedRng = rng;
+            PokemonMoveDamageRoll event{};
+            if (Pokerogue3DS::resolveStandardPokemonMoveDamage(user, target, id, false, rng,
+                    event, nullptr, nullptr, &hit) != PokemonMoveDamageResult::Ok ||
+                !event.hit || event.damage != predicted || event.criticalWasRolled ||
+                event.accuracyWasRolled || event.randomDamagePercent ||
+                rng.randSeedUint32() != expectedRng.randSeedUint32()) return 9882;
+        }
+    }
     // Complete command: PP once, HP clamp, accuracy-only RNG, and immunity before RNG.
     for (const uint16_t id : {uint16_t(49), uint16_t(82), uint16_t(69), uint16_t(101)}) {
         const auto* fixedMove = PokerogueContent::findMoveById(id);

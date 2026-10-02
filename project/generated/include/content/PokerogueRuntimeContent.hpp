@@ -788,6 +788,7 @@ inline constexpr StatusMoveFlagProfile kStatusMoveFlagProfiles[] = {
     {156, false, false, false, false},
     {159, true, false, false, false},
     {160, true, false, false, false},
+    {162, true, false, false, false},
     {164, true, false, false, false},
     {166, false, false, false, false},
     {169, false, true, false, false},
@@ -1078,6 +1079,7 @@ inline constexpr StatusMoveFlagProfile kStatusMoveFlagProfiles[] = {
     {708, false, false, false, false},
     {710, true, false, false, false},
     {715, true, true, false, false},
+    {717, true, false, false, false},
     {728, false, false, false, true},
     {730, true, false, false, false},
     {734, true, false, false, false},
@@ -1142,6 +1144,7 @@ inline constexpr StatusMoveFlagProfile kStatusMoveFlagProfiles[] = {
     {871, true, false, false, true},
     {872, false, false, false, false},
     {874, true, false, false, false},
+    {877, true, false, false, false},
     {880, false, false, false, false},
     {881, false, false, false, false},
     {882, true, false, false, false},
@@ -6558,12 +6561,15 @@ inline constexpr MoveImmunityAbilityProfile kMoveImmunityAbilityProfiles[] = {
     {171, 0, true, "src/data/abilities/init-abilities.ts", "AbilityId.BULLETPROOF", "040ccf2ca2e00a2111ef0acf54878ec67c45d98c831e35dda3e0bac52f1ee8e6"},
     {283, 0, true, "src/data/abilities/init-abilities.ts", "AbilityId.GOOD_AS_GOLD", "040ccf2ca2e00a2111ef0acf54878ec67c45d98c831e35dda3e0bac52f1ee8e6"}
 };
-struct MoveFixedDamageProfile { uint16_t moveId; bool userLevel; uint16_t amount; const char* sourcePath; const char* sourceSymbol; const char* sourceHash; };
+struct MoveFixedDamageProfile { uint16_t moveId; bool userLevel; uint16_t amount; bool targetHalfHp; const char* sourcePath; const char* sourceSymbol; const char* sourceHash; };
 inline constexpr MoveFixedDamageProfile kMoveFixedDamageProfiles[] = {
-    {49, false, 20, "src/data/moves/move.ts", "MoveId.SONIC_BOOM", "012df47701de494d4140e97cd4804b25cc7472fcf61805aa71aaa21fe7b59475"},
-    {69, true, 0, "src/data/moves/move.ts", "MoveId.SEISMIC_TOSS", "012df47701de494d4140e97cd4804b25cc7472fcf61805aa71aaa21fe7b59475"},
-    {82, false, 40, "src/data/moves/move.ts", "MoveId.DRAGON_RAGE", "012df47701de494d4140e97cd4804b25cc7472fcf61805aa71aaa21fe7b59475"},
-    {101, true, 0, "src/data/moves/move.ts", "MoveId.NIGHT_SHADE", "012df47701de494d4140e97cd4804b25cc7472fcf61805aa71aaa21fe7b59475"}
+    {49, false, 20, false, "src/data/moves/move.ts", "MoveId.SONIC_BOOM", "012df47701de494d4140e97cd4804b25cc7472fcf61805aa71aaa21fe7b59475"},
+    {69, true, 0, false, "src/data/moves/move.ts", "MoveId.SEISMIC_TOSS", "012df47701de494d4140e97cd4804b25cc7472fcf61805aa71aaa21fe7b59475"},
+    {82, false, 40, false, "src/data/moves/move.ts", "MoveId.DRAGON_RAGE", "012df47701de494d4140e97cd4804b25cc7472fcf61805aa71aaa21fe7b59475"},
+    {101, true, 0, false, "src/data/moves/move.ts", "MoveId.NIGHT_SHADE", "012df47701de494d4140e97cd4804b25cc7472fcf61805aa71aaa21fe7b59475"},
+    {162, false, 0, true, "src/data/moves/move.ts", "MoveId.SUPER_FANG", "012df47701de494d4140e97cd4804b25cc7472fcf61805aa71aaa21fe7b59475"},
+    {717, false, 0, true, "src/data/moves/move.ts", "MoveId.NATURES_MADNESS", "012df47701de494d4140e97cd4804b25cc7472fcf61805aa71aaa21fe7b59475"},
+    {877, false, 0, true, "src/data/moves/move.ts", "MoveId.RUINATION", "012df47701de494d4140e97cd4804b25cc7472fcf61805aa71aaa21fe7b59475"}
 };
 struct MoveHealProfile { uint16_t moveId; double ratio; bool showAnimation; bool selfTarget; bool failOnFullHp; };
 inline constexpr MoveHealProfile kMoveHealProfiles[] = {
