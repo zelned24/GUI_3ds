@@ -2033,6 +2033,54 @@ extern "C" int runPokemonBattleStateChecks() {
         if (Pokerogue3DS::resolvePokemonFieldTurnOrder(entries, 4, root, 6, 200, 3, room, untouched, 3) ||
             untouched[0] != 9) return 10164;
     }
+    // Status residual damage uses boss segments and bypasses survival tags.
+    {
+        auto actor = state;
+        actor.abilityId = 0;
+        actor.maxHp = 160;
+        actor.hp = 85;
+        actor.status = {};
+        actor.status.present = true;
+        actor.status.effect = Pokerogue3DS::PokemonStatusEffect::Burn;
+        actor.sturdy.present = true;
+        Pokerogue3DS::PokemonBossState boss{2, 1, false, false};
+        Pokerogue3DS::PokemonStatusResidualPolicy policy{};
+        policy.resolved = true;
+        policy.bossDamageNeedsDispatcher = true;
+        Pokerogue3DS::PokerogueRngAdapter rng;
+        const uint16_t root[] = {'r', 'e', 's', 'i', 'd', 'u', 'a', 'l'};
+        rng.sow(root, 8);
+        auto expected = actor;
+        auto expectedBoss = boss;
+        auto expectedRng = rng;
+        Pokerogue3DS::PokemonBossDamageEvent expectedDamage{}, damage{};
+        Pokerogue3DS::PokemonStatusResidualEvent residual{};
+        const Pokerogue3DS::PokemonBossDamagePolicy damagePolicy{true, true, false};
+        if (!Pokerogue3DS::applyPokemonBossDamage(expected, expectedBoss, 10, damagePolicy,
+                expectedRng, expectedDamage) ||
+            Pokerogue3DS::applyPokemonBossStatusResidual(actor, boss, policy, rng, residual, damage) !=
+                Pokerogue3DS::PokemonStatusResidualResult::Applied || actor.hp != expected.hp ||
+            boss.segmentIndex != expectedBoss.segmentIndex || residual.requestedDamage != 10 ||
+            residual.appliedDamage != expectedDamage.damageApplied || !actor.sturdy.present) return 10170;
+        for (uint8_t i = 0; i < 7; ++i)
+            if (actor.statStages[i] != expected.statStages[i]) return 10171;
+        const auto actualRng = rng.state(), referenceRng = expectedRng.state();
+        if (actualRng.carry != referenceRng.carry || actualRng.s0 != referenceRng.s0 ||
+            actualRng.s1 != referenceRng.s1 || actualRng.s2 != referenceRng.s2) return 10172;
+        actor.hp = 1;
+        boss.segmentIndex = 0;
+        if (Pokerogue3DS::applyPokemonBossStatusResidual(actor, boss, policy, rng, residual, damage) !=
+                Pokerogue3DS::PokemonStatusResidualResult::Applied || actor.hp ||
+            !residual.fainted || !actor.sturdy.present) return 10173;
+        actor.hp = 85;
+        actor.abilityId = 65535;
+        const auto before = rng.state();
+        if (Pokerogue3DS::applyPokemonBossStatusResidual(actor, boss, policy, rng, residual, damage) !=
+                Pokerogue3DS::PokemonStatusResidualResult::UnsupportedPolicy || actor.hp != 85) return 10174;
+        const auto after = rng.state();
+        if (before.carry != after.carry || before.s0 != after.s0 || before.s1 != after.s1 || before.s2 != after.s2)
+            return 10175;
+    }
     // Sharpness modifies slicing power before the base formula's additive two.
     {
         auto user = state, target = state;

@@ -1620,4 +1620,12 @@ bool applyPokemonBossDamage(PokemonBattleState& boss, PokemonBossState& state,
     uint32_t damage, const PokemonBossDamagePolicy& policy, PokerogueRngAdapter& rng,
     PokemonBossDamageEvent& output);
 
+// PostTurnStatusEffectPhase routes poison/toxic/burn through EnemyPokemon.damage
+// with ignoreSegments=false and preventEndure=true. Final-boss phase changes
+// remain a caller capability, rather than being inferred from a residual hit.
+PokemonStatusResidualResult applyPokemonBossStatusResidual(PokemonBattleState& actor,
+    PokemonBossState& boss, const PokemonStatusResidualPolicy& policy,
+    PokerogueRngAdapter& globalRng, PokemonStatusResidualEvent& output,
+    PokemonBossDamageEvent& bossOutput);
+
 } // namespace Pokerogue3DS

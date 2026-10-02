@@ -2955,7 +2955,6 @@ bool FirstRunRuntime::finishBattleTurn() {
         return false;
     }
     // TurnEndPhase lapses arena tags except during a biome interlude.
-    // Current checkpoint progression ends before the first X0 transition.
     // Resolve both field clocks before committing either. TurnEndPhase lapses
     // weather even during an interlude; arena tags have a separate interlude gate.
     // Actors requiring unported weather callbacks remain gated before a command.
@@ -3003,7 +3002,11 @@ bool FirstRunRuntime::finishBattleTurn() {
                 (i == 2 && nextSecondEnemyBoss.segmentCount) ||
                 m_run.wave == PokerogueContent::kClassicFinalWave;
             PokemonStatusResidualEvent statusEvent{};
-            const auto result = applyPokemonStatusResidual(actor, policy, statusEvent);
+            PokemonBossDamageEvent bossEvent{};
+            const auto result = !m_doubleBattle && i == 1 && nextEnemyBoss.segmentCount &&
+                    m_run.wave != PokerogueContent::kClassicFinalWave
+                ? applyPokemonBossStatusResidual(actor, nextEnemyBoss, policy, nextGlobalRng, statusEvent, bossEvent)
+                : applyPokemonStatusResidual(actor, policy, statusEvent);
             if (result != PokemonStatusResidualResult::Applied && result != PokemonStatusResidualResult::Blocked &&
                 result != PokemonStatusResidualResult::NoEffect) {
                 m_battleFeedback = "Status residual damage requires ability dispatcher";

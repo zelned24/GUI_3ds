@@ -2185,3 +2185,9 @@
 1. Pinned src/utils/speed-order.ts shufflePokemonList usa offset turn*1000+count; sortBySpeed ordena descendente y revierte la lista completa bajo Trick Room. El comparator ascendente anterior de dobles conservaba empates en vez de invertirlos.
 2. PokemonFieldTurnEntry/resolver bounded (hasta cuatro actores, una acción por actor) comparte algoritmo sin asignaciones: shuffle local seeded, orden estable de velocidad, reverse completo y prioridad estable. FirstRunRuntime dobles actuales consume el resolver; salida solo se publica al éxito.
 3. Regresiones 10160–10164 de dos/tres/cuatro actores, ties, prioridad, determinismo y entradas/capacidad inválidas escritas sin ejecutar. No integra por sí solo segundo jugador, acciones agrupadas, forced setOrder ni Eternatus fase dos.
+
+## Status residual en jefes normales
+
+1. Pinned PostTurnStatusEffectPhase usa pokemon.damage(damage, false, true): segmentos activos y preventEndure. Nuevo compositor reutiliza residual/status tick y applyPokemonBossDamage, publicando actor/boss/global RNG/eventos juntos.
+2. finishBattleTurn conecta esta ruta para jefe enemigo single fuera de wave final. Callbacks desconocidos y requested damage fuera de uint32 se rechazan sin mutación; Sturdy existente no se consume. Final phase/dobles permanecen gated.
+3. Regresiones 10170–10175 contrastan daño/segmentos/stages/RNG con resolver boss, KO residual ignorando Sturdy y rechazo sin mutación. Escritas, no ejecutadas; no declara todos los status/callbacks ni final Classic.

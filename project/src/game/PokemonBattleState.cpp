@@ -2319,4 +2319,40 @@ bool applyPokemonBossDamage(PokemonBattleState& boss, PokemonBossState& state,
     return true;
 }
 
+PokemonStatusResidualResult applyPokemonBossStatusResidual(PokemonBattleState& actor,
+    PokemonBossState& boss, const PokemonStatusResidualPolicy& policy,
+    PokerogueRngAdapter& globalRng, PokemonStatusResidualEvent& output,
+    PokemonBossDamageEvent& bossOutput) {
+    if (!boss.segmentCount || boss.segmentIndex >= boss.segmentCount || boss.classicFinalBossFirstPhase)
+        return PokemonStatusResidualResult::UnsupportedPolicy;
+    auto nextActor = actor;
+    auto nextBoss = boss;
+    auto nextRng = globalRng;
+    auto residualPolicy = policy;
+    residualPolicy.bossDamageNeedsDispatcher = false;
+    PokemonStatusResidualEvent event{};
+    const auto result = applyPokemonStatusResidual(nextActor, residualPolicy, event);
+    if (result != PokemonStatusResidualResult::Applied && result != PokemonStatusResidualResult::Blocked) return result;
+    PokemonBossDamageEvent damageEvent{};
+    if (event.requestedDamage) {
+        const auto* ability = PokerogueContent::findAbilityMovegenProfile(actor.abilityId);
+        if (!ability || !ability->bossDamageCallbacksResolved || event.requestedDamage > 0xffffffffu)
+            return PokemonStatusResidualResult::UnsupportedPolicy;
+        nextActor.hp = event.previousHp;
+        const PokemonBossDamagePolicy damagePolicy{true, true, false};
+        if (!applyPokemonBossDamage(nextActor, nextBoss, static_cast<uint32_t>(event.requestedDamage),
+            damagePolicy, nextRng, damageEvent)) return PokemonStatusResidualResult::UnsupportedPolicy;
+        event.appliedDamage = damageEvent.damageApplied;
+        event.remainingHp = nextActor.hp;
+        event.fainted = !nextActor.hp;
+    }
+    // preventEndure leaves an existing Sturdy tag untouched.
+    actor = nextActor;
+    boss = nextBoss;
+    globalRng = nextRng;
+    output = event;
+    bossOutput = damageEvent;
+    return result;
+}
+
 } // namespace Pokerogue3DS

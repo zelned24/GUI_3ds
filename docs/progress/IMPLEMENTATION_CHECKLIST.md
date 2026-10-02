@@ -452,3 +452,8 @@ Los ejemplos describen infraestructura y límites; no son tareas cerradas. Actua
 
 - Dobles actuales usan resolver de hasta cuatro actores; Trick Room invierte también empates según pinned upstream. Prioridad se aplica después, conservando orden estable.
 - Casos escritos sin ejecutar. Segundo jugador, selección de sus comandos/objetivos, acciones agrupadas y forced order siguen pendientes.
+
+### Avance HP-02 / CAM-03: status residual y segmentos
+
+- Jefes normales singles conectan poison/toxic/burn al dispatcher existente de segmentos con preventEndure. HP/stages/status/shields/RNG se publican conjuntamente.
+- Callbacks desconocidos, rangos no representables, dobles y fase final siguen protegidos. Regresiones escritas; validación ejecutada pendiente.
