@@ -1830,3 +1830,9 @@
 
 1. Proveedor de estadísticas inicializaba chance a -1 para cualquier movimiento de categoría Status. Ahora conserva upstreamChance y resuelve callbacks para todo valor no negativo, incluso cero. Sentinel negativo garantizado sigue sin draw y sin alteración por multiplicadores/bloqueadores de chance positiva.
 2. Rangos fuera del contrato nativo fallan explícitamente. No cambia IDs ni datos importados y no introduce probabilidad local. Regresiones existentes de chance cero/garantizada y dispatcher siguen escritas sin ejecutar; tests/compilación pendientes.
+
+## Builders de movimientos de estadísticas sobre USER
+
+1. supportsPokemonStatStageMove y usePokemonStatStageStatusMove ahora exigen el perfil generado de builders resuelto también para USER. Antes esa rama podía ejecutar únicamente StatStageChangeAttr e ignorar danceMove/unimplemented u otro builder no portado.
+2. Agility y Growl conservan perfiles conocidos; Swords Dance/Victory Dance requieren dispatcher dance y Extreme Evoboost no se habilita ignorando unimplemented. Se preserva raw canónico; no se modifica contenido para simular soporte.
+3. Regresiones escritas de perfiles reales y rechazo sin consumir PP/RNG ni cambiar etapas/output. Tests/compilación siguen aplazados. Portar dance y demás builders continúa pendiente antes de declarar cobertura completa.

@@ -863,6 +863,26 @@ extern "C" int runPokemonBattleStateChecks() {
         if (!Pokerogue3DS::calculatePlainAttackAiScore(0.5, 100, 100, 40, 100, false, composed, 1) ||
             composed != 4.25) return 9582;
     }
+    {
+        if (!Pokerogue3DS::pokemonStatStageMoveBuildersResolved(97) ||
+            !Pokerogue3DS::pokemonStatStageMoveBuildersResolved(45) ||
+            Pokerogue3DS::pokemonStatStageMoveBuildersResolved(14) ||
+            Pokerogue3DS::pokemonStatStageMoveBuildersResolved(702)) return 9610;
+        auto unresolvedUser = state, unresolvedTarget = state;
+        unresolvedUser.moveCount = 1;
+        unresolvedUser.moves[0] = {14, 20, 20};
+        Pokerogue3DS::PokemonStatStageMovePolicy unresolvedPolicy{};
+        unresolvedPolicy.hitPolicyResolved = unresolvedPolicy.stagePolicy.resolved = true;
+        Pokerogue3DS::PokemonStatStageMoveEvent unresolvedEvent{};
+        unresolvedEvent.accuracyRoll = 123;
+        auto unresolvedRng = replacementRng, expectedUnresolvedRng = unresolvedRng;
+        if (Pokerogue3DS::usePokemonStatStageStatusMove(unresolvedUser, unresolvedTarget, 0,
+                unresolvedPolicy, unresolvedRng, unresolvedEvent) !=
+                Pokerogue3DS::PokemonStatStageEffectResult::InvalidDefinition ||
+            unresolvedUser.moves[0].pp != 20 || unresolvedUser.statStages[0] != state.statStages[0] ||
+            unresolvedEvent.accuracyRoll != 123 ||
+            unresolvedRng.randSeedUint32() != expectedUnresolvedRng.randSeedUint32()) return 9611;
+    }
     const uint8_t mixedSlots[] = {0, 1};
     const uint32_t mixedDamage[] = {0, 10};
     uint8_t mixedFiltered[4]{}, mixedCount = 0;

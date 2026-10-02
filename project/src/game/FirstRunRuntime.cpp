@@ -905,7 +905,8 @@ const char* FirstRunRuntime::locale(const char* canonicalId, const char* fallbac
 namespace {
 bool supportsPokemonStatStageMove(uint16_t moveId) {
     const auto* move = PokerogueContent::findMoveById(moveId);
-    if (!move || move->category != PokerogueContent::MoveStatus || !move->target ||
+    if (!move || !pokemonStatStageMoveBuildersResolved(moveId) ||
+        move->category != PokerogueContent::MoveStatus || !move->target ||
         move->attributeCount != 1 ||
         !PokerogueContent::moveHasAttribute(*move, "StatStageChangeAttr")) return false;
     const bool self = std::strcmp(move->target, "USER") == 0;

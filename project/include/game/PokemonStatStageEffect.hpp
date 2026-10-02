@@ -216,6 +216,12 @@ inline PokemonStatStageEffectResult applyPokemonStatStageDropReaction(
         reactionPolicy, output);
 }
 
+inline bool pokemonStatStageMoveBuildersResolved(uint16_t moveId) {
+    for (const auto& profile : PokerogueContent::kStatusMoveFlagProfiles)
+        if (profile.moveId == moveId) return profile.resolved;
+    return false;
+}
+
 struct PokemonStatStageMovePolicy {
     uint8_t ppCost = 1;
     bool hitPolicyResolved = false;
@@ -246,7 +252,8 @@ inline PokemonStatStageEffectResult usePokemonStatStageStatusMove(
     if (slot >= user.moveCount || slot >= 4 || (!user.moves[slot].pp && policy.ppCost) || !user.hp)
         return PokemonStatStageEffectResult::InvalidState;
     const auto* move = PokerogueContent::findMoveById(user.moves[slot].moveId);
-    if (!move || move->category != PokerogueContent::MoveStatus || move->attributeCount != 1 ||
+    if (!move || !pokemonStatStageMoveBuildersResolved(move->id) ||
+        move->category != PokerogueContent::MoveStatus || move->attributeCount != 1 ||
         !PokerogueContent::moveHasAttribute(*move, "StatStageChangeAttr") ||
         !move->target || move->accuracy < -1 || move->accuracy > 100 ||
         !std::isfinite(policy.accuracyMultiplier) || policy.accuracyMultiplier < 0)
