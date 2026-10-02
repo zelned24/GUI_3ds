@@ -527,6 +527,10 @@ inline const PokerogueContent::MoveFixedDamageProfile* pokemonFixedDamageMovePro
         move->upstreamFlags || !move->target || std::strcmp(move->target, "NEAR_OTHER")) return nullptr;
     if (!PokerogueContent::moveHasAttribute(*move, "FixedDamageAttr") &&
         !PokerogueContent::moveHasAttribute(*move, "LevelDamageAttr")) return nullptr;
+    bool buildersResolved = false;
+    for (const auto& flags : PokerogueContent::kStatusMoveFlagProfiles)
+        if (flags.moveId == moveId) buildersResolved = flags.resolved;
+    if (!buildersResolved) return nullptr;
     const PokerogueContent::MoveFixedDamageProfile* found = nullptr;
     for (const auto& row : PokerogueContent::kMoveFixedDamageProfiles)
         if (row.moveId == moveId) {

@@ -1986,3 +1986,15 @@
 1. calculatePokemonDamageCore conecta MoveFixedDamageProfile al importe constante/nivel, conserva inmunidad y omite modificadores ofensivos igual que la ejecución.
 2. Gate compartido de capacidades evita divergencia por full-HP endure/inmunidades todavía no representadas. Regresión compara predicción y ejecución para Dragon Rage/Seismic Toss/Night Shade sin draws de simulación.
 3. Selección/admisión en FirstRunRuntime y gates ejecutados aún pendientes. Tests/compilación/Classic/Old 3DS no verificados.
+
+## Admisión y puntuación de ataques de daño fijo
+
+1. FirstRunRuntime admite perfiles canónicos exactos FixedDamageAttr/LevelDamageAttr en selección y ejecución, con gate compartido de habilidades, PP y contexto simple sin modifiers/dobles aún no resueltos. Se incluyen Sonic Boom, Dragon Rage, Seismic Toss y Night Shade.
+2. Builder metadata generada también cubre estas declaraciones; perfiles desconocidos no se habilitan silenciosamente. IA usa potencia efectiva cero como Move.calculateEffectivePower pinned, mientras la predicción conserva constante/nivel.
+3. Regresiones 9850–9853 escritas para potencia cero explícita y rechazo del centinela negativo. Tests/compilación/Azahar/hardware no ejecutados; falta evidencia end-to-end y cobertura de jefes/contextos adicionales. MOV-02 e IA-02 permanecen parciales.
+
+## Regresiones del comando de daño fijo
+
+1. Harness añade los cuatro movimientos con PP consumido una vez, HP/daño aplicado limitado por HP restante y una sola tirada de precisión sin crítico ni variación.
+2. Sonic Boom/Seismic Toss contra Ghost y Night Shade contra Normal comprueban inmunidad antes de RNG, con PP consumido. Dragon Rage no se marca falsamente inmune por resistencias.
+3. Regresiones 9860–9861 escritas, no ejecutadas. Siguen pendientes replay FirstRunRuntime, gates finales, Azahar y hardware.

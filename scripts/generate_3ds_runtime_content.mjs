@@ -246,7 +246,7 @@ const moveSelfThawRows = collections.moves.flatMap(move => {
 }).join(',\n');
 
 const statusMoveFlagRows = collections.moves.filter(move => move.category === 'Status' ||
-  /\b(?:StatusEffectAttr|ConfuseAttr|StatStageChangeAttr)\b/.test(move.extensions?.upstreamRawRecord?.value ?? '')).map(move => {
+  /\b(?:StatusEffectAttr|ConfuseAttr|StatStageChangeAttr|FixedDamageAttr|LevelDamageAttr)\b/.test(move.extensions?.upstreamRawRecord?.value ?? '')).map(move => {
   const raw = move.extensions?.upstreamRawRecord?.value ?? '';
   const calls = [...raw.matchAll(/\.([A-Za-z_$][\w$]*)\s*\(/g)].map(m => m[1]);
   const known = new Set(['attr', 'target', 'reflectable', 'powderMove', 'soundBased', 'recklessMove']);

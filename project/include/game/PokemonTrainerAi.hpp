@@ -49,9 +49,10 @@ inline bool selectSmartTrainerMoveSlot(const double* scores, const uint8_t* slot
 // conditions or multi-turn behavior may use this resolved baseline.
 inline bool calculatePlainAttackAiScore(double effectiveness, uint32_t selectedStat,
                                         uint32_t otherStat, int16_t power,
-                                        int16_t accuracy, bool stab, double& output, double userBenefit = 0.0) {
+                                        int16_t accuracy, bool stab, double& output, double userBenefit = 0.0,
+                                        bool allowZeroEffectivePower = false) {
     if (!std::isfinite(effectiveness) || effectiveness < 0 || !selectedStat ||
-        power <= 0 || accuracy < -1 || accuracy > 100 || !std::isfinite(userBenefit)) return false;
+        (power < 0 || (!power && !allowZeroEffectivePower)) || accuracy < -1 || accuracy > 100 || !std::isfinite(userBenefit)) return false;
     double attack = (effectiveness - 1.0) * (effectiveness - 1.0) *
         (effectiveness < 1.0 ? -2.0 : 2.0);
     const double statRatio = static_cast<double>(otherStat) / selectedStat;

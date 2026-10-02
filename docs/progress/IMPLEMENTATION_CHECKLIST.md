@@ -2,7 +2,7 @@
 
 ## Cómo medir el avance
 
-- Referencia inspeccionada: commit `165a23d`, rama `codex/pokerogue-3ds-migration`.
+- Referencia inspeccionada: commit `59db1db`, rama `codex/pokerogue-3ds-migration`.
 - Objetivo: PokéRogue jugable y fiel al snapshot upstream en Old 3DS, con ambas pantallas, progreso exportable y actualizaciones desde consola.
 - Cada ID es estable para reportar avances: `MOV-07`, `GUI-03`, etc. No equivale a un movimiento/habilidad individual.
 - Una casilla sin marcar puede tener código parcial; el resumen de cada área indica lo existente. Marcarla solo con integración completa y evidencia ejecutada pertinente.
@@ -11,6 +11,31 @@
 - Pins: juego `8555c08c823b856cbec4eb99ca84ea52a955836d`; assets `056a1f408f26a3be4fef243f7462cb43608c7928`; locales `23aea1cb0da5a0b15b836f3c243791cc42303`.
 - Fuente de detalle: [estado](../MIGRATION_STATUS.md), [inventario anterior](POKEROGUE_3DS_REMAINING_WORK.md), `project/` y scripts actuales. El inventario anterior incluye notas históricas, no resultados vigentes.
 - GUI significa interfaz **del juego**; no reconstruir el editor eliminado. El código actual usa gameplay C++ y bridge QuickJS opcional: su presencia no demuestra un port completo de la web.
+
+## Resumen del checklist
+
+Estos son criterios de cierre, no cantidades de ataques o habilidades pendientes. Todas las casillas siguen abiertas hasta aportar evidencia de integración y validación; muchas tienen implementación parcial.
+
+| Área | Criterios abiertos |
+|---|---:|
+| Contenido canónico y catálogo | 6 |
+| Inicio, modos y progresión | 10 |
+| Turnos y comandos | 8 |
+| Movimientos y cálculo de daño | 13 |
+| Habilidades y pasivas | 10 |
+| HP, PP, EXP y estados | 8 |
+| Campo, clima y transformaciones | 6 |
+| Entrenadores e IA | 6 |
+| Captura, items, recompensas y perfil | 8 |
+| Interfaz del juego en dos pantallas | 12 |
+| Assets, animación y audio | 8 |
+| Guardado, continuar y exportación | 8 |
+| Actualización desde la consola | 8 |
+| Memoria y rendimiento Old 3DS XL | 6 |
+| Validación y entrega final | 12 |
+| **Total** | **129** |
+
+Prioridad inmediata: admisión y puntuación de daño fijo en FirstRunRuntime (**MOV-02 / IA-02**), seguida de cobertura de efectos y habilidades que bloquean combates completos. Registrar cada avance con su ID; los tests escritos permanecen sin ejecutar.
 
 ## Orden de avance
 
@@ -325,3 +350,8 @@ Los ejemplos describen infraestructura y límites; no son tareas cerradas. Actua
 
 - calculatePokemonDamageCore devuelve constante/nivel tras inmunidad, sin multiplicar resistencias/STAB/burn. Comparte gate de capacidades con ejecución, evitando que IA prediga una ruta no soportada.
 - Regresiones de predicción/ejecución escritas; falta admisión y puntuación de selección en FirstRunRuntime y validación final. MOV-02 sigue parcial.
+
+### Avance MOV-02 / IA-02: admisión y selección de daño fijo
+
+- Selección y ejecución FirstRunRuntime conectadas para los cuatro perfiles exactos, con gates de capacidades/contexto. IA usa potencia efectiva cero, no el daño constante como potencia.
+- Builder metadata incluida y regresiones escritas; validación ejecutada y contextos adicionales siguen pendientes. Ambas casillas permanecen abiertas.

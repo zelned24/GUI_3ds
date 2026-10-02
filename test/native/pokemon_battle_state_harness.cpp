@@ -41,6 +41,17 @@ extern "C" int runPokemonBattleStateChecks() {
         if ((id == 69 || id == 101) && (!profile->userLevel || profile->amount)) return 9814;
     }
 
+    // FixedDamageAttr does not turn its constant into AI move power.
+    {
+        double score = 123;
+        if (Pokerogue3DS::calculatePlainAttackAiScore(1, 100, 100, 0, 100, false, score)) return 9850;
+        if (!Pokerogue3DS::calculatePlainAttackAiScore(1, 100, 100, 0, 100, false, score, 0, true) ||
+            score != -20) return 9851;
+        if (!Pokerogue3DS::calculatePlainAttackAiScore(2, 100, 100, 0, 100, false, score, 0, true) ||
+            score != 4) return 9852;
+        if (Pokerogue3DS::calculatePlainAttackAiScore(1, 100, 100, -1, 100, false, score, 0, true)) return 9853;
+    }
+
     // Classic late-game cap exceeds 100; the source stat formula remains unchanged.
     const auto* highLevelSpecies = PokerogueContent::findSpeciesByDex(1);
     if (!highLevelSpecies || Pokerogue3DS::classicExperienceLevelCap(200) != 200) return 460;
@@ -1707,6 +1718,37 @@ extern "C" int runPokemonBattleStateChecks() {
                 fixedRoll.damage != (id == 82 ? 40u : fixedUser.level) ||
                 fixedRoll.critical || fixedRoll.criticalWasRolled || fixedRoll.randomDamagePercent ||
                 fixedRng.randSeedUint32() != expectedFixedRng.randSeedUint32()) return 9820;
+        }
+    }
+    // Complete command: PP once, HP clamp, accuracy-only RNG, and immunity before RNG.
+    for (const uint16_t id : {uint16_t(49), uint16_t(82), uint16_t(69), uint16_t(101)}) {
+        const auto* fixedMove = PokerogueContent::findMoveById(id);
+        if (!fixedMove || !Pokerogue3DS::pokemonFixedDamageMoveProfile(id)) return 9860;
+        for (const bool immune : {false, true}) {
+            // Ghost rejects Normal/Fighting; Night Shade is immune against Normal.
+            if (immune && id == 82) continue;
+            auto user = state, target = state;
+            user.status = target.status = {};
+            user.abilityId = target.abilityId = 65;
+            user.formId = target.formId = 0;
+            if (immune) target.speciesDex = id == 101 ? 19 : 92;
+            user.moveCount = 1;
+            user.moves[0].moveId = id;
+            user.moves[0].pp = user.moves[0].maxPp = fixedMove->pp;
+            user.turnDamageDealt = 0;
+            auto commandRng = damageRng, expectedRng = commandRng;
+            const bool expectedHit = !immune && expectedRng.randSeedInt(100) < fixedMove->accuracy;
+            const uint32_t amount = id == 49 ? 20 : id == 82 ? 40 : user.level;
+            const uint16_t applied = expectedHit ? (amount < target.hp ? amount : target.hp) : 0;
+            const uint16_t priorHp = target.hp;
+            PokemonMoveActionResult event{};
+            if (Pokerogue3DS::useStandardPokemonMove(user, target, 0, false, commandRng, event) !=
+                    PokemonMoveActionStatus::Ok || event.ppConsumed != 1 ||
+                user.moves[0].pp != fixedMove->pp - 1 || event.damageApplied != applied ||
+                target.hp != priorHp - applied || user.turnDamageDealt != applied ||
+                event.damageRoll.hit != expectedHit || event.damageRoll.criticalWasRolled ||
+                event.damageRoll.randomDamagePercent || event.damageRoll.accuracyWasRolled == immune ||
+                commandRng.randSeedUint32() != expectedRng.randSeedUint32()) return 9861;
         }
     }
     PokemonMoveDamageRoll damageRoll{};
