@@ -1937,3 +1937,9 @@
 1. Pinned Flare Blitz 394 declara RecoilAttr(false,0.33), HealStatusEffectAttr propia FREEZE, StatusEffectAttr BURN y recklessMove. Composición admite retroceso constante canónico junto al efecto secundario y cura; no admite daño basado en maxHP ni perfiles ausentes/duplicados.
 2. Dispatcher de daño aplica retroceso POST_APPLY propio antes del estado secundario; IA conserva beneficio RecoilAttr -6 antes de efectividad/STAB. recklessMove se reconoce como flag; acciones con habilidades no resueltas siguen rechazadas por proveedores propios, no se simula Reckless.
 3. Regresiones de composición/ratio/retroceso y replay frozen Flare Blitz escritas. Contenido regenerado, hash canónico intacto. Tests/compilación/Azahar/hardware y cobertura completa permanecen pendientes.
+
+## Estado secundario tras faint por retroceso
+
+1. Pinned MoveEffectPhase.applyMoveEffects ejecuta POST_APPLY propio antes de applyOnTargetEffects. El retroceso puede debilitar al usuario; MoveEffectAttr.canApply del efecto no propio comprueba al rival, no al atacante.
+2. executePokemonMoveStatusPhase admite ese usuario faint en fase de movimiento dañino, manteniendo validación HP/status y rechazo para movimientos Status. Antes !user.hp revertía el turno completo de Flare Blitz al alcanzar este paso.
+3. Regresiones 9790–9791 escritas para quemadura de Flare Blitz tras recoil faint y rechazo Hypnosis con actor faint, sin gasto adicional PP ni draw garantizado. Tests/compilación y Classic/Old 3DS siguen pendientes.

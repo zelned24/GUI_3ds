@@ -423,8 +423,12 @@ bool executePokemonMoveStatusPhase(PokemonBattleState& user, PokemonBattleState&
     uint16_t moveId, int16_t effectiveChance, const PokemonStatusApplicationPolicy& application,
     const PokemonPostSetStatusPolicy& reactions, PokerogueRngAdapter& rng,
     PokemonMoveStatusPhaseEvent& output) {
-    if (&user == &target || !user.hp || !reactions.formsResolved ||
-        application.overrideStatus) return false;
+    const auto* move = PokerogueContent::findMoveById(moveId);
+    // POST_APPLY target effects follow self-target recoil, which may KO the user.
+    // This phase does not authorize starting a Status command from a fainted user.
+    if (&user == &target || !move || (!user.hp && move->category == PokerogueContent::MoveStatus) ||
+        user.hp > user.maxHp || !pokemonStatusStateValid(user.status) ||
+        !reactions.formsResolved || application.overrideStatus) return false;
     auto nextUser = user;
     auto nextTarget = target;
     auto nextRng = rng;

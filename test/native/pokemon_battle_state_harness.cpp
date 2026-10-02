@@ -3743,6 +3743,27 @@ extern "C" int runPokemonBattleStateChecks() {
             completeStatusPolicy.move.application, secondaryReactions, secondaryRng, secondaryEvent) ||
         secondaryTarget.status.present || secondaryUser.status.present ||
         secondaryRng.randSeedUint32() != expectedSecondaryRng.randSeedUint32()) return 9422;
+    {
+        auto recoilFaintedUser = secondaryUser, livingTarget = secondaryTarget;
+        recoilFaintedUser.hp = 0;
+        recoilFaintedUser.status = livingTarget.status = {};
+        auto neutralReactions = reactionsPolicy;
+        neutralReactions.formsResolved = true;
+        neutralReactions.recipientAbilityActive = neutralReactions.sourceAbilityActive = false;
+        auto postRecoilRng = secondaryRng, expectedPostRecoilRng = postRecoilRng;
+        Pokerogue3DS::PokemonMoveStatusPhaseEvent postRecoilEvent{};
+        const auto pp = recoilFaintedUser.moves[0].pp;
+        if (!Pokerogue3DS::executePokemonMoveStatusPhase(recoilFaintedUser, livingTarget, 394, 100,
+                completeStatusPolicy.move.application, neutralReactions, postRecoilRng, postRecoilEvent) ||
+            !postRecoilEvent.applied || livingTarget.status.effect != Effect::Burn || recoilFaintedUser.hp ||
+            recoilFaintedUser.moves[0].pp != pp ||
+            postRecoilRng.randSeedUint32() != expectedPostRecoilRng.randSeedUint32()) return 9790;
+        livingTarget.status = {};
+        postRecoilEvent.applied = true;
+        if (Pokerogue3DS::executePokemonMoveStatusPhase(recoilFaintedUser, livingTarget, 95, 100,
+                completeStatusPolicy.move.application, neutralReactions, postRecoilRng, postRecoilEvent) ||
+            livingTarget.status.present || !postRecoilEvent.applied) return 9791;
+    }
     // currentBattle owns both actors' duration draws; no actor-local stream.
     auto sleepActionUser = completeStatusUser;
     auto sleepActionTarget = completeStatusTarget;
