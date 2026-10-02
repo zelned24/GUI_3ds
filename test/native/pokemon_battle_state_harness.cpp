@@ -883,6 +883,29 @@ extern "C" int runPokemonBattleStateChecks() {
             unresolvedEvent.accuracyRoll != 123 ||
             unresolvedRng.randSeedUint32() != expectedUnresolvedRng.randSeedUint32()) return 9611;
     }
+    {
+        auto selfUser = state, selfOpponent = state;
+        selfUser.moveCount = 1;
+        selfUser.moves[0] = {97, 30, 30};
+        selfUser.statStages[4] = 5;
+        selfOpponent.hp = 0; // USER must not need a living opponent.
+        Pokerogue3DS::PokemonStatStageMovePolicy selfPolicy{};
+        selfPolicy.hitPolicyResolved = selfPolicy.stagePolicy.resolved = true;
+        selfPolicy.blockedBeforeAccuracy = selfPolicy.typeImmune = true;
+        Pokerogue3DS::PokemonStatStageMoveEvent selfEvent{};
+        auto selfRng = replacementRng, expectedSelfRng = selfRng;
+        if (Pokerogue3DS::usePokemonStatStageStatusMove(selfUser, selfOpponent, 0, selfPolicy,
+                selfRng, selfEvent) != Pokerogue3DS::PokemonStatStageEffectResult::Ok ||
+            !selfEvent.hit || selfEvent.typeImmune || selfEvent.accuracyRolled || selfUser.statStages[4] != 6 ||
+            selfEvent.stages.changes[4] != 1 || selfUser.moves[0].pp != 29 || selfOpponent.hp ||
+            selfRng.randSeedUint32() != expectedSelfRng.randSeedUint32()) return 9620;
+        selfUser.moves[0].pp = 31;
+        selfEvent.accuracyRoll = 123;
+        if (Pokerogue3DS::usePokemonStatStageStatusMove(selfUser, selfOpponent, 0, selfPolicy,
+                selfRng, selfEvent) != Pokerogue3DS::PokemonStatStageEffectResult::InvalidState ||
+            selfUser.moves[0].pp != 31 || selfUser.statStages[4] != 6 || selfEvent.accuracyRoll != 123)
+            return 9621;
+    }
     const uint8_t mixedSlots[] = {0, 1};
     const uint32_t mixedDamage[] = {0, 10};
     uint8_t mixedFiltered[4]{}, mixedCount = 0;

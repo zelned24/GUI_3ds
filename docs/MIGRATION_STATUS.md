@@ -1836,3 +1836,8 @@
 1. supportsPokemonStatStageMove y usePokemonStatStageStatusMove ahora exigen el perfil generado de builders resuelto también para USER. Antes esa rama podía ejecutar únicamente StatStageChangeAttr e ignorar danceMove/unimplemented u otro builder no portado.
 2. Agility y Growl conservan perfiles conocidos; Swords Dance/Victory Dance requieren dispatcher dance y Extreme Evoboost no se habilita ignorando unimplemented. Se preserva raw canónico; no se modifica contenido para simular soporte.
 3. Regresiones escritas de perfiles reales y rechazo sin consumir PP/RNG ni cambiar etapas/output. Tests/compilación siguen aplazados. Portar dance y demás builders continúa pendiente antes de declarar cobertura completa.
+
+## Coherencia de objetivo y PP en comandos de estadísticas
+
+1. usePokemonStatStageStatusMove valida concordancia USER/selfTarget, conteos de moveset, HP y PP máximo antes de crear la transacción. Una definición o snapshot incoherente no puede aplicar el efecto a otro actor ni consumir PP ilegítimo.
+2. Regresión Agility real: USER ignora bloqueos del oponente, funciona con destinatario enemigo faint, clamp SPD +5→+6 y ningún draw de precisión/chance garantizada. Regresión PP por encima del máximo conserva estado/output. Tests y compilación aplazados; Classic completo sigue pendiente.

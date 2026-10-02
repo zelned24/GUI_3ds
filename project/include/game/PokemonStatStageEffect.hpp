@@ -249,7 +249,9 @@ inline PokemonStatStageEffectResult usePokemonStatStageStatusMove(
     PokemonStatStageMoveEvent& output) {
     if (!policy.hitPolicyResolved || !policy.stagePolicy.resolved)
         return PokemonStatStageEffectResult::UnresolvedPolicy;
-    if (slot >= user.moveCount || slot >= 4 || (!user.moves[slot].pp && policy.ppCost) || !user.hp)
+    if (user.moveCount > 4 || target.moveCount > 4 || slot >= user.moveCount || slot >= 4 ||
+        (!user.moves[slot].pp && policy.ppCost) || !user.hp || user.hp > user.maxHp ||
+        target.hp > target.maxHp || user.moves[slot].pp > user.moves[slot].maxPp)
         return PokemonStatStageEffectResult::InvalidState;
     const auto* move = PokerogueContent::findMoveById(user.moves[slot].moveId);
     if (!move || !pokemonStatStageMoveBuildersResolved(move->id) ||
@@ -271,7 +273,7 @@ inline PokemonStatStageEffectResult usePokemonStatStageStatusMove(
             if (effect) return PokemonStatStageEffectResult::InvalidDefinition;
             effect = &entry;
         }
-    if (!effect) return PokemonStatStageEffectResult::InvalidDefinition;
+    if (!effect || effect->selfTarget != self) return PokemonStatStageEffectResult::InvalidDefinition;
     PokemonBattleState nextUser = user, nextTarget = target;
     PokerogueRngAdapter nextRng = battleRng;
     PokemonStatStageMoveEvent event{};
