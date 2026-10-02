@@ -179,6 +179,36 @@ inline bool resolvePokemonFieldTurnOrder(const PokemonFieldTurnEntry* entries, s
     return true;
 }
 
+// CheckStatusEffectPhase uses inSpeedOrder -> PokemonPriorityQueue.pop.
+// Each pop reorders the remaining queue with a seed offset based on its size.
+// Gathering occurs before PostTurnStatusEffectPhase damage is dispatched.
+inline bool resolvePokemonFieldPhaseOrder(const PokemonFieldTurnEntry* entries, size_t count,
+    const uint16_t* rootSeed, size_t seedLength, uint16_t wave, uint32_t turn,
+    const PokemonTurnOrderFieldPolicy& field, uint8_t* output, size_t capacity) {
+    if (!entries || !output || !count || count > 4 || capacity < count) return false;
+    PokemonFieldTurnEntry queue[4]{};
+    for (size_t i = 0; i < count; ++i) {
+        queue[i] = entries[i];
+        queue[i].priority = 0; // Residual phases have no move priority.
+    }
+    uint8_t result[4]{};
+    size_t remaining = count;
+    while (remaining) {
+        uint8_t ordered[4]{};
+        if (!resolvePokemonFieldTurnOrder(queue, remaining, rootSeed, seedLength, wave, turn, field, ordered, 4))
+            return false;
+        result[count - remaining] = ordered[0];
+        PokemonFieldTurnEntry next[4]{};
+        for (size_t i = 1; i < remaining; ++i)
+            for (size_t j = 0; j < remaining; ++j)
+                if (queue[j].battlerId == ordered[i]) next[i - 1] = queue[j];
+        --remaining;
+        for (size_t i = 0; i < remaining; ++i) queue[i] = next[i];
+    }
+    for (size_t i = 0; i < count; ++i) output[i] = result[i];
+    return true;
+}
+
 // Pinned MovePhasePriorityQueue sorts by move priority after
 // sortInSpeedOrder. For a two-Pokemon field, that speed sort shuffles the
 // initial [player, enemy] order with a stream derived from waveSeed and

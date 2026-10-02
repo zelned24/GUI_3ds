@@ -3104,7 +3104,47 @@ bool FirstRunRuntime::finishBattleTurn() {
     if (!upcomingInterlude) {
         PokemonBattleState* statusActors[] = {&nextPlayer, &nextEnemy, &nextSecondEnemy};
         const uint8_t actorCount = m_doubleBattle ? 3 : 2;
-        for (uint8_t i = 0; i < actorCount; ++i) {
+        PokemonFieldTurnEntry entries[3]{};
+        uint8_t count = 0;
+        bool hasResidual = false;
+        for (uint8_t i = 0; i < actorCount; ++i)
+            hasResidual |= statusActors[i]->hp && pokemonStatusIsPostTurn(statusActors[i]->status);
+        uint8_t order[3]{};
+        if (hasResidual) {
+            for (uint8_t i = 0; i < actorCount; ++i) {
+                if (!statusActors[i]->hp) continue;
+                PokemonWeatherAbilityComponent components[3]{};
+                for (uint8_t j = 0; j < actorCount; ++j)
+                    components[j] = {statusActors[j]->abilityId, statusActors[j]->hp != 0, j == i};
+                PokemonWeatherResolutionPolicy weatherPolicy{};
+                PokemonMoveWeatherContext weather{};
+                uint32_t speed = 0;
+                if (!composePokemonWeatherResolutionPolicy(components, actorCount, weatherPolicy) ||
+                    !resolvePokemonMoveWeatherContext(m_arenaWeather, weatherPolicy, weather) ||
+                    !pokemonWeatherEffectiveSpeed(*statusActors[i], weather, speed)) {
+                    m_battleFeedback = "Status phase speed callbacks require dispatcher";
+                    return false;
+                }
+                entries[count++] = {i, speed, 0};
+            }
+            const auto field = pokemonTrickRoomOrderPolicy(m_trickRoom);
+            if (!resolvePokemonFieldPhaseOrder(entries, count, m_seedCodeUnits.data(), m_seedLength,
+                    m_run.wave, m_turn, field, order, 3)) return false;
+        }
+        // PostTurnStatusEffectPhase is dynamic: it sorts its own queue again.
+        // Keep the gathering order as input, including its seeded tie ordering.
+        PokemonFieldTurnEntry pending[3]{};
+        uint8_t pendingCount = 0;
+        for (uint8_t position = 0; position < count; ++position) {
+            const uint8_t id = order[position];
+            if (!pokemonStatusIsPostTurn(statusActors[id]->status)) continue;
+            for (uint8_t j = 0; j < count; ++j)
+                if (entries[j].battlerId == id) pending[pendingCount++] = entries[j];
+        }
+        if (pendingCount && !resolvePokemonFieldPhaseOrder(pending, pendingCount, m_seedCodeUnits.data(),
+                m_seedLength, m_run.wave, m_turn, pokemonTrickRoomOrderPolicy(m_trickRoom), order, 3)) return false;
+        for (uint8_t position = 0; position < pendingCount; ++position) {
+            const uint8_t i = order[position];
             auto& actor = *statusActors[i];
             if (!actor.hp || !pokemonStatusIsPostTurn(actor.status)) continue;
             PokemonStatusResidualPolicy policy{};
@@ -3114,17 +3154,14 @@ bool FirstRunRuntime::finishBattleTurn() {
                 m_battleFeedback = "Status residual ability policy is unresolved";
                 return false;
             }
-            // PostDamage can affect other actors; doubles need phase ordering
-            // and the shared callback dispatcher before enabling residuals.
-            policy.bossDamageNeedsDispatcher = m_doubleBattle ||
-                (i == 1 && nextEnemyBoss.segmentCount) ||
-                (i == 2 && nextSecondEnemyBoss.segmentCount) ||
+            // Exact residual profiles exclude unresolved PostDamage callbacks.
+            PokemonBossState* boss = i == 1 ? &nextEnemyBoss : i == 2 ? &nextSecondEnemyBoss : nullptr;
+            policy.bossDamageNeedsDispatcher = (boss && boss->segmentCount) ||
                 m_run.wave == PokerogueContent::kClassicFinalWave;
             PokemonStatusResidualEvent statusEvent{};
             PokemonBossDamageEvent bossEvent{};
-            const auto result = !m_doubleBattle && i == 1 && nextEnemyBoss.segmentCount &&
-                    m_run.wave != PokerogueContent::kClassicFinalWave
-                ? applyPokemonBossStatusResidual(actor, nextEnemyBoss, policy, nextGlobalRng, statusEvent, bossEvent)
+            const auto result = boss && boss->segmentCount && m_run.wave != PokerogueContent::kClassicFinalWave
+                ? applyPokemonBossStatusResidual(actor, *boss, policy, nextGlobalRng, statusEvent, bossEvent)
                 : applyPokemonStatusResidual(actor, policy, statusEvent);
             if (result != PokemonStatusResidualResult::Applied && result != PokemonStatusResidualResult::Blocked &&
                 result != PokemonStatusResidualResult::NoEffect) {

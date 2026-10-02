@@ -3172,6 +3172,46 @@ static int checkCanonicalTrainerSignatureSlots() {
     return checked ? 0 : 231; // Real catalog coverage, not a synthetic trainer.
 }
 
+static int checkDoubleStatusResidualCheckpoint() {
+    using namespace Pokerogue3DS;
+    for (uint32_t seed = 1; seed <= 1024; ++seed) {
+        FirstRunRuntime baseline(seed), affected(seed);
+        if (!baseline.doubleBattle() || !baseline.doubleBattleSupported()) continue;
+        const auto& original = baseline.presentation().secondEnemy;
+        bool supported = false;
+        for (const auto& profile : PokerogueContent::kStatusResidualAbilityProfiles)
+            if (profile.abilityId == original.battleState.abilityId)
+                supported = profile.resolved && !profile.healedStatusMask;
+        if (!supported) continue;
+        auto& target = const_cast<PresentationContext&>(affected.presentation()).secondEnemy.battleState;
+        target.status = {};
+        target.status.present = true;
+        target.status.effect = PokemonStatusEffect::Toxic;
+        target.status.toxicTurnCount = 2; // Test-only already-poisoned real generated actor.
+        if (!baseline.advanceBattleTurn()) return 10340;
+        if (baseline.battleFinished() || !baseline.presentation().secondEnemy.battleState.hp) continue;
+        auto expected = baseline.presentation().secondEnemy.battleState;
+        expected.status = target.status;
+        PokemonStatusResidualPolicy policy{};
+        PokemonStatusResidualEvent event{};
+        if (!resolvePokemonStatusResidualPolicy(expected.abilityId, expected.status.effect, true, true, policy)) return 10341;
+        const auto result = applyPokemonStatusResidual(expected, policy, event);
+        if (result != PokemonStatusResidualResult::Applied && result != PokemonStatusResidualResult::Blocked) return 10341;
+        if (!expected.hp) continue; // This case exercises live checkpoint persistence, not EXP/faint callbacks.
+        if (!affected.advanceBattleTurn() || target.hp != expected.hp || !target.status.present ||
+            target.status.effect != PokemonStatusEffect::Toxic || target.status.toxicTurnCount != 3) return 10342;
+        NativeRunSave checkpoint{};
+        if (affected.captureNativeRunSave(checkpoint) != NativeSaveResult::Ok ||
+            checkpoint.secondEnemy.status.toxicTurnCount != 3) return 10343;
+        FirstRunRuntime restored(seed);
+        if (!restored.restoreNativeRunSave(checkpoint) ||
+            restored.presentation().secondEnemy.battleState.hp != target.hp ||
+            restored.presentation().secondEnemy.battleState.status.toxicTurnCount != 3) return 10344;
+        return 0;
+    }
+    return 10345; // Require real double residual -> checkpoint -> restore coverage.
+}
+
 static int checkDoublePartialExperienceCheckpoint() {
     using namespace Pokerogue3DS;
     for (uint32_t seed = 1; seed <= 1024; ++seed) {
@@ -3355,6 +3395,8 @@ static int checkExhaustedPpStruggleReplay() {
 }
 
 int main() {
+    const int doubleResidual = checkDoubleStatusResidualCheckpoint();
+    if (doubleResidual) return doubleResidual;
     const int partialExperience = checkDoublePartialExperienceCheckpoint();
     if (partialExperience) return partialExperience;
     const int doubleCheckpoint = checkDoubleCheckpointRoundtrip();

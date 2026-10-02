@@ -505,3 +505,8 @@ Los ejemplos describen infraestructura y límites; no son tareas cerradas. Actua
 
 - Checkpoints de derrota permiten ambos campos sin HP; captura de derrota usa actores explícitos para conservar EXP, sin replay ficticio de premios trainer.
 - Regresión de derrota parcial real → EXP → checkpoint → continuar sin repetir premio, y fixtures de pérdida simultánea escritas sin ejecutar. Resto de fases post-faint y validación final pendientes.
+
+### Avance CAM-03 / HP-07 / TUR-05: status residual doble
+
+- Secuencia de colas pinned conectada a fin de turno; Poison/Toxic/Burn usan políticas exactas y dispatcher propio de cada boss. Velocidad usa clima del snapshot posterior a weather.
+- Regresiones de orden y segundo enemigo Toxic → tick/HP → checkpoint → restore escritas sin ejecutar. Reacciones posteriores a faint/summon y contextos completos siguen pendientes.

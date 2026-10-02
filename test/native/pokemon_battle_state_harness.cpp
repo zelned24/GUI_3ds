@@ -2261,6 +2261,29 @@ extern "C" int runPokemonBattleStateChecks() {
         if (Pokerogue3DS::usePokemonStruggleCommand(user, target, rng, event) != PokemonMoveActionStatus::InvalidMoveSlot ||
             target.hp != targetHp) return 10214;
     }
+    // Phase queues re-sort remaining entries on each pop; move priority is irrelevant.
+    {
+        using namespace Pokerogue3DS;
+        const uint16_t root[] = {'p', 'h', 'a', 's', 'e'};
+        const PokemonFieldTurnEntry entries[] = {{0, 100, 7}, {1, 200, -4}, {2, 300, 0}};
+        uint8_t order[3]{};
+        PokemonTurnOrderFieldPolicy field{true, false};
+        if (!resolvePokemonFieldPhaseOrder(entries, 3, root, 5, 1, 1, field, order, 3) ||
+            order[0] != 2 || order[1] != 1 || order[2] != 0) return 10330;
+        field.speedReversed = true;
+        if (!resolvePokemonFieldPhaseOrder(entries, 3, root, 5, 1, 1, field, order, 3) ||
+            order[0] != 0 || order[1] != 1 || order[2] != 2) return 10331;
+        const PokemonFieldTurnEntry tied[] = {{0, 100, 0}, {1, 100, 0}, {2, 100, 0}};
+        uint8_t repeated[3]{};
+        if (!resolvePokemonFieldPhaseOrder(tied, 3, root, 5, 1, 7, field, order, 3) ||
+            !resolvePokemonFieldPhaseOrder(tied, 3, root, 5, 1, 7, field, repeated, 3) ||
+            order[0] != repeated[0] || order[1] != repeated[1] || order[2] != repeated[2] ||
+            order[0] == order[1] || order[1] == order[2] || order[0] == order[2]) return 10332;
+        const PokemonFieldTurnEntry invalid[] = {{0, 100, 0}, {0, 200, 0}};
+        order[0] = 77;
+        if (resolvePokemonFieldPhaseOrder(invalid, 2, root, 5, 1, 7, field, order, 3) || order[0] != 77)
+            return 10333;
+    }
     // RANDOM_NEAR_ENEMY uses command-time battle RNG and stable opponent field order.
     {
         Pokerogue3DS::PokerogueRngAdapter rng;
