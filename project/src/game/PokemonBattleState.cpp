@@ -123,7 +123,14 @@ bool checkPokemonConfusionBeforeMove(PokemonBattleState& actor, PokemonConfusion
         }
     }
     // No move PP, Rage Fist hitCount, or turnDamageDealt increments for confusion.
-    actor.hp -= event.hpLost;
+    auto nextActor = actor;
+    if (event.hurtItself) {
+        uint16_t applied = 0;
+        if (applyPokemonExistingSturdyDamage(nextActor, event.requestedDamage, applied) !=
+                PokemonSurvivalResult::Ok) return false;
+        event.hpLost = applied;
+    }
+    actor = nextActor;
     tag = nextTag;
     actorRng = nextRng;
     output = event;
@@ -1416,8 +1423,8 @@ bool applyPokemonWeatherResidualDamage(PokemonBattleState& target,
     }
     uint16_t damage = static_cast<uint16_t>(target.maxHp / 16);
     if (!damage) damage = 1;
-    event.damageApplied = damage < target.hp ? damage : target.hp;
-    target.hp = static_cast<uint16_t>(target.hp - event.damageApplied);
+    if (applyPokemonExistingSturdyDamage(target, damage, event.damageApplied) !=
+            PokemonSurvivalResult::Ok) return false;
     event.fainted = target.hp == 0;
     output = event;
     return true;

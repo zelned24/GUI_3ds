@@ -2094,3 +2094,9 @@
 1. Pinned RecoilAttr y ReverseDrain envían daño indirecto a Pokemon.damage; esa función consume tag STURDY existente a HP completo, pero no activa la habilidad.
 2. Helpers de recoil/Liquid Ooze reutilizan el consumo del tag sin crear otro. DamageApplied/fainted usan HP final; ausencia de tag conserva KO y bloqueos conservan tag.
 3. Regresiones 10000–10002 escritas, sin ejecutar. Falta auditar las demás rutas indirectas/tags/endure y validar Old 3DS.
+
+## Consumo de Sturdy existente en confusión/clima
+
+1. Daño de confusión y residual climático reutiliza consumo de tag existente; no invoca activación de habilidad. Confusión conserva cancelación y RNG aunque supervivencia reduzca HP perdido a cero.
+2. La ruta de clima con segmentos de jefe y tag activo se rechaza antes de consumirlo hasta resolver su composición específica.
+3. Regresiones 10010–10014 escritas, sin ejecutar. Rutas de status residual y otros tags siguen pendientes; tests/compilación/validación Old 3DS aplazados.

@@ -77,6 +77,7 @@ inline bool applyPokemonMultiWeatherPhase(PokemonBattleState& player,
         policy.type1 = form ? form->type1 : species->type1;
         policy.type2 = form ? form->type2 : species->type2;
         if (!pokemonAbilityBlocksWeatherDamage(actor.abilityId, arena.type, policy.abilityBlocksDamage)) return false;
+        if (boss && boss->segmentCount && actor.sturdy.present) return false;
         const uint16_t originalHp = actor.hp;
         if (!applyPokemonWeatherResidualDamage(actor, arena, policy, result)) return false;
         if (boss && boss->segmentCount && result.damageApplied) {

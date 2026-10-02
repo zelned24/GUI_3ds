@@ -1892,6 +1892,41 @@ extern "C" int runPokemonBattleStateChecks() {
                 Pokerogue3DS::PokemonHealingResult::Ok || actor.hp != 1 || actor.sturdy.present ||
             drain.reversedDamage != 9 || drain.healed) return 10002;
     }
+    // Indirect climate/confusion consumes only an existing tag; no ability activation.
+    {
+        auto actor = state;
+        actor.hp = actor.maxHp = 1;
+        actor.sturdy.present = true;
+        Pokerogue3DS::PokemonArenaWeatherState arena{};
+        arena.type = Pokerogue3DS::PokemonEffectiveWeather::Hail;
+        Pokerogue3DS::PokemonWeatherDamagePolicy policy{};
+        policy.resolved = true;
+        policy.type1 = "GRASS";
+        Pokerogue3DS::PokemonWeatherDamageEvent event{};
+        if (!Pokerogue3DS::applyPokemonWeatherResidualDamage(actor, arena, policy, event) ||
+            actor.hp != 1 || actor.sturdy.present || event.damageApplied || event.fainted) return 10010;
+        if (!Pokerogue3DS::applyPokemonWeatherResidualDamage(actor, arena, policy, event) ||
+            actor.hp || event.damageApplied != 1 || !event.fainted) return 10011;
+        bool found = false;
+        for (uint16_t seed = 1; seed <= 128 && !found; ++seed) {
+            actor = state;
+            actor.hp = actor.maxHp = 1;
+            actor.sturdy.present = true;
+            Pokerogue3DS::PokemonConfusionTagState tag{3, true};
+            Pokerogue3DS::PokemonConfusionMovePolicy confusionPolicy{true, 100, 100};
+            Pokerogue3DS::PokerogueRngAdapter rng;
+            rng.sow(&seed, 1);
+            Pokerogue3DS::PokemonConfusionMoveEvent confusion{};
+            if (!Pokerogue3DS::checkPokemonConfusionBeforeMove(actor, tag, confusionPolicy, rng, confusion))
+                return 10012;
+            if (confusion.hurtItself) {
+                if (actor.hp != 1 || actor.sturdy.present || confusion.hpLost || !confusion.moveCancelled)
+                    return 10013;
+                found = true;
+            }
+        }
+        if (!found) return 10014;
+    }
     // TargetHalfHpDamageAttr: floor, minimum one, no ordinary damage modifiers.
     for (const uint16_t id : {uint16_t(162), uint16_t(717), uint16_t(877)}) {
         const auto* profile = Pokerogue3DS::pokemonFixedDamageMoveProfile(id);
