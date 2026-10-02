@@ -1841,3 +1841,9 @@
 
 1. usePokemonStatStageStatusMove valida concordancia USER/selfTarget, conteos de moveset, HP y PP máximo antes de crear la transacción. Una definición o snapshot incoherente no puede aplicar el efecto a otro actor ni consumir PP ilegítimo.
 2. Regresión Agility real: USER ignora bloqueos del oponente, funciona con destinatario enemigo faint, clamp SPD +5→+6 y ningún draw de precisión/chance garantizada. Regresión PP por encima del máximo conserva estado/output. Tests y compilación aplazados; Classic completo sigue pendiente.
+
+## Simple y Contrary en capacidad de acciones de estado
+
+1. Pinned src/data/abilities/ab-attrs.ts StatStageChangeMultiplierAbAttr.apply multiplica numStages; declaraciones reales de Simple/Contrary usan 2/-1. StatusActionAbilityProfile admite únicamente esas declaraciones constantes completas, preservando rechazo de parámetros o builders desconocidos.
+2. FirstRunRuntime reutiliza su proveedor de estadísticas y el compositor de habilidades existentes. No introduce multiplicador directo de ATK/DEF ni cambia chance: la habilidad modifica el evento de etapas. Otros contextos de daño y callbacks siguen sujetos a sus gates propios.
+3. Regresiones reales Agility con Simple +4 y Contrary -2, perfil generado y PP escritas sin ejecutar. Contenido regenerado, hash canónico intacto; tests/compilación y Classic completo pendientes.

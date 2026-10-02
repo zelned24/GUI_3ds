@@ -32,7 +32,7 @@ const statusActionAbilityRows = collections.abilities.map(ability => {
   const builders = new Set(['attr', 'build', 'uncopiable', 'unreplaceable', 'unsuppressable', 'ignorable']);
   const known = new Set(['IncreasePpUsedAbAttr', 'LowHpMoveTypePowerBoostAbAttr',
     'SyncEncounterNatureAbAttr', 'SynchronizeStatusAbAttr', 'RunSuccessAbAttr',
-    'ProtectStatAbAttr', 'IgnoreOpponentStatStagesAbAttr',
+    'ProtectStatAbAttr', 'IgnoreOpponentStatStagesAbAttr', 'StatStageChangeMultiplierAbAttr',
     'MoveEffectChanceMultiplierAbAttr', 'IgnoreMoveEffectsAbAttr',
     'StatusEffectImmunityAbAttr', 'PostSummonHealStatusAbAttr', 'BattlerTagImmunityAbAttr',
     'PostSummonRemoveBattlerTagAbAttr', 'IntimidateImmunityAbAttr', 'ConfusionOnStatusEffectAbAttr']);
@@ -48,10 +48,14 @@ const statusActionAbilityRows = collections.abilities.map(ability => {
   if (!Number.isFinite(chanceMultiplier)) throw new Error(`Invalid move-effect chance multiplier: ${ability.id}`);
   const removalMentions = [...raw.matchAll(/\bPostSummonRemoveBattlerTagAbAttr\b/g)].length;
   const removalDeclarations = [...raw.matchAll(/\.attr\s*\(\s*PostSummonRemoveBattlerTagAbAttr\s*,\s*BattlerTagType\.CONFUSED\s*\)/g)].length;
+  const stageMultiplierMentions = [...raw.matchAll(/\bStatStageChangeMultiplierAbAttr\b/g)].length;
+  const stageMultipliers = [...raw.matchAll(/\.attr\s*\(\s*StatStageChangeMultiplierAbAttr\s*,\s*(-?\d+)\s*\)/g)];
+  const stageMultipliersResolved = stageMultiplierMentions === stageMultipliers.length &&
+    stageMultipliers.length <= 1 && stageMultipliers.every(m => [-1, 2].includes(Number(m[1])));
   const resolved = !!raw && /new AbBuilder\(/.test(raw) && attrCalls === attrs.length &&
     calls.every(c => builders.has(c)) && attrs.every(a => known.has(a)) && ignoreMentions === ignoreDeclarations &&
     chanceMentions === chanceDeclarations.length && chanceDeclarations.length <= 1 && Number.isFinite(chanceMultiplier) &&
-    ignoreEffectMentions === ignoreEffectDeclarations && removalMentions === removalDeclarations;
+    ignoreEffectMentions === ignoreEffectDeclarations && removalMentions === removalDeclarations && stageMultipliersResolved;
   return `    {${ability.abilityId}, ${resolved}, false, ${ignoreDeclarations > 0}, ${chanceMultiplier}, ${ignoreEffectDeclarations > 0}}`;
 }).join(',\n');
 

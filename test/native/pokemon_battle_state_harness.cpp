@@ -906,6 +906,32 @@ extern "C" int runPokemonBattleStateChecks() {
             selfUser.moves[0].pp != 31 || selfUser.statStages[4] != 6 || selfEvent.accuracyRoll != 123)
             return 9621;
     }
+    {
+        for (const uint16_t ability : {uint16_t(86), uint16_t(126)}) {
+            bool resolved = false;
+            for (const auto& row : PokerogueContent::kStatusActionAbilityProfiles)
+                if (row.abilityId == ability) resolved = row.resolved;
+            if (!resolved) return 9630;
+            const auto* stages = PokerogueContent::findAbilityStatStageProfile(ability);
+            if (!stages || stages->multiplier != (ability == 86 ? 2 : -1)) return 9631;
+            auto multiplierUser = state, multiplierTarget = state;
+            multiplierUser.moveCount = 1;
+            multiplierUser.moves[0] = {97, 30, 30};
+            multiplierUser.statStages[4] = 0;
+            Pokerogue3DS::PokemonStatStageMovePolicy multiplierPolicy{};
+            multiplierPolicy.hitPolicyResolved = multiplierPolicy.stagePolicy.resolved = true;
+            const Pokerogue3DS::ResolvedStatStageAbilityComponent component[] = {{stages, true}};
+            const PokerogueContent::MoveStatStageEffect agility{97, 16, 2, true};
+            if (!Pokerogue3DS::composePokemonStatStageAbilityPolicy(agility, component, 1, false,
+                    multiplierPolicy.stagePolicy, true)) return 9632;
+            Pokerogue3DS::PokemonStatStageMoveEvent multiplierEvent{};
+            auto multiplierRng = replacementRng;
+            if (Pokerogue3DS::usePokemonStatStageStatusMove(multiplierUser, multiplierTarget, 0,
+                    multiplierPolicy, multiplierRng, multiplierEvent) != Pokerogue3DS::PokemonStatStageEffectResult::Ok ||
+                multiplierUser.statStages[4] != (ability == 86 ? 4 : -2) ||
+                multiplierUser.moves[0].pp != 29) return 9633;
+        }
+    }
     const uint8_t mixedSlots[] = {0, 1};
     const uint32_t mixedDamage[] = {0, 10};
     uint8_t mixedFiltered[4]{}, mixedCount = 0;
