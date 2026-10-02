@@ -370,3 +370,8 @@ Los ejemplos describen infraestructura y límites; no son tareas cerradas. Actua
 
 - Perfil canónico, ejecución y predicción conectados al RNG de batalla: el KO simulado upstream también consume la tirada de nivel aleatoria.
 - Regresiones de orden RNG y restore escritas, sin ejecutar. No se declara cobertura completa ni validación de consola.
+
+### Avance HAB-04 / HP-03: Sturdy
+
+- Componentes de preparación/consumo/lapse y proveedor canónico con provenance implementados. Simulación no crea tag; preventEndure no lo consume.
+- Falta conectar actor, codec, fases y comando; FirstRunRuntime sigue rechazando Sturdy. Regresiones escritas sin ejecutar.

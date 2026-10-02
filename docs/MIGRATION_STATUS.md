@@ -2034,3 +2034,15 @@
 1. Sturdy pinned aplica PreDefendFullHpEndureAbAttr añadiendo tag STURDY, no mediante clamp directo del importe. Requiere integrar tag/lapse/consumo y persistencia antes de admitirla; no se habilitó incorrectamente.
 2. Inventario schema v2 inspecciona las clases reales de move.ts/ab-attrs.ts de la revisión pinned, conserva hashes de esas fuentes y un grafo de ascendencia compartido. RandomLevelDamageAttr queda trazado a FixedDamageAttr; attrs de Sturdy a sus bases.
 3. Registra la cura FREEZE implícita en 44 ataques Fuego. No interpreta automáticamente todos los constructores ni declara cobertura runtime. Generación realizada y revisión estática; pruebas y compilación siguen aplazadas.
+
+## Componentes de supervivencia Sturdy
+
+1. PokemonSurvivalEffect reproduce preparación del tag por PreDefendFullHpEndureAbAttr (no creación simulada), consumo en daño letal a HP completo y lapse TURN_END. preventEndure omite supervivencia sin consumir el tag.
+2. Contextos de otras supervivencias no resueltos y jefes se rechazan; no se habilita Sturdy por mera presencia del helper. Falta proveedor canónico, persistencia del estado y conexión a fases/comandos.
+3. Regresiones 9910–9914 escritas, sin ejecutar. Tests y compilación quedan aplazados; cobertura de Sturdy aún parcial.
+
+## Proveedor canónico de supervivencia
+
+1. Generador emite FullHpEndureAbilityProfile de declaraciones exactas sin argumentos y builders conocidos; Sturdy 5 conserva sourcePath/symbol/hash. Attributes inesperados no se descartan ni habilitan.
+2. resolvePokemonSturdyAbilityPolicy distingue perfil reconocido de habilidad activa y requiere caller explícito para otras supervivencias/jefes. No sustituye el proveedor general de capacidades ni abre Sturdy en FirstRunRuntime.
+3. Regresiones 9920–9922 de provider, unknown ID e inactividad escritas; no ejecutadas. Pendiente actor/save/tag dispatch y comando completo.

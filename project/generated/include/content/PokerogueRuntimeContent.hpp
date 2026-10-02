@@ -6562,6 +6562,10 @@ inline constexpr MoveImmunityAbilityProfile kMoveImmunityAbilityProfiles[] = {
     {171, 0, true, "src/data/abilities/init-abilities.ts", "AbilityId.BULLETPROOF", "040ccf2ca2e00a2111ef0acf54878ec67c45d98c831e35dda3e0bac52f1ee8e6"},
     {283, 0, true, "src/data/abilities/init-abilities.ts", "AbilityId.GOOD_AS_GOLD", "040ccf2ca2e00a2111ef0acf54878ec67c45d98c831e35dda3e0bac52f1ee8e6"}
 };
+struct FullHpEndureAbilityProfile { uint16_t abilityId; bool resolved; const char* sourcePath; const char* sourceSymbol; const char* sourceHash; };
+inline constexpr FullHpEndureAbilityProfile kFullHpEndureAbilityProfiles[] = {
+    {5, true, "src/data/abilities/init-abilities.ts", "AbilityId.STURDY", "040ccf2ca2e00a2111ef0acf54878ec67c45d98c831e35dda3e0bac52f1ee8e6"}
+};
 struct MoveFixedDamageProfile { uint16_t moveId; bool userLevel; uint16_t amount; bool targetHalfHp; bool randomLevel; const char* sourcePath; const char* sourceSymbol; const char* sourceHash; };
 inline constexpr MoveFixedDamageProfile kMoveFixedDamageProfiles[] = {
     {49, false, 20, false, false, "src/data/moves/move.ts", "MoveId.SONIC_BOOM", "012df47701de494d4140e97cd4804b25cc7472fcf61805aa71aaa21fe7b59475"},

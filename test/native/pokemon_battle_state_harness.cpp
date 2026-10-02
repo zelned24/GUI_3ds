@@ -7,6 +7,7 @@
 #include "game/PokemonStatStageEffect.hpp"
 #include "game/PokemonHealingEffect.hpp"
 #include "game/PokemonRecoilEffect.hpp"
+#include "game/PokemonSurvivalEffect.hpp"
 #include "game/PokemonWeatherPhase.hpp"
 #include "game/PokerogueTurnOrder.hpp"
 #include "game/PokemonExperience.hpp"
@@ -1745,6 +1746,35 @@ extern "C" int runPokemonBattleStateChecks() {
                 Pokerogue3DS::PokemonDamageCoreResult::Ok ||
             untouched != (simRaw < 1 ? 1 : static_cast<uint32_t>(simRaw)) ||
             simRng.randSeedUint32() != expectedSim.randSeedUint32()) return 9903;
+    }
+    {
+        auto target = state;
+        target.maxHp = target.hp = 10;
+        Pokerogue3DS::PokemonSturdyTagState tag{};
+        Pokerogue3DS::PokemonSturdyPolicy policy{};
+        if (!Pokerogue3DS::resolvePokemonSturdyAbilityPolicy(5, true, true, false, policy) ||
+            !policy.resolved || !policy.fullHpEndureAbilityActive) return 9920;
+        Pokerogue3DS::PokemonSturdyPolicy untouched = policy;
+        if (Pokerogue3DS::resolvePokemonSturdyAbilityPolicy(65535, true, true, false, untouched) ||
+            !untouched.resolved || !untouched.fullHpEndureAbilityActive) return 9921;
+        Pokerogue3DS::PokemonSturdyPolicy inactive{};
+        if (!Pokerogue3DS::resolvePokemonSturdyAbilityPolicy(5, false, true, false, inactive) ||
+            inactive.fullHpEndureAbilityActive) return 9922;
+        Pokerogue3DS::PokemonSturdyEvent event{};
+        if (Pokerogue3DS::preparePokemonSturdyTag(target, 20, policy, true, tag, event) !=
+                Pokerogue3DS::PokemonSurvivalResult::Ok || tag.present || event.tagAdded) return 9910;
+        if (Pokerogue3DS::preparePokemonSturdyTag(target, 20, policy, false, tag, event) !=
+                Pokerogue3DS::PokemonSurvivalResult::Ok || !tag.present || !event.tagAdded) return 9911;
+        if (Pokerogue3DS::applyPokemonSturdyDamage(target, 20, false, policy, tag, event) !=
+                Pokerogue3DS::PokemonSurvivalResult::Ok || target.hp != 1 || tag.present ||
+            !event.tagConsumed || event.damageApplied != 9) return 9912;
+        target.hp = 10;
+        tag.present = true;
+        if (Pokerogue3DS::applyPokemonSturdyDamage(target, 20, true, policy, tag, event) !=
+                Pokerogue3DS::PokemonSurvivalResult::Ok || target.hp || !tag.present ||
+            event.tagConsumed || event.damageApplied != 10) return 9913;
+        Pokerogue3DS::lapsePokemonSturdyTurnEnd(tag);
+        if (tag.present) return 9914;
     }
     // TargetHalfHpDamageAttr: floor, minimum one, no ordinary damage modifiers.
     for (const uint16_t id : {uint16_t(162), uint16_t(717), uint16_t(877)}) {
