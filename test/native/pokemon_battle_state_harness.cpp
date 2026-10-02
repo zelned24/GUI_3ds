@@ -889,6 +889,21 @@ extern "C" int runPokemonBattleStateChecks() {
             stageRng.randSeedUint32() != expectedStageRng.randSeedUint32()) return 9562;
     }
     {
+        const auto* blitz = PokerogueContent::findMoveById(394);
+        const auto* recoil = Pokerogue3DS::canonicalRecoilProfile(394);
+        if (!blitz || !recoil || recoil->useMaxHp || recoil->ratio != 0.33 ||
+            !Pokerogue3DS::pokemonMoveSelfThawResolved(394) ||
+            !Pokerogue3DS::pokemonDamageSecondaryAttributesResolved(*blitz, "StatusEffectAttr") ||
+            Pokerogue3DS::canonicalRecoilAiBenefit(*blitz) != -6) return 9780;
+        auto actor = state;
+        actor.hp = actor.maxHp = 100;
+        Pokerogue3DS::PokemonRecoilPolicy policy{};
+        policy.resolved = true;
+        Pokerogue3DS::PokemonRecoilEvent event{};
+        if (Pokerogue3DS::applyPokemonRecoil(actor, 394, 11, true, policy, event) !=
+                Pokerogue3DS::PokemonRecoilResult::Ok || event.damage != 3 || actor.hp != 97) return 9781;
+    }
+    {
         const auto* scald = PokerogueContent::findMoveById(503);
         if (!scald || !Pokerogue3DS::pokemonMoveSelfThawResolved(503) ||
             !Pokerogue3DS::pokemonMoveTargetThawResolved(503) ||

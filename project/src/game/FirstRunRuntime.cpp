@@ -2808,6 +2808,13 @@ bool FirstRunRuntime::executeActiveBattleMove(uint8_t userIndex, uint8_t targetI
             &weather, &critical, &hit, &pp, targetIsBoss ? &nextBossState : nullptr,
             targetIsBoss ? &bossPolicy : nullptr,
             targetIsBoss ? &nextGlobalRng : nullptr, &burn) != PokemonMoveActionStatus::Ok) return false;
+    if (PokerogueContent::moveHasAttribute(*move, "RecoilAttr")) {
+        PokemonRecoilEvent recoil{};
+        const auto recoilPolicy = canonicalFreshActorRecoilPolicy(nextUser.abilityId);
+        if (applyPokemonRecoil(nextUser, move->id, result.damageApplied,
+                !result.weatherCancelled && result.damageRoll.hit, recoilPolicy, recoil) !=
+                PokemonRecoilResult::Ok) return false;
+    }
     bool targetThawed = false;
     if (!applyPokemonMoveTargetThaw(nextOpponent, move->id,
             !result.weatherCancelled && result.damageRoll.hit && result.damageApplied,

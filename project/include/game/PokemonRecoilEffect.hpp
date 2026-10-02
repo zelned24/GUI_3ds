@@ -60,6 +60,7 @@ inline PokemonRecoilPolicy canonicalFreshActorRecoilPolicy(uint16_t abilityId) {
     return policy;
 }
 inline double canonicalRecoilAiBenefit(const PokerogueContent::Move& move) {
-    return damageRecoilProfile(move.id) ? std::floor(move.power / 5.0 / -4.0) : 0;
+    return canonicalRecoilProfile(move.id) && PokerogueContent::moveHasAttribute(move, "RecoilAttr")
+        ? std::floor(move.power / 5.0 / -4.0) : 0;
 }
 }

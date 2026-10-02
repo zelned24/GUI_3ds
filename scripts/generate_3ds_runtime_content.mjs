@@ -249,7 +249,7 @@ const statusMoveFlagRows = collections.moves.filter(move => move.category === 'S
   /\b(?:StatusEffectAttr|ConfuseAttr|StatStageChangeAttr)\b/.test(move.extensions?.upstreamRawRecord?.value ?? '')).map(move => {
   const raw = move.extensions?.upstreamRawRecord?.value ?? '';
   const calls = [...raw.matchAll(/\.([A-Za-z_$][\w$]*)\s*\(/g)].map(m => m[1]);
-  const known = new Set(['attr', 'target', 'reflectable', 'powderMove', 'soundBased']);
+  const known = new Set(['attr', 'target', 'reflectable', 'powderMove', 'soundBased', 'recklessMove']);
   const resolved = !!raw && calls.every(call => known.has(call));
   return `    {${move.moveId}, ${resolved}, ${calls.includes('reflectable')}, ${calls.includes('powderMove')}, ${calls.includes('soundBased')}}`;
 }).join(',\n');

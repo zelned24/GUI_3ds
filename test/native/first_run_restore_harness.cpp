@@ -417,7 +417,7 @@ static int checkStatusActionAdmission() {
                 emberAfter.enemyStatus.effect != repeatedEmberAfter.enemyStatus.effect ||
                 emberAfter.enemyStatus.present != repeatedEmberAfter.enemyStatus.present) return 9430;
             // Actual thaw+burn compositions, restored with both actors frozen.
-            for (const uint16_t id : {uint16_t(172), uint16_t(503), uint16_t(815)}) {
+            for (const uint16_t id : {uint16_t(172), uint16_t(394), uint16_t(503), uint16_t(815)}) {
                 const auto* thawMove = PokerogueContent::findMoveById(id);
                 if (!thawMove || !pokemonDamageSecondaryAttributesResolved(*thawMove, "StatusEffectAttr") ||
                     !pokemonMoveSelfThawResolved(id)) return 9770;

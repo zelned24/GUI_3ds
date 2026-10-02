@@ -1931,3 +1931,9 @@
 1. Regresiones de FirstRunRuntime usan Flame Wheel 172, Scald 503 y Scorching Sands 815 reales; inyectan movesets solo en snapshots de test y restauran ambos actores congelados.
 2. Exigen capacidad admitida, comando completo, gasto único de PP, cura del usuario/party y replay de HP/estado/counters enemigos. No se asume quemadura garantizada, rival vivo ni impacto contra un tipo inmune.
 3. Pruebas escritas, sin ejecución por instrucción del usuario. No certifican todavía run Classic, Azahar ni hardware Old 3DS; esos gates siguen pendientes.
+
+## Flare Blitz: retroceso, autodescongelación y quemadura
+
+1. Pinned Flare Blitz 394 declara RecoilAttr(false,0.33), HealStatusEffectAttr propia FREEZE, StatusEffectAttr BURN y recklessMove. Composición admite retroceso constante canónico junto al efecto secundario y cura; no admite daño basado en maxHP ni perfiles ausentes/duplicados.
+2. Dispatcher de daño aplica retroceso POST_APPLY propio antes del estado secundario; IA conserva beneficio RecoilAttr -6 antes de efectividad/STAB. recklessMove se reconoce como flag; acciones con habilidades no resueltas siguen rechazadas por proveedores propios, no se simula Reckless.
+3. Regresiones de composición/ratio/retroceso y replay frozen Flare Blitz escritas. Contenido regenerado, hash canónico intacto. Tests/compilación/Azahar/hardware y cobertura completa permanecen pendientes.

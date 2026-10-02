@@ -542,7 +542,7 @@ inline bool pokemonDamageSecondaryAttributesResolved(const PokerogueContent::Mov
     if (!secondaryAttribute || move.category == PokerogueContent::MoveStatus ||
         move.attributeOffset > PokerogueContent::kMoveAttributeCount ||
         move.attributeCount > PokerogueContent::kMoveAttributeCount - move.attributeOffset) return false;
-    uint16_t effects = 0, criticalModifiers = 0, selfThawEffects = 0;
+    uint16_t effects = 0, criticalModifiers = 0, selfThawEffects = 0, recoilEffects = 0;
     for (uint16_t i = 0; i < move.attributeCount; ++i) {
         const char* attribute = PokerogueContent::kMoveAttributes[move.attributeOffset + i].id;
         if (!attribute) return false;
@@ -553,9 +553,16 @@ inline bool pokemonDamageSecondaryAttributesResolved(const PokerogueContent::Mov
         if (matches(attribute, secondaryAttribute)) ++effects;
         else if (matches(attribute, "HighCritAttr") || matches(attribute, "CritOnlyAttr")) ++criticalModifiers;
         else if (matches(attribute, "HealStatusEffectAttr") && pokemonMoveSelfThawResolved(move.id)) ++selfThawEffects;
-        else return false;
+        else if (matches(attribute, "RecoilAttr")) {
+            unsigned profiles = 0;
+            for (const auto& profile : PokerogueContent::kMoveRecoilProfiles)
+                if (profile.moveId == move.id && !profile.useMaxHp && profile.ratio > 0 && profile.ratio <= 1)
+                    ++profiles;
+            if (profiles != 1) return false;
+            ++recoilEffects;
+        } else return false;
     }
-    return effects == 1 && criticalModifiers <= 1 && selfThawEffects <=
+    return effects == 1 && criticalModifiers <= 1 && recoilEffects <= 1 && selfThawEffects <=
         (pokemonMoveTargetThawResolved(move.id) ? 2 : 1);
 }
 
