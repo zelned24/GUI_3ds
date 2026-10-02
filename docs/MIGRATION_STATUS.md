@@ -2215,3 +2215,9 @@
 1. La declaración exacta MoveId.STRUGGLE de src/data/moves/move.ts pinned genera ID/resolved sin sustituir datos upstream. Pokemon.getAttackTypeEffectiveness y getStabMultiplier en src/field/pokemon.ts omiten chart/STAB para TypelessAttr; cálculo C++ aplica esa semántica al perfil exacto.
 2. usePokemonStruggleCommand valida agotamiento de todos los PP, prepara ejecución virtual ignore-PP y aplica recoil de un cuarto del HP máximo. Publica actores/RNG/evento juntos y conserva los cuatro slots originales; rechaza usuario debilitado o alias usuario/objetivo.
 3. Regresiones 10210–10216 escritas para Ghost real, recoil/PP/moveset y rechazo sin mutación ante PP disponible, alias, faint o clima no resuelto. No ejecutadas. Selección automática en FirstRunRuntime, jefes/dobles y restricciones adicionales todavía pendientes; no es fallback jugable conectado.
+
+## Struggle conectado a agotamiento de PP
+
+1. FirstRunRuntime selecciona el ID canónico virtual para jugador e IA en singles cuando todos los PP son cero; orden de turno usa prioridad de Struggle. No reemplaza movimientos persistentes. Navegación y presentación muestran su nombre desde locales.
+2. Ejecución conserva checks de sueño/freeze/parálisis/confusión y proveedores de clima/precisión/crítico/burn. PP cost cero no llama Pressure. Daño al jefe usa su dispatcher; retroceso de usuario jefe usa ignoreSegments y publica HP/escudos/streams juntos.
+3. Regresiones 10220–10227 de replay con encuentro real y 10230–10231 de retroceso boss/rechazo escritas sin ejecutar. Dobles, modifiers y selección por Disable/Encore u otros tags aún requieren integración; habilidades no resueltas continúan bloqueadas. No se cierra HP-05 ni MOV-07.

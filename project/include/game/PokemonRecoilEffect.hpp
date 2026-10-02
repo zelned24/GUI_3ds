@@ -81,7 +81,10 @@ struct PokemonStruggleActionResult {
 inline PokemonMoveActionStatus usePokemonStruggleCommand(PokemonBattleState& user,
     PokemonBattleState& target, PokerogueRngAdapter& rng, PokemonStruggleActionResult& output,
     const PokemonMoveWeatherContext* weather = nullptr, const PokemonCriticalPolicy* critical = nullptr,
-    const PokemonHitPolicy* hit = nullptr) {
+    const PokemonHitPolicy* hit = nullptr, PokemonBossState* targetBoss = nullptr,
+    const PokemonBossDamagePolicy* bossPolicy = nullptr, PokerogueRngAdapter* globalRng = nullptr,
+    const PokemonBurnDamagePolicy* burn = nullptr, PokemonBossState* userBoss = nullptr,
+    const PokemonBossDamagePolicy* userBossPolicy = nullptr) {
     if (&user == &target || !user.hp || !user.maxHp || user.hp > user.maxHp ||
         !PokerogueContent::kStruggleDefinitionResolved || !pokemonMovePpExhausted(user))
         return PokemonMoveActionStatus::InvalidMoveSlot;
@@ -89,24 +92,56 @@ inline PokemonMoveActionStatus usePokemonStruggleCommand(PokemonBattleState& use
     const auto* recoil = canonicalRecoilProfile(PokerogueContent::kStruggleMoveId);
     if (!move || !recoil || !recoil->useMaxHp || !recoil->unblockable || recoil->ratio != 0.25)
         return PokemonMoveActionStatus::DamageResolutionFailed;
+    if ((targetBoss != nullptr) != (bossPolicy != nullptr) ||
+        (targetBoss && (!globalRng || globalRng == &rng))) return PokemonMoveActionStatus::UnresolvedBoss;
+    if ((userBoss != nullptr) != (userBossPolicy != nullptr) ||
+        (userBoss && (!globalRng || globalRng == &rng || userBoss == targetBoss ||
+            !userBossPolicy->resolved || !userBossPolicy->damageCallbacksResolved ||
+            !userBoss->segmentCount || userBoss->segmentIndex >= userBoss->segmentCount)))
+        return PokemonMoveActionStatus::UnresolvedBoss;
     auto nextUser = user, nextTarget = target;
+    PokemonBossState nextBoss{};
+    PokerogueRngAdapter nextGlobal;
+    PokemonBossState nextUserBoss{};
+    if (targetBoss) nextBoss = *targetBoss;
+    if (userBoss) nextUserBoss = *userBoss;
+    if (targetBoss || userBoss) nextGlobal = *globalRng;
     auto nextRng = rng;
     nextUser.moveCount = 1;
     nextUser.moves[0] = {PokerogueContent::kStruggleMoveId, 1, 1};
     const PokemonPpPolicy pp{true, 0};
     PokemonStruggleActionResult event{};
     const auto result = useStandardPokemonMove(nextUser, nextTarget, 0, true, nextRng, event.attack,
-        weather, critical, hit, &pp);
+        weather, critical, hit, &pp, targetBoss ? &nextBoss : nullptr, bossPolicy,
+        targetBoss ? &nextGlobal : nullptr, burn);
     if (result != PokemonMoveActionStatus::Ok) return result;
+    const uint16_t recoilHp = nextUser.hp;
+    const auto recoilSturdy = nextUser.sturdy;
     const auto recoilPolicy = canonicalFreshActorRecoilPolicy(user.abilityId);
     if (applyPokemonRecoil(nextUser, move->id, event.attack.damageApplied,
         event.attack.damageRoll.hit && !event.attack.weatherCancelled, recoilPolicy, event.recoil) != PokemonRecoilResult::Ok)
         return PokemonMoveActionStatus::DamageResolutionFailed;
+    if (userBoss && recoilHp && event.attack.damageRoll.hit && !event.attack.weatherCancelled) {
+        nextUser.hp = recoilHp;
+        nextUser.sturdy = recoilSturdy;
+        auto policy = *userBossPolicy;
+        policy.ignoreSegments = true; // Pinned RecoilAttr.damageAndUpdate.
+        policy.preventEndure = false;
+        const auto requested = static_cast<uint32_t>(std::fmax(std::floor(nextUser.maxHp * recoil->ratio), 1.0));
+        PokemonBossDamageEvent damage{};
+        if (!applyPokemonBossDamage(nextUser, nextUserBoss, requested, policy, nextGlobal, damage))
+            return PokemonMoveActionStatus::UnresolvedBoss;
+        event.recoil.damage = damage.damageApplied;
+        event.recoil.fainted = !nextUser.hp;
+    }
     nextUser.moveCount = user.moveCount;
     for (uint8_t i = 0; i < 4; ++i) nextUser.moves[i] = user.moves[i];
     user = nextUser;
     target = nextTarget;
     rng = nextRng;
+    if (targetBoss) *targetBoss = nextBoss;
+    if (userBoss) *userBoss = nextUserBoss;
+    if (targetBoss || userBoss) *globalRng = nextGlobal;
     output = event;
     return PokemonMoveActionStatus::Ok;
 }

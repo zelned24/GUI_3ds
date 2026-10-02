@@ -2261,6 +2261,34 @@ extern "C" int runPokemonBattleStateChecks() {
         if (Pokerogue3DS::usePokemonStruggleCommand(user, target, rng, event) != PokemonMoveActionStatus::InvalidMoveSlot ||
             target.hp != targetHp) return 10214;
     }
+    // Boss user's recoil ignores shield reduction but updates cleared segments transactionally.
+    {
+        auto user = state, target = state;
+        user.abilityId = target.abilityId = 0;
+        user.status = target.status = {};
+        user.sturdy = target.sturdy = {};
+        user.hp = user.maxHp = 40;
+        target.hp = target.maxHp = 500;
+        user.moveCount = 1;
+        user.moves[0] = {33, 0, 35};
+        Pokerogue3DS::PokemonBossState boss{4, 3, false, false};
+        const Pokerogue3DS::PokemonBossDamagePolicy policy{true, true, true, false};
+        Pokerogue3DS::PokerogueRngAdapter battle, global;
+        const uint16_t root[] = {'r', 'e', 'c', 'o', 'i', 'l'};
+        battle.sow(root, 6); global.sow(root, 6);
+        Pokerogue3DS::PokemonStruggleActionResult event{};
+        if (Pokerogue3DS::usePokemonStruggleCommand(user, target, battle, event,
+                nullptr, nullptr, nullptr, nullptr, nullptr, &global, nullptr, &boss, &policy) !=
+                PokemonMoveActionStatus::Ok || user.hp != 30 || event.recoil.damage != 10 ||
+            boss.segmentIndex != 2 || user.moves[0].pp || user.moves[0].moveId != 33) return 10230;
+        boss.segmentIndex = 4;
+        const auto targetHp = target.hp;
+        event.recoil.damage = 77;
+        if (Pokerogue3DS::usePokemonStruggleCommand(user, target, battle, event,
+                nullptr, nullptr, nullptr, nullptr, nullptr, &global, nullptr, &boss, &policy) !=
+                PokemonMoveActionStatus::UnresolvedBoss || target.hp != targetHp || user.hp != 30 ||
+            event.recoil.damage != 77) return 10231;
+    }
     // Sharpness modifies slicing power before the base formula's additive two.
     {
         auto user = state, target = state;

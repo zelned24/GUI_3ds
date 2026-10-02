@@ -1028,6 +1028,7 @@ const PokerogueContent::MoveStatStageEffect* singleDamageStatStageEffect(uint16_
     return effect;
 }
 bool supportsBaselineBattleMove(uint16_t moveId) {
+    if (PokerogueContent::kStruggleDefinitionResolved && moveId == PokerogueContent::kStruggleMoveId) return true;
     if (pokemonIgnoreOpponentStatStagesMoveResolved(moveId) || pokemonSurviveDamageMoveResolved(moveId) || pokemonFixedDamageMoveProfile(moveId) || singleDamageStatStageEffect(moveId) || singleStatusConfusionEffect(moveId) || singleOpponentStatusEffect(moveId) || singleDamageStatusEffect(moveId) || singleDamageConfusionEffect(moveId) || pokemonWeatherChangeProfile(moveId) || supportsPokemonTrickRoomMove(moveId) || supportsPokemonStatStageMove(moveId) || selfHealingProfile(moveId) || damageDrainProfile(moveId) || damageRecoilProfile(moveId)) return true;
     const auto* move = PokerogueContent::findMoveById(moveId);
     // This first resolver only executes plain, single-target damaging moves.
@@ -1295,6 +1296,10 @@ bool FirstRunRuntime::resolveActiveStatStageCommandPolicy(const PokemonBattleSta
 bool FirstRunRuntime::supportsActiveBattleMove(const PokemonBattleState& user,
     const PokemonBattleState& opponent, uint16_t moveId) const {
     if (!supportsBaselineBattleMove(moveId)) return false;
+    if (moveId == PokerogueContent::kStruggleMoveId)
+        return PokerogueContent::kStruggleDefinitionResolved && !m_doubleBattle && !m_heldModifierCount &&
+            user.statsAreBaseFormulaOnly && opponent.statsAreBaseFormulaOnly &&
+            statusActionAbilitySupported(user.abilityId) && statusActionAbilitySupported(opponent.abilityId);
     // Survival dispatcher currently covers simple actor contexts only.
     for (const auto& profile : PokerogueContent::kFullHpEndureAbilityProfiles) {
         if (!profile.resolved || (profile.abilityId != user.abilityId && profile.abilityId != opponent.abilityId)) continue;
@@ -1487,7 +1492,8 @@ bool FirstRunRuntime::trainerBattleSupported() const {
         }
         ++usableMoves;
     }
-    return usableMoves > 0;
+    return usableMoves > 0 || (pokemonMovePpExhausted(activeEnemy) &&
+        supportsActiveBattleMove(activeEnemy, m_context.player.battleState, PokerogueContent::kStruggleMoveId));
 }
 
 bool FirstRunRuntime::doubleBattleSupported() const {
@@ -1564,7 +1570,13 @@ bool FirstRunRuntime::battleInputSupported() const {
             (damageDrainProfile(move.moveId) && hasCanonicalReverseDrain(m_context.player.battleState.abilityId))) return false;
         ++enemyUsable;
     }
-    return enemyUsable && m_selectedBattleMove < m_context.player.battleState.moveCount &&
+    const bool enemyStruggle = pokemonMovePpExhausted(m_context.enemy.battleState) &&
+        supportsActiveBattleMove(m_context.enemy.battleState, m_context.player.battleState, PokerogueContent::kStruggleMoveId);
+    const bool playerStruggle = pokemonMovePpExhausted(m_context.player.battleState) &&
+        supportsActiveBattleMove(m_context.player.battleState, m_context.enemy.battleState, PokerogueContent::kStruggleMoveId);
+    if (!(enemyUsable || enemyStruggle)) return false;
+    if (playerStruggle) return true;
+    return m_selectedBattleMove < m_context.player.battleState.moveCount &&
         m_context.player.battleState.moves[m_selectedBattleMove].pp &&
         supportsActiveBattleMove(m_context.player.battleState, m_context.enemy.battleState,
             m_context.player.battleState.moves[m_selectedBattleMove].moveId) &&
@@ -1873,6 +1885,12 @@ bool FirstRunRuntime::selectBattleMove(int direction) {
         return selectRewardChoice(direction);
     }
     if (!direction || !m_context.player.battleState.moveCount) return false;
+    if (pokemonMovePpExhausted(m_context.player.battleState)) {
+        m_selectedBattleMove = 0;
+        m_battleFeedback.clear();
+        buildScene();
+        return true;
+    }
     const uint8_t count = m_context.player.battleState.moveCount;
     for (uint8_t step = 0; step < count; ++step) {
         m_selectedBattleMove = direction > 0
@@ -2046,6 +2064,11 @@ bool FirstRunRuntime::grantVictoryExperience(bool pokemonDefeated, uint8_t enemy
 
 bool FirstRunRuntime::selectEnemyMoveSlot(const PokemonBattleState& enemyState,
     const PokemonBattleState& playerState, PokerogueRngAdapter& rng, uint8_t& enemyMoveSlot) {
+    if (pokemonMovePpExhausted(enemyState)) {
+        if (!supportsActiveBattleMove(enemyState, playerState, PokerogueContent::kStruggleMoveId)) return false;
+        enemyMoveSlot = 0; // Virtual action; persistent slot is not replaced.
+        return true;
+    }
     // Pinned EnemyPokemon.SMART_RANDOM: score each usable move in moveset order,
     // then advance through the descending pool while randBattleSeedInt(8) >= 5.
     PokemonMoveWeatherContext simulatedWeather{};
@@ -2230,6 +2253,7 @@ bool FirstRunRuntime::advanceBattleTurnInPlace() {
     const auto& playerState = m_context.player.battleState;
     const auto& enemyState = m_context.enemy.battleState;
     const auto* selected = PokerogueContent::findMoveById(
+        pokemonMovePpExhausted(playerState) ? PokerogueContent::kStruggleMoveId :
         playerState.moves[m_selectedBattleMove].moveId);
     if (!selected) {
         m_battleFeedback = "Canonical move reference invalid";
@@ -2509,7 +2533,8 @@ bool FirstRunRuntime::advanceBattleTurnInPlace() {
 
     uint8_t enemyMoveSlot = 0;
     if (!selectEnemyMoveSlot(enemyState, playerState, *rng, enemyMoveSlot)) return false;
-    const auto* enemyMove = PokerogueContent::findMoveById(enemyState.moves[enemyMoveSlot].moveId);
+    const auto* enemyMove = PokerogueContent::findMoveById(pokemonMovePpExhausted(enemyState) ?
+        PokerogueContent::kStruggleMoveId : enemyState.moves[enemyMoveSlot].moveId);
     if (!enemyMove) {
         m_battleFeedback = "Canonical enemy move reference invalid";
         buildScene();
@@ -2561,8 +2586,10 @@ bool FirstRunRuntime::executeActiveBattleMove(uint8_t userIndex, uint8_t targetI
     auto& opponent = *actors[targetIndex];
     if (!user.hp || !opponent.hp) return true;
     if (moveSlot >= user.moveCount || moveSlot >= 4) return false;
-    const auto* move = PokerogueContent::findMoveById(user.moves[moveSlot].moveId);
-    if (!move || !supportsBaselineBattleMove(move->id)) return false;
+    const bool virtualStruggle = pokemonMovePpExhausted(user);
+    const auto* move = PokerogueContent::findMoveById(virtualStruggle ? PokerogueContent::kStruggleMoveId : user.moves[moveSlot].moveId);
+    if (!move || !supportsBaselineBattleMove(move->id) ||
+        (virtualStruggle && !supportsActiveBattleMove(user, opponent, move->id))) return false;
     if ((pokemonFixedDamageMoveProfile(move->id) || pokemonSurviveDamageMoveResolved(move->id) || pokemonIgnoreOpponentStatStagesMoveResolved(move->id)) &&
         !supportsActiveBattleMove(user, opponent, move->id)) return false;
 
@@ -2678,7 +2705,8 @@ bool FirstRunRuntime::executeActiveBattleMove(uint8_t userIndex, uint8_t targetI
     if (ppOverride) {
         if (!ppOverride->resolved) return false;
         pp = *ppOverride;
-    } else if (!pokemonSingleOpponentPpCost(opponent.abilityId, pp.cost)) return false;
+    } else if (virtualStruggle) pp.cost = 0;
+    else if (!pokemonSingleOpponentPpCost(opponent.abilityId, pp.cost)) return false;
     if (pokemonWeatherChangeProfile(move->id)) {
         PokemonWeatherChangePolicy policy{};
         policy.resolved = policy.weatherCallbacksResolved = weatherBattleSupported();
@@ -2796,6 +2824,23 @@ bool FirstRunRuntime::executeActiveBattleMove(uint8_t userIndex, uint8_t targetI
             m_battleFeedback = "Burn ability callbacks require dispatcher";
             return false;
         }
+    }
+    if (virtualStruggle) {
+        ResolvedPokemon* resolvedActors[] = {&m_context.player, &m_context.enemy, &m_context.secondEnemy};
+        auto& userBoss = resolvedActors[userIndex]->bossState;
+        const auto* userAbility = PokerogueContent::findAbilityMovegenProfile(user.abilityId);
+        PokemonBossDamagePolicy recoilBossPolicy{};
+        recoilBossPolicy.resolved = recoilBossPolicy.damageCallbacksResolved =
+            userAbility && userAbility->bossDamageCallbacksResolved;
+        PokemonStruggleActionResult event{};
+        if (usePokemonStruggleCommand(user, opponent, rng, event, &weather, &critical, &hit,
+                targetIsBoss ? targetBossState : nullptr, targetIsBoss ? &bossPolicy : nullptr,
+                (targetIsBoss || userBoss.segmentCount) ? &m_globalRng : nullptr, &burn,
+                userBoss.segmentCount ? &userBoss : nullptr,
+                userBoss.segmentCount ? &recoilBossPolicy : nullptr) != PokemonMoveActionStatus::Ok) return false;
+        m_battleFeedback = event.recoil.fainted ? "Struggle recoil caused fainting" :
+            event.recoil.damage ? "Struggle caused recoil" : "Struggle was blocked";
+        return true;
     }
     if (damageRecoilProfile(move->id)) {
         auto nextUser = user;
@@ -4642,6 +4687,13 @@ void FirstRunRuntime::buildScene() {
                 localizedItem + " [" + tier + "]";
         }
         m_text[11] = "  B: Skip reward";
+    } else if (!m_battleFinished && !moveLearningPending() &&
+               pokemonMovePpExhausted(m_context.player.battleState)) {
+        const auto* move = PokerogueContent::findMoveById(PokerogueContent::kStruggleMoveId);
+        if (move) {
+            const std::string key = std::string("move:") + move->key;
+            m_text[8] = std::string("> ") + locale(key.c_str(), move->name);
+        }
     } else if (progressionPokemon().movesetResolved) {
         const auto& displayed = progressionPokemon();
         for (uint8_t i = 0; i < displayed.moveCount && i < 4; ++i) {

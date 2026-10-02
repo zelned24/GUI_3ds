@@ -3162,7 +3162,54 @@ static int checkCanonicalTrainerSignatureSlots() {
     return checked ? 0 : 231; // Real catalog coverage, not a synthetic trainer.
 }
 
+static int checkExhaustedPpStruggleReplay() {
+    using namespace Pokerogue3DS;
+    for (uint32_t seed = 1; seed <= 256; ++seed) {
+        FirstRunRuntime original(seed);
+        const auto& context = original.presentation();
+        if (!context.enemy.actorIdentityResolved || context.secondEnemy.dex || context.trainerPartyCount) continue;
+        NativeRunSave save{};
+        if (original.captureNativeRunSave(save) != NativeSaveResult::Ok) return 10220;
+        save.stage = NativeSaveStage::BattleActive;
+        save.battleTurn = 1;
+        save.encounterDex = context.enemy.dex;
+        save.playerHp = context.player.battleState.hp;
+        save.enemyHp = context.enemy.battleState.hp;
+        save.playerMoveCount = context.player.battleState.moveCount;
+        save.enemyMoveCount = context.enemy.battleState.moveCount;
+        for (uint8_t slot = 0; slot < 4; ++slot) {
+            save.playerMoveIds[slot] = slot < save.playerMoveCount ? context.player.battleState.moves[slot].moveId : 0;
+            save.enemyMoveIds[slot] = slot < save.enemyMoveCount ? context.enemy.battleState.moves[slot].moveId : 0;
+            save.playerPp[slot] = save.enemyPp[slot] = 0; // Test-only exhausted checkpoint.
+        }
+        auto actor = context.player.battleState;
+        for (uint8_t slot = 0; slot < actor.moveCount; ++slot) actor.moves[slot].pp = 0;
+        save.playerPartyCount = 1;
+        save.activePlayerMember = 0;
+        if (!captureNativePokemonActorSave(actor, context.player.actor, context.player.totalExperience, save.playerParty[0]))
+            return 10221;
+        FirstRunRuntime a(seed), b(seed);
+        if (!a.restoreNativeRunSave(save) || !b.restoreNativeRunSave(save)) return 10222;
+        if (!a.battleInputSupported()) continue; // Search real resolved ability context, never fabricate one.
+        if (!a.selectBattleMove(1) || !a.advanceBattleTurn() || !b.advanceBattleTurn()) return 10223;
+        const auto& pa = a.presentation();
+        const auto& pb = b.presentation();
+        if (pa.player.battleState.hp != pb.player.battleState.hp || pa.enemy.battleState.hp != pb.enemy.battleState.hp ||
+            pa.player.battleState.hp >= save.playerHp || pa.enemy.battleState.hp >= save.enemyHp) return 10224;
+        for (uint8_t slot = 0; slot < save.playerMoveCount; ++slot)
+            if (pa.player.battleState.moves[slot].moveId != save.playerMoveIds[slot] || pa.player.battleState.moves[slot].pp)
+                return 10225;
+        for (uint8_t slot = 0; slot < save.enemyMoveCount; ++slot)
+            if (pa.enemy.battleState.moves[slot].moveId != save.enemyMoveIds[slot] || pa.enemy.battleState.moves[slot].pp)
+                return 10226;
+        return 0;
+    }
+    return 10227; // Fail if no real eligible encounter was exercised.
+}
+
 int main() {
+    const int struggleReplay = checkExhaustedPpStruggleReplay();
+    if (struggleReplay) return struggleReplay;
     const int statusAdmissionCheck = checkStatusActionAdmission();
     if (statusAdmissionCheck) return statusAdmissionCheck;
 

@@ -49,7 +49,7 @@ Esta tabla describe código inspeccionado, no resultados de ejecución. Las nota
 | HAB-03 | Sharpness tiene perfil, cálculo de potencia, proveedor y regresión de replay Gallade escritos | Contextos adicionales, pasivas/supresión y validación ejecutada |
 | HAB-04 / HP-03 / CAM-03 | Sturdy: tag, daño ordinario/fijo, escudos, confusión/clima y persistencia jugador/enemigo/trainer | Otras supervivencias, pasivas/supresión, dobles y validación ejecutada |
 | HAB-01–10 / MOV-01–13 | Familias parciales y gates explícitos | Cobertura de todas las habilidades/movimientos del snapshot; no basta importar metadata |
-| HP-05 / MOV-07 | Declaración pinned y comando virtual de Struggle escritos en cambios locales | Selección automática jugador/IA, restricciones, jefes/dobles, feedback y regresiones; todavía no es fallback jugable |
+| HP-05 / MOV-07 | Struggle virtual conectado a selección jugador/IA, orden, locales y daño/retroceso boss en singles resueltos | Dobles, modifiers, restricciones por otros tags y validación ejecutada |
 | HP-01–08 | HP/PP/status, daño/curación, EXP y casos de límites | Composición completa, segmentos, faint simultáneo, persistencia y feedback visual |
 | FLU-05 / SAV-03 | Checkpoint v20: bioma, actores explícitos, jefes individuales y trainer con estados resueltos | Dobles, fase final, decisiones pendientes y recorrido completo; casos de trainer posterior sin verificar |
 | GUI-01–12 / AST-01–08 | Presentación nativa, índices y assets convertidos parciales | Todas las pantallas, HUD HP/PP/EXP, animación/audio, controles y comparación visual |
@@ -480,3 +480,8 @@ Los ejemplos describen infraestructura y límites; no son tareas cerradas. Actua
 - Falta conectar la selección automática en FirstRunRuntime, completar composición de políticas y ejecutar regresiones. No hay evidencia ejecutada ni se cierra el criterio.
 
 - Revisión adicional: chart/STAB omiten el perfil exacto typeless; regresiones 10210–10216 escritas sobre Ghost real, recoil, slots intactos y rechazo atómico. Sin ejecutar; selección automática aún pendiente.
+
+### Avance HP-05 / MOV-07: selección automática de Struggle
+
+- Singles conectan PP agotados → ID virtual → orden → checks previos → comando → recoil → feedback. Jefes usan dispatcher también para retroceso; moveset persistente intacto.
+- Replay de ambos actores con PP cero y regresiones de usuario boss escritos sin ejecutar. Dobles, modifiers, tags que bloquean movimientos y contextos de habilidades pendientes.
