@@ -1174,14 +1174,24 @@ static int checkBiomeTransitionProgression() {
         if (wave10Capture == NativeSaveResult::UnsupportedStage) continue;
         if (wave10Capture != NativeSaveResult::Ok || !wave10Won.enemyBoss.segmentCount ||
             !wave10Won.playerPartyCount) return 10140;
+        if (!wave10Won.globalRngResolved) return 10270;
         auto partialBoss = wave10Won;
         partialBoss.enemyBoss.segmentIndex = 0;
+        PokerogueRngAdapter progressedGlobal;
+        const uint16_t globalRoot[] = {'p', 'r', 'o', 'g', 'r', 'e', 's', 's'};
+        progressedGlobal.sow(globalRoot, 8);
+        for (unsigned draw = 0; draw < 23; ++draw) progressedGlobal.randSeedUint32();
+        partialBoss.globalRng = progressedGlobal.state(); // Test-only checkpoint after global draws.
+
         FirstRunRuntime bossRestore(seed);
         NativeRunSave partialRecaptured{};
         if (!bossRestore.restoreNativeRunSave(partialBoss) ||
             bossRestore.captureNativeRunSave(partialRecaptured) != NativeSaveResult::Ok ||
             partialRecaptured.enemyBoss.segmentCount != partialBoss.enemyBoss.segmentCount ||
             partialRecaptured.enemyBoss.segmentIndex || partialRecaptured.enemyHp != partialBoss.enemyHp) return 10141;
+        if (!partialRecaptured.globalRngResolved || partialRecaptured.globalRng.carry != partialBoss.globalRng.carry ||
+            partialRecaptured.globalRng.s0 != partialBoss.globalRng.s0 || partialRecaptured.globalRng.s1 != partialBoss.globalRng.s1 ||
+            partialRecaptured.globalRng.s2 != partialBoss.globalRng.s2) return 10271;
         auto invalidBoss = partialBoss;
         ++invalidBoss.enemyBoss.segmentCount;
         if (bossRestore.restoreNativeRunSave(invalidBoss)) return 10142;

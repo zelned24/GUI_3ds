@@ -4,11 +4,12 @@
 #include <cstdint>
 #include "game/PokerogueModifierReward.hpp"
 #include "game/PokemonBattleState.hpp"
+#include "game/PokerogueRngAdapter.hpp"
 
 namespace Pokerogue3DS {
 
-inline constexpr uint16_t kNativeSaveVersion = 20;
-inline constexpr uint16_t kNativeSaveRuntimeVersion = 20;
+inline constexpr uint16_t kNativeSaveVersion = 21;
+inline constexpr uint16_t kNativeSaveRuntimeVersion = 21;
 // Bounded text envelope including six trainer members and field/inventory state.
 inline constexpr size_t kNativeSaveMaxBytes = 8192;
 inline constexpr size_t kNativeHeldModifierCapacity = 32;
@@ -107,6 +108,8 @@ struct NativeRunSave {
     PokemonConfusionTagState enemyConfusion{};
     PokemonBossState enemyBoss{}; // Run envelope v20; actor form remains reconstructed.
     bool enemySturdyTag = false; // Player tags remain in explicit actor payloads.
+    bool globalRngResolved = false; // v21; legacy snapshots cannot recover shield RNG history.
+    PokerogueRngState globalRng{};
     uint32_t battleTurn = 0;
     uint8_t playerMoveCount = 0;
     uint8_t enemyMoveCount = 0;

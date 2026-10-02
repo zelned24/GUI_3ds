@@ -423,6 +423,8 @@ NativeSaveResult FirstRunRuntime::captureNativeRunSave(NativeRunSave& output) co
         value.enemyConfusion = m_context.enemy.battleState.confusion;
         value.enemySturdyTag = m_context.enemy.battleState.sturdy.present;
         value.enemyBoss = m_context.enemy.bossState;
+        value.globalRngResolved = true;
+        value.globalRng = m_globalRng.state();
         value.battleTurn = m_turn;
         value.weatherType = static_cast<uint8_t>(m_arenaWeather.type);
         value.weatherTurnsLeft = m_arenaWeather.turnsLeft;
@@ -897,6 +899,7 @@ bool FirstRunRuntime::restoreNativeRunSaveInPlace(const NativeRunSave& save) {
     m_pokeballs[5] = 0;
     m_context.playerParty[m_context.activePlayerPartyIndex] = m_context.player;
     if (!restoreHeldModifierInventory(save.heldModifiers, save.heldModifierCount)) return false;
+    if (save.globalRngResolved) m_globalRng.restore(save.globalRng);
     m_turn = save.battleTurn;
     m_enemySwitchCounter = save.enemySwitchCounter;
     if (save.trainerPartyCount) refreshTrainerBaselineMatchups();

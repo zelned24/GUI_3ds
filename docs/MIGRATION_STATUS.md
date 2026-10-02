@@ -2227,3 +2227,9 @@
 1. Referencia pinned src/data/moves/move-utils.ts:getMoveTargets, RANDOM_NEAR_ENEMY elige uniformemente con user.randBattleSeedInt sobre oponentes activos en orden de campo. FirstRunRuntime prepara el objetivo de jugador antes de selección IA y usa el ID virtual en prioridades.
 2. Los tres actores actuales pueden ejecutar Struggle al agotar PP; no se puntúan movimientos agotados ni se usa el cursor manual para elegir su objetivo. Contextos con modifiers o callbacks sin resolver siguen bloqueados; checks de status dobles mantienen sus limitaciones existentes.
 3. Regresiones 10240–10242 de orden/consumo RNG/rechazo y 10250–10254 de campo real con PP agotados y cursores distintos escritas, sin ejecutar. El campo continúa siendo un jugador contra dos enemigos: falta segundo activo jugador, persistencia doble y segunda fase final. No se declara dobles completo.
+
+## RNG global persistido — envelope v21
+
+1. Al revisar persistencia doble se detectó un requisito previo: Pokemon.handleBossSegmentCleared pinned usa weightedPick (src/utils/random.ts) sobre el stream global, separado del stream por turno. Los checkpoints anteriores conservaban segmentos pero reconstruían ese stream.
+2. Capture/restore ahora guarda Alea carry/s0/s1/s2 para runs activos. Codec v21 representa cada fracción exacta como entero de 32 bits; valida finitud/rango/cuantización y no incluye reloj. Setup no lleva RNG mutable. v1–20 siguen decodificando; globalRngResolved=false significa historial ausente, no equivalencia de continuación de RNG garantizada.
+3. Regresiones 10260–10268 comprueban roundtrip, próximas 32 extracciones, bytes repetidos, rangos inválidos y migración exacta v20; 10270–10271 conectan checkpoint de jefe reconstruido y recaptura de stream avanzado. Escritas sin ejecutar. Dobles aún rechazados por capture/restore; segundo enemigo, EXP por derrotas parciales y segundo activo jugador pendientes.

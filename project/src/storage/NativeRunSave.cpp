@@ -9,11 +9,12 @@
 #include "content/PokerogueRuntimeContent.hpp"
 #include <memory>
 #include <new>
+#include <cmath>
 
 namespace Pokerogue3DS {
 namespace {
 // Stable envelope marker; saveVersion carries the independently migrated
-// payload schema (currently version 18).
+// payload schema (currently version 21).
 constexpr char kMagic[] = "POKEROGUE-3DS-SAVE 1\n";
 constexpr size_t kDigestLineLength = 72;
 
@@ -651,6 +652,19 @@ NativeSaveResult decodeNativePokemonSave(const char* bytes, size_t length,
 }
 
 NativeSaveResult validateNativeRunSave(const NativeRunSave& save, const char* expectedContentHash) {
+    const auto& random = save.globalRng;
+    const auto fractionValid = [](double value) {
+        return std::isfinite(value) && value >= 0 && value < 1 &&
+            std::floor(value * 4294967296.0) == value * 4294967296.0;
+    };
+    if (save.globalRngResolved) {
+        if (save.stage == NativeSaveStage::RunSetup || !std::isfinite(random.carry) || random.carry < 0 ||
+            random.carry > 2091639 || std::floor(random.carry) != random.carry ||
+            !fractionValid(random.s0) || !fractionValid(random.s1) || !fractionValid(random.s2))
+            return NativeSaveResult::InvalidRecord;
+    } else if (random.carry != 0 || random.s0 != 0 || random.s1 != 0 || random.s2 != 0)
+        return NativeSaveResult::InvalidRecord;
+
     if (save.playerPartyCount > 6 || save.trainerPartyCount > 6) return NativeSaveResult::InvalidRecord;
     if (save.stage == NativeSaveStage::RunSetup && save.enemySturdyTag) return NativeSaveResult::InvalidRecord;
     for (uint8_t i = 0; i < 6; ++i)
@@ -1039,6 +1053,13 @@ NativeSaveResult encodeNativeRunSave(const NativeRunSave& save, char* output, si
     writer.hex(save.enemyBoss.segmentIndex, 4);
     writer.hex(save.enemyBoss.classicFinalBossFirstPhase ? 1 : 0, 1);
     writer.hex(save.enemyBoss.hasTrainer ? 1 : 0, 1);
+    writer.text("globalRng="); writer.hex(save.globalRngResolved ? 1 : 0, 1);
+    if (save.globalRngResolved) {
+        writer.hex(static_cast<uint32_t>(save.globalRng.carry), 8);
+        writer.hex(static_cast<uint32_t>(save.globalRng.s0 * 4294967296.0), 8);
+        writer.hex(static_cast<uint32_t>(save.globalRng.s1 * 4294967296.0), 8);
+        writer.hex(static_cast<uint32_t>(save.globalRng.s2 * 4294967296.0), 8);
+    }
     if (!writer.valid) return NativeSaveResult::TooLarge;
     char hash[65];
     IntegritySha256::hashHex(output, writer.position, hash);
@@ -1057,7 +1078,7 @@ NativeSaveResult decodeNativeRunSave(const char* bytes, size_t length, const cha
     auto status = inspectEnvelope(bytes, length, value, payloadStart);
     if (status != NativeSaveResult::Ok) return status;
     if (value.saveVersion > kNativeSaveVersion) return NativeSaveResult::UnsupportedVersion;
-    if (value.saveVersion != 1 && value.saveVersion != 2 && value.saveVersion != 3 && value.saveVersion != 4 && value.saveVersion != 5 && value.saveVersion != 6 && value.saveVersion != 7 && value.saveVersion != 8 && value.saveVersion != 9 && value.saveVersion != 10 && value.saveVersion != 11 && value.saveVersion != 12 && value.saveVersion != 13 && value.saveVersion != 14 && value.saveVersion != 15 && value.saveVersion != 16 && value.saveVersion != 17 && value.saveVersion != 18 && value.saveVersion != 19 &&
+    if (value.saveVersion != 1 && value.saveVersion != 2 && value.saveVersion != 3 && value.saveVersion != 4 && value.saveVersion != 5 && value.saveVersion != 6 && value.saveVersion != 7 && value.saveVersion != 8 && value.saveVersion != 9 && value.saveVersion != 10 && value.saveVersion != 11 && value.saveVersion != 12 && value.saveVersion != 13 && value.saveVersion != 14 && value.saveVersion != 15 && value.saveVersion != 16 && value.saveVersion != 17 && value.saveVersion != 18 && value.saveVersion != 19 && value.saveVersion != 20 &&
         value.saveVersion != kNativeSaveVersion) return NativeSaveResult::UnsupportedVersion;
     const bool legacySetup = value.saveVersion == 1 && value.runtimeVersion == 1;
     const bool legacyBattle = value.saveVersion == 2 && value.runtimeVersion == 2;
@@ -1078,9 +1099,10 @@ NativeSaveResult decodeNativeRunSave(const char* bytes, size_t length, const cha
     const bool legacyConfusionSource = value.saveVersion == 17 && value.runtimeVersion == 17;
     const bool legacyConfusionActor = value.saveVersion == 18 && value.runtimeVersion == 18;
     const bool legacySurvival = value.saveVersion == 19 && value.runtimeVersion == 19;
+    const bool legacyBoss = value.saveVersion == 20 && value.runtimeVersion == 20;
     const bool currentPayload = value.saveVersion == kNativeSaveVersion &&
         value.runtimeVersion == kNativeSaveRuntimeVersion;
-    if (!currentPayload && !legacySetup && !legacyBattle && !legacyProgress && !legacyTrainer && !legacySwitch && !legacyStages && !legacyWeather && !legacyRoom && !legacyInventory && !legacyParty && !legacyHeld && !legacyProfile && !legacyParticipants && !legacySetupParty && !legacyStatus && !legacyConfusion && !legacyConfusionSource && !legacyConfusionActor && !legacySurvival)
+    if (!currentPayload && !legacySetup && !legacyBattle && !legacyProgress && !legacyTrainer && !legacySwitch && !legacyStages && !legacyWeather && !legacyRoom && !legacyInventory && !legacyParty && !legacyHeld && !legacyProfile && !legacyParticipants && !legacySetupParty && !legacyStatus && !legacyConfusion && !legacyConfusionSource && !legacyConfusionActor && !legacySurvival && !legacyBoss)
         return NativeSaveResult::IncompatibleRuntime;
     if (!isHash(expectedContentHash)) return NativeSaveResult::InvalidFormat;
     if (!equal(value.contentHash, expectedContentHash)) return NativeSaveResult::ContentMismatch;
@@ -1322,10 +1344,22 @@ NativeSaveResult decodeNativeRunSave(const char* bytes, size_t length, const cha
                 return NativeSaveResult::InvalidFormat;
             value.enemyBoss = {static_cast<uint16_t>(count), static_cast<uint16_t>(index), firstPhase != 0, trainer != 0};
         }
+        if (value.saveVersion >= 21) {
+            if (!reader.literal("globalRng=") || !reader.hex(1, parsed) || parsed > 1)
+                return NativeSaveResult::InvalidFormat;
+            value.globalRngResolved = parsed != 0;
+            if (value.globalRngResolved) {
+                uint32_t carry = 0, s0 = 0, s1 = 0, s2 = 0;
+                if (!reader.hex(8, carry) || !reader.hex(8, s0) || !reader.hex(8, s1) || !reader.hex(8, s2))
+                    return NativeSaveResult::InvalidFormat;
+                constexpr double unit = 1.0 / 4294967296.0;
+                value.globalRng = {static_cast<double>(carry), s0 * unit, s1 * unit, s2 * unit};
+            }
+        }
         // All version-specific fields, including confusion source metadata, must be
         // consumed before checking for trailing or missing payload bytes.
         if (reader.position != reader.end) return NativeSaveResult::InvalidFormat;
-        if (legacyBattle || legacyProgress || legacyTrainer || legacySwitch || legacyStages || legacyWeather || legacyRoom || legacyInventory || legacyParty || legacyHeld || legacyProfile || legacyParticipants || legacySetupParty || legacyStatus || legacyConfusion || legacyConfusionSource || legacyConfusionActor || legacySurvival) {
+        if (legacyBattle || legacyProgress || legacyTrainer || legacySwitch || legacyStages || legacyWeather || legacyRoom || legacyInventory || legacyParty || legacyHeld || legacyProfile || legacyParticipants || legacySetupParty || legacyStatus || legacyConfusion || legacyConfusionSource || legacyConfusionActor || legacySurvival || legacyBoss) {
             value.saveVersion = kNativeSaveVersion;
             value.runtimeVersion = kNativeSaveRuntimeVersion;
         }

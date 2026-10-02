@@ -166,6 +166,57 @@ extern "C" int runNativeSaveChecks() {
         bossSave.enemyBoss = {2, 0, true, false};
         if (validateNativeRunSave(bossSave, PokerogueContent::kContentHash) != NativeSaveResult::InvalidRecord) return 10133;
     }
+    // v21 serializes Alea state losslessly as exact 32-bit fractions, without clock metadata.
+    {
+        auto randomSave = trainerSave;
+        PokerogueRngAdapter source;
+        const uint16_t root[] = {'s', 'h', 'i', 'e', 'l', 'd'};
+        source.sow(root, 6);
+        for (unsigned i = 0; i < 17; ++i) source.randSeedUint32();
+        randomSave.globalRngResolved = true;
+        randomSave.globalRng = source.state();
+        char randomBytes[kNativeSaveMaxBytes]{};
+        size_t randomSize = 0;
+        NativeRunSave decoded{};
+        if (encodeNativeRunSave(randomSave, randomBytes, sizeof(randomBytes), randomSize) != NativeSaveResult::Ok ||
+            decodeNativeRunSave(randomBytes, randomSize, PokerogueContent::kContentHash, decoded) != NativeSaveResult::Ok ||
+            !decoded.globalRngResolved || decoded.globalRng.carry != randomSave.globalRng.carry ||
+            decoded.globalRng.s0 != randomSave.globalRng.s0 || decoded.globalRng.s1 != randomSave.globalRng.s1 ||
+            decoded.globalRng.s2 != randomSave.globalRng.s2) return 10260;
+        size_t repeatedSize = 0;
+        if (encodeNativeRunSave(randomSave, partyBytes, sizeof(partyBytes), repeatedSize) != NativeSaveResult::Ok ||
+            repeatedSize != randomSize || std::memcmp(partyBytes, randomBytes, randomSize)) return 10268;
+        PokerogueRngAdapter replay;
+        replay.restore(decoded.globalRng);
+        for (unsigned i = 0; i < 32; ++i) if (source.randSeedUint32() != replay.randSeedUint32()) return 10261;
+        auto invalid = randomSave;
+        invalid.globalRng.s0 = 1.0;
+        if (validateNativeRunSave(invalid, PokerogueContent::kContentHash) != NativeSaveResult::InvalidRecord) return 10262;
+        invalid = randomSave;
+        invalid.globalRng.carry = 0.5;
+        if (validateNativeRunSave(invalid, PokerogueContent::kContentHash) != NativeSaveResult::InvalidRecord) return 10263;
+        invalid = randomSave;
+        invalid.globalRngResolved = false;
+        if (validateNativeRunSave(invalid, PokerogueContent::kContentHash) != NativeSaveResult::InvalidRecord) return 10264;
+        const auto* suffix = std::strstr(randomBytes, "globalRng=");
+        if (!suffix) return 10265;
+        const size_t payloadSize = static_cast<size_t>(suffix - randomBytes);
+        char legacy[kNativeSaveMaxBytes]{};
+        std::memcpy(legacy, randomBytes, payloadSize);
+        char* version = std::strstr(legacy, "saveVersion=0015");
+        char* runtime = std::strstr(legacy, "runtimeVersion=0015");
+        if (!version || !runtime) return 10266;
+        std::memcpy(version + 12, "0014", 4);
+        std::memcpy(runtime + 15, "0014", 4);
+        char checksum[65]{};
+        IntegritySha256::hashHex(legacy, payloadSize, checksum);
+        std::memcpy(legacy + payloadSize, "sha256=", 7);
+        std::memcpy(legacy + payloadSize + 7, checksum, 64);
+        legacy[payloadSize + 71] = '\n';
+        if (decodeNativeRunSave(legacy, payloadSize + 72, PokerogueContent::kContentHash, decoded) != NativeSaveResult::Ok ||
+            decoded.saveVersion != kNativeSaveVersion || decoded.globalRngResolved || decoded.globalRng.carry ||
+            decoded.globalRng.s0 || decoded.globalRng.s1 || decoded.globalRng.s2) return 10267;
+    }
     NativeRunSave statusSave = trainerSave;
     statusSave.playerStatus.present = true;
     statusSave.playerStatus.effect = PokemonStatusEffect::Burn;
@@ -231,8 +282,8 @@ extern "C" int runNativeSaveChecks() {
         if (!suffix) return 10093;
         const size_t payloadSize = static_cast<size_t>(suffix - partyBytes);
         std::memcpy(legacy, partyBytes, payloadSize);
-        char* version = std::strstr(legacy, "saveVersion=0014");
-        char* runtime = std::strstr(legacy, "runtimeVersion=0014");
+        char* version = std::strstr(legacy, "saveVersion=0015");
+        char* runtime = std::strstr(legacy, "runtimeVersion=0015");
         if (!version || !runtime) return 10094;
         std::memcpy(version + 12, "0012", 4);
         std::memcpy(runtime + 15, "0012", 4);
@@ -249,8 +300,8 @@ extern "C" int runNativeSaveChecks() {
         const size_t v19Size = static_cast<size_t>(bossSuffix - partyBytes);
         std::memset(legacy, 0, sizeof(legacy));
         std::memcpy(legacy, partyBytes, v19Size);
-        version = std::strstr(legacy, "saveVersion=0014");
-        runtime = std::strstr(legacy, "runtimeVersion=0014");
+        version = std::strstr(legacy, "saveVersion=0015");
+        runtime = std::strstr(legacy, "runtimeVersion=0015");
         if (!version || !runtime) return 10135;
         std::memcpy(version + 12, "0013", 4);
         std::memcpy(runtime + 15, "0013", 4);
@@ -271,9 +322,9 @@ extern "C" int runNativeSaveChecks() {
         const size_t legacyPayload = static_cast<size_t>(sourceStart - partyBytes);
         std::memcpy(legacyBytes, partyBytes, legacyPayload);
         for (size_t n = 0; n < legacyPayload; ++n) {
-            if (n + 16 <= legacyPayload && std::memcmp(legacyBytes + n, "saveVersion=0014", 16) == 0)
+            if (n + 16 <= legacyPayload && std::memcmp(legacyBytes + n, "saveVersion=0015", 16) == 0)
                 std::memcpy(legacyBytes + n + 12, "0010", 4);
-            if (n + 19 <= legacyPayload && std::memcmp(legacyBytes + n, "runtimeVersion=0014", 19) == 0)
+            if (n + 19 <= legacyPayload && std::memcmp(legacyBytes + n, "runtimeVersion=0015", 19) == 0)
                 std::memcpy(legacyBytes + n + 15, "0010", 4);
         }
         IntegritySha256::hashHex(legacyBytes, legacyPayload, digest);
@@ -291,9 +342,9 @@ extern "C" int runNativeSaveChecks() {
         const size_t v17Payload = static_cast<size_t>(actorStart - partyBytes);
         std::memcpy(legacyBytes, partyBytes, v17Payload);
         for (size_t n = 0; n < v17Payload; ++n) {
-            if (n + 16 <= v17Payload && std::memcmp(legacyBytes + n, "saveVersion=0014", 16) == 0)
+            if (n + 16 <= v17Payload && std::memcmp(legacyBytes + n, "saveVersion=0015", 16) == 0)
                 std::memcpy(legacyBytes + n + 12, "0011", 4);
-            if (n + 19 <= v17Payload && std::memcmp(legacyBytes + n, "runtimeVersion=0014", 19) == 0)
+            if (n + 19 <= v17Payload && std::memcmp(legacyBytes + n, "runtimeVersion=0015", 19) == 0)
                 std::memcpy(legacyBytes + n + 15, "0011", 4);
         }
         IntegritySha256::hashHex(legacyBytes, v17Payload, digest);
