@@ -1,8 +1,7 @@
 #pragma once
 #include "game/PokemonBattleState.hpp"
 namespace Pokerogue3DS {
-// Pinned PreDefendFullHpEndureAbAttr and SturdyTag. Owned by the caller until
-// actor persistence and turn-end tag dispatch are integrated.
+// Pinned PreDefendFullHpEndureAbAttr and SturdyTag; PokemonBattleState owns the tag.
 struct PokemonSturdyPolicy {
     bool resolved = false;
     bool fullHpEndureAbilityActive = false;
@@ -65,6 +64,16 @@ inline PokemonSurvivalResult applyPokemonSturdyDamage(PokemonBattleState& target
     }
     output = event;
     return PokemonSurvivalResult::Ok;
+}
+// Indirect damage consumes an existing tag; it never invokes PreDefend activation.
+inline PokemonSurvivalResult applyPokemonExistingSturdyDamage(PokemonBattleState& target,
+    uint32_t damage, uint16_t& damageApplied) {
+    PokemonSturdyPolicy policy{};
+    policy.resolved = policy.otherSurvivalEffectsResolved = true;
+    PokemonSturdyEvent event{};
+    const auto result = applyPokemonSturdyDamage(target, damage, false, policy, target.sturdy, event);
+    if (result == PokemonSurvivalResult::Ok) damageApplied = event.damageApplied;
+    return result;
 }
 // SturdyTag is transient and lapses at TURN_END even when never consumed.
 inline void lapsePokemonSturdyTurnEnd(PokemonSturdyTagState& tag) { tag.present = false; }

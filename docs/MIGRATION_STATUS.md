@@ -2088,3 +2088,9 @@
 1. SurviveDamageAttr valida el estado HP antes de cálculos/RNG; invalid HP no consume tiradas.
 2. Regresiones 9990–9991 comprueban False Swipe contra Sturdy: límite HP-1 precede callback full-HP, sin activar ni consumir tag de supervivencia.
 3. Replay de FirstRunRuntime incluye 206/610 además de familias de daño fijo. Casos escritos sin ejecutar; tests/compilación/Classic completo pendientes.
+
+## Tag Sturdy en retroceso y drenaje invertido
+
+1. Pinned RecoilAttr y ReverseDrain envían daño indirecto a Pokemon.damage; esa función consume tag STURDY existente a HP completo, pero no activa la habilidad.
+2. Helpers de recoil/Liquid Ooze reutilizan el consumo del tag sin crear otro. DamageApplied/fainted usan HP final; ausencia de tag conserva KO y bloqueos conservan tag.
+3. Regresiones 10000–10002 escritas, sin ejecutar. Falta auditar las demás rutas indirectas/tags/endure y validar Old 3DS.

@@ -1869,6 +1869,29 @@ extern "C" int runPokemonBattleStateChecks() {
                 PokemonMoveDamageResult::InvalidStats ||
             rng.randSeedUint32() != before.randSeedUint32()) return 9991;
     }
+    // Recoil/reverse drain can consume a pre-existing tag but never create one.
+    {
+        auto actor = state;
+        actor.hp = actor.maxHp = 10;
+        actor.sturdy.present = true;
+        Pokerogue3DS::PokemonRecoilPolicy recoilPolicy{};
+        recoilPolicy.resolved = true;
+        Pokerogue3DS::PokemonRecoilEvent recoil{};
+        if (Pokerogue3DS::applyPokemonRecoil(actor, 38, 100, true, recoilPolicy, recoil) !=
+                Pokerogue3DS::PokemonRecoilResult::Ok || actor.hp != 1 || actor.sturdy.present ||
+            recoil.damage != 9 || recoil.fainted) return 10000;
+        actor.hp = 10;
+        if (Pokerogue3DS::applyPokemonRecoil(actor, 38, 100, true, recoilPolicy, recoil) !=
+                Pokerogue3DS::PokemonRecoilResult::Ok || actor.hp || !recoil.fainted || actor.sturdy.present) return 10001;
+        actor.hp = 10;
+        actor.sturdy.present = true;
+        Pokerogue3DS::PokemonDrainPolicy drainPolicy{};
+        drainPolicy.resolved = drainPolicy.reverseDrain = true;
+        Pokerogue3DS::PokemonDrainEvent drain{};
+        if (Pokerogue3DS::applyPokemonDamageDrain(actor, 71, 100, drainPolicy, drain) !=
+                Pokerogue3DS::PokemonHealingResult::Ok || actor.hp != 1 || actor.sturdy.present ||
+            drain.reversedDamage != 9 || drain.healed) return 10002;
+    }
     // TargetHalfHpDamageAttr: floor, minimum one, no ordinary damage modifiers.
     for (const uint16_t id : {uint16_t(162), uint16_t(717), uint16_t(877)}) {
         const auto* profile = Pokerogue3DS::pokemonFixedDamageMoveProfile(id);

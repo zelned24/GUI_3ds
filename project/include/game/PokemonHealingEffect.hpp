@@ -1,5 +1,5 @@
 #pragma once
-#include "game/PokemonBattleState.hpp"
+#include "game/PokemonSurvivalEffect.hpp"
 #include <cmath>
 #include <cstring>
 
@@ -262,8 +262,9 @@ inline PokemonHealingResult applyPokemonDamageDrain(PokemonBattleState& user, ui
         // ReverseDrainAbAttr suppresses HitHealAttr even if indirect damage is blocked.
         event.blocked = policy.indirectDamageBlocked;
         if (!event.blocked) {
-            event.reversedDamage = amount >= user.hp ? user.hp : static_cast<uint16_t>(amount);
-            user.hp -= event.reversedDamage;
+            const uint32_t requested = amount >= user.hp ? user.hp : static_cast<uint16_t>(amount);
+            if (applyPokemonExistingSturdyDamage(user, requested, event.reversedDamage) != PokemonSurvivalResult::Ok)
+                return PokemonHealingResult::InvalidState;
         }
     } else if (policy.healBlocked) event.blocked = true;
     else {

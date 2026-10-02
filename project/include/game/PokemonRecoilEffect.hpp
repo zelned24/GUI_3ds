@@ -1,5 +1,5 @@
 #pragma once
-#include "game/PokemonBattleState.hpp"
+#include "game/PokemonSurvivalEffect.hpp"
 #include <cmath>
 #include <cstring>
 namespace Pokerogue3DS {
@@ -42,8 +42,9 @@ inline PokemonRecoilResult applyPokemonRecoil(PokemonBattleState& user, uint16_t
         event.blocked = true;
     else {
         const double amount = std::fmax(std::floor((profile->useMaxHp ? user.maxHp : totalDamageDealt) * profile->ratio), 1.0);
-        event.damage = amount >= user.hp ? user.hp : static_cast<uint16_t>(amount);
-        user.hp -= event.damage;
+        const uint32_t requested = amount >= user.hp ? user.hp : static_cast<uint16_t>(amount);
+        if (applyPokemonExistingSturdyDamage(user, requested, event.damage) != PokemonSurvivalResult::Ok)
+            return PokemonRecoilResult::InvalidState;
         event.fainted = !user.hp;
     }
     output = event;
