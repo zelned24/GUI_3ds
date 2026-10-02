@@ -1042,9 +1042,11 @@ double baselineEnemyMoveScore(const PokemonBattleState& user,
     double statBenefit = 0.0;
     if (singleDamageStatStageEffect(move.id) &&
         !calculateCanonicalDamageStatStageAiBenefit(user, target, move.id, statBenefit)) return -20.0;
+    const double userBenefit = critBenefit + statBenefit + secondaryBenefit +
+        canonicalDamageDrainAiBenefit(user, move) + canonicalRecoilAiBenefit(move);
     if (!calculatePlainAttackAiScore(effectiveness, selectedStat, otherStat,
-            move.power, move.accuracy, stab, score, critBenefit + statBenefit + secondaryBenefit)) return -20.0;
-    return score + canonicalDamageDrainAiBenefit(user, move) + canonicalRecoilAiBenefit(move);
+            move.power, move.accuracy, stab, score, userBenefit)) return -20.0;
+    return score;
 }
 
 }

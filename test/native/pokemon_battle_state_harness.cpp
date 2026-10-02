@@ -468,6 +468,29 @@ extern "C" int runPokemonBattleStateChecks() {
             true, plainAttackScore) || plainAttackScore != -20.0) return 190;
     if (!Pokerogue3DS::calculatePlainAttackAiScore(2.0, 20, 10, 40, 100,
             false, plainAttackScore) || plainAttackScore != 24.0) return 191;
+    {
+        // Pinned HitHealAttr/RecoilAttr benefits precede type and STAB multipliers.
+        const auto* absorb = PokerogueContent::findMoveById(71);
+        const auto* takeDown = PokerogueContent::findMoveById(36);
+        PokemonBattleState drainUser{};
+        drainUser.hp = 25; drainUser.maxHp = 100;
+        if (!absorb || !takeDown || absorb->power != 20 || absorb->accuracy != 100 ||
+            takeDown->power != 90 || takeDown->accuracy != 85) return 9710;
+        const double drainBenefit = Pokerogue3DS::canonicalDamageDrainAiBenefit(drainUser, *absorb);
+        const double recoilBenefit = Pokerogue3DS::canonicalRecoilAiBenefit(*takeDown);
+        if (drainBenefit != 2 || recoilBenefit != -5) return 9711;
+        double score = 0;
+        if (!Pokerogue3DS::calculatePlainAttackAiScore(1, 100, 100, absorb->power,
+                absorb->accuracy, true, score, drainBenefit) || score != 9) return 9712;
+        if (!Pokerogue3DS::calculatePlainAttackAiScore(0.5, 100, 100, absorb->power,
+                absorb->accuracy, false, score, drainBenefit) || score != 2.75) return 9713;
+        if (!Pokerogue3DS::calculatePlainAttackAiScore(0, 100, 100, absorb->power,
+                absorb->accuracy, true, score, drainBenefit) || score != -20) return 9714;
+        if (!Pokerogue3DS::calculatePlainAttackAiScore(1, 100, 100, takeDown->power,
+                takeDown->accuracy, true, score, recoilBenefit) || score != 15) return 9715;
+        if (!Pokerogue3DS::calculatePlainAttackAiScore(0, 100, 100, takeDown->power,
+                takeDown->accuracy, false, score, recoilBenefit) || score != -20) return 9716;
+    }
     const uint8_t koInputSlots[3] = {3, 0, 2};
     const uint32_t koDamage[3] = {9, 10, 12};
     uint8_t koSlots[4]{};

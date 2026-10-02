@@ -1888,3 +1888,9 @@
 1. Revisión estática del pinned src/data/moves/move.ts: FLAME_CHARGE declara StatStageChangeAttr SPD +1 selfTarget, chance 100; MoveEffectAttr evalúa si vive el destinatario del efecto. La fase nativa ya selecciona al usuario como destinatario, no al rival debilitado.
 2. Regresiones 9700–9702 escritas con movimiento real 488: rival HP 0, aumento SPD del usuario, clamp en +6, HP sin daño repetido, PP ya consumidos sin gasto adicional y RNG sin draw de chance garantizada. No se cambió la regla de producción porque esta ruta ya estaba representada.
 3. Estas regresiones aún no se ejecutaron. Tests, compilación, Azahar y Old 3DS permanecen pendientes; no certifican todavía Classic completo.
+
+## Orden de beneficios IA de drenaje y retroceso
+
+1. Pinned src/field/pokemon.ts EnemyPokemon.getNextMove obtiene beneficios de usuario/objetivo antes de multiplicar efectividad/STAB. HitHealAttr y RecoilAttr en src/data/moves/move.ts participan en esos beneficios.
+2. baselineEnemyMoveScore ahora incluye ambos beneficios en calculatePlainAttackAiScore, junto a críticos/estadísticas/status. Antes los sumaba al resultado ya multiplicado, alterando prioridad relativa y puntuación de ataques inmunes.
+3. Regresiones 9710–9716 escritas con Absorb 71 y Take Down 36: beneficio canónico, STAB, resistencia e inmunidad. No ejecutadas; tests/compilación/Azahar/Old 3DS y cobertura completa Classic siguen pendientes.
