@@ -1724,14 +1724,15 @@ extern "C" int runPokemonBattleStateChecks() {
     for (const uint16_t id : {uint16_t(162), uint16_t(717), uint16_t(877)}) {
         const auto* profile = Pokerogue3DS::pokemonFixedDamageMoveProfile(id);
         if (!profile || !profile->targetHalfHp || profile->userLevel || profile->amount) return 9880;
-        for (const uint16_t hp : {uint16_t(1), uint16_t(2), uint16_t(3)}) {
+        for (const uint16_t hp : {uint16_t(1), uint16_t(2), uint16_t(3), uint16_t(8), uint16_t(99)}) {
             auto user = state, target = state;
             user.abilityId = target.abilityId = 65;
             user.status = target.status = {};
+            target.maxHp = 100;
             target.hp = hp;
             uint32_t predicted = 0;
             if (Pokerogue3DS::calculatePokemonDamageCore(user, target, id, false, predicted) !=
-                    Pokerogue3DS::PokemonDamageCoreResult::Ok || predicted != 1) return 9881;
+                    Pokerogue3DS::PokemonDamageCoreResult::Ok || predicted != (hp > 1 ? hp / 2 : 1)) return 9881;
             Pokerogue3DS::PokemonHitPolicy hit{};
             hit.resolved = true;
             hit.bypassAccuracy = true;
@@ -1744,13 +1745,26 @@ extern "C" int runPokemonBattleStateChecks() {
                 rng.randSeedUint32() != expectedRng.randSeedUint32()) return 9882;
         }
     }
+    {
+        auto user = state, invalid = state;
+        user.abilityId = invalid.abilityId = 65;
+        invalid.hp = invalid.maxHp + 1;
+        uint32_t untouched = 123;
+        if (Pokerogue3DS::calculatePokemonDamageCore(user, invalid, 162, false, untouched) !=
+                Pokerogue3DS::PokemonDamageCoreResult::InvalidStats || untouched != 123) return 9890;
+        auto rng = damageRng, expected = rng;
+        PokemonMoveDamageRoll event{};
+        if (Pokerogue3DS::resolveStandardPokemonMoveDamage(user, invalid, 162, false, rng, event) !=
+                PokemonMoveDamageResult::InvalidStats ||
+            rng.randSeedUint32() != expected.randSeedUint32()) return 9891;
+    }
     // Complete command: PP once, HP clamp, accuracy-only RNG, and immunity before RNG.
-    for (const uint16_t id : {uint16_t(49), uint16_t(82), uint16_t(69), uint16_t(101)}) {
+    for (const uint16_t id : {uint16_t(49), uint16_t(82), uint16_t(69), uint16_t(101), uint16_t(162), uint16_t(717), uint16_t(877)}) {
         const auto* fixedMove = PokerogueContent::findMoveById(id);
         if (!fixedMove || !Pokerogue3DS::pokemonFixedDamageMoveProfile(id)) return 9860;
         for (const bool immune : {false, true}) {
             // Ghost rejects Normal/Fighting; Night Shade is immune against Normal.
-            if (immune && id == 82) continue;
+            if (immune && (id == 82 || id == 717 || id == 877)) continue;
             auto user = state, target = state;
             user.status = target.status = {};
             user.abilityId = target.abilityId = 65;
@@ -1762,7 +1776,8 @@ extern "C" int runPokemonBattleStateChecks() {
             user.turnDamageDealt = 0;
             auto commandRng = damageRng, expectedRng = commandRng;
             const bool expectedHit = !immune && expectedRng.randSeedInt(100) < fixedMove->accuracy;
-            const uint32_t amount = id == 49 ? 20 : id == 82 ? 40 : user.level;
+            const uint32_t amount = id == 49 ? 20 : id == 82 ? 40 :
+                id == 69 || id == 101 ? user.level : (target.hp > 1 ? target.hp / 2 : 1);
             const uint16_t applied = expectedHit ? (amount < target.hp ? amount : target.hp) : 0;
             const uint16_t priorHp = target.hp;
             PokemonMoveActionResult event{};

@@ -2010,3 +2010,9 @@
 1. TargetHalfHpDamageAttr pinned usa toDmgValue(target.hp / 2), con floor y mínimo uno sin Multi Lens. Generador conserva provenance para Super Fang 162, Nature’s Madness 717 y Ruination 877.
 2. Perfil se conecta a predicción, resolver, selección y ejecución existentes de daño fijo. El gate FirstRunRuntime mantiene modifiers/dobles no resueltos fuera de esta frontera. No se implementa Multi Lens ni Parental Bond mediante esta fórmula simple.
 3. Regresiones 9880–9882 escritas para HP 1/2/3 y bypass de precisión sin draws. Tests, compilación y validación de dispositivo siguen pendientes; MOV-02 permanece parcial.
+
+## Validación y replay de daño dependiente de HP
+
+1. Predicción y resolver rechazan maxHp cero o hp > maxHp para TargetHalfHpDamageAttr antes de consumir RNG o publicar daño.
+2. Regresiones de mitad de HP cubren 1/2/3/8/99, estado inválido y comando con PP/HP/RNG. Restore/replay incluye también 162/717/877; inmunidad Ghost de Super Fang se comprueba sin draws.
+3. Revisión estática y diff-check realizados; casos escritos sin ejecutar. Tests/compilación/Azahar/hardware pendientes.
