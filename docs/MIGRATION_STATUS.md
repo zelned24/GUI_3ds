@@ -2124,3 +2124,15 @@
 1. El builder reconocido habilita Metal Claw 232, Crush Claw 306, Razor Shell 534 y Cross Poison 440 mediante dispatchers existentes; se inspeccionaron los atributos reales del snapshot pinned.
 2. Replay de stages incorpora los tres primeros y compara ATK propio/DEF rival además de HP/PP. Regresiones de metadata mantienen HighCrit+POISON en Cross Poison y Sharpness no resuelta.
 3. Casos escritos sin ejecutar. Sharpness sigue pendiente; la admisión del builder no significa que cualquier habilidad consumidora o composición esté implementada.
+
+## Multiplicador canónico Sharpness
+
+1. Generador interpreta únicamente la condición exacta MovePowerBoostAbAttr con SLICING_MOVE y multiplicador literal; preserva sourcePath/symbol/hash.
+2. calculatePokemonBaseDamage aplica multiplicador de potencia antes de fórmula y +2 cuando atacante activo y movimiento slicing. No multiplica daño final ni afecta a daño fijo.
+3. Sharpness continúa bloqueada por proveedores generales hasta auditar declaración completa/IA/contextos. Este avance es cálculo parcial, tests/compilación pendientes.
+
+## Sharpness en proveedores de acciones
+
+1. Proveedor general admite únicamente el predicado exacto SLICING_MOVE y multiplicador literal validado; Tough Claws y otros predicados siguen rechazados. El generador comparte la expresión con el perfil de potencia.
+2. FirstRunRuntime restringe actores Sharpness a estadísticas base, sin dobles ni held modifiers. Potencia se aplica antes del término +2; no cambia daño fijo.
+3. Regresiones de cálculo, movimiento no slicing, provenance y rechazo de Tough Claws escritas. Fuente pinned inspeccionada y tablas regeneradas; tests, build y ejecución 3DS pendientes.

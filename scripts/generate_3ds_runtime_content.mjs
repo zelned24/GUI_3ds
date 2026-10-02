@@ -24,14 +24,21 @@ const collections = content.collections;
 // types or ability suppression during a status action. Chance and accuracy-stage
 // bypass is represented explicitly; Synchronize
 // is dispatched separately; unrecognized builders/attributes remain pending.
+// Only this exact predicate is interpreted; other power callbacks remain unresolved.
+const slicingPowerDeclaration = /\.attr\s*\(\s*MovePowerBoostAbAttr\s*,\s*\(\s*_user\s*,\s*_target\s*,\s*move\s*\)\s*=>\s*move\.hasFlag\(\s*MoveFlags\.SLICING_MOVE\s*\)\s*,\s*(\d+(?:\.\d+)?)\s*\)/g;
 const resolvedStatusActionAbilityIds = new Set();
 const statusActionAbilityRows = collections.abilities.map(ability => {
   const raw = ability.extensions?.upstreamRawRecord?.value ?? '';
   const attrs = [...raw.matchAll(/\.attr\s*\(\s*([A-Za-z_$][\w$]*)/g)].map(m => m[1]);
   const attrCalls = [...raw.matchAll(/\.attr\s*\(/g)].length;
-  const calls = [...raw.matchAll(/\.([A-Za-z_$][\w$]*)\s*\(/g)].map(m => m[1]);
+  const slicingDeclarations = [...raw.matchAll(slicingPowerDeclaration)];
+  const slicingMentions = [...raw.matchAll(/\bMovePowerBoostAbAttr\b/g)].length;
+  const slicingResolved = slicingMentions === slicingDeclarations.length && slicingDeclarations.length <= 1 &&
+    slicingDeclarations.every(m => Number.isFinite(Number(m[1])) && Number(m[1]) > 0 && Number(m[1]) <= 256);
+  const builderRaw = raw.replace(slicingPowerDeclaration, '.attr()');
+  const calls = [...builderRaw.matchAll(/\.([A-Za-z_$][\w$]*)\s*\(/g)].map(m => m[1]);
   const builders = new Set(['attr', 'build', 'uncopiable', 'unreplaceable', 'unsuppressable', 'ignorable']);
-  const known = new Set(['IncreasePpUsedAbAttr', 'LowHpMoveTypePowerBoostAbAttr',
+  const known = new Set(['MovePowerBoostAbAttr', 'IncreasePpUsedAbAttr', 'LowHpMoveTypePowerBoostAbAttr',
     'SyncEncounterNatureAbAttr', 'SynchronizeStatusAbAttr', 'RunSuccessAbAttr',
     'ProtectStatAbAttr', 'IgnoreOpponentStatStagesAbAttr', 'StatStageChangeMultiplierAbAttr',
     'ReflectStatStageChangeAbAttr', 'StatStageChangeCopyAbAttr', 'PostStatStageChangeStatStageChangeAbAttr',
@@ -72,7 +79,7 @@ const statusActionAbilityRows = collections.abilities.map(ability => {
   const resolved = !!raw && /new AbBuilder\(/.test(raw) && attrCalls === attrs.length &&
     calls.every(c => builders.has(c)) && attrs.every(a => known.has(a)) && ignoreMentions === ignoreDeclarations &&
     chanceMentions === chanceDeclarations.length && chanceDeclarations.length <= 1 && Number.isFinite(chanceMultiplier) &&
-    ignoreEffectMentions === ignoreEffectDeclarations && removalMentions === removalDeclarations && stageMultipliersResolved && simpleStageCallbacksResolved && postStageResolved && survivalResolved;
+    ignoreEffectMentions === ignoreEffectDeclarations && removalMentions === removalDeclarations && stageMultipliersResolved && simpleStageCallbacksResolved && postStageResolved && survivalResolved && slicingResolved;
   if (resolved) resolvedStatusActionAbilityIds.add(ability.abilityId);
   return `    {${ability.abilityId}, ${resolved}, false, ${ignoreDeclarations > 0}, ${chanceMultiplier}, ${ignoreEffectDeclarations > 0}}`;
 }).join(',\n');
@@ -1339,7 +1346,21 @@ const slicingRows = collections.moves.flatMap(move => {
     throw new Error(`Missing slicing provenance: ${move.id}`);
   return `    {${move.moveId}, "${field(source.sourcePath)}", "${field(source.sourceSymbol)}", "${field(source.sourceHash)}"}`;
 });
-const slicingHeader = survivalHeader.replace('struct MoveAttribute {',
+const slicingPowerRows = collections.abilities.flatMap(ability => {
+  const raw = ability.extensions?.upstreamRawRecord?.value ?? '';
+  const matches = [...raw.matchAll(slicingPowerDeclaration)];
+  if (matches.length !== 1) return [];
+  const multiplier = Number(matches[0][1]);
+  if (!Number.isFinite(multiplier) || multiplier <= 0 || multiplier > 256)
+    throw new Error(`Invalid slicing multiplier: ${ability.id}`);
+  const source = ability.source ?? ability.metadata;
+  if (!source?.sourcePath || !source?.sourceSymbol || !source?.sourceHash)
+    throw new Error(`Missing slicing ability provenance: ${ability.id}`);
+  return `    {${ability.abilityId}, ${multiplier}, "${field(source.sourcePath)}", "${field(source.sourceSymbol)}", "${field(source.sourceHash)}"}`;
+});
+const slicingPowerHeader = survivalHeader.replace('struct MoveAttribute {',
+  `struct SlicingPowerAbilityProfile { uint16_t abilityId; double multiplier; const char* sourcePath; const char* sourceSymbol; const char* sourceHash; };\ninline constexpr SlicingPowerAbilityProfile kSlicingPowerAbilityProfiles[] = {\n${slicingPowerRows.join(',\n')}\n};\nstruct MoveAttribute {`);
+const slicingHeader = slicingPowerHeader.replace('struct MoveAttribute {',
   `struct MoveSlicingProfile { uint16_t moveId; const char* sourcePath; const char* sourceSymbol; const char* sourceHash; };\ninline constexpr MoveSlicingProfile kMoveSlicingProfiles[] = {\n${slicingRows.join(',\n')}\n};\nstruct MoveAttribute {`);
 const ignoreStatStageHeader = slicingHeader.replace('struct MoveAttribute {',
   `struct MoveIgnoreStatStageProfile { uint16_t moveId; const char* sourcePath; const char* sourceSymbol; const char* sourceHash; };\ninline constexpr MoveIgnoreStatStageProfile kMoveIgnoreStatStageProfiles[] = {\n${ignoreStatStageRows.join(',\n')}\n};\nstruct MoveAttribute {`);

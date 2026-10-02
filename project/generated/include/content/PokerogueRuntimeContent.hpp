@@ -301,7 +301,7 @@ inline constexpr StatusActionAbilityProfile kStatusActionAbilityProfiles[] = {
     {289, false, false, false, 1, false},
     {290, true, false, false, 1, false},
     {291, false, false, false, 1, false},
-    {292, false, false, false, 1, false},
+    {292, true, false, false, 1, false},
     {293, false, false, false, 1, false},
     {294, false, false, false, 1, false},
     {295, false, false, false, 1, false},
@@ -6571,6 +6571,10 @@ inline constexpr MoveImmunityAbilityProfile kMoveImmunityAbilityProfiles[] = {
 struct FullHpEndureAbilityProfile { uint16_t abilityId; bool resolved; const char* sourcePath; const char* sourceSymbol; const char* sourceHash; };
 inline constexpr FullHpEndureAbilityProfile kFullHpEndureAbilityProfiles[] = {
     {5, true, "src/data/abilities/init-abilities.ts", "AbilityId.STURDY", "040ccf2ca2e00a2111ef0acf54878ec67c45d98c831e35dda3e0bac52f1ee8e6"}
+};
+struct SlicingPowerAbilityProfile { uint16_t abilityId; double multiplier; const char* sourcePath; const char* sourceSymbol; const char* sourceHash; };
+inline constexpr SlicingPowerAbilityProfile kSlicingPowerAbilityProfiles[] = {
+    {292, 1.5, "src/data/abilities/init-abilities.ts", "AbilityId.SHARPNESS", "040ccf2ca2e00a2111ef0acf54878ec67c45d98c831e35dda3e0bac52f1ee8e6"}
 };
 struct MoveSlicingProfile { uint16_t moveId; const char* sourcePath; const char* sourceSymbol; const char* sourceHash; };
 inline constexpr MoveSlicingProfile kMoveSlicingProfiles[] = {

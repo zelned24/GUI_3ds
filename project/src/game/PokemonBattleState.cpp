@@ -1248,6 +1248,13 @@ PokemonBaseDamageResult calculatePokemonBaseDamage(
     // weather, random factor, abilities, items and move attributes).
     const double levelMultiplier = (2.0 * attacker.level) / 5.0 + 2.0;
     double power = move->power;
+    if (attacker.hp) {
+        bool slicing = false;
+        for (const auto& row : PokerogueContent::kMoveSlicingProfiles)
+            if (row.moveId == moveId) slicing = true;
+        if (slicing) for (const auto& row : PokerogueContent::kSlicingPowerAbilityProfiles)
+            if (row.abilityId == attacker.abilityId) power *= row.multiplier;
+    }
     // LowHpMoveTypePowerBoostAbAttr inherits the 1.5 power multiplier and
     // checks getHpRatio() <= 0.33 (not one-third) before the base-damage +2.
     if (attacker.hp && attacker.maxHp &&

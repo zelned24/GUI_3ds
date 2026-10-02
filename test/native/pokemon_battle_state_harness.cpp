@@ -1998,7 +1998,35 @@ extern "C" int runPokemonBattleStateChecks() {
         bool sharpnessResolved = false;
         for (const auto& row : PokerogueContent::kStatusActionAbilityProfiles)
             if (row.abilityId == 292) sharpnessResolved = row.resolved;
-        if (sharpnessResolved) return 10053; // Sharpness callback has not been ported yet.
+        if (!sharpnessResolved) return 10053;
+        bool unknownPowerResolved = false;
+        for (const auto& row : PokerogueContent::kStatusActionAbilityProfiles)
+            if (row.abilityId == 181) unknownPowerResolved = row.resolved;
+        if (unknownPowerResolved) return 10054; // Tough Claws uses another predicate.
+        bool provenance = false;
+        for (const auto& row : PokerogueContent::kSlicingPowerAbilityProfiles)
+            if (row.abilityId == 292) provenance = row.multiplier == 1.5 &&
+                row.sourcePath[0] && row.sourceSymbol[0] && std::strlen(row.sourceHash) == 64;
+        if (!provenance) return 10055;
+    }
+    // Sharpness modifies slicing power before the base formula's additive two.
+    {
+        auto user = state, target = state;
+        user.abilityId = 0;
+        target.abilityId = 0;
+        user.status = target.status = {};
+        double neutral = 0, boosted = 0, plain = 0, sharpPlain = 0;
+        if (Pokerogue3DS::calculatePokemonBaseDamage(user, target, 533, neutral) !=
+                Pokerogue3DS::PokemonBaseDamageResult::Ok) return 10060;
+        user.abilityId = 292;
+        if (Pokerogue3DS::calculatePokemonBaseDamage(user, target, 533, boosted) !=
+                Pokerogue3DS::PokemonBaseDamageResult::Ok ||
+            std::fabs(boosted - ((neutral - 2) * 1.5 + 2)) > 0.000001) return 10061;
+        if (Pokerogue3DS::calculatePokemonBaseDamage(user, target, 33, sharpPlain) !=
+                Pokerogue3DS::PokemonBaseDamageResult::Ok) return 10062;
+        user.abilityId = 0;
+        if (Pokerogue3DS::calculatePokemonBaseDamage(user, target, 33, plain) !=
+                Pokerogue3DS::PokemonBaseDamageResult::Ok || plain != sharpPlain) return 10063;
     }
     // TargetHalfHpDamageAttr: floor, minimum one, no ordinary damage modifiers.
     for (const uint16_t id : {uint16_t(162), uint16_t(717), uint16_t(877)}) {

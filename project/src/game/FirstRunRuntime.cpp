@@ -1276,6 +1276,12 @@ bool FirstRunRuntime::supportsActiveBattleMove(const PokemonBattleState& user,
         if (m_doubleBattle || m_heldModifierCount || !user.statsAreBaseFormulaOnly ||
             !opponent.statsAreBaseFormulaOnly) return false;
     }
+    // Sharpness power dispatch currently excludes unresolved modifier/double contexts.
+    for (const auto& profile : PokerogueContent::kSlicingPowerAbilityProfiles) {
+        if (profile.abilityId != user.abilityId && profile.abilityId != opponent.abilityId) continue;
+        if (m_doubleBattle || m_heldModifierCount || !user.statsAreBaseFormulaOnly ||
+            !opponent.statsAreBaseFormulaOnly) return false;
+    }
     if (pokemonSurviveDamageMoveResolved(moveId) || pokemonIgnoreOpponentStatStagesMoveResolved(moveId)) {
         return !m_doubleBattle && !m_heldModifierCount && user.statsAreBaseFormulaOnly &&
             opponent.statsAreBaseFormulaOnly && statusActionAbilitySupported(user.abilityId) &&

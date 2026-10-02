@@ -2,7 +2,7 @@
 
 ## Cómo medir el avance
 
-- Referencia inspeccionada: commit `59db1db`, rama `codex/pokerogue-3ds-migration`.
+- Referencia inspeccionada: commit `35ce043` más cambios locales parciales de Sharpness, rama `codex/pokerogue-3ds-migration`.
 - Objetivo: PokéRogue jugable y fiel al snapshot upstream en Old 3DS, con ambas pantallas, progreso exportable y actualizaciones desde consola.
 - Cada ID es estable para reportar avances: `MOV-07`, `GUI-03`, etc. No equivale a un movimiento/habilidad individual.
 - Una casilla sin marcar puede tener código parcial; el resumen de cada área indica lo existente. Marcarla solo con integración completa y evidencia ejecutada pertinente.
@@ -35,7 +35,34 @@ Estos son criterios de cierre, no cantidades de ataques o habilidades pendientes
 | Validación y entrega final | 12 |
 | **Total** | **129** |
 
-Prioridad inmediata: admisión y puntuación de daño fijo en FirstRunRuntime (**MOV-02 / IA-02**), seguida de cobertura de efectos y habilidades que bloquean combates completos. Registrar cada avance con su ID; los tests escritos permanecen sin ejecutar.
+Prioridad inmediata: completar contextos/replay de Sharpness (**HAB-03**), ampliar efectos y contextos de combate, y eliminar las restricciones de progresión/restauración que impiden Classic completo (**FLU-05 / SAV-03**). Daño fijo ya tiene rutas de selección, comando y predicción, pendientes de validación. Los tests escritos permanecen sin ejecutar.
+
+## Estado consolidado para seguimiento
+
+Esta tabla describe código inspeccionado, no resultados de ejecución. Las notas cronológicas posteriores registran pasos anteriores; este resumen indica el estado actual.
+
+| Área / IDs | Ya existe | Qué falta implementar o integrar |
+|---|---|---|
+| DAT-01–06 | Catálogo pinned, generador C++, provenance e inventario por declaraciones | Matriz real de ejecución por ID/contexto, resto de datos raw y referencias completas |
+| MOV-02 / IA-02 | Daño constante, nivel, mitad de HP y Psywave conectados a selección, predicción y comando | Potencia variable restante, composición, dobles, modifiers y verificación |
+| MOV-04 / MOV-12 | Bypass de etapas y slicing con varios secundarios | Resto de flags, callbacks y combinaciones; slicing no implica Sharpness completa |
+| HAB-03 | Sharpness tiene perfil, cálculo de potencia y proveedor exacto en cambios locales | Contextos adicionales, pasivas/supresión, replay integrado y validación |
+| HAB-04 / HP-03 / CAM-03 | Sturdy: tag, daño ordinario/fijo e indirecto, lapse e interludio | Jefes, otras supervivencias, pasivas/supresión y guardado de run con tag activo |
+| HAB-01–10 / MOV-01–13 | Familias parciales y gates explícitos | Cobertura de todas las habilidades/movimientos del snapshot; no basta importar metadata |
+| HP-01–08 | HP/PP/status, daño/curación, EXP y casos de límites | Composición completa, segmentos, faint simultáneo, persistencia y feedback visual |
+| FLU-05 / SAV-03 | Progresión y restore limitados | Rutas con equipo explícito/restauración contienen gates de wave > 9; Classic 1–200 no está cerrado |
+| GUI-01–12 / AST-01–08 | Presentación nativa, índices y assets convertidos parciales | Todas las pantallas, HUD HP/PP/EXP, animación/audio, controles y comparación visual |
+| SAV-01–08 | Codecs, journals y bundles | Todos los estados de run/perfil, export/import conectado a UI y compatibilidad de contenido |
+| OTA-01–08 | Infraestructura de packs | Catálogo de gameplay cargable, firma, descarga e instalación desde consola |
+| 3DS-01–06 / VAL-01–12 | Pruebas escritas y pipeline | Ejecución final, build, Azahar y medición en Old 3DS XL física |
+
+### Actualización de cada entrega
+
+1. Indicar los IDs afectados y el commit o cambios locales.
+2. Registrar qué ruta está conectada y sus contextos excluidos.
+3. Distinguir código escrito de evidencia ejecutada.
+4. Marcar una casilla solo cuando se cumpla su criterio completo.
+5. Mantener separado el avance de gameplay del de presentación/assets de la otra IA.
 
 ## Orden de avance
 
@@ -243,7 +270,7 @@ Hay catálogos de atlases/t3x y presenter; el inventario histórico debe cotejar
 
 ### Estado actual
 
-NativeRunSave/runtime v18; codecs de actor v10 y compatibilidad anterior. Hay journals y bundles; cobertura de estados completa pendiente.
+NativeRunSave/runtime v18; codec de actor v11 cuando hay tag Sturdy, v10 para confusión y compatibilidad anterior. Hay journals y bundles; cobertura de estados completa pendiente.
 
 ### Pendientes y criterios de cierre
 
@@ -374,7 +401,7 @@ Los ejemplos describen infraestructura y límites; no son tareas cerradas. Actua
 ### Avance HAB-04 / HP-03: Sturdy
 
 - Componentes de preparación/consumo/lapse y proveedor canónico con provenance implementados. Simulación no crea tag; preventEndure no lo consume.
-- Falta conectar actor, codec, fases y comando; FirstRunRuntime sigue rechazando Sturdy. Regresiones escritas sin ejecutar.
+- Actor, codec individual, comando, rutas indirectas y lapse están conectados en contextos limitados. Guardar una run con tag activo sigue rechazado; jefes y contextos adicionales siguen pendientes. Regresiones escritas sin ejecutar.
 
 ### Avance MOV-02 / IA-02: False Swipe y Hold Back
 
