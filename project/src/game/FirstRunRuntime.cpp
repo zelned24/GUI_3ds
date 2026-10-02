@@ -1146,7 +1146,12 @@ bool FirstRunRuntime::resolveActiveStatStageCommandPolicy(const PokemonBattleSta
     if (!effect) return false;
     const bool self = effect->selfTarget;
     PokemonStatStageCommandPolicy policy{};
-    if (damaging) {
+    // Negative chance is the pinned guaranteed-effect sentinel; multiplier
+    // and IgnoreMoveEffects callbacks leave it unchanged. Nonnegative chances
+    // always need the resolved callback path, including status-category moves.
+    if (move->upstreamChance < -1 || move->upstreamChance > 100) return false;
+    policy.move.stagePolicy.chance = move->upstreamChance;
+    if (damaging || move->upstreamChance >= 0) {
         if (!statusActionAbilitySupported(user.abilityId) || !statusActionAbilitySupported(opponent.abilityId) ||
             !resolvePokemonMoveEffectChance(moveId, user.abilityId, opponent.abilityId, self,
                 policy.move.stagePolicy.chance)) return false;

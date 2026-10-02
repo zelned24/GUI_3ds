@@ -1825,3 +1825,8 @@
 1. Añadidas regresiones de comando completo con Bubble Beam (baja SPD enemigo) y Flame Charge (sube SPD propio), usando encuentros reales y cambios de moveset exclusivamente en snapshots de test. Comparan replay HP/PP/etapas de ambos actores.
 2. Caso de fallo tardío añade reacción Defiant con política pendiente tras chance y cambio tentativo: exige rollback de actor, RNG y output. El caso anterior solo cubría políticas rechazadas antes de cualquier draw; se conserva.
 3. Pruebas escritas, sin ejecución por instrucción del usuario; no demuestra todavía paridad ni jugabilidad en Old 3DS. Tests/compilación y Classic completo siguen pendientes.
+
+## Chance canónica de comandos de estadísticas
+
+1. Proveedor de estadísticas inicializaba chance a -1 para cualquier movimiento de categoría Status. Ahora conserva upstreamChance y resuelve callbacks para todo valor no negativo, incluso cero. Sentinel negativo garantizado sigue sin draw y sin alteración por multiplicadores/bloqueadores de chance positiva.
+2. Rangos fuera del contrato nativo fallan explícitamente. No cambia IDs ni datos importados y no introduce probabilidad local. Regresiones existentes de chance cero/garantizada y dispatcher siguen escritas sin ejecutar; tests/compilación pendientes.
