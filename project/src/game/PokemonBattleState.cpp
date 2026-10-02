@@ -1310,6 +1310,11 @@ PokemonTypeEffectivenessResult calculatePokemonTypeEffectiveness(
     uint16_t moveId, const PokemonBattleState& defender, double& outputMultiplier) {
     const auto* move = PokerogueContent::findMoveById(moveId);
     if (!move) return PokemonTypeEffectivenessResult::MissingMove;
+    // Pinned Pokemon.getAttackTypeEffectiveness: TypelessAttr precedes the type chart.
+    if (PokerogueContent::kStruggleDefinitionResolved && moveId == PokerogueContent::kStruggleMoveId) {
+        outputMultiplier = 1.0;
+        return PokemonTypeEffectivenessResult::Ok;
+    }
     return calculatePokemonAttackTypeEffectiveness(move->type, defender, outputMultiplier);
 }
 
@@ -1703,7 +1708,7 @@ PokemonDamageCoreResult calculatePokemonDamageCore(
     }
 
     double stabMultiplier = 1.0;
-    if (!moveIsTypeless && !sameText(move->type, "STELLAR")) {
+    if (!moveIsTypeless && !(PokerogueContent::kStruggleDefinitionResolved && moveId == PokerogueContent::kStruggleMoveId) && !sameText(move->type, "STELLAR")) {
         const char* attackerType1 = attackerForm ? attackerForm->type1 : attackerSpecies->type1;
         const char* attackerType2 = attackerForm ? attackerForm->type2 : attackerSpecies->type2;
         if (sameText(move->type, attackerType1) ||
@@ -1962,7 +1967,7 @@ PokemonMoveDamageResult resolveStandardPokemonMoveDamage(
     next.randomDamagePercent = static_cast<uint8_t>(battleRng.randSeedIntRange(85, 100));
 
     double stabMultiplier = 1.0;
-    if (!moveIsTypeless && !sameText(move->type, "STELLAR")) {
+    if (!moveIsTypeless && !(PokerogueContent::kStruggleDefinitionResolved && moveId == PokerogueContent::kStruggleMoveId) && !sameText(move->type, "STELLAR")) {
         const char* attackerType1 = attackerForm ? attackerForm->type1 : attackerSpecies->type1;
         const char* attackerType2 = attackerForm ? attackerForm->type2 : attackerSpecies->type2;
         if (sameText(move->type, attackerType1) ||

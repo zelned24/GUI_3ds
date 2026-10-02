@@ -2215,6 +2215,52 @@ extern "C" int runPokemonBattleStateChecks() {
                 &boss, nullptr, &global) || enemy.hp || event.enemy.damageApplied != 1 || !event.enemy.fainted)
             return 10203;
     }
+    // Pinned Struggle is typeless and virtual; max-HP recoil never replaces saved slots.
+    {
+        auto user = state, target = state;
+        user.abilityId = target.abilityId = 0;
+        user.status = target.status = {};
+        user.sturdy = target.sturdy = {};
+        user.hp = user.maxHp = 41;
+        user.moveCount = 2;
+        user.moves[0] = {33, 0, 35};
+        user.moves[1] = {45, 0, 40};
+        target.speciesDex = 92; // Real Ghost/Poison target: Normal chart immunity must be bypassed.
+        target.formId = nullptr;
+        target.hp = target.maxHp = 500;
+        Pokerogue3DS::PokerogueRngAdapter rng;
+        const uint16_t root[] = {'s', 't', 'r', 'u', 'g', 'g', 'l', 'e'};
+        rng.sow(root, 8);
+        Pokerogue3DS::PokemonStruggleActionResult event{};
+        if (!Pokerogue3DS::pokemonMovePpExhausted(user) ||
+            Pokerogue3DS::usePokemonStruggleCommand(user, target, rng, event) != PokemonMoveActionStatus::Ok ||
+            !event.attack.damageRoll.hit || event.attack.damageRoll.typeEffectiveness != 1.0 ||
+            !event.attack.damageApplied || event.attack.ppConsumed || event.recoil.damage != 10 || user.hp != 31 ||
+            user.moveCount != 2 || user.moves[0].moveId != 33 || user.moves[1].moveId != 45 ||
+            user.moves[0].pp || user.moves[1].pp || user.moves[0].maxPp != 35) return 10210;
+        user.moves[1].pp = 1;
+        event.recoil.damage = 99;
+        const auto before = rng.state();
+        const auto targetHp = target.hp;
+        if (Pokerogue3DS::usePokemonStruggleCommand(user, target, rng, event) != PokemonMoveActionStatus::InvalidMoveSlot ||
+            user.hp != 31 || target.hp != targetHp || event.recoil.damage != 99) return 10211;
+        const auto after = rng.state();
+        if (before.carry != after.carry || before.s0 != after.s0 || before.s1 != after.s1 || before.s2 != after.s2)
+            return 10212;
+        user.moves[1].pp = 0;
+        if (Pokerogue3DS::usePokemonStruggleCommand(user, user, rng, event) != PokemonMoveActionStatus::InvalidMoveSlot ||
+            event.recoil.damage != 99 || user.hp != 31) return 10213;
+        Pokerogue3DS::PokemonMoveWeatherContext unresolvedWeather{};
+        if (Pokerogue3DS::usePokemonStruggleCommand(user, target, rng, event, &unresolvedWeather) !=
+                PokemonMoveActionStatus::UnresolvedWeather || user.hp != 31 || target.hp != targetHp ||
+            event.recoil.damage != 99 || user.moves[0].moveId != 33 || user.moves[1].moveId != 45) return 10215;
+        const auto rejected = rng.state();
+        if (before.carry != rejected.carry || before.s0 != rejected.s0 || before.s1 != rejected.s1 || before.s2 != rejected.s2)
+            return 10216;
+        user.hp = 0;
+        if (Pokerogue3DS::usePokemonStruggleCommand(user, target, rng, event) != PokemonMoveActionStatus::InvalidMoveSlot ||
+            target.hp != targetHp) return 10214;
+    }
     // Sharpness modifies slicing power before the base formula's additive two.
     {
         auto user = state, target = state;

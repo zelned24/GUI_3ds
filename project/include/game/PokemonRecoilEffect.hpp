@@ -64,4 +64,51 @@ inline double canonicalRecoilAiBenefit(const PokerogueContent::Move& move) {
     return canonicalRecoilProfile(move.id) && PokerogueContent::moveHasAttribute(move, "RecoilAttr")
         ? std::floor(move.power / 5.0 / -4.0) : 0;
 }
+inline bool pokemonMovePpExhausted(const PokemonBattleState& actor) {
+    if (!actor.moveCount || actor.moveCount > 4) return false;
+    for (uint8_t i = 0; i < actor.moveCount; ++i) {
+        const auto& slot = actor.moves[i];
+        if (!PokerogueContent::findMoveById(slot.moveId) || slot.pp > slot.maxPp || slot.pp) return false;
+    }
+    return true;
+}
+struct PokemonStruggleActionResult {
+    PokemonMoveActionResult attack{};
+    PokemonRecoilEvent recoil{};
+};
+// Virtual command: no Struggle slot is inserted into the persistent moveset.
+// Caller resolves pre-move restrictions and random target selection separately.
+inline PokemonMoveActionStatus usePokemonStruggleCommand(PokemonBattleState& user,
+    PokemonBattleState& target, PokerogueRngAdapter& rng, PokemonStruggleActionResult& output,
+    const PokemonMoveWeatherContext* weather = nullptr, const PokemonCriticalPolicy* critical = nullptr,
+    const PokemonHitPolicy* hit = nullptr) {
+    if (&user == &target || !user.hp || !user.maxHp || user.hp > user.maxHp ||
+        !PokerogueContent::kStruggleDefinitionResolved || !pokemonMovePpExhausted(user))
+        return PokemonMoveActionStatus::InvalidMoveSlot;
+    const auto* move = PokerogueContent::findMoveById(PokerogueContent::kStruggleMoveId);
+    const auto* recoil = canonicalRecoilProfile(PokerogueContent::kStruggleMoveId);
+    if (!move || !recoil || !recoil->useMaxHp || !recoil->unblockable || recoil->ratio != 0.25)
+        return PokemonMoveActionStatus::DamageResolutionFailed;
+    auto nextUser = user, nextTarget = target;
+    auto nextRng = rng;
+    nextUser.moveCount = 1;
+    nextUser.moves[0] = {PokerogueContent::kStruggleMoveId, 1, 1};
+    const PokemonPpPolicy pp{true, 0};
+    PokemonStruggleActionResult event{};
+    const auto result = useStandardPokemonMove(nextUser, nextTarget, 0, true, nextRng, event.attack,
+        weather, critical, hit, &pp);
+    if (result != PokemonMoveActionStatus::Ok) return result;
+    const auto recoilPolicy = canonicalFreshActorRecoilPolicy(user.abilityId);
+    if (applyPokemonRecoil(nextUser, move->id, event.attack.damageApplied,
+        event.attack.damageRoll.hit && !event.attack.weatherCancelled, recoilPolicy, event.recoil) != PokemonRecoilResult::Ok)
+        return PokemonMoveActionStatus::DamageResolutionFailed;
+    nextUser.moveCount = user.moveCount;
+    for (uint8_t i = 0; i < 4; ++i) nextUser.moves[i] = user.moves[i];
+    user = nextUser;
+    target = nextTarget;
+    rng = nextRng;
+    output = event;
+    return PokemonMoveActionStatus::Ok;
+}
+
 }

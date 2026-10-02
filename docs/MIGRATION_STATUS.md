@@ -2209,3 +2209,9 @@
 1. Pinned WeatherEffectPhase.damageAndUpdate usa ignoreSegments=true; supervivencia existente sigue permitida. Evento climático conserva requestedDamage además de appliedDamage.
 2. Fase de clima restaura HP/tag previos antes de aplicar el daño solicitado mediante dispatcher boss; así un hit con appliedDamage cero no desaparece ni consume dos veces supervivencia. Eventos de los actores se publican solo tras éxito conjunto, igual que HP/boss/global RNG.
 3. Regresiones 10200–10203 cubren Hail + jefe HP uno + tag existente, siguiente KO, fallo tardío y outputs/RNG intactos. Casos escritos, no ejecutados; no implica todos los callbacks de clima/dobles ni final phase.
+
+## Struggle virtual y daño sin tipo
+
+1. La declaración exacta MoveId.STRUGGLE de src/data/moves/move.ts pinned genera ID/resolved sin sustituir datos upstream. Pokemon.getAttackTypeEffectiveness y getStabMultiplier en src/field/pokemon.ts omiten chart/STAB para TypelessAttr; cálculo C++ aplica esa semántica al perfil exacto.
+2. usePokemonStruggleCommand valida agotamiento de todos los PP, prepara ejecución virtual ignore-PP y aplica recoil de un cuarto del HP máximo. Publica actores/RNG/evento juntos y conserva los cuatro slots originales; rechaza usuario debilitado o alias usuario/objetivo.
+3. Regresiones 10210–10216 escritas para Ghost real, recoil/PP/moveset y rechazo sin mutación ante PP disponible, alias, faint o clima no resuelto. No ejecutadas. Selección automática en FirstRunRuntime, jefes/dobles y restricciones adicionales todavía pendientes; no es fallback jugable conectado.

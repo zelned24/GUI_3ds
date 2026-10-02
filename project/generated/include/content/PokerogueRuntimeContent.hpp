@@ -3,6 +3,8 @@
 #include <cstddef>
 #include <cstdint>
 namespace PokerogueContent {
+inline constexpr uint16_t kStruggleMoveId = 165;
+inline constexpr bool kStruggleDefinitionResolved = true;
 inline constexpr char kContentHash[] = "400fb84aa16a460c6d3eb6260240e8eae948acb9fab0f5467fd81521b6630e49";
 inline constexpr char kPokerogueRevision[] = "8555c08c823b856cbec4eb99ca84ea52a955836d";
 inline constexpr char kAssetsRevision[] = "056a1f408f26a3be4fef243f7462cb43608c7928";

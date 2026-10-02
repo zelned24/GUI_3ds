@@ -2,7 +2,7 @@
 
 ## Cómo medir el avance
 
-- Referencia inspeccionada: commit `35ce043` más cambios locales parciales de Sharpness, rama `codex/pokerogue-3ds-migration`.
+- Referencia de seguimiento: commit `d145425` más cambios locales parciales de Struggle, rama `codex/pokerogue-3ds-migration`.
 - Objetivo: PokéRogue jugable y fiel al snapshot upstream en Old 3DS, con ambas pantallas, progreso exportable y actualizaciones desde consola.
 - Cada ID es estable para reportar avances: `MOV-07`, `GUI-03`, etc. No equivale a un movimiento/habilidad individual.
 - Una casilla sin marcar puede tener código parcial; el resumen de cada área indica lo existente. Marcarla solo con integración completa y evidencia ejecutada pertinente.
@@ -35,7 +35,7 @@ Estos son criterios de cierre, no cantidades de ataques o habilidades pendientes
 | Validación y entrega final | 12 |
 | **Total** | **129** |
 
-Prioridad inmediata: completar contextos/replay de Sharpness (**HAB-03**), ampliar efectos y contextos de combate, y completar persistencia de bosses/dobles/trainers que impide Classic completo (**FLU-05 / SAV-03**). Daño fijo ya tiene rutas de selección, comando y predicción, pendientes de validación. Los tests escritos permanecen sin ejecutar.
+Prioridad inmediata: conectar el fallback de Struggle al agotarse PP (**HP-05 / MOV-07**), ampliar efectos y contextos de combate, y completar dobles y segunda fase de Eternatus con su persistencia (**TUR-05 / FLU-05 / SAV-03**). Daño fijo ya tiene rutas de selección, comando y predicción, pendientes de validación. Los tests escritos permanecen sin ejecutar.
 
 ## Estado consolidado para seguimiento
 
@@ -46,11 +46,12 @@ Esta tabla describe código inspeccionado, no resultados de ejecución. Las nota
 | DAT-01–06 | Catálogo pinned, generador C++, provenance e inventario por declaraciones | Matriz real de ejecución por ID/contexto, resto de datos raw y referencias completas |
 | MOV-02 / IA-02 | Daño constante, nivel, mitad de HP y Psywave conectados a selección, predicción y comando | Potencia variable restante, composición, dobles, modifiers y verificación |
 | MOV-04 / MOV-12 | Bypass de etapas y slicing con varios secundarios | Resto de flags, callbacks y combinaciones; slicing no implica Sharpness completa |
-| HAB-03 | Sharpness tiene perfil, cálculo de potencia y proveedor exacto en cambios locales | Contextos adicionales, pasivas/supresión, replay integrado y validación |
-| HAB-04 / HP-03 / CAM-03 | Sturdy: tag, daño ordinario/fijo e indirecto, lapse e interludio | Jefes, otras supervivencias, pasivas/supresión y demás estados de guardado |
+| HAB-03 | Sharpness tiene perfil, cálculo de potencia, proveedor y regresión de replay Gallade escritos | Contextos adicionales, pasivas/supresión y validación ejecutada |
+| HAB-04 / HP-03 / CAM-03 | Sturdy: tag, daño ordinario/fijo, escudos, confusión/clima y persistencia jugador/enemigo/trainer | Otras supervivencias, pasivas/supresión, dobles y validación ejecutada |
 | HAB-01–10 / MOV-01–13 | Familias parciales y gates explícitos | Cobertura de todas las habilidades/movimientos del snapshot; no basta importar metadata |
+| HP-05 / MOV-07 | Declaración pinned y comando virtual de Struggle escritos en cambios locales | Selección automática jugador/IA, restricciones, jefes/dobles, feedback y regresiones; todavía no es fallback jugable |
 | HP-01–08 | HP/PP/status, daño/curación, EXP y casos de límites | Composición completa, segmentos, faint simultáneo, persistencia y feedback visual |
-| FLU-05 / SAV-03 | Progresión y restore limitados | Wild singles posteriores usan actores explícitos/bioma; boss/dobles/trainers y recorrido completo pendientes |
+| FLU-05 / SAV-03 | Checkpoint v20: bioma, actores explícitos, jefes individuales y trainer con estados resueltos | Dobles, fase final, decisiones pendientes y recorrido completo; casos de trainer posterior sin verificar |
 | GUI-01–12 / AST-01–08 | Presentación nativa, índices y assets convertidos parciales | Todas las pantallas, HUD HP/PP/EXP, animación/audio, controles y comparación visual |
 | SAV-01–08 | Codecs, journals y bundles | Todos los estados de run/perfil, export/import conectado a UI y compatibilidad de contenido |
 | OTA-01–08 | Infraestructura de packs | Catálogo de gameplay cargable, firma, descarga e instalación desde consola |
@@ -472,3 +473,10 @@ Los ejemplos describen infraestructura y límites; no son tareas cerradas. Actua
 
 - Dispatcher boss recibe requested damage y tag previo; ignoreSegments calcula escudos desde HP final. Eventos de fase y estados se publican conjuntamente.
 - Regresiones de daño cero, KO siguiente y rollback escritas sin ejecutar. Resto de callbacks/campo doble y fase final siguen pendientes.
+
+### Avance HP-05 / MOV-07: Struggle en preparación
+
+- Cambios locales reconocen la declaración pinned y preparan un comando virtual sin sustituir el moveset persistente.
+- Falta conectar la selección automática en FirstRunRuntime, completar composición de políticas y ejecutar regresiones. No hay evidencia ejecutada ni se cierra el criterio.
+
+- Revisión adicional: chart/STAB omiten el perfil exacto typeless; regresiones 10210–10216 escritas sobre Ghost real, recoil, slots intactos y rechazo atómico. Sin ejecutar; selección automática aún pendiente.
