@@ -1998,3 +1998,9 @@
 1. Harness añade los cuatro movimientos con PP consumido una vez, HP/daño aplicado limitado por HP restante y una sola tirada de precisión sin crítico ni variación.
 2. Sonic Boom/Seismic Toss contra Ghost y Night Shade contra Normal comprueban inmunidad antes de RNG, con PP consumido. Dragon Rage no se marca falsamente inmune por resistencias.
 3. Regresiones 9860–9861 escritas, no ejecutadas. Siguen pendientes replay FirstRunRuntime, gates finales, Azahar y hardware.
+
+## Replay de daño fijo en FirstRunRuntime
+
+1. Harness de restore incorpora Sonic Boom, Dragon Rage, Seismic Toss y Night Shade en snapshots de test derivados de encuentros reales; no altera learnsets ni datos de producción.
+2. Dos restauraciones ejecutan advanceBattleTurn y comparan PP, HP, stage, turno y estado íntegro del battle RNG. Regresiones 9870–9872 escritas, pendientes de ejecución.
+3. La existencia de estos casos no demuestra Classic completo ni compatibilidad Old 3DS. Tests, compilación, Azahar y hardware siguen para la etapa final.

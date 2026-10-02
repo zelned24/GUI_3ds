@@ -416,6 +416,33 @@ static int checkStatusActionAdmission() {
                 emberAfter.enemyHp != repeatedEmberAfter.enemyHp ||
                 emberAfter.enemyStatus.effect != repeatedEmberAfter.enemyStatus.effect ||
                 emberAfter.enemyStatus.present != repeatedEmberAfter.enemyStatus.present) return 9430;
+            // Test-only save injection of real canonical fixed-damage moves.
+            // Both restores execute the production turn command and shared RNG.
+            for (const uint16_t id : {uint16_t(49), uint16_t(82), uint16_t(69), uint16_t(101)}) {
+                const auto* fixedMove = PokerogueContent::findMoveById(id);
+                if (!fixedMove || !pokemonFixedDamageMoveProfile(id)) return 9870;
+                auto fixedCheckpoint = checkpoint;
+                fixedCheckpoint.playerMoveIds[0] = fixedCheckpoint.playerParty[0].moveIds[0] = id;
+                fixedCheckpoint.playerPp[0] = fixedCheckpoint.playerParty[0].pp[0] =
+                    fixedCheckpoint.playerParty[0].maxPp[0] = static_cast<uint8_t>(fixedMove->pp);
+                FirstRunRuntime fixedAttack(seed), repeatedFixedAttack(seed);
+                NativeRunSave fixedAfter{}, repeatedFixedAfter{};
+                if (!fixedAttack.restoreNativeRunSave(fixedCheckpoint) ||
+                    !repeatedFixedAttack.restoreNativeRunSave(fixedCheckpoint) ||
+                    !fixedAttack.battleInputSupported() || !repeatedFixedAttack.battleInputSupported() ||
+                    !fixedAttack.advanceBattleTurn() || !repeatedFixedAttack.advanceBattleTurn() ||
+                    fixedAttack.captureNativeRunSave(fixedAfter) != NativeSaveResult::Ok ||
+                    repeatedFixedAttack.captureNativeRunSave(repeatedFixedAfter) != NativeSaveResult::Ok ||
+                    fixedAfter.playerPp[0] != fixedMove->pp - 1 ||
+                    fixedAfter.playerHp != repeatedFixedAfter.playerHp ||
+                    fixedAfter.enemyHp != repeatedFixedAfter.enemyHp ||
+                    fixedAfter.stage != repeatedFixedAfter.stage ||
+                    fixedAfter.battleTurn != repeatedFixedAfter.battleTurn) return 9871;
+                const auto fixedRng = fixedAttack.battleRng().state();
+                const auto replayRng = repeatedFixedAttack.battleRng().state();
+                if (fixedRng.carry != replayRng.carry || fixedRng.s0 != replayRng.s0 ||
+                    fixedRng.s1 != replayRng.s1 || fixedRng.s2 != replayRng.s2) return 9872;
+            }
             // Actual thaw+burn compositions, restored with both actors frozen.
             for (const uint16_t id : {uint16_t(172), uint16_t(394), uint16_t(503), uint16_t(815)}) {
                 const auto* thawMove = PokerogueContent::findMoveById(id);

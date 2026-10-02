@@ -355,3 +355,8 @@ Los ejemplos describen infraestructura y límites; no son tareas cerradas. Actua
 
 - Selección y ejecución FirstRunRuntime conectadas para los cuatro perfiles exactos, con gates de capacidades/contexto. IA usa potencia efectiva cero, no el daño constante como potencia.
 - Builder metadata incluida y regresiones escritas; validación ejecutada y contextos adicionales siguen pendientes. Ambas casillas permanecen abiertas.
+
+### Avance MOV-02 / SAV-02: replay de comandos tras restore
+
+- Añadidos casos de los cuatro ataques de daño fijo en FirstRunRuntime: dos restores, comandos reales, comparación de HP/PP/stage/turno y battle RNG.
+- Son snapshots exclusivamente de test; casos escritos sin ejecución. No se marcan casillas como verificadas.
