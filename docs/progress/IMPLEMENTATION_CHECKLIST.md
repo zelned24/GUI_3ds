@@ -462,3 +462,8 @@ Los ejemplos describen infraestructura y límites; no son tareas cerradas. Actua
 
 - Comando del jefe normal conecta autogolpe a escudos y conserva RNG actor/global, cancelación y PP. Rechazo tardío no publica mutaciones.
 - Sturdy combinado con escudos, fase final y dobles siguen pendientes. Regresiones escritas, ejecución aplazada.
+
+### Avance HAB-04 / HP-02: Sturdy con escudos
+
+- Daño boss consume tag después de ajuste por segmentos; comando activa Sturdy canónica y registra supervivencia. Residual mantiene preventEndure; confusión usa el tag original con dispatcher.
+- Casos escritos y generación realizada; ejecución pendiente. Weather, otras supervivencias/flags, dobles y fase final siguen pendientes.

@@ -2197,3 +2197,9 @@
 1. Pinned ConfusedTag.lapse calcula autogolpe y llama damageAndUpdate sin saltar segmentos. Nuevo compositor reutiliza checkPokemonConfusionBeforeMove y boss damage con streams separados (actor para activación/variación; global para boosts).
 2. executeActiveBattleMove conecta la ruta en jefes normales con callbacks resueltos; actualiza tag/HP/escudos/stages/RNG juntos y mantiene cancelación/PP. Sturdy existente, final phase y otras restricciones actuales permanecen gated.
 3. Regresiones 10180–10186 de autogolpe/segmentos/streams/PP y rollback ante ability desconocida escritas, no ejecutadas. No declara confusión universal ni dobles completos.
+
+## Composición Sturdy y escudos
+
+1. EnemyPokemon.damage pinned reduce por segmentos, aplica super.damage (supervivencia) y luego usa el índice cleared calculado; ignoreSegments calcula cleared desde HP final. applyPokemonBossDamage reproduce ese orden y reporta sturdyConsumed.
+2. useStandardPokemonMove prepara el tag desde perfil exacto antes del daño boss. Generador admite callbacks Sturdy únicamente con declaration completa ya validada; desconocidos siguen rechazados. Status residual pasa preventEndure=true; confusión restaura el tag previo antes de delegar al boss resolver.
+3. Regresiones 10190–10193 de tag existente, bypass preventEndure y Dragon Rage+Sturdy+escudo/PP escritas. Tablas regeneradas; tests/build pendientes. Weather con tag boss y otras supervivencias aún requieren su composición; no se declara paridad universal.

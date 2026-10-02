@@ -2026,11 +2026,6 @@ PokemonMoveActionStatus useStandardPokemonMove(
             !targetBossState->segmentCount || targetBossState->segmentIndex >= targetBossState->segmentCount ||
             !defender.maxHp || defender.hp > defender.maxHp || &attacker == &defender)))
         return PokemonMoveActionStatus::UnresolvedBoss;
-    if (targetBossState) {
-        for (const auto& profile : PokerogueContent::kFullHpEndureAbilityProfiles)
-            if ((profile.abilityId == defender.abilityId && profile.resolved) || defender.sturdy.present)
-                return PokemonMoveActionStatus::UnresolvedBoss;
-    }
     if (ppPolicy && !ppPolicy->resolved) return PokemonMoveActionStatus::UnresolvedPp;
     const uint8_t ppCost = ppPolicy ? ppPolicy->cost : 1;
     if (attacker.moves[moveSlot].pp == 0 && ppCost) return PokemonMoveActionStatus::NoPp;
@@ -2081,10 +2076,19 @@ PokemonMoveActionStatus useStandardPokemonMove(
     if (targetBossState) nextBossState = *targetBossState;
     if (next.damageRoll.hit && next.damageRoll.damage > 0) {
         if (targetBossState) {
+            PokemonSturdyPolicy survival{};
+            if (resolvePokemonSturdyAbilityPolicy(nextDefender.abilityId, nextDefender.hp != 0,
+                    true, true, survival)) {
+                PokemonSturdyEvent prepared{};
+                if (preparePokemonSturdyTag(nextDefender, next.damageRoll.damage, survival, false,
+                    nextDefender.sturdy, prepared) != PokemonSurvivalResult::Ok)
+                    return PokemonMoveActionStatus::UnresolvedBoss;
+            }
             PokemonBossDamageEvent bossEvent{};
             if (!applyPokemonBossDamage(nextDefender, nextBossState, next.damageRoll.damage,
                     *bossDamagePolicy, nextGlobalRng, bossEvent)) return PokemonMoveActionStatus::UnresolvedBoss;
             next.damageApplied = bossEvent.damageApplied;
+            next.sturdySurvived = bossEvent.sturdyConsumed;
         } else {
             PokemonSturdyPolicy survival{};
             const bool sturdyAbility = resolvePokemonSturdyAbilityPolicy(nextDefender.abilityId,
@@ -2298,8 +2302,15 @@ bool applyPokemonBossDamage(PokemonBattleState& boss, PokemonBossState& state,
         damage = boss.hp - 1;
         event.preventedFinalBossKo = true;
     }
-    event.damageApplied = static_cast<uint16_t>(damage < boss.hp ? damage : boss.hp);
-    nextBoss.hp -= event.damageApplied;
+    if (policy.preventEndure) {
+        event.damageApplied = static_cast<uint16_t>(damage < boss.hp ? damage : boss.hp);
+        nextBoss.hp -= event.damageApplied;
+    } else {
+        const bool hadSturdy = nextBoss.sturdy.present;
+        if (applyPokemonExistingSturdyDamage(nextBoss, damage, event.damageApplied) != PokemonSurvivalResult::Ok)
+            return false;
+        event.sturdyConsumed = hadSturdy && !nextBoss.sturdy.present;
+    }
     if (policy.ignoreSegments) {
         cleared = static_cast<uint16_t>((static_cast<uint64_t>(nextBoss.hp) * state.segmentCount +
             boss.maxHp - 1) / boss.maxHp);
@@ -2324,7 +2335,7 @@ bool checkPokemonBossConfusionBeforeMove(PokemonBattleState& actor, PokemonConfu
     PokerogueRngAdapter& actorRng, PokerogueRngAdapter& globalRng,
     PokemonConfusionMoveEvent& output, PokemonBossDamageEvent& bossOutput) {
     if (!boss.segmentCount || boss.segmentIndex >= boss.segmentCount ||
-        boss.classicFinalBossFirstPhase || actor.sturdy.present || &actorRng == &globalRng) return false;
+        boss.classicFinalBossFirstPhase || &actorRng == &globalRng) return false;
     auto nextActor = actor;
     auto nextTag = tag;
     auto nextBoss = boss;
@@ -2337,6 +2348,7 @@ bool checkPokemonBossConfusionBeforeMove(PokemonBattleState& actor, PokemonConfu
         const auto* ability = PokerogueContent::findAbilityMovegenProfile(actor.abilityId);
         if (!ability || !ability->bossDamageCallbacksResolved) return false;
         nextActor.hp = actor.hp;
+        nextActor.sturdy = actor.sturdy;
         const PokemonBossDamagePolicy damagePolicy{true, true, false};
         if (!applyPokemonBossDamage(nextActor, nextBoss, event.requestedDamage, damagePolicy,
             nextGlobalRng, damageEvent)) return false;
@@ -2372,7 +2384,7 @@ PokemonStatusResidualResult applyPokemonBossStatusResidual(PokemonBattleState& a
         if (!ability || !ability->bossDamageCallbacksResolved || event.requestedDamage > 0xffffffffu)
             return PokemonStatusResidualResult::UnsupportedPolicy;
         nextActor.hp = event.previousHp;
-        const PokemonBossDamagePolicy damagePolicy{true, true, false};
+        const PokemonBossDamagePolicy damagePolicy{true, true, false, true};
         if (!applyPokemonBossDamage(nextActor, nextBoss, static_cast<uint32_t>(event.requestedDamage),
             damagePolicy, nextRng, damageEvent)) return PokemonStatusResidualResult::UnsupportedPolicy;
         event.appliedDamage = damageEvent.damageApplied;

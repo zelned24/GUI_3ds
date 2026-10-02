@@ -943,7 +943,10 @@ const abilityMovegenProfiles = collections.abilities.map(ability => {
   const knownBuilderCalls = new Set(['attr', 'build', 'uncopiable', 'unreplaceable', 'unsuppressable', 'ignorable']);
   const bossDamageCallbacksResolved = builderCalls.every(name => knownBuilderCalls.has(name)) && !!raw && /new AbBuilder\(/.test(raw) &&
     attributeCalls === attributes.length && !/\.(?:condition|conditionalAttr|unimplemented|partial)\s*\(/.test(raw) &&
-    attributes.every(name => ['IncreasePpUsedAbAttr', 'NonSuperEffectiveImmunityAbAttr'].includes(name));
+    attributes.every(name => ['IncreasePpUsedAbAttr', 'NonSuperEffectiveImmunityAbAttr',
+      'PreDefendFullHpEndureAbAttr', 'BlockOneHitKOAbAttr'].includes(name)) &&
+    (!attributes.some(name => ['PreDefendFullHpEndureAbAttr', 'BlockOneHitKOAbAttr'].includes(name)) ||
+      resolvedStatusActionAbilityIds.has(ability.abilityId));
   return { abilityId: ability.abilityId, flags, accuracyMultiplier, bossDamageCallbacksResolved, source: ability.source };
 }).sort((left, right) => left.abilityId - right.abilityId);
 const statusResidualRows = collections.abilities.map(ability => {

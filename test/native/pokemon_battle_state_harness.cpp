@@ -2138,6 +2138,48 @@ extern "C" int runPokemonBattleStateChecks() {
         }
         if (!found) return 10186;
     }
+    // EnemyPokemon.damage reduces segments before consuming an existing Sturdy tag.
+    {
+        auto actor = state;
+        actor.abilityId = 5;
+        actor.maxHp = actor.hp = 20;
+        actor.status = {};
+        actor.sturdy.present = true;
+        Pokerogue3DS::PokemonBossState boss{1, 0, false, false};
+        Pokerogue3DS::PokerogueRngAdapter global;
+        const uint16_t root[] = {'s', 'h', 'i', 'e', 'l', 'd'};
+        global.sow(root, 6);
+        Pokerogue3DS::PokemonBossDamageEvent event{};
+        const Pokerogue3DS::PokemonBossDamagePolicy normal{true, true, false, false};
+        if (!Pokerogue3DS::applyPokemonBossDamage(actor, boss, 40, normal, global, event) ||
+            actor.hp != 1 || actor.sturdy.present || !event.sturdyConsumed || event.damageApplied != 19) return 10190;
+        actor.hp = 20;
+        actor.sturdy.present = true;
+        const Pokerogue3DS::PokemonBossDamagePolicy residual{true, true, false, true};
+        if (!Pokerogue3DS::applyPokemonBossDamage(actor, boss, 40, residual, global, event) ||
+            actor.hp || !actor.sturdy.present || event.sturdyConsumed || event.damageApplied != 20) return 10191;
+        auto user = state, target = state;
+        user.abilityId = 0;
+        user.status = target.status = {};
+        user.moveCount = 1;
+        user.moves[0] = {82, 10, 10};
+        target.abilityId = 5;
+        target.maxHp = target.hp = 20;
+        target.sturdy = {};
+        boss = {1, 0, false, false};
+        Pokerogue3DS::PokerogueRngAdapter battle;
+        battle.sow(root, 6);
+        Pokerogue3DS::PokemonHitPolicy hit{};
+        hit.resolved = true;
+        hit.bypassAccuracy = true;
+        Pokerogue3DS::PokemonMoveActionResult command{};
+        if (Pokerogue3DS::useStandardPokemonMove(user, target, 0, false, battle, command,
+                nullptr, nullptr, &hit, nullptr, &boss, &normal, &global) !=
+                Pokerogue3DS::PokemonMoveActionStatus::Ok || target.hp != 1 || target.sturdy.present ||
+            !command.sturdySurvived || command.damageApplied != 19 || user.moves[0].pp != 9) return 10192;
+        const auto* ability = PokerogueContent::findAbilityMovegenProfile(5);
+        if (!ability || !ability->bossDamageCallbacksResolved) return 10193;
+    }
     // Sharpness modifies slicing power before the base formula's additive two.
     {
         auto user = state, target = state;

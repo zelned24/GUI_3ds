@@ -37367,7 +37367,7 @@ inline constexpr AbilityMovegenProfile kAbilityMovegenProfiles[] = {
     {2, 1, 1, false, "src/data/abilities/init-abilities.ts", "AbilityId.DRIZZLE", "040ccf2ca2e00a2111ef0acf54878ec67c45d98c831e35dda3e0bac52f1ee8e6"},
     {3, 0, 1, false, "src/data/abilities/init-abilities.ts", "AbilityId.SPEED_BOOST", "040ccf2ca2e00a2111ef0acf54878ec67c45d98c831e35dda3e0bac52f1ee8e6"},
     {4, 0, 1, false, "src/data/abilities/init-abilities.ts", "AbilityId.BATTLE_ARMOR", "040ccf2ca2e00a2111ef0acf54878ec67c45d98c831e35dda3e0bac52f1ee8e6"},
-    {5, 0, 1, false, "src/data/abilities/init-abilities.ts", "AbilityId.STURDY", "040ccf2ca2e00a2111ef0acf54878ec67c45d98c831e35dda3e0bac52f1ee8e6"},
+    {5, 0, 1, true, "src/data/abilities/init-abilities.ts", "AbilityId.STURDY", "040ccf2ca2e00a2111ef0acf54878ec67c45d98c831e35dda3e0bac52f1ee8e6"},
     {6, 1, 1, false, "src/data/abilities/init-abilities.ts", "AbilityId.DAMP", "040ccf2ca2e00a2111ef0acf54878ec67c45d98c831e35dda3e0bac52f1ee8e6"},
     {7, 0, 1, false, "src/data/abilities/init-abilities.ts", "AbilityId.LIMBER", "040ccf2ca2e00a2111ef0acf54878ec67c45d98c831e35dda3e0bac52f1ee8e6"},
     {8, 0, 1, false, "src/data/abilities/init-abilities.ts", "AbilityId.SAND_VEIL", "040ccf2ca2e00a2111ef0acf54878ec67c45d98c831e35dda3e0bac52f1ee8e6"},

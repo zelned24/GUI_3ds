@@ -1608,10 +1608,12 @@ struct PokemonBossDamagePolicy {
     bool resolved = false;
     bool damageCallbacksResolved = false;
     bool ignoreSegments = false;
+    bool preventEndure = false;
 };
 struct PokemonBossDamageEvent {
     uint16_t damageApplied = 0;
     bool preventedFinalBossKo = false;
+    bool sturdyConsumed = false;
     PokemonBossSegmentClearEvent segments{};
 };
 // Owns only resolved direct damage + ignoreAbilities shield boosts. Caller must
