@@ -2261,6 +2261,26 @@ extern "C" int runPokemonBattleStateChecks() {
         if (Pokerogue3DS::usePokemonStruggleCommand(user, target, rng, event) != PokemonMoveActionStatus::InvalidMoveSlot ||
             target.hp != targetHp) return 10214;
     }
+    // RANDOM_NEAR_ENEMY uses command-time battle RNG and stable opponent field order.
+    {
+        Pokerogue3DS::PokerogueRngAdapter rng;
+        const uint16_t root[] = {'t', 'a', 'r', 'g', 'e', 't'};
+        rng.sow(root, 6);
+        auto expected = rng;
+        const uint8_t targets[] = {1, 2};
+        uint8_t selected = 99;
+        const auto index = expected.randSeedInt(2);
+        if (!Pokerogue3DS::selectPokemonStruggleTarget(targets, 2, rng, selected) || selected != targets[index] ||
+            rng.randSeedUint32() != expected.randSeedUint32()) return 10240;
+        expected = rng;
+        if (!Pokerogue3DS::selectPokemonStruggleTarget(targets + 1, 1, rng, selected) || selected != 2 ||
+            rng.randSeedUint32() != expected.randSeedUint32()) return 10241;
+        expected = rng;
+        const uint8_t duplicate[] = {1, 1};
+        selected = 99;
+        if (Pokerogue3DS::selectPokemonStruggleTarget(duplicate, 2, rng, selected) || selected != 99 ||
+            rng.randSeedUint32() != expected.randSeedUint32()) return 10242;
+    }
     // Boss user's recoil ignores shield reduction but updates cleared segments transactionally.
     {
         auto user = state, target = state;

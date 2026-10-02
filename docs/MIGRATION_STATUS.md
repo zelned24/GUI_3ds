@@ -2221,3 +2221,9 @@
 1. FirstRunRuntime selecciona el ID canónico virtual para jugador e IA en singles cuando todos los PP son cero; orden de turno usa prioridad de Struggle. No reemplaza movimientos persistentes. Navegación y presentación muestran su nombre desde locales.
 2. Ejecución conserva checks de sueño/freeze/parálisis/confusión y proveedores de clima/precisión/crítico/burn. PP cost cero no llama Pressure. Daño al jefe usa su dispatcher; retroceso de usuario jefe usa ignoreSegments y publica HP/escudos/streams juntos.
 3. Regresiones 10220–10227 de replay con encuentro real y 10230–10231 de retroceso boss/rechazo escritas sin ejecutar. Dobles, modifiers y selección por Disable/Encore u otros tags aún requieren integración; habilidades no resueltas continúan bloqueadas. No se cierra HP-05 ni MOV-07.
+
+## Struggle en el campo doble actual
+
+1. Referencia pinned src/data/moves/move-utils.ts:getMoveTargets, RANDOM_NEAR_ENEMY elige uniformemente con user.randBattleSeedInt sobre oponentes activos en orden de campo. FirstRunRuntime prepara el objetivo de jugador antes de selección IA y usa el ID virtual en prioridades.
+2. Los tres actores actuales pueden ejecutar Struggle al agotar PP; no se puntúan movimientos agotados ni se usa el cursor manual para elegir su objetivo. Contextos con modifiers o callbacks sin resolver siguen bloqueados; checks de status dobles mantienen sus limitaciones existentes.
+3. Regresiones 10240–10242 de orden/consumo RNG/rechazo y 10250–10254 de campo real con PP agotados y cursores distintos escritas, sin ejecutar. El campo continúa siendo un jugador contra dos enemigos: falta segundo activo jugador, persistencia doble y segunda fase final. No se declara dobles completo.

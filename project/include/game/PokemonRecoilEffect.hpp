@@ -72,6 +72,18 @@ inline bool pokemonMovePpExhausted(const PokemonBattleState& actor) {
     }
     return true;
 }
+// Pinned getMoveTargets(RANDOM_NEAR_ENEMY): field order, uniform battle RNG.
+// Caller supplies only active opponents; one target consumes no RNG in the adapter.
+inline bool selectPokemonStruggleTarget(const uint8_t* opponents, uint8_t count,
+    PokerogueRngAdapter& rng, uint8_t& output) {
+    if (!opponents || !count || count > 2) return false;
+    for (uint8_t i = 0; i < count; ++i) {
+        if (opponents[i] > 3) return false;
+        for (uint8_t j = 0; j < i; ++j) if (opponents[j] == opponents[i]) return false;
+    }
+    output = opponents[rng.randSeedInt(count)];
+    return true;
+}
 struct PokemonStruggleActionResult {
     PokemonMoveActionResult attack{};
     PokemonRecoilEvent recoil{};

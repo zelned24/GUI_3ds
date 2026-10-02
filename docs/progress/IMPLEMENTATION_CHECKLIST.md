@@ -49,7 +49,7 @@ Esta tabla describe código inspeccionado, no resultados de ejecución. Las nota
 | HAB-03 | Sharpness tiene perfil, cálculo de potencia, proveedor y regresión de replay Gallade escritos | Contextos adicionales, pasivas/supresión y validación ejecutada |
 | HAB-04 / HP-03 / CAM-03 | Sturdy: tag, daño ordinario/fijo, escudos, confusión/clima y persistencia jugador/enemigo/trainer | Otras supervivencias, pasivas/supresión, dobles y validación ejecutada |
 | HAB-01–10 / MOV-01–13 | Familias parciales y gates explícitos | Cobertura de todas las habilidades/movimientos del snapshot; no basta importar metadata |
-| HP-05 / MOV-07 | Struggle virtual conectado a selección jugador/IA, orden, locales y daño/retroceso boss en singles resueltos | Dobles, modifiers, restricciones por otros tags y validación ejecutada |
+| HP-05 / MOV-07 | Struggle virtual conectado a selección jugador/IA, orden, locales, daño/retroceso boss y campo actual de tres actores | Segundo activo jugador, persistencia doble, modifiers, restricciones por otros tags y validación ejecutada |
 | HP-01–08 | HP/PP/status, daño/curación, EXP y casos de límites | Composición completa, segmentos, faint simultáneo, persistencia y feedback visual |
 | FLU-05 / SAV-03 | Checkpoint v20: bioma, actores explícitos, jefes individuales y trainer con estados resueltos | Dobles, fase final, decisiones pendientes y recorrido completo; casos de trainer posterior sin verificar |
 | GUI-01–12 / AST-01–08 | Presentación nativa, índices y assets convertidos parciales | Todas las pantallas, HUD HP/PP/EXP, animación/audio, controles y comparación visual |
@@ -485,3 +485,8 @@ Los ejemplos describen infraestructura y límites; no son tareas cerradas. Actua
 
 - Singles conectan PP agotados → ID virtual → orden → checks previos → comando → recoil → feedback. Jefes usan dispatcher también para retroceso; moveset persistente intacto.
 - Replay de ambos actores con PP cero y regresiones de usuario boss escritos sin ejecutar. Dobles, modifiers, tags que bloquean movimientos y contextos de habilidades pendientes.
+
+### Avance HP-05 / TUR-05: Struggle en campo de tres actores
+
+- PP agotados de jugador/ambos enemigos usan acción virtual; objetivo aleatorio pinned se prepara antes de IA, prioridad usa Struggle y slots persistentes se conservan.
+- Regresiones de RNG/objetivo y campo real escritas sin ejecutar. Segundo activo jugador, todos los checks de status dobles, persistencia y contextos pendientes impiden cerrar dobles completo.

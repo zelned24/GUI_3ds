@@ -1297,7 +1297,7 @@ bool FirstRunRuntime::supportsActiveBattleMove(const PokemonBattleState& user,
     const PokemonBattleState& opponent, uint16_t moveId) const {
     if (!supportsBaselineBattleMove(moveId)) return false;
     if (moveId == PokerogueContent::kStruggleMoveId)
-        return PokerogueContent::kStruggleDefinitionResolved && !m_doubleBattle && !m_heldModifierCount &&
+        return PokerogueContent::kStruggleDefinitionResolved && !m_heldModifierCount &&
             user.statsAreBaseFormulaOnly && opponent.statsAreBaseFormulaOnly &&
             statusActionAbilitySupported(user.abilityId) && statusActionAbilitySupported(opponent.abilityId);
     // Survival dispatcher currently covers simple actor contexts only.
@@ -1539,8 +1539,20 @@ bool FirstRunRuntime::doubleBattleSupported() const {
         enemy1Usable = 1;
     }
 
+    if (!enemy0Usable && pokemonMovePpExhausted(m_context.enemy.battleState) &&
+        supportsActiveBattleMove(m_context.enemy.battleState, m_context.player.battleState, PokerogueContent::kStruggleMoveId))
+        enemy0Usable = 1;
+    if (!enemy1Usable && pokemonMovePpExhausted(m_context.secondEnemy.battleState) &&
+        supportsActiveBattleMove(m_context.secondEnemy.battleState, m_context.player.battleState, PokerogueContent::kStruggleMoveId))
+        enemy1Usable = 1;
     if (!enemy0Usable || !enemy1Usable) return false;
 
+    if (pokemonMovePpExhausted(m_context.player.battleState)) {
+        return (!m_context.enemy.battleState.hp || supportsActiveBattleMove(m_context.player.battleState,
+                    m_context.enemy.battleState, PokerogueContent::kStruggleMoveId)) &&
+               (!m_context.secondEnemy.battleState.hp || supportsActiveBattleMove(m_context.player.battleState,
+                    m_context.secondEnemy.battleState, PokerogueContent::kStruggleMoveId));
+    }
     if (m_selectedBattleMove >= m_context.player.battleState.moveCount) return false;
     const auto& playerMove = m_context.player.battleState.moves[m_selectedBattleMove];
     if (!playerMove.pp || !supportsActiveBattleMove(m_context.player.battleState, m_context.enemy.battleState, playerMove.moveId) || !weatherMoveAllowed(playerMove.moveId)) return false;
@@ -2332,8 +2344,16 @@ bool FirstRunRuntime::advanceBattleTurnInPlace() {
     }
 
     if (m_doubleBattle) {
+        uint8_t struggleTarget = 0;
+        if (pokemonMovePpExhausted(playerState)) {
+            uint8_t opponents[2]{};
+            uint8_t count = 0;
+            if (m_context.enemy.battleState.hp) opponents[count++] = 1;
+            if (m_context.secondEnemy.battleState.hp) opponents[count++] = 2;
+            if (!selectPokemonStruggleTarget(opponents, count, *rng, struggleTarget)) return false;
+        }
         uint8_t enemy0MoveSlot = 0;
-        if (m_context.enemy.battleState.hp > 0) {
+        if (m_context.enemy.battleState.hp > 0 && !pokemonMovePpExhausted(m_context.enemy.battleState)) {
             PokemonMoveWeatherContext simWeather{};
             if (!resolveActiveMoveWeather(m_context.enemy.battleState, playerState, simWeather)) return false;
             uint8_t usableSlots[4]{};
@@ -2388,7 +2408,7 @@ bool FirstRunRuntime::advanceBattleTurnInPlace() {
         }
 
         uint8_t enemy1MoveSlot = 0;
-        if (m_context.secondEnemy.battleState.hp > 0) {
+        if (m_context.secondEnemy.battleState.hp > 0 && !pokemonMovePpExhausted(m_context.secondEnemy.battleState)) {
             PokemonMoveWeatherContext simWeather{};
             if (!resolveActiveMoveWeather(m_context.secondEnemy.battleState, playerState, simWeather)) return false;
             uint8_t usableSlots[4]{};
@@ -2456,9 +2476,9 @@ bool FirstRunRuntime::advanceBattleTurnInPlace() {
             &m_context.secondEnemy.battleState
         };
         uint16_t moveIds[3] = {
-            playerState.moves[m_selectedBattleMove].moveId,
-            m_context.enemy.battleState.moves[enemy0MoveSlot].moveId,
-            m_context.secondEnemy.battleState.moves[enemy1MoveSlot].moveId
+            pokemonMovePpExhausted(playerState) ? PokerogueContent::kStruggleMoveId : playerState.moves[m_selectedBattleMove].moveId,
+            pokemonMovePpExhausted(m_context.enemy.battleState) ? PokerogueContent::kStruggleMoveId : m_context.enemy.battleState.moves[enemy0MoveSlot].moveId,
+            pokemonMovePpExhausted(m_context.secondEnemy.battleState) ? PokerogueContent::kStruggleMoveId : m_context.secondEnemy.battleState.moves[enemy1MoveSlot].moveId
         };
         for (uint8_t i = 0; i < 3; ++i) {
             if (!states[i]->hp) continue;
@@ -2487,7 +2507,7 @@ bool FirstRunRuntime::advanceBattleTurnInPlace() {
             const uint8_t battler = activeBattlers[i];
             if (battler == 0) {
                 if (!m_context.player.battleState.hp) continue;
-                const auto* pMove = PokerogueContent::findMoveById(playerState.moves[m_selectedBattleMove].moveId);
+                const auto* pMove = PokerogueContent::findMoveById(moveIds[0]);
                 const bool isSpread = pMove && pMove->target &&
                     (std::strcmp(pMove->target, "ALL_NEAR_ENEMIES") == 0 ||
                      std::strcmp(pMove->target, "ALL_ENEMIES") == 0 ||
@@ -2511,7 +2531,7 @@ bool FirstRunRuntime::advanceBattleTurnInPlace() {
                         if (!executeActiveBattleMove(0, 2, m_selectedBattleMove, *rng, &areaPp)) { m_battleFeedback = "Double battle action failed"; return false; }
                     }
                 } else {
-                    uint8_t target = m_selectedTarget == 0 ? 1 : 2;
+                    uint8_t target = struggleTarget ? struggleTarget : (m_selectedTarget == 0 ? 1 : 2);
                     if (target == 1 && m_context.enemy.battleState.hp == 0) target = 2;
                     else if (target == 2 && m_context.secondEnemy.battleState.hp == 0) target = 1;
                     if ((target == 1 && m_context.enemy.battleState.hp > 0) ||

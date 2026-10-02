@@ -3162,6 +3162,44 @@ static int checkCanonicalTrainerSignatureSlots() {
     return checked ? 0 : 231; // Real catalog coverage, not a synthetic trainer.
 }
 
+static int checkDoubleExhaustedPpStruggle() {
+    using namespace Pokerogue3DS;
+    for (uint32_t seed = 1; seed <= 512; ++seed) {
+        FirstRunRuntime a(seed), b(seed);
+        if (!a.doubleBattle()) continue;
+        auto& fieldA = const_cast<PresentationContext&>(a.presentation());
+        auto& fieldB = const_cast<PresentationContext&>(b.presentation());
+        // Test-only PP exhaustion of real generated actors; double checkpoint codec is still pending.
+        ResolvedPokemon* actorsA[] = {&fieldA.player, &fieldA.enemy, &fieldA.secondEnemy};
+        ResolvedPokemon* actorsB[] = {&fieldB.player, &fieldB.enemy, &fieldB.secondEnemy};
+        uint16_t originalMoves[3][4]{};
+        bool resolved = true;
+        for (uint8_t i = 0; i < 3; ++i) {
+            resolved &= actorsA[i]->actorIdentityResolved;
+            for (uint8_t slot = 0; slot < actorsA[i]->battleState.moveCount; ++slot) {
+                originalMoves[i][slot] = actorsA[i]->battleState.moves[slot].moveId;
+                actorsA[i]->battleState.moves[slot].pp = actorsB[i]->battleState.moves[slot].pp = 0;
+            }
+        }
+        if (!resolved || !a.doubleBattleSupported()) continue;
+        const auto enemyHp = fieldA.enemy.battleState.hp;
+        const auto secondHp = fieldA.secondEnemy.battleState.hp;
+        if (!b.cycleTarget(1) || !a.advanceBattleTurn() || !b.advanceBattleTurn()) return 10250;
+        // Manual target cursor must not control Struggle's random target.
+        for (uint8_t i = 0; i < 3; ++i) {
+            if (actorsA[i]->battleState.hp != actorsB[i]->battleState.hp ||
+                actorsA[i]->battleState.moveCount != actorsB[i]->battleState.moveCount) return 10251;
+            for (uint8_t slot = 0; slot < actorsA[i]->battleState.moveCount; ++slot)
+                if (actorsA[i]->battleState.moves[slot].pp || actorsB[i]->battleState.moves[slot].pp ||
+                    actorsA[i]->battleState.moves[slot].moveId != actorsB[i]->battleState.moves[slot].moveId ||
+                    actorsA[i]->battleState.moves[slot].moveId != originalMoves[i][slot]) return 10252;
+        }
+        if (fieldA.enemy.battleState.hp == enemyHp && fieldA.secondEnemy.battleState.hp == secondHp) return 10253;
+        return 0;
+    }
+    return 10254; // No silent skip of a real eligible double field.
+}
+
 static int checkExhaustedPpStruggleReplay() {
     using namespace Pokerogue3DS;
     for (uint32_t seed = 1; seed <= 256; ++seed) {
@@ -3208,6 +3246,8 @@ static int checkExhaustedPpStruggleReplay() {
 }
 
 int main() {
+    const int doubleStruggle = checkDoubleExhaustedPpStruggle();
+    if (doubleStruggle) return doubleStruggle;
     const int struggleReplay = checkExhaustedPpStruggleReplay();
     if (struggleReplay) return struggleReplay;
     const int statusAdmissionCheck = checkStatusActionAdmission();
