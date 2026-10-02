@@ -507,14 +507,21 @@ struct PokemonMoveStatusApplicationEvent {
     uint8_t chanceRoll = 0;
     bool requestObtainStatusPhase = false;
 };
-// Admitted composition: one secondary effect plus an optional existing critical
-// modifier. Other effects require their own ordered dispatcher, never omission.
+// Exact self-FREEZE healing declarations used by MovePhase.checkFreeze.
+// Burn Up still requires its type/removal attributes before runtime admission.
+inline bool pokemonMoveSelfThawResolved(uint16_t moveId) {
+    for (const auto& profile : PokerogueContent::kMoveSelfThawProfiles)
+        if (profile.moveId == moveId) return profile.resolved;
+    return false;
+}
+// One secondary effect, optional critical modifier and exact pre-use self-thaw.
+// Other effects require their own dispatcher, never omission.
 inline bool pokemonDamageSecondaryAttributesResolved(const PokerogueContent::Move& move,
     const char* secondaryAttribute) {
     if (!secondaryAttribute || move.category == PokerogueContent::MoveStatus ||
         move.attributeOffset > PokerogueContent::kMoveAttributeCount ||
         move.attributeCount > PokerogueContent::kMoveAttributeCount - move.attributeOffset) return false;
-    uint16_t effects = 0, criticalModifiers = 0;
+    uint16_t effects = 0, criticalModifiers = 0, selfThawEffects = 0;
     for (uint16_t i = 0; i < move.attributeCount; ++i) {
         const char* attribute = PokerogueContent::kMoveAttributes[move.attributeOffset + i].id;
         if (!attribute) return false;
@@ -524,9 +531,10 @@ inline bool pokemonDamageSecondaryAttributesResolved(const PokerogueContent::Mov
         };
         if (matches(attribute, secondaryAttribute)) ++effects;
         else if (matches(attribute, "HighCritAttr") || matches(attribute, "CritOnlyAttr")) ++criticalModifiers;
+        else if (matches(attribute, "HealStatusEffectAttr") && pokemonMoveSelfThawResolved(move.id)) ++selfThawEffects;
         else return false;
     }
-    return effects == 1 && criticalModifiers <= 1;
+    return effects == 1 && criticalModifiers <= 1 && selfThawEffects <= 1;
 }
 
 // StatusEffectAttr.apply only: caller has resolved hit and effective move chance.

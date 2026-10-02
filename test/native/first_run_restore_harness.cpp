@@ -463,7 +463,7 @@ static int checkStatusActionAdmission() {
                 psychicAfter.playerPp[0] != 9 || psychicAfter.enemyHp != repeatedPsychicAfter.enemyHp ||
                 psychicAfter.playerHp != repeatedPsychicAfter.playerHp ||
                 psychicAfter.enemyStatStages[4] != repeatedPsychicAfter.enemyStatStages[4]) return 9563;
-            for (const uint16_t id : {uint16_t(61), uint16_t(488)}) {
+            for (const uint16_t id : {uint16_t(61), uint16_t(488), uint16_t(315)}) {
                 const auto* stageMove = PokerogueContent::findMoveById(id);
                 if (!stageMove) return 9602;
                 auto stageCheckpoint = checkpoint;
@@ -480,6 +480,7 @@ static int checkStatusActionAdmission() {
                     stageAfter.playerPp[0] != stageMove->pp - 1 || stageAfter.playerHp != repeatedStageAfter.playerHp ||
                     stageAfter.enemyHp != repeatedStageAfter.enemyHp ||
                     stageAfter.playerStatStages[4] != repeatedStageAfter.playerStatStages[4] ||
+                    stageAfter.playerStatStages[2] != repeatedStageAfter.playerStatStages[2] ||
                     stageAfter.enemyStatStages[4] != repeatedStageAfter.enemyStatStages[4]) return 9603;
             }
             auto growlCheckpoint = checkpoint;

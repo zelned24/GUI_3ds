@@ -889,6 +889,29 @@ extern "C" int runPokemonBattleStateChecks() {
             stageRng.randSeedUint32() != expectedStageRng.randSeedUint32()) return 9562;
     }
     {
+        const auto* overheat = PokerogueContent::findMoveById(315);
+        const auto* sparklingAria = PokerogueContent::findMoveById(664);
+        if (!overheat || !sparklingAria || !Pokerogue3DS::pokemonMoveSelfThawResolved(315) ||
+            Pokerogue3DS::pokemonMoveSelfThawResolved(664) ||
+            !Pokerogue3DS::pokemonDamageSecondaryAttributesResolved(*overheat, "StatStageChangeAttr") ||
+            Pokerogue3DS::pokemonDamageSecondaryAttributesResolved(*sparklingAria, "StatStageChangeAttr")) return 9730;
+        PokemonBattleState hotUser = state, faintedTarget = state;
+        for (auto& stage : hotUser.statStages) stage = 0;
+        hotUser.moveCount = 1;
+        hotUser.moves[0] = {315, 4, 5};
+        faintedTarget.hp = 0;
+        const PokerogueContent::MoveStatStageEffect drop{315, 4, -2, true};
+        Pokerogue3DS::PokemonStatStageCommandPolicy policy{};
+        policy.postChangePoliciesResolved = policy.move.stagePolicy.resolved = true;
+        policy.move.stagePolicy.chance = overheat->upstreamChance;
+        Pokerogue3DS::PokemonStatStageCommandEvent event{};
+        auto rng = replacementRng, expected = rng;
+        if (Pokerogue3DS::executePokemonDamageStatStagePhase(hotUser, faintedTarget, drop,
+                policy, rng, event) != Pokerogue3DS::PokemonStatStageEffectResult::Ok ||
+            hotUser.statStages[2] != -2 || hotUser.moves[0].pp != 4 || faintedTarget.hp ||
+            rng.randSeedUint32() != expected.randSeedUint32()) return 9731;
+    }
+    {
         // Pinned Flame Charge POST_APPLY targets the living USER after a KO.
         PokemonBattleState chargeUser = state, chargeTarget = state;
         chargeUser.moveCount = 1;

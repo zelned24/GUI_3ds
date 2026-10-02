@@ -678,6 +678,29 @@ inline constexpr MoveConfusionEffect kMoveConfusionEffects[] = {
     {853, true, false, 2, 5},
     {900, true, false, 2, 5}
 };
+struct MoveSelfThawProfile { uint16_t moveId; bool resolved; };
+inline constexpr MoveSelfThawProfile kMoveSelfThawProfiles[] = {
+    {172, true},
+    {221, true},
+    {257, true},
+    {265, false},
+    {287, false},
+    {315, true},
+    {358, false},
+    {394, true},
+    {503, false},
+    {558, true},
+    {592, false},
+    {664, false},
+    {682, false},
+    {685, false},
+    {780, true},
+    {815, false},
+    {816, false},
+    {849, false},
+    {850, false},
+    {902, false}
+};
 struct StatusMoveFlagProfile { uint16_t moveId; bool resolved; bool reflectable; bool powder; bool sound; };
 inline constexpr StatusMoveFlagProfile kStatusMoveFlagProfiles[] = {
     {7, false, false, false, false},

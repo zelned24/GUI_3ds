@@ -1900,3 +1900,10 @@
 1. usePokemonSelfHealingCommand rechaza moveCount >4 antes de consumir PP o restaurar HP. Se añade regresión Recover con snapshot inválido y evento centinela sin cambios.
 2. applyPokemonPostTurnStatusHealing comprueba que el producto base/multiplicador sea finito antes de calcular HP. Un multiplicador finito extremo no puede producir infinito y convertirse silenciosamente en curación completa.
 3. Revisión estática y regresión escrita; sin ejecución de tests ni compilación. Familias de efectos, habilidades, integración Classic y validación Old 3DS siguen pendientes.
+
+## Autodescongelación canónica y composición de Overheat
+
+1. Generador deriva MoveSelfThawProfile del raw pinned: una declaración exacta HealStatusEffectAttr(true, StatusEffect.FREEZE), sin condition/conditionalAttr. Otras curaciones/objetivos permanecen pendientes; raw/provenance canónicos conservados y hash intacto.
+2. Composición de daño admite este atributo junto al efecto secundario migrado y crítico opcional. Overheat 315 conserva daño y SPATK -2 propio; no se admite Burn Up ignorando eliminación de tipo ni Sparkling Aria ignorando curación enemiga.
+3. executeActiveBattleMove reutiliza checkPokemonStatusBeforeMove con deferredFreezeThawMove y aplica la cura después de confusión y validación de PP, antes de precisión. Cancelación por confusión conserva congelación; dobles y callbacks desconocidos siguen gated. IA incluye beneficio HealStatusEffectAttr antes de efectividad/STAB.
+4. Regresiones escritas de perfil, composición, SPATK -2 con rival faint y replay de comando real Overheat. Pruebas de deferred thaw existentes permanecen. Tests/compilación y validación de la cura en run/emulador/hardware siguen pendientes; Classic completo no certificado.
