@@ -3172,6 +3172,43 @@ static int checkCanonicalTrainerSignatureSlots() {
     return checked ? 0 : 231; // Real catalog coverage, not a synthetic trainer.
 }
 
+static int checkEnemyAreaStatAction() {
+    using namespace Pokerogue3DS;
+    const auto* growl = PokerogueContent::findMoveById(45);
+    if (!growl) return 10400;
+    for (uint32_t seed = 1; seed <= 1024; ++seed) {
+        FirstRunRuntime game(seed);
+        if (!game.doubleBattle()) continue;
+        auto& field = const_cast<PresentationContext&>(game.presentation());
+        auto& enemy = field.enemy.battleState;
+        enemy.moveCount = 1;
+        enemy.moves[0] = {growl->id, 1, static_cast<uint8_t>(growl->pp)};
+        bool resolved = true;
+        PokemonBattleState* sleeping[] = {&field.player.battleState, &field.secondEnemy.battleState};
+        for (auto* actor : sleeping) {
+            bool duration = false;
+            for (const auto& profile : PokerogueContent::kStatusDurationAbilityProfiles)
+                if (profile.abilityId == actor->abilityId) duration = profile.resolved;
+            resolved &= duration;
+            actor->status = {};
+            actor->status.present = actor->status.hasSleepTurnsRemaining = true;
+            actor->status.effect = PokemonStatusEffect::Sleep;
+            actor->status.sleepTurnsRemaining = 8;
+            for (uint8_t slot = 0; slot < actor->moveCount; ++slot) actor->moves[slot].pp = 0;
+            for (auto& stage : actor->statStages) stage = 0;
+        }
+        if (!resolved || !game.doubleBattleSupported()) continue;
+        const uint16_t hp[] = {field.player.battleState.hp, enemy.hp, field.secondEnemy.battleState.hp};
+        if (!game.advanceBattleTurn()) return 10401;
+        if (enemy.moves[0].moveId != growl->id || enemy.moves[0].pp ||
+            field.player.battleState.statStages[0] != -1 || field.secondEnemy.battleState.statStages[0] ||
+            field.player.battleState.hp != hp[0] || enemy.hp != hp[1] ||
+            field.secondEnemy.battleState.hp != hp[2]) return 10402;
+        return 0;
+    }
+    return 10403; // Require an admitted real field with the enemy area command connected.
+}
+
 static int checkEnemyAreaAllyDamage() {
     using namespace Pokerogue3DS;
     const auto* move = PokerogueContent::findMoveById(572);
@@ -3735,6 +3772,8 @@ static int checkExhaustedPpStruggleReplay() {
 }
 
 int main() {
+    const int enemyAreaStats = checkEnemyAreaStatAction();
+    if (enemyAreaStats) return enemyAreaStats;
     const int enemyArea = checkEnemyAreaAllyDamage();
     if (enemyArea) return enemyArea;
     const int areaHits = checkDoubleAreaHitBatchRng();

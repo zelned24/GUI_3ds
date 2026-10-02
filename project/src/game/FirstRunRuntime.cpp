@@ -1084,6 +1084,11 @@ bool plainAreaDamageMove(const PokerogueContent::Move& move) {
             !std::strcmp(move.target, "ALL_NEAR_OTHERS"));
 }
 
+bool sharedAreaActionMove(const PokerogueContent::Move& move) {
+    return plainAreaDamageMove(move) || (supportsPokemonStatStageMove(move.id) &&
+        move.target && !std::strcmp(move.target, "ALL_NEAR_ENEMIES"));
+}
+
 bool supportsBaselineBattleMove(uint16_t moveId) {
     if (PokerogueContent::kStruggleDefinitionResolved && moveId == PokerogueContent::kStruggleMoveId) return true;
     if (pokemonIgnoreOpponentStatStagesMoveResolved(moveId) || pokemonSurviveDamageMoveResolved(moveId) || pokemonFixedDamageMoveProfile(moveId) || singleDamageStatStageEffect(moveId) || singleStatusConfusionEffect(moveId) || singleOpponentStatusEffect(moveId) || singleDamageStatusEffect(moveId) || singleDamageConfusionEffect(moveId) || pokemonWeatherChangeProfile(moveId) || supportsPokemonTrickRoomMove(moveId) || supportsPokemonStatStageMove(moveId) || selfHealingProfile(moveId) || damageDrainProfile(moveId) || damageRecoilProfile(moveId)) return true;
@@ -2276,7 +2281,7 @@ bool FirstRunRuntime::executeEnemyResponse(uint8_t userIndex, PokerogueRngAdapte
     const auto* move = PokerogueContent::findMoveById(pokemonMovePpExhausted(enemy.battleState) ?
         PokerogueContent::kStruggleMoveId : enemy.battleState.moves[slot].moveId);
     if (!move) return false;
-    return m_doubleBattle && plainAreaDamageMove(*move) ? executeActiveAreaMove(userIndex, slot, rng) :
+    return m_doubleBattle && sharedAreaActionMove(*move) ? executeActiveAreaMove(userIndex, slot, rng) :
         executeActiveBattleMove(userIndex, 0, slot, rng);
 }
 
@@ -2649,11 +2654,11 @@ bool FirstRunRuntime::advanceBattleTurnInPlace() {
                 }
             } else if (battler == 1) {
                 if (!m_context.enemy.battleState.hp || !m_context.player.battleState.hp) continue;
-                if (!(plainAreaDamageMove(*PokerogueContent::findMoveById(moveIds[1])) ?
+                if (!(sharedAreaActionMove(*PokerogueContent::findMoveById(moveIds[1])) ?
                     executeActiveAreaMove(1, enemy0MoveSlot, *rng) : executeActiveBattleMove(1, 0, enemy0MoveSlot, *rng))) { m_battleFeedback = "Double battle action failed"; return false; }
             } else if (battler == 2) {
                 if (!m_context.secondEnemy.battleState.hp || !m_context.player.battleState.hp) continue;
-                if (!(plainAreaDamageMove(*PokerogueContent::findMoveById(moveIds[2])) ?
+                if (!(sharedAreaActionMove(*PokerogueContent::findMoveById(moveIds[2])) ?
                     executeActiveAreaMove(2, enemy1MoveSlot, *rng) : executeActiveBattleMove(2, 0, enemy1MoveSlot, *rng))) { m_battleFeedback = "Double battle action failed"; return false; }
             }
         }
@@ -2709,7 +2714,7 @@ bool FirstRunRuntime::executeActiveAreaMove(uint8_t userIndex, uint8_t moveSlot,
         &m_context.secondEnemy.battleState};
     if (userIndex > 2 || !m_doubleBattle || moveSlot >= actors[userIndex]->moveCount) return false;
     const auto* move = PokerogueContent::findMoveById(actors[userIndex]->moves[moveSlot].moveId);
-    if (!move || (!plainAreaDamageMove(*move) && (userIndex || !supportsPokemonStatStageMove(move->id)))) return false;
+    if (!move || !sharedAreaActionMove(*move)) return false;
     BattleMoveActionState action{};
     // Pinned getMoveTargets: opponents first, then ally for ALL_NEAR_OTHERS.
     if (!userIndex) {

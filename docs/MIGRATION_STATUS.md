@@ -2281,3 +2281,8 @@
 1. getMoveTargets pinned (src/data/moves/move-utils.ts) resuelve oponentes y después ally para ALL_NEAR_OTHERS. executeActiveAreaMove comparte lista ordenada, prechecks, lote de precisión y PP para jugador/enemigos; daño recomputa multiplicidad viva sin omitir aliado enemigo.
 2. Pokemon.getNextMove usa máximo de targetScores y cambia signo del beneficio de objetivo aliado. La familia plana no tiene beneficio de efecto propio; valoración incorpora aliado con ese signo. Predicción de KO usa targetMultiplier cuando el aliado sigue vivo. Gates existentes de habilidades, escudos, flags/atributos/modifiers siguen activos; no habilita daño de área con efectos adicionales.
 3. Regresión 10390–10394 configura Petal Blizzard canónico en enemigo real (setup exclusivamente de test), comprueba daño a jugador y aliado, PP único, dos ejecuciones iguales y un tick de sueño por actor. Escrita sin ejecutar. Segundo jugador, equipos dobles trainer completos, efectos/callbacks y validación final pendientes.
+
+## Cambios de estadísticas de área del enemigo
+
+1. La admisión de cambios de etapas status neutrales ya permitía Growl enemigo, pero su ejecución requería acción compartida. Se unifica la clasificación usada por turnos normales y respuestas a captura/cambio: ALL_NEAR_ENEMIES de etapas recorre oponentes exclusivamente, con checks y PP únicos.
+2. Regresión 10400–10403 conecta Growl enemigo real contra el jugador, conserva aliado/HP y gasta el último PP sin cambiar identidad. Setup de sueño/slots exclusivo de test. Escrita sin ejecutar; perfiles no neutrales, callbacks, segundo jugador y validación final siguen pendientes.

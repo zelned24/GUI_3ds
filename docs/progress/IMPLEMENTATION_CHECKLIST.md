@@ -540,3 +540,8 @@ Para cada entrega actualizar esta tabla con IDs, commit, alcance conectado, excl
 
 - Dispatcher plano de área compartido resuelve oponentes → aliado, precisión previa, daño/PP y multiplicidad viva. Valoración de IA considera aliado y predicción de KO utiliza factor de área.
 - Regresión Petal Blizzard enemigo → jugador + aliado escrita sin ejecutar. Segundo activo jugador, effects/flags/callbacks completos y verificación pendientes.
+
+### Avance TUR-05 / MOV-09: cambios de estadísticas de área enemigos
+
+- Growl enemigo usa acción compartida también en respuestas a cambio/captura; aliado queda fuera de ALL_NEAR_ENEMIES. Gates de perfiles neutrales conservados.
+- Regresión de comando real/último PP/HP escrita sin ejecutar. Campo de cuatro actores y reacciones de etapas pendientes.
