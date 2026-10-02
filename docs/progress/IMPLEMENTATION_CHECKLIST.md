@@ -310,3 +310,8 @@ Los ejemplos describen infraestructura y límites; no son tareas cerradas. Actua
 
 - Generador produce MoveFixedDamageProfile de FixedDamageAttr literal y LevelDamageAttr exacto con provenance. Sonic Boom/Dragon Rage y Seismic Toss/Night Shade quedan representados.
 - Falta conectarlos al cálculo/comando, inmunidades, precisión, jefes e IA con orden RNG upstream. Generar el perfil no habilita el movimiento ni cierra MOV-02.
+
+### Avance MOV-02: cálculo de daño fijo tras precisión
+
+- resolveStandardPokemonMoveDamage usa el perfil constante/nivel tras inmunidad y precisión, sin crítico, STAB, burn ni variación de daño. Rechaza capacidades de habilidad aún desconocidas.
+- Sigue pendiente habilitar selección/IA/predicción en FirstRunRuntime y pruebas finales. Esta ruta de cálculo no equivale todavía a comando jugable completo.

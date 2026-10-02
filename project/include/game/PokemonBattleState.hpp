@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <cstddef>
 #include <cmath>
+#include <cstring>
 
 namespace Pokerogue3DS {
 
@@ -510,6 +511,20 @@ struct PokemonMoveStatusApplicationEvent {
 };
 // Exact self-FREEZE healing declarations used by MovePhase.checkFreeze.
 // Burn Up still requires its type/removal attributes before runtime admission.
+inline const PokerogueContent::MoveFixedDamageProfile* pokemonFixedDamageMoveProfile(uint16_t moveId) {
+    const auto* move = PokerogueContent::findMoveById(moveId);
+    if (!move || move->category == PokerogueContent::MoveStatus || move->attributeCount != 1 ||
+        move->upstreamFlags || !move->target || std::strcmp(move->target, "NEAR_OTHER")) return nullptr;
+    if (!PokerogueContent::moveHasAttribute(*move, "FixedDamageAttr") &&
+        !PokerogueContent::moveHasAttribute(*move, "LevelDamageAttr")) return nullptr;
+    const PokerogueContent::MoveFixedDamageProfile* found = nullptr;
+    for (const auto& row : PokerogueContent::kMoveFixedDamageProfiles)
+        if (row.moveId == moveId) {
+            if (found || (row.userLevel ? row.amount != 0 : row.amount == 0)) return nullptr;
+            found = &row;
+        }
+    return found;
+}
 inline bool pokemonMoveSelfThawResolved(uint16_t moveId) {
     for (const auto& profile : PokerogueContent::kMoveSelfThawProfiles)
         if (profile.moveId == moveId) return profile.resolved;

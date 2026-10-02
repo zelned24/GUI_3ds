@@ -1776,13 +1776,14 @@ PokemonMoveDamageResult resolveStandardPokemonMoveDamage(
     const PokemonHitPolicy* hitPolicy, const PokemonBurnDamagePolicy* burnPolicy) {
     const auto* move = PokerogueContent::findMoveById(moveId);
     if (!move) return PokemonMoveDamageResult::MissingMove;
-    if (move->category == PokerogueContent::MoveStatus || move->power <= 0) {
+    const auto* fixedDamage = pokemonFixedDamageMoveProfile(moveId);
+    if (move->category == PokerogueContent::MoveStatus || (move->power <= 0 && !fixedDamage)) {
         return PokemonMoveDamageResult::NonDamagingMove;
     }
     if (move->accuracy < -1 || move->accuracy > 100) return PokemonMoveDamageResult::InvalidAccuracy;
     double burnMultiplier = 1.0;
     const PokemonBurnDamagePolicy unknownBurnPolicy{};
-    if (!pokemonBurnDamageMultiplier(attacker, moveId, burnPolicy ? *burnPolicy : unknownBurnPolicy, burnMultiplier))
+    if (!fixedDamage && !pokemonBurnDamageMultiplier(attacker, moveId, burnPolicy ? *burnPolicy : unknownBurnPolicy, burnMultiplier))
         return PokemonMoveDamageResult::UnsupportedAbilityCondition;
     const auto* attackerSpecies = PokerogueContent::findSpeciesByDex(attacker.speciesDex);
     const auto* defenderSpecies = PokerogueContent::findSpeciesByDex(defender.speciesDex);
@@ -1803,7 +1804,20 @@ PokemonMoveDamageResult resolveStandardPokemonMoveDamage(
     double weatherMultiplier = 1.0;
     if (weatherContext && !pokemonMoveWeatherMultiplier(moveId, *weatherContext, weatherMultiplier))
         return PokemonMoveDamageResult::UnresolvedWeather;
-    const auto baseStatus = calculatePokemonBaseDamage(attacker, defender, moveId, baseDamage, false, weatherContext);
+    if (fixedDamage) {
+        // Fixed damage skips offensive modifiers, but unported full-HP endure,
+        // immunities and callbacks must still fail explicitly in this frontier.
+        const uint16_t abilityIds[] = {attacker.abilityId, defender.abilityId};
+        for (const auto id : abilityIds) {
+            bool known = false;
+            for (const auto& capability : PokerogueContent::kStatusActionAbilityProfiles)
+                if (capability.abilityId == id) known = capability.resolved;
+            if (!known) return PokemonMoveDamageResult::UnsupportedAbilityCondition;
+        }
+        if (fixedDamage->userLevel && !attacker.level) return PokemonMoveDamageResult::InvalidStats;
+    }
+    const auto baseStatus = fixedDamage ? PokemonBaseDamageResult::Ok :
+        calculatePokemonBaseDamage(attacker, defender, moveId, baseDamage, false, weatherContext);
     if (baseStatus == PokemonBaseDamageResult::UnsupportedAbilityCondition)
         return PokemonMoveDamageResult::UnsupportedAbilityCondition;
     if (baseStatus == PokemonBaseDamageResult::UnresolvedWeather)
@@ -1848,6 +1862,11 @@ PokemonMoveDamageResult resolveStandardPokemonMoveDamage(
         }
     }
     next.hit = true;
+    if (fixedDamage) {
+        next.damage = fixedDamage->userLevel ? attacker.level : fixedDamage->amount;
+        output = next;
+        return PokemonMoveDamageResult::Ok;
+    }
 
     // Baseline hitCheck -> getCriticalHitResult -> damage RNG ordering:
     // Canonical HighCrit raises the stage; CritOnly skips the critical draw.

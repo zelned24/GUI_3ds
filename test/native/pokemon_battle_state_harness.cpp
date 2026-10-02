@@ -1682,6 +1682,21 @@ extern "C" int runPokemonBattleStateChecks() {
         (static_cast<double>(randomPercent) / 100.0);
     const uint32_t expectedDamage = expectedRawDamage < 1.0 ? 1 : static_cast<uint32_t>(expectedRawDamage);
     PokemonBattleState sameSpeciesTarget = state;
+    {
+        auto fixedUser = state, fixedTarget = state;
+        fixedUser.status = fixedTarget.status = {};
+        fixedUser.abilityId = fixedTarget.abilityId = 65;
+        for (const uint16_t id : {uint16_t(82), uint16_t(69), uint16_t(101)}) {
+            auto fixedRng = damageRng, expectedFixedRng = fixedRng;
+            (void)expectedFixedRng.randSeedInt(100);
+            PokemonMoveDamageRoll fixedRoll{};
+            if (Pokerogue3DS::resolveStandardPokemonMoveDamage(fixedUser, fixedTarget, id, false,
+                    fixedRng, fixedRoll) != PokemonMoveDamageResult::Ok || !fixedRoll.hit ||
+                fixedRoll.damage != (id == 82 ? 40u : fixedUser.level) ||
+                fixedRoll.critical || fixedRoll.criticalWasRolled || fixedRoll.randomDamagePercent ||
+                fixedRng.randSeedUint32() != expectedFixedRng.randSeedUint32()) return 9820;
+        }
+    }
     PokemonMoveDamageRoll damageRoll{};
     if (Pokerogue3DS::resolveStandardPokemonMoveDamage(state, sameSpeciesTarget, 33, false,
         damageRng, damageRoll) != PokemonMoveDamageResult::Ok) return 43;

@@ -1967,3 +1967,9 @@
 1. Pinned move.ts FixedDamageAttr.getDamage devuelve constante; LevelDamageAttr devuelve user.level. Generador acepta declaraciones exactas únicas y conserva path/symbol/hash. No interpreta RandomLevelDamageAttr/Counter derivados como constantes.
 2. MoveFixedDamageProfile generado para Sonic Boom 49=20, Dragon Rage 82=40, Seismic Toss 69/Night Shade 101=nivel. Regresiones de datos/provenance escritas; no habilita aún ejecución en FirstRunRuntime.
 3. Pendiente conectar dispatcher, precisión/inmunidades/bosses/IA/RNG y correr gates finales. Tests/compilación aplazados; no se declara soporte runtime de daño fijo ni Classic completo.
+
+## Resolver de daño fijo y por nivel
+
+1. Pinned Pokemon.getMoveEffectiveness/getAttackDamage/getCriticalHitResult y FixedDamageAttr: inmunidad precede precisión; daño fijo devuelve constante/nivel y nunca crit ni variación de daño.
+2. resolveStandardPokemonMoveDamage conecta perfiles exactos a esa ruta; ignora burn/STAB/etapas ofensivas para el importe final y conserva precisión/ability block. Gate de habilidad evita omitir callbacks full-HP endure desconocidos.
+3. FirstRunRuntime todavía no selecciona estos ataques: falta AI/predicción/admisión y regresiones ejecutadas. Tests/compilación y objetivo Old 3DS continúan pendientes.
