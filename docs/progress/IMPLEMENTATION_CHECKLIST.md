@@ -315,3 +315,8 @@ Los ejemplos describen infraestructura y límites; no son tareas cerradas. Actua
 
 - resolveStandardPokemonMoveDamage usa el perfil constante/nivel tras inmunidad y precisión, sin crítico, STAB, burn ni variación de daño. Rechaza capacidades de habilidad aún desconocidas.
 - Sigue pendiente habilitar selección/IA/predicción en FirstRunRuntime y pruebas finales. Esta ruta de cálculo no equivale todavía a comando jugable completo.
+
+### Avance MOV-08 / MOV-13: efecto implícito del constructor AttackMove
+
+- Todos los ataques Fuego incluyen cura FREEZE del objetivo por el constructor upstream, aunque no figure en su raw individual. El dispatcher aplica esa cura y la IA cuenta su atributo implícito.
+- Regresiones Ember y beneficio Overheat actualizadas desde esta evidencia. El inventario de declaraciones raw no enumera efectos heredados/implícitos; DAT-02 requiere también esa auditoría.

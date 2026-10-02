@@ -533,6 +533,11 @@ inline bool pokemonMoveSelfThawResolved(uint16_t moveId) {
 // One secondary effect, optional critical modifier and exact pre-use self-thaw.
 // Other effects require their own dispatcher, never omission.
 inline bool pokemonMoveTargetThawResolved(uint16_t moveId) {
+    // Pinned AttackMove constructor inserts HealStatusEffectAttr(false, FREEZE)
+    // for FIRE, even when absent from the individual raw initializer.
+    const auto* move = PokerogueContent::findMoveById(moveId);
+    if (move && move->category != PokerogueContent::MoveStatus && move->type &&
+        std::strcmp(move->type, "FIRE") == 0) return true;
     for (const auto& profile : PokerogueContent::kMoveSelfThawProfiles)
         if (profile.moveId == moveId) return profile.resolved && profile.curesTarget;
     return false;
@@ -540,8 +545,15 @@ inline bool pokemonMoveTargetThawResolved(uint16_t moveId) {
 // Pinned Move.getUserBenefitScore sums each HealStatusEffectAttr, including
 // opponent-targeted declarations: the getter checks the USER status in both.
 inline double pokemonCanonicalThawAiBenefit(const PokemonBattleState& user, uint16_t moveId) {
-    if (!user.status.present || !pokemonMoveSelfThawResolved(moveId)) return 0.0;
-    return pokemonMoveTargetThawResolved(moveId) ? 20.0 : 10.0;
+    if (!user.status.present) return 0.0;
+    const auto* move = PokerogueContent::findMoveById(moveId);
+    if (!move) return 0.0;
+    double benefit = move->category != PokerogueContent::MoveStatus && move->type &&
+        std::strcmp(move->type, "FIRE") == 0 ? 10.0 : 0.0;
+    for (const auto& profile : PokerogueContent::kMoveSelfThawProfiles)
+        if (profile.moveId == moveId && profile.resolved)
+            benefit += profile.curesTarget ? 20.0 : 10.0;
+    return benefit;
 }
 // POST_APPLY, after a successful damaging hit and before the queued burn effect.
 inline bool applyPokemonMoveTargetThaw(PokemonBattleState& target, uint16_t moveId,

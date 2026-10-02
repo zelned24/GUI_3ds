@@ -940,8 +940,16 @@ extern "C" int runPokemonBattleStateChecks() {
         frozenTarget.status.freezeTurnsRemaining = 3;
         if (Pokerogue3DS::pokemonCanonicalThawAiBenefit(frozenTarget, 503) != 20 ||
             Pokerogue3DS::pokemonCanonicalThawAiBenefit(frozenTarget, 815) != 20 ||
-            Pokerogue3DS::pokemonCanonicalThawAiBenefit(frozenTarget, 315) != 10 ||
+            Pokerogue3DS::pokemonCanonicalThawAiBenefit(frozenTarget, 315) != 20 ||
             Pokerogue3DS::pokemonCanonicalThawAiBenefit(frozenTarget, 664) != 0) return 9760;
+        if (!Pokerogue3DS::pokemonMoveTargetThawResolved(52) ||
+            Pokerogue3DS::pokemonMoveSelfThawResolved(52) ||
+            Pokerogue3DS::pokemonCanonicalThawAiBenefit(frozenTarget, 52) != 10) return 9830;
+        auto emberFrozenTarget = frozenTarget;
+        bool emberCured = false;
+        if (!Pokerogue3DS::applyPokemonMoveTargetThaw(emberFrozenTarget, 52, true, emberCured) ||
+            !emberCured || emberFrozenTarget.status.present ||
+            emberFrozenTarget.status.freezeTurnsRemaining) return 9831;
         auto statusless = frozenTarget;
         statusless.status = {};
         if (Pokerogue3DS::pokemonCanonicalThawAiBenefit(statusless, 503) != 0) return 9761;

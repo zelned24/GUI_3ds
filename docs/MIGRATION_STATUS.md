@@ -1973,3 +1973,10 @@
 1. Pinned Pokemon.getMoveEffectiveness/getAttackDamage/getCriticalHitResult y FixedDamageAttr: inmunidad precede precisión; daño fijo devuelve constante/nivel y nunca crit ni variación de daño.
 2. resolveStandardPokemonMoveDamage conecta perfiles exactos a esa ruta; ignora burn/STAB/etapas ofensivas para el importe final y conserva precisión/ability block. Gate de habilidad evita omitir callbacks full-HP endure desconocidos.
 3. FirstRunRuntime todavía no selecciona estos ataques: falta AI/predicción/admisión y regresiones ejecutadas. Tests/compilación y objetivo Old 3DS continúan pendientes.
+
+## Cura de congelación implícita en ataques Fuego
+
+1. Pinned src/data/moves/move.ts AttackMove.constructor añade HealStatusEffectAttr(false, FREEZE) cuando type FIRE. No está en el raw individual: el inventario de declaraciones no representa todos los atributos efectivos construidos.
+2. pokemonMoveTargetThawResolved incluye este efecto en ataques Fuego; dispatcher ya ejecuta la cura tras impacto y antes del status secundario. Ember/Flamethrower también curan al rival, sin autodescongelar al usuario.
+3. IA suma atributo implícito y explícitos: Ember=10, Overheat/Flame Wheel/Flare Blitz=20 cuando el usuario tiene status; Scald/Scorching Sands conservan 20. Corrige las notas anteriores que atribuían solo 10 a Overheat.
+4. Regresiones Ember y puntuación Overheat escritas/actualizadas según nueva evidencia. Tests/compilación/Classic/Azahar/hardware permanecen pendientes.
