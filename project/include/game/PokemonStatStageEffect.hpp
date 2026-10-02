@@ -391,6 +391,21 @@ inline PokemonStatStageEffectResult executePokemonDamageStatStagePhase(
     const auto* move = PokerogueContent::findMoveById(effect.moveId);
     if (!move || !pokemonDamageSecondaryAttributesResolved(*move, "StatStageChangeAttr"))
         return PokemonStatStageEffectResult::InvalidDefinition;
+    const PokerogueContent::MoveStatStageEffect* canonical = nullptr;
+    for (const auto& row : PokerogueContent::kMoveStatStageEffects)
+        if (row.moveId == effect.moveId) {
+            if (canonical) return PokemonStatStageEffectResult::InvalidDefinition;
+            canonical = &row;
+        }
+    if (!canonical || canonical->statMask != effect.statMask || canonical->stages != effect.stages ||
+        canonical->selfTarget != effect.selfTarget) return PokemonStatStageEffectResult::InvalidDefinition;
+    if (!policy.move.stagePolicy.resolved) return PokemonStatStageEffectResult::UnresolvedPolicy;
+    if (user.hp > user.maxHp || target.hp > target.maxHp ||
+        user.moveCount > 4 || target.moveCount > 4) return PokemonStatStageEffectResult::InvalidState;
+    for (int8_t stage : user.statStages)
+        if (stage < -6 || stage > 6) return PokemonStatStageEffectResult::InvalidState;
+    for (int8_t stage : target.statStages)
+        if (stage < -6 || stage > 6) return PokemonStatStageEffectResult::InvalidState;
     auto nextUser = user, nextTarget = target;
     auto nextRng = rng;
     PokemonStatStageCommandEvent event{};

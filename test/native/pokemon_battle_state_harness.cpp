@@ -775,6 +775,25 @@ extern "C" int runPokemonBattleStateChecks() {
                 stagePolicy, stageRng, phaseEvent) != Pokerogue3DS::PokemonStatStageEffectResult::Ok ||
             phaseEvent.move.stages.triggered || stageTarget.statStages[4] != -1 || stageUser.moves[0].pp != 10 ||
             stageRng.randSeedUint32() != expectedStageRng.randSeedUint32()) return 9561;
+        // Even a fainted recipient cannot legitimize a forged definition.
+        auto forgedPsychic = psychic;
+        forgedPsychic.statMask = 1;
+        phaseEvent.move.stages.changedStatMask = 123;
+        if (Pokerogue3DS::executePokemonDamageStatStagePhase(stageUser, stageTarget, forgedPsychic,
+                stagePolicy, stageRng, phaseEvent) != Pokerogue3DS::PokemonStatStageEffectResult::InvalidDefinition ||
+            phaseEvent.move.stages.changedStatMask != 123 || stageTarget.statStages[4] != -1) return 9590;
+        stagePolicy.move.stagePolicy.resolved = false;
+        if (Pokerogue3DS::executePokemonDamageStatStagePhase(stageUser, stageTarget, psychic,
+                stagePolicy, stageRng, phaseEvent) != Pokerogue3DS::PokemonStatStageEffectResult::UnresolvedPolicy ||
+            phaseEvent.move.stages.changedStatMask != 123) return 9591;
+        stagePolicy.move.stagePolicy.resolved = true;
+        const auto validMaxHp = stageTarget.maxHp;
+        stageTarget.hp = 1;
+        stageTarget.maxHp = 0;
+        if (Pokerogue3DS::executePokemonDamageStatStagePhase(stageUser, stageTarget, psychic,
+                stagePolicy, stageRng, phaseEvent) != Pokerogue3DS::PokemonStatStageEffectResult::InvalidState ||
+            phaseEvent.move.stages.changedStatMask != 123) return 9592;
+        stageTarget.maxHp = validMaxHp;
         stageTarget.hp = targetHp;
         stagePolicy.postChangePoliciesResolved = false;
         stageRng = expectedStageRng;

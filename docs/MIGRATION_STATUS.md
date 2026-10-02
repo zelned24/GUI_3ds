@@ -1813,3 +1813,9 @@
 1. Revisión estática identificó que scoreActiveEnemyMove sumaba estados/confusión después del scorer que ya había aplicado efectividad/STAB. Pinned Pokemon.getEnemyMoveScores suma beneficios primero; ahora esos beneficios entran en baselineEnemyMoveScore antes de sus multiplicadores.
 2. Tipo inmune conserva score -20: un efecto secundario ya no aumenta ficticiamente la puntuación de un ataque sin efecto. Fórmulas de beneficio y políticas de elegibilidad existentes se conservan; este cambio no completa la IA ni callbacks pendientes.
 3. Regresiones escritas para efectividad doble, resistencia y tipo inmune con beneficio de Ember. Tests y compilación permanecen aplazados; Classic completo aún pendiente.
+
+## Validación de definiciones en fase secundaria de estadísticas
+
+1. executePokemonDamageStatStagePhase exige coincidencia exacta de máscara, niveles y selfTarget con la declaración canónica única. Antes solo validaba moveId/clase de atributo, permitiendo parámetros externos incoherentes.
+2. Valida políticas y HP/etapas incluso si el destinatario ya está faint; ese caso omite chance, pero no autoriza una definición falsa ni políticas pendientes. Fallos dejan actores, RNG y output intactos.
+3. Regresiones escritas para máscara falsificada, política pendiente y HP fuera de rango. Tests y compilación siguen aplazados; esta validación no demuestra todavía ejecución en Azahar ni Classic completo.
