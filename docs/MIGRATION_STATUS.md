@@ -1819,3 +1819,9 @@
 1. executePokemonDamageStatStagePhase exige coincidencia exacta de máscara, niveles y selfTarget con la declaración canónica única. Antes solo validaba moveId/clase de atributo, permitiendo parámetros externos incoherentes.
 2. Valida políticas y HP/etapas incluso si el destinatario ya está faint; ese caso omite chance, pero no autoriza una definición falsa ni políticas pendientes. Fallos dejan actores, RNG y output intactos.
 3. Regresiones escritas para máscara falsificada, política pendiente y HP fuera de rango. Tests y compilación siguen aplazados; esta validación no demuestra todavía ejecución en Azahar ni Classic completo.
+
+## Regresiones de composición y rollback de estadísticas secundarias
+
+1. Añadidas regresiones de comando completo con Bubble Beam (baja SPD enemigo) y Flame Charge (sube SPD propio), usando encuentros reales y cambios de moveset exclusivamente en snapshots de test. Comparan replay HP/PP/etapas de ambos actores.
+2. Caso de fallo tardío añade reacción Defiant con política pendiente tras chance y cambio tentativo: exige rollback de actor, RNG y output. El caso anterior solo cubría políticas rechazadas antes de cualquier draw; se conserva.
+3. Pruebas escritas, sin ejecución por instrucción del usuario; no demuestra todavía paridad ni jugabilidad en Old 3DS. Tests/compilación y Classic completo siguen pendientes.

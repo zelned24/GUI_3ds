@@ -463,6 +463,25 @@ static int checkStatusActionAdmission() {
                 psychicAfter.playerPp[0] != 9 || psychicAfter.enemyHp != repeatedPsychicAfter.enemyHp ||
                 psychicAfter.playerHp != repeatedPsychicAfter.playerHp ||
                 psychicAfter.enemyStatStages[4] != repeatedPsychicAfter.enemyStatStages[4]) return 9563;
+            for (const uint16_t id : {uint16_t(61), uint16_t(488)}) {
+                const auto* stageMove = PokerogueContent::findMoveById(id);
+                if (!stageMove) return 9602;
+                auto stageCheckpoint = checkpoint;
+                stageCheckpoint.playerMoveIds[0] = stageCheckpoint.playerParty[0].moveIds[0] = id;
+                stageCheckpoint.playerPp[0] = stageCheckpoint.playerParty[0].pp[0] =
+                    stageCheckpoint.playerParty[0].maxPp[0] = static_cast<uint8_t>(stageMove->pp);
+                FirstRunRuntime stageAttack(seed), repeatedStageAttack(seed);
+                NativeRunSave stageAfter{}, repeatedStageAfter{};
+                if (!stageAttack.restoreNativeRunSave(stageCheckpoint) ||
+                    !repeatedStageAttack.restoreNativeRunSave(stageCheckpoint) || !stageAttack.battleInputSupported() ||
+                    !stageAttack.advanceBattleTurn() || !repeatedStageAttack.advanceBattleTurn() ||
+                    stageAttack.captureNativeRunSave(stageAfter) != NativeSaveResult::Ok ||
+                    repeatedStageAttack.captureNativeRunSave(repeatedStageAfter) != NativeSaveResult::Ok ||
+                    stageAfter.playerPp[0] != stageMove->pp - 1 || stageAfter.playerHp != repeatedStageAfter.playerHp ||
+                    stageAfter.enemyHp != repeatedStageAfter.enemyHp ||
+                    stageAfter.playerStatStages[4] != repeatedStageAfter.playerStatStages[4] ||
+                    stageAfter.enemyStatStages[4] != repeatedStageAfter.enemyStatStages[4]) return 9603;
+            }
             auto growlCheckpoint = checkpoint;
             growlCheckpoint.playerMoveIds[0] = growlCheckpoint.playerParty[0].moveIds[0] = 45;
             growlCheckpoint.playerPp[0] = growlCheckpoint.playerParty[0].pp[0] =

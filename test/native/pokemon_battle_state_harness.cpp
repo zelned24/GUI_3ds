@@ -795,6 +795,30 @@ extern "C" int runPokemonBattleStateChecks() {
             phaseEvent.move.stages.changedStatMask != 123) return 9592;
         stageTarget.maxHp = validMaxHp;
         stageTarget.hp = targetHp;
+        // Failure in a reaction occurs AFTER chance and tentative mutation.
+        // Neither that mutation nor the chance draw may escape the transaction.
+        const PokerogueContent::AbilityStatStageReaction lateReaction{128, 1, 2, "AbilityId.DEFIANT"};
+        stagePolicy.recipientReactions[0] = &lateReaction;
+        stagePolicy.move.stagePolicy.chance = 99;
+        bool checkedLateFailure = false;
+        for (uint32_t seed = 1; seed <= 128; ++seed) {
+            Pokerogue3DS::PokerogueRngAdapter lateRng;
+            const uint16_t lateSeed[] = {static_cast<uint16_t>(seed)};
+            lateRng.sow(lateSeed, 1);
+            auto expectedLateRng = lateRng;
+            if (expectedLateRng.randSeedInt(100) >= 99) continue;
+            expectedLateRng = lateRng;
+            phaseEvent.move.stages.changedStatMask = 123;
+            if (Pokerogue3DS::executePokemonDamageStatStagePhase(stageUser, stageTarget, psychic,
+                    stagePolicy, lateRng, phaseEvent) != Pokerogue3DS::PokemonStatStageEffectResult::UnresolvedPolicy ||
+                stageTarget.statStages[4] != -1 || stageTarget.hp != targetHp || stageUser.hp != userHp ||
+                stageUser.moves[0].pp != 10 || phaseEvent.move.stages.changedStatMask != 123 ||
+                lateRng.randSeedUint32() != expectedLateRng.randSeedUint32()) return 9600;
+            checkedLateFailure = true;
+            break;
+        }
+        if (!checkedLateFailure) return 9601;
+        stagePolicy.recipientReactions[0] = nullptr;
         stagePolicy.postChangePoliciesResolved = false;
         stageRng = expectedStageRng;
         if (Pokerogue3DS::executePokemonDamageStatStagePhase(stageUser, stageTarget, psychic,
