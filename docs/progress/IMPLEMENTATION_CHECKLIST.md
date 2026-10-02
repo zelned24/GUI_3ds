@@ -535,3 +535,8 @@ Para cada entrega actualizar esta tabla con IDs, commit, alcance conectado, excl
 
 - Tipo/inmunidad/bloqueo/precisión se preparan para todos los objetivos vivos antes de críticos/daño. Resultados ligados a move/target se consumen sin reroll. Petal Blizzard plano se conecta al dispatcher del jugador.
 - Regresión de hit/miss mixto y orden RNG escrita sin ejecutar. ALL_NEAR_OTHERS enemigo, segundo jugador, protecciones y efectos adicionales pendientes.
+
+### Avance TUR-05 / IA-02 / MOV-03: daño enemigo a aliado
+
+- Dispatcher plano de área compartido resuelve oponentes → aliado, precisión previa, daño/PP y multiplicidad viva. Valoración de IA considera aliado y predicción de KO utiliza factor de área.
+- Regresión Petal Blizzard enemigo → jugador + aliado escrita sin ejecutar. Segundo activo jugador, effects/flags/callbacks completos y verificación pendientes.

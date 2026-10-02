@@ -1377,14 +1377,18 @@ bool FirstRunRuntime::supportsActiveBattleMove(const PokemonBattleState& user,
     const auto* areaMove = PokerogueContent::findMoveById(moveId);
     if (areaMove && plainAreaDamageMove(*areaMove)) {
         if (m_heldModifierCount || !user.statsAreBaseFormulaOnly || !opponent.statsAreBaseFormulaOnly) return false;
-        // An enemy's ALL_NEAR_OTHERS also hits its ally; that target dispatcher
-        // is not yet connected. Do not silently drop the ally from the action.
-        if (m_doubleBattle && !std::strcmp(areaMove->target, "ALL_NEAR_OTHERS") &&
-            user.pokemonId != m_context.player.battleState.pokemonId) return false;
         const PokemonBattleState* field[] = {&m_context.player.battleState, &m_context.enemy.battleState,
             &m_context.secondEnemy.battleState};
-        for (uint8_t i = 0; i < (m_doubleBattle ? 3 : 2); ++i)
-            if (field[i]->hp && !statusActionAbilitySupported(field[i]->abilityId)) return false;
+        for (uint8_t i = 0; i < (m_doubleBattle ? 3 : 2); ++i) {
+            if (!field[i]->hp) continue;
+            if (!field[i]->statsAreBaseFormulaOnly || !statusActionAbilitySupported(field[i]->abilityId)) return false;
+            if (m_doubleBattle) {
+                for (const auto& profile : PokerogueContent::kFullHpEndureAbilityProfiles)
+                    if (profile.resolved && profile.abilityId == field[i]->abilityId) return false;
+                for (const auto& profile : PokerogueContent::kSlicingPowerAbilityProfiles)
+                    if (profile.abilityId == field[i]->abilityId) return false;
+            }
+        }
     }
     // Survival dispatcher currently covers simple actor contexts only.
     for (const auto& profile : PokerogueContent::kFullHpEndureAbilityProfiles) {
@@ -1469,7 +1473,17 @@ double FirstRunRuntime::scoreActiveEnemyMove(const PokemonBattleState& user,
                 !calculatePokemonConfusionMoveAiBenefit(move.id, chance, benefit)) return -20.0;
             secondaryBenefit -= benefit;
         }
-        return baselineEnemyMoveScore(user, target, move, secondaryBenefit);
+        const double opponentScore = baselineEnemyMoveScore(user, target, move, secondaryBenefit);
+        if (m_doubleBattle && plainAreaDamageMove(move) && !std::strcmp(move.target, "ALL_NEAR_OTHERS") &&
+            user.pokemonId != m_context.player.battleState.pokemonId) {
+            const auto& ally = user.pokemonId == m_context.enemy.battleState.pokemonId ?
+                m_context.secondEnemy.battleState : m_context.enemy.battleState;
+            if (ally.hp) {
+                const double allyScore = -baselineEnemyMoveScore(user, ally, move);
+                return allyScore > opponentScore ? allyScore : opponentScore;
+            }
+        }
+        return opponentScore;
     }
     PokemonStatusRecipientPolicies policies{};
     double targetBenefit = 0;
@@ -2179,10 +2193,17 @@ bool FirstRunRuntime::selectEnemyMoveSlot(const PokemonBattleState& enemyState,
         uint32_t damage = 0;
         const auto* candidateMove = PokerogueContent::findMoveById(enemyState.moves[slot].moveId);
         if (!candidateMove) return false;
+        PokemonMoveTargetPolicy targets{true, 1};
+        if (m_doubleBattle && plainAreaDamageMove(*candidateMove) &&
+            !std::strcmp(candidateMove->target, "ALL_NEAR_OTHERS")) {
+            const auto& ally = enemyState.pokemonId == m_context.enemy.battleState.pokemonId ?
+                m_context.secondEnemy.battleState : m_context.enemy.battleState;
+            if (ally.hp) targets.activeTargetCount = 2;
+        }
         // Status moves cannot KO and remain eligible only when no attack can KO.
         if (candidateMove->category != PokerogueContent::MoveStatus &&
             calculatePokemonDamageCore(enemyState, playerState,
-                enemyState.moves[slot].moveId, false, damage, &simulatedWeather, &rng) != PokemonDamageCoreResult::Ok) {
+                enemyState.moves[slot].moveId, false, damage, &simulatedWeather, &rng, &targets) != PokemonDamageCoreResult::Ok) {
             m_battleFeedback = "Enemy simulated damage unsupported";
             buildScene();
             return false;
@@ -2251,7 +2272,11 @@ bool FirstRunRuntime::executeEnemyResponse(uint8_t userIndex, PokerogueRngAdapte
     const auto& enemy = userIndex == 1 ? m_context.enemy : m_context.secondEnemy;
     if (!enemy.battleState.hp || !m_context.player.battleState.hp) return true;
     uint8_t slot = 0;
-    return selectEnemyMoveSlot(enemy.battleState, m_context.player.battleState, rng, slot) &&
+    if (!selectEnemyMoveSlot(enemy.battleState, m_context.player.battleState, rng, slot)) return false;
+    const auto* move = PokerogueContent::findMoveById(pokemonMovePpExhausted(enemy.battleState) ?
+        PokerogueContent::kStruggleMoveId : enemy.battleState.moves[slot].moveId);
+    if (!move) return false;
+    return m_doubleBattle && plainAreaDamageMove(*move) ? executeActiveAreaMove(userIndex, slot, rng) :
         executeActiveBattleMove(userIndex, 0, slot, rng);
 }
 
@@ -2450,9 +2475,12 @@ bool FirstRunRuntime::advanceBattleTurnInPlace() {
                 uint32_t damage = 0;
                 const auto* cm = PokerogueContent::findMoveById(m_context.enemy.battleState.moves[slot].moveId);
                 if (!cm) return false;
+                PokemonMoveTargetPolicy targets{true, 1};
+                if (plainAreaDamageMove(*cm) && !std::strcmp(cm->target, "ALL_NEAR_OTHERS") &&
+                    m_context.secondEnemy.battleState.hp) targets.activeTargetCount = 2;
                 if (cm->category != PokerogueContent::MoveStatus &&
                     calculatePokemonDamageCore(m_context.enemy.battleState, playerState,
-                        m_context.enemy.battleState.moves[slot].moveId, false, damage, &simWeather, rng) != PokemonDamageCoreResult::Ok) {
+                        m_context.enemy.battleState.moves[slot].moveId, false, damage, &simWeather, rng, &targets) != PokemonDamageCoreResult::Ok) {
                     m_battleFeedback = "Enemy simulated damage unsupported";
                     buildScene();
                     return false;
@@ -2505,9 +2533,12 @@ bool FirstRunRuntime::advanceBattleTurnInPlace() {
                 uint32_t damage = 0;
                 const auto* cm = PokerogueContent::findMoveById(m_context.secondEnemy.battleState.moves[slot].moveId);
                 if (!cm) return false;
+                PokemonMoveTargetPolicy targets{true, 1};
+                if (plainAreaDamageMove(*cm) && !std::strcmp(cm->target, "ALL_NEAR_OTHERS") &&
+                    m_context.enemy.battleState.hp) targets.activeTargetCount = 2;
                 if (cm->category != PokerogueContent::MoveStatus &&
                     calculatePokemonDamageCore(m_context.secondEnemy.battleState, playerState,
-                        m_context.secondEnemy.battleState.moves[slot].moveId, false, damage, &simWeather, rng) != PokemonDamageCoreResult::Ok) {
+                        m_context.secondEnemy.battleState.moves[slot].moveId, false, damage, &simWeather, rng, &targets) != PokemonDamageCoreResult::Ok) {
                     m_battleFeedback = "Enemy simulated damage unsupported";
                     buildScene();
                     return false;
@@ -2603,20 +2634,9 @@ bool FirstRunRuntime::advanceBattleTurnInPlace() {
                     // Stat-stage status and plain area damage share action checks.
                     // Other area effects require hit batching and their own resolver.
                     if (!supportsPokemonStatStageMove(pMove->id) && !plainAreaDamageMove(*pMove)) return false;
-                    uint16_t targetAbilities[2]{};
-                    uint8_t targetCount = 0;
-                    if (m_context.enemy.battleState.hp) targetAbilities[targetCount++] = m_context.enemy.battleState.abilityId;
-                    if (m_context.secondEnemy.battleState.hp) targetAbilities[targetCount++] = m_context.secondEnemy.battleState.abilityId;
-                    BattleMoveActionState areaAction{};
-                    PokemonPpPolicy areaPp{};
-                    areaPp.resolved = true;
-                    if (!pokemonActiveTargetsPpCost(targetAbilities, targetCount, areaPp.cost)) return false;
-                    if (m_context.enemy.battleState.hp > 0) {
-                        if (!executeActiveBattleMove(0, 1, m_selectedBattleMove, *rng, &areaPp, &areaAction)) { m_battleFeedback = "Double battle action failed"; return false; }
-                        areaPp.cost = 0; // Subsequent target executes in resolved ignore-PP mode.
-                    }
-                    if (m_context.secondEnemy.battleState.hp > 0) {
-                        if (!executeActiveBattleMove(0, 2, m_selectedBattleMove, *rng, &areaPp, &areaAction)) { m_battleFeedback = "Double battle action failed"; return false; }
+                    if (!executeActiveAreaMove(0, m_selectedBattleMove, *rng)) {
+                        m_battleFeedback = "Double battle area action failed";
+                        return false;
                     }
                 } else {
                     uint8_t target = struggleTarget ? struggleTarget : (m_selectedTarget == 0 ? 1 : 2);
@@ -2629,10 +2649,12 @@ bool FirstRunRuntime::advanceBattleTurnInPlace() {
                 }
             } else if (battler == 1) {
                 if (!m_context.enemy.battleState.hp || !m_context.player.battleState.hp) continue;
-                if (!executeActiveBattleMove(1, 0, enemy0MoveSlot, *rng)) { m_battleFeedback = "Double battle action failed"; return false; }
+                if (!(plainAreaDamageMove(*PokerogueContent::findMoveById(moveIds[1])) ?
+                    executeActiveAreaMove(1, enemy0MoveSlot, *rng) : executeActiveBattleMove(1, 0, enemy0MoveSlot, *rng))) { m_battleFeedback = "Double battle action failed"; return false; }
             } else if (battler == 2) {
                 if (!m_context.secondEnemy.battleState.hp || !m_context.player.battleState.hp) continue;
-                if (!executeActiveBattleMove(2, 0, enemy1MoveSlot, *rng)) { m_battleFeedback = "Double battle action failed"; return false; }
+                if (!(plainAreaDamageMove(*PokerogueContent::findMoveById(moveIds[2])) ?
+                    executeActiveAreaMove(2, enemy1MoveSlot, *rng) : executeActiveBattleMove(2, 0, enemy1MoveSlot, *rng))) { m_battleFeedback = "Double battle action failed"; return false; }
             }
         }
 
@@ -2682,6 +2704,41 @@ bool FirstRunRuntime::advanceBattleTurnInPlace() {
     return finishBattleTurn();
 }
 
+bool FirstRunRuntime::executeActiveAreaMove(uint8_t userIndex, uint8_t moveSlot, PokerogueRngAdapter& rng) {
+    PokemonBattleState* actors[] = {&m_context.player.battleState, &m_context.enemy.battleState,
+        &m_context.secondEnemy.battleState};
+    if (userIndex > 2 || !m_doubleBattle || moveSlot >= actors[userIndex]->moveCount) return false;
+    const auto* move = PokerogueContent::findMoveById(actors[userIndex]->moves[moveSlot].moveId);
+    if (!move || (!plainAreaDamageMove(*move) && (userIndex || !supportsPokemonStatStageMove(move->id)))) return false;
+    BattleMoveActionState action{};
+    // Pinned getMoveTargets: opponents first, then ally for ALL_NEAR_OTHERS.
+    if (!userIndex) {
+        if (actors[1]->hp) action.targetIndices[action.targetCount++] = 1;
+        if (actors[2]->hp) action.targetIndices[action.targetCount++] = 2;
+    } else {
+        if (actors[0]->hp) action.targetIndices[action.targetCount++] = 0;
+        if (move->target && !std::strcmp(move->target, "ALL_NEAR_OTHERS")) {
+            const uint8_t ally = userIndex == 1 ? 2 : 1;
+            if (actors[ally]->hp) action.targetIndices[action.targetCount++] = ally;
+        }
+    }
+    if (!action.targetCount) return true;
+    uint16_t abilities[3]{};
+    for (uint8_t i = 0; i < action.targetCount; ++i)
+        abilities[i] = actors[action.targetIndices[i]]->abilityId;
+    PokemonPpPolicy pp{};
+    pp.resolved = true;
+    if (!pokemonActiveTargetsPpCost(abilities, action.targetCount, pp.cost)) return false;
+    for (uint8_t i = 0; i < action.targetCount; ++i) {
+        const uint8_t target = action.targetIndices[i];
+        if (!actors[userIndex]->hp || !actors[target]->hp) continue;
+        if (!executeActiveBattleMove(userIndex, target, moveSlot, rng, &pp, &action)) return false;
+        pp.cost = 0;
+        if (action.cancelled) break;
+    }
+    return true;
+}
+
 bool FirstRunRuntime::executeActiveBattleMove(uint8_t userIndex, uint8_t targetIndex, uint8_t moveSlot,
     PokerogueRngAdapter& rng, const PokemonPpPolicy* ppOverride, BattleMoveActionState* action) {
     if (userIndex > 2 || targetIndex > 2) return false;
@@ -2709,7 +2766,7 @@ bool FirstRunRuntime::executeActiveBattleMove(uint8_t userIndex, uint8_t targetI
 
     // The current spread dispatcher visits targets separately. A single-target
     // action calls this function once, so its MovePhase checks also run once.
-    const bool repeatedTargetChecks = m_doubleBattle && userIndex == 0 && move->target &&
+    const bool repeatedTargetChecks = m_doubleBattle && move->target &&
         (!std::strcmp(move->target, "ALL_NEAR_ENEMIES") ||
          !std::strcmp(move->target, "ALL_ENEMIES") ||
          !std::strcmp(move->target, "ALL_OTHERS") ||
@@ -2944,7 +3001,8 @@ bool FirstRunRuntime::executeActiveBattleMove(uint8_t userIndex, uint8_t targetI
     if (action && !action->hitChecksPrepared && plainAreaDamageMove(*move) && !primalWeatherCancelled) {
         // MoveEffectPhase conducts every hit check before any critical/damage draw.
         // Preparation belongs to the action and sees the unmodified target field.
-        for (uint8_t i = 1; i < (m_doubleBattle ? 3 : 2); ++i) {
+        for (uint8_t targetEntry = 0; targetEntry < action->targetCount; ++targetEntry) {
+            const uint8_t i = action->targetIndices[targetEntry];
             const auto& target = *actors[i];
             if (!target.hp) continue;
             PokemonMoveWeatherContext targetWeather{};
@@ -3072,9 +3130,11 @@ bool FirstRunRuntime::executeActiveBattleMove(uint8_t userIndex, uint8_t targetI
     auto nextRng = rng;
     PokemonMoveTargetPolicy targets{};
     targets.resolved = true;
-    if (plainAreaDamageMove(*move) && m_doubleBattle && userIndex == 0)
-        targets.activeTargetCount = static_cast<uint8_t>((m_context.enemy.battleState.hp != 0) +
-            (m_context.secondEnemy.battleState.hp != 0));
+    if (plainAreaDamageMove(*move) && action) {
+        targets.activeTargetCount = 0;
+        for (uint8_t i = 0; i < action->targetCount; ++i)
+            targets.activeTargetCount += actors[action->targetIndices[i]]->hp != 0;
+    }
     PokemonMoveActionResult result{};
     if (useStandardPokemonMove(nextUser, nextOpponent, moveSlot, false, nextRng, result,
             &weather, &critical, &hit, &pp, targetIsBoss ? &nextBossState : nullptr,

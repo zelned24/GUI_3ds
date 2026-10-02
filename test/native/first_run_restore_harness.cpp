@@ -3172,6 +3172,52 @@ static int checkCanonicalTrainerSignatureSlots() {
     return checked ? 0 : 231; // Real catalog coverage, not a synthetic trainer.
 }
 
+static int checkEnemyAreaAllyDamage() {
+    using namespace Pokerogue3DS;
+    const auto* move = PokerogueContent::findMoveById(572);
+    if (!move) return 10390;
+    for (uint32_t seed = 1; seed <= 1024; ++seed) {
+        FirstRunRuntime source(seed);
+        if (!source.doubleBattle() || source.arenaWeather().type != PokemonEffectiveWeather::None) continue;
+        auto& field = const_cast<PresentationContext&>(source.presentation());
+        auto& enemy = field.enemy.battleState;
+        enemy.moveCount = 1;
+        enemy.moves[0] = {move->id, 1, static_cast<uint8_t>(move->pp)};
+        PokemonBattleState* sleeping[] = {&field.player.battleState, &field.secondEnemy.battleState};
+        bool supported = true;
+        for (auto* actor : sleeping) {
+            bool duration = false;
+            for (const auto& profile : PokerogueContent::kStatusDurationAbilityProfiles)
+                if (profile.abilityId == actor->abilityId) duration = profile.resolved;
+            supported &= duration;
+            actor->status = {};
+            actor->status.present = actor->status.hasSleepTurnsRemaining = true;
+            actor->status.effect = PokemonStatusEffect::Sleep;
+            actor->status.sleepTurnsRemaining = 8;
+            for (uint8_t slot = 0; slot < actor->moveCount; ++slot) actor->moves[slot].pp = 0;
+        }
+        if (!supported || !source.doubleBattleSupported()) continue;
+        const uint16_t playerHp = field.player.battleState.hp;
+        const uint16_t allyHp = field.secondEnemy.battleState.hp;
+        const uint16_t enemyHp = enemy.hp;
+        FirstRunRuntime left = source, right = source;
+        if (!left.advanceBattleTurn() || !right.advanceBattleTurn()) return 10391;
+        const auto& a = left.presentation();
+        const auto& b = right.presentation();
+        if (left.battleFinished() || !a.secondEnemy.battleState.hp) continue;
+        if (!a.player.battleState.hp || a.player.battleState.hp >= playerHp ||
+            a.secondEnemy.battleState.hp >= allyHp || a.enemy.battleState.hp != enemyHp ||
+            a.enemy.battleState.moves[0].moveId != move->id || a.enemy.battleState.moves[0].pp ||
+            a.player.battleState.hp != b.player.battleState.hp ||
+            a.secondEnemy.battleState.hp != b.secondEnemy.battleState.hp ||
+            a.enemy.battleState.moves[0].pp != b.enemy.battleState.moves[0].pp) return 10392;
+        if (a.player.battleState.status.toxicTurnCount != 1 ||
+            a.secondEnemy.battleState.status.toxicTurnCount != 1) return 10393;
+        return 0;
+    }
+    return 10394; // Require a real enemy -> opponent + ally action, not just target metadata.
+}
+
 static int checkDoubleAreaHitBatchRng() {
     using namespace Pokerogue3DS;
     const auto* move = PokerogueContent::findMoveById(572); // Real Petal Blizzard, no extra effects.
@@ -3689,6 +3735,8 @@ static int checkExhaustedPpStruggleReplay() {
 }
 
 int main() {
+    const int enemyArea = checkEnemyAreaAllyDamage();
+    if (enemyArea) return enemyArea;
     const int areaHits = checkDoubleAreaHitBatchRng();
     if (areaHits) return areaHits;
     const int spreadDamage = checkDoublePlainAreaDamage();
