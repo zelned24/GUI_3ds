@@ -1955,3 +1955,9 @@
 1. resolveActiveStatusRecipientPolicies ya no marca incondicionalmente activos los componentes de habilidades propias/fuente. Usa HP restante después del daño/retroceso para ambos actores.
 2. Esto conserva la distinción entre capability conocida y habilidad activa: las capacidades desconocidas continúan rechazadas; perfiles admitidos no declaran bypassFaint. No se habilitan pasivas ni suppression implícitamente.
 3. Revisión estática y diff-check; pruebas de composición/inactividad existentes quedan pendientes de ejecución junto con tests, compilación y validación Old 3DS. Objetivo global aún incompleto.
+
+## Chance de efecto secundario después de faint por retroceso
+
+1. Pinned MoveAttr.getMoveChance consulta applyAbAttrs; Pokemon.canApplyAbility excluye portadores faint sin bypassFaint. Resolver nativo ahora recibe userAbilityActive/targetAbilityActive, manteniendo defaults compatibles y capacidad desconocida rechazada.
+2. POST_APPLY de status/confusión en FirstRunRuntime pasa HP posterior a daño/retroceso. Serene Grace del usuario KO no multiplica chance; IgnoreMoveEffects del objetivo solo bloquea si está activo.
+3. Regresiones 9800–9803 escritas de Flare Blitz con Serene Grace/Shield Dust: chances 20/10/0/10. Tests/compilación y run Classic en Old 3DS siguen pendientes.

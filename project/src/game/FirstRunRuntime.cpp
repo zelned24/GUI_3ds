@@ -2832,7 +2832,8 @@ bool FirstRunRuntime::executeActiveBattleMove(uint8_t userIndex, uint8_t targetI
         if (!result.weatherCancelled && result.damageRoll.hit && result.damageApplied) {
             PokemonMoveStatusPhaseEvent statusEvent{};
             int16_t chance = 0;
-            if (!resolvePokemonMoveEffectChance(move->id, nextUser.abilityId, nextOpponent.abilityId, false, chance)) return false;
+            if (!resolvePokemonMoveEffectChance(move->id, nextUser.abilityId, nextOpponent.abilityId, false, chance,
+                    nextUser.hp != 0, nextOpponent.hp != 0)) return false;
             if (!executePokemonMoveStatusPhase(nextUser, nextOpponent, move->id, chance,
                     recipient.status, reactions, nextRng, statusEvent)) return false;
         }
@@ -2852,7 +2853,8 @@ bool FirstRunRuntime::executeActiveBattleMove(uint8_t userIndex, uint8_t targetI
         int16_t chance = 0;
         PokemonMoveConfusionEvent confusionEvent{};
         if (!resolveActiveStatusRecipientPolicies(nextOpponent, nextUser, PokemonStatusEffect::None, recipient) ||
-            !resolvePokemonMoveEffectChance(move->id, nextUser.abilityId, nextOpponent.abilityId, false, chance) ||
+            !resolvePokemonMoveEffectChance(move->id, nextUser.abilityId, nextOpponent.abilityId, false, chance,
+                    nextUser.hp != 0, nextOpponent.hp != 0) ||
             !applyPokemonMoveConfusion(nextOpponent, move->id, chance, recipient.status.safeguardBlocks,
                 recipient.confusion, nextRng, confusionEvent, nextUser.pokemonId, true)) return false;
     }

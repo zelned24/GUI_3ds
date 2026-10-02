@@ -889,6 +889,17 @@ extern "C" int runPokemonBattleStateChecks() {
             stageRng.randSeedUint32() != expectedStageRng.randSeedUint32()) return 9562;
     }
     {
+        int16_t chance = -123;
+        if (!Pokerogue3DS::resolvePokemonMoveEffectChance(394, 32, 0, false, chance, true, true) ||
+            chance != 20) return 9800; // Serene Grace on living source.
+        if (!Pokerogue3DS::resolvePokemonMoveEffectChance(394, 32, 0, false, chance, false, true) ||
+            chance != 10) return 9801; // Source KO by recoil before secondary burn.
+        if (!Pokerogue3DS::resolvePokemonMoveEffectChance(394, 32, 19, false, chance, false, true) ||
+            chance != 0) return 9802; // Living Shield Dust still blocks.
+        if (!Pokerogue3DS::resolvePokemonMoveEffectChance(394, 32, 19, false, chance, false, false) ||
+            chance != 10) return 9803;
+    }
+    {
         const auto* blitz = PokerogueContent::findMoveById(394);
         const auto* recoil = Pokerogue3DS::canonicalRecoilProfile(394);
         if (!blitz || !recoil || recoil->useMaxHp || recoil->ratio != 0.33 ||

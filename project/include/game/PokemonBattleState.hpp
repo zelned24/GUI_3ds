@@ -443,7 +443,8 @@ PokemonStatusObtainResult obtainPokemonStatus(PokemonBattleState& actor, Pokemon
 // Fractional results remain explicitly unsupported by the current int chance
 // contract; never truncate a future upstream multiplier silently.
 inline bool resolvePokemonMoveEffectChance(uint16_t moveId, uint16_t userAbilityId,
-    uint16_t targetAbilityId, bool selfEffect, int16_t& output) {
+    uint16_t targetAbilityId, bool selfEffect, int16_t& output,
+    bool userAbilityActive = true, bool targetAbilityActive = true) {
     const auto* move = PokerogueContent::findMoveById(moveId);
     if (!move) return false;
     const PokerogueContent::StatusActionAbilityProfile *user = nullptr, *target = nullptr;
@@ -455,11 +456,11 @@ inline bool resolvePokemonMoveEffectChance(uint16_t moveId, uint16_t userAbility
     double chance = move->upstreamChance;
     bool exception = false;
     for (const auto id : PokerogueContent::kMoveEffectChanceExceptions) exception |= id == moveId;
-    if (chance > 0 && !exception) {
+    if (userAbilityActive && chance > 0 && !exception) {
         chance *= user->effectChanceMultiplier;
         if (chance > 100) chance = 100;
     }
-    if (!selfEffect && chance > 0 && target->ignoresPositiveMoveEffects) chance = 0;
+    if (!selfEffect && targetAbilityActive && chance > 0 && target->ignoresPositiveMoveEffects) chance = 0;
     if (!std::isfinite(chance) || chance < -32768 || chance > 32767 || std::floor(chance) != chance) return false;
     output = static_cast<int16_t>(chance);
     return true;

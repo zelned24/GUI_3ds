@@ -300,3 +300,8 @@ Los ejemplos describen infraestructura y límites; no son tareas cerradas. Actua
 - [Resumen por familia](../generated/CONTENT_COVERAGE_INVENTORY.md) y [registros por ID](../generated/CONTENT_COVERAGE_INVENTORY.json).
 - Incluye movimientos/habilidades, builders y provenance; no duplica raw TypeScript. Todos los registros comienzan NOT_AUDITED para ejecución: el inventario no infiere soporte por existencia de código.
 - DAT-02 permanece parcial: falta conectar matriz de capacidades y evidencia por contexto del runtime, además del resto de dominios.
+
+### Avance HAB-08 / MOV-10: chance tras retroceso
+
+- Resolver de probabilidad acepta actividad explícita de ambas habilidades. POST_APPLY pasa HP restante; Serene Grace no duplica chance tras faint y Shield Dust solo bloquea cuando está activo.
+- Regresiones con Flare Blitz 394, Serene Grace 32 y Shield Dust 19 escritas, sin ejecutar. Las dos tareas siguen parciales; no se extiende a pasivas/supresión todavía.
