@@ -4,6 +4,8 @@ Revisión upstream: 8555c08c823b856cbec4eb99ca84ea52a955836d.
 
 Inventario de declaraciones, no porcentaje de soporte runtime. Cada registro queda NOT_AUDITED hasta inspeccionar ejecución, consumidor y prueba.
 
+El JSON conserva herencia inspeccionada y cura FREEZE implícita del constructor Fuego. Herencia no equivale a efectos ejecutados; otros efectos implícitos aún requieren auditoría.
+
 El JSON asociado contiene IDs, builders y provenance. Las familias cuentan registros distintos; un registro puede pertenecer a varias familias.
 
 ## moves: 920 registros

@@ -2028,3 +2028,9 @@
 1. EnemyPokemon.getNextMove calcula KO mediante getAttackDamage(simulated:true), que aplica FixedDamageAttr sin suprimir la tirada RandomLevelDamageAttr; Pokemon.randBattleSeedInt delega al battle RNG. La simulación pinned sí consume esta tirada.
 2. calculatePokemonDamageCore acepta un RNG explícito para esta familia y FirstRunRuntime pasa el mismo stream de selección. No usa media ni copia restaurada del RNG. Admisión habilitada con los gates de contexto/habilidades existentes.
 3. Regresión 9903 compara daño/tirada de predicción; restore/replay incluye Psywave. Corrige el bloqueo documentado en el apartado anterior. Tests/compilación/Azahar/hardware siguen pendientes.
+
+## Inventario de herencia y atributos implícitos
+
+1. Sturdy pinned aplica PreDefendFullHpEndureAbAttr añadiendo tag STURDY, no mediante clamp directo del importe. Requiere integrar tag/lapse/consumo y persistencia antes de admitirla; no se habilitó incorrectamente.
+2. Inventario schema v2 inspecciona las clases reales de move.ts/ab-attrs.ts de la revisión pinned, conserva hashes de esas fuentes y un grafo de ascendencia compartido. RandomLevelDamageAttr queda trazado a FixedDamageAttr; attrs de Sturdy a sus bases.
+3. Registra la cura FREEZE implícita en 44 ataques Fuego. No interpreta automáticamente todos los constructores ni declara cobertura runtime. Generación realizada y revisión estática; pruebas y compilación siguen aplazadas.
