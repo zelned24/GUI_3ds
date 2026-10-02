@@ -124,6 +124,61 @@ inline PokemonTurnOrderFieldPolicy pokemonTrickRoomOrderPolicy(const PokemonTric
     return policy;
 }
 
+// One resolved command per battler. Grouped multi-action/forced setOrder paths
+// remain separate capabilities; callers supply already resolved speed/priority.
+struct PokemonFieldTurnEntry {
+    uint8_t battlerId = 0;
+    uint32_t effectiveSpeed = 0;
+    int32_t priority = 0;
+};
+inline bool resolvePokemonFieldTurnOrder(const PokemonFieldTurnEntry* entries, size_t count,
+    const uint16_t* rootSeed, size_t seedLength, uint16_t wave, uint32_t turn,
+    const PokemonTurnOrderFieldPolicy& field, uint8_t* output, size_t capacity) {
+    if (!field.resolved || !entries || !output || !count || count > 4 || capacity < count ||
+        !rootSeed || !seedLength || seedLength > PokerogueRngAdapter::kMaxSeedCodeUnits ||
+        !wave || !turn || turn > (0xffffffffU - count) / 1000U) return false;
+    PokemonFieldTurnEntry ordered[4]{};
+    for (size_t i = 0; i < count; ++i) {
+        if (entries[i].battlerId >= 4 || !entries[i].effectiveSpeed) return false;
+        for (size_t j = 0; j < i; ++j)
+            if (entries[i].battlerId == entries[j].battlerId) return false;
+        ordered[i] = entries[i];
+    }
+    uint16_t waveSeed[PokerogueRngAdapter::kMaxSeedCodeUnits]{};
+    if (!PokerogueRngAdapter::shiftCharCodes(rootSeed, seedLength, wave,
+        waveSeed, PokerogueRngAdapter::kMaxSeedCodeUnits)) return false;
+    PokerogueRngAdapter tieRng;
+    PokerogueSeedOffsetScope scope(tieRng, waveSeed, seedLength, turn * 1000U + static_cast<uint32_t>(count));
+    if (!scope.valid()) return false;
+    for (size_t i = count - 1; i > 0; --i) {
+        const auto j = static_cast<size_t>(tieRng.integerInRange(0, static_cast<int>(i)));
+        const auto saved = ordered[i]; ordered[i] = ordered[j]; ordered[j] = saved;
+    }
+    // Stable descending speed sort, then reverse the entire order (including ties).
+    for (size_t i = 1; i < count; ++i) {
+        const auto value = ordered[i];
+        size_t j = i;
+        while (j && ordered[j - 1].effectiveSpeed < value.effectiveSpeed) {
+            ordered[j] = ordered[j - 1]; --j;
+        }
+        ordered[j] = value;
+    }
+    if (field.speedReversed) for (size_t i = 0; i < count / 2; ++i) {
+        const auto saved = ordered[i]; ordered[i] = ordered[count - 1 - i]; ordered[count - 1 - i] = saved;
+    }
+    // MovePhasePriorityQueue applies stable priority ordering afterward.
+    for (size_t i = 1; i < count; ++i) {
+        const auto value = ordered[i];
+        size_t j = i;
+        while (j && ordered[j - 1].priority < value.priority) {
+            ordered[j] = ordered[j - 1]; --j;
+        }
+        ordered[j] = value;
+    }
+    for (size_t i = 0; i < count; ++i) output[i] = ordered[i].battlerId;
+    return true;
+}
+
 // Pinned MovePhasePriorityQueue sorts by move priority after
 // sortInSpeedOrder. For a two-Pokemon field, that speed sort shuffles the
 // initial [player, enemy] order with a stream derived from waveSeed and

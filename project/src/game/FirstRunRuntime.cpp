@@ -2447,27 +2447,14 @@ bool FirstRunRuntime::advanceBattleTurnInPlace() {
             priorities[i] = m->priority;
         }
 
-        uint16_t waveSeed[PokerogueRngAdapter::kMaxSeedCodeUnits]{};
-        if (!PokerogueRngAdapter::shiftCharCodes(m_seedCodeUnits.data(), m_seedLength,
-                m_run.wave, waveSeed, PokerogueRngAdapter::kMaxSeedCodeUnits)) return false;
-        PokerogueRngAdapter tieRng;
-        if (m_turn > (0xffffffffU - activeCount) / 1000U) return false;
-        PokerogueSeedOffsetScope tieScope(tieRng, waveSeed, m_seedLength, m_turn * 1000U + activeCount);
-        if (!tieScope.valid()) return false;
-        if (activeCount > 1) {
-            for (int i = static_cast<int>(activeCount) - 1; i > 0; --i) {
-                const int j = tieRng.integerInRange(0, i);
-                std::swap(activeBattlers[i], activeBattlers[j]);
-            }
+        PokemonFieldTurnEntry entries[3]{};
+        for (uint8_t i = 0; i < activeCount; ++i) {
+            const uint8_t id = activeBattlers[i];
+            entries[i] = {id, speeds[id], priorities[id]};
         }
-
-        const bool reverseSpeed = m_trickRoom.turnsLeft != 0;
-        std::stable_sort(activeBattlers, activeBattlers + activeCount, [&](uint8_t a, uint8_t b) {
-            return reverseSpeed ? speeds[a] < speeds[b] : speeds[a] > speeds[b];
-        });
-        std::stable_sort(activeBattlers, activeBattlers + activeCount, [&](uint8_t a, uint8_t b) {
-            return priorities[a] > priorities[b];
-        });
+        const auto field = pokemonTrickRoomOrderPolicy(m_trickRoom);
+        if (!resolvePokemonFieldTurnOrder(entries, activeCount, m_seedCodeUnits.data(), m_seedLength,
+            m_run.wave, m_turn, field, activeBattlers, 3)) return false;
 
         m_runStarted = true;
         m_checkpointAvailable = false;

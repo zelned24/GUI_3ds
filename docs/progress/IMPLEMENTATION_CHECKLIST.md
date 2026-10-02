@@ -447,3 +447,8 @@ Los ejemplos describen infraestructura y límites; no son tareas cerradas. Actua
 
 - Capture/restore acepta parties generadas con estados resueltos fuera de wave 5 cuando el equipo jugador/EXP es explícito; verifica identidad del trainer y sus miembros contra generación.
 - Replay legacy permanece restringido. Casos de ruta explícita wave 5 escritos; casos posteriores y gates ejecutados aún pendientes. No implica todos los entrenadores ni todas las reglas de combate.
+
+### Avance TUR-02 / TUR-05: orden de campo
+
+- Dobles actuales usan resolver de hasta cuatro actores; Trick Room invierte también empates según pinned upstream. Prioridad se aplica después, conservando orden estable.
+- Casos escritos sin ejecutar. Segundo jugador, selección de sus comandos/objetivos, acciones agrupadas y forced order siguen pendientes.

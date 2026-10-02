@@ -2009,6 +2009,30 @@ extern "C" int runPokemonBattleStateChecks() {
                 row.sourcePath[0] && row.sourceSymbol[0] && std::strlen(row.sourceHash) == 64;
         if (!provenance) return 10055;
     }
+    // Field speed ties are reversed as a whole by Trick Room, before priority.
+    {
+        const uint16_t root[] = {'d', 'o', 'u', 'b', 'l', 'e'};
+        Pokerogue3DS::PokemonFieldTurnEntry entries[4] = {{0, 100, 0}, {1, 100, 0}, {2, 100, 0}, {3, 100, 0}};
+        Pokerogue3DS::PokemonTurnOrderFieldPolicy normal{true, false}, room{true, true};
+        uint8_t ordinary[4]{}, reversed[4]{}, repeated[4]{};
+        for (const size_t count : {size_t(2), size_t(3), size_t(4)}) {
+            if (!Pokerogue3DS::resolvePokemonFieldTurnOrder(entries, count, root, 6, 200, 3, normal, ordinary, 4) ||
+                !Pokerogue3DS::resolvePokemonFieldTurnOrder(entries, count, root, 6, 200, 3, room, reversed, 4) ||
+                !Pokerogue3DS::resolvePokemonFieldTurnOrder(entries, count, root, 6, 200, 3, normal, repeated, 4)) return 10160;
+            for (size_t i = 0; i < count; ++i)
+                if (ordinary[i] != repeated[i] || ordinary[i] != reversed[count - 1 - i]) return 10161;
+        }
+        entries[3].priority = 1;
+        if (!Pokerogue3DS::resolvePokemonFieldTurnOrder(entries, 4, root, 6, 200, 3, room, reversed, 4) ||
+            reversed[0] != 3) return 10162;
+        entries[1].battlerId = 0;
+        uint8_t untouched[4]{9, 9, 9, 9};
+        if (Pokerogue3DS::resolvePokemonFieldTurnOrder(entries, 4, root, 6, 200, 3, room, untouched, 4) ||
+            untouched[0] != 9 || untouched[3] != 9) return 10163;
+        entries[1].battlerId = 1;
+        if (Pokerogue3DS::resolvePokemonFieldTurnOrder(entries, 4, root, 6, 200, 3, room, untouched, 3) ||
+            untouched[0] != 9) return 10164;
+    }
     // Sharpness modifies slicing power before the base formula's additive two.
     {
         auto user = state, target = state;

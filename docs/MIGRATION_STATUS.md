@@ -2179,3 +2179,9 @@
 2. Legacy sin actores conserva restricción wave 5 y replay de historial soportado. No se declara que todos los callbacks/templates upstream estén resueltos ni que todos los combates sean ejecutables.
 3. Regresiones 10150–10154 contrastan ruta explícita de trainer existente wave 5 (equipo/EXP/moves/PP/switch counter), escritas sin ejecutar. Aún faltan casos de encounters posteriores concretos; la apertura por capacidades necesita evidencia ejecutada, no solo eliminar un gate.
 4. Inspección pinned BattleScene.initFinalBossPhaseTwo confirma dependencias pendientes: Mini Black Hole no transferible, moveset/form change y campo doble con segundo jugador. No se habilita una segunda fase falsa de un solo jugador.
+
+## Orden de campo y empate Trick Room en dobles
+
+1. Pinned src/utils/speed-order.ts shufflePokemonList usa offset turn*1000+count; sortBySpeed ordena descendente y revierte la lista completa bajo Trick Room. El comparator ascendente anterior de dobles conservaba empates en vez de invertirlos.
+2. PokemonFieldTurnEntry/resolver bounded (hasta cuatro actores, una acción por actor) comparte algoritmo sin asignaciones: shuffle local seeded, orden estable de velocidad, reverse completo y prioridad estable. FirstRunRuntime dobles actuales consume el resolver; salida solo se publica al éxito.
+3. Regresiones 10160–10164 de dos/tres/cuatro actores, ties, prioridad, determinismo y entradas/capacidad inválidas escritas sin ejecutar. No integra por sí solo segundo jugador, acciones agrupadas, forced setOrder ni Eternatus fase dos.
