@@ -2118,3 +2118,9 @@
 1. Move.slicingMove pinned marca MoveFlags.SLICING_MOVE, consumido por Sharpness. Generador preserva IDs/path/symbol/hash para declarations exactas; builders parametrizados/desconocidos no se admiten.
 2. Sacred Sword 533 queda admitido con IgnoreOpponentStatStagesAttr y slicing conocido en contextos/abilities soportados. Sharpness todavía es capacidad desconocida y se rechaza; Nihil Light no se habilita por este perfil parcial.
 3. Regresiones de bypass DEF/EVA/ATK/ACC incluyen 533 y provenance slicing. Escritas sin ejecutar; tests/compilación/Old 3DS pendientes.
+
+## Auditoría de slicing con secundarios
+
+1. El builder reconocido habilita Metal Claw 232, Crush Claw 306, Razor Shell 534 y Cross Poison 440 mediante dispatchers existentes; se inspeccionaron los atributos reales del snapshot pinned.
+2. Replay de stages incorpora los tres primeros y compara ATK propio/DEF rival además de HP/PP. Regresiones de metadata mantienen HighCrit+POISON en Cross Poison y Sharpness no resuelta.
+3. Casos escritos sin ejecutar. Sharpness sigue pendiente; la admisión del builder no significa que cualquier habilidad consumidora o composición esté implementada.

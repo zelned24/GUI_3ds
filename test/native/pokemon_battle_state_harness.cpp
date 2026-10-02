@@ -1981,6 +1981,25 @@ extern "C" int runPokemonBattleStateChecks() {
             first.hit != (first.accuracyRoll < 100.0 / 3.0) ||
             rng.randSeedUint32() != repeated.randSeedUint32()) return 10035;
     }
+    // Newly resolved slicing builder must retain every secondary attribute.
+    for (const uint16_t id : {uint16_t(232), uint16_t(306), uint16_t(534)}) {
+        const auto* move = PokerogueContent::findMoveById(id);
+        if (!move || !Pokerogue3DS::pokemonDamageSecondaryAttributesResolved(*move, "StatStageChangeAttr"))
+            return 10050;
+        bool flags = false;
+        for (const auto& row : PokerogueContent::kStatusMoveFlagProfiles)
+            if (row.moveId == id) flags = row.resolved;
+        if (!flags) return 10051;
+    }
+    {
+        const auto* move = PokerogueContent::findMoveById(440);
+        if (!move || !PokerogueContent::moveHasAttribute(*move, "HighCritAttr") ||
+            !Pokerogue3DS::pokemonDamageSecondaryAttributesResolved(*move, "StatusEffectAttr")) return 10052;
+        bool sharpnessResolved = false;
+        for (const auto& row : PokerogueContent::kStatusActionAbilityProfiles)
+            if (row.abilityId == 292) sharpnessResolved = row.resolved;
+        if (sharpnessResolved) return 10053; // Sharpness callback has not been ported yet.
+    }
     // TargetHalfHpDamageAttr: floor, minimum one, no ordinary damage modifiers.
     for (const uint16_t id : {uint16_t(162), uint16_t(717), uint16_t(877)}) {
         const auto* profile = Pokerogue3DS::pokemonFixedDamageMoveProfile(id);

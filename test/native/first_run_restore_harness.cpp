@@ -578,7 +578,7 @@ static int checkStatusActionAdmission() {
                 psychicAfter.playerPp[0] != 9 || psychicAfter.enemyHp != repeatedPsychicAfter.enemyHp ||
                 psychicAfter.playerHp != repeatedPsychicAfter.playerHp ||
                 psychicAfter.enemyStatStages[4] != repeatedPsychicAfter.enemyStatStages[4]) return 9563;
-            for (const uint16_t id : {uint16_t(61), uint16_t(488), uint16_t(315)}) {
+            for (const uint16_t id : {uint16_t(61), uint16_t(488), uint16_t(315), uint16_t(232), uint16_t(306), uint16_t(534)}) {
                 const auto* stageMove = PokerogueContent::findMoveById(id);
                 if (!stageMove) return 9602;
                 auto stageCheckpoint = checkpoint;
@@ -605,7 +605,9 @@ static int checkStatusActionAdmission() {
                     stageAfter.enemyHp != repeatedStageAfter.enemyHp ||
                     stageAfter.playerStatStages[4] != repeatedStageAfter.playerStatStages[4] ||
                     stageAfter.playerStatStages[2] != repeatedStageAfter.playerStatStages[2] ||
-                    stageAfter.enemyStatStages[4] != repeatedStageAfter.enemyStatStages[4]) return 9603;
+                    stageAfter.enemyStatStages[4] != repeatedStageAfter.enemyStatStages[4] ||
+                    stageAfter.enemyStatStages[1] != repeatedStageAfter.enemyStatStages[1] ||
+                    stageAfter.playerStatStages[0] != repeatedStageAfter.playerStatStages[0]) return 9603;
                 if (id == 315 && (stageAfter.playerStatus.present ||
                     repeatedStageAfter.playerStatus.present || stageAfter.playerParty[0].status.present ||
                     stageAfter.playerStatus.freezeTurnsRemaining ||
