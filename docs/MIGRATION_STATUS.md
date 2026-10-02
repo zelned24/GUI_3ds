@@ -1907,3 +1907,9 @@
 2. Composición de daño admite este atributo junto al efecto secundario migrado y crítico opcional. Overheat 315 conserva daño y SPATK -2 propio; no se admite Burn Up ignorando eliminación de tipo ni Sparkling Aria ignorando curación enemiga.
 3. executeActiveBattleMove reutiliza checkPokemonStatusBeforeMove con deferredFreezeThawMove y aplica la cura después de confusión y validación de PP, antes de precisión. Cancelación por confusión conserva congelación; dobles y callbacks desconocidos siguen gated. IA incluye beneficio HealStatusEffectAttr antes de efectividad/STAB.
 4. Regresiones escritas de perfil, composición, SPATK -2 con rival faint y replay de comando real Overheat. Pruebas de deferred thaw existentes permanecen. Tests/compilación y validación de la cura en run/emulador/hardware siguen pendientes; Classic completo no certificado.
+
+## Replay completo de Overheat con usuario congelado
+
+1. Regresión de FirstRunRuntime restaura snapshot de encuentro real con Overheat canónico y estado FREEZE con tres turnos restantes; duplicación del estado de actor activo/party mantiene coherencia del codec.
+2. Exige comando admitido, PP consumido una vez, replay de HP/etapas y desaparición completa de congelación/counter en actor activo y party guardados. La cura debe ocurrir incluso si precisión falla, porque doThawCheck precede la precisión en upstream.
+3. Prueba escrita, no ejecutada; siguen pendientes tests/compilación/Azahar/hardware y Classic completo. Esta regresión no constituye resultado de ejecución.

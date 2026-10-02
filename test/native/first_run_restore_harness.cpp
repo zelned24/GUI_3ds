@@ -470,6 +470,15 @@ static int checkStatusActionAdmission() {
                 stageCheckpoint.playerMoveIds[0] = stageCheckpoint.playerParty[0].moveIds[0] = id;
                 stageCheckpoint.playerPp[0] = stageCheckpoint.playerParty[0].pp[0] =
                     stageCheckpoint.playerParty[0].maxPp[0] = static_cast<uint8_t>(stageMove->pp);
+                if (id == 315) {
+                    // Test-only frozen snapshot; the production move/profile stays canonical.
+                    PokemonStatusState frozen{};
+                    frozen.present = true;
+                    frozen.effect = PokemonStatusEffect::Freeze;
+                    frozen.hasFreezeTurnsRemaining = true;
+                    frozen.freezeTurnsRemaining = 3;
+                    stageCheckpoint.playerStatus = stageCheckpoint.playerParty[0].status = frozen;
+                }
                 FirstRunRuntime stageAttack(seed), repeatedStageAttack(seed);
                 NativeRunSave stageAfter{}, repeatedStageAfter{};
                 if (!stageAttack.restoreNativeRunSave(stageCheckpoint) ||
@@ -482,6 +491,10 @@ static int checkStatusActionAdmission() {
                     stageAfter.playerStatStages[4] != repeatedStageAfter.playerStatStages[4] ||
                     stageAfter.playerStatStages[2] != repeatedStageAfter.playerStatStages[2] ||
                     stageAfter.enemyStatStages[4] != repeatedStageAfter.enemyStatStages[4]) return 9603;
+                if (id == 315 && (stageAfter.playerStatus.present ||
+                    repeatedStageAfter.playerStatus.present || stageAfter.playerParty[0].status.present ||
+                    stageAfter.playerStatus.freezeTurnsRemaining ||
+                    stageAfter.playerStatus.hasFreezeTurnsRemaining)) return 9740;
             }
             auto growlCheckpoint = checkpoint;
             growlCheckpoint.playerMoveIds[0] = growlCheckpoint.playerParty[0].moveIds[0] = 45;
