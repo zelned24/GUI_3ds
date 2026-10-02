@@ -3471,6 +3471,14 @@ static int checkDoubleAreaHitBatchRng() {
                 unchanged, &weather, &critical[0], &hits[0], nullptr, &targets, &rejected) !=
                 PokemonMoveDamageResult::InvalidStats || unchanged.damage != 123 ||
             rng.randSeedUint32() != beforeReject.randSeedUint32()) return 10386;
+        rejected = checks[0];
+        rejected.attackerPokemonId ^= 1;
+        unchanged.damage = 123;
+        beforeReject = rng;
+        if (resolveStandardPokemonMoveDamage(expectedPlayer, expectedEnemies[0], move->id, false, rng,
+                unchanged, &weather, &critical[0], &hits[0], nullptr, &targets, &rejected) !=
+                PokemonMoveDamageResult::InvalidStats || unchanged.damage != 123 ||
+            rng.randSeedUint32() != beforeReject.randSeedUint32()) return 10440;
         return 0;
     }
     return 10387; // Require a real mixed hit/miss area action in the native runtime.

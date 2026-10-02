@@ -1851,6 +1851,7 @@ PokemonMoveDamageResult resolvePokemonDamageMoveHitCheck(const PokemonBattleStat
     PokemonDamageMoveHitCheck event{};
     event.resolved = true;
     event.moveId = moveId;
+    event.attackerPokemonId = attacker.pokemonId;
     event.targetPokemonId = defender.pokemonId;
     PokemonMoveDamageRoll next{};
     if (calculatePokemonTypeEffectiveness(moveId, defender, next.typeEffectiveness) !=
@@ -1944,6 +1945,7 @@ PokemonMoveDamageResult resolveStandardPokemonMoveDamage(
     if (preparedHit) {
         const auto& check = preparedHit->result;
         if (!preparedHit->resolved || preparedHit->moveId != moveId ||
+            preparedHit->attackerPokemonId != attacker.pokemonId ||
             preparedHit->targetPokemonId != defender.pokemonId ||
             check.typeEffectiveness != next.typeEffectiveness || check.critical || check.criticalWasRolled ||
             check.criticalRoll || check.randomDamagePercent || check.damage ||

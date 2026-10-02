@@ -560,3 +560,7 @@ Para cada entrega actualizar esta tabla con IDs, commit, alcance conectado, excl
 
 - Reflexión de un objetivo admite dobles; fase reflejada compone protección propia de bajadas antes de mutar. Simple/Contrary/Clear Body y ausencia de reflexión recursiva tienen regresiones escritas sin ejecutar.
 - Copia, reflexión de área, pasivas/supresión y validación final siguen pendientes.
+
+### Avance TUR-08 / MOV-04: identidad de hit checks
+
+- Resultados preparados se ligan a atacante, movimiento y objetivo; se rechaza reutilización por otro atacante sin consumir RNG. Regresión escrita sin ejecutar; cola general y campo de cuatro actores pendientes.

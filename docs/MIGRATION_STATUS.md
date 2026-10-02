@@ -2304,3 +2304,8 @@
 1. ReflectStatStageChangeAbAttr pinned encola fase con sourcePokemon undefined y MIRROR_ARMOR; StatStageChangePhase vuelve a aplicar multiplicadores y protección propia pero excluye otra reflexión. Política reflejada ahora se compone como bajada, no como reacción positiva: Clear Body del origen bloquea, Contrary convierte y Simple multiplica.
 2. Dobles status de un objetivo admiten reflectDrops; copia, reflexión de área y callbacks desconocidos siguen gated. Se reutiliza el comando transaccional existente y su reacción del origen, sin habilitar secundarios de daño.
 3. Regresión 10430–10432 usa Screech/Mirror Armor y perfiles canónicos de origen Simple/Contrary/Clear Body/Mirror Armor en setup exclusivo de test sobre campo real. Comprueba -4/+2/bloqueo/-2 sin rebote recursivo, objetivo/aliado intactos y PP único. Escrita sin ejecutar; evidencia final y campo de cuatro actores pendientes.
+
+## Identidad del atacante en hit checks preparados
+
+1. MoveEffectPhase pinned liga user y targets a una misma acción. PokemonDamageMoveHitCheck conserva también attackerPokemonId; resolveStandardPokemonMoveDamage rechaza resultados preparados por otro atacante, antes de consumo de RNG o publicación del output, incluida inmunidad.
+2. Regresión 10440 amplía el caso real de Petal Blizzard: altera solo el ID del atacante preparado y exige rechazo con output/RNG intactos. Escrita sin ejecutar; este binding no sustituye una cola completa de fases ni constituye soporte del segundo jugador activo.

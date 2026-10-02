@@ -1523,6 +1523,7 @@ enum class PokemonMoveDamageResult : uint8_t {
 struct PokemonDamageMoveHitCheck {
     bool resolved = false;
     uint16_t moveId = 0;
+    uint32_t attackerPokemonId = 0;
     uint32_t targetPokemonId = 0;
     PokemonMoveDamageRoll result{}; // Hit fields only; no critical/damage draw.
 };
