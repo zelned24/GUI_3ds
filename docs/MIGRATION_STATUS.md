@@ -1919,3 +1919,9 @@
 1. Perfil generado admite una cura FREEZE propia y una opcional del rival; exige coincidencia completa de declaraciones, sin callbacks desconocidos. Scald 503/Scorching Sands 815 dejan de rechazarse por esta composición.
 2. POST_APPLY nativo cura FREEZE del objetivo vivo tras impacto efectivo, antes del efecto secundario de quemadura. Miss, cancelación por clima o faint no curan. Autodescongelación propia sigue en MovePhase antes de precisión.
 3. Regresiones escritas de perfil Scald, composición, miss y cura completa de counters. Sin tests/compilación; cobertura completa y Old 3DS permanecen pendientes.
+
+## Beneficio IA por cada atributo de cura de estado
+
+1. Pinned Move.getUserBenefitScore suma atributos; HealStatusEffectAttr.getUserBenefitScore devuelve 10 si el usuario tiene status, también para declaraciones sobre el rival y aunque el status no sea FREEZE.
+2. Runtime reutiliza pokemonCanonicalThawAiBenefit: Overheat aporta 10; Scald/Scorching Sands aportan 20 cuando el usuario tiene status. Corrige el anterior conteo único de 10, conservando multiplicación posterior de efectividad/STAB.
+3. Regresiones 9760–9762 escritas para cero/uno/dos atributos, estado ausente y burn. Sin ejecución; tests/compilación y jugabilidad completa Old 3DS siguen pendientes.

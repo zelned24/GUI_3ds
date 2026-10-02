@@ -1044,7 +1044,7 @@ double baselineEnemyMoveScore(const PokemonBattleState& user,
         !calculateCanonicalDamageStatStageAiBenefit(user, target, move.id, statBenefit)) return -20.0;
     const double userBenefit = critBenefit + statBenefit + secondaryBenefit +
         canonicalDamageDrainAiBenefit(user, move) + canonicalRecoilAiBenefit(move) +
-        (pokemonMoveSelfThawResolved(move.id) && user.status.present ? 10.0 : 0.0);
+        pokemonCanonicalThawAiBenefit(user, move.id);
     if (!calculatePlainAttackAiScore(effectiveness, selectedStat, otherStat,
             move.power, move.accuracy, stab, score, userBenefit)) return -20.0;
     return score;

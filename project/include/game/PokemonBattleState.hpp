@@ -521,6 +521,12 @@ inline bool pokemonMoveTargetThawResolved(uint16_t moveId) {
         if (profile.moveId == moveId) return profile.resolved && profile.curesTarget;
     return false;
 }
+// Pinned Move.getUserBenefitScore sums each HealStatusEffectAttr, including
+// opponent-targeted declarations: the getter checks the USER status in both.
+inline double pokemonCanonicalThawAiBenefit(const PokemonBattleState& user, uint16_t moveId) {
+    if (!user.status.present || !pokemonMoveSelfThawResolved(moveId)) return 0.0;
+    return pokemonMoveTargetThawResolved(moveId) ? 20.0 : 10.0;
+}
 // POST_APPLY, after a successful damaging hit and before the queued burn effect.
 inline bool applyPokemonMoveTargetThaw(PokemonBattleState& target, uint16_t moveId,
     bool effectiveHit, bool& cured) {

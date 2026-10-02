@@ -899,6 +899,19 @@ extern "C" int runPokemonBattleStateChecks() {
         frozenTarget.status.effect = Pokerogue3DS::PokemonStatusEffect::Freeze;
         frozenTarget.status.hasFreezeTurnsRemaining = true;
         frozenTarget.status.freezeTurnsRemaining = 3;
+        if (Pokerogue3DS::pokemonCanonicalThawAiBenefit(frozenTarget, 503) != 20 ||
+            Pokerogue3DS::pokemonCanonicalThawAiBenefit(frozenTarget, 815) != 20 ||
+            Pokerogue3DS::pokemonCanonicalThawAiBenefit(frozenTarget, 315) != 10 ||
+            Pokerogue3DS::pokemonCanonicalThawAiBenefit(frozenTarget, 664) != 0) return 9760;
+        auto statusless = frozenTarget;
+        statusless.status = {};
+        if (Pokerogue3DS::pokemonCanonicalThawAiBenefit(statusless, 503) != 0) return 9761;
+        // The pinned getter checks any user status, not specifically FREEZE.
+        auto burned = frozenTarget;
+        burned.status = {};
+        burned.status.present = true;
+        burned.status.effect = Pokerogue3DS::PokemonStatusEffect::Burn;
+        if (Pokerogue3DS::pokemonCanonicalThawAiBenefit(burned, 503) != 20) return 9762;
         bool cured = true;
         if (!Pokerogue3DS::applyPokemonMoveTargetThaw(frozenTarget, 503, false, cured) ||
             cured || !frozenTarget.status.present) return 9751;
