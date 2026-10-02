@@ -305,3 +305,8 @@ Los ejemplos describen infraestructura y límites; no son tareas cerradas. Actua
 
 - Resolver de probabilidad acepta actividad explícita de ambas habilidades. POST_APPLY pasa HP restante; Serene Grace no duplica chance tras faint y Shield Dust solo bloquea cuando está activo.
 - Regresiones con Flare Blitz 394, Serene Grace 32 y Shield Dust 19 escritas, sin ejecutar. Las dos tareas siguen parciales; no se extiende a pasivas/supresión todavía.
+
+### Avance MOV-02: perfiles de daño fijo/nivel
+
+- Generador produce MoveFixedDamageProfile de FixedDamageAttr literal y LevelDamageAttr exacto con provenance. Sonic Boom/Dragon Rage y Seismic Toss/Night Shade quedan representados.
+- Falta conectarlos al cálculo/comando, inmunidades, precisión, jefes e IA con orden RNG upstream. Generar el perfil no habilita el movimiento ni cierra MOV-02.

@@ -1264,6 +1264,24 @@ const immunityRows = collections.abilities.flatMap(ability => {
 });
 const immunityHeader = ppHeader.replace('struct MoveAttribute {',
   `struct MoveImmunityFlags { uint16_t moveId; uint8_t mask; };\ninline constexpr MoveImmunityFlags kMoveImmunityFlags[] = {\n${flaggedMoveRows.join(',\n')}\n};\nstruct MoveImmunityAbilityProfile { uint16_t abilityId; uint8_t mask; bool requiresDispatcher; const char* sourcePath; const char* sourceSymbol; const char* sourceHash; };\ninline constexpr MoveImmunityAbilityProfile kMoveImmunityAbilityProfiles[] = {\n${immunityRows.join(',\n')}\n};\nstruct MoveAttribute {`);
+// FixedDamageAttr literal and exact LevelDamageAttr; derived/random callbacks stay raw.
+const fixedDamageRows = collections.moves.flatMap(move => {
+  const raw = move.extensions?.upstreamRawRecord?.value ?? '';
+  const mentions = [...raw.matchAll(/\.attr\s*\(\s*(?:FixedDamageAttr|LevelDamageAttr)\b/g)];
+  if (mentions.length !== 1) return [];
+  const fixed = [...raw.matchAll(/\.attr\s*\(\s*FixedDamageAttr\s*,\s*(\d+)\s*\)/g)];
+  const level = [...raw.matchAll(/\.attr\s*\(\s*LevelDamageAttr\s*\)/g)];
+  if (fixed.length + level.length !== 1) return [];
+  const amount = fixed.length ? Number(fixed[0][1]) : 0;
+  if (fixed.length && (!Number.isSafeInteger(amount) || amount < 1 || amount > 65535))
+    throw new Error(`Invalid fixed damage declaration: ${move.id}`);
+  const source = move.source ?? move.metadata;
+  if (!source?.sourcePath || !source?.sourceSymbol || !source?.sourceHash)
+    throw new Error(`Missing fixed damage provenance: ${move.id}`);
+  return [`    {${move.moveId}, ${level.length === 1}, ${amount}, "${field(source.sourcePath)}", "${field(source.sourceSymbol)}", "${field(source.sourceHash)}"}`];
+});
+const fixedDamageHeader = immunityHeader.replace('struct MoveAttribute {',
+  `struct MoveFixedDamageProfile { uint16_t moveId; bool userLevel; uint16_t amount; const char* sourcePath; const char* sourceSymbol; const char* sourceHash; };\ninline constexpr MoveFixedDamageProfile kMoveFixedDamageProfiles[] = {\n${fixedDamageRows.join(',\n')}\n};\nstruct MoveAttribute {`);
 // Preserve constant HealAttr constructor semantics; variable/callback healing remains raw.
 const healRows = collections.moves.flatMap(move => {
   const raw = move.extensions?.upstreamEffectMetadata?.value ?? '';
@@ -1277,7 +1295,7 @@ const healRows = collections.moves.flatMap(move => {
     return `    {${move.moveId}, ${ratio}, ${m[2] === 'true'}, ${m[3] !== 'false'}, ${m[4] !== 'false'}}`;
   });
 });
-const healingHeader = immunityHeader.replace('struct MoveAttribute {',
+const healingHeader = fixedDamageHeader.replace('struct MoveAttribute {',
   `struct MoveHealProfile { uint16_t moveId; double ratio; bool showAnimation; bool selfTarget; bool failOnFullHp; };\ninline constexpr MoveHealProfile kMoveHealProfiles[] = {\n${healRows.join(',\n')}\n};\nstruct MoveAttribute {`);
 const drainRows = collections.moves.flatMap(move => {
   const raw = move.extensions?.upstreamEffectMetadata?.value ?? '';

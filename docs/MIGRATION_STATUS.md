@@ -1961,3 +1961,9 @@
 1. Pinned MoveAttr.getMoveChance consulta applyAbAttrs; Pokemon.canApplyAbility excluye portadores faint sin bypassFaint. Resolver nativo ahora recibe userAbilityActive/targetAbilityActive, manteniendo defaults compatibles y capacidad desconocida rechazada.
 2. POST_APPLY de status/confusión en FirstRunRuntime pasa HP posterior a daño/retroceso. Serene Grace del usuario KO no multiplica chance; IgnoreMoveEffects del objetivo solo bloquea si está activo.
 3. Regresiones 9800–9803 escritas de Flare Blitz con Serene Grace/Shield Dust: chances 20/10/0/10. Tests/compilación y run Classic en Old 3DS siguen pendientes.
+
+## Perfiles canónicos nativos de daño fijo y por nivel
+
+1. Pinned move.ts FixedDamageAttr.getDamage devuelve constante; LevelDamageAttr devuelve user.level. Generador acepta declaraciones exactas únicas y conserva path/symbol/hash. No interpreta RandomLevelDamageAttr/Counter derivados como constantes.
+2. MoveFixedDamageProfile generado para Sonic Boom 49=20, Dragon Rage 82=40, Seismic Toss 69/Night Shade 101=nivel. Regresiones de datos/provenance escritas; no habilita aún ejecución en FirstRunRuntime.
+3. Pendiente conectar dispatcher, precisión/inmunidades/bosses/IA/RNG y correr gates finales. Tests/compilación aplazados; no se declara soporte runtime de daño fijo ni Classic completo.

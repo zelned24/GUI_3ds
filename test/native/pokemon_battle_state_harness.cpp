@@ -28,6 +28,19 @@ using Pokerogue3DS::PokemonMoveActionStatus;
 using Pokerogue3DS::PokerogueRngAdapter;
 
 extern "C" int runPokemonBattleStateChecks() {
+    // Real generated declarations only; this does not assert runtime support yet.
+    for (const auto id : {uint16_t(49), uint16_t(82), uint16_t(69), uint16_t(101)}) {
+        const PokerogueContent::MoveFixedDamageProfile* profile = nullptr;
+        for (const auto& row : PokerogueContent::kMoveFixedDamageProfiles)
+            if (row.moveId == id) { if (profile) return 9810; profile = &row; }
+        if (!profile || !profile->sourcePath || !*profile->sourcePath ||
+            !profile->sourceSymbol || !*profile->sourceSymbol || !profile->sourceHash || !*profile->sourceHash)
+            return 9811;
+        if (id == 49 && (profile->userLevel || profile->amount != 20)) return 9812;
+        if (id == 82 && (profile->userLevel || profile->amount != 40)) return 9813;
+        if ((id == 69 || id == 101) && (!profile->userLevel || profile->amount)) return 9814;
+    }
+
     // Classic late-game cap exceeds 100; the source stat formula remains unchanged.
     const auto* highLevelSpecies = PokerogueContent::findSpeciesByDex(1);
     if (!highLevelSpecies || Pokerogue3DS::classicExperienceLevelCap(200) != 200) return 460;
