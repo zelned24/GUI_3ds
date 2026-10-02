@@ -167,6 +167,7 @@ inline PokemonHealingResult applyPokemonPostTurnStatusHealing(PokemonBattleState
         if (!event.failedFullHp && !event.blocked) {
             const uint32_t base = actor.maxHp / 8 ? actor.maxHp / 8 : 1;
             const double amount = std::floor(base * policy.healingMultiplier);
+            if (!std::isfinite(amount)) return PokemonHealingResult::InvalidState;
             const uint16_t missing = actor.maxHp - actor.hp;
             event.healed = amount >= missing ? missing : static_cast<uint16_t>(amount);
             event.hpAfter += event.healed;
@@ -180,7 +181,8 @@ inline PokemonHealingResult applyPokemonPostTurnStatusHealing(PokemonBattleState
 inline PokemonHealingResult usePokemonSelfHealingCommand(PokemonBattleState& user,
     uint8_t slot, const PokemonHealingPolicy& policy, PokemonHealingEvent& output) {
     if (!policy.resolved) return PokemonHealingResult::UnresolvedPolicy;
-    if (!user.hp || !user.maxHp || user.hp > user.maxHp || slot >= user.moveCount || slot >= 4 ||
+    if (!user.hp || !user.maxHp || user.hp > user.maxHp || user.moveCount > 4 ||
+        slot >= user.moveCount || slot >= 4 ||
         !user.moves[slot].pp || user.moves[slot].pp > user.moves[slot].maxPp ||
         !std::isfinite(policy.ratioMultiplier) || policy.ratioMultiplier <= 0 ||
         !std::isfinite(policy.healingMultiplier) || policy.healingMultiplier <= 0)

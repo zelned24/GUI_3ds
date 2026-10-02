@@ -1894,3 +1894,9 @@
 1. Pinned src/field/pokemon.ts EnemyPokemon.getNextMove obtiene beneficios de usuario/objetivo antes de multiplicar efectividad/STAB. HitHealAttr y RecoilAttr en src/data/moves/move.ts participan en esos beneficios.
 2. baselineEnemyMoveScore ahora incluye ambos beneficios en calculatePlainAttackAiScore, junto a críticos/estadísticas/status. Antes los sumaba al resultado ya multiplicado, alterando prioridad relativa y puntuación de ataques inmunes.
 3. Regresiones 9710–9716 escritas con Absorb 71 y Take Down 36: beneficio canónico, STAB, resistencia e inmunidad. No ejecutadas; tests/compilación/Azahar/Old 3DS y cobertura completa Classic siguen pendientes.
+
+## Validación de estado y cálculo en curación
+
+1. usePokemonSelfHealingCommand rechaza moveCount >4 antes de consumir PP o restaurar HP. Se añade regresión Recover con snapshot inválido y evento centinela sin cambios.
+2. applyPokemonPostTurnStatusHealing comprueba que el producto base/multiplicador sea finito antes de calcular HP. Un multiplicador finito extremo no puede producir infinito y convertirse silenciosamente en curación completa.
+3. Revisión estática y regresión escrita; sin ejecución de tests ni compilación. Familias de efectos, habilidades, integración Classic y validación Old 3DS siguen pendientes.

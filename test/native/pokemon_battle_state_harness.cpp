@@ -343,6 +343,20 @@ extern "C" int runPokemonBattleStateChecks() {
     healing.hp = 20;
     if (!Pokerogue3DS::canonicalSelfHealingAiScore(healing, recoverId, healScore) || healScore != 15) return 409;
 
+    {
+        auto malformedHealer = healing;
+        malformedHealer.moveCount = 5;
+        malformedHealer.moves[0] = {recoverId, 1, 5};
+        Pokerogue3DS::PokemonHealingPolicy resolvedHealing{};
+        resolvedHealing.resolved = true;
+        Pokerogue3DS::PokemonHealingEvent rejectedHealing{};
+        rejectedHealing.healed = 123;
+        const auto hpBefore = malformedHealer.hp;
+        if (Pokerogue3DS::usePokemonSelfHealingCommand(malformedHealer, 0, resolvedHealing,
+                rejectedHealing) != Pokerogue3DS::PokemonHealingResult::InvalidState ||
+            malformedHealer.hp != hpBefore || malformedHealer.moves[0].pp != 1 ||
+            rejectedHealing.healed != 123) return 9720;
+    }
     healing.maxHp = 7; healing.hp = 1; healing.moves[0].pp = 1;
     healPolicy.blockedBeforeMove = healPolicy.healBlocked = false;
     healPolicy.healingMultiplier = 1.5;
