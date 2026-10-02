@@ -516,6 +516,21 @@ inline bool pokemonMoveSelfThawResolved(uint16_t moveId) {
 }
 // One secondary effect, optional critical modifier and exact pre-use self-thaw.
 // Other effects require their own dispatcher, never omission.
+inline bool pokemonMoveTargetThawResolved(uint16_t moveId) {
+    for (const auto& profile : PokerogueContent::kMoveSelfThawProfiles)
+        if (profile.moveId == moveId) return profile.resolved && profile.curesTarget;
+    return false;
+}
+// POST_APPLY, after a successful damaging hit and before the queued burn effect.
+inline bool applyPokemonMoveTargetThaw(PokemonBattleState& target, uint16_t moveId,
+    bool effectiveHit, bool& cured) {
+    if (!pokemonStatusStateValid(target.status) || target.hp > target.maxHp) return false;
+    const bool applies = effectiveHit && target.hp && pokemonMoveTargetThawResolved(moveId) &&
+        target.status.present && target.status.effect == PokemonStatusEffect::Freeze;
+    if (applies) target.status = {};
+    cured = applies;
+    return true;
+}
 inline bool pokemonDamageSecondaryAttributesResolved(const PokerogueContent::Move& move,
     const char* secondaryAttribute) {
     if (!secondaryAttribute || move.category == PokerogueContent::MoveStatus ||
@@ -534,7 +549,8 @@ inline bool pokemonDamageSecondaryAttributesResolved(const PokerogueContent::Mov
         else if (matches(attribute, "HealStatusEffectAttr") && pokemonMoveSelfThawResolved(move.id)) ++selfThawEffects;
         else return false;
     }
-    return effects == 1 && criticalModifiers <= 1 && selfThawEffects <= 1;
+    return effects == 1 && criticalModifiers <= 1 && selfThawEffects <=
+        (pokemonMoveTargetThawResolved(move.id) ? 2 : 1);
 }
 
 // StatusEffectAttr.apply only: caller has resolved hit and effective move chance.

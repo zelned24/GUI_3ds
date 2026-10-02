@@ -678,28 +678,28 @@ inline constexpr MoveConfusionEffect kMoveConfusionEffects[] = {
     {853, true, false, 2, 5},
     {900, true, false, 2, 5}
 };
-struct MoveSelfThawProfile { uint16_t moveId; bool resolved; };
+struct MoveSelfThawProfile { uint16_t moveId; bool resolved; bool curesTarget; };
 inline constexpr MoveSelfThawProfile kMoveSelfThawProfiles[] = {
-    {172, true},
-    {221, true},
-    {257, true},
-    {265, false},
-    {287, false},
-    {315, true},
-    {358, false},
-    {394, true},
-    {503, false},
-    {558, true},
-    {592, false},
-    {664, false},
-    {682, false},
-    {685, false},
-    {780, true},
-    {815, false},
-    {816, false},
-    {849, false},
-    {850, false},
-    {902, false}
+    {172, true, false},
+    {221, true, false},
+    {257, true, false},
+    {265, false, false},
+    {287, false, false},
+    {315, true, false},
+    {358, false, false},
+    {394, true, false},
+    {503, true, true},
+    {558, true, false},
+    {592, true, true},
+    {664, false, false},
+    {682, false, false},
+    {685, false, false},
+    {780, true, false},
+    {815, true, true},
+    {816, false, false},
+    {849, false, false},
+    {850, false, false},
+    {902, true, true}
 };
 struct StatusMoveFlagProfile { uint16_t moveId; bool resolved; bool reflectable; bool powder; bool sound; };
 inline constexpr StatusMoveFlagProfile kStatusMoveFlagProfiles[] = {

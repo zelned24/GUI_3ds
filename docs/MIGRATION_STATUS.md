@@ -1913,3 +1913,9 @@
 1. Regresión de FirstRunRuntime restaura snapshot de encuentro real con Overheat canónico y estado FREEZE con tres turnos restantes; duplicación del estado de actor activo/party mantiene coherencia del codec.
 2. Exige comando admitido, PP consumido una vez, replay de HP/etapas y desaparición completa de congelación/counter en actor activo y party guardados. La cura debe ocurrir incluso si precisión falla, porque doThawCheck precede la precisión en upstream.
 3. Prueba escrita, no ejecutada; siguen pendientes tests/compilación/Azahar/hardware y Classic completo. Esta regresión no constituye resultado de ejecución.
+
+## Scald y Scorching Sands: cura del objetivo antes de quemadura
+
+1. Perfil generado admite una cura FREEZE propia y una opcional del rival; exige coincidencia completa de declaraciones, sin callbacks desconocidos. Scald 503/Scorching Sands 815 dejan de rechazarse por esta composición.
+2. POST_APPLY nativo cura FREEZE del objetivo vivo tras impacto efectivo, antes del efecto secundario de quemadura. Miss, cancelación por clima o faint no curan. Autodescongelación propia sigue en MovePhase antes de precisión.
+3. Regresiones escritas de perfil Scald, composición, miss y cura completa de counters. Sin tests/compilación; cobertura completa y Old 3DS permanecen pendientes.

@@ -889,6 +889,23 @@ extern "C" int runPokemonBattleStateChecks() {
             stageRng.randSeedUint32() != expectedStageRng.randSeedUint32()) return 9562;
     }
     {
+        const auto* scald = PokerogueContent::findMoveById(503);
+        if (!scald || !Pokerogue3DS::pokemonMoveSelfThawResolved(503) ||
+            !Pokerogue3DS::pokemonMoveTargetThawResolved(503) ||
+            !Pokerogue3DS::pokemonDamageSecondaryAttributesResolved(*scald, "StatusEffectAttr")) return 9750;
+        auto frozenTarget = state;
+        frozenTarget.status = {};
+        frozenTarget.status.present = true;
+        frozenTarget.status.effect = Pokerogue3DS::PokemonStatusEffect::Freeze;
+        frozenTarget.status.hasFreezeTurnsRemaining = true;
+        frozenTarget.status.freezeTurnsRemaining = 3;
+        bool cured = true;
+        if (!Pokerogue3DS::applyPokemonMoveTargetThaw(frozenTarget, 503, false, cured) ||
+            cured || !frozenTarget.status.present) return 9751;
+        if (!Pokerogue3DS::applyPokemonMoveTargetThaw(frozenTarget, 503, true, cured) ||
+            !cured || frozenTarget.status.present || frozenTarget.status.freezeTurnsRemaining) return 9752;
+    }
+    {
         const auto* overheat = PokerogueContent::findMoveById(315);
         const auto* sparklingAria = PokerogueContent::findMoveById(664);
         if (!overheat || !sparklingAria || !Pokerogue3DS::pokemonMoveSelfThawResolved(315) ||

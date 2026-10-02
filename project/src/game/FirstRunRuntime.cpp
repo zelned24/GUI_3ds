@@ -2808,6 +2808,10 @@ bool FirstRunRuntime::executeActiveBattleMove(uint8_t userIndex, uint8_t targetI
             &weather, &critical, &hit, &pp, targetIsBoss ? &nextBossState : nullptr,
             targetIsBoss ? &bossPolicy : nullptr,
             targetIsBoss ? &nextGlobalRng : nullptr, &burn) != PokemonMoveActionStatus::Ok) return false;
+    bool targetThawed = false;
+    if (!applyPokemonMoveTargetThaw(nextOpponent, move->id,
+            !result.weatherCancelled && result.damageRoll.hit && result.damageApplied,
+            targetThawed)) return false;
     if (const auto* effect = singleDamageStatusEffect(move->id)) {
         PokemonStatusRecipientPolicies recipient{}, source{};
         PokemonPostSetStatusPolicy reactions{};
