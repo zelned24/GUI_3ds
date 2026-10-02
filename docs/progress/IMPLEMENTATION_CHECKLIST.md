@@ -569,3 +569,8 @@ Para cada entrega actualizar esta tabla con IDs, commit, alcance conectado, excl
 
 - Runtime doble reordena acciones pendientes por velocidad/clima/Trick Room y prioridad en cada extracción, conservando su orden restante y movimientos elegidos.
 - Regresiones del resolver escritas sin ejecutar; timing modifiers, prioridad por abilities/items, segundo activo jugador y prueba end-to-end con cambios de velocidad pendientes.
+
+### Avance TUR-02: regresión de turno dinámico
+
+- Caso completo Scary Face → cambio de velocidad → dos acciones Swift pendientes compara HP/PP/etapas con comandos ordenados y exige diferenciarse del orden inicial. Setup de velocidades/slots exclusivo de test.
+- Escrito sin ejecutar; evidencia upstream ejecutada, timing/priority modifiers y segundo jugador pendientes.

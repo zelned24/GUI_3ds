@@ -2315,3 +2315,8 @@
 1. MovePhasePriorityQueue.pop pinned reordena antes de extraer cada fase: velocidad (DynamicPhasePriorityQueue), después prioridad del movimiento. advanceBattleTurnInPlace ahora recalcula velocidad/clima/Trick Room de los pendientes y conserva la cola restante en su nuevo orden después de cada acción; ya no fija todo el turno antes de actuar.
 2. IDs de acciones elegidas permanecen estables; empates siguen usando resolver seeded existente con tamaño de cola restante. Timing modifiers, forced order, habilidades/items de prioridad y segundo jugador siguen pendientes.
 3. Regresiones 10450–10453 cubren nueva velocidad entre extracciones, reversión de campo y prioridad sobre velocidad. Escritas sin ejecutar; son contrato del resolver, no evidencia de recorrido completo ni paridad universal de fases.
+
+## Regresión de turno con cambio de velocidad
+
+1. Caso 10460–10461 usa actores reales y movimientos canónicos Scary Face/Swift; velocidades/slots se controlan exclusivamente en test. Tras Scary Face se exige inversión relativa de los dos enemigos pendientes.
+2. Construye resultado esperado con comandos C++ en orden dinámico y otro resultado con orden inicial; requiere una diferencia observable de HP antes de contrastar advanceBattleTurn, etapas y PP. No basta llamar al resolver aislado. Prueba escrita sin ejecutar: comparación interna no sustituye paridad upstream ejecutada ni validación ARM/Old 3DS.

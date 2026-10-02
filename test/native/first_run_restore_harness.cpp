@@ -7,6 +7,7 @@
 #include "storage/NativeProgressStore.hpp"
 #include "game/PokemonExperience.hpp"
 #include "game/PokemonWeatherPhase.hpp"
+#include "game/PokemonStatStageEffect.hpp"
 #include "game/PokerogueClassicWaveSchedule.hpp"
 #include "game/PokerogueBiomeTransition.hpp"
 #include "game/PokerogueEncounterResolver.hpp"
@@ -3172,6 +3173,93 @@ static int checkCanonicalTrainerSignatureSlots() {
     return checked ? 0 : 231; // Real catalog coverage, not a synthetic trainer.
 }
 
+static int checkDynamicDoubleSpeedChangeTurn() {
+    using namespace Pokerogue3DS;
+    for (uint32_t seed = 1; seed <= 4096; ++seed) {
+        FirstRunRuntime game(seed);
+        if (!game.doubleBattle() || game.arenaWeather().type != PokemonEffectiveWeather::None) continue;
+        auto& field = const_cast<PresentationContext&>(game.presentation());
+        if (field.enemy.bossState.segmentCount || field.secondEnemy.bossState.segmentCount) continue;
+        PokemonBattleState* actors[] = {&field.player.battleState, &field.enemy.battleState,
+            &field.secondEnemy.battleState};
+        bool neutral = true;
+        for (auto* actor : actors) {
+            const auto* profile = PokerogueContent::findAbilityStatStageProfile(actor->abilityId);
+            if (profile && (profile->multiplier != 1 || profile->protectedMask || profile->reflectDrops ||
+                    profile->copiesRaises)) neutral = false;
+            for (const auto& row : PokerogueContent::kAbilityStatStageReactions)
+                if (row.abilityId == actor->abilityId) neutral = false;
+            for (auto& stage : actor->statStages) stage = 0;
+            actor->moveCount = 1;
+        }
+        if (!neutral) continue;
+        actors[0]->moves[0] = {184, 10, 10}; // Canonical Scary Face.
+        actors[1]->moves[0] = actors[2]->moves[0] = {129, 20, 20}; // Canonical Swift.
+        // Controlled speeds are test-only; species, forms, attack/defense remain real.
+        actors[0]->stats[5] = 300;
+        actors[1]->stats[5] = 200;
+        actors[2]->stats[5] = 150;
+        if (!game.doubleBattleSupported() || !game.battleRng().currentStream()) continue;
+        auto rng = *game.battleRng().currentStream();
+        PokemonBattleState expected[] = {*actors[0], *actors[1], *actors[2]};
+        PokemonMoveWeatherContext weather{true};
+        PokemonHitPolicy hit{};
+        const PokemonWeatherAbilityComponent components[] = {
+            {expected[0].abilityId, true, true}, {expected[1].abilityId, true, false}
+        };
+        if (!composePokemonAlwaysHitPolicy(components, 2, hit, 184, &weather)) continue;
+        PokemonStatStageCommandPolicy policy{};
+        policy.postChangePoliciesResolved = true;
+        policy.move.hitPolicyResolved = true;
+        if (!pokemonSingleOpponentPpCost(expected[1].abilityId, policy.move.ppCost)) continue;
+        policy.move.accuracyMultiplier = hit.accuracyMultiplier;
+        policy.move.bypassAccuracy = hit.bypassAccuracy;
+        policy.move.blockedBeforeAccuracy = hit.blockedByAbility;
+        policy.move.stagePolicy.resolved = true;
+        policy.move.stagePolicy.chance = -1;
+        PokemonStatStageCommandEvent stageEvent{};
+        if (usePokemonStatStageStatusCommand(expected[0], expected[1], 0, policy, rng, stageEvent) !=
+                PokemonStatStageEffectResult::Ok || !stageEvent.move.hit || expected[1].statStages[4] != -2) continue;
+        uint32_t firstSpeed = 0, secondSpeed = 0;
+        if (!pokemonWeatherEffectiveSpeed(expected[1], weather, firstSpeed) ||
+            !pokemonWeatherEffectiveSpeed(expected[2], weather, secondSpeed) || firstSpeed >= secondSpeed) continue;
+        const auto afterPlayer = rng;
+        const auto simulate = [&](PokemonBattleState* snapshots, PokerogueRngAdapter& stream, bool dynamic) {
+            const uint8_t order[] = {static_cast<uint8_t>(dynamic ? 2 : 1), static_cast<uint8_t>(dynamic ? 1 : 2)};
+            for (uint8_t id : order) {
+                PokemonHitPolicy attackHit{};
+                PokemonCriticalPolicy critical{};
+                const PokemonWeatherAbilityComponent hitComponents[] = {
+                    {snapshots[id].abilityId, true, true}, {snapshots[0].abilityId, true, false}
+                };
+                const PokemonCriticalAbilityComponent critComponents[] = {
+                    {snapshots[id].abilityId, true, true}, {snapshots[0].abilityId, true, false}
+                };
+                if (!composePokemonAlwaysHitPolicy(hitComponents, 2, attackHit, 129, &weather) ||
+                    !composePokemonCriticalAbilityPolicy(critComponents, 2, false, critical)) return false;
+                PokemonPpPolicy pp{true, 1};
+                if (!pokemonSingleOpponentPpCost(snapshots[0].abilityId, pp.cost)) return false;
+                PokemonMoveActionResult result{};
+                if (useStandardPokemonMove(snapshots[id], snapshots[0], 0, false, stream, result,
+                        &weather, &critical, &attackHit, &pp) != PokemonMoveActionStatus::Ok || !snapshots[0].hp)
+                    return false;
+            }
+            return true;
+        };
+        PokemonBattleState oldOrder[] = {expected[0], expected[1], expected[2]};
+        auto oldRng = afterPlayer;
+        if (!simulate(expected, rng, true) || !simulate(oldOrder, oldRng, false) ||
+            expected[0].hp == oldOrder[0].hp) continue; // Require an observable ordering difference.
+        if (!game.advanceBattleTurn() || field.player.battleState.hp != expected[0].hp ||
+            field.enemy.battleState.statStages[4] != -2 ||
+            field.player.battleState.moves[0].pp != expected[0].moves[0].pp ||
+            field.enemy.battleState.moves[0].pp != expected[1].moves[0].pp ||
+            field.secondEnemy.battleState.moves[0].pp != expected[2].moves[0].pp) return 10460;
+        return 0;
+    }
+    return 10461; // Require an actual turn whose HP distinguishes dynamic from initial order.
+}
+
 static int checkDoubleMirrorArmorSourceProtection() {
     using namespace Pokerogue3DS;
     const uint16_t sourceAbilities[] = {86, 126, 29, 240};
@@ -3912,6 +4000,8 @@ static int checkExhaustedPpStruggleReplay() {
 }
 
 int main() {
+    const int speedChangeTurn = checkDynamicDoubleSpeedChangeTurn();
+    if (speedChangeTurn) return speedChangeTurn;
     const int mirrorProtection = checkDoubleMirrorArmorSourceProtection();
     if (mirrorProtection) return mirrorProtection;
     const int dropReactions = checkDoubleSingleTargetDropReactions();
