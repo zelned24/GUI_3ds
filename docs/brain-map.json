@@ -269,6 +269,7 @@
 {"from":"project/src/game/FirstRunRuntime.cpp","to":"project/include/game/PokerogueTurnOrder.hpp","kind":"include"},
 {"from":"project/src/game/FirstRunRuntime.cpp","to":"project/include/storage/NativeProgressStore.hpp","kind":"include"},
 {"from":"project/src/game/PokemonBattleState.cpp","to":"project/include/game/PokemonBattleState.hpp","kind":"include"},
+{"from":"project/src/game/PokemonBattleState.cpp","to":"project/include/game/PokemonSurvivalEffect.hpp","kind":"include"},
 {"from":"project/src/game/PokemonBattleState.cpp","to":"project/include/game/PokerogueRngAdapter.hpp","kind":"include"},
 {"from":"project/src/gfx/renderer2d.cpp","to":"project/generated/include/screens/SceneAssets.hpp","kind":"include"},
 {"from":"project/src/gfx/renderer2d.cpp","to":"project/include/gfx/renderer2d.hpp","kind":"include"},

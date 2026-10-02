@@ -1779,6 +1779,29 @@ extern "C" int runPokemonBattleStateChecks() {
         Pokerogue3DS::resetPokemonSummonState(target);
         if (target.sturdy.present) return 9930;
     }
+    // Real canonical Sturdy defender through the fixed-damage command.
+    {
+        auto user = state, target = state;
+        user.abilityId = 65;
+        target.abilityId = 5;
+        user.status = target.status = {};
+        user.moveCount = 1;
+        user.moves[0] = {82, 10, 10};
+        target.maxHp = target.hp = 10;
+        uint32_t predicted = 0;
+        if (Pokerogue3DS::calculatePokemonDamageCore(user, target, 82, false, predicted) !=
+                Pokerogue3DS::PokemonDamageCoreResult::Ok || predicted != 40 || target.sturdy.present) return 9950;
+        auto rng = damageRng, expected = rng;
+        (void)expected.randSeedInt(100);
+        PokemonMoveActionResult event{};
+        if (Pokerogue3DS::useStandardPokemonMove(user, target, 0, false, rng, event) !=
+                PokemonMoveActionStatus::Ok || target.hp != 1 || target.sturdy.present ||
+            !event.sturdySurvived || event.targetFainted || event.damageApplied != 9 || user.moves[0].pp != 9 ||
+            rng.randSeedUint32() != expected.randSeedUint32()) return 9951;
+        if (Pokerogue3DS::useStandardPokemonMove(user, target, 0, false, rng, event) !=
+                PokemonMoveActionStatus::Ok || target.hp || !event.targetFainted || event.sturdySurvived ||
+            event.damageApplied != 1 || user.moves[0].pp != 8) return 9952;
+    }
     // TargetHalfHpDamageAttr: floor, minimum one, no ordinary damage modifiers.
     for (const uint16_t id : {uint16_t(162), uint16_t(717), uint16_t(877)}) {
         const auto* profile = Pokerogue3DS::pokemonFixedDamageMoveProfile(id);

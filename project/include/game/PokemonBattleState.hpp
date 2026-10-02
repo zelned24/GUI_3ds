@@ -519,6 +519,10 @@ inline bool pokemonFixedDamageAbilityCapabilitiesResolved(uint16_t attackerAbili
         bool known = false;
         for (const auto& capability : PokerogueContent::kStatusActionAbilityProfiles)
             if (capability.abilityId == id) known = capability.resolved;
+        if (!known && id == defenderAbility && id != attackerAbility) {
+            for (const auto& profile : PokerogueContent::kFullHpEndureAbilityProfiles)
+                if (profile.abilityId == id && profile.resolved) known = true;
+        }
         if (!known) return false;
     }
     return true;
@@ -1500,6 +1504,7 @@ struct PokemonMoveActionResult {
     PokemonMoveDamageRoll damageRoll{};
     uint16_t damageApplied = 0;
     bool targetFainted = false;
+    bool sturdySurvived = false;
     bool weatherCancelled = false;
     uint8_t ppConsumed = 0;
     PokemonMoveDamageResult damageResolutionStatus = PokemonMoveDamageResult::Ok;

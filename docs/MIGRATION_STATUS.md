@@ -2058,3 +2058,9 @@
 1. NativePokemonSave conserva sturdyTag y reconstruye PokemonBattleState.sturdy. Payload pokemon=b escribe status, presencia/confusión completa y tag; los registros v1–v10 mantienen su lectura/encoding cuando no tienen Sturdy.
 2. Captura individual admite el tag; captureNativeRunSave mantiene bloqueo explícito para runs con tags activos mientras falta integrar snapshots de trainer/enemy y comando. No se declara persistencia completa de run.
 3. Regresiones 9940–9941 cubren combinaciones status/confusión, roundtrip byte a byte, reconstrucción y truncamiento sin mutar salida. Escritas, no ejecutadas; tests/compilación pendientes.
+
+## Sturdy en comando de daño fijo
+
+1. Gate de daño fijo reconoce perfil FullHpEndure canónico en defensor; no amplía automáticamente capacidades del atacante. Predicción devuelve importe sin crear tag, igual que canApply/apply(simulated) pinned.
+2. useStandardPokemonMove prepara y consume tag sobre copia del defensor; HP, PP, damageApplied, RNG y evento sturdySurvived se publican juntos al éxito. Segundo golpe a HP reducido ya no activa Sturdy. Jefes con esta capacidad se rechazan hasta su dispatch específico.
+3. Regresiones 9950–9952 con Sturdy 5 y Dragon Rage 82 escritas; pruebas no ejecutadas. FirstRunRuntime continúa restringido por proveedores generales de ability/PP/weather/save: no se declara una run con Sturdy jugable todavía.

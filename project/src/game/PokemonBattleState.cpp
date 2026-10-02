@@ -1,5 +1,6 @@
 #include "game/PokemonBattleState.hpp"
 #include "game/PokerogueRngAdapter.hpp"
+#include "game/PokemonSurvivalEffect.hpp"
 #include <cmath>
 #include <cstring>
 
@@ -1998,6 +1999,11 @@ PokemonMoveActionStatus useStandardPokemonMove(
             !targetBossState->segmentCount || targetBossState->segmentIndex >= targetBossState->segmentCount ||
             !defender.maxHp || defender.hp > defender.maxHp || &attacker == &defender)))
         return PokemonMoveActionStatus::UnresolvedBoss;
+    if (targetBossState) {
+        for (const auto& profile : PokerogueContent::kFullHpEndureAbilityProfiles)
+            if ((profile.abilityId == defender.abilityId && profile.resolved) || defender.sturdy.present)
+                return PokemonMoveActionStatus::UnresolvedBoss;
+    }
     if (ppPolicy && !ppPolicy->resolved) return PokemonMoveActionStatus::UnresolvedPp;
     const uint8_t ppCost = ppPolicy ? ppPolicy->cost : 1;
     if (attacker.moves[moveSlot].pp == 0 && ppCost) return PokemonMoveActionStatus::NoPp;
@@ -2053,9 +2059,26 @@ PokemonMoveActionStatus useStandardPokemonMove(
                     *bossDamagePolicy, nextGlobalRng, bossEvent)) return PokemonMoveActionStatus::UnresolvedBoss;
             next.damageApplied = bossEvent.damageApplied;
         } else {
-            next.damageApplied = static_cast<uint16_t>(next.damageRoll.damage < nextDefender.hp
-                ? next.damageRoll.damage : nextDefender.hp);
-            nextDefender.hp -= next.damageApplied;
+            PokemonSturdyPolicy survival{};
+            const bool sturdyAbility = resolvePokemonSturdyAbilityPolicy(nextDefender.abilityId,
+                nextDefender.hp != 0, true, false, survival);
+            if (sturdyAbility || nextDefender.sturdy.present) {
+                if (!sturdyAbility) {
+                    survival.resolved = survival.otherSurvivalEffectsResolved = true;
+                }
+                PokemonSturdyEvent prepared{}, applied{};
+                if (preparePokemonSturdyTag(nextDefender, next.damageRoll.damage, survival, false,
+                        nextDefender.sturdy, prepared) != PokemonSurvivalResult::Ok ||
+                    applyPokemonSturdyDamage(nextDefender, next.damageRoll.damage, false, survival,
+                        nextDefender.sturdy, applied) != PokemonSurvivalResult::Ok)
+                    return PokemonMoveActionStatus::DamageResolutionFailed;
+                next.damageApplied = applied.damageApplied;
+                next.sturdySurvived = applied.tagConsumed;
+            } else {
+                next.damageApplied = static_cast<uint16_t>(next.damageRoll.damage < nextDefender.hp
+                    ? next.damageRoll.damage : nextDefender.hp);
+                nextDefender.hp -= next.damageApplied;
+            }
         }
         next.targetFainted = nextDefender.hp == 0;
     }
