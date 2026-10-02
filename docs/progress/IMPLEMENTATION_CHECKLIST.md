@@ -520,3 +520,8 @@ Para cada entrega actualizar esta tabla con IDs, commit, alcance conectado, excl
 
 - Sueño/congelación/parálisis conectados al dispatcher de acciones de un objetivo en el campo doble actual, con el mismo resolver de singles. Ataques de área mantienen gate para no repetir checks/RNG.
 - Regresión de sueño con Struggle virtual y replay de checkpoint escrita sin ejecutar. Confusión doble, segundo jugador, callbacks y cobertura completa pendientes.
+
+### Avance TUR-03 / TUR-05 / MOV-09 / HP-05: acción de área compartida
+
+- Estado transitorio compartido conserva checks/cancelación/ID entre objetivos. Último PP no convierte el segundo efecto en Struggle. Cambios de etapas status en dobles se admiten solo con perfiles neutrales y callbacks resueltos en todo el campo vivo.
+- Confusión se conecta a acciones de un objetivo y al dispatcher compartido con gates de clima/modifiers/habilidades. Regresiones Growl/sueño/confusión/último PP escritas sin ejecutar. Daño de área, reacciones de etapas y segundo jugador pendientes.

@@ -1226,9 +1226,25 @@ bool FirstRunRuntime::resolveActiveStatStageCommandPolicy(const PokemonBattleSta
     PokemonStatStageCommandPolicy& output) const {
     const auto* move = PokerogueContent::findMoveById(moveId);
     if (!move || (!supportsPokemonStatStageMove(moveId) && !singleDamageStatStageEffect(moveId)) ||
-        m_doubleBattle || m_heldModifierCount ||
+        m_heldModifierCount ||
         !user.statsAreBaseFormulaOnly || !opponent.statsAreBaseFormulaOnly) return false;
     const bool damaging = move->category != PokerogueContent::MoveStatus;
+    if (m_doubleBattle) {
+        if (damaging) return false;
+        // The current field dispatcher has no queued cross-actor stage reactions.
+        // Neutral profiles are admissible; reflection/copy/reactions stay gated.
+        const PokemonBattleState* field[] = {&m_context.player.battleState,
+            &m_context.enemy.battleState, &m_context.secondEnemy.battleState};
+        for (const auto* actor : field) {
+            if (!actor->hp) continue;
+            if (!statusActionAbilitySupported(actor->abilityId)) return false;
+            const auto* profile = PokerogueContent::findAbilityStatStageProfile(actor->abilityId);
+            if (profile && (profile->multiplier != 1 || profile->protectedMask ||
+                    profile->reflectDrops || profile->copiesRaises)) return false;
+            for (const auto& reaction : PokerogueContent::kAbilityStatStageReactions)
+                if (reaction.abilityId == actor->abilityId) return false;
+        }
+    }
     const PokerogueContent::MoveStatStageEffect* effect = nullptr;
     for (const auto& row : PokerogueContent::kMoveStatStageEffects)
         if (row.moveId == moveId) { if (effect) return false; effect = &row; }
@@ -2569,15 +2585,16 @@ bool FirstRunRuntime::advanceBattleTurnInPlace() {
                     uint8_t targetCount = 0;
                     if (m_context.enemy.battleState.hp) targetAbilities[targetCount++] = m_context.enemy.battleState.abilityId;
                     if (m_context.secondEnemy.battleState.hp) targetAbilities[targetCount++] = m_context.secondEnemy.battleState.abilityId;
+                    BattleMoveActionState areaAction{};
                     PokemonPpPolicy areaPp{};
                     areaPp.resolved = true;
                     if (!pokemonActiveTargetsPpCost(targetAbilities, targetCount, areaPp.cost)) return false;
                     if (m_context.enemy.battleState.hp > 0) {
-                        if (!executeActiveBattleMove(0, 1, m_selectedBattleMove, *rng, &areaPp)) { m_battleFeedback = "Double battle action failed"; return false; }
+                        if (!executeActiveBattleMove(0, 1, m_selectedBattleMove, *rng, &areaPp, &areaAction)) { m_battleFeedback = "Double battle action failed"; return false; }
                         areaPp.cost = 0; // Subsequent target executes in resolved ignore-PP mode.
                     }
                     if (m_context.secondEnemy.battleState.hp > 0) {
-                        if (!executeActiveBattleMove(0, 2, m_selectedBattleMove, *rng, &areaPp)) { m_battleFeedback = "Double battle action failed"; return false; }
+                        if (!executeActiveBattleMove(0, 2, m_selectedBattleMove, *rng, &areaPp, &areaAction)) { m_battleFeedback = "Double battle action failed"; return false; }
                     }
                 } else {
                     uint8_t target = struggleTarget ? struggleTarget : (m_selectedTarget == 0 ? 1 : 2);
@@ -2644,7 +2661,7 @@ bool FirstRunRuntime::advanceBattleTurnInPlace() {
 }
 
 bool FirstRunRuntime::executeActiveBattleMove(uint8_t userIndex, uint8_t targetIndex, uint8_t moveSlot,
-    PokerogueRngAdapter& rng, const PokemonPpPolicy* ppOverride) {
+    PokerogueRngAdapter& rng, const PokemonPpPolicy* ppOverride, BattleMoveActionState* action) {
     if (userIndex > 2 || targetIndex > 2) return false;
     PokemonBattleState* actors[3] = {
         &m_context.player.battleState,
@@ -2655,8 +2672,14 @@ bool FirstRunRuntime::executeActiveBattleMove(uint8_t userIndex, uint8_t targetI
     auto& opponent = *actors[targetIndex];
     if (!user.hp || !opponent.hp) return true;
     if (moveSlot >= user.moveCount || moveSlot >= 4) return false;
-    const bool virtualStruggle = pokemonMovePpExhausted(user);
-    const auto* move = PokerogueContent::findMoveById(virtualStruggle ? PokerogueContent::kStruggleMoveId : user.moves[moveSlot].moveId);
+    if (action && action->checksCompleted &&
+        (action->userIndex != userIndex || action->moveSlot != moveSlot)) return false;
+    if (action && action->checksCompleted && action->cancelled) return true;
+    const bool virtualStruggle = action && action->checksCompleted
+        ? action->virtualStruggle : pokemonMovePpExhausted(user);
+    const uint16_t actionMoveId = action && action->checksCompleted ? action->moveId :
+        (virtualStruggle ? PokerogueContent::kStruggleMoveId : user.moves[moveSlot].moveId);
+    const auto* move = PokerogueContent::findMoveById(actionMoveId);
     if (!move || !supportsBaselineBattleMove(move->id) ||
         (virtualStruggle && !supportsActiveBattleMove(user, opponent, move->id))) return false;
     if ((pokemonFixedDamageMoveProfile(move->id) || pokemonSurviveDamageMoveResolved(move->id) || pokemonIgnoreOpponentStatStagesMoveResolved(move->id)) &&
@@ -2669,95 +2692,112 @@ bool FirstRunRuntime::executeActiveBattleMove(uint8_t userIndex, uint8_t targetI
          !std::strcmp(move->target, "ALL_ENEMIES") ||
          !std::strcmp(move->target, "ALL_OTHERS") ||
          !std::strcmp(move->target, "ALL"));
-    bool thawAfterFailureChecks = false;
-    if (user.status.present && (user.status.effect == PokemonStatusEffect::Sleep ||
-            user.status.effect == PokemonStatusEffect::Freeze)) {
-        // Area attacks visit each target; status checks belong to one MovePhase,
-        // so spread actions require a shared dispatcher before enabling this.
-        if (repeatedTargetChecks || PokerogueContent::moveHasAttribute(*move, "BypassSleepAttr") ||
-            (PokerogueContent::moveHasAttribute(*move, "HealStatusEffectAttr") &&
-             !pokemonMoveSelfThawResolved(move->id))) {
-            m_battleFeedback = "Status move-use conditions require dispatcher";
-            return false;
+    if (repeatedTargetChecks && !action) return false;
+    const auto publishActionChecks = [&](bool cancelled) {
+        if (action) {
+            action->moveId = move->id;
+            action->userIndex = userIndex;
+            action->moveSlot = moveSlot;
+            action->virtualStruggle = virtualStruggle;
+            action->cancelled = cancelled;
+            action->checksCompleted = true;
         }
-        PokemonStatusMoveCheckPolicy statusPolicy{};
-        statusPolicy.resolved = true;
-        statusPolicy.deferredFreezeThawMove = pokemonMoveSelfThawResolved(move->id);
-        if (user.status.effect == PokemonStatusEffect::Sleep) {
-            statusPolicy.resolved = false;
-            for (const auto& profile : PokerogueContent::kStatusDurationAbilityProfiles)
-                if (profile.abilityId == user.abilityId) {
-                    statusPolicy.resolved = profile.resolved;
-                    statusPolicy.sleepDurationReduction = profile.sleepReduction;
-                    break;
-                }
-        }
-        // Current gated actor path has no Nightmare tags or indirect
-        // use modes. Unknown ability conditions fail before publishing the turn.
-        PokemonStatusMoveCheckEvent statusEvent{};
-        if (checkPokemonStatusBeforeMove(user.status, statusPolicy, rng, statusEvent) !=
-                PokemonStatusMoveCheckResult::Ok) {
-            m_battleFeedback = "Status callbacks require dispatcher";
-            return false;
-        }
-        thawAfterFailureChecks = statusEvent.thawAfterFailureChecks;
-        if (statusEvent.cancelled) {
-            m_battleFeedback = "Status prevented the move";
-            return true; // First failure check cancels without consuming PP.
-        }
-    }
-    if (user.confusion.present || user.confusion.turns) {
-        // Status-action capability admits no ATK/DEF multipliers or indirect
-        // damage callbacks. Its EVA-only bypass does not affect self-hit stats.
-        if (m_doubleBattle || m_heldModifierCount || m_arenaWeather.type != PokemonEffectiveWeather::None ||
-            !statusActionAbilitySupported(user.abilityId) || !statusActionAbilitySupported(opponent.abilityId)) {
-            m_battleFeedback = "Confusion stat/damage callbacks require dispatcher";
-            return false;
-        }
-        ResolvedPokemon* resolvedActors[] = {&m_context.player, &m_context.enemy, &m_context.secondEnemy};
-        uint32_t attack = 0, defense = 0;
-        if (!pokemonBaselineEffectiveStat(user, 1, false, attack) ||
-            !pokemonBaselineEffectiveStat(user, 2, false, defense)) return false;
-        PokemonConfusionMovePolicy confusionPolicy{};
-        confusionPolicy.resolved = true;
-        confusionPolicy.effectiveAttack = attack;
-        confusionPolicy.effectiveDefense = defense;
-        PokemonConfusionMoveEvent confusionEvent{};
-        auto& userBoss = resolvedActors[userIndex]->bossState;
-        if (userBoss.segmentCount) {
-            PokemonBossDamageEvent bossEvent{};
-            if (m_run.wave == PokerogueContent::kClassicFinalWave ||
-                !checkPokemonBossConfusionBeforeMove(user, user.confusion, userBoss, confusionPolicy,
-                    rng, m_globalRng, confusionEvent, bossEvent)) {
-                m_battleFeedback = "Confusion boss callbacks require dispatcher";
+    };
+    if (!action || !action->checksCompleted) {
+        bool thawAfterFailureChecks = false;
+        if (user.status.present && (user.status.effect == PokemonStatusEffect::Sleep ||
+                user.status.effect == PokemonStatusEffect::Freeze)) {
+            // Area attacks visit each target; status checks belong to one MovePhase,
+            // so spread actions require a shared dispatcher before enabling this.
+            if (PokerogueContent::moveHasAttribute(*move, "BypassSleepAttr") ||
+                (PokerogueContent::moveHasAttribute(*move, "HealStatusEffectAttr") &&
+                 !pokemonMoveSelfThawResolved(move->id))) {
+                m_battleFeedback = "Status move-use conditions require dispatcher";
                 return false;
             }
-        } else if (!checkPokemonConfusionBeforeMove(user, user.confusion, confusionPolicy, rng, confusionEvent)) return false;
-        if (confusionEvent.moveCancelled) {
-            m_battleFeedback = "Confusion prevented the move";
-            return true;
+            PokemonStatusMoveCheckPolicy statusPolicy{};
+            statusPolicy.resolved = true;
+            statusPolicy.deferredFreezeThawMove = pokemonMoveSelfThawResolved(move->id);
+            if (user.status.effect == PokemonStatusEffect::Sleep) {
+                statusPolicy.resolved = false;
+                for (const auto& profile : PokerogueContent::kStatusDurationAbilityProfiles)
+                    if (profile.abilityId == user.abilityId) {
+                        statusPolicy.resolved = profile.resolved;
+                        statusPolicy.sleepDurationReduction = profile.sleepReduction;
+                        break;
+                    }
+            }
+            // Current gated actor path has no Nightmare tags or indirect
+            // use modes. Unknown ability conditions fail before publishing the turn.
+            PokemonStatusMoveCheckEvent statusEvent{};
+            if (checkPokemonStatusBeforeMove(user.status, statusPolicy, rng, statusEvent) !=
+                    PokemonStatusMoveCheckResult::Ok) {
+                m_battleFeedback = "Status callbacks require dispatcher";
+                return false;
+            }
+            thawAfterFailureChecks = statusEvent.thawAfterFailureChecks;
+            if (statusEvent.cancelled) {
+                m_battleFeedback = "Status prevented the move";
+                publishActionChecks(true);
+                return true; // First failure check cancels without consuming PP.
+            }
         }
-    }
-    if (user.status.present && user.status.effect == PokemonStatusEffect::Paralysis) {
-        if (repeatedTargetChecks) {
-            m_battleFeedback = "Status move-use conditions require dispatcher";
-            return false;
+        if (user.confusion.present || user.confusion.turns) {
+            // Status-action capability admits no ATK/DEF multipliers or indirect
+            // damage callbacks. Its EVA-only bypass does not affect self-hit stats.
+            bool fieldCallbacksResolved = true;
+            if (m_doubleBattle)
+                for (const auto* actor : actors)
+                    if (actor->hp && !statusActionAbilitySupported(actor->abilityId)) fieldCallbacksResolved = false;
+            if (!fieldCallbacksResolved || m_heldModifierCount || m_arenaWeather.type != PokemonEffectiveWeather::None ||
+                !statusActionAbilitySupported(user.abilityId) || !statusActionAbilitySupported(opponent.abilityId)) {
+                m_battleFeedback = "Confusion stat/damage callbacks require dispatcher";
+                return false;
+            }
+            ResolvedPokemon* resolvedActors[] = {&m_context.player, &m_context.enemy, &m_context.secondEnemy};
+            uint32_t attack = 0, defense = 0;
+            if (!pokemonBaselineEffectiveStat(user, 1, false, attack) ||
+                !pokemonBaselineEffectiveStat(user, 2, false, defense)) return false;
+            PokemonConfusionMovePolicy confusionPolicy{};
+            confusionPolicy.resolved = true;
+            confusionPolicy.effectiveAttack = attack;
+            confusionPolicy.effectiveDefense = defense;
+            PokemonConfusionMoveEvent confusionEvent{};
+            auto& userBoss = resolvedActors[userIndex]->bossState;
+            if (userBoss.segmentCount) {
+                PokemonBossDamageEvent bossEvent{};
+                if (m_run.wave == PokerogueContent::kClassicFinalWave ||
+                    !checkPokemonBossConfusionBeforeMove(user, user.confusion, userBoss, confusionPolicy,
+                        rng, m_globalRng, confusionEvent, bossEvent)) {
+                    m_battleFeedback = "Confusion boss callbacks require dispatcher";
+                    return false;
+                }
+            } else if (!checkPokemonConfusionBeforeMove(user, user.confusion, confusionPolicy, rng, confusionEvent)) return false;
+            if (confusionEvent.moveCancelled) {
+                m_battleFeedback = "Confusion prevented the move";
+                publishActionChecks(true);
+                return true;
+            }
         }
-        PokemonStatusMoveCheckPolicy paralysisPolicy{};
-        paralysisPolicy.resolved = true;
-        PokemonStatusMoveCheckEvent paralysisEvent{};
-        if (checkPokemonStatusBeforeMove(user.status, paralysisPolicy, rng, paralysisEvent) !=
-                PokemonStatusMoveCheckResult::Ok) return false;
-        if (paralysisEvent.cancelled) {
-            m_battleFeedback = "Status prevented the move";
-            return true;
+        if (user.status.present && user.status.effect == PokemonStatusEffect::Paralysis) {
+            PokemonStatusMoveCheckPolicy paralysisPolicy{};
+            paralysisPolicy.resolved = true;
+            PokemonStatusMoveCheckEvent paralysisEvent{};
+            if (checkPokemonStatusBeforeMove(user.status, paralysisPolicy, rng, paralysisEvent) !=
+                    PokemonStatusMoveCheckResult::Ok) return false;
+            if (paralysisEvent.cancelled) {
+                m_battleFeedback = "Status prevented the move";
+                publishActionChecks(true);
+                return true;
+            }
         }
-    }
-    if (thawAfterFailureChecks) {
-        // MovePhase.doThawCheck follows confusion and PP checks, before accuracy.
-        if (!user.moves[moveSlot].pp || user.moves[moveSlot].pp > user.moves[moveSlot].maxPp)
-            return false;
-        user.status = {};
+        if (thawAfterFailureChecks) {
+            // MovePhase.doThawCheck follows confusion and PP checks, before accuracy.
+            if (!user.moves[moveSlot].pp || user.moves[moveSlot].pp > user.moves[moveSlot].maxPp)
+                return false;
+            user.status = {};
+        }
+        publishActionChecks(false);
     }
     const auto applyMoveHeldHealing = [this](PokemonBattleState& actor) {
         PokemonHealingPolicy policy{};

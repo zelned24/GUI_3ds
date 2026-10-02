@@ -3172,6 +3172,92 @@ static int checkCanonicalTrainerSignatureSlots() {
     return checked ? 0 : 231; // Real catalog coverage, not a synthetic trainer.
 }
 
+static int checkDoubleAreaActionChecksAndLastPp() {
+    using namespace Pokerogue3DS;
+    const auto* growl = PokerogueContent::findMoveById(45);
+    if (!growl || !growl->target || std::strcmp(growl->target, "ALL_NEAR_ENEMIES") || growl->pp <= 0)
+        return 10360;
+    for (uint32_t seed = 1; seed <= 1024; ++seed) {
+        FirstRunRuntime source(seed);
+        if (!source.doubleBattle()) continue;
+        auto& field = const_cast<PresentationContext&>(source.presentation());
+        PokemonBattleState* actors[] = {&field.player.battleState, &field.enemy.battleState,
+            &field.secondEnemy.battleState};
+        bool policiesResolved = true;
+        uint8_t playerSleepReduction = 0;
+        for (uint8_t actorIndex = 0; actorIndex < 3; ++actorIndex) {
+            auto& actor = *actors[actorIndex];
+            bool durationResolved = false;
+            for (const auto& profile : PokerogueContent::kStatusDurationAbilityProfiles)
+                if (profile.abilityId == actor.abilityId) {
+                    durationResolved = profile.resolved;
+                    if (!actorIndex) playerSleepReduction = profile.sleepReduction;
+                }
+            policiesResolved &= durationResolved;
+            actor.status = {};
+            actor.status.present = actor.status.hasSleepTurnsRemaining = true;
+            actor.status.effect = PokemonStatusEffect::Sleep;
+            actor.status.sleepTurnsRemaining = 8;
+            for (auto& stage : actor.statStages) stage = 0;
+            for (uint8_t slot = 0; slot < actor.moveCount; ++slot) actor.moves[slot].pp = 0;
+        }
+        // Canonical move in a test-only actor setup, not production starter data.
+        actors[0]->moveCount = 1;
+        actors[0]->moves[0].moveId = growl->id;
+        actors[0]->moves[0].maxPp = static_cast<uint8_t>(growl->pp);
+        actors[0]->moves[0].pp = 1;
+        if (!policiesResolved || !source.doubleBattleSupported()) continue;
+        const uint16_t beforeHp[] = {actors[0]->hp, actors[1]->hp, actors[2]->hp};
+        FirstRunRuntime asleep = source;
+        if (!asleep.advanceBattleTurn()) return 10361;
+        const auto& sleeping = asleep.presentation();
+        if (sleeping.player.battleState.status.toxicTurnCount != 1 ||
+            sleeping.player.battleState.status.sleepTurnsRemaining != 7u - playerSleepReduction ||
+            sleeping.player.battleState.moves[0].pp != 1 ||
+            sleeping.player.battleState.hp != beforeHp[0] ||
+            sleeping.enemy.battleState.statStages[0] || sleeping.secondEnemy.battleState.statStages[0])
+            return 10362; // Cancel entire action; do not recheck/cancel separately per target.
+        FirstRunRuntime awake = source;
+        const_cast<PresentationContext&>(awake.presentation()).player.battleState.status = {};
+        if (!awake.advanceBattleTurn()) return 10363;
+        const auto& completed = awake.presentation();
+        if (completed.player.battleState.moves[0].moveId != growl->id ||
+            completed.player.battleState.moves[0].pp ||
+            completed.enemy.battleState.statStages[0] != -1 ||
+            completed.secondEnemy.battleState.statStages[0] != -1 ||
+            completed.player.battleState.hp != beforeHp[0] ||
+            completed.enemy.battleState.hp != beforeHp[1] ||
+            completed.secondEnemy.battleState.hp != beforeHp[2]) return 10364;
+        FirstRunRuntime invalidSecond = source;
+        auto& invalidField = const_cast<PresentationContext&>(invalidSecond.presentation());
+        invalidField.player.battleState.status = {};
+        invalidField.secondEnemy.battleState.statStages[0] = 7; // Late target failure, test-only.
+        if (invalidSecond.advanceBattleTurn() || invalidField.player.battleState.moves[0].pp != 1 ||
+            invalidField.enemy.battleState.statStages[0] ||
+            invalidField.secondEnemy.battleState.statStages[0] != 7 ||
+            invalidField.player.battleState.hp != beforeHp[0] ||
+            invalidField.enemy.battleState.hp != beforeHp[1]) return 10368;
+        FirstRunRuntime confused = source;
+        auto& confusedPlayer = const_cast<PresentationContext&>(confused.presentation()).player.battleState;
+        confusedPlayer.status = {};
+        confusedPlayer.confusion = {};
+        confusedPlayer.confusion.present = true;
+        confusedPlayer.confusion.turns = 3;
+        confusedPlayer.confusion.sourceMoveId = 109;
+        confusedPlayer.confusion.sourceMoveResolved = true;
+        confusedPlayer.confusion.sourcePokemonResolved = true;
+        confusedPlayer.confusion.sourcePokemonId = field.enemy.battleState.pokemonId;
+        if (!confused.advanceBattleTurn()) return 10365;
+        const auto& outcome = confused.presentation();
+        const bool executed = !outcome.player.battleState.moves[0].pp;
+        if (outcome.player.battleState.confusion.turns != 2 ||
+            outcome.enemy.battleState.statStages[0] != (executed ? -1 : 0) ||
+            outcome.secondEnemy.battleState.statStages[0] != (executed ? -1 : 0)) return 10366;
+        return 0;
+    }
+    return 10367; // Require the full real field -> area action path, never silently skip.
+}
+
 static int checkDoubleSingleTargetSleepCheckpoint() {
     using namespace Pokerogue3DS;
     for (uint32_t seed = 1; seed <= 1024; ++seed) {
@@ -3458,6 +3544,8 @@ static int checkExhaustedPpStruggleReplay() {
 }
 
 int main() {
+    const int areaAction = checkDoubleAreaActionChecksAndLastPp();
+    if (areaAction) return areaAction;
     const int doubleSleep = checkDoubleSingleTargetSleepCheckpoint();
     if (doubleSleep) return doubleSleep;
     const int doubleResidual = checkDoubleStatusResidualCheckpoint();

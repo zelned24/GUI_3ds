@@ -224,7 +224,18 @@ private:
     bool recordActiveParticipant();
     void removeParticipant(uint32_t pokemonId);
     bool executeActiveBattleMove(bool enemyActs, uint8_t moveSlot, PokerogueRngAdapter& rng);
-    bool executeActiveBattleMove(uint8_t userIndex, uint8_t targetIndex, uint8_t moveSlot, PokerogueRngAdapter& rng, const PokemonPpPolicy* ppOverride = nullptr);
+    // Transient MovePhase state shared by target visits; never part of a save.
+    struct BattleMoveActionState {
+        uint16_t moveId = 0;
+        uint8_t userIndex = 0;
+        uint8_t moveSlot = 0;
+        bool virtualStruggle = false;
+        bool checksCompleted = false;
+        bool cancelled = false;
+    };
+    bool executeActiveBattleMove(uint8_t userIndex, uint8_t targetIndex, uint8_t moveSlot,
+        PokerogueRngAdapter& rng, const PokemonPpPolicy* ppOverride = nullptr,
+        BattleMoveActionState* action = nullptr);
     bool supportsActiveBattleMove(const PokemonBattleState& user,
         const PokemonBattleState& opponent, uint16_t moveId) const;
     bool resolveActiveStatStageCommandPolicy(const PokemonBattleState& user,
