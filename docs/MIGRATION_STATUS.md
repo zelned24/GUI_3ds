@@ -1882,3 +1882,9 @@
 1. Regresión del comando Screech/Mirror Armor con política de reflexión pendiente exige rollback de PP/etapas/RNG/output tras la fase original. Mantiene la prueba existente de reflexión DEF -2 en el atacante.
 2. Revisión estática encontró aiUser/clearUser de estas regresiones con PP positivos y maxPp cero por inicialización incompleta. Se asignaron máximos de Screech/Tackle/Tail Whip a los fixtures, sin modificar asserts ni la validación de producción. No hay resultado de ejecución todavía.
 3. Tests/compilación siguen aplazados; estos casos se ejecutarán en la etapa final junto con los demás gates. Classic completo continúa pendiente.
+
+## Flame Charge después de debilitar al rival
+
+1. Revisión estática del pinned src/data/moves/move.ts: FLAME_CHARGE declara StatStageChangeAttr SPD +1 selfTarget, chance 100; MoveEffectAttr evalúa si vive el destinatario del efecto. La fase nativa ya selecciona al usuario como destinatario, no al rival debilitado.
+2. Regresiones 9700–9702 escritas con movimiento real 488: rival HP 0, aumento SPD del usuario, clamp en +6, HP sin daño repetido, PP ya consumidos sin gasto adicional y RNG sin draw de chance garantizada. No se cambió la regla de producción porque esta ruta ya estaba representada.
+3. Estas regresiones aún no se ejecutaron. Tests, compilación, Azahar y Old 3DS permanecen pendientes; no certifican todavía Classic completo.

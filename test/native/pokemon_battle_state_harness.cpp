@@ -852,6 +852,37 @@ extern "C" int runPokemonBattleStateChecks() {
             stageRng.randSeedUint32() != expectedStageRng.randSeedUint32()) return 9562;
     }
     {
+        // Pinned Flame Charge POST_APPLY targets the living USER after a KO.
+        PokemonBattleState chargeUser = state, chargeTarget = state;
+        chargeUser.moveCount = 1;
+        chargeUser.moves[0] = {488, 19, 20}; // PP already spent by the damage phase.
+        for (auto& stage : chargeUser.statStages) stage = 0;
+        for (auto& stage : chargeTarget.statStages) stage = 0;
+        chargeTarget.hp = 0;
+        const auto* move = PokerogueContent::findMoveById(488);
+        if (!move || move->upstreamChance != 100) return 9700;
+        const PokerogueContent::MoveStatStageEffect charge{488, 16, 1, true};
+        Pokerogue3DS::PokemonStatStageCommandPolicy policy{};
+        policy.postChangePoliciesResolved = policy.move.stagePolicy.resolved = true;
+        policy.move.stagePolicy.chance = move->upstreamChance;
+        Pokerogue3DS::PokemonStatStageCommandEvent event{};
+        auto rng = replacementRng, expectedRng = rng;
+        const auto hp = chargeUser.hp;
+        if (Pokerogue3DS::executePokemonDamageStatStagePhase(chargeUser, chargeTarget, charge,
+                policy, rng, event) != Pokerogue3DS::PokemonStatStageEffectResult::Ok ||
+            !event.move.stages.triggered || event.move.stages.changedStatMask != 16 ||
+            chargeUser.statStages[4] != 1 || chargeTarget.statStages[4] || chargeTarget.hp ||
+            chargeUser.hp != hp || chargeUser.moves[0].pp != 19 ||
+            rng.randSeedUint32() != expectedRng.randSeedUint32()) return 9701;
+        chargeUser.statStages[4] = 6;
+        rng = expectedRng;
+        if (Pokerogue3DS::executePokemonDamageStatStagePhase(chargeUser, chargeTarget, charge,
+                policy, rng, event) != Pokerogue3DS::PokemonStatStageEffectResult::Ok ||
+            !event.move.stages.triggered || event.move.stages.changedStatMask ||
+            chargeUser.statStages[4] != 6 || chargeUser.moves[0].pp != 19 ||
+            rng.randSeedUint32() != expectedRng.randSeedUint32()) return 9702;
+    }
+    {
         PokemonBattleState aiUser = state, aiTarget = state;
         aiUser.moveCount = 1;
         aiUser.moves[0] = {94, 10, 10};
