@@ -555,3 +555,8 @@ Para cada entrega actualizar esta tabla con IDs, commit, alcance conectado, excl
 
 - Comandos status de un objetivo en dobles admiten reacciones de etapas canónicas como Defiant/Competitive mediante resolver existente. Reacciones de área, reflexión/copia y callbacks desconocidos siguen gated.
 - Regresiones Screech → bajada → reacción escritas sin ejecutar; no se cierra cobertura completa de habilidades.
+
+### Avance HAB-05 / MOV-09: Mirror Armor de un objetivo
+
+- Reflexión de un objetivo admite dobles; fase reflejada compone protección propia de bajadas antes de mutar. Simple/Contrary/Clear Body y ausencia de reflexión recursiva tienen regresiones escritas sin ejecutar.
+- Copia, reflexión de área, pasivas/supresión y validación final siguen pendientes.

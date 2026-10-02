@@ -3172,6 +3172,49 @@ static int checkCanonicalTrainerSignatureSlots() {
     return checked ? 0 : 231; // Real catalog coverage, not a synthetic trainer.
 }
 
+static int checkDoubleMirrorArmorSourceProtection() {
+    using namespace Pokerogue3DS;
+    const uint16_t sourceAbilities[] = {86, 126, 29, 240};
+    const int8_t expectedDefense[] = {-4, 2, 0, -2};
+    for (uint32_t seed = 1; seed <= 1024; ++seed) {
+        FirstRunRuntime source(seed);
+        if (!source.doubleBattle()) continue;
+        auto& field = const_cast<PresentationContext&>(source.presentation());
+        field.player.battleState.moveCount = 1;
+        field.player.battleState.moves[0] = {103, 1, 40};
+        field.player.battleState.statStages[5] = 6;
+        bool durationResolved = true;
+        PokemonBattleState* enemies[] = {&field.enemy.battleState, &field.secondEnemy.battleState};
+        for (auto* enemy : enemies) {
+            bool duration = false;
+            for (const auto& profile : PokerogueContent::kStatusDurationAbilityProfiles)
+                if (profile.abilityId == enemy->abilityId) duration = profile.resolved;
+            durationResolved &= duration;
+            enemy->status = {};
+            enemy->status.present = enemy->status.hasSleepTurnsRemaining = true;
+            enemy->status.effect = PokemonStatusEffect::Sleep;
+            enemy->status.sleepTurnsRemaining = 8;
+            for (auto& stage : enemy->statStages) stage = 0;
+            for (uint8_t slot = 0; slot < enemy->moveCount; ++slot) enemy->moves[slot].pp = 0;
+        }
+        if (!durationResolved || !source.doubleBattleSupported()) continue;
+        for (uint8_t i = 0; i < 4; ++i) {
+            FirstRunRuntime game = source;
+            auto& actors = const_cast<PresentationContext&>(game.presentation());
+            // Canonical ability contexts injected exclusively for regression.
+            actors.player.battleState.abilityId = sourceAbilities[i];
+            actors.enemy.battleState.abilityId = 240;
+            if (!game.doubleBattleSupported() || !game.advanceBattleTurn()) return 10430;
+            if (actors.enemy.battleState.statStages[1] ||
+                actors.player.battleState.statStages[1] != expectedDefense[i] ||
+                actors.secondEnemy.battleState.statStages[1] || actors.player.battleState.moves[0].pp)
+                return 10431;
+        }
+        return 0;
+    }
+    return 10432;
+}
+
 static int checkDoubleSingleTargetDropReactions() {
     using namespace Pokerogue3DS;
     const auto* screech = PokerogueContent::findMoveById(103);
@@ -3861,6 +3904,8 @@ static int checkExhaustedPpStruggleReplay() {
 }
 
 int main() {
+    const int mirrorProtection = checkDoubleMirrorArmorSourceProtection();
+    if (mirrorProtection) return mirrorProtection;
     const int dropReactions = checkDoubleSingleTargetDropReactions();
     if (dropReactions) return dropReactions;
     const int doubleStageAbilities = checkDoubleLocalStageAbilities();

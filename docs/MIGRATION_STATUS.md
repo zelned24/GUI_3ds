@@ -2298,3 +2298,9 @@
 1. PostStatStageChangeStatStageChangeAbAttr pinned (ab-attrs.ts) prepara una fase del mismo Pokémon con sourcePokemon propio; canApply excluye selfTarget. En comandos status NEAR_OTHER/NEAR_ENEMY del campo doble se reutiliza el resolver existente de reacción y sus políticas completas.
 2. Reflexión/copia y callbacks desconocidos siguen gated. Ataques de área con reacciones permanecen rechazados: su cola entre destinatarios todavía no está representada; no se extiende este permiso a daño con secundarios.
 3. Regresión 10420–10423 configura Screech canónico y capacidades Defiant/Competitive exclusivamente en contexto de test sobre campo real, verifica DEF -2, ATK/SPATK +2, PP único, HP/aliado intactos. Escrita sin ejecutar; pasivas/supresión y validación final pendientes.
+
+## Mirror Armor de un objetivo y protección del origen
+
+1. ReflectStatStageChangeAbAttr pinned encola fase con sourcePokemon undefined y MIRROR_ARMOR; StatStageChangePhase vuelve a aplicar multiplicadores y protección propia pero excluye otra reflexión. Política reflejada ahora se compone como bajada, no como reacción positiva: Clear Body del origen bloquea, Contrary convierte y Simple multiplica.
+2. Dobles status de un objetivo admiten reflectDrops; copia, reflexión de área y callbacks desconocidos siguen gated. Se reutiliza el comando transaccional existente y su reacción del origen, sin habilitar secundarios de daño.
+3. Regresión 10430–10432 usa Screech/Mirror Armor y perfiles canónicos de origen Simple/Contrary/Clear Body/Mirror Armor en setup exclusivo de test sobre campo real. Comprueba -4/+2/bloqueo/-2 sin rebote recursivo, objetivo/aliado intactos y PP único. Escrita sin ejecutar; evidencia final y campo de cuatro actores pendientes.

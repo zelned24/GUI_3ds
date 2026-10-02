@@ -1254,11 +1254,11 @@ bool FirstRunRuntime::resolveActiveStatStageCommandPolicy(const PokemonBattleSta
             if (!actor->hp) continue;
             if (!statusActionAbilitySupported(actor->abilityId)) return false;
             const auto* profile = PokerogueContent::findAbilityStatStageProfile(actor->abilityId);
-            if (profile && (profile->reflectDrops || profile->copiesRaises)) return false;
-            // Area effects enqueue multiple recipient phases; do not execute
-            // their post-change reactions inline until field queue order exists.
             const bool singleTarget = move->target &&
                 (!std::strcmp(move->target, "NEAR_OTHER") || !std::strcmp(move->target, "NEAR_ENEMY"));
+            if (profile && (profile->copiesRaises || (profile->reflectDrops && !singleTarget))) return false;
+            // Area effects enqueue multiple recipient phases; do not execute
+            // their post-change reactions inline until field queue order exists.
             if (!singleTarget)
                 for (const auto& reaction : PokerogueContent::kAbilityStatStageReactions)
                     if (reaction.abilityId == actor->abilityId) return false;
@@ -1351,10 +1351,13 @@ bool FirstRunRuntime::resolveActiveStatStageCommandPolicy(const PokemonBattleSta
             policy.move.stagePolicy, true)) return false;
 
     const PokerogueContent::MoveStatStageEffect reaction{move->id, 127, 1, true};
+    const PokerogueContent::MoveStatStageEffect reflected{move->id,
+        policy.move.stagePolicy.reflectedStatMask ? policy.move.stagePolicy.reflectedStatMask : effect->statMask,
+        -1, false};
     policy.recipientReaction.resolved = policy.sourceReaction.resolved =
         policy.reflection.resolved = policy.opponentCopy.resolved = true;
     if (!composePokemonStatStageAbilityPolicy(reaction, recipientComp, 1, false, policy.recipientReaction) ||
-        !composePokemonStatStageAbilityPolicy(reaction, sourceComp, 1, false, policy.reflection) ||
+        !composePokemonStatStageAbilityPolicy(reflected, sourceComp, 1, false, policy.reflection) ||
         !composePokemonStatStageAbilityPolicy(reaction, sourceComp, 1, false, policy.sourceReaction) ||
         !composePokemonStatStageAbilityPolicy(reaction, observerComp, 1, false, policy.opponentCopy)) return false;
     policy.opponentCopyProfile = observerProfile;
