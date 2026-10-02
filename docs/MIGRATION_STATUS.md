@@ -1980,3 +1980,9 @@
 2. pokemonMoveTargetThawResolved incluye este efecto en ataques Fuego; dispatcher ya ejecuta la cura tras impacto y antes del status secundario. Ember/Flamethrower también curan al rival, sin autodescongelar al usuario.
 3. IA suma atributo implícito y explícitos: Ember=10, Overheat/Flame Wheel/Flare Blitz=20 cuando el usuario tiene status; Scald/Scorching Sands conservan 20. Corrige las notas anteriores que atribuían solo 10 a Overheat.
 4. Regresiones Ember y puntuación Overheat escritas/actualizadas según nueva evidencia. Tests/compilación/Classic/Azahar/hardware permanecen pendientes.
+
+## Predicción del núcleo para daño fijo
+
+1. calculatePokemonDamageCore conecta MoveFixedDamageProfile al importe constante/nivel, conserva inmunidad y omite modificadores ofensivos igual que la ejecución.
+2. Gate compartido de capacidades evita divergencia por full-HP endure/inmunidades todavía no representadas. Regresión compara predicción y ejecución para Dragon Rage/Seismic Toss/Night Shade sin draws de simulación.
+3. Selección/admisión en FirstRunRuntime y gates ejecutados aún pendientes. Tests/compilación/Classic/Old 3DS no verificados.

@@ -1633,7 +1633,8 @@ PokemonDamageCoreResult calculatePokemonDamageCore(
     const PokemonMoveWeatherContext* weatherContext) {
     const auto* move = PokerogueContent::findMoveById(moveId);
     if (!move) return PokemonDamageCoreResult::MissingMove;
-    if (move->category == PokerogueContent::MoveStatus || move->power <= 0) {
+    const auto* fixedDamage = pokemonFixedDamageMoveProfile(moveId);
+    if (move->category == PokerogueContent::MoveStatus || (move->power <= 0 && !fixedDamage)) {
         return PokemonDamageCoreResult::NonDamagingMove;
     }
     const auto* attackerSpecies = PokerogueContent::findSpeciesByDex(attacker.speciesDex);
@@ -1642,6 +1643,17 @@ PokemonDamageCoreResult calculatePokemonDamageCore(
     const auto* attackerForm = attacker.formId ? PokerogueContent::findFormById(attacker.formId) : nullptr;
     if (attacker.formId && !attackerForm) return PokemonDamageCoreResult::InvalidType;
 
+    if (fixedDamage) {
+        double effectiveness = 1.0;
+        if (calculatePokemonTypeEffectiveness(moveId, defender, effectiveness) != PokemonTypeEffectivenessResult::Ok)
+            return PokemonDamageCoreResult::InvalidType;
+        if (effectiveness == 0.0) { outputDamage = 0; return PokemonDamageCoreResult::Ok; }
+        if (!pokemonFixedDamageAbilityCapabilitiesResolved(attacker.abilityId, defender.abilityId))
+            return PokemonDamageCoreResult::UnsupportedAbilityCondition;
+        if (fixedDamage->userLevel && !attacker.level) return PokemonDamageCoreResult::InvalidStats;
+        outputDamage = fixedDamage->userLevel ? attacker.level : fixedDamage->amount;
+        return PokemonDamageCoreResult::Ok;
+    }
     double baseDamage = 0.0;
     double weatherMultiplier = 1.0;
     if (weatherContext && !pokemonMoveWeatherMultiplier(moveId, *weatherContext, weatherMultiplier))
@@ -1807,13 +1819,8 @@ PokemonMoveDamageResult resolveStandardPokemonMoveDamage(
     if (fixedDamage) {
         // Fixed damage skips offensive modifiers, but unported full-HP endure,
         // immunities and callbacks must still fail explicitly in this frontier.
-        const uint16_t abilityIds[] = {attacker.abilityId, defender.abilityId};
-        for (const auto id : abilityIds) {
-            bool known = false;
-            for (const auto& capability : PokerogueContent::kStatusActionAbilityProfiles)
-                if (capability.abilityId == id) known = capability.resolved;
-            if (!known) return PokemonMoveDamageResult::UnsupportedAbilityCondition;
-        }
+        if (!pokemonFixedDamageAbilityCapabilitiesResolved(attacker.abilityId, defender.abilityId))
+            return PokemonMoveDamageResult::UnsupportedAbilityCondition;
         if (fixedDamage->userLevel && !attacker.level) return PokemonMoveDamageResult::InvalidStats;
     }
     const auto baseStatus = fixedDamage ? PokemonBaseDamageResult::Ok :

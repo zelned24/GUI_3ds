@@ -1695,6 +1695,10 @@ extern "C" int runPokemonBattleStateChecks() {
         fixedUser.status = fixedTarget.status = {};
         fixedUser.abilityId = fixedTarget.abilityId = 65;
         for (const uint16_t id : {uint16_t(82), uint16_t(69), uint16_t(101)}) {
+            uint32_t prediction = 123;
+            if (Pokerogue3DS::calculatePokemonDamageCore(fixedUser, fixedTarget, id, false, prediction) !=
+                    Pokerogue3DS::PokemonDamageCoreResult::Ok ||
+                prediction != (id == 82 ? 40u : fixedUser.level)) return 9840;
             auto fixedRng = damageRng, expectedFixedRng = fixedRng;
             (void)expectedFixedRng.randSeedInt(100);
             PokemonMoveDamageRoll fixedRoll{};

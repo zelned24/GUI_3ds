@@ -320,3 +320,8 @@ Los ejemplos describen infraestructura y límites; no son tareas cerradas. Actua
 
 - Todos los ataques Fuego incluyen cura FREEZE del objetivo por el constructor upstream, aunque no figure en su raw individual. El dispatcher aplica esa cura y la IA cuenta su atributo implícito.
 - Regresiones Ember y beneficio Overheat actualizadas desde esta evidencia. El inventario de declaraciones raw no enumera efectos heredados/implícitos; DAT-02 requiere también esa auditoría.
+
+### Avance MOV-02: predicción de daño fijo
+
+- calculatePokemonDamageCore devuelve constante/nivel tras inmunidad, sin multiplicar resistencias/STAB/burn. Comparte gate de capacidades con ejecución, evitando que IA prediga una ruta no soportada.
+- Regresiones de predicción/ejecución escritas; falta admisión y puntuación de selección en FirstRunRuntime y validación final. MOV-02 sigue parcial.

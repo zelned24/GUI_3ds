@@ -511,6 +511,16 @@ struct PokemonMoveStatusApplicationEvent {
 };
 // Exact self-FREEZE healing declarations used by MovePhase.checkFreeze.
 // Burn Up still requires its type/removal attributes before runtime admission.
+inline bool pokemonFixedDamageAbilityCapabilitiesResolved(uint16_t attackerAbility, uint16_t defenderAbility) {
+    const uint16_t ids[] = {attackerAbility, defenderAbility};
+    for (const auto id : ids) {
+        bool known = false;
+        for (const auto& capability : PokerogueContent::kStatusActionAbilityProfiles)
+            if (capability.abilityId == id) known = capability.resolved;
+        if (!known) return false;
+    }
+    return true;
+}
 inline const PokerogueContent::MoveFixedDamageProfile* pokemonFixedDamageMoveProfile(uint16_t moveId) {
     const auto* move = PokerogueContent::findMoveById(moveId);
     if (!move || move->category == PokerogueContent::MoveStatus || move->attributeCount != 1 ||
