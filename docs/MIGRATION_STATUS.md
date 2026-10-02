@@ -2070,3 +2070,9 @@
 1. StatusActionAbilityProfile admite callbacks PreDefendFullHpEndureAbAttr/BlockOneHitKOAbAttr solo con declaraciones exactas sin parámetros. Eso permite PP/status providers sin omitir un callback desconocido; los ataques OneHitKO no se admiten por este cambio.
 2. FirstRunRuntime mantiene dobles/modifiers/stats no base fuera de contextos Sturdy. Comando aplica tag también en daño ordinario; jefes siguen rechazados y run save con tag activo sigue protegido.
 3. Regresiones 9960–9961 de PP y Tackle con Sturdy escritas, no ejecutadas. Falta evidencia end-to-end con actor real Sturdy, save de run y todos los contextos antes de declarar cobertura completa.
+
+## Replay FirstRunRuntime de Geodude/Sturdy
+
+1. Regresiones 9970–9975 construyen actor Geodude 74 con ability 5 validada contra su catálogo real, IV/nature/identity coherentes y EXP canónica; snapshots de test usan Growl frente a Dragon Rage para provocar supervivencia.
+2. Dos restores ejecutan turno y capture de checkpoint, comparando HP=1, PP, ausencia de tag consumido y battle RNG íntegro. No modifica learnsets de producción.
+3. Caso escrito, sin ejecutar: no demuestra aún run Sturdy verificada ni Classic completo. Tests/compilación/Azahar/hardware siguen pendientes.

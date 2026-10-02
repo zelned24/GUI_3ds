@@ -400,6 +400,62 @@ static int checkStatusActionAdmission() {
                 afterAction.enemyStatus.effect != repeatedAction.enemyStatus.effect ||
                 afterAction.enemyStatus.sleepTurnsRemaining != repeatedAction.enemyStatus.sleepTurnsRemaining)
                 return 9387;
+            // Real Geodude/Sturdy actor, deterministic Dragon Rage opponent.
+            // Moves are injected only into this test snapshot, never production learnsets.
+            {
+                const auto* species = PokerogueContent::findSpeciesByDex(74);
+                if (!species || (species->ability1 != 5 && species->ability2 != 5)) return 9970;
+                PokemonBattleInit input{};
+                input.speciesDex = species->dex;
+                input.formId = species->firstFormId;
+                input.level = 5;
+                input.pokemonId = context.player.actor.pokemonId;
+                input.abilityId = 5;
+                input.gender = context.player.actor.gender;
+                input.nature = context.player.actor.nature;
+                for (uint8_t i = 0; i < 6; ++i) input.ivs[i] = context.player.actor.ivs[i];
+                input.moveCount = 1;
+                input.moveIds[0] = 45;
+                PokemonBattleState actor{};
+                if (initializePokemonBattleState(input, actor) != PokemonBattleInitResult::Ok ||
+                    actor.maxHp >= 40) return 9971;
+                auto identity = context.player.actor;
+                identity.formId = actor.formId;
+                identity.abilityIndex = species->ability1 == 5 ? 0 : 1;
+                identity.initialTeraType = resolvePokemonTypeSymbol(species->type1);
+                identity.initialTeraTypeIndex = 0;
+                identity.initialTeraTypeResolved = true;
+                uint32_t experience = 0;
+                if (pokemonTotalExperienceForLevel(species->growthRate, 5, experience) !=
+                        PokemonExperienceResult::Ok) return 9972;
+                auto sturdyCheckpoint = checkpoint;
+                if (!captureNativePokemonActorSave(actor, identity, experience,
+                        sturdyCheckpoint.playerParty[0])) return 9973;
+                sturdyCheckpoint.playerLevel = 5;
+                sturdyCheckpoint.playerExperience = experience;
+                sturdyCheckpoint.playerHp = actor.hp;
+                sturdyCheckpoint.playerMoveIds[0] = 45;
+                sturdyCheckpoint.playerPp[0] = 40;
+                sturdyCheckpoint.enemyMoveCount = 1;
+                sturdyCheckpoint.enemyMoveIds[0] = 82;
+                sturdyCheckpoint.enemyPp[0] = 10;
+                for (uint8_t slot = 1; slot < 4; ++slot) {
+                    sturdyCheckpoint.enemyMoveIds[slot] = 0;
+                    sturdyCheckpoint.enemyPp[slot] = 0;
+                }
+                FirstRunRuntime sturdyRun(seed), replay(seed);
+                NativeRunSave after{}, repeatedAfter{};
+                if (!sturdyRun.restoreNativeRunSave(sturdyCheckpoint) ||
+                    !replay.restoreNativeRunSave(sturdyCheckpoint) || !sturdyRun.battleInputSupported() ||
+                    !replay.battleInputSupported() || !sturdyRun.advanceBattleTurn() || !replay.advanceBattleTurn() ||
+                    sturdyRun.captureNativeRunSave(after) != NativeSaveResult::Ok ||
+                    replay.captureNativeRunSave(repeatedAfter) != NativeSaveResult::Ok ||
+                    after.playerHp != 1 || after.playerPp[0] != 39 || after.enemyPp[0] != 9 ||
+                    after.playerHp != repeatedAfter.playerHp || after.enemyHp != repeatedAfter.enemyHp ||
+                    sturdyRun.presentation().player.battleState.sturdy.present) return 9974;
+                const auto a = sturdyRun.battleRng().state(), b = replay.battleRng().state();
+                if (a.carry != b.carry || a.s0 != b.s0 || a.s1 != b.s1 || a.s2 != b.s2) return 9975;
+            }
             NativeRunSave emberCheckpoint = checkpoint;
             emberCheckpoint.playerMoveIds[0] = 52;
             emberCheckpoint.playerPp[0] = 25;
