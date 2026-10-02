@@ -1837,6 +1837,75 @@ bool composePokemonAlwaysHitPolicy(const PokemonWeatherAbilityComponent* compone
     return true;
 }
 
+PokemonMoveDamageResult resolvePokemonDamageMoveHitCheck(const PokemonBattleState& attacker,
+    const PokemonBattleState& defender, uint16_t moveId, PokerogueRngAdapter& rng,
+    PokemonDamageMoveHitCheck& output, const PokemonMoveWeatherContext* weatherContext,
+    const PokemonHitPolicy* hitPolicy) {
+    const auto* move = PokerogueContent::findMoveById(moveId);
+    if (!move) return PokemonMoveDamageResult::MissingMove;
+    if (move->category == PokerogueContent::MoveStatus || (move->power <= 0 && !pokemonFixedDamageMoveProfile(moveId)))
+        return PokemonMoveDamageResult::NonDamagingMove;
+    if (move->accuracy < -1 || move->accuracy > 100) return PokemonMoveDamageResult::InvalidAccuracy;
+    if (!PokerogueContent::findSpeciesByDex(attacker.speciesDex) ||
+        !PokerogueContent::findSpeciesByDex(defender.speciesDex)) return PokemonMoveDamageResult::MissingSpecies;
+    PokemonDamageMoveHitCheck event{};
+    event.resolved = true;
+    event.moveId = moveId;
+    event.targetPokemonId = defender.pokemonId;
+    PokemonMoveDamageRoll next{};
+    if (calculatePokemonTypeEffectiveness(moveId, defender, next.typeEffectiveness) !=
+        PokemonTypeEffectivenessResult::Ok) return PokemonMoveDamageResult::InvalidType;
+    if (!next.typeEffectiveness) { event.result = next; output = event; return PokemonMoveDamageResult::Ok; }
+    auto nextRng = rng;
+    int16_t weatherAccuracy = move->accuracy;
+    if (!pokemonWeatherMoveAccuracy(moveId, weatherContext, weatherAccuracy))
+        return PokemonMoveDamageResult::UnresolvedWeather;
+    bool alwaysHits = false;
+    // Unsuppressed primary abilities in the current baseline. Type immunity
+    // was already checked above; No Guard does not bypass that check.
+    for (const auto& profile : PokerogueContent::kAlwaysHitAbilityProfiles)
+        if (profile.abilityId == attacker.abilityId || profile.abilityId == defender.abilityId)
+            alwaysHits = true;
+    double additionalAccuracyMultiplier = 1.0;
+    if (hitPolicy) {
+        if (!hitPolicy->resolved) return PokemonMoveDamageResult::UnsupportedAbilityCondition;
+        if (!(hitPolicy->accuracyMultiplier > 0.0) || hitPolicy->accuracyMultiplier > 256.0)
+            return PokemonMoveDamageResult::InvalidAccuracy;
+        if (hitPolicy->blockedByAbility) {
+            next.abilityBlocked = true;
+            event.result = next;
+            output = event;
+            rng = nextRng;
+            return PokemonMoveDamageResult::Ok;
+        }
+        alwaysHits = hitPolicy->bypassAccuracy;
+        additionalAccuracyMultiplier = hitPolicy->accuracyMultiplier;
+    }
+    if (weatherAccuracy >= 0 && !alwaysHits) {
+        double accuracyStage = 1.0;
+        if (attacker.statStages[5] < -6 || attacker.statStages[5] > 6 ||
+            defender.statStages[6] < -6 || defender.statStages[6] > 6) return PokemonMoveDamageResult::InvalidAccuracy;
+        const int accuracy = hitPolicy && hitPolicy->ignoreAttackerAccuracyStage ? 0 : attacker.statStages[5];
+        const int evasion = pokemonIgnoreOpponentStatStagesMoveResolved(moveId) ||
+            (hitPolicy && hitPolicy->ignoreDefenderEvasionStage) ? 0 : defender.statStages[6];
+        if (!pokemonAccuracyStageMultiplier(accuracy, evasion, accuracyStage))
+            return PokemonMoveDamageResult::InvalidAccuracy;
+        next.accuracyWasRolled = true;
+        next.accuracyRoll = static_cast<uint8_t>(nextRng.randSeedInt(100));
+        if (next.accuracyRoll >= weatherAccuracy * accuracyStage * additionalAccuracyMultiplier) {
+            event.result = next;
+            output = event;
+            rng = nextRng;
+            return PokemonMoveDamageResult::Ok;
+        }
+    }
+    next.hit = true;
+    event.result = next;
+    output = event;
+    rng = nextRng;
+    return PokemonMoveDamageResult::Ok;
+}
+
 PokemonMoveDamageResult resolveStandardPokemonMoveDamage(
     const PokemonBattleState& attacker,
     const PokemonBattleState& defender,
@@ -1847,7 +1916,7 @@ PokemonMoveDamageResult resolveStandardPokemonMoveDamage(
     const PokemonMoveWeatherContext* weatherContext,
     const PokemonCriticalPolicy* criticalPolicy,
     const PokemonHitPolicy* hitPolicy, const PokemonBurnDamagePolicy* burnPolicy,
-    const PokemonMoveTargetPolicy* targetPolicy) {
+    const PokemonMoveTargetPolicy* targetPolicy, const PokemonDamageMoveHitCheck* preparedHit) {
     const auto* move = PokerogueContent::findMoveById(moveId);
     if (!move) return PokemonMoveDamageResult::MissingMove;
     double targetMultiplier = 1.0;
@@ -1872,6 +1941,17 @@ PokemonMoveDamageResult resolveStandardPokemonMoveDamage(
     PokemonMoveDamageRoll next{};
     if (calculatePokemonTypeEffectiveness(moveId, defender, next.typeEffectiveness) !=
         PokemonTypeEffectivenessResult::Ok) return PokemonMoveDamageResult::InvalidType;
+    if (preparedHit) {
+        const auto& check = preparedHit->result;
+        if (!preparedHit->resolved || preparedHit->moveId != moveId ||
+            preparedHit->targetPokemonId != defender.pokemonId ||
+            check.typeEffectiveness != next.typeEffectiveness || check.critical || check.criticalWasRolled ||
+            check.criticalRoll || check.randomDamagePercent || check.damage ||
+            (check.accuracyWasRolled && check.accuracyRoll >= 100) ||
+            (!check.accuracyWasRolled && check.accuracyRoll) || (check.abilityBlocked && check.hit) ||
+            (!check.typeEffectiveness && check.hit))
+            return PokemonMoveDamageResult::InvalidStats;
+    }
     // Upstream checks type immunity before accuracy, critical and damage RNG.
     if (next.typeEffectiveness == 0.0) {
         output = next;
@@ -1898,45 +1978,16 @@ PokemonMoveDamageResult resolveStandardPokemonMoveDamage(
         return PokemonMoveDamageResult::UnresolvedWeather;
     if (baseStatus != PokemonBaseDamageResult::Ok) return PokemonMoveDamageResult::InvalidStats;
 
-    int16_t weatherAccuracy = move->accuracy;
-    if (!pokemonWeatherMoveAccuracy(moveId, weatherContext, weatherAccuracy))
-        return PokemonMoveDamageResult::UnresolvedWeather;
-    bool alwaysHits = false;
-    // Unsuppressed primary abilities in the current baseline. Type immunity
-    // was already checked above; No Guard does not bypass that check.
-    for (const auto& profile : PokerogueContent::kAlwaysHitAbilityProfiles)
-        if (profile.abilityId == attacker.abilityId || profile.abilityId == defender.abilityId)
-            alwaysHits = true;
-    double additionalAccuracyMultiplier = 1.0;
-    if (hitPolicy) {
-        if (!hitPolicy->resolved) return PokemonMoveDamageResult::UnsupportedAbilityCondition;
-        if (!(hitPolicy->accuracyMultiplier > 0.0) || hitPolicy->accuracyMultiplier > 256.0)
-            return PokemonMoveDamageResult::InvalidAccuracy;
-        if (hitPolicy->blockedByAbility) {
-            next.abilityBlocked = true;
-            output = next;
-            return PokemonMoveDamageResult::Ok;
-        }
-        alwaysHits = hitPolicy->bypassAccuracy;
-        additionalAccuracyMultiplier = hitPolicy->accuracyMultiplier;
+    if (preparedHit) {
+        next = preparedHit->result;
+    } else {
+        PokemonDamageMoveHitCheck check{};
+        const auto hitResult = resolvePokemonDamageMoveHitCheck(attacker, defender, moveId,
+            battleRng, check, weatherContext, hitPolicy);
+        if (hitResult != PokemonMoveDamageResult::Ok) return hitResult;
+        next = check.result;
     }
-    if (weatherAccuracy >= 0 && !alwaysHits) {
-        double accuracyStage = 1.0;
-        if (attacker.statStages[5] < -6 || attacker.statStages[5] > 6 ||
-            defender.statStages[6] < -6 || defender.statStages[6] > 6) return PokemonMoveDamageResult::InvalidAccuracy;
-        const int accuracy = hitPolicy && hitPolicy->ignoreAttackerAccuracyStage ? 0 : attacker.statStages[5];
-        const int evasion = pokemonIgnoreOpponentStatStagesMoveResolved(moveId) ||
-            (hitPolicy && hitPolicy->ignoreDefenderEvasionStage) ? 0 : defender.statStages[6];
-        if (!pokemonAccuracyStageMultiplier(accuracy, evasion, accuracyStage))
-            return PokemonMoveDamageResult::InvalidAccuracy;
-        next.accuracyWasRolled = true;
-        next.accuracyRoll = static_cast<uint8_t>(battleRng.randSeedInt(100));
-        if (next.accuracyRoll >= weatherAccuracy * accuracyStage * additionalAccuracyMultiplier) {
-            output = next;
-            return PokemonMoveDamageResult::Ok;
-        }
-    }
-    next.hit = true;
+    if (!next.hit) { output = next; return PokemonMoveDamageResult::Ok; }
     if (fixedDamage) {
         if (fixedDamage->randomLevel) {
             const uint32_t percentage = battleRng.randSeedIntRange(50, 150);
@@ -2048,7 +2099,7 @@ PokemonMoveActionStatus useStandardPokemonMove(
     const PokemonPpPolicy* ppPolicy,
     PokemonBossState* targetBossState, const PokemonBossDamagePolicy* bossDamagePolicy,
     PokerogueRngAdapter* bossGlobalRng, const PokemonBurnDamagePolicy* burnPolicy,
-    const PokemonMoveTargetPolicy* targetPolicy) {
+    const PokemonMoveTargetPolicy* targetPolicy, const PokemonDamageMoveHitCheck* preparedHit) {
     if (moveSlot >= attacker.moveCount || moveSlot >= 4 || attacker.moves[moveSlot].moveId == 0) {
         return PokemonMoveActionStatus::InvalidMoveSlot;
     }
@@ -2096,7 +2147,7 @@ PokemonMoveActionStatus useStandardPokemonMove(
     PokerogueRngAdapter nextGlobalRng;
     if (bossGlobalRng) nextGlobalRng = *bossGlobalRng;
     next.damageResolutionStatus = resolveStandardPokemonMoveDamage(
-        attacker, defender, attacker.moves[moveSlot].moveId, moveIsTypeless, nextRng, next.damageRoll, weatherContext, criticalPolicy, hitPolicy, burnPolicy, targetPolicy);
+        attacker, defender, attacker.moves[moveSlot].moveId, moveIsTypeless, nextRng, next.damageRoll, weatherContext, criticalPolicy, hitPolicy, burnPolicy, targetPolicy, preparedHit);
     if (next.damageResolutionStatus == PokemonMoveDamageResult::UnsupportedAbilityCondition)
         return PokemonMoveActionStatus::UnsupportedAbilityCondition;
     if (next.damageResolutionStatus == PokemonMoveDamageResult::UnresolvedWeather)

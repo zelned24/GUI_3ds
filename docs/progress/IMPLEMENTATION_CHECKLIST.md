@@ -530,3 +530,8 @@ Para cada entrega actualizar esta tabla con IDs, commit, alcance conectado, excl
 
 - Swift canónico atraviesa acción compartida, multiplicador de objetivos vivos, daño a ambos enemigos y PP único; política también disponible en predicción. No se habilitan efectos adicionales ni área con checks aleatorios de precisión.
 - Regresiones de políticas/daño/checkpoint escritas sin ejecutar. Campo de cuatro actores, batching general de precisión y callbacks pendientes.
+
+### Avance TUR-05 / MOV-04: lote de precisión antes de daño
+
+- Tipo/inmunidad/bloqueo/precisión se preparan para todos los objetivos vivos antes de críticos/daño. Resultados ligados a move/target se consumen sin reroll. Petal Blizzard plano se conecta al dispatcher del jugador.
+- Regresión de hit/miss mixto y orden RNG escrita sin ejecutar. ALL_NEAR_OTHERS enemigo, segundo jugador, protecciones y efectos adicionales pendientes.

@@ -3172,6 +3172,95 @@ static int checkCanonicalTrainerSignatureSlots() {
     return checked ? 0 : 231; // Real catalog coverage, not a synthetic trainer.
 }
 
+static int checkDoubleAreaHitBatchRng() {
+    using namespace Pokerogue3DS;
+    const auto* move = PokerogueContent::findMoveById(572); // Real Petal Blizzard, no extra effects.
+    if (!move || move->attributeCount || !move->target || std::strcmp(move->target, "ALL_NEAR_OTHERS")) return 10380;
+    for (uint32_t seed = 1; seed <= 4096; ++seed) {
+        FirstRunRuntime game(seed);
+        if (!game.doubleBattle() || game.arenaWeather().type != PokemonEffectiveWeather::None) continue;
+        auto& field = const_cast<PresentationContext&>(game.presentation());
+        if (field.enemy.bossState.segmentCount || field.secondEnemy.bossState.segmentCount) continue;
+        auto& player = field.player.battleState;
+        player.moveCount = 1;
+        player.moves[0] = {move->id, 1, static_cast<uint8_t>(move->pp)};
+        for (auto& stage : player.statStages) stage = 0;
+        player.statStages[5] = -6; // Test-only lowered accuracy to exercise mixed outcomes.
+        PokemonBattleState* enemies[] = {&field.enemy.battleState, &field.secondEnemy.battleState};
+        bool supported = true;
+        for (auto* enemy : enemies) {
+            bool duration = false;
+            for (const auto& profile : PokerogueContent::kStatusDurationAbilityProfiles)
+                if (profile.abilityId == enemy->abilityId) duration = profile.resolved;
+            supported &= duration;
+            enemy->status = {};
+            enemy->status.present = enemy->status.hasSleepTurnsRemaining = true;
+            enemy->status.effect = PokemonStatusEffect::Sleep;
+            enemy->status.sleepTurnsRemaining = 8;
+            for (auto& stage : enemy->statStages) stage = 0;
+            for (uint8_t slot = 0; slot < enemy->moveCount; ++slot) enemy->moves[slot].pp = 0;
+        }
+        if (!supported || !game.doubleBattleSupported() || !game.battleRng().currentStream()) continue;
+        auto rng = *game.battleRng().currentStream();
+        auto expectedAccuracyRng = rng;
+        const auto firstRoll = expectedAccuracyRng.randSeedInt(100);
+        const auto secondRoll = expectedAccuracyRng.randSeedInt(100);
+        PokemonDamageMoveHitCheck checks[2]{};
+        PokemonHitPolicy hits[2]{};
+        PokemonCriticalPolicy critical[2]{};
+        PokemonMoveWeatherContext weather{true};
+        for (uint8_t i = 0; i < 2; ++i) {
+            const PokemonWeatherAbilityComponent hitComponents[] = {
+                {player.abilityId, true, true}, {enemies[i]->abilityId, true, false}
+            };
+            const PokemonCriticalAbilityComponent critComponents[] = {
+                {player.abilityId, true, true}, {enemies[i]->abilityId, true, false}
+            };
+            if (!composePokemonAlwaysHitPolicy(hitComponents, 2, hits[i], move->id, &weather) ||
+                !composePokemonCriticalAbilityPolicy(critComponents, 2, false, critical[i])) return 10381;
+            for (const auto& profile : PokerogueContent::kStatusActionAbilityProfiles) {
+                if (!profile.resolved) continue;
+                if (profile.abilityId == player.abilityId) hits[i].ignoreDefenderEvasionStage = profile.ignoresOpponentEvasion;
+                if (profile.abilityId == enemies[i]->abilityId) hits[i].ignoreAttackerAccuracyStage = profile.ignoresOpponentAccuracy;
+            }
+            if (resolvePokemonDamageMoveHitCheck(player, *enemies[i], move->id, rng,
+                    checks[i], &weather, &hits[i]) != PokemonMoveDamageResult::Ok) return 10382;
+        }
+        if (!checks[0].result.accuracyWasRolled || !checks[1].result.accuracyWasRolled) continue;
+        if (checks[0].result.accuracyRoll != firstRoll || checks[1].result.accuracyRoll != secondRoll ||
+            rng.state().s0 != expectedAccuracyRng.state().s0 || rng.state().s1 != expectedAccuracyRng.state().s1 ||
+            rng.state().s2 != expectedAccuracyRng.state().s2 || rng.state().carry != expectedAccuracyRng.state().carry)
+            return 10383;
+        if (checks[0].result.hit == checks[1].result.hit) continue; // Require one hit and one miss.
+        auto expectedPlayer = player;
+        PokemonBattleState expectedEnemies[] = {*enemies[0], *enemies[1]};
+        PokemonMoveTargetPolicy targets{true, 2};
+        PokemonPpPolicy pp{true, 1};
+        for (uint8_t i = 0; i < 2; ++i) {
+            PokemonMoveActionResult result{};
+            if (useStandardPokemonMove(expectedPlayer, expectedEnemies[i], 0, false, rng, result,
+                    &weather, &critical[i], &hits[i], &pp, nullptr, nullptr, nullptr, nullptr, &targets,
+                    &checks[i]) != PokemonMoveActionStatus::Ok) return 10384;
+            pp.cost = 0;
+        }
+        if (!expectedEnemies[0].hp || !expectedEnemies[1].hp) continue;
+        if (!game.advanceBattleTurn() || field.enemy.battleState.hp != expectedEnemies[0].hp ||
+            field.secondEnemy.battleState.hp != expectedEnemies[1].hp || player.moves[0].pp ||
+            player.moves[0].moveId != move->id || player.hp != expectedPlayer.hp) return 10385;
+        auto rejected = checks[0];
+        rejected.targetPokemonId ^= 1;
+        PokemonMoveDamageRoll unchanged{};
+        unchanged.damage = 123;
+        auto beforeReject = rng;
+        if (resolveStandardPokemonMoveDamage(expectedPlayer, expectedEnemies[0], move->id, false, rng,
+                unchanged, &weather, &critical[0], &hits[0], nullptr, &targets, &rejected) !=
+                PokemonMoveDamageResult::InvalidStats || unchanged.damage != 123 ||
+            rng.randSeedUint32() != beforeReject.randSeedUint32()) return 10386;
+        return 0;
+    }
+    return 10387; // Require a real mixed hit/miss area action in the native runtime.
+}
+
 static int checkDoublePlainAreaDamage() {
     using namespace Pokerogue3DS;
     const auto* swift = PokerogueContent::findMoveById(129);
@@ -3600,6 +3689,8 @@ static int checkExhaustedPpStruggleReplay() {
 }
 
 int main() {
+    const int areaHits = checkDoubleAreaHitBatchRng();
+    if (areaHits) return areaHits;
     const int spreadDamage = checkDoublePlainAreaDamage();
     if (spreadDamage) return spreadDamage;
     const int areaAction = checkDoubleAreaActionChecksAndLastPp();

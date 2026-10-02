@@ -1076,18 +1076,19 @@ const PokerogueContent::MoveStatStageEffect* singleDamageStatStageEffect(uint16_
         if (row.moveId == moveId) { if (effect) return nullptr; effect = &row; }
     return effect;
 }
-bool plainAlwaysHitAreaMove(const PokerogueContent::Move& move) {
-    // Other spread effects need hit-check batching and effect-specific dispatch.
+bool plainAreaDamageMove(const PokerogueContent::Move& move) {
+    // Plain spread damage has shared checks and a batch of per-target hit checks.
     return move.category != PokerogueContent::MoveStatus && move.power > 0 &&
-        move.accuracy == -1 && !move.upstreamFlags && !move.attributeCount &&
-        move.target && !std::strcmp(move.target, "ALL_NEAR_ENEMIES");
+        move.accuracy >= -1 && move.accuracy <= 100 && !move.upstreamFlags && !move.attributeCount &&
+        move.target && (!std::strcmp(move.target, "ALL_NEAR_ENEMIES") ||
+            !std::strcmp(move.target, "ALL_NEAR_OTHERS"));
 }
 
 bool supportsBaselineBattleMove(uint16_t moveId) {
     if (PokerogueContent::kStruggleDefinitionResolved && moveId == PokerogueContent::kStruggleMoveId) return true;
     if (pokemonIgnoreOpponentStatStagesMoveResolved(moveId) || pokemonSurviveDamageMoveResolved(moveId) || pokemonFixedDamageMoveProfile(moveId) || singleDamageStatStageEffect(moveId) || singleStatusConfusionEffect(moveId) || singleOpponentStatusEffect(moveId) || singleDamageStatusEffect(moveId) || singleDamageConfusionEffect(moveId) || pokemonWeatherChangeProfile(moveId) || supportsPokemonTrickRoomMove(moveId) || supportsPokemonStatStageMove(moveId) || selfHealingProfile(moveId) || damageDrainProfile(moveId) || damageRecoilProfile(moveId)) return true;
     const auto* move = PokerogueContent::findMoveById(moveId);
-    if (move && plainAlwaysHitAreaMove(*move)) return true;
+    if (move && plainAreaDamageMove(*move)) return true;
     // Other plain attacks currently use the single-target damage path.
     // Only plain damage or a single migrated weather/critical attribute is
     // eligible; other declared attributes/flags still need their own port.
@@ -1374,8 +1375,12 @@ bool FirstRunRuntime::supportsActiveBattleMove(const PokemonBattleState& user,
             user.statsAreBaseFormulaOnly && opponent.statsAreBaseFormulaOnly &&
             statusActionAbilitySupported(user.abilityId) && statusActionAbilitySupported(opponent.abilityId);
     const auto* areaMove = PokerogueContent::findMoveById(moveId);
-    if (areaMove && plainAlwaysHitAreaMove(*areaMove)) {
+    if (areaMove && plainAreaDamageMove(*areaMove)) {
         if (m_heldModifierCount || !user.statsAreBaseFormulaOnly || !opponent.statsAreBaseFormulaOnly) return false;
+        // An enemy's ALL_NEAR_OTHERS also hits its ally; that target dispatcher
+        // is not yet connected. Do not silently drop the ally from the action.
+        if (m_doubleBattle && !std::strcmp(areaMove->target, "ALL_NEAR_OTHERS") &&
+            user.pokemonId != m_context.player.battleState.pokemonId) return false;
         const PokemonBattleState* field[] = {&m_context.player.battleState, &m_context.enemy.battleState,
             &m_context.secondEnemy.battleState};
         for (uint8_t i = 0; i < (m_doubleBattle ? 3 : 2); ++i)
@@ -2592,11 +2597,12 @@ bool FirstRunRuntime::advanceBattleTurnInPlace() {
                 const bool isSpread = pMove && pMove->target &&
                     (std::strcmp(pMove->target, "ALL_NEAR_ENEMIES") == 0 ||
                      std::strcmp(pMove->target, "ALL_ENEMIES") == 0 ||
-                     std::strcmp(pMove->target, "ALL_OTHERS") == 0);
+                     std::strcmp(pMove->target, "ALL_OTHERS") == 0 ||
+                     std::strcmp(pMove->target, "ALL_NEAR_OTHERS") == 0);
                 if (isSpread) {
-                    // Stat-stage status and plain always-hit damage share action checks.
+                    // Stat-stage status and plain area damage share action checks.
                     // Other area effects require hit batching and their own resolver.
-                    if (!supportsPokemonStatStageMove(pMove->id) && !plainAlwaysHitAreaMove(*pMove)) return false;
+                    if (!supportsPokemonStatStageMove(pMove->id) && !plainAreaDamageMove(*pMove)) return false;
                     uint16_t targetAbilities[2]{};
                     uint8_t targetCount = 0;
                     if (m_context.enemy.battleState.hp) targetAbilities[targetCount++] = m_context.enemy.battleState.abilityId;
@@ -2707,6 +2713,7 @@ bool FirstRunRuntime::executeActiveBattleMove(uint8_t userIndex, uint8_t targetI
         (!std::strcmp(move->target, "ALL_NEAR_ENEMIES") ||
          !std::strcmp(move->target, "ALL_ENEMIES") ||
          !std::strcmp(move->target, "ALL_OTHERS") ||
+         !std::strcmp(move->target, "ALL_NEAR_OTHERS") ||
          !std::strcmp(move->target, "ALL"));
     if (repeatedTargetChecks && !action) return false;
     const auto publishActionChecks = [&](bool cancelled) {
@@ -2931,6 +2938,36 @@ bool FirstRunRuntime::executeActiveBattleMove(uint8_t userIndex, uint8_t targetI
         if (profile.abilityId == user.abilityId) hit.ignoreDefenderEvasionStage = profile.ignoresOpponentEvasion;
         if (profile.abilityId == opponent.abilityId) hit.ignoreAttackerAccuracyStage = profile.ignoresOpponentAccuracy;
     }
+    const bool primalWeatherCancelled =
+        (weather.cancellationWeather == PokemonEffectiveWeather::HarshSun && !std::strcmp(move->type, "WATER")) ||
+        (weather.cancellationWeather == PokemonEffectiveWeather::HeavyRain && !std::strcmp(move->type, "FIRE"));
+    if (action && !action->hitChecksPrepared && plainAreaDamageMove(*move) && !primalWeatherCancelled) {
+        // MoveEffectPhase conducts every hit check before any critical/damage draw.
+        // Preparation belongs to the action and sees the unmodified target field.
+        for (uint8_t i = 1; i < (m_doubleBattle ? 3 : 2); ++i) {
+            const auto& target = *actors[i];
+            if (!target.hp) continue;
+            PokemonMoveWeatherContext targetWeather{};
+            PokemonHitPolicy targetHit{};
+            const PokemonWeatherAbilityComponent components[] = {
+                {user.abilityId, true, true}, {target.abilityId, true, false}
+            };
+            if (!resolveActiveMoveWeather(user, target, targetWeather) ||
+                !composePokemonAlwaysHitPolicy(components, 2, targetHit, move->id, &targetWeather)) return false;
+            const bool targetWeatherCancelled =
+                (targetWeather.cancellationWeather == PokemonEffectiveWeather::HarshSun && !std::strcmp(move->type, "WATER")) ||
+                (targetWeather.cancellationWeather == PokemonEffectiveWeather::HeavyRain && !std::strcmp(move->type, "FIRE"));
+            if (targetWeatherCancelled) return false; // Mixed cancellation contexts need phase-level policy.
+            for (const auto& profile : PokerogueContent::kStatusActionAbilityProfiles) {
+                if (!profile.resolved) continue;
+                if (profile.abilityId == user.abilityId) targetHit.ignoreDefenderEvasionStage = profile.ignoresOpponentEvasion;
+                if (profile.abilityId == target.abilityId) targetHit.ignoreAttackerAccuracyStage = profile.ignoresOpponentAccuracy;
+            }
+            if (resolvePokemonDamageMoveHitCheck(user, target, move->id, rng,
+                    action->hitChecks[i], &targetWeather, &targetHit) != PokemonMoveDamageResult::Ok) return false;
+        }
+        action->hitChecksPrepared = true;
+    }
     ResolvedPokemon* resolvedActors[] = {&m_context.player, &m_context.enemy, &m_context.secondEnemy};
     auto* targetBossState = &resolvedActors[targetIndex]->bossState;
     auto nextBossState = *targetBossState;
@@ -3035,14 +3072,15 @@ bool FirstRunRuntime::executeActiveBattleMove(uint8_t userIndex, uint8_t targetI
     auto nextRng = rng;
     PokemonMoveTargetPolicy targets{};
     targets.resolved = true;
-    if (plainAlwaysHitAreaMove(*move) && m_doubleBattle && userIndex == 0)
+    if (plainAreaDamageMove(*move) && m_doubleBattle && userIndex == 0)
         targets.activeTargetCount = static_cast<uint8_t>((m_context.enemy.battleState.hp != 0) +
             (m_context.secondEnemy.battleState.hp != 0));
     PokemonMoveActionResult result{};
     if (useStandardPokemonMove(nextUser, nextOpponent, moveSlot, false, nextRng, result,
             &weather, &critical, &hit, &pp, targetIsBoss ? &nextBossState : nullptr,
             targetIsBoss ? &bossPolicy : nullptr,
-            targetIsBoss ? &nextGlobalRng : nullptr, &burn, &targets) != PokemonMoveActionStatus::Ok) return false;
+            targetIsBoss ? &nextGlobalRng : nullptr, &burn, &targets,
+            action && action->hitChecksPrepared ? &action->hitChecks[targetIndex] : nullptr) != PokemonMoveActionStatus::Ok) return false;
     if (PokerogueContent::moveHasAttribute(*move, "RecoilAttr")) {
         PokemonRecoilEvent recoil{};
         const auto recoilPolicy = canonicalFreshActorRecoilPolicy(nextUser.abilityId);

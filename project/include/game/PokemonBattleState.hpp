@@ -1520,6 +1520,17 @@ struct PokemonMoveDamageRoll {
 enum class PokemonMoveDamageResult : uint8_t {
     Ok = 0, MissingMove, MissingSpecies, NonDamagingMove, InvalidAccuracy, InvalidStats, InvalidType, UnsupportedAbilityCondition, UnresolvedWeather
 };
+struct PokemonDamageMoveHitCheck {
+    bool resolved = false;
+    uint16_t moveId = 0;
+    uint32_t targetPokemonId = 0;
+    PokemonMoveDamageRoll result{}; // Hit fields only; no critical/damage draw.
+};
+PokemonMoveDamageResult resolvePokemonDamageMoveHitCheck(const PokemonBattleState& attacker,
+    const PokemonBattleState& defender, uint16_t moveId, PokerogueRngAdapter& rng,
+    PokemonDamageMoveHitCheck& output, const PokemonMoveWeatherContext* weather = nullptr,
+    const PokemonHitPolicy* policy = nullptr);
+
 PokemonMoveDamageResult resolveStandardPokemonMoveDamage(
     const PokemonBattleState& attacker,
     const PokemonBattleState& defender,
@@ -1531,7 +1542,8 @@ PokemonMoveDamageResult resolveStandardPokemonMoveDamage(
     const PokemonCriticalPolicy* criticalPolicy = nullptr,
     const PokemonHitPolicy* hitPolicy = nullptr,
     const PokemonBurnDamagePolicy* burnPolicy = nullptr,
-    const PokemonMoveTargetPolicy* targetPolicy = nullptr);
+    const PokemonMoveTargetPolicy* targetPolicy = nullptr,
+    const PokemonDamageMoveHitCheck* preparedHit = nullptr);
 
 struct PokemonPpPolicy {
     bool resolved = false;
@@ -1569,7 +1581,8 @@ PokemonMoveActionStatus useStandardPokemonMove(
     const PokemonBossDamagePolicy* bossDamagePolicy = nullptr,
     PokerogueRngAdapter* bossGlobalRng = nullptr,
     const PokemonBurnDamagePolicy* burnPolicy = nullptr,
-    const PokemonMoveTargetPolicy* targetPolicy = nullptr);
+    const PokemonMoveTargetPolicy* targetPolicy = nullptr,
+    const PokemonDamageMoveHitCheck* preparedHit = nullptr);
 
 enum class PokemonAbilitySelectionResult : uint8_t { Ok = 0, MissingSpecies, InvalidHiddenRate };
 PokemonAbilitySelectionResult selectPokemonAbilityIndex(

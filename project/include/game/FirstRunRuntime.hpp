@@ -232,6 +232,8 @@ private:
         bool virtualStruggle = false;
         bool checksCompleted = false;
         bool cancelled = false;
+        bool hitChecksPrepared = false;
+        PokemonDamageMoveHitCheck hitChecks[3]{};
     };
     bool executeActiveBattleMove(uint8_t userIndex, uint8_t targetIndex, uint8_t moveSlot,
         PokerogueRngAdapter& rng, const PokemonPpPolicy* ppOverride = nullptr,
