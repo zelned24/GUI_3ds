@@ -502,7 +502,7 @@ NativeSaveResult FirstRunRuntime::captureNativeRunSave(NativeRunSave& output) co
         hasSummonTags |= m_context.playerParty[member].battleState.heldItemLostTags.unburden ||
             m_context.playerParty[member].battleState.sturdy.present;
     if (value.stage != NativeSaveStage::RunSetup &&
-        (m_doubleBattle || m_run.wave > 9 || (m_trainerBattle && m_run.wave != 5) || m_context.playerPartyCount > 1 || m_playerHistoryRequiresSnapshot || m_heldModifierCount || value.playerStatus.present || value.playerConfusion.present || hasSummonTags || hasChangedFriendship || hasModifiedMaxPp)) {
+        (m_doubleBattle || (m_battleFinished && !m_playerWon) || m_run.wave > 9 || (m_trainerBattle && m_run.wave != 5) || m_context.playerPartyCount > 1 || m_playerHistoryRequiresSnapshot || m_heldModifierCount || value.playerStatus.present || value.playerConfusion.present || hasSummonTags || hasChangedFriendship || hasModifiedMaxPp)) {
         if (m_context.playerPartyCount > 6 ||
             m_context.activePlayerPartyIndex >= m_context.playerPartyCount) { output = {}; return NativeSaveResult::InvalidRecord; }
         value.playerPartyCount = m_context.playerPartyCount;
@@ -860,7 +860,7 @@ bool FirstRunRuntime::restoreNativeRunSaveInPlace(const NativeRunSave& save) {
         (save.stage == NativeSaveStage::BattleActive && (!save.playerHp || !(save.enemyHp || (save.doubleBattle && save.secondEnemy.hp)))) ||
         ((save.stage == NativeSaveStage::BattleWon ||
           save.stage == NativeSaveStage::ExperienceGranted) && (save.enemyHp || (save.doubleBattle && save.secondEnemy.hp) || !save.playerHp)) ||
-        (save.stage == NativeSaveStage::BattleLost && (save.playerHp || !(save.enemyHp || (save.doubleBattle && save.secondEnemy.hp))))) return false;
+        (save.stage == NativeSaveStage::BattleLost && save.playerHp)) return false;
     for (uint8_t i = 0; i < save.playerMoveCount; ++i) {
         const auto& move = m_context.player.battleState.moves[i];
         if (save.playerMoveIds[i] != move.moveId || save.playerPp[i] > move.maxPp) return false;

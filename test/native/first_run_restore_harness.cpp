@@ -3172,6 +3172,53 @@ static int checkCanonicalTrainerSignatureSlots() {
     return checked ? 0 : 231; // Real catalog coverage, not a synthetic trainer.
 }
 
+static int checkDoublePartialExperienceCheckpoint() {
+    using namespace Pokerogue3DS;
+    for (uint32_t seed = 1; seed <= 1024; ++seed) {
+        FirstRunRuntime game(seed);
+        if (!game.doubleBattle()) continue;
+        auto& field = const_cast<PresentationContext&>(game.presentation());
+        if (!field.enemy.actorIdentityResolved || !field.secondEnemy.actorIdentityResolved) continue;
+        field.enemy.battleState.hp = 1; // Test-only near-faint state of the real first enemy.
+        for (uint8_t slot = 0; slot < field.enemy.battleState.moveCount; ++slot)
+            field.enemy.battleState.moves[slot].pp = 0;
+        if (!game.doubleBattleSupported()) continue;
+        const auto beforeExperience = field.player.totalExperience;
+        if (!game.advanceBattleTurn()) return 10300;
+        if (game.battleFinished() || field.enemy.battleState.hp || !field.secondEnemy.battleState.hp) continue;
+        for (unsigned decision = 0; decision < 32 && (game.moveLearningPending() || game.evolutionPending()); ++decision) {
+            if (game.moveLearningPending()) { if (!game.resolvePendingLearnMove(-1)) return 10301; }
+            else if (!game.finishPendingEvolution(false)) return 10302;
+        }
+        NativeRunSave checkpoint{};
+        if (game.captureNativeRunSave(checkpoint) != NativeSaveResult::Ok || !checkpoint.doubleBattle ||
+            checkpoint.stage != NativeSaveStage::BattleActive || checkpoint.doubleExperienceGrantedMask != 1 ||
+            checkpoint.playerExperience <= beforeExperience) return 10303;
+        FirstRunRuntime restored(seed);
+        if (!restored.restoreNativeRunSave(checkpoint)) return 10304;
+        NativeRunSave repeated{};
+        if (restored.captureNativeRunSave(repeated) != NativeSaveResult::Ok ||
+            repeated.playerExperience != checkpoint.playerExperience || repeated.doubleExperienceGrantedMask != 1 ||
+            repeated.enemyHp || repeated.secondEnemy.hp != checkpoint.secondEnemy.hp) return 10305;
+        if (!restored.advanceBattleTurn()) return 10306;
+        if (restored.presentation().secondEnemy.battleState.hp &&
+            restored.presentation().player.totalExperience != checkpoint.playerExperience) return 10307;
+        auto invalid = checkpoint;
+        invalid.doubleExperienceGrantedMask = 0; // Already-defeated enemy cannot lose its award history.
+        if (restored.restoreNativeRunSave(invalid)) return 10308;
+        auto defeat = checkpoint;
+        defeat.stage = NativeSaveStage::BattleLost;
+        defeat.playerHp = defeat.playerParty[defeat.activePlayerMember].hp = 0;
+        defeat.enemyHp = defeat.secondEnemy.hp = 0;
+        FirstRunRuntime lost(seed);
+        if (!lost.restoreNativeRunSave(defeat) || !lost.battleFinished() || lost.playerWon() ||
+            lost.captureNativeRunSave(repeated) != NativeSaveResult::Ok || repeated.stage != NativeSaveStage::BattleLost ||
+            repeated.enemyHp || repeated.secondEnemy.hp) return 10309;
+        return 0;
+    }
+    return 10310; // Require a real partial defeat, never skip the scenario silently.
+}
+
 static int checkDoubleCheckpointRoundtrip() {
     using namespace Pokerogue3DS;
     for (uint32_t seed = 1; seed <= 512; ++seed) {
@@ -3308,6 +3355,8 @@ static int checkExhaustedPpStruggleReplay() {
 }
 
 int main() {
+    const int partialExperience = checkDoublePartialExperienceCheckpoint();
+    if (partialExperience) return partialExperience;
     const int doubleCheckpoint = checkDoubleCheckpointRoundtrip();
     if (doubleCheckpoint) return doubleCheckpoint;
     const int doubleStruggle = checkDoubleExhaustedPpStruggle();

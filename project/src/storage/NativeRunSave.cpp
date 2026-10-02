@@ -909,7 +909,8 @@ NativeSaveResult validateNativeRunSave(const NativeRunSave& save, const char* ex
     }
     if (save.trainerPartyCount &&
         ((save.stage == NativeSaveStage::BattleWon || save.stage == NativeSaveStage::ExperienceGranted)
-            ? hasLivingTrainerMember : !hasLivingTrainerMember)) return NativeSaveResult::InvalidRecord;
+            ? hasLivingTrainerMember : (save.stage == NativeSaveStage::BattleActive && !hasLivingTrainerMember)))
+        return NativeSaveResult::InvalidRecord;
     if (save.stage == NativeSaveStage::RunSetup) {
         if (save.wave != 1 || !equal(save.biomeId, PokerogueContent::kStartingBiomeId)
             || save.playerLevel != 5 || save.playerExperience != initialExperience)
@@ -930,7 +931,7 @@ NativeSaveResult validateNativeRunSave(const NativeRunSave& save, const char* ex
             (!save.playerHp || !livingEnemy)) || (save.stage == NativeSaveStage::BattleWon &&
             (livingEnemy || !save.playerHp)) || (save.stage == NativeSaveStage::ExperienceGranted &&
             (livingEnemy || !save.playerHp)) || (save.stage == NativeSaveStage::BattleLost &&
-            (save.playerHp || !livingEnemy))) return NativeSaveResult::InvalidRecord;
+            save.playerHp)) return NativeSaveResult::InvalidRecord;
 
     bool validEncounter = false;
     for (size_t i = 0; i < PokerogueContent::kSpeciesCount; ++i) {

@@ -240,6 +240,24 @@ extern "C" int runNativeSaveChecks() {
         invalid.secondEnemy.level = 1;
         if (validateNativeRunSave(invalid, PokerogueContent::kContentHash) != NativeSaveResult::InvalidRecord) return 10293;
     }
+    // A defeat needs no living enemy: final recoil can knock out both complete parties.
+    {
+        auto lost = trainerSave;
+        lost.stage = NativeSaveStage::BattleLost;
+        lost.playerHp = lost.enemyHp = 0;
+        for (uint8_t i = 0; i < lost.trainerPartyCount; ++i) lost.trainerParty[i].hp = 0;
+        char lostBytes[kNativeSaveMaxBytes]{};
+        size_t lostSize = 0;
+        NativeRunSave decoded{};
+        if (encodeNativeRunSave(lost, lostBytes, sizeof(lostBytes), lostSize) != NativeSaveResult::Ok ||
+            decodeNativeRunSave(lostBytes, lostSize, PokerogueContent::kContentHash, decoded) != NativeSaveResult::Ok ||
+            decoded.stage != NativeSaveStage::BattleLost || decoded.playerHp || decoded.enemyHp ||
+            decoded.trainerParty[1].hp) return 10320;
+        lost.stage = NativeSaveStage::BattleActive;
+        if (validateNativeRunSave(lost, PokerogueContent::kContentHash) != NativeSaveResult::InvalidRecord) return 10321;
+        lost.stage = NativeSaveStage::BattleWon;
+        if (validateNativeRunSave(lost, PokerogueContent::kContentHash) != NativeSaveResult::InvalidRecord) return 10322;
+    }
     NativeRunSave statusSave = trainerSave;
     statusSave.playerStatus.present = true;
     statusSave.playerStatus.effect = PokemonStatusEffect::Burn;

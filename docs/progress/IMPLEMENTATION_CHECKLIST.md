@@ -500,3 +500,8 @@ Los ejemplos describen infraestructura y límites; no son tareas cerradas. Actua
 
 - Envelope v22 conserva segundo enemigo, estado mutable, escudos, objetivo y máscara de EXP parcial. Capture/codec/restore/recapture conectados con validación del encuentro regenerado y snapshots explícitos de jugador.
 - Regresiones de encuentro real/replay/rechazo y migración v21 escritas sin ejecutar. Segundo jugador activo, derrotas parciales/EXP, estados/contextos completos y evidencia final siguen pendientes.
+
+### Avance SAV-03 / HP-03 / HP-06: derrotas parciales y simultáneas
+
+- Checkpoints de derrota permiten ambos campos sin HP; captura de derrota usa actores explícitos para conservar EXP, sin replay ficticio de premios trainer.
+- Regresión de derrota parcial real → EXP → checkpoint → continuar sin repetir premio, y fixtures de pérdida simultánea escritas sin ejecutar. Resto de fases post-faint y validación final pendientes.
