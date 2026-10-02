@@ -50,6 +50,7 @@ const statusActionAbilityRows = collections.abilities.map(ability => {
     'ProtectStatAbAttr', 'IgnoreOpponentStatStagesAbAttr', 'StatStageChangeMultiplierAbAttr',
     'ReflectStatStageChangeAbAttr', 'StatStageChangeCopyAbAttr', 'PostStatStageChangeStatStageChangeAbAttr',
     'MoveEffectChanceMultiplierAbAttr', 'IgnoreMoveEffectsAbAttr',
+    'BlockStatusDamageAbAttr', 'PostTurnStatusHealAbAttr',
     'PreDefendFullHpEndureAbAttr', 'BlockOneHitKOAbAttr',
     'StatusEffectImmunityAbAttr', 'PostSummonHealStatusAbAttr', 'BattlerTagImmunityAbAttr',
     'PostSummonRemoveBattlerTagAbAttr', 'IntimidateImmunityAbAttr', 'ConfusionOnStatusEffectAbAttr']);
@@ -83,10 +84,17 @@ const statusActionAbilityRows = collections.abilities.map(ability => {
     const declarations = [...raw.matchAll(new RegExp(`\\.attr\\s*\\(\\s*${name}\\s*\\)`, 'g'))].length;
     return mentions === declarations && declarations <= 1;
   });
+  // Only the pinned Poison Heal status pair is admitted by the active provider.
+  // Residual/healing dispatch uses its separate exact canonical profile.
+  const statusTurnResolved = ['BlockStatusDamageAbAttr', 'PostTurnStatusHealAbAttr'].every(name => {
+    const mentions = [...raw.matchAll(new RegExp(`\\b${name}\\b`, 'g'))].length;
+    const declarations = [...raw.matchAll(new RegExp(`\\.attr\\s*\\(\\s*${name}\\s*,\\s*StatusEffect\\.TOXIC\\s*,\\s*StatusEffect\\.POISON\\s*\\)`, 'g'))].length;
+    return mentions === declarations && declarations <= 1;
+  });
   const resolved = !!raw && /new AbBuilder\(/.test(raw) && attrCalls === attrs.length &&
     calls.every(c => builders.has(c)) && attrs.every(a => known.has(a)) && ignoreMentions === ignoreDeclarations &&
     chanceMentions === chanceDeclarations.length && chanceDeclarations.length <= 1 && Number.isFinite(chanceMultiplier) &&
-    ignoreEffectMentions === ignoreEffectDeclarations && removalMentions === removalDeclarations && stageMultipliersResolved && simpleStageCallbacksResolved && postStageResolved && survivalResolved && slicingResolved;
+    ignoreEffectMentions === ignoreEffectDeclarations && removalMentions === removalDeclarations && stageMultipliersResolved && simpleStageCallbacksResolved && postStageResolved && survivalResolved && slicingResolved && statusTurnResolved;
   if (resolved) resolvedStatusActionAbilityIds.add(ability.abilityId);
   return `    {${ability.abilityId}, ${resolved}, false, ${ignoreDeclarations > 0}, ${chanceMultiplier}, ${ignoreEffectDeclarations > 0}}`;
 }).join(',\n');

@@ -3396,7 +3396,7 @@ bool FirstRunRuntime::finishBattleTurn() {
             PokemonHealingPolicy healing{};
             healing.resolved = true; // Current frontier excludes Heal Block/Healing Charms.
             PokemonHealingEvent event{};
-            if (m_doubleBattle || applyPokemonPostTurnStatusHealing(actor, true, healing, event) != PokemonHealingResult::Ok) {
+            if (applyPokemonPostTurnStatusHealing(actor, true, healing, event) != PokemonHealingResult::Ok) {
                 m_battleFeedback = "Post-turn status healing requires dispatcher";
                 return false;
             }

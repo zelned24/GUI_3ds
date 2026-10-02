@@ -2320,3 +2320,9 @@
 
 1. Caso 10460–10461 usa actores reales y movimientos canónicos Scary Face/Swift; velocidades/slots se controlan exclusivamente en test. Tras Scary Face se exige inversión relativa de los dos enemigos pendientes.
 2. Construye resultado esperado con comandos C++ en orden dinámico y otro resultado con orden inicial; requiere una diferencia observable de HP antes de contrastar advanceBattleTurn, etapas y PP. No basta llamar al resolver aislado. Prueba escrita sin ejecutar: comparación interna no sustituye paridad upstream ejecutada ni validación ARM/Old 3DS.
+
+## Poison Heal en el campo doble actual
+
+1. Declaración pinned POISON_HEAL (init-abilities.ts) combina PostTurnStatusHealAbAttr y BlockStatusDamageAbAttr para TOXIC/POISON. El proveedor de acción admite solo esas declaraciones exactas; parámetros nuevos permanecen sin resolver. Perfiles residuales/curación existentes conservan provenance y bloqueo de daño.
+2. finishBattleTurn admite curación local por status en dobles bajo perfil exacto y política existente sin Heal Block/Healing Charms. Efectos no consumen RNG ni modifican otro actor; no se extiende a callbacks de curación de campo ni pasivas/supresión.
+3. Regresión 10470–10473 compara un segundo enemigo real con capacidad Poison Heal inyectada exclusivamente en test, con/sin Toxic, bloquea residual, conserva tick y aplica curación tras acciones. Escrita sin ejecutar. Generación C++ realizada; hash importado permanece 400fb84aa16a460c6d3eb6260240e8eae948acb9fab0f5467fd81521b6630e49. No hay compilación ni validación hardware.

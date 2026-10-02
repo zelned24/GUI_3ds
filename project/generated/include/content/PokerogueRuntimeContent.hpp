@@ -101,7 +101,7 @@ inline constexpr StatusActionAbilityProfile kStatusActionAbilityProfiles[] = {
     {87, false, false, false, 1, false},
     {88, false, false, false, 1, false},
     {89, false, false, false, 1, false},
-    {90, false, false, false, 1, false},
+    {90, true, false, false, 1, false},
     {91, false, false, false, 1, false},
     {92, false, false, false, 1, false},
     {93, false, false, false, 1, false},

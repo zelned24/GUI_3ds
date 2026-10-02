@@ -574,3 +574,8 @@ Para cada entrega actualizar esta tabla con IDs, commit, alcance conectado, excl
 
 - Caso completo Scary Face → cambio de velocidad → dos acciones Swift pendientes compara HP/PP/etapas con comandos ordenados y exige diferenciarse del orden inicial. Setup de velocidades/slots exclusivo de test.
 - Escrito sin ejecutar; evidencia upstream ejecutada, timing/priority modifiers y segundo jugador pendientes.
+
+### Avance HAB-05 / HP-04 / CAM-03: Poison Heal doble
+
+- Capacidad de acción reconoce la declaración exacta de Poison Heal; curación local post-turno en dobles conecta bloqueo de residual y HP sin eliminar status.
+- Regresión de segundo enemigo real con capacidad canónica escrita sin ejecutar; pasivas/supresión, callbacks de curación y campo completo pendientes.

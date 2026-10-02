@@ -8,6 +8,7 @@
 #include "game/PokemonExperience.hpp"
 #include "game/PokemonWeatherPhase.hpp"
 #include "game/PokemonStatStageEffect.hpp"
+#include "game/PokemonHealingEffect.hpp"
 #include "game/PokerogueClassicWaveSchedule.hpp"
 #include "game/PokerogueBiomeTransition.hpp"
 #include "game/PokerogueEncounterResolver.hpp"
@@ -3173,6 +3174,38 @@ static int checkCanonicalTrainerSignatureSlots() {
     return checked ? 0 : 231; // Real catalog coverage, not a synthetic trainer.
 }
 
+static int checkDoublePoisonHealTurn() {
+    using namespace Pokerogue3DS;
+    for (uint32_t seed = 1; seed <= 1024; ++seed) {
+        FirstRunRuntime baseline(seed), poisoned(seed);
+        if (!baseline.doubleBattle() || baseline.arenaWeather().type != PokemonEffectiveWeather::None) continue;
+        auto& base = const_cast<PresentationContext&>(baseline.presentation()).secondEnemy.battleState;
+        auto& target = const_cast<PresentationContext&>(poisoned.presentation()).secondEnemy.battleState;
+        // Canonical Poison Heal ability in a controlled, test-only real field context.
+        base.abilityId = target.abilityId = 90;
+        base.hp = target.hp = base.maxHp > 1 ? base.maxHp / 2 : 1;
+        target.status = {};
+        target.status.present = true;
+        target.status.effect = PokemonStatusEffect::Toxic;
+        if (!baseline.doubleBattleSupported() || !poisoned.doubleBattleSupported()) continue;
+        if (!baseline.advanceBattleTurn()) return 10470;
+        if (baseline.battleFinished() || !base.hp) continue;
+        auto expected = base;
+        expected.status = target.status;
+        expected.status.toxicTurnCount = 1;
+        PokemonHealingPolicy healing{};
+        healing.resolved = true;
+        PokemonHealingEvent event{};
+        if (applyPokemonPostTurnStatusHealing(expected, true, healing, event) != PokemonHealingResult::Ok)
+            return 10471;
+        if (!poisoned.advanceBattleTurn() || target.hp != expected.hp ||
+            !target.status.present || target.status.effect != PokemonStatusEffect::Toxic ||
+            target.status.toxicTurnCount != 1) return 10472;
+        return 0;
+    }
+    return 10473; // Require actual end-turn residual block + healing, not just ability metadata.
+}
+
 static int checkDynamicDoubleSpeedChangeTurn() {
     using namespace Pokerogue3DS;
     for (uint32_t seed = 1; seed <= 4096; ++seed) {
@@ -4000,6 +4033,8 @@ static int checkExhaustedPpStruggleReplay() {
 }
 
 int main() {
+    const int poisonHealDouble = checkDoublePoisonHealTurn();
+    if (poisonHealDouble) return poisonHealDouble;
     const int speedChangeTurn = checkDynamicDoubleSpeedChangeTurn();
     if (speedChangeTurn) return speedChangeTurn;
     const int mirrorProtection = checkDoubleMirrorArmorSourceProtection();
