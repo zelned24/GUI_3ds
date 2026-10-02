@@ -2166,3 +2166,9 @@
 1. Capture deja de rechazar toda wave posterior: fuerza equipo explícito y registra arena actual. Restore reconstruye desde actores y bioma guardados, valida encounter/moves/HP y restaura campo/turno; legacy sin actores posteriores sigue rechazado.
 2. Dobles, segmentos de jefe y entrenadores diferentes de wave 5 siguen fuera de fronteras de save soportadas. Restore ahora rechaza explícitamente boss segments no representados, igual que capture; no presupone reconstrucción de HP/escudos por seed.
 3. Regresión 10120–10123 de wave 11 agregada a recorrido de transición existente, sin ejecutar. Ese recorrido depende de checkpoint de wave 10 con jefe todavía pendiente: no demuestra paso end-to-end ni Classic completo. Pruebas/build aplazados.
+
+## Envelope v20: segmentos de jefes y frontera wave 10
+
+1. NativeRunSave conserva enemyBoss (count/index/firstPhase/hasTrainer). Captura admite jefes individuales con estado reconstruible; restore compara count/fase/ownership con el encuentro canónico antes de aplicar índice mutable. Segunda fase final, dobles y trainers adicionales siguen rechazados.
+2. Decoder migra v19 y anteriores con estado boss ausente; no infiere escudos perdidos. Validation rechaza índices fuera del count, flags sin segmentos, trainer boss no representado y fase final en wave incorrecta. Upstream src/system/pokemon-data.ts pinned conserva bossSegments; el estado nativo incluye además su índice mutable.
+3. Regresiones 10130–10136/10140–10142 cubren codec, límites, v19, checkpoint real wave 10 y discrepancia con generación. El recorrido wave 10–11 ahora tiene representación de segmentos; casos escritos, no ejecutados. No demuestra todavía run Classic ni paridad/hardware.

@@ -144,6 +144,28 @@ extern "C" int runNativeSaveChecks() {
         restored.playerStatStages[0] != -6 || restored.enemyStatStages[4] != 6 ||
         restored.trainerParty[1].statStages[5] != -2 || restored.enemySwitchCounter != 2 || restored.trainerPartyCount != 2 || restored.trainerParty[1].hp != 9 ||
         restored.trainerParty[1].pp[0] != 17 || restored.activeTrainerMember != 0) return 13;
+    {
+        auto bossSave = trainerSave;
+        bossSave.wave = 10;
+        bossSave.trainerTypeId = 0;
+        bossSave.trainerPartyCount = 0;
+        bossSave.activeTrainerMember = 0xff;
+        bossSave.enemySwitchCounter = 0;
+        for (auto& member : bossSave.trainerParty) member = {};
+        bossSave.enemyBoss = {2, 0, false, false};
+        char bossBytes[kNativeSaveMaxBytes]{};
+        size_t bossSize = 0;
+        NativeRunSave decodedBoss{};
+        if (encodeNativeRunSave(bossSave, bossBytes, sizeof(bossBytes), bossSize) != NativeSaveResult::Ok ||
+            decodeNativeRunSave(bossBytes, bossSize, PokerogueContent::kContentHash, decodedBoss) != NativeSaveResult::Ok ||
+            decodedBoss.enemyBoss.segmentCount != 2 || decodedBoss.enemyBoss.segmentIndex != 0) return 10130;
+        bossSave.enemyBoss.segmentIndex = 2;
+        if (validateNativeRunSave(bossSave, PokerogueContent::kContentHash) != NativeSaveResult::InvalidRecord) return 10131;
+        bossSave.enemyBoss = {0, 1, false, false};
+        if (validateNativeRunSave(bossSave, PokerogueContent::kContentHash) != NativeSaveResult::InvalidRecord) return 10132;
+        bossSave.enemyBoss = {2, 0, true, false};
+        if (validateNativeRunSave(bossSave, PokerogueContent::kContentHash) != NativeSaveResult::InvalidRecord) return 10133;
+    }
     NativeRunSave statusSave = trainerSave;
     statusSave.playerStatus.present = true;
     statusSave.playerStatus.effect = PokemonStatusEffect::Burn;
@@ -209,8 +231,8 @@ extern "C" int runNativeSaveChecks() {
         if (!suffix) return 10093;
         const size_t payloadSize = static_cast<size_t>(suffix - partyBytes);
         std::memcpy(legacy, partyBytes, payloadSize);
-        char* version = std::strstr(legacy, "saveVersion=0013");
-        char* runtime = std::strstr(legacy, "runtimeVersion=0013");
+        char* version = std::strstr(legacy, "saveVersion=0014");
+        char* runtime = std::strstr(legacy, "runtimeVersion=0014");
         if (!version || !runtime) return 10094;
         std::memcpy(version + 12, "0012", 4);
         std::memcpy(runtime + 15, "0012", 4);
@@ -222,6 +244,24 @@ extern "C" int runNativeSaveChecks() {
             survivalDecoded.saveVersion != kNativeSaveVersion || survivalDecoded.enemySturdyTag ||
             survivalDecoded.trainerParty[0].sturdyTag || survivalDecoded.trainerParty[1].sturdyTag ||
             survivalDecoded.enemyConfusion.sourcePokemonId != 0xffffffffu) return 10095;
+        const char* bossSuffix = std::strstr(partyBytes, "enemyBoss=");
+        if (!bossSuffix) return 10134;
+        const size_t v19Size = static_cast<size_t>(bossSuffix - partyBytes);
+        std::memset(legacy, 0, sizeof(legacy));
+        std::memcpy(legacy, partyBytes, v19Size);
+        version = std::strstr(legacy, "saveVersion=0014");
+        runtime = std::strstr(legacy, "runtimeVersion=0014");
+        if (!version || !runtime) return 10135;
+        std::memcpy(version + 12, "0013", 4);
+        std::memcpy(runtime + 15, "0013", 4);
+        IntegritySha256::hashHex(legacy, v19Size, digest);
+        std::memcpy(legacy + v19Size, "sha256=", 7);
+        std::memcpy(legacy + v19Size + 7, digest, 64);
+        legacy[v19Size + 71] = '\n';
+        if (decodeNativeRunSave(legacy, v19Size + 72, PokerogueContent::kContentHash, survivalDecoded) != NativeSaveResult::Ok ||
+            survivalDecoded.enemyBoss.segmentCount || survivalDecoded.enemyBoss.segmentIndex ||
+            survivalDecoded.enemyConfusion.sourcePokemonId != 0xffffffffu) return 10136;
+
     }
     {
         // Build the exact v16 layout by removing only v17 source metadata.
@@ -231,9 +271,9 @@ extern "C" int runNativeSaveChecks() {
         const size_t legacyPayload = static_cast<size_t>(sourceStart - partyBytes);
         std::memcpy(legacyBytes, partyBytes, legacyPayload);
         for (size_t n = 0; n < legacyPayload; ++n) {
-            if (n + 16 <= legacyPayload && std::memcmp(legacyBytes + n, "saveVersion=0013", 16) == 0)
+            if (n + 16 <= legacyPayload && std::memcmp(legacyBytes + n, "saveVersion=0014", 16) == 0)
                 std::memcpy(legacyBytes + n + 12, "0010", 4);
-            if (n + 19 <= legacyPayload && std::memcmp(legacyBytes + n, "runtimeVersion=0013", 19) == 0)
+            if (n + 19 <= legacyPayload && std::memcmp(legacyBytes + n, "runtimeVersion=0014", 19) == 0)
                 std::memcpy(legacyBytes + n + 15, "0010", 4);
         }
         IntegritySha256::hashHex(legacyBytes, legacyPayload, digest);
@@ -251,9 +291,9 @@ extern "C" int runNativeSaveChecks() {
         const size_t v17Payload = static_cast<size_t>(actorStart - partyBytes);
         std::memcpy(legacyBytes, partyBytes, v17Payload);
         for (size_t n = 0; n < v17Payload; ++n) {
-            if (n + 16 <= v17Payload && std::memcmp(legacyBytes + n, "saveVersion=0013", 16) == 0)
+            if (n + 16 <= v17Payload && std::memcmp(legacyBytes + n, "saveVersion=0014", 16) == 0)
                 std::memcpy(legacyBytes + n + 12, "0011", 4);
-            if (n + 19 <= v17Payload && std::memcmp(legacyBytes + n, "runtimeVersion=0013", 19) == 0)
+            if (n + 19 <= v17Payload && std::memcmp(legacyBytes + n, "runtimeVersion=0014", 19) == 0)
                 std::memcpy(legacyBytes + n + 15, "0011", 4);
         }
         IntegritySha256::hashHex(legacyBytes, v17Payload, digest);

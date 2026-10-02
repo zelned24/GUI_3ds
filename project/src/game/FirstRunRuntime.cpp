@@ -368,9 +368,11 @@ NativeSaveResult FirstRunRuntime::captureNativeRunSave(NativeRunSave& output) co
     std::unique_ptr<NativeRunSave> valueStorage(new (std::nothrow) NativeRunSave{});
     if (!valueStorage) { output = {}; return NativeSaveResult::MemoryUnavailable; }
     auto& value = *valueStorage;
-    // Singles preserve explicit player state; boss segments, doubles and later trainer history remain unsupported.
+    // Singles preserve actors and boss segments; doubles, final phase two and later trainer history remain unsupported.
     // Never report a setup checkpoint as a successful save of an active double battle.
-    if (m_capturePartyChoicePending || m_context.enemy.bossState.segmentCount || m_doubleBattle || m_pokeballs[5] ||
+    if (m_capturePartyChoicePending || m_doubleBattle || m_pokeballs[5] ||
+        (m_run.wave == PokerogueContent::kClassicFinalWave && m_context.enemy.bossState.segmentCount &&
+            !m_context.enemy.bossState.classicFinalBossFirstPhase) ||
         (m_trainerBattle && m_run.wave != 5)) {
         output = {};
         return NativeSaveResult::UnsupportedStage;
@@ -421,6 +423,7 @@ NativeSaveResult FirstRunRuntime::captureNativeRunSave(NativeRunSave& output) co
         value.playerConfusion = m_context.player.battleState.confusion;
         value.enemyConfusion = m_context.enemy.battleState.confusion;
         value.enemySturdyTag = m_context.enemy.battleState.sturdy.present;
+        value.enemyBoss = m_context.enemy.bossState;
         value.battleTurn = m_turn;
         value.weatherType = static_cast<uint8_t>(m_arenaWeather.type);
         value.weatherTurnsLeft = m_arenaWeather.turnsLeft;
@@ -823,7 +826,10 @@ bool FirstRunRuntime::restoreNativeRunSaveInPlace(const NativeRunSave& save) {
     if (save.playerLevel != m_context.player.level ||
         save.playerExperience != m_context.player.totalExperience) return false;
     if (save.stage == NativeSaveStage::RunSetup) return save.wave == 1;
-    if (!m_encounterResolved || m_doubleBattle || reconstructedEnemy.bossState.segmentCount ||
+    if (!m_encounterResolved || m_doubleBattle ||
+        save.enemyBoss.segmentCount != reconstructedEnemy.bossState.segmentCount ||
+        save.enemyBoss.classicFinalBossFirstPhase != reconstructedEnemy.bossState.classicFinalBossFirstPhase ||
+        save.enemyBoss.hasTrainer != reconstructedEnemy.bossState.hasTrainer ||
         save.encounterDex != reconstructedEnemy.dex ||
         !save.battleTurn || !save.playerMoveCount || save.playerMoveCount > 4 ||
         !save.enemyMoveCount || save.enemyMoveCount > 4 ||
@@ -857,6 +863,7 @@ bool FirstRunRuntime::restoreNativeRunSaveInPlace(const NativeRunSave& save) {
         m_context.enemy.battleState.statStages[stat] = save.enemyStatStages[stat];
     }
     m_context.enemy.battleState.hp = save.enemyHp;
+    m_context.enemy.bossState = save.enemyBoss;
     m_context.player.battleState.status = save.playerStatus;
     m_context.enemy.battleState.status = save.enemyStatus;
     m_context.player.battleState.confusion = save.playerConfusion;

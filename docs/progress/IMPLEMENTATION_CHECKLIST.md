@@ -270,7 +270,7 @@ Hay catálogos de atlases/t3x y presenter; el inventario histórico debe cotejar
 
 ### Estado actual
 
-NativeRunSave/runtime v19; codec de actor v11 cuando hay tag Sturdy, v10 para confusión y compatibilidad anterior. Hay journals y bundles; cobertura de estados completa pendiente.
+NativeRunSave/runtime v20; codec de actor v11 cuando hay tag Sturdy, v10 para confusión y compatibilidad anterior. Hay journals y bundles; cobertura de estados completa pendiente.
 
 ### Pendientes y criterios de cierre
 
@@ -437,3 +437,8 @@ Los ejemplos describen infraestructura y límites; no son tareas cerradas. Actua
 
 - Captura fuerza equipo explícito después de wave 9; restauración usa bioma del checkpoint, sin replay ficticio de rewards/evoluciones. Legacy posterior sin actores rechazado.
 - Segmentos boss, dobles y trainers adicionales aún no representados. Caso wave 11 escrito, pero su recorrido depende del save del jefe de wave 10 pendiente; no es evidencia ejecutada.
+
+### Avance SAV-01 / SAV-03 / HP-02: segmentos de jefe
+
+- Envelope v20 conserva count/index/fase de jefe individual; captura/restore conectados con validación de estructura canónica y migración histórica.
+- Recorrido de test wave 10–11 actualizado, aún sin ejecutar. Segunda fase Eternatus, dobles y trainers adicionales requieren persistencia/integración propia; Classic completo permanece pendiente.

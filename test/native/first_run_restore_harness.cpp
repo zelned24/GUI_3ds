@@ -1140,7 +1140,22 @@ static int checkBiomeTransitionProgression() {
         if (!eligible || game.run().wave != 10) continue;
         if (std::strcmp(game.run().biomeId, "town") != 0) return 80;
         NativeRunSave wave10Won{};
-        game.captureNativeRunSave(wave10Won);
+        const auto wave10Capture = game.captureNativeRunSave(wave10Won);
+        if (wave10Capture == NativeSaveResult::UnsupportedStage) continue;
+        if (wave10Capture != NativeSaveResult::Ok || !wave10Won.enemyBoss.segmentCount ||
+            !wave10Won.playerPartyCount) return 10140;
+        auto partialBoss = wave10Won;
+        partialBoss.enemyBoss.segmentIndex = 0;
+        FirstRunRuntime bossRestore(seed);
+        NativeRunSave partialRecaptured{};
+        if (!bossRestore.restoreNativeRunSave(partialBoss) ||
+            bossRestore.captureNativeRunSave(partialRecaptured) != NativeSaveResult::Ok ||
+            partialRecaptured.enemyBoss.segmentCount != partialBoss.enemyBoss.segmentCount ||
+            partialRecaptured.enemyBoss.segmentIndex || partialRecaptured.enemyHp != partialBoss.enemyHp) return 10141;
+        auto invalidBoss = partialBoss;
+        ++invalidBoss.enemyBoss.segmentCount;
+        if (bossRestore.restoreNativeRunSave(invalidBoss)) return 10142;
+        wave10Won.enemyBoss.segmentIndex = 0;
         wave10Won.stage = NativeSaveStage::BattleWon;
         setSingleParticipantFixture(wave10Won, game);
         wave10Won.enemyHp = 0;
