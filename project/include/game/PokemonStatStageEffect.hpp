@@ -409,6 +409,13 @@ inline PokemonStatStageEffectResult executePokemonDamageStatStagePhase(
     if (!canonical || canonical->statMask != effect.statMask || canonical->stages != effect.stages ||
         canonical->selfTarget != effect.selfTarget) return PokemonStatStageEffectResult::InvalidDefinition;
     if (!policy.move.stagePolicy.resolved) return PokemonStatStageEffectResult::UnresolvedPolicy;
+    const auto& stagePolicy = policy.move.stagePolicy;
+    if (!effect.statMask || effect.statMask > 127 || effect.stages < -6 || effect.stages > 6 ||
+        stagePolicy.stageMultiplier < -6 || stagePolicy.stageMultiplier > 6 ||
+        stagePolicy.cancelledStatMask > 127 || stagePolicy.reflectedStatMask > 127 ||
+        (stagePolicy.reflectedStatMask & ~stagePolicy.cancelledStatMask) ||
+        stagePolicy.chance < -1 || stagePolicy.chance > 100)
+        return PokemonStatStageEffectResult::InvalidDefinition;
     if (user.hp > user.maxHp || target.hp > target.maxHp ||
         user.moveCount > 4 || target.moveCount > 4) return PokemonStatStageEffectResult::InvalidState;
     for (int8_t stage : user.statStages)

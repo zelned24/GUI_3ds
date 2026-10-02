@@ -1859,3 +1859,8 @@
 1. Pinned src/data/abilities/ab-attrs.ts PostStatStageChangeStatStageChangeAbAttr.canApply exige cambio no propio y callback no cero. Declaraciones reales Defiant/Competitive usan ATK/SPATK y 2 * changes.length ante primera etapa negativa.
 2. Capacidad de acciones de estado admite únicamente ese callback exacto inspeccionado, reutilizando tablas y dispatcher existentes de reacciones. Otras funciones/argumentos se mantienen pendientes; no se habilita una función arbitraria por nombre de clase.
 3. Regresiones Growl reales comprueban caída ATK y reacción +2 en ATK/SPATK, PP y perfiles canónicos. Escritas sin ejecutar; contenido regenerado, hash intacto, tests/compilación y Classic completo pendientes.
+
+## Políticas inválidas con destinatario faint
+
+1. Fase secundaria de estadísticas valida chance, multiplicador y máscaras antes de omitir efecto por faint. Antes el early skip podía aceptar chance >100 o reflexión sin cancelación, aunque el mismo contexto fallaba con actor vivo.
+2. Regresiones escritas para chance 101 y máscara de reflexión incoherente, preservando output/actor. Faint continúa sin consumir chance. Tests/compilación siguen aplazados; no se declara jugabilidad completa.

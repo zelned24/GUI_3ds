@@ -782,6 +782,16 @@ extern "C" int runPokemonBattleStateChecks() {
         if (Pokerogue3DS::executePokemonDamageStatStagePhase(stageUser, stageTarget, forgedPsychic,
                 stagePolicy, stageRng, phaseEvent) != Pokerogue3DS::PokemonStatStageEffectResult::InvalidDefinition ||
             phaseEvent.move.stages.changedStatMask != 123 || stageTarget.statStages[4] != -1) return 9590;
+        auto malformedPolicy = stagePolicy;
+        malformedPolicy.move.stagePolicy.chance = 101;
+        if (Pokerogue3DS::executePokemonDamageStatStagePhase(stageUser, stageTarget, psychic,
+                malformedPolicy, stageRng, phaseEvent) != Pokerogue3DS::PokemonStatStageEffectResult::InvalidDefinition ||
+            phaseEvent.move.stages.changedStatMask != 123 || stageTarget.hp) return 9660;
+        malformedPolicy = stagePolicy;
+        malformedPolicy.move.stagePolicy.reflectedStatMask = 16;
+        if (Pokerogue3DS::executePokemonDamageStatStagePhase(stageUser, stageTarget, psychic,
+                malformedPolicy, stageRng, phaseEvent) != Pokerogue3DS::PokemonStatStageEffectResult::InvalidDefinition ||
+            phaseEvent.move.stages.changedStatMask != 123 || stageTarget.hp) return 9661;
         stagePolicy.move.stagePolicy.resolved = false;
         if (Pokerogue3DS::executePokemonDamageStatStagePhase(stageUser, stageTarget, psychic,
                 stagePolicy, stageRng, phaseEvent) != Pokerogue3DS::PokemonStatStageEffectResult::UnresolvedPolicy ||
