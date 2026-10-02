@@ -2251,3 +2251,9 @@
 1. Fuentes pinned: CheckStatusEffectPhase.start usa inSpeedOrder/PokemonPriorityQueue; PriorityQueue.pop reordena la cola restante en cada extracción. PostTurnStatusEffectPhase es dinámico (dynamic-queue-manager.ts) y su cola vuelve a ordenar por velocidad, sin prioridad de movimiento. Resolver reutilizado reproduce ambas etapas con streams de empates derivados, sin modificar battle/global RNG.
 2. finishBattleTurn calcula velocidades con clima/habilidades de snapshots posteriores a weather. Poison/Toxic/Burn de actores con perfiles residuales exactos ya no se rechazan por ser doble; cada enemigo boss usa su propio dispatcher y global RNG, conservando preventEndure. Callbacks PostDamage desconocidos, segunda fase final y resto de contextos siguen gated.
 3. Regresiones 10330–10333 cubren orden sin prioridad, Trick Room, empates deterministas y rechazo; 10340–10345 conectan Toxic de segundo enemigo real, tick/HP y checkpoint/restore. Escritas sin ejecutar. Reacciones post-faint/summon, segundo jugador activo, pasivas/modifiers y dobles completos pendientes.
+
+## Checks de estado para acciones de un objetivo en dobles
+
+1. MovePhase.firstFailureCheck pinned (src/phases/move-phase.ts) comprueba sueño/congelación antes de confusión/parálisis y doThawCheck después. executeActiveBattleMove ya se llama una vez por acción de un objetivo; ahora acepta checks de sueño/congelación/parálisis también en el campo actual de tres actores.
+2. Ataques de área conservan rechazo explícito: el dispatcher actual visita objetivos por separado y no debe repetir checks, cancelación ni RNG. Confusión doble, bypass de sueño, callbacks desconocidos y segundo jugador permanecen pendientes.
+3. Regresión 10350–10356 configura sueño/PP agotados exclusivamente en actores reales de test, verifica una cancelación por actor sin daño, slots conservados y replay de checkpoint. Escrita sin ejecutar; no se afirma paridad completa ni validación ARM/Azahar.

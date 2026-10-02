@@ -3172,6 +3172,69 @@ static int checkCanonicalTrainerSignatureSlots() {
     return checked ? 0 : 231; // Real catalog coverage, not a synthetic trainer.
 }
 
+static int checkDoubleSingleTargetSleepCheckpoint() {
+    using namespace Pokerogue3DS;
+    for (uint32_t seed = 1; seed <= 1024; ++seed) {
+        FirstRunRuntime game(seed);
+        if (!game.doubleBattle() || !game.doubleBattleSupported()) continue;
+        auto& player = const_cast<PresentationContext&>(game.presentation()).player.battleState;
+        // Use the already supported virtual single-target action, retaining real
+        // actor identity and original moves. Mutations are exclusively test setup.
+        for (uint8_t i = 0; i < player.moveCount; ++i) player.moves[i].pp = 0;
+        if (!game.doubleBattleSupported()) continue;
+        bool durationResolved = false;
+        uint8_t reduction = 0;
+        for (const auto& profile : PokerogueContent::kStatusDurationAbilityProfiles)
+            if (profile.abilityId == player.abilityId) {
+                durationResolved = profile.resolved;
+                reduction = profile.sleepReduction;
+            }
+        if (!durationResolved) continue;
+        player.status = {};
+        player.status.present = true;
+        player.status.effect = PokemonStatusEffect::Sleep;
+        player.status.hasSleepTurnsRemaining = true;
+        player.status.sleepTurnsRemaining = 8;
+        auto& field = const_cast<PresentationContext&>(game.presentation());
+        bool enemyPoliciesResolved = true;
+        PokemonBattleState* sleepingEnemies[] = {&field.enemy.battleState, &field.secondEnemy.battleState};
+        for (auto* enemy : sleepingEnemies) {
+            bool resolved = false;
+            for (const auto& profile : PokerogueContent::kStatusDurationAbilityProfiles)
+                if (profile.abilityId == enemy->abilityId) resolved = profile.resolved;
+            enemyPoliciesResolved &= resolved;
+            enemy->status = player.status;
+            for (uint8_t i = 0; i < enemy->moveCount; ++i) enemy->moves[i].pp = 0;
+        }
+        if (!enemyPoliciesResolved || !game.doubleBattleSupported()) continue;
+        const auto playerHp = player.hp;
+        const auto enemyHp = game.presentation().enemy.battleState.hp;
+        const auto secondHp = game.presentation().secondEnemy.battleState.hp;
+        if (!game.advanceBattleTurn()) return 10350;
+        if (!player.hp || game.battleFinished()) continue;
+        if (player.hp != playerHp || !player.status.present || player.status.effect != PokemonStatusEffect::Sleep ||
+            player.status.toxicTurnCount != 1 || player.status.sleepTurnsRemaining != 7u - reduction ||
+            game.presentation().enemy.battleState.hp != enemyHp ||
+            game.presentation().secondEnemy.battleState.hp != secondHp) return 10351;
+        for (uint8_t i = 0; i < player.moveCount; ++i)
+            if (player.moves[i].pp) return 10352;
+        NativeRunSave checkpoint{};
+        if (game.captureNativeRunSave(checkpoint) != NativeSaveResult::Ok) return 10353;
+        FirstRunRuntime left(seed), right(seed);
+        if (!left.restoreNativeRunSave(checkpoint) || !right.restoreNativeRunSave(checkpoint) ||
+            !left.advanceBattleTurn() || !right.advanceBattleTurn()) return 10354;
+        const auto& a = left.presentation().player.battleState;
+        const auto& b = right.presentation().player.battleState;
+        if (a.hp != b.hp || a.status.toxicTurnCount != b.status.toxicTurnCount ||
+            a.status.sleepTurnsRemaining != b.status.sleepTurnsRemaining ||
+            left.presentation().enemy.battleState.hp != right.presentation().enemy.battleState.hp ||
+            left.presentation().secondEnemy.battleState.hp != right.presentation().secondEnemy.battleState.hp)
+            return 10355;
+        return 0;
+    }
+    return 10356; // Require a real double encounter with a resolved sleep policy.
+}
+
 static int checkDoubleStatusResidualCheckpoint() {
     using namespace Pokerogue3DS;
     for (uint32_t seed = 1; seed <= 1024; ++seed) {
@@ -3395,6 +3458,8 @@ static int checkExhaustedPpStruggleReplay() {
 }
 
 int main() {
+    const int doubleSleep = checkDoubleSingleTargetSleepCheckpoint();
+    if (doubleSleep) return doubleSleep;
     const int doubleResidual = checkDoubleStatusResidualCheckpoint();
     if (doubleResidual) return doubleResidual;
     const int partialExperience = checkDoublePartialExperienceCheckpoint();

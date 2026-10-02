@@ -2,7 +2,7 @@
 
 ## Cómo medir el avance
 
-- Referencia de seguimiento: commit `d145425` más cambios locales parciales de Struggle, rama `codex/pokerogue-3ds-migration`.
+- Referencia de código inspeccionado: commit `ddcb4ff`, rama `codex/pokerogue-3ds-migration`.
 - Objetivo: PokéRogue jugable y fiel al snapshot upstream en Old 3DS, con ambas pantallas, progreso exportable y actualizaciones desde consola.
 - Cada ID es estable para reportar avances: `MOV-07`, `GUI-03`, etc. No equivale a un movimiento/habilidad individual.
 - Una casilla sin marcar puede tener código parcial; el resumen de cada área indica lo existente. Marcarla solo con integración completa y evidencia ejecutada pertinente.
@@ -35,7 +35,7 @@ Estos son criterios de cierre, no cantidades de ataques o habilidades pendientes
 | Validación y entrega final | 12 |
 | **Total** | **129** |
 
-Prioridad inmediata: conectar el fallback de Struggle al agotarse PP (**HP-05 / MOV-07**), ampliar efectos y contextos de combate, y completar dobles y segunda fase de Eternatus con su persistencia (**TUR-05 / FLU-05 / SAV-03**). Daño fijo ya tiene rutas de selección, comando y predicción, pendientes de validación. Los tests escritos permanecen sin ejecutar.
+Prioridad inmediata: completar el segundo Pokémon activo del jugador y el campo de cuatro actores (**TUR-05**), checks previos y cola dinámica de acciones (**TUR-01–04**), ampliar habilidades/movimientos (**HAB / MOV**) y cerrar Eternatus con persistencia (**FLU-09 / SAV-03**). Struggle por PP agotados y guardado del campo actual de tres actores ya tienen rutas conectadas; no cubren todos los contextos. Los tests escritos permanecen sin ejecutar.
 
 ## Estado consolidado para seguimiento
 
@@ -49,8 +49,8 @@ Esta tabla describe código inspeccionado, no resultados de ejecución. Las nota
 | HAB-03 | Sharpness tiene perfil, cálculo de potencia, proveedor y regresión de replay Gallade escritos | Contextos adicionales, pasivas/supresión y validación ejecutada |
 | HAB-04 / HP-03 / CAM-03 | Sturdy: tag, daño ordinario/fijo, escudos, confusión/clima y persistencia jugador/enemigo/trainer | Otras supervivencias, pasivas/supresión, dobles y validación ejecutada |
 | HAB-01–10 / MOV-01–13 | Familias parciales y gates explícitos | Cobertura de todas las habilidades/movimientos del snapshot; no basta importar metadata |
-| HP-05 / MOV-07 | Struggle virtual conectado a selección jugador/IA, orden, locales, daño/retroceso boss y campo actual de tres actores | Segundo activo jugador, persistencia doble, modifiers, restricciones por otros tags y validación ejecutada |
-| HP-01–08 | HP/PP/status, daño/curación, EXP y casos de límites | Composición completa, segmentos, faint simultáneo, persistencia y feedback visual |
+| HP-05 / MOV-07 | Struggle virtual conectado a selección jugador/IA, orden, locales, daño/retroceso boss y campo actual de tres actores | Segundo activo jugador, modifiers, restricciones por otros tags y validación ejecutada |
+| HP-01–08 | HP/PP/status, daño/curación, EXP parcial persistida, checkpoint de derrota simultánea y residual de Poison/Toxic/Burn para ambos enemigos | Composición completa, fases tras faint/summon, otros tags/callbacks y feedback visual; falta ejecución de pruebas |
 | FLU-05 / SAV-03 | Checkpoint v22: bioma, actores explícitos, jefes, RNG global, trainer resuelto y segundo enemigo del campo doble | Segundo activo jugador, fase final, decisiones pendientes y recorrido completo; casos de trainer posterior/dobles sin verificar |
 | GUI-01–12 / AST-01–08 | Presentación nativa, índices y assets convertidos parciales | Todas las pantallas, HUD HP/PP/EXP, animación/audio, controles y comparación visual |
 | SAV-01–08 | Codecs, journals y bundles | Todos los estados de run/perfil, export/import conectado a UI y compatibilidad de contenido |
@@ -271,7 +271,7 @@ Hay catálogos de atlases/t3x y presenter; el inventario histórico debe cotejar
 
 ### Estado actual
 
-NativeRunSave/runtime v20; codec de actor v11 cuando hay tag Sturdy, v10 para confusión y compatibilidad anterior. Hay journals y bundles; cobertura de estados completa pendiente.
+NativeRunSave/runtime v22: RNG global, segundo enemigo, escudos, objetivo y máscara de EXP parcial; codec de actor v11 cuando hay tag Sturdy, v10 para confusión y compatibilidad anterior. Hay journals y bundles. Segundo jugador activo, decisiones pendientes y cobertura completa de estados aún faltan; regresiones sin ejecutar.
 
 ### Pendientes y criterios de cierre
 
@@ -341,11 +341,16 @@ Por instrucción del usuario, tests y compilación del programa están aplazados
 
 | ID | Estado | Commit | Evidencia ejecutada | Falta para cerrar |
 |---|---|---|---|---|
-| Ejemplo: MOV-07 | Parcial | 1cd6400 / efb650e | Revisión estática; tests no ejecutados | Resto de composiciones, paridad y runtime |
-| Ejemplo: SAV-04 | Parcial | Consultar historial de NativeRunSave | Codec v18 inspeccionado; sin gate final | Cobertura de estados y compatibilidad de catálogo |
-| Ejemplo: GUI-12 | Parcial | Consultar historial de QuickJSBridge | Bridge y bindRuntime inspeccionados | Alcance completo y ejecución ARM |
+| HP-05 / MOV-07 / TUR-05 | Parcial | beb74ef → a8d8f1f | Inspección estática; regresiones escritas sin ejecutar | Struggle: segundo jugador, tags, modifiers y validación |
+| SAV-02 | Parcial | 5e7b5e5 | Codec v21 inspeccionado; regresiones sin ejecutar | Todas las fronteras de RNG y compatibilidad histórica |
+| SAV-03 / TUR-05 | Parcial | f8ee639 | Codec v22 y capture/restore inspeccionados; regresiones sin ejecutar | Campo de cuatro actores, decisiones y fase final |
+| SAV-03 / HP-03 / HP-06 | Parcial | 7c64484 | Revisión estática de EXP parcial y derrota simultánea | Fases tras faint y ejecución de regresiones |
+| CAM-03 / HP-07 / TUR-05 | Parcial | ddcb4ff | Residual doble y dos colas de orden inspeccionados | Callbacks, faint/summon, segundo jugador y pruebas |
+| GUI-01–12 / AST-01–08 | Parcial | Consultar historial de presentación | Sin prueba visual ARM/Azahar/hardware registrada aquí | Pantallas/animación/audio completos y evidencia visual |
 
-Los ejemplos describen infraestructura y límites; no son tareas cerradas. Actualizar filas con cada bloque y mantener las casillas abiertas hasta reunir su evidencia.
+El registro describe implementación parcial. **129 criterios abiertos no significa 129 sistemas sin código**: incluye completar contextos y aportar evidencia. No se calcula porcentaje contando casillas de distinto alcance.
+
+Para cada entrega actualizar esta tabla con IDs, commit, alcance conectado, exclusiones y resultado ejecutado. Las notas siguientes son históricas; la tabla consolidada y el código de referencia prevalecen cuando una limitación antigua ya fue abordada.
 
 ### Avance DAT-02: inventario reproducible de declaraciones
 
@@ -510,3 +515,8 @@ Los ejemplos describen infraestructura y límites; no son tareas cerradas. Actua
 
 - Secuencia de colas pinned conectada a fin de turno; Poison/Toxic/Burn usan políticas exactas y dispatcher propio de cada boss. Velocidad usa clima del snapshot posterior a weather.
 - Regresiones de orden y segundo enemigo Toxic → tick/HP → checkpoint → restore escritas sin ejecutar. Reacciones posteriores a faint/summon y contextos completos siguen pendientes.
+
+### Avance TUR-03 / TUR-05 / HP-07: checks previos de un objetivo
+
+- Sueño/congelación/parálisis conectados al dispatcher de acciones de un objetivo en el campo doble actual, con el mismo resolver de singles. Ataques de área mantienen gate para no repetir checks/RNG.
+- Regresión de sueño con Struggle virtual y replay de checkpoint escrita sin ejecutar. Confusión doble, segundo jugador, callbacks y cobertura completa pendientes.

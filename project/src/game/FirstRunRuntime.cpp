@@ -2662,12 +2662,19 @@ bool FirstRunRuntime::executeActiveBattleMove(uint8_t userIndex, uint8_t targetI
     if ((pokemonFixedDamageMoveProfile(move->id) || pokemonSurviveDamageMoveResolved(move->id) || pokemonIgnoreOpponentStatStagesMoveResolved(move->id)) &&
         !supportsActiveBattleMove(user, opponent, move->id)) return false;
 
+    // The current spread dispatcher visits targets separately. A single-target
+    // action calls this function once, so its MovePhase checks also run once.
+    const bool repeatedTargetChecks = m_doubleBattle && move->target &&
+        (!std::strcmp(move->target, "ALL_NEAR_ENEMIES") ||
+         !std::strcmp(move->target, "ALL_ENEMIES") ||
+         !std::strcmp(move->target, "ALL_OTHERS") ||
+         !std::strcmp(move->target, "ALL"));
     bool thawAfterFailureChecks = false;
     if (user.status.present && (user.status.effect == PokemonStatusEffect::Sleep ||
             user.status.effect == PokemonStatusEffect::Freeze)) {
         // Area attacks visit each target; status checks belong to one MovePhase,
-        // so doubles require the shared action dispatcher before enabling this.
-        if (m_doubleBattle || PokerogueContent::moveHasAttribute(*move, "BypassSleepAttr") ||
+        // so spread actions require a shared dispatcher before enabling this.
+        if (repeatedTargetChecks || PokerogueContent::moveHasAttribute(*move, "BypassSleepAttr") ||
             (PokerogueContent::moveHasAttribute(*move, "HealStatusEffectAttr") &&
              !pokemonMoveSelfThawResolved(move->id))) {
             m_battleFeedback = "Status move-use conditions require dispatcher";
@@ -2732,7 +2739,7 @@ bool FirstRunRuntime::executeActiveBattleMove(uint8_t userIndex, uint8_t targetI
         }
     }
     if (user.status.present && user.status.effect == PokemonStatusEffect::Paralysis) {
-        if (m_doubleBattle) {
+        if (repeatedTargetChecks) {
             m_battleFeedback = "Status move-use conditions require dispatcher";
             return false;
         }
