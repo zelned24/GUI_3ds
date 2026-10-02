@@ -416,6 +416,38 @@ static int checkStatusActionAdmission() {
                 emberAfter.enemyHp != repeatedEmberAfter.enemyHp ||
                 emberAfter.enemyStatus.effect != repeatedEmberAfter.enemyStatus.effect ||
                 emberAfter.enemyStatus.present != repeatedEmberAfter.enemyStatus.present) return 9430;
+            // Actual thaw+burn compositions, restored with both actors frozen.
+            for (const uint16_t id : {uint16_t(172), uint16_t(503), uint16_t(815)}) {
+                const auto* thawMove = PokerogueContent::findMoveById(id);
+                if (!thawMove || !pokemonDamageSecondaryAttributesResolved(*thawMove, "StatusEffectAttr") ||
+                    !pokemonMoveSelfThawResolved(id)) return 9770;
+                auto thawCheckpoint = checkpoint;
+                thawCheckpoint.playerMoveIds[0] = thawCheckpoint.playerParty[0].moveIds[0] = id;
+                thawCheckpoint.playerPp[0] = thawCheckpoint.playerParty[0].pp[0] =
+                    thawCheckpoint.playerParty[0].maxPp[0] = static_cast<uint8_t>(thawMove->pp);
+                PokemonStatusState frozen{};
+                frozen.present = true;
+                frozen.effect = PokemonStatusEffect::Freeze;
+                frozen.hasFreezeTurnsRemaining = true;
+                frozen.freezeTurnsRemaining = 3;
+                thawCheckpoint.playerStatus = thawCheckpoint.playerParty[0].status = frozen;
+                thawCheckpoint.enemyStatus = frozen;
+                FirstRunRuntime thawAttack(seed), replayThaw(seed);
+                NativeRunSave thawAfter{}, replayAfter{};
+                if (!thawAttack.restoreNativeRunSave(thawCheckpoint) ||
+                    !replayThaw.restoreNativeRunSave(thawCheckpoint) || !thawAttack.battleInputSupported() ||
+                    !thawAttack.advanceBattleTurn() || !replayThaw.advanceBattleTurn() ||
+                    thawAttack.captureNativeRunSave(thawAfter) != NativeSaveResult::Ok ||
+                    replayThaw.captureNativeRunSave(replayAfter) != NativeSaveResult::Ok ||
+                    thawAfter.playerPp[0] != thawMove->pp - 1 || thawAfter.playerStatus.present ||
+                    thawAfter.playerParty[0].status.present || replayAfter.playerStatus.present ||
+                    thawAfter.playerHp != replayAfter.playerHp || thawAfter.enemyHp != replayAfter.enemyHp ||
+                    thawAfter.enemyStatus.present != replayAfter.enemyStatus.present ||
+                    thawAfter.enemyStatus.effect != replayAfter.enemyStatus.effect ||
+                    thawAfter.enemyStatus.freezeTurnsRemaining != replayAfter.enemyStatus.freezeTurnsRemaining ||
+                    thawAfter.enemyStatus.hasFreezeTurnsRemaining != replayAfter.enemyStatus.hasFreezeTurnsRemaining)
+                    return 9771;
+            }
             // Real multi-attribute attacks use the same critical/damage/status
             // path. Moves are injected only in this native regression snapshot.
             for (const uint16_t id : {uint16_t(299), uint16_t(342)}) {

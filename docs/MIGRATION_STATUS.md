@@ -1925,3 +1925,9 @@
 1. Pinned Move.getUserBenefitScore suma atributos; HealStatusEffectAttr.getUserBenefitScore devuelve 10 si el usuario tiene status, también para declaraciones sobre el rival y aunque el status no sea FREEZE.
 2. Runtime reutiliza pokemonCanonicalThawAiBenefit: Overheat aporta 10; Scald/Scorching Sands aportan 20 cuando el usuario tiene status. Corrige el anterior conteo único de 10, conservando multiplicación posterior de efectividad/STAB.
 3. Regresiones 9760–9762 escritas para cero/uno/dos atributos, estado ausente y burn. Sin ejecución; tests/compilación y jugabilidad completa Old 3DS siguen pendientes.
+
+## Replay de composiciones autodescongelación y quemadura
+
+1. Regresiones de FirstRunRuntime usan Flame Wheel 172, Scald 503 y Scorching Sands 815 reales; inyectan movesets solo en snapshots de test y restauran ambos actores congelados.
+2. Exigen capacidad admitida, comando completo, gasto único de PP, cura del usuario/party y replay de HP/estado/counters enemigos. No se asume quemadura garantizada, rival vivo ni impacto contra un tipo inmune.
+3. Pruebas escritas, sin ejecución por instrucción del usuario. No certifican todavía run Classic, Azahar ni hardware Old 3DS; esos gates siguen pendientes.
