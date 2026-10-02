@@ -343,10 +343,12 @@ NativeSaveResult FirstRunRuntime::captureNativeRunSave(NativeRunSave& output) co
         m_context.secondEnemy.battleState.pendingStatus != PokemonStatusEffect::None;
     for (const auto& member : m_context.playerParty) pending |= member.battleState.pendingStatus != PokemonStatusEffect::None;
     for (const auto& member : m_context.trainerParty) pending |= member.battleState.pendingStatus != PokemonStatusEffect::None;
-    // Do not discard a tag that the v18 codec cannot yet represent.
-    pending |= m_context.player.battleState.sturdy.present || m_context.enemy.battleState.sturdy.present ||
-        m_context.secondEnemy.battleState.sturdy.present;
-    for (const auto& member : m_context.playerParty) pending |= member.battleState.sturdy.present;
+    // Enemy/trainer records lack survival tags; players use the actor v11 payload.
+    pending |= m_context.enemy.battleState.sturdy.present || m_context.secondEnemy.battleState.sturdy.present;
+    if (!m_runStarted) {
+        pending |= m_context.player.battleState.sturdy.present;
+        for (const auto& member : m_context.playerParty) pending |= member.battleState.sturdy.present;
+    }
     for (const auto& member : m_context.trainerParty) pending |= member.battleState.sturdy.present;
     if (pending) { output = {}; return NativeSaveResult::UnsupportedStage; }
     if (!m_runStarted) {
@@ -469,9 +471,11 @@ NativeSaveResult FirstRunRuntime::captureNativeRunSave(NativeRunSave& output) co
         const auto* definition = PokerogueContent::findMoveById(move.moveId);
         if (definition && move.maxPp != definition->pp) hasModifiedMaxPp = true;
     }
-    bool hasSummonTags = m_context.player.battleState.heldItemLostTags.unburden;
+    bool hasSummonTags = m_context.player.battleState.heldItemLostTags.unburden ||
+        m_context.player.battleState.sturdy.present;
     for (uint8_t member = 0; member < m_context.playerPartyCount; ++member)
-        hasSummonTags |= m_context.playerParty[member].battleState.heldItemLostTags.unburden;
+        hasSummonTags |= m_context.playerParty[member].battleState.heldItemLostTags.unburden ||
+            m_context.playerParty[member].battleState.sturdy.present;
     if (value.stage != NativeSaveStage::RunSetup &&
         (m_context.playerPartyCount > 1 || m_playerHistoryRequiresSnapshot || m_heldModifierCount || value.playerStatus.present || value.playerConfusion.present || hasSummonTags || hasChangedFriendship || hasModifiedMaxPp)) {
         if (m_context.playerPartyCount > 6 ||
@@ -749,6 +753,9 @@ bool FirstRunRuntime::restoreNativeRunSaveInPlace(const NativeRunSave& save) {
             m_context.playerParty[member].battleState.heldItemLostTags.unburden = save.playerParty[member].unburdenTag;
         for (uint8_t member = 0; member < save.playerPartyCount; ++member)
             m_context.playerParty[member].battleState.confusion = save.playerParty[member].confusion;
+        // resolve(true) may recall the team; reapply checkpoint summon data afterward.
+        for (uint8_t member = 0; member < save.playerPartyCount; ++member)
+            m_context.playerParty[member].battleState.sturdy.present = save.playerParty[member].sturdyTag;
         m_context.player = m_context.playerParty[save.activePlayerMember];
     }
     for (uint16_t wave = 1; !save.playerPartyCount && wave < save.wave; ++wave) {

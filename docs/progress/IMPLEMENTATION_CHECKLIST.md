@@ -47,7 +47,7 @@ Esta tabla describe código inspeccionado, no resultados de ejecución. Las nota
 | MOV-02 / IA-02 | Daño constante, nivel, mitad de HP y Psywave conectados a selección, predicción y comando | Potencia variable restante, composición, dobles, modifiers y verificación |
 | MOV-04 / MOV-12 | Bypass de etapas y slicing con varios secundarios | Resto de flags, callbacks y combinaciones; slicing no implica Sharpness completa |
 | HAB-03 | Sharpness tiene perfil, cálculo de potencia y proveedor exacto en cambios locales | Contextos adicionales, pasivas/supresión, replay integrado y validación |
-| HAB-04 / HP-03 / CAM-03 | Sturdy: tag, daño ordinario/fijo e indirecto, lapse e interludio | Jefes, otras supervivencias, pasivas/supresión y guardado de run con tag activo |
+| HAB-04 / HP-03 / CAM-03 | Sturdy: tag, daño ordinario/fijo e indirecto, lapse e interludio | Jefes, otras supervivencias, pasivas/supresión y guardado de tags enemy/trainer |
 | HAB-01–10 / MOV-01–13 | Familias parciales y gates explícitos | Cobertura de todas las habilidades/movimientos del snapshot; no basta importar metadata |
 | HP-01–08 | HP/PP/status, daño/curación, EXP y casos de límites | Composición completa, segmentos, faint simultáneo, persistencia y feedback visual |
 | FLU-05 / SAV-03 | Progresión y restore limitados | Rutas con equipo explícito/restauración contienen gates de wave > 9; Classic 1–200 no está cerrado |
@@ -417,3 +417,8 @@ Los ejemplos describen infraestructura y límites; no son tareas cerradas. Actua
 
 - Perfil, cálculo de potencia y proveedor exacto conectados en contextos simples. Replay con actor real Gallade y Sacred Sword escrito, compara HP/PP/ability/RNG tras dos restores.
 - Caso sin ejecutar; dobles/modifiers/pasivas/supresión y verificación final siguen pendientes. No se cierra HAB-03 ni SAV-02.
+
+### Avance SAV-01 / HP-07: Sturdy en checkpoint del jugador
+
+- Captura usa actor v11 y restore reaplica summon tag después de reconstrucción del encuentro. Se conservan tags de todos los miembros de jugador representados.
+- Enemy/trainer siguen protegidos por rechazo; no hay ampliación de waves/biomas. Regresiones de roundtrip/consumo/RNG escritas, sin ejecutar.

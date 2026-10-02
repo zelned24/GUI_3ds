@@ -2142,3 +2142,9 @@
 1. Caso 10070–10075 usa Gallade 475 y ability 292 validados contra el catálogo; actor masculino, identidad/forma/EXP coherentes. Sacred Sword se inyecta exclusivamente en snapshot de test.
 2. Dos restores ejecutan comando y recapturan estado, comparando HP, PP, conservación de habilidad y RNG. No sustituye un recorrido completo ni cobertura de todos los contextos.
 3. Regresión escrita, no ejecutada. Inspección confirma que capture/restore de runs aún restringe wave > 9 y trainers distintos de wave 5; retirar gates requiere persistir sus estados, no eliminarlos silenciosamente.
+
+## Checkpoint de run con Sturdy en jugadores
+
+1. Captura de run fuerza snapshots explícitos del equipo cuando hay Sturdy; actor v11 conserva el tag sin cambiar el envelope de run v18. Restore reaplica el tag después de reconstruir el encuentro, que puede limpiar summon data.
+2. Tags en slots de jugador no usados son inválidos. Enemy/segundo enemy/trainer con Sturdy activo continúan rechazados porque sus registros no lo representan; setup y fronteras no soportadas conservan protección.
+3. Regresiones 10080–10083 cubren captura/codec/restore/consumo con Geodude, replay RNG y slot inválido. Escritas sin ejecutar. Esto cierra una pérdida de estado del jugador, no levanta los límites de wave/bioma/trainer ni demuestra Classic completo.

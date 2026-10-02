@@ -455,6 +455,34 @@ static int checkStatusActionAdmission() {
                     sturdyRun.presentation().player.battleState.sturdy.present) return 9974;
                 const auto a = sturdyRun.battleRng().state(), b = replay.battleRng().state();
                 if (a.carry != b.carry || a.s0 != b.s0 || a.s1 != b.s1 || a.s2 != b.s2) return 9975;
+                // Existing player survival tag must persist through a run checkpoint.
+                auto taggedCheckpoint = sturdyCheckpoint;
+                taggedCheckpoint.playerParty[0].sturdyTag = true;
+                FirstRunRuntime tagged(seed), taggedReplay(seed);
+                NativeRunSave recaptured{};
+                char payload[kNativeSaveMaxBytes]{};
+                size_t payloadSize = 0;
+                NativeRunSave decoded{};
+                if (!tagged.restoreNativeRunSave(taggedCheckpoint) ||
+                    !tagged.presentation().player.battleState.sturdy.present ||
+                    tagged.captureNativeRunSave(recaptured) != NativeSaveResult::Ok ||
+                    !recaptured.playerPartyCount || !recaptured.playerParty[0].sturdyTag ||
+                    encodeNativeRunSave(recaptured, payload, sizeof(payload), payloadSize) != NativeSaveResult::Ok ||
+                    decodeNativeRunSave(payload, payloadSize, PokerogueContent::kContentHash, decoded) != NativeSaveResult::Ok ||
+                    !taggedReplay.restoreNativeRunSave(decoded) ||
+                    !taggedReplay.presentation().player.battleState.sturdy.present) return 10080;
+                if (!tagged.advanceBattleTurn() || !taggedReplay.advanceBattleTurn() ||
+                    tagged.presentation().player.battleState.hp != 1 ||
+                    taggedReplay.presentation().player.battleState.hp != 1 ||
+                    tagged.presentation().player.battleState.sturdy.present ||
+                    taggedReplay.presentation().player.battleState.sturdy.present) return 10081;
+                const auto tagRng = tagged.battleRng().state(), replayTagRng = taggedReplay.battleRng().state();
+                if (tagRng.carry != replayTagRng.carry || tagRng.s0 != replayTagRng.s0 ||
+                    tagRng.s1 != replayTagRng.s1 || tagRng.s2 != replayTagRng.s2) return 10082;
+                auto invalidUnusedTag = recaptured;
+                invalidUnusedTag.playerParty[5].sturdyTag = true;
+                if (validateNativeRunSave(invalidUnusedTag, PokerogueContent::kContentHash) !=
+                    NativeSaveResult::InvalidRecord) return 10083;
             }
             // Real Gallade/Sharpness actor, Sacred Sword command after restore.
             // Moves are injected only into this test snapshot, never production learnsets.

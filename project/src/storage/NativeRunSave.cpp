@@ -665,7 +665,7 @@ NativeSaveResult validateNativeRunSave(const NativeRunSave& save, const char* ex
         return NativeSaveResult::InvalidRecord;
     for (uint8_t i = 0; i < 6; ++i) {
         if (!validConfusion(save.playerParty[i].confusion) || !validConfusion(save.trainerParty[i].confusion) ||
-            (i >= save.playerPartyCount && save.playerParty[i].confusion.present) ||
+            (i >= save.playerPartyCount && (save.playerParty[i].confusion.present || save.playerParty[i].sturdyTag)) ||
             (i >= save.trainerPartyCount && save.trainerParty[i].confusion.present)) return NativeSaveResult::InvalidRecord;
     }
     if (save.playerPartyCount && save.activePlayerMember < save.playerPartyCount &&
