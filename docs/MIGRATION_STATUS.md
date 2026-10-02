@@ -1943,3 +1943,9 @@
 1. Pinned MoveEffectPhase.applyMoveEffects ejecuta POST_APPLY propio antes de applyOnTargetEffects. El retroceso puede debilitar al usuario; MoveEffectAttr.canApply del efecto no propio comprueba al rival, no al atacante.
 2. executePokemonMoveStatusPhase admite ese usuario faint en fase de movimiento dañino, manteniendo validación HP/status y rechazo para movimientos Status. Antes !user.hp revertía el turno completo de Flare Blitz al alcanzar este paso.
 3. Regresiones 9790–9791 escritas para quemadura de Flare Blitz tras recoil faint y rechazo Hypnosis con actor faint, sin gasto adicional PP ni draw garantizado. Tests/compilación y Classic/Old 3DS siguen pendientes.
+
+## Actividad de callbacks de estado después del retroceso
+
+1. Pinned Pokemon.canApplyAbility exige HP >0 salvo bypassFaint. Poison Puppeteer y Synchronize inspeccionados no declaran bypassFaint; los perfiles admitidos de acciones de estado rechazan ese builder desconocido.
+2. Proveedor POST_APPLY de FirstRunRuntime pasa la actividad de receptor/fuente desde HP después del daño y retroceso, en vez de true incondicional. El efecto de estado sobre rival vivo se conserva; callback del atacante debilitado no se activa ni consume duración de confusión.
+3. Revisión estática; regresiones existentes de callbacks desactivados y fase tras recoil permanecen pendientes de ejecución. Tests/compilación/Classic/Azahar/Old 3DS no verificados aún.

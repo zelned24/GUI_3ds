@@ -2826,7 +2826,7 @@ bool FirstRunRuntime::executeActiveBattleMove(uint8_t userIndex, uint8_t targetI
         if (!resolveActiveStatusRecipientPolicies(nextOpponent, nextUser, status, recipient) ||
             !resolveActiveStatusRecipientPolicies(nextUser, nextOpponent, status, source) ||
             !resolvePokemonPostSetStatusPolicy(nextOpponent, nextUser, status, recipient, source,
-                true, true, true, reactions)) return false;
+                nextOpponent.hp != 0, nextUser.hp != 0, true, reactions)) return false;
         if (!result.weatherCancelled && result.damageRoll.hit && result.damageApplied) {
             PokemonMoveStatusPhaseEvent statusEvent{};
             int16_t chance = 0;
