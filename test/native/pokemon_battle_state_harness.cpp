@@ -1946,6 +1946,35 @@ extern "C" int runPokemonBattleStateChecks() {
         Pokerogue3DS::lapsePokemonSturdyTurnEnd(actor.sturdy, false);
         if (actor.sturdy.present) return 10022;
     }
+    // IgnoreOpponentStatStagesAttr ignores DEF/EVA, but keeps the user's ATK/ACC.
+    for (const uint16_t id : {uint16_t(498), uint16_t(663)}) {
+        if (!Pokerogue3DS::pokemonIgnoreOpponentStatStagesMoveResolved(id)) return 10030;
+        auto user = state, target = state;
+        user.abilityId = target.abilityId = 65;
+        user.status = target.status = {};
+        for (auto& stage : user.statStages) stage = 0;
+        for (auto& stage : target.statStages) stage = 0;
+        uint32_t neutral = 0, raisedDefense = 0, raisedAttack = 0;
+        if (Pokerogue3DS::calculatePokemonDamageCore(user, target, id, false, neutral) !=
+                Pokerogue3DS::PokemonDamageCoreResult::Ok) return 10031;
+        target.statStages[1] = 6;
+        if (Pokerogue3DS::calculatePokemonDamageCore(user, target, id, false, raisedDefense) !=
+                Pokerogue3DS::PokemonDamageCoreResult::Ok || raisedDefense != neutral) return 10032;
+        user.statStages[0] = 1;
+        if (Pokerogue3DS::calculatePokemonDamageCore(user, target, id, false, raisedAttack) !=
+                Pokerogue3DS::PokemonDamageCoreResult::Ok || raisedAttack <= neutral) return 10033;
+        user.statStages[5] = -6;
+        target.statStages[6] = 6;
+        auto rng = damageRng, repeated = rng;
+        PokemonMoveDamageRoll first{}, second{};
+        if (Pokerogue3DS::resolveStandardPokemonMoveDamage(user, target, id, false, rng, first) !=
+                PokemonMoveDamageResult::Ok) return 10034;
+        target.statStages[6] = 0;
+        if (Pokerogue3DS::resolveStandardPokemonMoveDamage(user, target, id, false, repeated, second) !=
+                PokemonMoveDamageResult::Ok || first.hit != second.hit || first.damage != second.damage ||
+            first.hit != (first.accuracyRoll < 100.0 / 3.0) ||
+            rng.randSeedUint32() != repeated.randSeedUint32()) return 10035;
+    }
     // TargetHalfHpDamageAttr: floor, minimum one, no ordinary damage modifiers.
     for (const uint16_t id : {uint16_t(162), uint16_t(717), uint16_t(877)}) {
         const auto* profile = Pokerogue3DS::pokemonFixedDamageMoveProfile(id);

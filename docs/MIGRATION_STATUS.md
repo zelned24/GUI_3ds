@@ -2106,3 +2106,9 @@
 1. PostTurnStatusEffectPhase pinned pasa preventEndure=true: status residual conserva KO y no consume el tag. La ruta nativa existente era correcta; no se convirtió en supervivencia general.
 2. FirstRunRuntime ahora lapsa Sturdy antes de turn healing y solo fuera de interludio, siguiendo TurnEndPhase; sustituye limpieza incondicional tardía.
 3. Regresiones 10020–10022 cubren burn KO con tag, conservación en interludio y lapse normal. Casos escritos, no ejecutados; cobertura completa de turn end y hardware pendientes.
+
+## Chip Away y Darkest Lariat
+
+1. IgnoreOpponentStatStagesAttr exacto genera perfiles con provenance; admisión exige atributo único, builders conocidos y objetivo simple. Otros registros preservan datos sin admitir composiciones incompletas.
+2. Cálculo defensivo omite DEF/SPDEF stages, precisión omite EVA rival; ATK/SPATK y ACC del usuario permanecen. Basado en Pokemon.getBaseDamage/getStatStageMultiplier/getAccuracyMultiplier pinned.
+3. Regresiones 10030–10035 comparan defensa +6, boost ofensivo, evasión y RNG. Escritas sin ejecutar; tests/compilación/Old 3DS pendientes.

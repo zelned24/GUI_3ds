@@ -253,7 +253,7 @@ const moveSelfThawRows = collections.moves.flatMap(move => {
 }).join(',\n');
 
 const statusMoveFlagRows = collections.moves.filter(move => move.category === 'Status' ||
-  /\b(?:StatusEffectAttr|ConfuseAttr|StatStageChangeAttr|FixedDamageAttr|LevelDamageAttr|TargetHalfHpDamageAttr|RandomLevelDamageAttr|SurviveDamageAttr)\b/.test(move.extensions?.upstreamRawRecord?.value ?? '')).map(move => {
+  /\b(?:StatusEffectAttr|ConfuseAttr|StatStageChangeAttr|FixedDamageAttr|LevelDamageAttr|TargetHalfHpDamageAttr|RandomLevelDamageAttr|SurviveDamageAttr|IgnoreOpponentStatStagesAttr)\b/.test(move.extensions?.upstreamRawRecord?.value ?? '')).map(move => {
   const raw = move.extensions?.upstreamRawRecord?.value ?? '';
   const calls = [...raw.matchAll(/\.([A-Za-z_$][\w$]*)\s*\(/g)].map(m => m[1]);
   const known = new Set(['attr', 'target', 'reflectable', 'powderMove', 'soundBased', 'recklessMove']);
@@ -1318,7 +1318,19 @@ const surviveMoveRows = collections.moves.flatMap(move => {
     throw new Error(`Missing survive move provenance: ${move.id}`);
   return `    {${move.moveId}, "${field(source.sourcePath)}", "${field(source.sourceSymbol)}", "${field(source.sourceHash)}"}`;
 });
-const surviveMoveHeader = survivalHeader.replace('struct MoveAttribute {',
+const ignoreStatStageRows = collections.moves.flatMap(move => {
+  const raw = move.extensions?.upstreamRawRecord?.value ?? '';
+  const mentions = [...raw.matchAll(/\bIgnoreOpponentStatStagesAttr\b/g)];
+  const declarations = [...raw.matchAll(/\.attr\s*\(\s*IgnoreOpponentStatStagesAttr\s*\)/g)];
+  if (mentions.length !== 1 || declarations.length !== 1) return [];
+  const source = move.source ?? move.metadata;
+  if (!source?.sourcePath || !source?.sourceSymbol || !source?.sourceHash)
+    throw new Error(`Missing ignore-stat-stage provenance: ${move.id}`);
+  return `    {${move.moveId}, "${field(source.sourcePath)}", "${field(source.sourceSymbol)}", "${field(source.sourceHash)}"}`;
+});
+const ignoreStatStageHeader = survivalHeader.replace('struct MoveAttribute {',
+  `struct MoveIgnoreStatStageProfile { uint16_t moveId; const char* sourcePath; const char* sourceSymbol; const char* sourceHash; };\ninline constexpr MoveIgnoreStatStageProfile kMoveIgnoreStatStageProfiles[] = {\n${ignoreStatStageRows.join(',\n')}\n};\nstruct MoveAttribute {`);
+const surviveMoveHeader = ignoreStatStageHeader.replace('struct MoveAttribute {',
   `struct MoveSurviveDamageProfile { uint16_t moveId; const char* sourcePath; const char* sourceSymbol; const char* sourceHash; };\ninline constexpr MoveSurviveDamageProfile kMoveSurviveDamageProfiles[] = {\n${surviveMoveRows.join(',\n')}\n};\nstruct MoveAttribute {`);
 const fixedDamageHeader = surviveMoveHeader.replace('struct MoveAttribute {',
   `struct MoveFixedDamageProfile { uint16_t moveId; bool userLevel; uint16_t amount; bool targetHalfHp; bool randomLevel; const char* sourcePath; const char* sourceSymbol; const char* sourceHash; };\ninline constexpr MoveFixedDamageProfile kMoveFixedDamageProfiles[] = {\n${fixedDamageRows.join(',\n')}\n};\nstruct MoveAttribute {`);

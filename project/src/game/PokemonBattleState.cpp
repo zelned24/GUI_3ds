@@ -1209,6 +1209,7 @@ PokemonBaseDamageResult calculatePokemonBaseDamage(
         !pokemonStatStageMultiplier(defender, defenseStat, critical, defenseStage) ||
         !attacker.stats[attackStat] || !defender.stats[defenseStat])
         return PokemonBaseDamageResult::InvalidStats;
+    if (pokemonIgnoreOpponentStatStagesMoveResolved(moveId)) defenseStage = 1.0;
     // Pokemon.getEffectiveStat floors after stage multiplication, minimum one.
     double weatherDefenseMultiplier = 1.0;
     if (weatherContext) {
@@ -1887,7 +1888,8 @@ PokemonMoveDamageResult resolveStandardPokemonMoveDamage(
         if (attacker.statStages[5] < -6 || attacker.statStages[5] > 6 ||
             defender.statStages[6] < -6 || defender.statStages[6] > 6) return PokemonMoveDamageResult::InvalidAccuracy;
         const int accuracy = hitPolicy && hitPolicy->ignoreAttackerAccuracyStage ? 0 : attacker.statStages[5];
-        const int evasion = hitPolicy && hitPolicy->ignoreDefenderEvasionStage ? 0 : defender.statStages[6];
+        const int evasion = pokemonIgnoreOpponentStatStagesMoveResolved(moveId) ||
+            (hitPolicy && hitPolicy->ignoreDefenderEvasionStage) ? 0 : defender.statStages[6];
         if (!pokemonAccuracyStageMultiplier(accuracy, evasion, accuracyStage))
             return PokemonMoveDamageResult::InvalidAccuracy;
         next.accuracyWasRolled = true;

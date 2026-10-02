@@ -563,6 +563,21 @@ inline bool pokemonSurviveDamageMoveResolved(uint16_t moveId) {
         if (row.moveId == moveId) ++count;
     return count == 1;
 }
+inline bool pokemonIgnoreOpponentStatStagesMoveResolved(uint16_t moveId) {
+    const auto* move = PokerogueContent::findMoveById(moveId);
+    if (!move || move->category == PokerogueContent::MoveStatus || move->power <= 0 ||
+        move->attributeCount != 1 || move->upstreamFlags || !move->target ||
+        std::strcmp(move->target, "NEAR_OTHER") || !PokerogueContent::moveHasAttribute(*move, "IgnoreOpponentStatStagesAttr"))
+        return false;
+    bool builders = false;
+    for (const auto& row : PokerogueContent::kStatusMoveFlagProfiles)
+        if (row.moveId == moveId) builders = row.resolved;
+    if (!builders) return false;
+    unsigned count = 0;
+    for (const auto& row : PokerogueContent::kMoveIgnoreStatStageProfiles)
+        if (row.moveId == moveId) ++count;
+    return count == 1;
+}
 inline bool pokemonMoveSelfThawResolved(uint16_t moveId) {
     for (const auto& profile : PokerogueContent::kMoveSelfThawProfiles)
         if (profile.moveId == moveId) return profile.resolved;

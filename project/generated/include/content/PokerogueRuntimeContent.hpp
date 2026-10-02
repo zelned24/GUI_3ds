@@ -990,6 +990,7 @@ inline constexpr StatusMoveFlagProfile kStatusMoveFlagProfiles[] = {
     {493, false, true, false, false},
     {494, false, true, false, false},
     {495, false, false, false, false},
+    {498, true, false, false, false},
     {501, false, false, false, false},
     {502, false, false, false, false},
     {503, true, false, false, false},
@@ -1004,6 +1005,7 @@ inline constexpr StatusMoveFlagProfile kStatusMoveFlagProfiles[] = {
     {523, false, false, false, false},
     {526, true, false, false, false},
     {527, true, false, false, false},
+    {533, false, false, false, false},
     {534, false, false, false, false},
     {536, true, false, false, false},
     {538, true, false, false, false},
@@ -1061,6 +1063,7 @@ inline constexpr StatusMoveFlagProfile kStatusMoveFlagProfiles[] = {
     {621, false, false, false, false},
     {659, false, false, false, false},
     {661, false, false, false, false},
+    {663, true, false, false, false},
     {665, false, false, false, false},
     {666, false, true, false, false},
     {668, false, true, false, false},
@@ -1165,7 +1168,8 @@ inline constexpr StatusMoveFlagProfile kStatusMoveFlagProfiles[] = {
     {905, false, false, false, false},
     {908, false, false, false, false},
     {913, false, false, false, true},
-    {919, true, false, false, false}
+    {919, true, false, false, false},
+    {920, false, false, false, false}
 };
 struct StatusFormChangeProfile { uint16_t speciesDex; bool resolved; bool hasStatusTrigger; };
 inline constexpr StatusFormChangeProfile kStatusFormChangeProfiles[] = {
@@ -6567,6 +6571,13 @@ inline constexpr MoveImmunityAbilityProfile kMoveImmunityAbilityProfiles[] = {
 struct FullHpEndureAbilityProfile { uint16_t abilityId; bool resolved; const char* sourcePath; const char* sourceSymbol; const char* sourceHash; };
 inline constexpr FullHpEndureAbilityProfile kFullHpEndureAbilityProfiles[] = {
     {5, true, "src/data/abilities/init-abilities.ts", "AbilityId.STURDY", "040ccf2ca2e00a2111ef0acf54878ec67c45d98c831e35dda3e0bac52f1ee8e6"}
+};
+struct MoveIgnoreStatStageProfile { uint16_t moveId; const char* sourcePath; const char* sourceSymbol; const char* sourceHash; };
+inline constexpr MoveIgnoreStatStageProfile kMoveIgnoreStatStageProfiles[] = {
+    {498, "src/data/moves/move.ts", "MoveId.CHIP_AWAY", "012df47701de494d4140e97cd4804b25cc7472fcf61805aa71aaa21fe7b59475"},
+    {533, "src/data/moves/move.ts", "MoveId.SACRED_SWORD", "012df47701de494d4140e97cd4804b25cc7472fcf61805aa71aaa21fe7b59475"},
+    {663, "src/data/moves/move.ts", "MoveId.DARKEST_LARIAT", "012df47701de494d4140e97cd4804b25cc7472fcf61805aa71aaa21fe7b59475"},
+    {920, "src/data/moves/move.ts", "MoveId.NIHIL_LIGHT", "012df47701de494d4140e97cd4804b25cc7472fcf61805aa71aaa21fe7b59475"}
 };
 struct MoveSurviveDamageProfile { uint16_t moveId; const char* sourcePath; const char* sourceSymbol; const char* sourceHash; };
 inline constexpr MoveSurviveDamageProfile kMoveSurviveDamageProfiles[] = {

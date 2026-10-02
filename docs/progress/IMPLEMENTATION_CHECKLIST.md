@@ -380,3 +380,8 @@ Los ejemplos describen infraestructura y límites; no son tareas cerradas. Actua
 
 - SurviveDamageAttr canónico conectado a predicción, comando y selección; límite HP-1 aplicado después del redondeo, incluido daño cero a HP uno.
 - Regresiones de HP/PP/RNG escritas; contextos amplios y validación ejecutada permanecen pendientes.
+
+### Avance MOV-04: ignorar etapas del rival
+
+- Chip Away/Darkest Lariat conectados a daño, precisión y selección con perfiles exactos. Se conserva la precisión y el boost ofensivo propio.
+- Regresiones escritas sin ejecutar; atributos compuestos y validación final pendientes.
