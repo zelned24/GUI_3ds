@@ -2598,11 +2598,8 @@ bool FirstRunRuntime::advanceBattleTurnInPlace() {
         if (m_context.enemy.battleState.hp > 0) activeBattlers[activeCount++] = 1;
         if (m_context.secondEnemy.battleState.hp > 0) activeBattlers[activeCount++] = 2;
 
-        uint32_t speeds[3]{};
-        int32_t priorities[3]{};
         const PokemonBattleState* states[3] = {
-            &m_context.player.battleState,
-            &m_context.enemy.battleState,
+            &m_context.player.battleState, &m_context.enemy.battleState,
             &m_context.secondEnemy.battleState
         };
         uint16_t moveIds[3] = {
@@ -2610,31 +2607,30 @@ bool FirstRunRuntime::advanceBattleTurnInPlace() {
             pokemonMovePpExhausted(m_context.enemy.battleState) ? PokerogueContent::kStruggleMoveId : m_context.enemy.battleState.moves[enemy0MoveSlot].moveId,
             pokemonMovePpExhausted(m_context.secondEnemy.battleState) ? PokerogueContent::kStruggleMoveId : m_context.secondEnemy.battleState.moves[enemy1MoveSlot].moveId
         };
-        for (uint8_t i = 0; i < 3; ++i) {
-            if (!states[i]->hp) continue;
-            PokemonMoveWeatherContext speedWeather{};
-            const auto& speedOpponent = i == 0 ? m_context.enemy.battleState : playerState;
-            if (!resolveActiveMoveWeather(*states[i], speedOpponent, speedWeather) ||
-                !pokemonWeatherEffectiveSpeed(*states[i], speedWeather, speeds[i])) return false;
-            const auto* m = PokerogueContent::findMoveById(moveIds[i]);
-            if (!m) return false;
-            priorities[i] = m->priority;
-        }
-
-        PokemonFieldTurnEntry entries[3]{};
-        for (uint8_t i = 0; i < activeCount; ++i) {
-            const uint8_t id = activeBattlers[i];
-            entries[i] = {id, speeds[id], priorities[id]};
-        }
-        const auto field = pokemonTrickRoomOrderPolicy(m_trickRoom);
-        if (!resolvePokemonFieldTurnOrder(entries, activeCount, m_seedCodeUnits.data(), m_seedLength,
-            m_run.wave, m_turn, field, activeBattlers, 3)) return false;
-
         m_runStarted = true;
         m_checkpointAvailable = false;
 
-        for (uint8_t i = 0; i < activeCount; ++i) {
-            const uint8_t battler = activeBattlers[i];
+        while (activeCount) {
+            // MovePhasePriorityQueue.pop reorders the remaining phases. Changes
+            // in speed/weather/Trick Room during this turn affect the next pop.
+            PokemonFieldTurnEntry entries[3]{};
+            for (uint8_t i = 0; i < activeCount; ++i) {
+                const uint8_t id = activeBattlers[i];
+                PokemonMoveWeatherContext speedWeather{};
+                const auto& speedOpponent = id == 0 ? m_context.enemy.battleState : m_context.player.battleState;
+                uint32_t speed = 0;
+                const auto* queuedMove = PokerogueContent::findMoveById(moveIds[id]);
+                if (!queuedMove || !resolveActiveMoveWeather(*states[id], speedOpponent, speedWeather) ||
+                    !pokemonWeatherEffectiveSpeed(*states[id], speedWeather, speed)) return false;
+                entries[i] = {id, speed, queuedMove->priority};
+            }
+            uint8_t ordered[3]{};
+            const auto field = pokemonTrickRoomOrderPolicy(m_trickRoom);
+            if (!resolvePokemonFieldTurnOrder(entries, activeCount, m_seedCodeUnits.data(), m_seedLength,
+                    m_run.wave, m_turn, field, ordered, 3)) return false;
+            const uint8_t battler = ordered[0];
+            --activeCount;
+            for (uint8_t i = 0; i < activeCount; ++i) activeBattlers[i] = ordered[i + 1];
             if (battler == 0) {
                 if (!m_context.player.battleState.hp) continue;
                 const auto* pMove = PokerogueContent::findMoveById(moveIds[0]);

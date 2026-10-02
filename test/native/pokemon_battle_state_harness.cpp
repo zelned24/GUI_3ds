@@ -5126,5 +5126,25 @@ extern "C" int runPokemonBattleStateChecks() {
         confusedActor.hp != previousConfusedHp || confusedEvent.requestedDamage != 123 ||
         statusApplicationRng.randSeedUint32() != expectedApplicationRng.randSeedUint32()) return 9122;
 
+    {
+        // Pinned MovePhasePriorityQueue.pop sees changed speed on each extraction.
+        using namespace Pokerogue3DS;
+        const uint16_t seed[] = {'d', 'y', 'n', 'a', 'm', 'i', 'c'};
+        PokemonTurnOrderFieldPolicy field{true, false};
+        PokemonFieldTurnEntry queue[] = {{0, 100, 0}, {1, 90, 0}, {2, 80, 0}};
+        uint8_t order[3]{};
+        if (!resolvePokemonFieldTurnOrder(queue, 3, seed, 7, 1, 1, field, order, 3) || order[0] != 0)
+            return 10450;
+        PokemonFieldTurnEntry pending[] = {{1, 90, 0}, {2, 180, 0}}; // Speed rose after first action.
+        if (!resolvePokemonFieldTurnOrder(pending, 2, seed, 7, 1, 1, field, order, 3) || order[0] != 2)
+            return 10451;
+        field.speedReversed = true;
+        if (!resolvePokemonFieldTurnOrder(pending, 2, seed, 7, 1, 1, field, order, 3) || order[0] != 1)
+            return 10452;
+        pending[1].priority = 1;
+        if (!resolvePokemonFieldTurnOrder(pending, 2, seed, 7, 1, 1, field, order, 3) || order[0] != 2)
+            return 10453;
+    }
+
     return 0;
 }

@@ -564,3 +564,8 @@ Para cada entrega actualizar esta tabla con IDs, commit, alcance conectado, excl
 ### Avance TUR-08 / MOV-04: identidad de hit checks
 
 - Resultados preparados se ligan a atacante, movimiento y objetivo; se rechaza reutilización por otro atacante sin consumir RNG. Regresión escrita sin ejecutar; cola general y campo de cuatro actores pendientes.
+
+### Avance TUR-01 / TUR-02 / TUR-05: cola dinámica de acciones
+
+- Runtime doble reordena acciones pendientes por velocidad/clima/Trick Room y prioridad en cada extracción, conservando su orden restante y movimientos elegidos.
+- Regresiones del resolver escritas sin ejecutar; timing modifiers, prioridad por abilities/items, segundo activo jugador y prueba end-to-end con cambios de velocidad pendientes.

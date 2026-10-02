@@ -2309,3 +2309,9 @@
 
 1. MoveEffectPhase pinned liga user y targets a una misma acción. PokemonDamageMoveHitCheck conserva también attackerPokemonId; resolveStandardPokemonMoveDamage rechaza resultados preparados por otro atacante, antes de consumo de RNG o publicación del output, incluida inmunidad.
 2. Regresión 10440 amplía el caso real de Petal Blizzard: altera solo el ID del atacante preparado y exige rechazo con output/RNG intactos. Escrita sin ejecutar; este binding no sustituye una cola completa de fases ni constituye soporte del segundo jugador activo.
+
+## Reordenación dinámica de acciones dobles
+
+1. MovePhasePriorityQueue.pop pinned reordena antes de extraer cada fase: velocidad (DynamicPhasePriorityQueue), después prioridad del movimiento. advanceBattleTurnInPlace ahora recalcula velocidad/clima/Trick Room de los pendientes y conserva la cola restante en su nuevo orden después de cada acción; ya no fija todo el turno antes de actuar.
+2. IDs de acciones elegidas permanecen estables; empates siguen usando resolver seeded existente con tamaño de cola restante. Timing modifiers, forced order, habilidades/items de prioridad y segundo jugador siguen pendientes.
+3. Regresiones 10450–10453 cubren nueva velocidad entre extracciones, reversión de campo y prioridad sobre velocidad. Escritas sin ejecutar; son contrato del resolver, no evidencia de recorrido completo ni paridad universal de fases.
