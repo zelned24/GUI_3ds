@@ -24,6 +24,7 @@ const collections = content.collections;
 // types or ability suppression during a status action. Chance and accuracy-stage
 // bypass is represented explicitly; Synchronize
 // is dispatched separately; unrecognized builders/attributes remain pending.
+const resolvedStatusActionAbilityIds = new Set();
 const statusActionAbilityRows = collections.abilities.map(ability => {
   const raw = ability.extensions?.upstreamRawRecord?.value ?? '';
   const attrs = [...raw.matchAll(/\.attr\s*\(\s*([A-Za-z_$][\w$]*)/g)].map(m => m[1]);
@@ -65,6 +66,7 @@ const statusActionAbilityRows = collections.abilities.map(ability => {
     calls.every(c => builders.has(c)) && attrs.every(a => known.has(a)) && ignoreMentions === ignoreDeclarations &&
     chanceMentions === chanceDeclarations.length && chanceDeclarations.length <= 1 && Number.isFinite(chanceMultiplier) &&
     ignoreEffectMentions === ignoreEffectDeclarations && removalMentions === removalDeclarations && stageMultipliersResolved && simpleStageCallbacksResolved && postStageResolved;
+  if (resolved) resolvedStatusActionAbilityIds.add(ability.abilityId);
   return `    {${ability.abilityId}, ${resolved}, false, ${ignoreDeclarations > 0}, ${chanceMultiplier}, ${ignoreEffectDeclarations > 0}}`;
 }).join(',\n');
 
@@ -947,7 +949,8 @@ const statusResidualRows = collections.abilities.map(ability => {
   const resolved = !!raw && /new AbBuilder\(/.test(raw) && parametersResolved &&
     builders.every(name => ['attr', 'build', 'uncopiable', 'unreplaceable', 'unsuppressable', 'ignorable'].includes(name)) &&
     [...raw.matchAll(/\.(?:attr|conditionalAttr)\s*\(/g)].length === attrs.length &&
-    attrs.every(name => harmless.has(name) || relevant.has(name)) && burn.length <= 1 && statusHeals.length <= 1;
+    attrs.every(name => harmless.has(name) || relevant.has(name) ||
+      resolvedStatusActionAbilityIds.has(ability.abilityId)) && burn.length <= 1 && statusHeals.length <= 1;
   return `    {${ability.abilityId}, ${resolved}, ${block}, ${statusMask}, 1, ${burn.length ? 2 : 1}, ${healMask}}`;
 }).join(',\n');
 

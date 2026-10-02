@@ -979,6 +979,22 @@ extern "C" int runPokemonBattleStateChecks() {
                 (ability == 172 && reactionTarget.statStages[2] != 2)) return 9651;
         }
     }
+    {
+        for (const uint16_t ability : {uint16_t(86), uint16_t(126), uint16_t(128), uint16_t(172),
+                uint16_t(240), uint16_t(290)}) {
+            bool residualResolved = false;
+            for (const auto& row : PokerogueContent::kStatusResidualAbilityProfiles)
+                if (row.abilityId == ability) {
+                    residualResolved = row.resolved && !row.blockNonDirectDamage && !row.blockedStatusMask &&
+                        !row.healedStatusMask && row.burnNumerator == row.burnDenominator;
+                }
+            if (!residualResolved) return 9670;
+        }
+        bool unresolvedResidual = false;
+        for (const auto& row : PokerogueContent::kStatusResidualAbilityProfiles)
+            if (row.abilityId == 125) unresolvedResidual = !row.resolved; // Sheer Force power callback pending.
+        if (!unresolvedResidual) return 9671;
+    }
     const uint8_t mixedSlots[] = {0, 1};
     const uint32_t mixedDamage[] = {0, 10};
     uint8_t mixedFiltered[4]{}, mixedCount = 0;

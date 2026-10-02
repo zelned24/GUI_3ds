@@ -1864,3 +1864,9 @@
 
 1. Fase secundaria de estadísticas valida chance, multiplicador y máscaras antes de omitir efecto por faint. Antes el early skip podía aceptar chance >100 o reflexión sin cancelación, aunque el mismo contexto fallaba con actor vivo.
 2. Regresiones escritas para chance 101 y máscara de reflexión incoherente, preservando output/actor. Faint continúa sin consumir chance. Tests/compilación siguen aplazados; no se declara jugabilidad completa.
+
+## Capacidad residual de habilidades resueltas en acciones de estado
+
+1. Generador conserva el conjunto de habilidades cuyo perfil completo de acción de estado ya pasó validación de atributos/parámetros/builders. Sus atributos de estadísticas, precisión, inmunidad de aplicación y chance no son callbacks de daño residual; el perfil residual los admite como neutros en ese contexto.
+2. Simple/Contrary/Defiant/Competitive/Mirror Armor/Opportunist dejan de rechazarse únicamente por sus atributos de etapas al resolver residuales. Atributos relevantes residuales conservan sus máscaras/multiplicadores; callbacks desconocidos como Sheer Force siguen pendientes. No habilita automáticamente daño de jefes ni otras fases.
+3. Regresiones de perfiles neutros y rechazo Sheer Force escritas; contenido regenerado y hash canónico intacto. Tests/compilación y validación de run Classic siguen pendientes.
