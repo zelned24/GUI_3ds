@@ -293,3 +293,10 @@ Por instrucción del usuario, tests y compilación del programa están aplazados
 | Ejemplo: GUI-12 | Parcial | Consultar historial de QuickJSBridge | Bridge y bindRuntime inspeccionados | Alcance completo y ejecución ARM |
 
 Los ejemplos describen infraestructura y límites; no son tareas cerradas. Actualizar filas con cada bloque y mantener las casillas abiertas hasta reunir su evidencia.
+
+### Avance DAT-02: inventario reproducible de declaraciones
+
+- Generación: `node scripts/generate_content_coverage_inventory.mjs`.
+- [Resumen por familia](../generated/CONTENT_COVERAGE_INVENTORY.md) y [registros por ID](../generated/CONTENT_COVERAGE_INVENTORY.json).
+- Incluye movimientos/habilidades, builders y provenance; no duplica raw TypeScript. Todos los registros comienzan NOT_AUDITED para ejecución: el inventario no infiere soporte por existencia de código.
+- DAT-02 permanece parcial: falta conectar matriz de capacidades y evidencia por contexto del runtime, además del resto de dominios.
