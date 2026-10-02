@@ -368,12 +368,11 @@ NativeSaveResult FirstRunRuntime::captureNativeRunSave(NativeRunSave& output) co
     std::unique_ptr<NativeRunSave> valueStorage(new (std::nothrow) NativeRunSave{});
     if (!valueStorage) { output = {}; return NativeSaveResult::MemoryUnavailable; }
     auto& value = *valueStorage;
-    // Singles preserve actors and boss segments; doubles, final phase two and later trainer history remain unsupported.
+    // Singles preserve actors, boss segments and resolved trainer parties; doubles and final phase two remain unsupported.
     // Never report a setup checkpoint as a successful save of an active double battle.
     if (m_capturePartyChoicePending || m_doubleBattle || m_pokeballs[5] ||
         (m_run.wave == PokerogueContent::kClassicFinalWave && m_context.enemy.bossState.segmentCount &&
-            !m_context.enemy.bossState.classicFinalBossFirstPhase) ||
-        (m_trainerBattle && m_run.wave != 5)) {
+            !m_context.enemy.bossState.classicFinalBossFirstPhase)) {
         output = {};
         return NativeSaveResult::UnsupportedStage;
     }
@@ -487,7 +486,7 @@ NativeSaveResult FirstRunRuntime::captureNativeRunSave(NativeRunSave& output) co
         hasSummonTags |= m_context.playerParty[member].battleState.heldItemLostTags.unburden ||
             m_context.playerParty[member].battleState.sturdy.present;
     if (value.stage != NativeSaveStage::RunSetup &&
-        (m_run.wave > 9 || m_context.playerPartyCount > 1 || m_playerHistoryRequiresSnapshot || m_heldModifierCount || value.playerStatus.present || value.playerConfusion.present || hasSummonTags || hasChangedFriendship || hasModifiedMaxPp)) {
+        (m_run.wave > 9 || (m_trainerBattle && m_run.wave != 5) || m_context.playerPartyCount > 1 || m_playerHistoryRequiresSnapshot || m_heldModifierCount || value.playerStatus.present || value.playerConfusion.present || hasSummonTags || hasChangedFriendship || hasModifiedMaxPp)) {
         if (m_context.playerPartyCount > 6 ||
             m_context.activePlayerPartyIndex >= m_context.playerPartyCount) { output = {}; return NativeSaveResult::InvalidRecord; }
         value.playerPartyCount = m_context.playerPartyCount;
@@ -718,8 +717,9 @@ bool FirstRunRuntime::restoreNativeRunSaveInPlace(const NativeRunSave& save) {
     if (validateNativeRunSave(save, PokerogueContent::kContentHash) != NativeSaveResult::Ok ||
         save.stage < NativeSaveStage::RunSetup ||
         save.stage > NativeSaveStage::ExperienceGranted) return false;
-    // Wave five is currently the only complete deterministic trainer party.
-    if (save.trainerPartyCount && save.wave != 5) return false;
+    // Other trainer checkpoints require explicit actors/EXP instead of legacy
+    // reconstruction of previously defeated party members.
+    if (save.trainerPartyCount && save.wave != 5 && !save.playerPartyCount) return false;
     // Legacy snapshots cannot reconstruct later evolution/reward/route history.
     if (save.wave > 9 && !save.playerPartyCount) return false;
     if (!restoreSetupInPlace(save.seed, save.starterDex)) return false;

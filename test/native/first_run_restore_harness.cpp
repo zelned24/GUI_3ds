@@ -1004,6 +1004,36 @@ static int checkTrainerInteractiveBattle() {
             activeAfter.player.battleState.hp == initialPlayerHp &&
             activeAfter.activeTrainerPartyIndex == 0) return 43;
 
+        // Explicit player snapshots use the same trainer reconstruction path
+        // needed by later waves, without replaying earlier EXP/reward history.
+        NativeRunSave explicitTrainer{};
+        if (game.captureNativeRunSave(explicitTrainer) != NativeSaveResult::Ok) return 10150;
+        explicitTrainer.playerPartyCount = activeAfter.playerPartyCount;
+        explicitTrainer.activePlayerMember = activeAfter.activePlayerPartyIndex;
+        for (uint8_t member = 0; member < activeAfter.playerPartyCount; ++member) {
+            const auto& actor = member == activeAfter.activePlayerPartyIndex
+                ? activeAfter.player : activeAfter.playerParty[member];
+            if (!captureNativePokemonActorSave(actor.battleState, actor.actor, actor.totalExperience,
+                explicitTrainer.playerParty[member])) return 10151;
+        }
+        FirstRunRuntime explicitTrainerRestore(seed);
+        NativeRunSave explicitTrainerRecaptured{};
+        if (!explicitTrainerRestore.restoreNativeRunSave(explicitTrainer) ||
+            explicitTrainerRestore.captureNativeRunSave(explicitTrainerRecaptured) != NativeSaveResult::Ok ||
+            explicitTrainerRecaptured.trainerTypeId != explicitTrainer.trainerTypeId ||
+            explicitTrainerRecaptured.activeTrainerMember != explicitTrainer.activeTrainerMember ||
+            explicitTrainerRecaptured.trainerPartyCount != explicitTrainer.trainerPartyCount ||
+            explicitTrainerRecaptured.playerExperience != explicitTrainer.playerExperience ||
+            explicitTrainerRecaptured.enemySwitchCounter != explicitTrainer.enemySwitchCounter) return 10152;
+        for (uint8_t member = 0; member < explicitTrainer.trainerPartyCount; ++member) {
+            const auto& expected = explicitTrainer.trainerParty[member];
+            const auto& actual = explicitTrainerRecaptured.trainerParty[member];
+            if (actual.speciesDex != expected.speciesDex || actual.hp != expected.hp ||
+                actual.moveCount != expected.moveCount || actual.sturdyTag != expected.sturdyTag) return 10153;
+            for (uint8_t slot = 0; slot < actual.moveCount; ++slot)
+                if (actual.moveIds[slot] != expected.moveIds[slot] || actual.pp[slot] != expected.pp[slot]) return 10154;
+        }
+
         // Defeat first trainer Pokemon and transition to second
         NativeRunSave firstDefeated{};
         game.captureNativeRunSave(firstDefeated);

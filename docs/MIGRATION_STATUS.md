@@ -2172,3 +2172,10 @@
 1. NativeRunSave conserva enemyBoss (count/index/firstPhase/hasTrainer). Captura admite jefes individuales con estado reconstruible; restore compara count/fase/ownership con el encuentro canónico antes de aplicar índice mutable. Segunda fase final, dobles y trainers adicionales siguen rechazados.
 2. Decoder migra v19 y anteriores con estado boss ausente; no infiere escudos perdidos. Validation rechaza índices fuera del count, flags sin segmentos, trainer boss no representado y fase final en wave incorrecta. Upstream src/system/pokemon-data.ts pinned conserva bossSegments; el estado nativo incluye además su índice mutable.
 3. Regresiones 10130–10136/10140–10142 cubren codec, límites, v19, checkpoint real wave 10 y discrepancia con generación. El recorrido wave 10–11 ahora tiene representación de segmentos; casos escritos, no ejecutados. No demuestra todavía run Classic ni paridad/hardware.
+
+## Checkpoints de entrenadores resueltos con actores explícitos
+
+1. Capture admite trainer parties con battle states resueltos fuera de wave 5 y fuerza snapshot de equipo/EXP. Restore exige actores explícitos para esas waves y valida tipo/tamaño/especies/moves contra generación canónica, conservando HP/PP/stages/status/confusión/Sturdy/switch counter.
+2. Legacy sin actores conserva restricción wave 5 y replay de historial soportado. No se declara que todos los callbacks/templates upstream estén resueltos ni que todos los combates sean ejecutables.
+3. Regresiones 10150–10154 contrastan ruta explícita de trainer existente wave 5 (equipo/EXP/moves/PP/switch counter), escritas sin ejecutar. Aún faltan casos de encounters posteriores concretos; la apertura por capacidades necesita evidencia ejecutada, no solo eliminar un gate.
+4. Inspección pinned BattleScene.initFinalBossPhaseTwo confirma dependencias pendientes: Mini Black Hole no transferible, moveset/form change y campo doble con segundo jugador. No se habilita una segunda fase falsa de un solo jugador.

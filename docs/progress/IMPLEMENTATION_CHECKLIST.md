@@ -442,3 +442,8 @@ Los ejemplos describen infraestructura y límites; no son tareas cerradas. Actua
 
 - Envelope v20 conserva count/index/fase de jefe individual; captura/restore conectados con validación de estructura canónica y migración histórica.
 - Recorrido de test wave 10–11 actualizado, aún sin ejecutar. Segunda fase Eternatus, dobles y trainers adicionales requieren persistencia/integración propia; Classic completo permanece pendiente.
+
+### Avance SAV-03 / IA-06: entrenador con snapshot explícito
+
+- Capture/restore acepta parties generadas con estados resueltos fuera de wave 5 cuando el equipo jugador/EXP es explícito; verifica identidad del trainer y sus miembros contra generación.
+- Replay legacy permanece restringido. Casos de ruta explícita wave 5 escritos; casos posteriores y gates ejecutados aún pendientes. No implica todos los entrenadores ni todas las reglas de combate.
