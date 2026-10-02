@@ -1807,3 +1807,9 @@
 1. Pinned src/data/moves/move.ts StatStageChangeAttr.getTargetBenefitScore no pondera chance ni consulta inmunidades; usa etapas/clamp y composición de moveset. src/field/pokemon.ts suma beneficios antes de efectividad/STAB. Runtime añade el beneficio secundario en ese punto del scorer existente, con signo según destinatario.
 2. Reutiliza calculateStatStageTargetBenefit, conservando la consulta PHYSICAL para SPDEF y el término +2 cuando levels es cero. No introduce un score esperado por chance ni reemplaza comportamiento upstream por una fórmula inventada.
 3. Regresiones escritas para Psychic con moveset especial/mixto, efectividad/STAB, límite -6 y fallos con output intacto. Tests/compilación siguen aplazados. El selector completo, callbacks de todos los movimientos y Classic completo continúan pendientes.
+
+## Orden de puntuación de estados y confusión secundarios
+
+1. Revisión estática identificó que scoreActiveEnemyMove sumaba estados/confusión después del scorer que ya había aplicado efectividad/STAB. Pinned Pokemon.getEnemyMoveScores suma beneficios primero; ahora esos beneficios entran en baselineEnemyMoveScore antes de sus multiplicadores.
+2. Tipo inmune conserva score -20: un efecto secundario ya no aumenta ficticiamente la puntuación de un ataque sin efecto. Fórmulas de beneficio y políticas de elegibilidad existentes se conservan; este cambio no completa la IA ni callbacks pendientes.
+3. Regresiones escritas para efectividad doble, resistencia y tipo inmune con beneficio de Ember. Tests y compilación permanecen aplazados; Classic completo aún pendiente.

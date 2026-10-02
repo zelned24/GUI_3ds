@@ -1013,7 +1013,7 @@ bool supportsBaselineBattleMove(uint16_t moveId) {
 
 double baselineEnemyMoveScore(const PokemonBattleState& user,
                               const PokemonBattleState& target,
-                              const PokerogueContent::Move& move) {
+                              const PokerogueContent::Move& move, double secondaryBenefit = 0.0) {
     if (move.category == PokerogueContent::MoveStatus) {
         if (pokemonWeatherChangeProfile(move.id)) return 0.0; // Inherited MoveEffectAttr benefit.
         if (supportsPokemonTrickRoomMove(move.id)) return 0.0; // Inherited MoveAttr benefits.
@@ -1042,7 +1042,7 @@ double baselineEnemyMoveScore(const PokemonBattleState& user,
     if (singleDamageStatStageEffect(move.id) &&
         !calculateCanonicalDamageStatStageAiBenefit(user, target, move.id, statBenefit)) return -20.0;
     if (!calculatePlainAttackAiScore(effectiveness, selectedStat, otherStat,
-            move.power, move.accuracy, stab, score, critBenefit + statBenefit)) return -20.0;
+            move.power, move.accuracy, stab, score, critBenefit + statBenefit + secondaryBenefit)) return -20.0;
     return score + canonicalDamageDrainAiBenefit(user, move) + canonicalRecoilAiBenefit(move);
 }
 
@@ -1289,7 +1289,7 @@ double FirstRunRuntime::scoreActiveEnemyMove(const PokemonBattleState& user,
     }
     const auto* effect = singleOpponentStatusEffect(move.id);
     if (!effect) {
-        double score = baselineEnemyMoveScore(user, target, move);
+        double secondaryBenefit = 0.0;
         if (const auto* secondary = singleDamageStatusEffect(move.id)) {
             PokemonStatusRecipientPolicies policies{};
             double benefit = 0;
@@ -1298,15 +1298,15 @@ double FirstRunRuntime::scoreActiveEnemyMove(const PokemonBattleState& user,
                     static_cast<PokemonStatusEffect>(secondary->effectId), policies) ||
                 !calculatePokemonStatusEffectAiBenefit(target, move.id, chance,
                     true, policies.status, benefit)) return -20.0;
-            score -= benefit;
+            secondaryBenefit -= benefit;
         }
         if (singleDamageConfusionEffect(move.id)) {
             double benefit = 0;
             if (!resolvePokemonMoveEffectChance(move.id, user.abilityId, target.abilityId, false, chance) ||
                 !calculatePokemonConfusionMoveAiBenefit(move.id, chance, benefit)) return -20.0;
-            score -= benefit;
+            secondaryBenefit -= benefit;
         }
-        return score;
+        return baselineEnemyMoveScore(user, target, move, secondaryBenefit);
     }
     PokemonStatusRecipientPolicies policies{};
     double targetBenefit = 0;

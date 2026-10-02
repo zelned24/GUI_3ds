@@ -810,6 +810,16 @@ extern "C" int runPokemonBattleStateChecks() {
         if (Pokerogue3DS::calculateCanonicalDamageStatStageAiBenefit(aiUser, aiTarget, 94, statBenefit) ||
             statBenefit != 123) return 9575;
     }
+    {
+        double composed = 0;
+        // Ember's 10% status benefit is one, before effectiveness and STAB.
+        if (!Pokerogue3DS::calculatePlainAttackAiScore(2, 100, 100, 40, 100, true, composed, 1) ||
+            composed != 33) return 9580;
+        if (!Pokerogue3DS::calculatePlainAttackAiScore(0, 100, 100, 40, 100, true, composed, 1) ||
+            composed != -20) return 9581; // Secondary benefit cannot revive type immunity.
+        if (!Pokerogue3DS::calculatePlainAttackAiScore(0.5, 100, 100, 40, 100, false, composed, 1) ||
+            composed != 4.25) return 9582;
+    }
     const uint8_t mixedSlots[] = {0, 1};
     const uint32_t mixedDamage[] = {0, 10};
     uint8_t mixedFiltered[4]{}, mixedCount = 0;
