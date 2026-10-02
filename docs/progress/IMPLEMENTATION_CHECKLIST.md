@@ -427,3 +427,8 @@ Los ejemplos describen infraestructura y límites; no son tareas cerradas. Actua
 
 - Envelope v19, captura y restore conservan Sturdy enemigo y de miembros trainer; v18 migra sin tags nuevos. Validación rechaza slots/activo inconsistentes y booleanos inválidos.
 - Regresiones escritas sin ejecutar; estas tareas continúan parciales. Persistencia de bioma/ruta, otros tags y resto de fronteras siguen pendientes.
+
+### Avance SAV-03 / FLU-06: reconstrucción del bioma guardado
+
+- Captura registra arena actual; resolve de checkpoint usa destino canónico sin repetir transición y sin punteros al buffer de entrada.
+- Replay legacy comprueba coincidencia del bioma. Regresiones escritas; no elimina aún gates después de wave 9 ni cierra persistencia completa de ruta/campo.

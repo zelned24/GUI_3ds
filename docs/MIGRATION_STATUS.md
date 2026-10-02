@@ -2154,3 +2154,9 @@
 1. NativeRunSave v19 agrega enemySturdy/memberSturdy; captura y restore conservan tags enemigos y de reservas trainer. Jugadores mantienen actor v11. Setup/dobles/jefes no soportados conservan gates.
 2. Decoder acepta v18 y versiones históricas, migrando tags nuevos a ausentes. Valida booleanos, miembro activo consistente y slots no usados; fallos no publican salida parcial.
 3. Regresiones 10090–10097/10100 de roundtrip, v18 exacto, inconsistencias, campo inválido con checksum válido y restore enemigo escritas. Pruebas/compilación pendientes; wave > 9 y trainers adicionales aún no habilitados.
+
+## Bioma del checkpoint y reconstrucción de arena
+
+1. Captura escribe el biomeId canónico actual, en lugar de conservar el inicial de makeNativeRunSetupSave. IDs inexistentes/demasiado largos fallan antes de publicar salida.
+2. resolve acepta bioma de checkpoint y omite transición de segmento cuando ya se restaura su destino. Referencias quedan ligadas al catálogo, no al buffer del save. Replay legacy debe coincidir con el bioma registrado.
+3. Regresiones 10110–10113 de captura, mismatch y lifetime escritas sin ejecutar. Gates wave > 9/trainer/jefe/dobles permanecen: aún falta reconstrucción completa de sus fronteras y prueba del recorrido.

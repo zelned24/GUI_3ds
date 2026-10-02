@@ -213,7 +213,7 @@ private:
     bool enemyPartyDefeated() const;
     bool weatherBattleSupported() const;
     bool resolveStarterFromDex(uint16_t dex, PokerogueRngAdapter& rng, ResolvedPokemon& output);
-    void resolve(bool carryPlayer = false);
+    void resolve(bool carryPlayer = false, const char* checkpointBiomeId = nullptr);
     bool restoreNativeRunSaveInPlace(const NativeRunSave& save);
     bool grantVictoryExperience(bool pokemonDefeated = true, uint8_t enemyMask = 0);
     void advanceProgressionQueue();

@@ -384,6 +384,11 @@ NativeSaveResult FirstRunRuntime::captureNativeRunSave(NativeRunSave& output) co
         output = {};
         return setupStatus;
     }
+    const auto* checkpointBiome = findBiomeById(m_run.biomeId);
+    if (!checkpointBiome || std::strlen(checkpointBiome->id) >= sizeof(value.biomeId)) {
+        output = {}; return NativeSaveResult::InvalidRecord;
+    }
+    std::snprintf(value.biomeId, sizeof(value.biomeId), "%s", checkpointBiome->id);
     for (uint8_t ball = 0; ball < 5; ++ball) value.pokeballCounts[ball] = m_pokeballs[ball];
     value.starterProfileGeneration = m_starterProfileGeneration;
     if (!m_runStarted && m_context.playerPartyCount > 1) {
@@ -745,7 +750,7 @@ bool FirstRunRuntime::restoreNativeRunSaveInPlace(const NativeRunSave& save) {
         }
         m_context.player = m_context.playerParty[save.activePlayerMember];
         m_run.wave = save.wave;
-        resolve(true);
+        resolve(true, save.biomeId);
         m_participantHistoryResolved = false;
         // Encounter cleanup can reset stages; overlay the explicit checkpoint.
         for (uint8_t member = 0; member < save.playerPartyCount; ++member)
@@ -775,7 +780,7 @@ bool FirstRunRuntime::restoreNativeRunSaveInPlace(const NativeRunSave& save) {
         resolve(true);
         m_participantHistoryResolved = false;
     }
-    if (save.wave != m_run.wave) return false;
+    if (save.wave != m_run.wave || std::strcmp(save.biomeId, m_run.biomeId)) return false;
     if (m_trainerBattle != (save.trainerPartyCount != 0)) return false;
     if (save.trainerPartyCount) {
         if (!m_context.trainerPartyBattleStatesResolved ||
@@ -3882,7 +3887,7 @@ bool FirstRunRuntime::resolveStarterFromDex(uint16_t dex, PokerogueRngAdapter& r
     return true;
 }
 
-void FirstRunRuntime::resolve(bool carryPlayer) {
+void FirstRunRuntime::resolve(bool carryPlayer, const char* checkpointBiomeId) {
     m_participantHistoryResolved = true;
     m_participantCount = 0;
     m_participantIds = {};
@@ -3956,8 +3961,18 @@ void FirstRunRuntime::resolve(bool carryPlayer) {
     const auto& starter = PokerogueContent::kSpecies[m_starterIndex];
     m_run.starterDex = starter.dex;
     m_context.modeName = locale("gameMode:classic", "Classic");
+    // A restored checkpoint already names the destination arena. Do not perform
+    // the segment transition again; bind to owned canonical catalog storage.
+    if (checkpointBiomeId) {
+        const auto* biome = findBiomeById(checkpointBiomeId);
+        if (!biome) {
+            m_battleFeedback = "Checkpoint biome is missing from canonical content";
+            return;
+        }
+        m_run.biomeId = biome->id;
+    }
     // Segment transitions: every 10 waves in Classic, transition to next biome.
-    if (m_run.wave > 1 && (m_run.wave - 1) % 10 == 0) {
+    if (!checkpointBiomeId && m_run.wave > 1 && (m_run.wave - 1) % 10 == 0) {
         const char* nextBiomeId = nullptr;
         const auto transition = resolveClassicNextBiome(m_run.biomeId, m_run.wave, true,
             m_seedCodeUnits.data(), m_seedLength, false, nullptr, nextBiomeId);

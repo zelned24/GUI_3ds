@@ -3255,6 +3255,18 @@ int main() {
             loaded.seed != seed || loaded.playerStatStages[0] != -2 ||
             loaded.enemyStatStages[4] != 3 || loaded.starterProfileGeneration != 17 || !loaded.participantHistoryResolved ||
             loaded.participantCount != 1 || loaded.participantIds[0] != active.participantIds[0]) return 6;
+        if (std::strcmp(loaded.biomeId, game.run().biomeId)) return 10110;
+        // A valid but different biome is not the checkpoint's reconstructed arena.
+        auto mismatchedBiome = loaded;
+        std::strcpy(mismatchedBiome.biomeId, "forest");
+        FirstRunRuntime mismatchedRuntime(seed);
+        if (mismatchedRuntime.restoreNativeRunSave(mismatchedBiome)) return 10111;
+        // Restore binds the arena ID to canonical storage, not the input buffer.
+        auto borrowedCheckpoint = loaded;
+        FirstRunRuntime stableBiome(seed);
+        if (!stableBiome.restoreNativeRunSave(borrowedCheckpoint)) return 10112;
+        borrowedCheckpoint.biomeId[0] = 'x';
+        if (std::strcmp(stableBiome.run().biomeId, loaded.biomeId)) return 10113;
         NativePokemonSave actorSnapshot{};
         const auto& currentActor = game.presentation().player;
         if (!captureNativePokemonSave(currentActor.battleState, currentActor.totalExperience,
