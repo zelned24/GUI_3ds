@@ -2112,3 +2112,9 @@
 1. IgnoreOpponentStatStagesAttr exacto genera perfiles con provenance; admisión exige atributo único, builders conocidos y objetivo simple. Otros registros preservan datos sin admitir composiciones incompletas.
 2. Cálculo defensivo omite DEF/SPDEF stages, precisión omite EVA rival; ATK/SPATK y ACC del usuario permanecen. Basado en Pokemon.getBaseDamage/getStatStageMultiplier/getAccuracyMultiplier pinned.
 3. Regresiones 10030–10035 comparan defensa +6, boost ofensivo, evasión y RNG. Escritas sin ejecutar; tests/compilación/Old 3DS pendientes.
+
+## Sacred Sword y slicing flags
+
+1. Move.slicingMove pinned marca MoveFlags.SLICING_MOVE, consumido por Sharpness. Generador preserva IDs/path/symbol/hash para declarations exactas; builders parametrizados/desconocidos no se admiten.
+2. Sacred Sword 533 queda admitido con IgnoreOpponentStatStagesAttr y slicing conocido en contextos/abilities soportados. Sharpness todavía es capacidad desconocida y se rechaza; Nihil Light no se habilita por este perfil parcial.
+3. Regresiones de bypass DEF/EVA/ATK/ACC incluyen 533 y provenance slicing. Escritas sin ejecutar; tests/compilación/Old 3DS pendientes.

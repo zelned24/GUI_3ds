@@ -1947,8 +1947,14 @@ extern "C" int runPokemonBattleStateChecks() {
         if (actor.sturdy.present) return 10022;
     }
     // IgnoreOpponentStatStagesAttr ignores DEF/EVA, but keeps the user's ATK/ACC.
-    for (const uint16_t id : {uint16_t(498), uint16_t(663)}) {
+    for (const uint16_t id : {uint16_t(498), uint16_t(533), uint16_t(663)}) {
         if (!Pokerogue3DS::pokemonIgnoreOpponentStatStagesMoveResolved(id)) return 10030;
+        if (id == 533) {
+            bool slicing = false;
+            for (const auto& row : PokerogueContent::kMoveSlicingProfiles)
+                if (row.moveId == id) slicing = row.sourcePath && *row.sourcePath && row.sourceHash && *row.sourceHash;
+            if (!slicing) return 10040;
+        }
         auto user = state, target = state;
         user.abilityId = target.abilityId = 65;
         user.status = target.status = {};

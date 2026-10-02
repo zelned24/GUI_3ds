@@ -256,8 +256,10 @@ const statusMoveFlagRows = collections.moves.filter(move => move.category === 'S
   /\b(?:StatusEffectAttr|ConfuseAttr|StatStageChangeAttr|FixedDamageAttr|LevelDamageAttr|TargetHalfHpDamageAttr|RandomLevelDamageAttr|SurviveDamageAttr|IgnoreOpponentStatStagesAttr)\b/.test(move.extensions?.upstreamRawRecord?.value ?? '')).map(move => {
   const raw = move.extensions?.upstreamRawRecord?.value ?? '';
   const calls = [...raw.matchAll(/\.([A-Za-z_$][\w$]*)\s*\(/g)].map(m => m[1]);
-  const known = new Set(['attr', 'target', 'reflectable', 'powderMove', 'soundBased', 'recklessMove']);
-  const resolved = !!raw && calls.every(call => known.has(call));
+  const known = new Set(['attr', 'target', 'reflectable', 'powderMove', 'soundBased', 'recklessMove', 'slicingMove']);
+  const slicingMentions = [...raw.matchAll(/\.slicingMove\s*\(/g)].length;
+  const slicingExact = [...raw.matchAll(/\.slicingMove\s*\(\s*\)/g)].length;
+  const resolved = !!raw && calls.every(call => known.has(call)) && slicingMentions === slicingExact;
   return `    {${move.moveId}, ${resolved}, ${calls.includes('reflectable')}, ${calls.includes('powderMove')}, ${calls.includes('soundBased')}}`;
 }).join(',\n');
 
@@ -1328,7 +1330,18 @@ const ignoreStatStageRows = collections.moves.flatMap(move => {
     throw new Error(`Missing ignore-stat-stage provenance: ${move.id}`);
   return `    {${move.moveId}, "${field(source.sourcePath)}", "${field(source.sourceSymbol)}", "${field(source.sourceHash)}"}`;
 });
-const ignoreStatStageHeader = survivalHeader.replace('struct MoveAttribute {',
+// Preserve the real slicing flag separately; Sharpness behavior remains gated.
+const slicingRows = collections.moves.flatMap(move => {
+  const raw = move.extensions?.upstreamRawRecord?.value ?? '';
+  if (!/\.slicingMove\s*\(\s*\)/.test(raw)) return [];
+  const source = move.source ?? move.metadata;
+  if (!source?.sourcePath || !source?.sourceSymbol || !source?.sourceHash)
+    throw new Error(`Missing slicing provenance: ${move.id}`);
+  return `    {${move.moveId}, "${field(source.sourcePath)}", "${field(source.sourceSymbol)}", "${field(source.sourceHash)}"}`;
+});
+const slicingHeader = survivalHeader.replace('struct MoveAttribute {',
+  `struct MoveSlicingProfile { uint16_t moveId; const char* sourcePath; const char* sourceSymbol; const char* sourceHash; };\ninline constexpr MoveSlicingProfile kMoveSlicingProfiles[] = {\n${slicingRows.join(',\n')}\n};\nstruct MoveAttribute {`);
+const ignoreStatStageHeader = slicingHeader.replace('struct MoveAttribute {',
   `struct MoveIgnoreStatStageProfile { uint16_t moveId; const char* sourcePath; const char* sourceSymbol; const char* sourceHash; };\ninline constexpr MoveIgnoreStatStageProfile kMoveIgnoreStatStageProfiles[] = {\n${ignoreStatStageRows.join(',\n')}\n};\nstruct MoveAttribute {`);
 const surviveMoveHeader = ignoreStatStageHeader.replace('struct MoveAttribute {',
   `struct MoveSurviveDamageProfile { uint16_t moveId; const char* sourcePath; const char* sourceSymbol; const char* sourceHash; };\ninline constexpr MoveSurviveDamageProfile kMoveSurviveDamageProfiles[] = {\n${surviveMoveRows.join(',\n')}\n};\nstruct MoveAttribute {`);
