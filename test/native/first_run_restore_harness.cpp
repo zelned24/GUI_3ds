@@ -472,11 +472,11 @@ static int checkStatusActionAdmission() {
                 emberAfter.enemyHp != repeatedEmberAfter.enemyHp ||
                 emberAfter.enemyStatus.effect != repeatedEmberAfter.enemyStatus.effect ||
                 emberAfter.enemyStatus.present != repeatedEmberAfter.enemyStatus.present) return 9430;
-            // Test-only save injection of real canonical fixed-damage moves.
+            // Test-only save injection of real canonical special-damage moves.
             // Both restores execute the production turn command and shared RNG.
-            for (const uint16_t id : {uint16_t(49), uint16_t(82), uint16_t(69), uint16_t(101), uint16_t(162), uint16_t(717), uint16_t(877), uint16_t(149)}) {
+            for (const uint16_t id : {uint16_t(49), uint16_t(82), uint16_t(69), uint16_t(101), uint16_t(162), uint16_t(717), uint16_t(877), uint16_t(149), uint16_t(206), uint16_t(610)}) {
                 const auto* fixedMove = PokerogueContent::findMoveById(id);
-                if (!fixedMove || !pokemonFixedDamageMoveProfile(id)) return 9870;
+                if (!fixedMove || (!pokemonFixedDamageMoveProfile(id) && !pokemonSurviveDamageMoveResolved(id))) return 9870;
                 auto fixedCheckpoint = checkpoint;
                 fixedCheckpoint.playerMoveIds[0] = fixedCheckpoint.playerParty[0].moveIds[0] = id;
                 fixedCheckpoint.playerPp[0] = fixedCheckpoint.playerParty[0].pp[0] =

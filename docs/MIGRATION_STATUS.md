@@ -2082,3 +2082,9 @@
 1. Perfiles SurviveDamageAttr exactos conservan provenance. Predicción y ejecución limitan daño a HP-1 después del redondeo ordinario; a HP uno resulta cero, sin omitir precisión/crítico/variación RNG.
 2. FirstRunRuntime admite familias simples con contexto/abilities resueltos y añade penalización IA upstream de -20 cuando target.hp <= 1. No amplía variantes múltiples ni modifiers/dobles.
 3. Regresiones 9980–9984 de los dos movimientos, PP, HP uno y consumo RNG escritas, sin ejecutar. Tests/compilación/Azahar/hardware pendientes.
+
+## Composición no letal/Sturdy y restore
+
+1. SurviveDamageAttr valida el estado HP antes de cálculos/RNG; invalid HP no consume tiradas.
+2. Regresiones 9990–9991 comprueban False Swipe contra Sturdy: límite HP-1 precede callback full-HP, sin activar ni consumir tag de supervivencia.
+3. Replay de FirstRunRuntime incluye 206/610 además de familias de daño fijo. Casos escritos sin ejecutar; tests/compilación/Classic completo pendientes.

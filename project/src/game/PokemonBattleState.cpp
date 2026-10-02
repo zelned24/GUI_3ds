@@ -1636,7 +1636,7 @@ PokemonDamageCoreResult calculatePokemonDamageCore(
     const auto* move = PokerogueContent::findMoveById(moveId);
     if (!move) return PokemonDamageCoreResult::MissingMove;
     const auto* fixedDamage = pokemonFixedDamageMoveProfile(moveId);
-    if (fixedDamage && fixedDamage->targetHalfHp &&
+    if (((fixedDamage && fixedDamage->targetHalfHp) || pokemonSurviveDamageMoveResolved(moveId)) &&
         (!defender.maxHp || defender.hp > defender.maxHp)) return PokemonDamageCoreResult::InvalidStats;
     if (move->category == PokerogueContent::MoveStatus || (move->power <= 0 && !fixedDamage)) {
         return PokemonDamageCoreResult::NonDamagingMove;
@@ -1808,7 +1808,7 @@ PokemonMoveDamageResult resolveStandardPokemonMoveDamage(
     const auto* move = PokerogueContent::findMoveById(moveId);
     if (!move) return PokemonMoveDamageResult::MissingMove;
     const auto* fixedDamage = pokemonFixedDamageMoveProfile(moveId);
-    if (fixedDamage && fixedDamage->targetHalfHp &&
+    if (((fixedDamage && fixedDamage->targetHalfHp) || pokemonSurviveDamageMoveResolved(moveId)) &&
         (!defender.maxHp || defender.hp > defender.maxHp)) return PokemonMoveDamageResult::InvalidStats;
     if (move->category == PokerogueContent::MoveStatus || (move->power <= 0 && !fixedDamage)) {
         return PokemonMoveDamageResult::NonDamagingMove;

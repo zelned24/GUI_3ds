@@ -1847,6 +1847,28 @@ extern "C" int runPokemonBattleStateChecks() {
             event.targetFainted || user.moves[0].pp != 38 ||
             rng.randSeedUint32() != expected.randSeedUint32()) return 9984;
     }
+    // Nonlethal modifier precedes Sturdy: it never adds a survival tag itself.
+    {
+        auto user = state, target = state;
+        user.abilityId = 65;
+        target.abilityId = 5;
+        user.status = target.status = {};
+        user.moveCount = 1;
+        user.moves[0] = {206, 40, 40};
+        target.maxHp = target.hp = 2;
+        auto rng = damageRng;
+        PokemonMoveActionResult event{};
+        if (Pokerogue3DS::useStandardPokemonMove(user, target, 0, false, rng, event) !=
+                PokemonMoveActionStatus::Ok || target.hp != 1 || event.sturdySurvived ||
+            target.sturdy.present || event.damageApplied != 1) return 9990;
+        auto invalid = target;
+        invalid.hp = invalid.maxHp + 1;
+        auto before = rng;
+        PokemonMoveDamageRoll roll{};
+        if (Pokerogue3DS::resolveStandardPokemonMoveDamage(user, invalid, 206, false, rng, roll) !=
+                PokemonMoveDamageResult::InvalidStats ||
+            rng.randSeedUint32() != before.randSeedUint32()) return 9991;
+    }
     // TargetHalfHpDamageAttr: floor, minimum one, no ordinary damage modifiers.
     for (const uint16_t id : {uint16_t(162), uint16_t(717), uint16_t(877)}) {
         const auto* profile = Pokerogue3DS::pokemonFixedDamageMoveProfile(id);
