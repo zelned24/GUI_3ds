@@ -2612,10 +2612,6 @@ bool FirstRunRuntime::executeActiveBattleMove(uint8_t userIndex, uint8_t targetI
             return false;
         }
         ResolvedPokemon* resolvedActors[] = {&m_context.player, &m_context.enemy, &m_context.secondEnemy};
-        if (resolvedActors[userIndex]->bossState.segmentCount) {
-            m_battleFeedback = "Confusion boss damage requires dispatcher";
-            return false;
-        }
         uint32_t attack = 0, defense = 0;
         if (!pokemonBaselineEffectiveStat(user, 1, false, attack) ||
             !pokemonBaselineEffectiveStat(user, 2, false, defense)) return false;
@@ -2624,7 +2620,16 @@ bool FirstRunRuntime::executeActiveBattleMove(uint8_t userIndex, uint8_t targetI
         confusionPolicy.effectiveAttack = attack;
         confusionPolicy.effectiveDefense = defense;
         PokemonConfusionMoveEvent confusionEvent{};
-        if (!checkPokemonConfusionBeforeMove(user, user.confusion, confusionPolicy, rng, confusionEvent)) return false;
+        auto& userBoss = resolvedActors[userIndex]->bossState;
+        if (userBoss.segmentCount) {
+            PokemonBossDamageEvent bossEvent{};
+            if (m_run.wave == PokerogueContent::kClassicFinalWave ||
+                !checkPokemonBossConfusionBeforeMove(user, user.confusion, userBoss, confusionPolicy,
+                    rng, m_globalRng, confusionEvent, bossEvent)) {
+                m_battleFeedback = "Confusion boss callbacks require dispatcher";
+                return false;
+            }
+        } else if (!checkPokemonConfusionBeforeMove(user, user.confusion, confusionPolicy, rng, confusionEvent)) return false;
         if (confusionEvent.moveCancelled) {
             m_battleFeedback = "Confusion prevented the move";
             return true;

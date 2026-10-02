@@ -2081,6 +2081,63 @@ extern "C" int runPokemonBattleStateChecks() {
         if (before.carry != after.carry || before.s0 != after.s0 || before.s1 != after.s1 || before.s2 != after.s2)
             return 10175;
     }
+    // Confusion uses actor RNG; shield boosts use the separate global stream.
+    {
+        bool found = false;
+        for (uint16_t seed = 1; seed <= 64 && !found; ++seed) {
+            auto actor = state;
+            actor.abilityId = 0;
+            actor.level = 100;
+            actor.maxHp = 160;
+            actor.hp = 90;
+            actor.status = {};
+            actor.sturdy = {};
+            actor.confusion = {3, true};
+            Pokerogue3DS::PokemonBossState boss{2, 1, false, false};
+            const Pokerogue3DS::PokemonConfusionMovePolicy policy{true, 100, 100};
+            Pokerogue3DS::PokerogueRngAdapter actorRng, globalRng;
+            const uint16_t root[] = {'c', 'o', 'n', 'f', seed};
+            actorRng.sow(root, 5);
+            globalRng.sow(root, 5);
+            auto expected = actor;
+            auto expectedActorRng = actorRng, expectedGlobalRng = globalRng;
+            auto expectedBoss = boss;
+            Pokerogue3DS::PokemonConfusionMoveEvent expectedEvent{}, event{};
+            if (!Pokerogue3DS::checkPokemonConfusionBeforeMove(expected, expected.confusion, policy,
+                expectedActorRng, expectedEvent)) return 10180;
+            if (!expectedEvent.hurtItself) continue;
+            found = true;
+            expected.hp = actor.hp;
+            Pokerogue3DS::PokemonBossDamageEvent expectedDamage{}, damage{};
+            const Pokerogue3DS::PokemonBossDamagePolicy damagePolicy{true, true, false};
+            if (!Pokerogue3DS::applyPokemonBossDamage(expected, expectedBoss, expectedEvent.requestedDamage,
+                    damagePolicy, expectedGlobalRng, expectedDamage) ||
+                !Pokerogue3DS::checkPokemonBossConfusionBeforeMove(actor, actor.confusion, boss, policy,
+                    actorRng, globalRng, event, damage) || actor.hp != expected.hp ||
+                actor.confusion.turns != expected.confusion.turns || boss.segmentIndex != expectedBoss.segmentIndex ||
+                !event.moveCancelled || event.hpLost != expectedDamage.damageApplied) return 10181;
+            const auto a = actorRng.state(), b = expectedActorRng.state();
+            const auto c = globalRng.state(), d = expectedGlobalRng.state();
+            if (a.carry != b.carry || a.s0 != b.s0 || a.s1 != b.s1 || a.s2 != b.s2 ||
+                c.carry != d.carry || c.s0 != d.s0 || c.s1 != d.s1 || c.s2 != d.s2) return 10182;
+            for (uint8_t i = 0; i < actor.moveCount; ++i)
+                if (actor.moves[i].pp != state.moves[i].pp) return 10183;
+            actor.hp = 90;
+            actor.confusion = {3, true};
+            actor.abilityId = 65535;
+            actorRng.sow(root, 5);
+            globalRng.sow(root, 5);
+            const auto beforeActor = actorRng.state(), beforeGlobal = globalRng.state();
+            if (Pokerogue3DS::checkPokemonBossConfusionBeforeMove(actor, actor.confusion, boss, policy,
+                    actorRng, globalRng, event, damage) || actor.hp != 90 || actor.confusion.turns != 3) return 10184;
+            const auto afterActor = actorRng.state(), afterGlobal = globalRng.state();
+            if (beforeActor.carry != afterActor.carry || beforeActor.s0 != afterActor.s0 ||
+                beforeActor.s1 != afterActor.s1 || beforeActor.s2 != afterActor.s2 ||
+                beforeGlobal.carry != afterGlobal.carry || beforeGlobal.s0 != afterGlobal.s0 ||
+                beforeGlobal.s1 != afterGlobal.s1 || beforeGlobal.s2 != afterGlobal.s2) return 10185;
+        }
+        if (!found) return 10186;
+    }
     // Sharpness modifies slicing power before the base formula's additive two.
     {
         auto user = state, target = state;

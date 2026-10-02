@@ -2319,6 +2319,39 @@ bool applyPokemonBossDamage(PokemonBattleState& boss, PokemonBossState& state,
     return true;
 }
 
+bool checkPokemonBossConfusionBeforeMove(PokemonBattleState& actor, PokemonConfusionTagState& tag,
+    PokemonBossState& boss, const PokemonConfusionMovePolicy& policy,
+    PokerogueRngAdapter& actorRng, PokerogueRngAdapter& globalRng,
+    PokemonConfusionMoveEvent& output, PokemonBossDamageEvent& bossOutput) {
+    if (!boss.segmentCount || boss.segmentIndex >= boss.segmentCount ||
+        boss.classicFinalBossFirstPhase || actor.sturdy.present || &actorRng == &globalRng) return false;
+    auto nextActor = actor;
+    auto nextTag = tag;
+    auto nextBoss = boss;
+    auto nextActorRng = actorRng;
+    auto nextGlobalRng = globalRng;
+    PokemonConfusionMoveEvent event{};
+    PokemonBossDamageEvent damageEvent{};
+    if (!checkPokemonConfusionBeforeMove(nextActor, nextTag, policy, nextActorRng, event)) return false;
+    if (event.hurtItself) {
+        const auto* ability = PokerogueContent::findAbilityMovegenProfile(actor.abilityId);
+        if (!ability || !ability->bossDamageCallbacksResolved) return false;
+        nextActor.hp = actor.hp;
+        const PokemonBossDamagePolicy damagePolicy{true, true, false};
+        if (!applyPokemonBossDamage(nextActor, nextBoss, event.requestedDamage, damagePolicy,
+            nextGlobalRng, damageEvent)) return false;
+        event.hpLost = damageEvent.damageApplied;
+    }
+    actor = nextActor;
+    tag = nextTag;
+    boss = nextBoss;
+    actorRng = nextActorRng;
+    globalRng = nextGlobalRng;
+    output = event;
+    bossOutput = damageEvent;
+    return true;
+}
+
 PokemonStatusResidualResult applyPokemonBossStatusResidual(PokemonBattleState& actor,
     PokemonBossState& boss, const PokemonStatusResidualPolicy& policy,
     PokerogueRngAdapter& globalRng, PokemonStatusResidualEvent& output,

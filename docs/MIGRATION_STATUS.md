@@ -2191,3 +2191,9 @@
 1. Pinned PostTurnStatusEffectPhase usa pokemon.damage(damage, false, true): segmentos activos y preventEndure. Nuevo compositor reutiliza residual/status tick y applyPokemonBossDamage, publicando actor/boss/global RNG/eventos juntos.
 2. finishBattleTurn conecta esta ruta para jefe enemigo single fuera de wave final. Callbacks desconocidos y requested damage fuera de uint32 se rechazan sin mutación; Sturdy existente no se consume. Final phase/dobles permanecen gated.
 3. Regresiones 10170–10175 contrastan daño/segmentos/stages/RNG con resolver boss, KO residual ignorando Sturdy y rechazo sin mutación. Escritas, no ejecutadas; no declara todos los status/callbacks ni final Classic.
+
+## Confusión de jefe normal y escudos
+
+1. Pinned ConfusedTag.lapse calcula autogolpe y llama damageAndUpdate sin saltar segmentos. Nuevo compositor reutiliza checkPokemonConfusionBeforeMove y boss damage con streams separados (actor para activación/variación; global para boosts).
+2. executeActiveBattleMove conecta la ruta en jefes normales con callbacks resueltos; actualiza tag/HP/escudos/stages/RNG juntos y mantiene cancelación/PP. Sturdy existente, final phase y otras restricciones actuales permanecen gated.
+3. Regresiones 10180–10186 de autogolpe/segmentos/streams/PP y rollback ante ability desconocida escritas, no ejecutadas. No declara confusión universal ni dobles completos.

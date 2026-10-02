@@ -457,3 +457,8 @@ Los ejemplos describen infraestructura y límites; no son tareas cerradas. Actua
 
 - Jefes normales singles conectan poison/toxic/burn al dispatcher existente de segmentos con preventEndure. HP/stages/status/shields/RNG se publican conjuntamente.
 - Callbacks desconocidos, rangos no representables, dobles y fase final siguen protegidos. Regresiones escritas; validación ejecutada pendiente.
+
+### Avance TUR-03 / HP-02: confusión del jefe
+
+- Comando del jefe normal conecta autogolpe a escudos y conserva RNG actor/global, cancelación y PP. Rechazo tardío no publica mutaciones.
+- Sturdy combinado con escudos, fase final y dobles siguen pendientes. Regresiones escritas, ejecución aplazada.

@@ -1620,6 +1620,13 @@ bool applyPokemonBossDamage(PokemonBattleState& boss, PokemonBossState& state,
     uint32_t damage, const PokemonBossDamagePolicy& policy, PokerogueRngAdapter& rng,
     PokemonBossDamageEvent& output);
 
+// ConfusedTag.damageAndUpdate uses the normal boss shield path. Survive tags
+// and the final transformation require separate dispatch capabilities.
+bool checkPokemonBossConfusionBeforeMove(PokemonBattleState& actor, PokemonConfusionTagState& tag,
+    PokemonBossState& boss, const PokemonConfusionMovePolicy& policy,
+    PokerogueRngAdapter& actorRng, PokerogueRngAdapter& globalRng,
+    PokemonConfusionMoveEvent& output, PokemonBossDamageEvent& bossOutput);
+
 // PostTurnStatusEffectPhase routes poison/toxic/burn through EnemyPokemon.damage
 // with ignoreSegments=false and preventEndure=true. Final-boss phase changes
 // remain a caller capability, rather than being inferred from a residual hit.
