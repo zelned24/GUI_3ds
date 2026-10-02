@@ -35,7 +35,7 @@ Estos son criterios de cierre, no cantidades de ataques o habilidades pendientes
 | Validación y entrega final | 12 |
 | **Total** | **129** |
 
-Prioridad inmediata: completar contextos/replay de Sharpness (**HAB-03**), ampliar efectos y contextos de combate, y eliminar las restricciones de progresión/restauración que impiden Classic completo (**FLU-05 / SAV-03**). Daño fijo ya tiene rutas de selección, comando y predicción, pendientes de validación. Los tests escritos permanecen sin ejecutar.
+Prioridad inmediata: completar contextos/replay de Sharpness (**HAB-03**), ampliar efectos y contextos de combate, y completar persistencia de bosses/dobles/trainers que impide Classic completo (**FLU-05 / SAV-03**). Daño fijo ya tiene rutas de selección, comando y predicción, pendientes de validación. Los tests escritos permanecen sin ejecutar.
 
 ## Estado consolidado para seguimiento
 
@@ -50,7 +50,7 @@ Esta tabla describe código inspeccionado, no resultados de ejecución. Las nota
 | HAB-04 / HP-03 / CAM-03 | Sturdy: tag, daño ordinario/fijo e indirecto, lapse e interludio | Jefes, otras supervivencias, pasivas/supresión y demás estados de guardado |
 | HAB-01–10 / MOV-01–13 | Familias parciales y gates explícitos | Cobertura de todas las habilidades/movimientos del snapshot; no basta importar metadata |
 | HP-01–08 | HP/PP/status, daño/curación, EXP y casos de límites | Composición completa, segmentos, faint simultáneo, persistencia y feedback visual |
-| FLU-05 / SAV-03 | Progresión y restore limitados | Rutas con equipo explícito/restauración contienen gates de wave > 9; Classic 1–200 no está cerrado |
+| FLU-05 / SAV-03 | Progresión y restore limitados | Wild singles posteriores usan actores explícitos/bioma; boss/dobles/trainers y recorrido completo pendientes |
 | GUI-01–12 / AST-01–08 | Presentación nativa, índices y assets convertidos parciales | Todas las pantallas, HUD HP/PP/EXP, animación/audio, controles y comparación visual |
 | SAV-01–08 | Codecs, journals y bundles | Todos los estados de run/perfil, export/import conectado a UI y compatibilidad de contenido |
 | OTA-01–08 | Infraestructura de packs | Catálogo de gameplay cargable, firma, descarga e instalación desde consola |
@@ -432,3 +432,8 @@ Los ejemplos describen infraestructura y límites; no son tareas cerradas. Actua
 
 - Captura registra arena actual; resolve de checkpoint usa destino canónico sin repetir transición y sin punteros al buffer de entrada.
 - Replay legacy comprueba coincidencia del bioma. Regresiones escritas; no elimina aún gates después de wave 9 ni cierra persistencia completa de ruta/campo.
+
+### Avance SAV-03 / FLU-05: wild singles posteriores
+
+- Captura fuerza equipo explícito después de wave 9; restauración usa bioma del checkpoint, sin replay ficticio de rewards/evoluciones. Legacy posterior sin actores rechazado.
+- Segmentos boss, dobles y trainers adicionales aún no representados. Caso wave 11 escrito, pero su recorrido depende del save del jefe de wave 10 pendiente; no es evidencia ejecutada.

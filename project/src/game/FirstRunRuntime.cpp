@@ -368,10 +368,10 @@ NativeSaveResult FirstRunRuntime::captureNativeRunSave(NativeRunSave& output) co
     std::unique_ptr<NativeRunSave> valueStorage(new (std::nothrow) NativeRunSave{});
     if (!valueStorage) { output = {}; return NativeSaveResult::MemoryUnavailable; }
     auto& value = *valueStorage;
-    // v9 preserves ball inventory; doubles, captured party and later trainer history remain unsupported.
+    // Singles preserve explicit player state; boss segments, doubles and later trainer history remain unsupported.
     // Never report a setup checkpoint as a successful save of an active double battle.
     if (m_capturePartyChoicePending || m_context.enemy.bossState.segmentCount || m_doubleBattle || m_pokeballs[5] ||
-        m_run.wave > 9 || (m_trainerBattle && m_run.wave != 5)) {
+        (m_trainerBattle && m_run.wave != 5)) {
         output = {};
         return NativeSaveResult::UnsupportedStage;
     }
@@ -484,7 +484,7 @@ NativeSaveResult FirstRunRuntime::captureNativeRunSave(NativeRunSave& output) co
         hasSummonTags |= m_context.playerParty[member].battleState.heldItemLostTags.unburden ||
             m_context.playerParty[member].battleState.sturdy.present;
     if (value.stage != NativeSaveStage::RunSetup &&
-        (m_context.playerPartyCount > 1 || m_playerHistoryRequiresSnapshot || m_heldModifierCount || value.playerStatus.present || value.playerConfusion.present || hasSummonTags || hasChangedFriendship || hasModifiedMaxPp)) {
+        (m_run.wave > 9 || m_context.playerPartyCount > 1 || m_playerHistoryRequiresSnapshot || m_heldModifierCount || value.playerStatus.present || value.playerConfusion.present || hasSummonTags || hasChangedFriendship || hasModifiedMaxPp)) {
         if (m_context.playerPartyCount > 6 ||
             m_context.activePlayerPartyIndex >= m_context.playerPartyCount) { output = {}; return NativeSaveResult::InvalidRecord; }
         value.playerPartyCount = m_context.playerPartyCount;
@@ -717,6 +717,8 @@ bool FirstRunRuntime::restoreNativeRunSaveInPlace(const NativeRunSave& save) {
         save.stage > NativeSaveStage::ExperienceGranted) return false;
     // Wave five is currently the only complete deterministic trainer party.
     if (save.trainerPartyCount && save.wave != 5) return false;
+    // Legacy snapshots cannot reconstruct later evolution/reward/route history.
+    if (save.wave > 9 && !save.playerPartyCount) return false;
     if (!restoreSetupInPlace(save.seed, save.starterDex)) return false;
     m_participantHistoryResolved = false; // Seed replay is the legacy single-starter path.
     // A skipped reward adds no modifier or party member. Replay each earlier
@@ -724,9 +726,8 @@ bool FirstRunRuntime::restoreNativeRunSaveInPlace(const NativeRunSave& save) {
     // saved HP and PP are overlaid only after the target encounter is rebuilt.
     if (save.playerPartyCount) {
         m_playerHistoryRequiresSnapshot = true;
-        // Explicit party state replaces reward/capture replay. The currently
-        // supported frontier has no biome transition or persisted modifiers.
-        if (save.wave > 9 || std::strcmp(save.biomeId, PokerogueContent::kStartingBiomeId)) return false;
+        // Explicit actors and the destination biome replace reward/route replay.
+        // Encounter identity is still checked against deterministic reconstruction.
         m_context.playerPartyCount = save.playerPartyCount;
         m_context.activePlayerPartyIndex = save.activePlayerMember;
         for (uint8_t member = 0; member < save.playerPartyCount; ++member) {
@@ -822,7 +823,8 @@ bool FirstRunRuntime::restoreNativeRunSaveInPlace(const NativeRunSave& save) {
     if (save.playerLevel != m_context.player.level ||
         save.playerExperience != m_context.player.totalExperience) return false;
     if (save.stage == NativeSaveStage::RunSetup) return save.wave == 1;
-    if (!m_encounterResolved || m_doubleBattle || save.encounterDex != reconstructedEnemy.dex ||
+    if (!m_encounterResolved || m_doubleBattle || reconstructedEnemy.bossState.segmentCount ||
+        save.encounterDex != reconstructedEnemy.dex ||
         !save.battleTurn || !save.playerMoveCount || save.playerMoveCount > 4 ||
         !save.enemyMoveCount || save.enemyMoveCount > 4 ||
         save.playerMoveCount != m_context.player.battleState.moveCount ||

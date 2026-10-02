@@ -1149,6 +1149,30 @@ static int checkBiomeTransitionProgression() {
         if (game.run().wave != 11) return 83;
         if (std::strcmp(game.run().biomeId, "town") == 0) return 84;
         if (!game.presentation().biomeName || !*game.presentation().biomeName) return 85;
+        NativeRunSave laterCheckpoint{};
+        const auto captured = game.captureNativeRunSave(laterCheckpoint);
+        // This gate covers wild singles, not every random wave-11 encounter.
+        if (captured == NativeSaveResult::UnsupportedStage) continue;
+        if (captured != NativeSaveResult::Ok || laterCheckpoint.wave != 11 ||
+            !laterCheckpoint.playerPartyCount || std::strcmp(laterCheckpoint.biomeId, game.run().biomeId)) return 10120;
+        FirstRunRuntime laterRestore(seed), laterReplay(seed);
+        NativeRunSave recaptured{}, replayCaptured{};
+        if (!laterRestore.restoreNativeRunSave(laterCheckpoint) || !laterReplay.restoreNativeRunSave(laterCheckpoint) ||
+            laterRestore.captureNativeRunSave(recaptured) != NativeSaveResult::Ok ||
+            laterReplay.captureNativeRunSave(replayCaptured) != NativeSaveResult::Ok ||
+            recaptured.wave != 11 || recaptured.encounterDex != laterCheckpoint.encounterDex ||
+            std::strcmp(recaptured.biomeId, laterCheckpoint.biomeId) ||
+            recaptured.playerHp != laterCheckpoint.playerHp || recaptured.enemyHp != laterCheckpoint.enemyHp ||
+            recaptured.playerParty[0].pokemonId != laterCheckpoint.playerParty[0].pokemonId ||
+            recaptured.playerHp != replayCaptured.playerHp || recaptured.enemyHp != replayCaptured.enemyHp) return 10121;
+        const auto a = laterRestore.battleRng().state(), b = laterReplay.battleRng().state();
+        if (a.carry != b.carry || a.s0 != b.s0 || a.s1 != b.s1 || a.s2 != b.s2) return 10122;
+        auto legacyLater = laterCheckpoint;
+        legacyLater.playerPartyCount = 0;
+        legacyLater.activePlayerMember = 0xff;
+        for (auto& member : legacyLater.playerParty) member = {};
+        FirstRunRuntime rejectedLegacy(seed);
+        if (rejectedLegacy.restoreNativeRunSave(legacyLater)) return 10123;
         return 0;
     }
     return 86;
@@ -3258,6 +3282,10 @@ int main() {
         if (std::strcmp(loaded.biomeId, game.run().biomeId)) return 10110;
         // A valid but different biome is not the checkpoint's reconstructed arena.
         auto mismatchedBiome = loaded;
+        // Exercise legacy seed replay: explicit actors intentionally use the saved arena.
+        mismatchedBiome.playerPartyCount = 0;
+        mismatchedBiome.activePlayerMember = 0xff;
+        for (auto& member : mismatchedBiome.playerParty) member = {};
         std::strcpy(mismatchedBiome.biomeId, "forest");
         FirstRunRuntime mismatchedRuntime(seed);
         if (mismatchedRuntime.restoreNativeRunSave(mismatchedBiome)) return 10111;

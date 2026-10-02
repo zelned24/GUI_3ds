@@ -2160,3 +2160,9 @@
 1. Captura escribe el biomeId canónico actual, en lugar de conservar el inicial de makeNativeRunSetupSave. IDs inexistentes/demasiado largos fallan antes de publicar salida.
 2. resolve acepta bioma de checkpoint y omite transición de segmento cuando ya se restaura su destino. Referencias quedan ligadas al catálogo, no al buffer del save. Replay legacy debe coincidir con el bioma registrado.
 3. Regresiones 10110–10113 de captura, mismatch y lifetime escritas sin ejecutar. Gates wave > 9/trainer/jefe/dobles permanecen: aún falta reconstrucción completa de sus fronteras y prueba del recorrido.
+
+## Checkpoints posteriores a wave 9: wild singles
+
+1. Capture deja de rechazar toda wave posterior: fuerza equipo explícito y registra arena actual. Restore reconstruye desde actores y bioma guardados, valida encounter/moves/HP y restaura campo/turno; legacy sin actores posteriores sigue rechazado.
+2. Dobles, segmentos de jefe y entrenadores diferentes de wave 5 siguen fuera de fronteras de save soportadas. Restore ahora rechaza explícitamente boss segments no representados, igual que capture; no presupone reconstrucción de HP/escudos por seed.
+3. Regresión 10120–10123 de wave 11 agregada a recorrido de transición existente, sin ejecutar. Ese recorrido depende de checkpoint de wave 10 con jefe todavía pendiente: no demuestra paso end-to-end ni Classic completo. Pruebas/build aplazados.
