@@ -1847,3 +1847,9 @@
 1. Pinned src/data/abilities/ab-attrs.ts StatStageChangeMultiplierAbAttr.apply multiplica numStages; declaraciones reales de Simple/Contrary usan 2/-1. StatusActionAbilityProfile admite únicamente esas declaraciones constantes completas, preservando rechazo de parámetros o builders desconocidos.
 2. FirstRunRuntime reutiliza su proveedor de estadísticas y el compositor de habilidades existentes. No introduce multiplicador directo de ATK/DEF ni cambia chance: la habilidad modifica el evento de etapas. Otros contextos de daño y callbacks siguen sujetos a sus gates propios.
 3. Regresiones reales Agility con Simple +4 y Contrary -2, perfil generado y PP escritas sin ejecutar. Contenido regenerado, hash canónico intacto; tests/compilación y Classic completo pendientes.
+
+## Mirror Armor y Opportunist en acciones de estadísticas
+
+1. Perfiles de capacidad admiten las declaraciones exactas sin parámetros ReflectStatStageChangeAbAttr y StatStageChangeCopyAbAttr, ya representadas en tablas/reacciones nativas. Builders, argumentos y múltiples callbacks desconocidos se rechazan.
+2. Proveedor de estadísticas exige capacidad resuelta para ambos actores incluso en USER: ausencia de AbilityStatStageProfile ya no equivale silenciosamente a habilidad neutra desconocida. Mirror Armor/Opportunist usan el dispatcher compartido existente; el resto del daño sigue sujeto a sus resolvers propios.
+3. Regresiones de perfiles reales escritas junto con regresiones existentes de reflexión/copia. Contenido regenerado sin cambiar hash canónico; tests/compilación y Classic completo siguen pendientes.

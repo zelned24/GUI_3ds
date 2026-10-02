@@ -1146,6 +1146,10 @@ bool FirstRunRuntime::resolveActiveStatStageCommandPolicy(const PokemonBattleSta
         if (row.moveId == moveId) { if (effect) return false; effect = &row; }
     if (!effect) return false;
     const bool self = effect->selfTarget;
+    // A missing stage profile is neutral only after the complete action
+    // capability was resolved. Unknown callbacks must not disappear for USER.
+    if (!statusActionAbilitySupported(user.abilityId) ||
+        !statusActionAbilitySupported(opponent.abilityId)) return false;
     PokemonStatStageCommandPolicy policy{};
     // Negative chance is the pinned guaranteed-effect sentinel; multiplier
     // and IgnoreMoveEffects callbacks leave it unchanged. Nonnegative chances

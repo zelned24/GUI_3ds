@@ -33,6 +33,7 @@ const statusActionAbilityRows = collections.abilities.map(ability => {
   const known = new Set(['IncreasePpUsedAbAttr', 'LowHpMoveTypePowerBoostAbAttr',
     'SyncEncounterNatureAbAttr', 'SynchronizeStatusAbAttr', 'RunSuccessAbAttr',
     'ProtectStatAbAttr', 'IgnoreOpponentStatStagesAbAttr', 'StatStageChangeMultiplierAbAttr',
+    'ReflectStatStageChangeAbAttr', 'StatStageChangeCopyAbAttr',
     'MoveEffectChanceMultiplierAbAttr', 'IgnoreMoveEffectsAbAttr',
     'StatusEffectImmunityAbAttr', 'PostSummonHealStatusAbAttr', 'BattlerTagImmunityAbAttr',
     'PostSummonRemoveBattlerTagAbAttr', 'IntimidateImmunityAbAttr', 'ConfusionOnStatusEffectAbAttr']);
@@ -52,10 +53,15 @@ const statusActionAbilityRows = collections.abilities.map(ability => {
   const stageMultipliers = [...raw.matchAll(/\.attr\s*\(\s*StatStageChangeMultiplierAbAttr\s*,\s*(-?\d+)\s*\)/g)];
   const stageMultipliersResolved = stageMultiplierMentions === stageMultipliers.length &&
     stageMultipliers.length <= 1 && stageMultipliers.every(m => [-1, 2].includes(Number(m[1])));
+  const simpleStageCallbacksResolved = ['ReflectStatStageChangeAbAttr', 'StatStageChangeCopyAbAttr'].every(name => {
+    const mentions = [...raw.matchAll(new RegExp(`\\b${name}\\b`, 'g'))].length;
+    const declarations = [...raw.matchAll(new RegExp(`\\.attr\\s*\\(\\s*${name}\\s*\\)`, 'g'))].length;
+    return mentions === declarations && declarations <= 1;
+  });
   const resolved = !!raw && /new AbBuilder\(/.test(raw) && attrCalls === attrs.length &&
     calls.every(c => builders.has(c)) && attrs.every(a => known.has(a)) && ignoreMentions === ignoreDeclarations &&
     chanceMentions === chanceDeclarations.length && chanceDeclarations.length <= 1 && Number.isFinite(chanceMultiplier) &&
-    ignoreEffectMentions === ignoreEffectDeclarations && removalMentions === removalDeclarations && stageMultipliersResolved;
+    ignoreEffectMentions === ignoreEffectDeclarations && removalMentions === removalDeclarations && stageMultipliersResolved && simpleStageCallbacksResolved;
   return `    {${ability.abilityId}, ${resolved}, false, ${ignoreDeclarations > 0}, ${chanceMultiplier}, ${ignoreEffectDeclarations > 0}}`;
 }).join(',\n');
 

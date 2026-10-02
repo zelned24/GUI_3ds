@@ -932,6 +932,16 @@ extern "C" int runPokemonBattleStateChecks() {
                 multiplierUser.moves[0].pp != 29) return 9633;
         }
     }
+    {
+        for (const uint16_t ability : {uint16_t(240), uint16_t(290)}) {
+            bool resolved = false;
+            for (const auto& profile : PokerogueContent::kStatusActionAbilityProfiles)
+                if (profile.abilityId == ability) resolved = profile.resolved;
+            const auto* stages = PokerogueContent::findAbilityStatStageProfile(ability);
+            if (!resolved || !stages || stages->reflectDrops != (ability == 240) ||
+                stages->copiesRaises != (ability == 290)) return 9640;
+        }
+    }
     const uint8_t mixedSlots[] = {0, 1};
     const uint32_t mixedDamage[] = {0, 10};
     uint8_t mixedFiltered[4]{}, mixedCount = 0;
