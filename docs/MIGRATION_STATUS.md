@@ -1876,3 +1876,9 @@
 1. Regresión Agility con usuario en SPD +6 y oponente Opportunist comprueba copia del aumento solicitado +2 aunque el cambio aplicado al usuario sea cero, según triggerReactionAbilities del pinned StatStageChangePhase. No consume RNG de precisión/chance garantizada; PP se consume una sola vez.
 2. Regresión de callback de copia pendiente exige rollback de PP/etapas/RNG/output después de la fase original tentativa. Esto cubre el dispatcher completo además de las pruebas aisladas de copia existentes; permanece sin ejecutar.
 3. Feedback runtime distingue inmunidad de tipo de bloqueo por habilidad y miss en comandos de estadísticas, consumiendo el evento ya emitido. Tests/compilación y jugabilidad Classic completa siguen pendientes.
+
+## Rollback de Mirror Armor y coherencia de fixtures
+
+1. Regresión del comando Screech/Mirror Armor con política de reflexión pendiente exige rollback de PP/etapas/RNG/output tras la fase original. Mantiene la prueba existente de reflexión DEF -2 en el atacante.
+2. Revisión estática encontró aiUser/clearUser de estas regresiones con PP positivos y maxPp cero por inicialización incompleta. Se asignaron máximos de Screech/Tackle/Tail Whip a los fixtures, sin modificar asserts ni la validación de producción. No hay resultado de ejecución todavía.
+3. Tests/compilación siguen aplazados; estos casos se ejecutarán en la etapa final junto con los demás gates. Classic completo continúa pendiente.

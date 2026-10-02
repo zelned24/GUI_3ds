@@ -181,8 +181,8 @@ extern "C" int runPokemonBattleStateChecks() {
     PokemonBattleState aiUser{}, aiOpponent{};
     aiUser.hp = aiUser.maxHp = 100; aiOpponent.hp = aiOpponent.maxHp = 100;
     aiUser.moveCount = 2;
-    aiUser.moves[0].moveId = 103; aiUser.moves[0].pp = 40; // Screech (DEF -2)
-    aiUser.moves[1].moveId = 33;  aiUser.moves[1].pp = 35; // Tackle (Physical move required to value DEF drops)
+    aiUser.moves[0].moveId = 103; aiUser.moves[0].pp = aiUser.moves[0].maxPp = 40; // Screech (DEF -2)
+    aiUser.moves[1].moveId = 33;  aiUser.moves[1].pp = aiUser.moves[1].maxPp = 35; // Tackle (Physical move required to value DEF drops)
     if (!Pokerogue3DS::calculateCanonicalStatStageStatusAiScore(aiUser, aiOpponent, 103, aiScore) || aiScore <= 0.0)
         return 442;
 
@@ -212,7 +212,7 @@ extern "C" int runPokemonBattleStateChecks() {
         soundTarget.statStages[0] != 0 || soundUser.moves[0].pp != 39) return 444;
 
     PokemonBattleState clearUser = aiUser, clearTarget = aiOpponent;
-    clearUser.moves[0].moveId = 39; clearUser.moves[0].pp = 30; // Tail Whip (DEF -1)
+    clearUser.moves[0].moveId = 39; clearUser.moves[0].pp = clearUser.moves[0].maxPp = 30; // Tail Whip (DEF -1)
     Pokerogue3DS::PokemonStatStageCommandPolicy clearPolicy = screechPolicy;
     const auto* clearBodyProfile = PokerogueContent::findAbilityStatStageProfile(29); // Clear Body
     if (!clearBodyProfile || clearBodyProfile->protectedMask != 127) return 445;
@@ -240,6 +240,21 @@ extern "C" int runPokemonBattleStateChecks() {
         Pokerogue3DS::PokemonStatStageEffectResult::Ok || !mirrorEvent.move.hit ||
         mirrorTarget.statStages[1] != 0 || mirrorUser.statStages[1] != -2 ||
         !(mirrorEvent.reflection.changedStatMask & 2)) return 450;
+
+    {
+        auto failedMirrorUser = aiUser, failedMirrorTarget = aiOpponent;
+        auto failedMirrorPolicy = mirrorPolicy;
+        failedMirrorPolicy.reflection.resolved = false;
+        auto failedMirrorRng = stageRng, expectedFailedMirrorRng = failedMirrorRng;
+        Pokerogue3DS::PokemonStatStageCommandEvent failedMirrorEvent{};
+        failedMirrorEvent.move.accuracyRoll = 123;
+        if (Pokerogue3DS::usePokemonStatStageStatusCommand(failedMirrorUser, failedMirrorTarget, 0,
+                failedMirrorPolicy, failedMirrorRng, failedMirrorEvent) !=
+                Pokerogue3DS::PokemonStatStageEffectResult::UnresolvedPolicy ||
+            failedMirrorUser.moves[0].pp != 40 || failedMirrorUser.statStages[1] ||
+            failedMirrorTarget.statStages[1] || failedMirrorEvent.move.accuracyRoll != 123 ||
+            failedMirrorRng.randSeedUint32() != expectedFailedMirrorRng.randSeedUint32()) return 9690;
+    }
 
     // Real imported WeatherChangeAttr records; no synthetic move catalog.
     if (sizeof(PokerogueContent::kMoveWeatherChangeProfiles) == 0) return 427;
