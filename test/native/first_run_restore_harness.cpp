@@ -3172,6 +3172,58 @@ static int checkCanonicalTrainerSignatureSlots() {
     return checked ? 0 : 231; // Real catalog coverage, not a synthetic trainer.
 }
 
+static int checkDoubleCheckpointRoundtrip() {
+    using namespace Pokerogue3DS;
+    for (uint32_t seed = 1; seed <= 512; ++seed) {
+        FirstRunRuntime game(seed);
+        if (!game.doubleBattle() || !game.doubleBattleSupported()) continue;
+        if (!game.cycleTarget(1) || !game.advanceBattleTurn()) return 10280;
+        NativeRunSave snapshot{};
+        const auto status = game.captureNativeRunSave(snapshot);
+        if (status == NativeSaveResult::UnsupportedStage && (game.moveLearningPending() || game.evolutionPending())) continue;
+        if (status != NativeSaveResult::Ok || !snapshot.doubleBattle || !snapshot.playerPartyCount ||
+            !snapshot.globalRngResolved || snapshot.secondEnemy.speciesDex != game.presentation().secondEnemy.dex)
+            return 10281;
+        char bytes[kNativeSaveMaxBytes]{};
+        size_t length = 0;
+        NativeRunSave decoded{};
+        if (encodeNativeRunSave(snapshot, bytes, sizeof(bytes), length) != NativeSaveResult::Ok ||
+            decodeNativeRunSave(bytes, length, PokerogueContent::kContentHash, decoded) != NativeSaveResult::Ok) return 10282;
+        FirstRunRuntime restored(seed), replay(seed);
+        NativeRunSave recaptured{};
+        if (!restored.restoreNativeRunSave(decoded) || !replay.restoreNativeRunSave(decoded) ||
+            restored.captureNativeRunSave(recaptured) != NativeSaveResult::Ok ||
+            !restored.doubleBattle() || restored.selectedTarget() != snapshot.selectedTarget ||
+            recaptured.secondEnemy.hp != snapshot.secondEnemy.hp ||
+            recaptured.secondEnemy.pokemonId != snapshot.secondEnemy.pokemonId ||
+            recaptured.secondEnemyBoss.segmentCount != snapshot.secondEnemyBoss.segmentCount ||
+            recaptured.secondEnemyBoss.segmentIndex != snapshot.secondEnemyBoss.segmentIndex ||
+            recaptured.doubleExperienceGrantedMask != snapshot.doubleExperienceGrantedMask ||
+            recaptured.globalRng.s0 != snapshot.globalRng.s0 || recaptured.globalRng.s1 != snapshot.globalRng.s1 ||
+            recaptured.globalRng.s2 != snapshot.globalRng.s2 || recaptured.globalRng.carry != snapshot.globalRng.carry)
+            return 10283;
+        for (uint8_t slot = 0; slot < snapshot.secondEnemy.moveCount; ++slot)
+            if (recaptured.secondEnemy.moveIds[slot] != snapshot.secondEnemy.moveIds[slot] ||
+                recaptured.secondEnemy.pp[slot] != snapshot.secondEnemy.pp[slot]) return 10284;
+        auto invalid = snapshot;
+        invalid.doubleExperienceGrantedMask = 3; // Invalid if either enemy still lives.
+        if ((snapshot.enemyHp || snapshot.secondEnemy.hp) &&
+            validateNativeRunSave(invalid, PokerogueContent::kContentHash) != NativeSaveResult::InvalidRecord) return 10285;
+        invalid = snapshot;
+        ++invalid.secondEnemy.pokemonId; // Wrong seeded encounter identity; immutable data must not be accepted.
+        if (restored.restoreNativeRunSave(invalid)) return 10286;
+        if (!game.battleFinished()) {
+            if (!restored.advanceBattleTurn() || !replay.advanceBattleTurn()) return 10287;
+            if (restored.presentation().player.battleState.hp != replay.presentation().player.battleState.hp ||
+                restored.presentation().enemy.battleState.hp != replay.presentation().enemy.battleState.hp ||
+                restored.presentation().secondEnemy.battleState.hp != replay.presentation().secondEnemy.battleState.hp)
+                return 10288;
+        }
+        return 0;
+    }
+    return 10289; // No silent skip of the real save/codec/restore pipeline.
+}
+
 static int checkDoubleExhaustedPpStruggle() {
     using namespace Pokerogue3DS;
     for (uint32_t seed = 1; seed <= 512; ++seed) {
@@ -3256,6 +3308,8 @@ static int checkExhaustedPpStruggleReplay() {
 }
 
 int main() {
+    const int doubleCheckpoint = checkDoubleCheckpointRoundtrip();
+    if (doubleCheckpoint) return doubleCheckpoint;
     const int doubleStruggle = checkDoubleExhaustedPpStruggle();
     if (doubleStruggle) return doubleStruggle;
     const int struggleReplay = checkExhaustedPpStruggleReplay();

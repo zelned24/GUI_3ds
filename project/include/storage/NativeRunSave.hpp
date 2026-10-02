@@ -8,8 +8,8 @@
 
 namespace Pokerogue3DS {
 
-inline constexpr uint16_t kNativeSaveVersion = 21;
-inline constexpr uint16_t kNativeSaveRuntimeVersion = 21;
+inline constexpr uint16_t kNativeSaveVersion = 22;
+inline constexpr uint16_t kNativeSaveRuntimeVersion = 22;
 // Bounded text envelope including six trainer members and field/inventory state.
 inline constexpr size_t kNativeSaveMaxBytes = 8192;
 inline constexpr size_t kNativeHeldModifierCapacity = 32;
@@ -110,6 +110,11 @@ struct NativeRunSave {
     bool enemySturdyTag = false; // Player tags remain in explicit actor payloads.
     bool globalRngResolved = false; // v21; legacy snapshots cannot recover shield RNG history.
     PokerogueRngState globalRng{};
+    bool doubleBattle = false; // v22: current field has one player and two enemies.
+    NativePokemonSave secondEnemy{};
+    PokemonBossState secondEnemyBoss{};
+    uint8_t doubleExperienceGrantedMask = 0;
+    uint8_t selectedTarget = 0;
     uint32_t battleTurn = 0;
     uint8_t playerMoveCount = 0;
     uint8_t enemyMoveCount = 0;

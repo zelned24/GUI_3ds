@@ -51,7 +51,7 @@ Esta tabla describe código inspeccionado, no resultados de ejecución. Las nota
 | HAB-01–10 / MOV-01–13 | Familias parciales y gates explícitos | Cobertura de todas las habilidades/movimientos del snapshot; no basta importar metadata |
 | HP-05 / MOV-07 | Struggle virtual conectado a selección jugador/IA, orden, locales, daño/retroceso boss y campo actual de tres actores | Segundo activo jugador, persistencia doble, modifiers, restricciones por otros tags y validación ejecutada |
 | HP-01–08 | HP/PP/status, daño/curación, EXP y casos de límites | Composición completa, segmentos, faint simultáneo, persistencia y feedback visual |
-| FLU-05 / SAV-03 | Checkpoint v21: bioma, actores explícitos, jefes individuales, RNG global y trainer con estados resueltos | Dobles, fase final, decisiones pendientes y recorrido completo; casos de trainer posterior sin verificar |
+| FLU-05 / SAV-03 | Checkpoint v22: bioma, actores explícitos, jefes, RNG global, trainer resuelto y segundo enemigo del campo doble | Segundo activo jugador, fase final, decisiones pendientes y recorrido completo; casos de trainer posterior/dobles sin verificar |
 | GUI-01–12 / AST-01–08 | Presentación nativa, índices y assets convertidos parciales | Todas las pantallas, HUD HP/PP/EXP, animación/audio, controles y comparación visual |
 | SAV-01–08 | Codecs, journals y bundles | Todos los estados de run/perfil, export/import conectado a UI y compatibilidad de contenido |
 | OTA-01–08 | Infraestructura de packs | Catálogo de gameplay cargable, firma, descarga e instalación desde consola |
@@ -495,3 +495,8 @@ Los ejemplos describen infraestructura y límites; no son tareas cerradas. Actua
 
 - Envelope v21 y runtime capture/restore conservan Alea global para boosts de escudos. Codec usa fracciones enteras exactas, rechaza estados inválidos y mantiene decodificación legacy con historial explícitamente ausente.
 - Regresiones de roundtrip/extracciones/bytes/migración y checkpoint de jefe escritas sin ejecutar. Persistencia doble sigue pendiente; no se cierra continuidad completa ni compatibilidad/paridad de runs legacy.
+
+### Avance SAV-03 / TUR-05: persistencia del campo doble actual
+
+- Envelope v22 conserva segundo enemigo, estado mutable, escudos, objetivo y máscara de EXP parcial. Capture/codec/restore/recapture conectados con validación del encuentro regenerado y snapshots explícitos de jugador.
+- Regresiones de encuentro real/replay/rechazo y migración v21 escritas sin ejecutar. Segundo jugador activo, derrotas parciales/EXP, estados/contextos completos y evidencia final siguen pendientes.

@@ -343,10 +343,10 @@ NativeSaveResult FirstRunRuntime::captureNativeRunSave(NativeRunSave& output) co
         m_context.secondEnemy.battleState.pendingStatus != PokemonStatusEffect::None;
     for (const auto& member : m_context.playerParty) pending |= member.battleState.pendingStatus != PokemonStatusEffect::None;
     for (const auto& member : m_context.trainerParty) pending |= member.battleState.pendingStatus != PokemonStatusEffect::None;
-    // Setup has no summon-state representation; active singles use v19/actor v11.
-    pending |= m_context.secondEnemy.battleState.sturdy.present;
+    // Setup has no summon-state representation; active actors use explicit codecs.
     if (!m_runStarted) {
-        pending |= m_context.player.battleState.sturdy.present || m_context.enemy.battleState.sturdy.present;
+        pending |= m_context.player.battleState.sturdy.present || m_context.enemy.battleState.sturdy.present ||
+            m_context.secondEnemy.battleState.sturdy.present;
         for (const auto& member : m_context.playerParty) pending |= member.battleState.sturdy.present;
         for (const auto& member : m_context.trainerParty) pending |= member.battleState.sturdy.present;
     }
@@ -357,20 +357,20 @@ NativeSaveResult FirstRunRuntime::captureNativeRunSave(NativeRunSave& output) co
         for (const auto& member : m_context.trainerParty)
             if (member.battleState.status.present || member.battleState.confusion.present || member.battleState.confusion.turns) { output = {}; return NativeSaveResult::UnsupportedStage; }
     }
-    // Setup has no actor snapshot; doubles still require a separate save schema.
-    if ((!m_runStarted && (m_context.player.battleState.status.present ||
+    // Setup has no actor snapshot; active double checkpoints use v22.
+    if (!m_runStarted && (m_context.player.battleState.status.present ||
             m_context.enemy.battleState.status.present || m_context.player.battleState.confusion.present ||
-            m_context.enemy.battleState.confusion.present)) || m_context.secondEnemy.battleState.status.present ||
-            m_context.secondEnemy.battleState.confusion.present) {
+            m_context.enemy.battleState.confusion.present || m_context.secondEnemy.battleState.status.present ||
+            m_context.secondEnemy.battleState.confusion.present)) {
         output = {}; return NativeSaveResult::UnsupportedStage;
     }
 
     std::unique_ptr<NativeRunSave> valueStorage(new (std::nothrow) NativeRunSave{});
     if (!valueStorage) { output = {}; return NativeSaveResult::MemoryUnavailable; }
     auto& value = *valueStorage;
-    // Singles preserve actors, boss segments and resolved trainer parties; doubles and final phase two remain unsupported.
+    // Active fields preserve actors/segments; final phase two and setup doubles remain unsupported.
     // Never report a setup checkpoint as a successful save of an active double battle.
-    if (m_capturePartyChoicePending || m_doubleBattle || m_pokeballs[5] ||
+    if (m_capturePartyChoicePending || (m_doubleBattle && !m_runStarted) || m_pokeballs[5] ||
         (m_run.wave == PokerogueContent::kClassicFinalWave && m_context.enemy.bossState.segmentCount &&
             !m_context.enemy.bossState.classicFinalBossFirstPhase)) {
         output = {};
@@ -404,7 +404,7 @@ NativeSaveResult FirstRunRuntime::captureNativeRunSave(NativeRunSave& output) co
     value.wave = m_run.wave;
     value.playerLevel = m_context.player.level;
     value.playerExperience = m_context.player.totalExperience;
-    if (m_runStarted && m_encounterResolved && !m_doubleBattle) {
+    if (m_runStarted && m_encounterResolved) {
         value.stage = m_battleFinished
             ? (m_playerWon ? (m_experienceGranted ? NativeSaveStage::ExperienceGranted
                                                 : NativeSaveStage::BattleWon)
@@ -425,6 +425,20 @@ NativeSaveResult FirstRunRuntime::captureNativeRunSave(NativeRunSave& output) co
         value.enemyBoss = m_context.enemy.bossState;
         value.globalRngResolved = true;
         value.globalRng = m_globalRng.state();
+        if (m_doubleBattle) {
+            const auto& actor = m_context.secondEnemy;
+            const auto* species = PokerogueContent::findSpeciesByDex(actor.dex);
+            uint32_t levelExperience = 0;
+            if (!m_secondEncounterResolved || !actor.actorIdentityResolved || !species ||
+                pokemonTotalExperienceForLevel(species->growthRate, actor.level, levelExperience) != PokemonExperienceResult::Ok ||
+                !captureNativePokemonActorSave(actor.battleState, actor.actor, levelExperience, value.secondEnemy)) {
+                output = {}; return NativeSaveResult::InvalidRecord;
+            }
+            value.doubleBattle = true;
+            value.secondEnemyBoss = actor.bossState;
+            value.doubleExperienceGrantedMask = m_doubleExperienceGrantedMask;
+            value.selectedTarget = m_selectedTarget;
+        }
         value.battleTurn = m_turn;
         value.weatherType = static_cast<uint8_t>(m_arenaWeather.type);
         value.weatherTurnsLeft = m_arenaWeather.turnsLeft;
@@ -488,7 +502,7 @@ NativeSaveResult FirstRunRuntime::captureNativeRunSave(NativeRunSave& output) co
         hasSummonTags |= m_context.playerParty[member].battleState.heldItemLostTags.unburden ||
             m_context.playerParty[member].battleState.sturdy.present;
     if (value.stage != NativeSaveStage::RunSetup &&
-        (m_run.wave > 9 || (m_trainerBattle && m_run.wave != 5) || m_context.playerPartyCount > 1 || m_playerHistoryRequiresSnapshot || m_heldModifierCount || value.playerStatus.present || value.playerConfusion.present || hasSummonTags || hasChangedFriendship || hasModifiedMaxPp)) {
+        (m_doubleBattle || m_run.wave > 9 || (m_trainerBattle && m_run.wave != 5) || m_context.playerPartyCount > 1 || m_playerHistoryRequiresSnapshot || m_heldModifierCount || value.playerStatus.present || value.playerConfusion.present || hasSummonTags || hasChangedFriendship || hasModifiedMaxPp)) {
         if (m_context.playerPartyCount > 6 ||
             m_context.activePlayerPartyIndex >= m_context.playerPartyCount) { output = {}; return NativeSaveResult::InvalidRecord; }
         value.playerPartyCount = m_context.playerPartyCount;
@@ -504,6 +518,10 @@ NativeSaveResult FirstRunRuntime::captureNativeRunSave(NativeRunSave& output) co
     if (m_heldModifierCount && value.stage == NativeSaveStage::RunSetup) { output = {}; return NativeSaveResult::InvalidRecord; }
     value.heldModifierCount = static_cast<uint8_t>(m_heldModifierCount);
     for (size_t i = 0; i < m_heldModifierCount; ++i) value.heldModifiers[i] = m_heldModifiers[i];
+    if (value.doubleBattle) {
+        const auto status = validateNativeRunSave(value, PokerogueContent::kContentHash);
+        if (status != NativeSaveResult::Ok) { output = {}; return status; }
+    }
     output = value;
     return NativeSaveResult::Ok;
 }
@@ -828,7 +846,7 @@ bool FirstRunRuntime::restoreNativeRunSaveInPlace(const NativeRunSave& save) {
     if (save.playerLevel != m_context.player.level ||
         save.playerExperience != m_context.player.totalExperience) return false;
     if (save.stage == NativeSaveStage::RunSetup) return save.wave == 1;
-    if (!m_encounterResolved || m_doubleBattle ||
+    if (!m_encounterResolved || m_doubleBattle != save.doubleBattle ||
         save.enemyBoss.segmentCount != reconstructedEnemy.bossState.segmentCount ||
         save.enemyBoss.classicFinalBossFirstPhase != reconstructedEnemy.bossState.classicFinalBossFirstPhase ||
         save.enemyBoss.hasTrainer != reconstructedEnemy.bossState.hasTrainer ||
@@ -839,10 +857,10 @@ bool FirstRunRuntime::restoreNativeRunSaveInPlace(const NativeRunSave& save) {
         save.enemyMoveCount != reconstructedEnemy.battleState.moveCount ||
         save.playerHp > m_context.player.battleState.maxHp ||
         save.enemyHp > reconstructedEnemy.battleState.maxHp ||
-        (save.stage == NativeSaveStage::BattleActive && (!save.playerHp || !save.enemyHp)) ||
+        (save.stage == NativeSaveStage::BattleActive && (!save.playerHp || !(save.enemyHp || (save.doubleBattle && save.secondEnemy.hp)))) ||
         ((save.stage == NativeSaveStage::BattleWon ||
-          save.stage == NativeSaveStage::ExperienceGranted) && (save.enemyHp || !save.playerHp)) ||
-        (save.stage == NativeSaveStage::BattleLost && (save.playerHp || !save.enemyHp))) return false;
+          save.stage == NativeSaveStage::ExperienceGranted) && (save.enemyHp || (save.doubleBattle && save.secondEnemy.hp) || !save.playerHp)) ||
+        (save.stage == NativeSaveStage::BattleLost && (save.playerHp || !(save.enemyHp || (save.doubleBattle && save.secondEnemy.hp))))) return false;
     for (uint8_t i = 0; i < save.playerMoveCount; ++i) {
         const auto& move = m_context.player.battleState.moves[i];
         if (save.playerMoveIds[i] != move.moveId || save.playerPp[i] > move.maxPp) return false;
@@ -850,6 +868,34 @@ bool FirstRunRuntime::restoreNativeRunSaveInPlace(const NativeRunSave& save) {
     for (uint8_t i = 0; i < save.enemyMoveCount; ++i) {
         const auto& move = reconstructedEnemy.battleState.moves[i];
         if (save.enemyMoveIds[i] != move.moveId || save.enemyPp[i] > move.maxPp) return false;
+    }
+    if (save.doubleBattle) {
+        auto& second = m_context.secondEnemy;
+        const auto* species = PokerogueContent::findSpeciesByDex(second.dex);
+        NativePokemonSave expected{};
+        uint32_t levelExperience = 0;
+        if (!m_secondEncounterResolved || !second.actorIdentityResolved || !species ||
+            pokemonTotalExperienceForLevel(species->growthRate, second.level, levelExperience) != PokemonExperienceResult::Ok ||
+            !captureNativePokemonActorSave(second.battleState, second.actor, levelExperience, expected) ||
+            save.secondEnemyBoss.segmentCount != second.bossState.segmentCount ||
+            save.secondEnemyBoss.classicFinalBossFirstPhase != second.bossState.classicFinalBossFirstPhase ||
+            save.secondEnemyBoss.hasTrainer != second.bossState.hasTrainer) return false;
+        // Verify all immutable identity/constructor data through the existing codec.
+        expected.hp = save.secondEnemy.hp;
+        expected.status = save.secondEnemy.status;
+        expected.confusion = save.secondEnemy.confusion;
+        expected.sturdyTag = save.secondEnemy.sturdyTag;
+        for (uint8_t i = 0; i < 7; ++i) expected.statStages[i] = save.secondEnemy.statStages[i];
+        for (uint8_t i = 0; i < 4; ++i) expected.pp[i] = save.secondEnemy.pp[i];
+        char expectedBytes[512]{}, savedBytes[512]{};
+        size_t expectedSize = 0, savedSize = 0;
+        if (encodeNativePokemonSave(expected, expectedBytes, sizeof(expectedBytes), expectedSize) != NativeSaveResult::Ok ||
+            encodeNativePokemonSave(save.secondEnemy, savedBytes, sizeof(savedBytes), savedSize) != NativeSaveResult::Ok ||
+            expectedSize != savedSize || std::memcmp(expectedBytes, savedBytes, expectedSize) ||
+            !restoreNativePokemonActorSave(save.secondEnemy, second.battleState, second.actor)) return false;
+        second.bossState = save.secondEnemyBoss;
+        m_doubleExperienceGrantedMask = save.doubleExperienceGrantedMask;
+        m_selectedTarget = save.selectedTarget;
     }
     // Run commands are accepted only between turns. The pinned battle stream
     // is re-seeded from battleSeed + turn index, so no mid-turn Alea state is

@@ -14,7 +14,7 @@
 namespace Pokerogue3DS {
 namespace {
 // Stable envelope marker; saveVersion carries the independently migrated
-// payload schema (currently version 21).
+// payload schema (currently version 22).
 constexpr char kMagic[] = "POKEROGUE-3DS-SAVE 1\n";
 constexpr size_t kDigestLineLength = 72;
 
@@ -652,6 +652,42 @@ NativeSaveResult decodeNativePokemonSave(const char* bytes, size_t length,
 }
 
 NativeSaveResult validateNativeRunSave(const NativeRunSave& save, const char* expectedContentHash) {
+    if (save.doubleBattle) {
+        PokemonBattleState restoredSecond{};
+        PokemonActorIdentity identity{};
+        const auto& boss = save.secondEnemyBoss;
+        if (save.stage == NativeSaveStage::RunSetup || save.trainerPartyCount || !save.playerPartyCount ||
+            !save.globalRngResolved || save.selectedTarget > 1 || save.doubleExperienceGrantedMask > 3 ||
+            !restoreNativePokemonActorSave(save.secondEnemy, restoredSecond, identity) ||
+            (save.doubleExperienceGrantedMask & 1 && save.enemyHp) ||
+            (save.doubleExperienceGrantedMask & 2 && save.secondEnemy.hp) ||
+            (save.stage == NativeSaveStage::BattleActive && save.doubleExperienceGrantedMask !=
+                static_cast<uint8_t>((save.enemyHp ? 0 : 1) | (save.secondEnemy.hp ? 0 : 2))) ||
+            (save.stage == NativeSaveStage::ExperienceGranted && save.doubleExperienceGrantedMask != 3) ||
+            (!boss.segmentCount && (boss.segmentIndex || boss.classicFinalBossFirstPhase || boss.hasTrainer)) ||
+            (boss.segmentCount && (boss.segmentIndex >= boss.segmentCount || boss.classicFinalBossFirstPhase || boss.hasTrainer)))
+            return NativeSaveResult::InvalidRecord;
+    } else {
+        const auto& actor = save.secondEnemy;
+        if (save.doubleExperienceGrantedMask || save.selectedTarget || actor.speciesDex || actor.formId[0] ||
+            actor.level || actor.pokemonId || actor.abilityId || actor.gender || actor.nature != 255 || actor.hp ||
+            actor.experience || actor.moveCount || actor.status.present || actor.status.effect != PokemonStatusEffect::None ||
+            actor.status.toxicTurnCount || actor.status.sleepTurnsRemaining || actor.status.freezeTurnsRemaining ||
+            actor.status.hasSleepTurnsRemaining || actor.status.hasFreezeTurnsRemaining || actor.confusion.present ||
+            actor.confusion.turns || actor.confusion.sourceMoveId || actor.confusion.sourceMoveResolved ||
+            actor.confusion.sourcePokemonId || actor.confusion.sourcePokemonResolved || actor.sturdyTag ||
+            actor.ivsDerivedFromId || actor.pauseEvolutions || actor.maxPpResolved || actor.friendship ||
+            actor.friendshipResolved || actor.unburdenTag || actor.actorIdentityResolved || actor.abilityIndex ||
+            actor.initialTeraType[0] || actor.initialTeraTypeIndex || actor.initialTeraTypeResolved ||
+            save.secondEnemyBoss.segmentCount || save.secondEnemyBoss.segmentIndex ||
+            save.secondEnemyBoss.classicFinalBossFirstPhase || save.secondEnemyBoss.hasTrainer)
+            return NativeSaveResult::InvalidRecord;
+        for (uint8_t i = 0; i < 4; ++i)
+            if (actor.moveIds[i] || actor.pp[i] || actor.maxPp[i]) return NativeSaveResult::InvalidRecord;
+        for (uint8_t i = 0; i < 6; ++i) if (actor.ivs[i]) return NativeSaveResult::InvalidRecord;
+        for (uint8_t i = 0; i < 7; ++i) if (actor.statStages[i]) return NativeSaveResult::InvalidRecord;
+    }
+    const bool livingEnemy = save.enemyHp || (save.doubleBattle && save.secondEnemy.hp);
     const auto& random = save.globalRng;
     const auto fractionValid = [](double value) {
         return std::isfinite(value) && value >= 0 && value < 1 &&
@@ -891,10 +927,10 @@ NativeSaveResult validateNativeRunSave(const NativeRunSave& save, const char* ex
         save.stage != NativeSaveStage::ExperienceGranted) return NativeSaveResult::UnsupportedStage;
     if (!save.battleTurn || !save.encounterDex || !save.playerMoveCount || save.playerMoveCount > 4 ||
         !save.enemyMoveCount || save.enemyMoveCount > 4 || (save.stage == NativeSaveStage::BattleActive &&
-            (!save.playerHp || !save.enemyHp)) || (save.stage == NativeSaveStage::BattleWon &&
-            (save.enemyHp || !save.playerHp)) || (save.stage == NativeSaveStage::ExperienceGranted &&
-            (save.enemyHp || !save.playerHp)) || (save.stage == NativeSaveStage::BattleLost &&
-            (save.playerHp || !save.enemyHp))) return NativeSaveResult::InvalidRecord;
+            (!save.playerHp || !livingEnemy)) || (save.stage == NativeSaveStage::BattleWon &&
+            (livingEnemy || !save.playerHp)) || (save.stage == NativeSaveStage::ExperienceGranted &&
+            (livingEnemy || !save.playerHp)) || (save.stage == NativeSaveStage::BattleLost &&
+            (save.playerHp || !livingEnemy))) return NativeSaveResult::InvalidRecord;
 
     bool validEncounter = false;
     for (size_t i = 0; i < PokerogueContent::kSpeciesCount; ++i) {
@@ -1060,6 +1096,22 @@ NativeSaveResult encodeNativeRunSave(const NativeRunSave& save, char* output, si
         writer.hex(static_cast<uint32_t>(save.globalRng.s1 * 4294967296.0), 8);
         writer.hex(static_cast<uint32_t>(save.globalRng.s2 * 4294967296.0), 8);
     }
+    writer.text("doubleBattle="); writer.hex(save.doubleBattle ? 1 : 0, 1);
+    if (save.doubleBattle) {
+        char payload[512]{};
+        size_t payloadSize = 0;
+        const auto status = encodeNativePokemonSave(save.secondEnemy, payload, sizeof(payload), payloadSize);
+        if (status != NativeSaveResult::Ok) return status;
+        writer.text("secondEnemyBytes="); writer.hex(static_cast<uint32_t>(payloadSize), 4);
+        for (size_t i = 0; i < payloadSize; ++i) writer.character(payload[i]);
+        writer.text("secondEnemyBoss=");
+        writer.hex(save.secondEnemyBoss.segmentCount, 4);
+        writer.hex(save.secondEnemyBoss.segmentIndex, 4);
+        writer.hex(save.secondEnemyBoss.classicFinalBossFirstPhase ? 1 : 0, 1);
+        writer.hex(save.secondEnemyBoss.hasTrainer ? 1 : 0, 1);
+        writer.text("doubleExperience="); writer.hex(save.doubleExperienceGrantedMask, 1);
+        writer.text("selectedTarget="); writer.hex(save.selectedTarget, 1);
+    }
     if (!writer.valid) return NativeSaveResult::TooLarge;
     char hash[65];
     IntegritySha256::hashHex(output, writer.position, hash);
@@ -1078,7 +1130,7 @@ NativeSaveResult decodeNativeRunSave(const char* bytes, size_t length, const cha
     auto status = inspectEnvelope(bytes, length, value, payloadStart);
     if (status != NativeSaveResult::Ok) return status;
     if (value.saveVersion > kNativeSaveVersion) return NativeSaveResult::UnsupportedVersion;
-    if (value.saveVersion != 1 && value.saveVersion != 2 && value.saveVersion != 3 && value.saveVersion != 4 && value.saveVersion != 5 && value.saveVersion != 6 && value.saveVersion != 7 && value.saveVersion != 8 && value.saveVersion != 9 && value.saveVersion != 10 && value.saveVersion != 11 && value.saveVersion != 12 && value.saveVersion != 13 && value.saveVersion != 14 && value.saveVersion != 15 && value.saveVersion != 16 && value.saveVersion != 17 && value.saveVersion != 18 && value.saveVersion != 19 && value.saveVersion != 20 &&
+    if (value.saveVersion != 1 && value.saveVersion != 2 && value.saveVersion != 3 && value.saveVersion != 4 && value.saveVersion != 5 && value.saveVersion != 6 && value.saveVersion != 7 && value.saveVersion != 8 && value.saveVersion != 9 && value.saveVersion != 10 && value.saveVersion != 11 && value.saveVersion != 12 && value.saveVersion != 13 && value.saveVersion != 14 && value.saveVersion != 15 && value.saveVersion != 16 && value.saveVersion != 17 && value.saveVersion != 18 && value.saveVersion != 19 && value.saveVersion != 20 && value.saveVersion != 21 &&
         value.saveVersion != kNativeSaveVersion) return NativeSaveResult::UnsupportedVersion;
     const bool legacySetup = value.saveVersion == 1 && value.runtimeVersion == 1;
     const bool legacyBattle = value.saveVersion == 2 && value.runtimeVersion == 2;
@@ -1100,9 +1152,10 @@ NativeSaveResult decodeNativeRunSave(const char* bytes, size_t length, const cha
     const bool legacyConfusionActor = value.saveVersion == 18 && value.runtimeVersion == 18;
     const bool legacySurvival = value.saveVersion == 19 && value.runtimeVersion == 19;
     const bool legacyBoss = value.saveVersion == 20 && value.runtimeVersion == 20;
+    const bool legacyGlobalRng = value.saveVersion == 21 && value.runtimeVersion == 21;
     const bool currentPayload = value.saveVersion == kNativeSaveVersion &&
         value.runtimeVersion == kNativeSaveRuntimeVersion;
-    if (!currentPayload && !legacySetup && !legacyBattle && !legacyProgress && !legacyTrainer && !legacySwitch && !legacyStages && !legacyWeather && !legacyRoom && !legacyInventory && !legacyParty && !legacyHeld && !legacyProfile && !legacyParticipants && !legacySetupParty && !legacyStatus && !legacyConfusion && !legacyConfusionSource && !legacyConfusionActor && !legacySurvival && !legacyBoss)
+    if (!currentPayload && !legacySetup && !legacyBattle && !legacyProgress && !legacyTrainer && !legacySwitch && !legacyStages && !legacyWeather && !legacyRoom && !legacyInventory && !legacyParty && !legacyHeld && !legacyProfile && !legacyParticipants && !legacySetupParty && !legacyStatus && !legacyConfusion && !legacyConfusionSource && !legacyConfusionActor && !legacySurvival && !legacyBoss && !legacyGlobalRng)
         return NativeSaveResult::IncompatibleRuntime;
     if (!isHash(expectedContentHash)) return NativeSaveResult::InvalidFormat;
     if (!equal(value.contentHash, expectedContentHash)) return NativeSaveResult::ContentMismatch;
@@ -1356,10 +1409,33 @@ NativeSaveResult decodeNativeRunSave(const char* bytes, size_t length, const cha
                 value.globalRng = {static_cast<double>(carry), s0 * unit, s1 * unit, s2 * unit};
             }
         }
+        if (value.saveVersion >= 22) {
+            if (!reader.literal("doubleBattle=") || !reader.hex(1, parsed) || parsed > 1)
+                return NativeSaveResult::InvalidFormat;
+            value.doubleBattle = parsed != 0;
+            if (value.doubleBattle) {
+                if (!reader.literal("secondEnemyBytes=") || !reader.hex(4, parsed) || !parsed ||
+                    parsed > 512 || parsed > reader.end - reader.position) return NativeSaveResult::InvalidFormat;
+                const auto status = decodeNativePokemonSave(reader.bytes + reader.position, parsed, value.secondEnemy);
+                if (status != NativeSaveResult::Ok) return status;
+                reader.position += parsed;
+                uint32_t count = 0, index = 0, first = 0, trainer = 0;
+                if (!reader.literal("secondEnemyBoss=") || !reader.hex(4, count) || !reader.hex(4, index) ||
+                    !reader.hex(1, first) || !reader.hex(1, trainer) || first > 1 || trainer > 1)
+                    return NativeSaveResult::InvalidFormat;
+                value.secondEnemyBoss = {static_cast<uint16_t>(count), static_cast<uint16_t>(index), first != 0, trainer != 0};
+                if (!reader.literal("doubleExperience=") || !reader.hex(1, parsed) || parsed > 3)
+                    return NativeSaveResult::InvalidFormat;
+                value.doubleExperienceGrantedMask = static_cast<uint8_t>(parsed);
+                if (!reader.literal("selectedTarget=") || !reader.hex(1, parsed) || parsed > 1)
+                    return NativeSaveResult::InvalidFormat;
+                value.selectedTarget = static_cast<uint8_t>(parsed);
+            }
+        }
         // All version-specific fields, including confusion source metadata, must be
         // consumed before checking for trailing or missing payload bytes.
         if (reader.position != reader.end) return NativeSaveResult::InvalidFormat;
-        if (legacyBattle || legacyProgress || legacyTrainer || legacySwitch || legacyStages || legacyWeather || legacyRoom || legacyInventory || legacyParty || legacyHeld || legacyProfile || legacyParticipants || legacySetupParty || legacyStatus || legacyConfusion || legacyConfusionSource || legacyConfusionActor || legacySurvival || legacyBoss) {
+        if (legacyBattle || legacyProgress || legacyTrainer || legacySwitch || legacyStages || legacyWeather || legacyRoom || legacyInventory || legacyParty || legacyHeld || legacyProfile || legacyParticipants || legacySetupParty || legacyStatus || legacyConfusion || legacyConfusionSource || legacyConfusionActor || legacySurvival || legacyBoss || legacyGlobalRng) {
             value.saveVersion = kNativeSaveVersion;
             value.runtimeVersion = kNativeSaveRuntimeVersion;
         }
