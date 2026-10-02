@@ -1647,15 +1647,36 @@ bool pokemonMoveWeatherMultiplier(uint16_t moveId,
     return true;
 }
 
+bool pokemonMoveTargetMultiplier(uint16_t moveId, const PokemonMoveTargetPolicy* policy, double& output) {
+    const auto* move = PokerogueContent::findMoveById(moveId);
+    if (!move) return false;
+    double multiplier = 1.0;
+    if (policy) {
+        if (!policy->resolved || !policy->activeTargetCount || policy->activeTargetCount > 3) return false;
+        if (policy->activeTargetCount > 1) {
+            if (!move->target || (std::strcmp(move->target, "ALL_NEAR_ENEMIES") &&
+                std::strcmp(move->target, "ALL_ENEMIES") &&
+                std::strcmp(move->target, "ALL_NEAR_OTHERS") && std::strcmp(move->target, "ALL_OTHERS") &&
+                std::strcmp(move->target, "ALL"))) return false;
+            multiplier = 0.75;
+        }
+    }
+    output = multiplier;
+    return true;
+}
+
 PokemonDamageCoreResult calculatePokemonDamageCore(
     const PokemonBattleState& attacker,
     const PokemonBattleState& defender,
     uint16_t moveId,
     bool moveIsTypeless,
     uint32_t& outputDamage,
-    const PokemonMoveWeatherContext* weatherContext, PokerogueRngAdapter* simulationRng) {
+    const PokemonMoveWeatherContext* weatherContext, PokerogueRngAdapter* simulationRng,
+    const PokemonMoveTargetPolicy* targetPolicy) {
     const auto* move = PokerogueContent::findMoveById(moveId);
     if (!move) return PokemonDamageCoreResult::MissingMove;
+    double targetMultiplier = 1.0;
+    if (!pokemonMoveTargetMultiplier(moveId, targetPolicy, targetMultiplier)) return PokemonDamageCoreResult::InvalidStats;
     const auto* fixedDamage = pokemonFixedDamageMoveProfile(moveId);
     if (((fixedDamage && fixedDamage->targetHalfHp) || pokemonSurviveDamageMoveResolved(moveId)) &&
         (!defender.maxHp || defender.hp > defender.maxHp)) return PokemonDamageCoreResult::InvalidStats;
@@ -1721,7 +1742,7 @@ PokemonDamageCoreResult calculatePokemonDamageCore(
     // Mirrors the pinned deterministic/simulated core: critical=1, random=1,
     // Optional resolved weather is applied; remaining field/status/item
     // modifiers are neutral in this baseline. toDmgValue floors with min 1.
-    const double adjusted = baseDamage * weatherMultiplier * stabMultiplier * typeMultiplier;
+    const double adjusted = baseDamage * targetMultiplier * weatherMultiplier * stabMultiplier * typeMultiplier;
     if (adjusted > 4294967295.0) return PokemonDamageCoreResult::InvalidStats;
     const uint32_t rounded = static_cast<uint32_t>(adjusted);
     uint32_t result = rounded ? rounded : 1;
@@ -1825,9 +1846,12 @@ PokemonMoveDamageResult resolveStandardPokemonMoveDamage(
     PokemonMoveDamageRoll& output,
     const PokemonMoveWeatherContext* weatherContext,
     const PokemonCriticalPolicy* criticalPolicy,
-    const PokemonHitPolicy* hitPolicy, const PokemonBurnDamagePolicy* burnPolicy) {
+    const PokemonHitPolicy* hitPolicy, const PokemonBurnDamagePolicy* burnPolicy,
+    const PokemonMoveTargetPolicy* targetPolicy) {
     const auto* move = PokerogueContent::findMoveById(moveId);
     if (!move) return PokemonMoveDamageResult::MissingMove;
+    double targetMultiplier = 1.0;
+    if (!pokemonMoveTargetMultiplier(moveId, targetPolicy, targetMultiplier)) return PokemonMoveDamageResult::InvalidStats;
     const auto* fixedDamage = pokemonFixedDamageMoveProfile(moveId);
     if (((fixedDamage && fixedDamage->targetHalfHp) || pokemonSurviveDamageMoveResolved(moveId)) &&
         (!defender.maxHp || defender.hp > defender.maxHp)) return PokemonMoveDamageResult::InvalidStats;
@@ -1978,7 +2002,7 @@ PokemonMoveDamageResult resolveStandardPokemonMoveDamage(
     }
 
     const double criticalMultiplier = next.critical ? 1.5 * abilityCriticalMultiplier : 1.0;
-    const double damage = baseDamage * weatherMultiplier * criticalMultiplier
+    const double damage = baseDamage * targetMultiplier * weatherMultiplier * criticalMultiplier
         * (static_cast<double>(next.randomDamagePercent) / 100.0)
         * stabMultiplier * next.typeEffectiveness * burnMultiplier;
     if (damage > 4294967295.0) return PokemonMoveDamageResult::InvalidStats;
@@ -2023,10 +2047,14 @@ PokemonMoveActionStatus useStandardPokemonMove(
     const PokemonHitPolicy* hitPolicy,
     const PokemonPpPolicy* ppPolicy,
     PokemonBossState* targetBossState, const PokemonBossDamagePolicy* bossDamagePolicy,
-    PokerogueRngAdapter* bossGlobalRng, const PokemonBurnDamagePolicy* burnPolicy) {
+    PokerogueRngAdapter* bossGlobalRng, const PokemonBurnDamagePolicy* burnPolicy,
+    const PokemonMoveTargetPolicy* targetPolicy) {
     if (moveSlot >= attacker.moveCount || moveSlot >= 4 || attacker.moves[moveSlot].moveId == 0) {
         return PokemonMoveActionStatus::InvalidMoveSlot;
     }
+    double targetMultiplier = 1.0;
+    if (!pokemonMoveTargetMultiplier(attacker.moves[moveSlot].moveId, targetPolicy, targetMultiplier))
+        return PokemonMoveActionStatus::DamageResolutionFailed;
     if ((targetBossState != nullptr) != (bossDamagePolicy != nullptr) ||
         (targetBossState && (!bossGlobalRng || bossGlobalRng == &battleRng || !bossDamagePolicy->resolved || !bossDamagePolicy->damageCallbacksResolved ||
             !targetBossState->segmentCount || targetBossState->segmentIndex >= targetBossState->segmentCount ||
@@ -2068,7 +2096,7 @@ PokemonMoveActionStatus useStandardPokemonMove(
     PokerogueRngAdapter nextGlobalRng;
     if (bossGlobalRng) nextGlobalRng = *bossGlobalRng;
     next.damageResolutionStatus = resolveStandardPokemonMoveDamage(
-        attacker, defender, attacker.moves[moveSlot].moveId, moveIsTypeless, nextRng, next.damageRoll, weatherContext, criticalPolicy, hitPolicy, burnPolicy);
+        attacker, defender, attacker.moves[moveSlot].moveId, moveIsTypeless, nextRng, next.damageRoll, weatherContext, criticalPolicy, hitPolicy, burnPolicy, targetPolicy);
     if (next.damageResolutionStatus == PokemonMoveDamageResult::UnsupportedAbilityCondition)
         return PokemonMoveActionStatus::UnsupportedAbilityCondition;
     if (next.damageResolutionStatus == PokemonMoveDamageResult::UnresolvedWeather)

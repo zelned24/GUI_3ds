@@ -1076,11 +1076,19 @@ const PokerogueContent::MoveStatStageEffect* singleDamageStatStageEffect(uint16_
         if (row.moveId == moveId) { if (effect) return nullptr; effect = &row; }
     return effect;
 }
+bool plainAlwaysHitAreaMove(const PokerogueContent::Move& move) {
+    // Other spread effects need hit-check batching and effect-specific dispatch.
+    return move.category != PokerogueContent::MoveStatus && move.power > 0 &&
+        move.accuracy == -1 && !move.upstreamFlags && !move.attributeCount &&
+        move.target && !std::strcmp(move.target, "ALL_NEAR_ENEMIES");
+}
+
 bool supportsBaselineBattleMove(uint16_t moveId) {
     if (PokerogueContent::kStruggleDefinitionResolved && moveId == PokerogueContent::kStruggleMoveId) return true;
     if (pokemonIgnoreOpponentStatStagesMoveResolved(moveId) || pokemonSurviveDamageMoveResolved(moveId) || pokemonFixedDamageMoveProfile(moveId) || singleDamageStatStageEffect(moveId) || singleStatusConfusionEffect(moveId) || singleOpponentStatusEffect(moveId) || singleDamageStatusEffect(moveId) || singleDamageConfusionEffect(moveId) || pokemonWeatherChangeProfile(moveId) || supportsPokemonTrickRoomMove(moveId) || supportsPokemonStatStageMove(moveId) || selfHealingProfile(moveId) || damageDrainProfile(moveId) || damageRecoilProfile(moveId)) return true;
     const auto* move = PokerogueContent::findMoveById(moveId);
-    // This first resolver only executes plain, single-target damaging moves.
+    if (move && plainAlwaysHitAreaMove(*move)) return true;
+    // Other plain attacks currently use the single-target damage path.
     // Only plain damage or a single migrated weather/critical attribute is
     // eligible; other declared attributes/flags still need their own port.
     return move && move->category != PokerogueContent::MoveStatus && move->power > 0 &&
@@ -1365,6 +1373,14 @@ bool FirstRunRuntime::supportsActiveBattleMove(const PokemonBattleState& user,
         return PokerogueContent::kStruggleDefinitionResolved && !m_heldModifierCount &&
             user.statsAreBaseFormulaOnly && opponent.statsAreBaseFormulaOnly &&
             statusActionAbilitySupported(user.abilityId) && statusActionAbilitySupported(opponent.abilityId);
+    const auto* areaMove = PokerogueContent::findMoveById(moveId);
+    if (areaMove && plainAlwaysHitAreaMove(*areaMove)) {
+        if (m_heldModifierCount || !user.statsAreBaseFormulaOnly || !opponent.statsAreBaseFormulaOnly) return false;
+        const PokemonBattleState* field[] = {&m_context.player.battleState, &m_context.enemy.battleState,
+            &m_context.secondEnemy.battleState};
+        for (uint8_t i = 0; i < (m_doubleBattle ? 3 : 2); ++i)
+            if (field[i]->hp && !statusActionAbilitySupported(field[i]->abilityId)) return false;
+    }
     // Survival dispatcher currently covers simple actor contexts only.
     for (const auto& profile : PokerogueContent::kFullHpEndureAbilityProfiles) {
         if (!profile.resolved || (profile.abilityId != user.abilityId && profile.abilityId != opponent.abilityId)) continue;
@@ -2578,9 +2594,9 @@ bool FirstRunRuntime::advanceBattleTurnInPlace() {
                      std::strcmp(pMove->target, "ALL_ENEMIES") == 0 ||
                      std::strcmp(pMove->target, "ALL_OTHERS") == 0);
                 if (isSpread) {
-                    // Only the migrated stat-stage family currently admits area targets.
-                    // Damage-area multipliers and other effects require their own resolver.
-                    if (!supportsPokemonStatStageMove(pMove->id)) return false;
+                    // Stat-stage status and plain always-hit damage share action checks.
+                    // Other area effects require hit batching and their own resolver.
+                    if (!supportsPokemonStatStageMove(pMove->id) && !plainAlwaysHitAreaMove(*pMove)) return false;
                     uint16_t targetAbilities[2]{};
                     uint8_t targetCount = 0;
                     if (m_context.enemy.battleState.hp) targetAbilities[targetCount++] = m_context.enemy.battleState.abilityId;
@@ -2687,7 +2703,7 @@ bool FirstRunRuntime::executeActiveBattleMove(uint8_t userIndex, uint8_t targetI
 
     // The current spread dispatcher visits targets separately. A single-target
     // action calls this function once, so its MovePhase checks also run once.
-    const bool repeatedTargetChecks = m_doubleBattle && move->target &&
+    const bool repeatedTargetChecks = m_doubleBattle && userIndex == 0 && move->target &&
         (!std::strcmp(move->target, "ALL_NEAR_ENEMIES") ||
          !std::strcmp(move->target, "ALL_ENEMIES") ||
          !std::strcmp(move->target, "ALL_OTHERS") ||
@@ -3017,11 +3033,16 @@ bool FirstRunRuntime::executeActiveBattleMove(uint8_t userIndex, uint8_t targetI
     auto nextUser = user;
     auto nextOpponent = opponent;
     auto nextRng = rng;
+    PokemonMoveTargetPolicy targets{};
+    targets.resolved = true;
+    if (plainAlwaysHitAreaMove(*move) && m_doubleBattle && userIndex == 0)
+        targets.activeTargetCount = static_cast<uint8_t>((m_context.enemy.battleState.hp != 0) +
+            (m_context.secondEnemy.battleState.hp != 0));
     PokemonMoveActionResult result{};
     if (useStandardPokemonMove(nextUser, nextOpponent, moveSlot, false, nextRng, result,
             &weather, &critical, &hit, &pp, targetIsBoss ? &nextBossState : nullptr,
             targetIsBoss ? &bossPolicy : nullptr,
-            targetIsBoss ? &nextGlobalRng : nullptr, &burn) != PokemonMoveActionStatus::Ok) return false;
+            targetIsBoss ? &nextGlobalRng : nullptr, &burn, &targets) != PokemonMoveActionStatus::Ok) return false;
     if (PokerogueContent::moveHasAttribute(*move, "RecoilAttr")) {
         PokemonRecoilEvent recoil{};
         const auto recoilPolicy = canonicalFreshActorRecoilPolicy(nextUser.abilityId);

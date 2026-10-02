@@ -525,3 +525,8 @@ Para cada entrega actualizar esta tabla con IDs, commit, alcance conectado, excl
 
 - Estado transitorio compartido conserva checks/cancelación/ID entre objetivos. Último PP no convierte el segundo efecto en Struggle. Cambios de etapas status en dobles se admiten solo con perfiles neutrales y callbacks resueltos en todo el campo vivo.
 - Confusión se conecta a acciones de un objetivo y al dispatcher compartido con gates de clima/modifiers/habilidades. Regresiones Growl/sueño/confusión/último PP escritas sin ejecutar. Daño de área, reacciones de etapas y segundo jugador pendientes.
+
+### Avance TUR-05 / MOV-03 / HP-05: daño de área always-hit
+
+- Swift canónico atraviesa acción compartida, multiplicador de objetivos vivos, daño a ambos enemigos y PP único; política también disponible en predicción. No se habilitan efectos adicionales ni área con checks aleatorios de precisión.
+- Regresiones de políticas/daño/checkpoint escritas sin ejecutar. Campo de cuatro actores, batching general de precisión y callbacks pendientes.

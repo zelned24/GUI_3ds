@@ -3172,6 +3172,62 @@ static int checkCanonicalTrainerSignatureSlots() {
     return checked ? 0 : 231; // Real catalog coverage, not a synthetic trainer.
 }
 
+static int checkDoublePlainAreaDamage() {
+    using namespace Pokerogue3DS;
+    const auto* swift = PokerogueContent::findMoveById(129);
+    if (!swift || swift->attributeCount || swift->accuracy != -1) return 10370;
+    double multiplier = 7;
+    PokemonMoveTargetPolicy two{true, 2}, one{true, 1}, invalid{false, 2};
+    if (!pokemonMoveTargetMultiplier(swift->id, &two, multiplier) || multiplier != 0.75 ||
+        !pokemonMoveTargetMultiplier(swift->id, &one, multiplier) || multiplier != 1) return 10371;
+    multiplier = 7;
+    if (pokemonMoveTargetMultiplier(swift->id, &invalid, multiplier) || multiplier != 7 ||
+        pokemonMoveTargetMultiplier(33, &two, multiplier)) return 10372;
+    for (uint32_t seed = 1; seed <= 1024; ++seed) {
+        FirstRunRuntime game(seed);
+        if (!game.doubleBattle()) continue;
+        auto& field = const_cast<PresentationContext&>(game.presentation());
+        field.player.battleState.moveCount = 1;
+        field.player.battleState.moves[0] = {swift->id, 1, static_cast<uint8_t>(swift->pp)};
+        bool resolved = true;
+        PokemonBattleState* opponents[] = {&field.enemy.battleState, &field.secondEnemy.battleState};
+        for (auto* enemy : opponents) {
+            bool duration = false;
+            for (const auto& profile : PokerogueContent::kStatusDurationAbilityProfiles)
+                if (profile.abilityId == enemy->abilityId) duration = profile.resolved;
+            resolved &= duration;
+            enemy->status = {};
+            enemy->status.present = enemy->status.hasSleepTurnsRemaining = true;
+            enemy->status.effect = PokemonStatusEffect::Sleep;
+            enemy->status.sleepTurnsRemaining = 8;
+            for (uint8_t slot = 0; slot < enemy->moveCount; ++slot) enemy->moves[slot].pp = 0;
+        }
+        if (!resolved || !game.doubleBattleSupported()) continue;
+        uint32_t full = 0, spread = 0;
+        if (calculatePokemonDamageCore(field.player.battleState, field.enemy.battleState,
+                swift->id, false, full, nullptr, nullptr, &one) != PokemonDamageCoreResult::Ok ||
+            calculatePokemonDamageCore(field.player.battleState, field.enemy.battleState,
+                swift->id, false, spread, nullptr, nullptr, &two) != PokemonDamageCoreResult::Ok ||
+            spread > full || !spread) return 10373;
+        const uint16_t playerHp = field.player.battleState.hp;
+        const uint16_t enemyHp = field.enemy.battleState.hp, secondHp = field.secondEnemy.battleState.hp;
+        if (!game.advanceBattleTurn()) return 10374;
+        if (game.battleFinished() || !field.enemy.battleState.hp || !field.secondEnemy.battleState.hp) continue;
+        if (field.player.battleState.hp != playerHp || field.player.battleState.moves[0].pp ||
+            field.player.battleState.moves[0].moveId != swift->id ||
+            field.enemy.battleState.hp >= enemyHp || field.secondEnemy.battleState.hp >= secondHp) return 10375;
+        NativeRunSave saved{};
+        FirstRunRuntime restored(seed);
+        if (game.captureNativeRunSave(saved) != NativeSaveResult::Ok || !restored.restoreNativeRunSave(saved) ||
+            restored.presentation().player.battleState.moves[0].moveId != swift->id ||
+            restored.presentation().player.battleState.moves[0].pp ||
+            restored.presentation().enemy.battleState.hp != field.enemy.battleState.hp ||
+            restored.presentation().secondEnemy.battleState.hp != field.secondEnemy.battleState.hp) return 10376;
+        return 0;
+    }
+    return 10377;
+}
+
 static int checkDoubleAreaActionChecksAndLastPp() {
     using namespace Pokerogue3DS;
     const auto* growl = PokerogueContent::findMoveById(45);
@@ -3544,6 +3600,8 @@ static int checkExhaustedPpStruggleReplay() {
 }
 
 int main() {
+    const int spreadDamage = checkDoublePlainAreaDamage();
+    if (spreadDamage) return spreadDamage;
     const int areaAction = checkDoubleAreaActionChecksAndLastPp();
     if (areaAction) return areaAction;
     const int doubleSleep = checkDoubleSingleTargetSleepCheckpoint();

@@ -1461,6 +1461,12 @@ bool pokemonMoveWeatherMultiplier(uint16_t moveId,
 enum class PokemonDamageCoreResult : uint8_t {
     Ok = 0, MissingMove, MissingSpecies, NonDamagingMove, InvalidStats, InvalidType, UnsupportedAbilityCondition, UnresolvedWeather
 };
+struct PokemonMoveTargetPolicy {
+    bool resolved = false;
+    uint8_t activeTargetCount = 1; // Live targets, including immune actors.
+};
+bool pokemonMoveTargetMultiplier(uint16_t moveId, const PokemonMoveTargetPolicy* policy, double& output);
+
 PokemonDamageCoreResult calculatePokemonDamageCore(
     const PokemonBattleState& attacker,
     const PokemonBattleState& defender,
@@ -1468,7 +1474,8 @@ PokemonDamageCoreResult calculatePokemonDamageCore(
     bool moveIsTypeless,
     uint32_t& outputDamage,
     const PokemonMoveWeatherContext* weatherContext = nullptr,
-    PokerogueRngAdapter* simulationRng = nullptr);
+    PokerogueRngAdapter* simulationRng = nullptr,
+    const PokemonMoveTargetPolicy* targetPolicy = nullptr);
 
 struct PokemonCriticalPolicy {
     bool resolved = false;
@@ -1523,7 +1530,8 @@ PokemonMoveDamageResult resolveStandardPokemonMoveDamage(
     const PokemonMoveWeatherContext* weatherContext = nullptr,
     const PokemonCriticalPolicy* criticalPolicy = nullptr,
     const PokemonHitPolicy* hitPolicy = nullptr,
-    const PokemonBurnDamagePolicy* burnPolicy = nullptr);
+    const PokemonBurnDamagePolicy* burnPolicy = nullptr,
+    const PokemonMoveTargetPolicy* targetPolicy = nullptr);
 
 struct PokemonPpPolicy {
     bool resolved = false;
@@ -1560,7 +1568,8 @@ PokemonMoveActionStatus useStandardPokemonMove(
     PokemonBossState* targetBossState = nullptr,
     const PokemonBossDamagePolicy* bossDamagePolicy = nullptr,
     PokerogueRngAdapter* bossGlobalRng = nullptr,
-    const PokemonBurnDamagePolicy* burnPolicy = nullptr);
+    const PokemonBurnDamagePolicy* burnPolicy = nullptr,
+    const PokemonMoveTargetPolicy* targetPolicy = nullptr);
 
 enum class PokemonAbilitySelectionResult : uint8_t { Ok = 0, MissingSpecies, InvalidHiddenRate };
 PokemonAbilitySelectionResult selectPokemonAbilityIndex(
