@@ -2203,3 +2203,9 @@
 1. EnemyPokemon.damage pinned reduce por segmentos, aplica super.damage (supervivencia) y luego usa el índice cleared calculado; ignoreSegments calcula cleared desde HP final. applyPokemonBossDamage reproduce ese orden y reporta sturdyConsumed.
 2. useStandardPokemonMove prepara el tag desde perfil exacto antes del daño boss. Generador admite callbacks Sturdy únicamente con declaration completa ya validada; desconocidos siguen rechazados. Status residual pasa preventEndure=true; confusión restaura el tag previo antes de delegar al boss resolver.
 3. Regresiones 10190–10193 de tag existente, bypass preventEndure y Dragon Rage+Sturdy+escudo/PP escritas. Tablas regeneradas; tests/build pendientes. Weather con tag boss y otras supervivencias aún requieren su composición; no se declara paridad universal.
+
+## Clima, Sturdy y escudos
+
+1. Pinned WeatherEffectPhase.damageAndUpdate usa ignoreSegments=true; supervivencia existente sigue permitida. Evento climático conserva requestedDamage además de appliedDamage.
+2. Fase de clima restaura HP/tag previos antes de aplicar el daño solicitado mediante dispatcher boss; así un hit con appliedDamage cero no desaparece ni consume dos veces supervivencia. Eventos de los actores se publican solo tras éxito conjunto, igual que HP/boss/global RNG.
+3. Regresiones 10200–10203 cubren Hail + jefe HP uno + tag existente, siguiente KO, fallo tardío y outputs/RNG intactos. Casos escritos, no ejecutados; no implica todos los callbacks de clima/dobles ni final phase.

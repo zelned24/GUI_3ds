@@ -33,8 +33,9 @@ inline bool applyPokemonMultiWeatherPhase(PokemonBattleState& player,
     PokemonWeatherPhaseEvent& output,
     PokemonBossState* enemyBoss = nullptr, PokemonBossState* secondEnemyBoss = nullptr,
     PokerogueRngAdapter* globalRng = nullptr) {
-    output = {};
+    PokemonWeatherPhaseEvent event{};
     if (upcomingInterlude || arena.type == PokemonEffectiveWeather::None) {
+        output = event;
         return true;
     }
     if (!pokemonWeatherLifecycleSupported(player.abilityId) ||
@@ -77,16 +78,17 @@ inline bool applyPokemonMultiWeatherPhase(PokemonBattleState& player,
         policy.type1 = form ? form->type1 : species->type1;
         policy.type2 = form ? form->type2 : species->type2;
         if (!pokemonAbilityBlocksWeatherDamage(actor.abilityId, arena.type, policy.abilityBlocksDamage)) return false;
-        if (boss && boss->segmentCount && actor.sturdy.present) return false;
         const uint16_t originalHp = actor.hp;
+        const auto originalSturdy = actor.sturdy;
         if (!applyPokemonWeatherResidualDamage(actor, arena, policy, result)) return false;
-        if (boss && boss->segmentCount && result.damageApplied) {
+        if (boss && boss->segmentCount && result.requestedDamage) {
             const auto* ability = PokerogueContent::findAbilityMovegenProfile(actor.abilityId);
             if (!globalRng || !ability || !ability->bossDamageCallbacksResolved) return false;
             actor.hp = originalHp;
+            actor.sturdy = originalSturdy;
             PokemonBossDamagePolicy bossPolicy{true, true, true};
             PokemonBossDamageEvent bossEvent{};
-            if (!applyPokemonBossDamage(actor, *boss, result.damageApplied, bossPolicy,
+            if (!applyPokemonBossDamage(actor, *boss, result.requestedDamage, bossPolicy,
                     nextGlobalRng, bossEvent)) return false;
             result.damageApplied = bossEvent.damageApplied;
             result.fainted = actor.hp == 0;
@@ -94,16 +96,17 @@ inline bool applyPokemonMultiWeatherPhase(PokemonBattleState& player,
         return true;
     };
 
-    if (!apply(nextPlayer, nullptr, output.player) ||
-        !apply(nextEnemy, enemyBoss ? &nextBoss : nullptr, output.enemy)) return false;
+    if (!apply(nextPlayer, nullptr, event.player) ||
+        !apply(nextEnemy, enemyBoss ? &nextBoss : nullptr, event.enemy)) return false;
     if (secondEnemy && !apply(nextSecondEnemy, secondEnemyBoss ? &nextSecondBoss : nullptr,
-            output.secondEnemy)) return false;
+            event.secondEnemy)) return false;
     player = nextPlayer;
     enemy = nextEnemy;
     if (secondEnemy) *secondEnemy = nextSecondEnemy;
     if (enemyBoss) *enemyBoss = nextBoss;
     if (secondEnemyBoss) *secondEnemyBoss = nextSecondBoss;
     if (globalRng) *globalRng = nextGlobalRng;
+    output = event;
     return true;
 }
 

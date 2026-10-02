@@ -1431,6 +1431,7 @@ bool applyPokemonWeatherResidualDamage(PokemonBattleState& target,
     }
     uint16_t damage = static_cast<uint16_t>(target.maxHp / 16);
     if (!damage) damage = 1;
+    event.requestedDamage = damage;
     if (applyPokemonExistingSturdyDamage(target, damage, event.damageApplied) !=
             PokemonSurvivalResult::Ok) return false;
     event.fainted = target.hp == 0;

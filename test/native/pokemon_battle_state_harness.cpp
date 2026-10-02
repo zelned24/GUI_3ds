@@ -2180,6 +2180,41 @@ extern "C" int runPokemonBattleStateChecks() {
         const auto* ability = PokerogueContent::findAbilityMovegenProfile(5);
         if (!ability || !ability->bossDamageCallbacksResolved) return 10193;
     }
+    // Hail keeps the requested hit even when a full-HP one-point boss survives.
+    {
+        auto player = state, enemy = state;
+        player.abilityId = enemy.abilityId = 0;
+        player.hp = player.maxHp = 16;
+        enemy.hp = enemy.maxHp = 1;
+        player.status = enemy.status = {};
+        player.sturdy = {};
+        enemy.sturdy.present = true;
+        Pokerogue3DS::PokemonBossState boss{1, 0, false, false};
+        Pokerogue3DS::PokemonArenaWeatherState arena{};
+        arena.type = Pokerogue3DS::PokemonEffectiveWeather::Hail;
+        Pokerogue3DS::PokerogueRngAdapter global;
+        const uint16_t root[] = {'h', 'a', 'i', 'l'};
+        global.sow(root, 4);
+        Pokerogue3DS::PokemonWeatherPhaseEvent event{};
+        if (!Pokerogue3DS::applyPokemonMultiWeatherPhase(player, enemy, nullptr, arena, false, event,
+                &boss, nullptr, &global) || enemy.hp != 1 || enemy.sturdy.present ||
+            event.enemy.requestedDamage != 1 || event.enemy.damageApplied || event.enemy.fainted) return 10200;
+        const auto before = global.state();
+        const auto playerHp = player.hp;
+        boss.segmentIndex = 1; // Invalid: fail after preparing the player's residual.
+        event.player.damageApplied = 99;
+        event.enemy.damageApplied = 77;
+        if (Pokerogue3DS::applyPokemonMultiWeatherPhase(player, enemy, nullptr, arena, false, event,
+                &boss, nullptr, &global) || player.hp != playerHp || enemy.hp != 1 ||
+            event.player.damageApplied != 99 || event.enemy.damageApplied != 77) return 10201;
+        const auto after = global.state();
+        if (before.carry != after.carry || before.s0 != after.s0 || before.s1 != after.s1 || before.s2 != after.s2)
+            return 10202;
+        boss.segmentIndex = 0;
+        if (!Pokerogue3DS::applyPokemonMultiWeatherPhase(player, enemy, nullptr, arena, false, event,
+                &boss, nullptr, &global) || enemy.hp || event.enemy.damageApplied != 1 || !event.enemy.fainted)
+            return 10203;
+    }
     // Sharpness modifies slicing power before the base formula's additive two.
     {
         auto user = state, target = state;

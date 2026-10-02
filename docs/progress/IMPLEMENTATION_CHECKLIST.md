@@ -467,3 +467,8 @@ Los ejemplos describen infraestructura y límites; no son tareas cerradas. Actua
 
 - Daño boss consume tag después de ajuste por segmentos; comando activa Sturdy canónica y registra supervivencia. Residual mantiene preventEndure; confusión usa el tag original con dispatcher.
 - Casos escritos y generación realizada; ejecución pendiente. Weather, otras supervivencias/flags, dobles y fase final siguen pendientes.
+
+### Avance CAM-03 / HP-02 / TUR-08: clima con supervivencia
+
+- Dispatcher boss recibe requested damage y tag previo; ignoreSegments calcula escudos desde HP final. Eventos de fase y estados se publican conjuntamente.
+- Regresiones de daño cero, KO siguiente y rollback escritas sin ejecutar. Resto de callbacks/campo doble y fase final siguen pendientes.

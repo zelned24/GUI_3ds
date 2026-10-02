@@ -1392,6 +1392,7 @@ bool pokemonAbilityBlocksWeatherDamage(uint16_t abilityId,
 struct PokemonWeatherDamageEvent {
     uint16_t damageApplied = 0;
     bool fainted = false;
+    uint16_t requestedDamage = 0;
 };
 bool applyPokemonWeatherResidualDamage(PokemonBattleState& target,
     const PokemonArenaWeatherState& arena, const PokemonWeatherDamagePolicy& policy,
