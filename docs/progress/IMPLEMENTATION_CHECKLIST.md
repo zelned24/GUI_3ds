@@ -412,3 +412,8 @@ Los ejemplos describen infraestructura y límites; no son tareas cerradas. Actua
 
 - Chip Away/Darkest Lariat conectados a daño, precisión y selección con perfiles exactos. Se conserva la precisión y el boost ofensivo propio.
 - Regresiones escritas sin ejecutar; atributos compuestos y validación final pendientes.
+
+### Avance HAB-03 / SAV-02: replay Gallade/Sharpness
+
+- Perfil, cálculo de potencia y proveedor exacto conectados en contextos simples. Replay con actor real Gallade y Sacred Sword escrito, compara HP/PP/ability/RNG tras dos restores.
+- Caso sin ejecutar; dobles/modifiers/pasivas/supresión y verificación final siguen pendientes. No se cierra HAB-03 ni SAV-02.

@@ -456,6 +456,64 @@ static int checkStatusActionAdmission() {
                 const auto a = sturdyRun.battleRng().state(), b = replay.battleRng().state();
                 if (a.carry != b.carry || a.s0 != b.s0 || a.s1 != b.s1 || a.s2 != b.s2) return 9975;
             }
+            // Real Gallade/Sharpness actor, Sacred Sword command after restore.
+            // Moves are injected only into this test snapshot, never production learnsets.
+            {
+                const auto* species = PokerogueContent::findSpeciesByDex(475);
+                if (!species || (species->ability1 != 292 && species->ability2 != 292)) return 10070;
+                PokemonBattleInit input{};
+                input.speciesDex = species->dex;
+                input.formId = species->firstFormId;
+                input.level = 5;
+                input.pokemonId = context.player.actor.pokemonId;
+                input.abilityId = 292;
+                input.gender = PokemonGender::Male;
+                input.nature = context.player.actor.nature;
+                for (uint8_t i = 0; i < 6; ++i) input.ivs[i] = context.player.actor.ivs[i];
+                input.moveCount = 1;
+                input.moveIds[0] = 533;
+                PokemonBattleState actor{};
+                if (initializePokemonBattleState(input, actor) != PokemonBattleInitResult::Ok) return 10071;
+                auto identity = context.player.actor;
+                identity.formId = actor.formId;
+                identity.gender = PokemonGender::Male;
+                identity.abilityIndex = species->ability1 == 292 ? 0 : 1;
+                identity.initialTeraType = resolvePokemonTypeSymbol(species->type1);
+                identity.initialTeraTypeIndex = 0;
+                identity.initialTeraTypeResolved = true;
+                uint32_t experience = 0;
+                if (pokemonTotalExperienceForLevel(species->growthRate, 5, experience) !=
+                        PokemonExperienceResult::Ok) return 10072;
+                auto sharpnessCheckpoint = checkpoint;
+                if (!captureNativePokemonActorSave(actor, identity, experience,
+                        sharpnessCheckpoint.playerParty[0])) return 10073;
+                sharpnessCheckpoint.playerLevel = 5;
+                sharpnessCheckpoint.playerExperience = experience;
+                sharpnessCheckpoint.playerHp = actor.hp;
+                sharpnessCheckpoint.playerMoveIds[0] = 533;
+                sharpnessCheckpoint.playerPp[0] = 15;
+                sharpnessCheckpoint.enemyMoveCount = 1;
+                sharpnessCheckpoint.enemyMoveIds[0] = 45;
+                sharpnessCheckpoint.enemyPp[0] = 40;
+                for (uint8_t slot = 1; slot < 4; ++slot) {
+                    sharpnessCheckpoint.enemyMoveIds[slot] = 0;
+                    sharpnessCheckpoint.enemyPp[slot] = 0;
+                }
+                FirstRunRuntime sharpnessRun(seed), replay(seed);
+                NativeRunSave after{}, repeatedAfter{};
+                if (!sharpnessRun.restoreNativeRunSave(sharpnessCheckpoint) ||
+                    !replay.restoreNativeRunSave(sharpnessCheckpoint) || !sharpnessRun.battleInputSupported() ||
+                    !replay.battleInputSupported() || !sharpnessRun.advanceBattleTurn() || !replay.advanceBattleTurn() ||
+                    sharpnessRun.captureNativeRunSave(after) != NativeSaveResult::Ok ||
+                    replay.captureNativeRunSave(repeatedAfter) != NativeSaveResult::Ok ||
+                    after.playerPp[0] != 14 || after.battleTurn != sharpnessCheckpoint.battleTurn + 1 ||
+                    after.playerHp != repeatedAfter.playerHp || after.enemyHp != repeatedAfter.enemyHp ||
+                    after.playerParty[0].abilityId != 292 || repeatedAfter.playerParty[0].abilityId != 292 ||
+                    after.enemyPp[0] != repeatedAfter.enemyPp[0] ||
+                    after.playerPp[0] != repeatedAfter.playerPp[0]) return 10074;
+                const auto a = sharpnessRun.battleRng().state(), b = replay.battleRng().state();
+                if (a.carry != b.carry || a.s0 != b.s0 || a.s1 != b.s1 || a.s2 != b.s2) return 10075;
+            }
             NativeRunSave emberCheckpoint = checkpoint;
             emberCheckpoint.playerMoveIds[0] = 52;
             emberCheckpoint.playerPp[0] = 25;

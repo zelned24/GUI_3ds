@@ -2136,3 +2136,9 @@
 1. Proveedor general admite únicamente el predicado exacto SLICING_MOVE y multiplicador literal validado; Tough Claws y otros predicados siguen rechazados. El generador comparte la expresión con el perfil de potencia.
 2. FirstRunRuntime restringe actores Sharpness a estadísticas base, sin dobles ni held modifiers. Potencia se aplica antes del término +2; no cambia daño fijo.
 3. Regresiones de cálculo, movimiento no slicing, provenance y rechazo de Tough Claws escritas. Fuente pinned inspeccionada y tablas regeneradas; tests, build y ejecución 3DS pendientes.
+
+## Replay de actor Gallade/Sharpness
+
+1. Caso 10070–10075 usa Gallade 475 y ability 292 validados contra el catálogo; actor masculino, identidad/forma/EXP coherentes. Sacred Sword se inyecta exclusivamente en snapshot de test.
+2. Dos restores ejecutan comando y recapturan estado, comparando HP, PP, conservación de habilidad y RNG. No sustituye un recorrido completo ni cobertura de todos los contextos.
+3. Regresión escrita, no ejecutada. Inspección confirma que capture/restore de runs aún restringe wave > 9 y trainers distintos de wave 5; retirar gates requiere persistir sus estados, no eliminarlos silenciosamente.
