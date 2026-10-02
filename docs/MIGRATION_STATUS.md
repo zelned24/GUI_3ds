@@ -2064,3 +2064,9 @@
 1. Gate de daño fijo reconoce perfil FullHpEndure canónico en defensor; no amplía automáticamente capacidades del atacante. Predicción devuelve importe sin crear tag, igual que canApply/apply(simulated) pinned.
 2. useStandardPokemonMove prepara y consume tag sobre copia del defensor; HP, PP, damageApplied, RNG y evento sturdySurvived se publican juntos al éxito. Segundo golpe a HP reducido ya no activa Sturdy. Jefes con esta capacidad se rechazan hasta su dispatch específico.
 3. Regresiones 9950–9952 con Sturdy 5 y Dragon Rage 82 escritas; pruebas no ejecutadas. FirstRunRuntime continúa restringido por proveedores generales de ability/PP/weather/save: no se declara una run con Sturdy jugable todavía.
+
+## Sturdy en proveedores de acciones
+
+1. StatusActionAbilityProfile admite callbacks PreDefendFullHpEndureAbAttr/BlockOneHitKOAbAttr solo con declaraciones exactas sin parámetros. Eso permite PP/status providers sin omitir un callback desconocido; los ataques OneHitKO no se admiten por este cambio.
+2. FirstRunRuntime mantiene dobles/modifiers/stats no base fuera de contextos Sturdy. Comando aplica tag también en daño ordinario; jefes siguen rechazados y run save con tag activo sigue protegido.
+3. Regresiones 9960–9961 de PP y Tackle con Sturdy escritas, no ejecutadas. Falta evidencia end-to-end con actor real Sturdy, save de run y todos los contextos antes de declarar cobertura completa.

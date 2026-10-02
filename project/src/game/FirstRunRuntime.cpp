@@ -1269,6 +1269,12 @@ bool FirstRunRuntime::resolveActiveStatStageCommandPolicy(const PokemonBattleSta
 bool FirstRunRuntime::supportsActiveBattleMove(const PokemonBattleState& user,
     const PokemonBattleState& opponent, uint16_t moveId) const {
     if (!supportsBaselineBattleMove(moveId)) return false;
+    // Survival dispatcher currently covers simple actor contexts only.
+    for (const auto& profile : PokerogueContent::kFullHpEndureAbilityProfiles) {
+        if (!profile.resolved || (profile.abilityId != user.abilityId && profile.abilityId != opponent.abilityId)) continue;
+        if (m_doubleBattle || m_heldModifierCount || !user.statsAreBaseFormulaOnly ||
+            !opponent.statsAreBaseFormulaOnly) return false;
+    }
     if (pokemonFixedDamageMoveProfile(moveId)) {
         uint8_t ppCost = 1;
         return !m_doubleBattle && !m_heldModifierCount &&

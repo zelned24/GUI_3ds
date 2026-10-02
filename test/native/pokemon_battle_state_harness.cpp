@@ -1802,6 +1802,23 @@ extern "C" int runPokemonBattleStateChecks() {
                 PokemonMoveActionStatus::Ok || target.hp || !event.targetFainted || event.sturdySurvived ||
             event.damageApplied != 1 || user.moves[0].pp != 8) return 9952;
     }
+    // Exact Sturdy profile is neutral for PP/critical policy and applies to ordinary damage.
+    {
+        uint8_t cost = 0;
+        if (!Pokerogue3DS::pokemonSingleOpponentPpCost(5, cost) || cost != 1) return 9960;
+        auto user = state, target = state;
+        user.abilityId = 65;
+        target.abilityId = 5;
+        user.status = target.status = {};
+        user.moveCount = 1;
+        user.moves[0] = {33, 35, 35};
+        target.maxHp = target.hp = 2;
+        auto rng = damageRng;
+        PokemonMoveActionResult event{};
+        if (Pokerogue3DS::useStandardPokemonMove(user, target, 0, false, rng, event) !=
+                PokemonMoveActionStatus::Ok || target.hp != 1 || !event.sturdySurvived ||
+            event.targetFainted || target.sturdy.present || event.damageApplied != 1) return 9961;
+    }
     // TargetHalfHpDamageAttr: floor, minimum one, no ordinary damage modifiers.
     for (const uint16_t id : {uint16_t(162), uint16_t(717), uint16_t(877)}) {
         const auto* profile = Pokerogue3DS::pokemonFixedDamageMoveProfile(id);
