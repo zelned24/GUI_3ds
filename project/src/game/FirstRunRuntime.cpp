@@ -2671,7 +2671,8 @@ bool FirstRunRuntime::executeActiveBattleMove(uint8_t userIndex, uint8_t targetI
                 PokemonStatStageEffectResult::Ok) return false;
         if (!applyMoveHeldHealing(user)) return false;
         if (!event.move.hit) {
-            m_battleFeedback = policy.move.blockedBeforeAccuracy ? "Move blocked by ability" : "Move missed";
+            m_battleFeedback = event.move.typeImmune ? "Target immune to move" :
+                policy.move.blockedBeforeAccuracy ? "Move blocked by ability" : "Move missed";
         } else {
             m_battleFeedback = (event.move.stages.changedStatMask || event.reflection.changedStatMask)
                 ? "Stats changed" : "Stats unchanged";

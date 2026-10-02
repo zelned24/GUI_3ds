@@ -995,6 +995,38 @@ extern "C" int runPokemonBattleStateChecks() {
             if (row.abilityId == 125) unresolvedResidual = !row.resolved; // Sheer Force power callback pending.
         if (!unresolvedResidual) return 9671;
     }
+    {
+        auto cappedUser = state, opportunistTarget = state;
+        cappedUser.moveCount = 1;
+        cappedUser.moves[0] = {97, 30, 30};
+        cappedUser.statStages[4] = 6;
+        for (auto& stage : opportunistTarget.statStages) stage = 0;
+        const auto* opportunist = PokerogueContent::findAbilityStatStageProfile(290);
+        if (!opportunist || !opportunist->copiesRaises) return 9680;
+        Pokerogue3DS::PokemonStatStageCommandPolicy copyCommand{};
+        copyCommand.move.hitPolicyResolved = copyCommand.move.stagePolicy.resolved = true;
+        copyCommand.postChangePoliciesResolved = true;
+        copyCommand.opponentCopyProfile = opportunist;
+        Pokerogue3DS::PokemonStatStageCommandEvent copyCommandEvent{};
+        copyCommandEvent.move.accuracyRoll = 123;
+        auto copyCommandRng = replacementRng, expectedCopyCommandRng = copyCommandRng;
+        // Required copy callback unresolved: rollback even though USER already
+        // tentatively consumed PP and emitted a clamped original phase.
+        if (Pokerogue3DS::usePokemonStatStageStatusCommand(cappedUser, opportunistTarget, 0,
+                copyCommand, copyCommandRng, copyCommandEvent) !=
+                Pokerogue3DS::PokemonStatStageEffectResult::UnresolvedPolicy ||
+            cappedUser.moves[0].pp != 30 || cappedUser.statStages[4] != 6 ||
+            opportunistTarget.statStages[4] || copyCommandEvent.move.accuracyRoll != 123 ||
+            copyCommandRng.randSeedUint32() != expectedCopyCommandRng.randSeedUint32()) return 9681;
+        copyCommand.opponentCopy.resolved = true;
+        copyCommandRng = expectedCopyCommandRng;
+        if (Pokerogue3DS::usePokemonStatStageStatusCommand(cappedUser, opportunistTarget, 0,
+                copyCommand, copyCommandRng, copyCommandEvent) != Pokerogue3DS::PokemonStatStageEffectResult::Ok ||
+            cappedUser.statStages[4] != 6 || copyCommandEvent.move.stages.changedStatMask ||
+            copyCommandEvent.move.stages.requestedStages != 2 || cappedUser.moves[0].pp != 29 ||
+            opportunistTarget.statStages[4] != 2 || copyCommandEvent.opponentCopy.changes[4] != 2 ||
+            copyCommandRng.randSeedUint32() != expectedCopyCommandRng.randSeedUint32()) return 9682;
+    }
     const uint8_t mixedSlots[] = {0, 1};
     const uint32_t mixedDamage[] = {0, 10};
     uint8_t mixedFiltered[4]{}, mixedCount = 0;

@@ -1870,3 +1870,9 @@
 1. Generador conserva el conjunto de habilidades cuyo perfil completo de acción de estado ya pasó validación de atributos/parámetros/builders. Sus atributos de estadísticas, precisión, inmunidad de aplicación y chance no son callbacks de daño residual; el perfil residual los admite como neutros en ese contexto.
 2. Simple/Contrary/Defiant/Competitive/Mirror Armor/Opportunist dejan de rechazarse únicamente por sus atributos de etapas al resolver residuales. Atributos relevantes residuales conservan sus máscaras/multiplicadores; callbacks desconocidos como Sheer Force siguen pendientes. No habilita automáticamente daño de jefes ni otras fases.
 3. Regresiones de perfiles neutros y rechazo Sheer Force escritas; contenido regenerado y hash canónico intacto. Tests/compilación y validación de run Classic siguen pendientes.
+
+## Opportunist en el comando completo y feedback de inmunidad
+
+1. Regresión Agility con usuario en SPD +6 y oponente Opportunist comprueba copia del aumento solicitado +2 aunque el cambio aplicado al usuario sea cero, según triggerReactionAbilities del pinned StatStageChangePhase. No consume RNG de precisión/chance garantizada; PP se consume una sola vez.
+2. Regresión de callback de copia pendiente exige rollback de PP/etapas/RNG/output después de la fase original tentativa. Esto cubre el dispatcher completo además de las pruebas aisladas de copia existentes; permanece sin ejecutar.
+3. Feedback runtime distingue inmunidad de tipo de bloqueo por habilidad y miss en comandos de estadísticas, consumiendo el evento ya emitido. Tests/compilación y jugabilidad Classic completa siguen pendientes.
