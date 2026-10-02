@@ -1076,8 +1076,10 @@ bool FirstRunRuntime::resolveActiveStatusRecipientPolicies(const PokemonBattleSt
         (count == 1 || std::strcmp(types[1], "FLYING") != 0);
     field.sunnyOrHarshSun = m_arenaWeather.type == PokemonEffectiveWeather::Sunny ||
         m_arenaWeather.type == PokemonEffectiveWeather::HarshSun;
-    const PokemonStatusAbilityComponent own[] = {{recipient.abilityId, true, true}};
-    const PokemonStatusAbilityComponent sourceAbilities[] = {{source.abilityId, true, true}};
+    // Admitted status-action abilities have no bypassFaint builder; HP controls
+    // activity after recoil while provenance/capability resolution stays explicit.
+    const PokemonStatusAbilityComponent own[] = {{recipient.abilityId, recipient.hp != 0, true}};
+    const PokemonStatusAbilityComponent sourceAbilities[] = {{source.abilityId, source.hp != 0, true}};
     return resolvePokemonStatusRecipientPolicies(recipient, &source, effect, field,
         own, 1, nullptr, 0, sourceAbilities, 1, output);
 }

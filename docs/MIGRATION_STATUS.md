@@ -1949,3 +1949,9 @@
 1. Pinned Pokemon.canApplyAbility exige HP >0 salvo bypassFaint. Poison Puppeteer y Synchronize inspeccionados no declaran bypassFaint; los perfiles admitidos de acciones de estado rechazan ese builder desconocido.
 2. Proveedor POST_APPLY de FirstRunRuntime pasa la actividad de receptor/fuente desde HP después del daño y retroceso, en vez de true incondicional. El efecto de estado sobre rival vivo se conserva; callback del atacante debilitado no se activa ni consume duración de confusión.
 3. Revisión estática; regresiones existentes de callbacks desactivados y fase tras recoil permanecen pendientes de ejecución. Tests/compilación/Classic/Azahar/Old 3DS no verificados aún.
+
+## Actividad de inmunidades de estado tras faint
+
+1. resolveActiveStatusRecipientPolicies ya no marca incondicionalmente activos los componentes de habilidades propias/fuente. Usa HP restante después del daño/retroceso para ambos actores.
+2. Esto conserva la distinción entre capability conocida y habilidad activa: las capacidades desconocidas continúan rechazadas; perfiles admitidos no declaran bypassFaint. No se habilitan pasivas ni suppression implícitamente.
+3. Revisión estática y diff-check; pruebas de composición/inactividad existentes quedan pendientes de ejecución junto con tests, compilación y validación Old 3DS. Objetivo global aún incompleto.
