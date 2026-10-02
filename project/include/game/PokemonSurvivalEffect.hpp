@@ -3,7 +3,6 @@
 namespace Pokerogue3DS {
 // Pinned PreDefendFullHpEndureAbAttr and SturdyTag. Owned by the caller until
 // actor persistence and turn-end tag dispatch are integrated.
-struct PokemonSturdyTagState { bool present = false; };
 struct PokemonSturdyPolicy {
     bool resolved = false;
     bool fullHpEndureAbilityActive = false;

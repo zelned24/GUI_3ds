@@ -343,6 +343,11 @@ NativeSaveResult FirstRunRuntime::captureNativeRunSave(NativeRunSave& output) co
         m_context.secondEnemy.battleState.pendingStatus != PokemonStatusEffect::None;
     for (const auto& member : m_context.playerParty) pending |= member.battleState.pendingStatus != PokemonStatusEffect::None;
     for (const auto& member : m_context.trainerParty) pending |= member.battleState.pendingStatus != PokemonStatusEffect::None;
+    // Do not discard a tag that the v18 codec cannot yet represent.
+    pending |= m_context.player.battleState.sturdy.present || m_context.enemy.battleState.sturdy.present ||
+        m_context.secondEnemy.battleState.sturdy.present;
+    for (const auto& member : m_context.playerParty) pending |= member.battleState.sturdy.present;
+    for (const auto& member : m_context.trainerParty) pending |= member.battleState.sturdy.present;
     if (pending) { output = {}; return NativeSaveResult::UnsupportedStage; }
     if (!m_runStarted) {
         for (const auto& member : m_context.playerParty)
@@ -3037,6 +3042,7 @@ bool FirstRunRuntime::finishBattleTurn() {
         removeParticipant(nextPlayer.pokemonId);
     }
     nextPlayer.turnDamageDealt = nextEnemy.turnDamageDealt = nextSecondEnemy.turnDamageDealt = 0;
+    nextPlayer.sturdy = nextEnemy.sturdy = nextSecondEnemy.sturdy = {};
     m_context.player.battleState = nextPlayer;
     m_context.enemy.battleState = nextEnemy;
     m_context.enemy.bossState = nextEnemyBoss;

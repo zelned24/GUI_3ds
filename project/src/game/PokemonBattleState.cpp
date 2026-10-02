@@ -1148,6 +1148,7 @@ bool changePokemonBattleForm(PokemonBattleState& state, const char* targetFormId
     next.status = state.status;
     next.pendingStatus = state.pendingStatus;
     next.confusion = state.confusion;
+    next.sturdy = state.sturdy;
     next.heldItemLostTags = state.heldItemLostTags;
     next.turnDamageDealt = state.turnDamageDealt;
     state = next;

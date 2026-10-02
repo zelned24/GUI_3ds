@@ -3253,6 +3253,32 @@ int main() {
         size_t rejectedSize = 99;
         if (encodeNativePokemonSave(actorSnapshot, actorBytesAgain, 1, rejectedSize) != NativeSaveResult::TooLarge ||
             rejectedSize) return 286;
+        // Actor v11 preserves Sturdy alongside independently optional status/confusion.
+        for (const bool status : {false, true}) for (const bool confused : {false, true}) {
+            auto survivalActor = actorSnapshot;
+            survivalActor.sturdyTag = true;
+            survivalActor.status = {};
+            survivalActor.confusion = {};
+            if (status) {
+                survivalActor.status.present = true;
+                survivalActor.status.effect = PokemonStatusEffect::Burn;
+            }
+            if (confused) survivalActor.confusion = {3, true, 109, true, 42, true};
+            char payload[512]{}, repeatedPayload[512]{};
+            size_t payloadSize = 0, repeatedSize = 0;
+            NativePokemonSave decoded{};
+            PokemonBattleState restored{};
+            if (encodeNativePokemonSave(survivalActor, payload, sizeof(payload), payloadSize) != NativeSaveResult::Ok ||
+                decodeNativePokemonSave(payload, payloadSize, decoded) != NativeSaveResult::Ok ||
+                !decoded.sturdyTag || decoded.status.present != status || decoded.confusion.present != confused ||
+                (confused && (decoded.confusion.turns != 3 || decoded.confusion.sourcePokemonId != 42)) ||
+                !restoreNativePokemonSave(decoded, restored) || !restored.sturdy.present ||
+                encodeNativePokemonSave(decoded, repeatedPayload, sizeof(repeatedPayload), repeatedSize) !=
+                    NativeSaveResult::Ok || repeatedSize != payloadSize ||
+                std::memcmp(payload, repeatedPayload, payloadSize)) return 9940;
+            if (decodeNativePokemonSave(payload, payloadSize - 1, decoded) != NativeSaveResult::InvalidFormat ||
+                !decoded.sturdyTag) return 9941;
+        }
         // Actor payload v7 preserves optional zero counters and full uint32 counts.
         auto statusActor = currentActor.battleState;
         statusActor.status.present = true;

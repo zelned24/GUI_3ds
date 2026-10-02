@@ -2046,3 +2046,15 @@
 1. Generador emite FullHpEndureAbilityProfile de declaraciones exactas sin argumentos y builders conocidos; Sturdy 5 conserva sourcePath/symbol/hash. Attributes inesperados no se descartan ni habilitan.
 2. resolvePokemonSturdyAbilityPolicy distingue perfil reconocido de habilidad activa y requiere caller explícito para otras supervivencias/jefes. No sustituye el proveedor general de capacidades ni abre Sturdy en FirstRunRuntime.
 3. Regresiones 9920–9922 de provider, unknown ID e inactividad escritas; no ejecutadas. Pendiente actor/save/tag dispatch y comando completo.
+
+## Ownership del tag Sturdy y protección de guardado
+
+1. PokemonBattleState posee sturdy; reconstrucción de estadísticas lo conserva, recall lo elimina y finishBattleTurn lo limpia en el estado transaccional.
+2. Codec v18 aún no lo representa: captura de actor/run rechaza explícitamente tags activos en cualquier miembro, evitando pérdida silenciosa. No cambia formato ni declara persistencia completa.
+3. Sturdy sigue bloqueada en gameplay hasta codec y command integration. Regresión de recall escrita; tests/compilación pendientes.
+
+## Codec de actor v11 para Sturdy
+
+1. NativePokemonSave conserva sturdyTag y reconstruye PokemonBattleState.sturdy. Payload pokemon=b escribe status, presencia/confusión completa y tag; los registros v1–v10 mantienen su lectura/encoding cuando no tienen Sturdy.
+2. Captura individual admite el tag; captureNativeRunSave mantiene bloqueo explícito para runs con tags activos mientras falta integrar snapshots de trainer/enemy y comando. No se declara persistencia completa de run.
+3. Regresiones 9940–9941 cubren combinaciones status/confusión, roundtrip byte a byte, reconstrucción y truncamiento sin mutar salida. Escritas, no ejecutadas; tests/compilación pendientes.

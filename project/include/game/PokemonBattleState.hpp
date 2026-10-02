@@ -161,6 +161,7 @@ struct PokemonBattleInit {
 };
 
 struct HeldItemLostTagState { bool unburden = false; };
+struct PokemonSturdyTagState { bool present = false; };
 
 // Pinned src/enums/status-effect.ts IDs. FAINT is preserved upstream metadata.
 enum class PokemonStatusEffect : uint8_t {
@@ -239,6 +240,7 @@ struct PokemonBattleState {
     PokemonStatusState status{}; // Persistent nonvolatile status, stored in run v15.
     PokemonStatusEffect pendingStatus = PokemonStatusEffect::None; // PokemonTurnData; queue must drain before checkpoint.
     PokemonConfusionTagState confusion{}; // Transient summon tag; actor v10 / run v18.
+    PokemonSturdyTagState sturdy{}; // Transient summon tag; codec integration pending.
     HeldItemLostTagState heldItemLostTags{}; // Transient summon data.
     uint32_t turnDamageDealt = 0; // PokemonTurnData.totalDamageDealt; reset after turn effects.
     PokemonGender gender = PokemonGender::Unspecified;
@@ -1210,6 +1212,7 @@ inline void resetPokemonStatStages(PokemonBattleState& state) {
 inline void resetPokemonSummonState(PokemonBattleState& state) {
     resetPokemonStatStages(state);
     state.heldItemLostTags = {};
+    state.sturdy = {};
     state.confusion = {};
     state.turnDamageDealt = 0;
 }

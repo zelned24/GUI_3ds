@@ -1775,6 +1775,9 @@ extern "C" int runPokemonBattleStateChecks() {
             event.tagConsumed || event.damageApplied != 10) return 9913;
         Pokerogue3DS::lapsePokemonSturdyTurnEnd(tag);
         if (tag.present) return 9914;
+        target.sturdy.present = true;
+        Pokerogue3DS::resetPokemonSummonState(target);
+        if (target.sturdy.present) return 9930;
     }
     // TargetHalfHpDamageAttr: floor, minimum one, no ordinary damage modifiers.
     for (const uint16_t id : {uint16_t(162), uint16_t(717), uint16_t(877)}) {

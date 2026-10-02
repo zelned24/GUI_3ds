@@ -53,6 +53,7 @@ struct NativePokemonSave {
     int8_t statStages[7]{};
     PokemonStatusState status{}; // Actor payload v7; older payloads contain no status.
     PokemonConfusionTagState confusion{}; // Actor payload v10, summon data.
+    bool sturdyTag = false; // Actor payload v11; absent in older records.
     bool ivsDerivedFromId = false;
     bool pauseEvolutions = false;
     uint8_t maxPp[4]{};

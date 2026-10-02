@@ -314,6 +314,7 @@ bool restoreNativePokemonSave(const NativePokemonSave& saved, PokemonBattleState
     actor.hp = saved.hp;
     actor.status = saved.status;
     actor.confusion = saved.confusion;
+    actor.sturdy.present = saved.sturdyTag;
     for (uint8_t i = 0; i < saved.moveCount; ++i) {
         if (saved.maxPpResolved) {
             if (!pokemonPermanentMaxPpSupported(saved.moveIds[i], saved.maxPp[i])) return false;
@@ -354,6 +355,7 @@ bool captureNativePokemonSave(const PokemonBattleState& state, uint32_t experien
     saved.hp = state.hp;
     saved.status = state.status;
     saved.confusion = state.confusion;
+    saved.sturdyTag = state.sturdy.present;
     saved.experience = experience;
     saved.moveCount = state.moveCount;
     for (uint8_t i = 0; i < 6; ++i) saved.ivs[i] = state.ivs[i];
@@ -482,7 +484,7 @@ NativeSaveResult encodeNativePokemonSave(const NativePokemonSave& saved, char* o
     if (!restoreNativePokemonActorSave(saved, state, identity)) return NativeSaveResult::InvalidRecord;
     if (!output) return NativeSaveResult::InvalidFormat;
     Writer writer{output, capacity};
-    writer.text(saved.confusion.present ? "pokemon=a\n" : saved.status.present ? "pokemon=7\n" : "pokemon=6\n");
+    writer.text(saved.sturdyTag ? "pokemon=b\n" : saved.confusion.present ? "pokemon=a\n" : saved.status.present ? "pokemon=7\n" : "pokemon=6\n");
     writer.hex(saved.speciesDex, 4);
     writer.text(saved.formId); writer.character('\n');
     writer.hex(saved.level, 4);
@@ -507,14 +509,18 @@ NativeSaveResult encodeNativePokemonSave(const NativePokemonSave& saved, char* o
     writer.hex(saved.unburdenTag ? 1 : 0, 2);
     writer.hex(state.friendship, 2);
     for (uint8_t slot = 0; slot < 4; ++slot) writer.hex(state.moves[slot].maxPp, 2);
-    if (saved.confusion.present) {
+    if (saved.sturdyTag) {
         writeStatus(writer, saved.status);
+        writer.hex(saved.confusion.present ? 1 : 0, 1);
+    }
+    if (saved.confusion.present) {
+        if (!saved.sturdyTag) writeStatus(writer, saved.status);
         writer.hex(saved.confusion.turns, 8);
         writer.hex(saved.confusion.sourceMoveResolved ? 1 : 0, 1);
         writer.hex(saved.confusion.sourceMoveId, 4);
         writer.hex(saved.confusion.sourcePokemonResolved ? 1 : 0, 1);
         writer.hex(saved.confusion.sourcePokemonId, 8);
-    } else if (saved.status.present) {
+    } else if (saved.status.present && !saved.sturdyTag) {
         writer.hex(static_cast<uint8_t>(saved.status.effect), 2);
         writer.hex((saved.status.hasSleepTurnsRemaining ? 1 : 0) |
             (saved.status.hasFreezeTurnsRemaining ? 2 : 0), 2);
@@ -522,6 +528,7 @@ NativeSaveResult encodeNativePokemonSave(const NativePokemonSave& saved, char* o
         writer.hex(saved.status.sleepTurnsRemaining, 8);
         writer.hex(saved.status.freezeTurnsRemaining, 8);
     }
+    if (saved.sturdyTag) writer.hex(1, 1);
     if (!writer.valid) return NativeSaveResult::TooLarge;
     written = writer.position;
     return NativeSaveResult::Ok;
@@ -533,11 +540,12 @@ NativeSaveResult decodeNativePokemonSave(const char* bytes, size_t length,
     Reader reader{bytes, length};
     NativePokemonSave saved{};
     uint32_t value = 0;
-    if (!reader.literal("pokemon=") || !reader.hex(1, value) || (value < 1 || value > 10))
+    if (!reader.literal("pokemon=") || !reader.hex(1, value) || (value < 1 || value > 11))
         return NativeSaveResult::InvalidFormat;
+    const bool hasSurvival = value >= 11;
     const bool hasConfusionActor = value >= 10;
     const bool hasConfusionSource = value >= 9;
-    const bool hasConfusion = value >= 8;
+    bool hasConfusion = value >= 8;
     const bool hasStatus = value >= 7;
     const bool hasMaxPp = value >= 6;
     const bool hasFriendship = value >= 5;
@@ -598,8 +606,13 @@ NativeSaveResult decodeNativePokemonSave(const char* bytes, size_t length,
         }
         saved.maxPpResolved = true;
     }
+    if (hasSurvival) {
+        if (!readStatus(reader, saved.status) || !reader.hex(1, value) || value > 1)
+            return NativeSaveResult::InvalidFormat;
+        hasConfusion = value != 0;
+    }
     if (hasConfusion) {
-        if (!readStatus(reader, saved.status) || !reader.hex(8, saved.confusion.turns) ||
+        if ((!hasSurvival && !readStatus(reader, saved.status)) || !reader.hex(8, saved.confusion.turns) ||
             !saved.confusion.turns) return NativeSaveResult::InvalidFormat;
         saved.confusion.present = true;
         if (hasConfusionSource) {
@@ -613,7 +626,7 @@ NativeSaveResult decodeNativePokemonSave(const char* bytes, size_t length,
             saved.confusion.sourcePokemonResolved = value != 0;
             if (!reader.hex(8, saved.confusion.sourcePokemonId)) return NativeSaveResult::InvalidFormat;
         }
-    } else if (hasStatus) {
+    } else if (hasStatus && !hasSurvival) {
         if (!reader.hex(2, value) || value > 7) return NativeSaveResult::InvalidFormat;
         saved.status.effect = static_cast<PokemonStatusEffect>(value);
         saved.status.present = true;
@@ -623,6 +636,10 @@ NativeSaveResult decodeNativePokemonSave(const char* bytes, size_t length,
         if (!reader.hex(8, saved.status.toxicTurnCount) ||
             !reader.hex(8, saved.status.sleepTurnsRemaining) ||
             !reader.hex(8, saved.status.freezeTurnsRemaining)) return NativeSaveResult::InvalidFormat;
+    }
+    if (hasSurvival) {
+        if (!reader.hex(1, value) || value > 1) return NativeSaveResult::InvalidFormat;
+        saved.sturdyTag = value != 0;
     }
     saved.actorIdentityResolved = saved.initialTeraTypeResolved = true;
     if (reader.position != reader.end) return NativeSaveResult::InvalidFormat;
