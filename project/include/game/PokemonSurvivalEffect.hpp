@@ -76,5 +76,7 @@ inline PokemonSurvivalResult applyPokemonExistingSturdyDamage(PokemonBattleState
     return result;
 }
 // SturdyTag is transient and lapses at TURN_END even when never consumed.
-inline void lapsePokemonSturdyTurnEnd(PokemonSturdyTagState& tag) { tag.present = false; }
+inline void lapsePokemonSturdyTurnEnd(PokemonSturdyTagState& tag, bool biomeInterlude = false) {
+    if (!biomeInterlude) tag.present = false;
+}
 }

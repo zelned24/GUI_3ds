@@ -2993,6 +2993,10 @@ bool FirstRunRuntime::finishBattleTurn() {
             }
         }
     }
+    // TurnEndPhase lapses summon tags before turn healing, except biome interludes.
+    lapsePokemonSturdyTurnEnd(nextPlayer.sturdy, upcomingInterlude);
+    lapsePokemonSturdyTurnEnd(nextEnemy.sturdy, upcomingInterlude);
+    lapsePokemonSturdyTurnEnd(nextSecondEnemy.sturdy, upcomingInterlude);
     auto nextRoom = m_trickRoom;
     auto nextWeather = m_arenaWeather;
     PokemonTrickRoomEvent roomEvent{};
@@ -3054,7 +3058,7 @@ bool FirstRunRuntime::finishBattleTurn() {
         removeParticipant(nextPlayer.pokemonId);
     }
     nextPlayer.turnDamageDealt = nextEnemy.turnDamageDealt = nextSecondEnemy.turnDamageDealt = 0;
-    nextPlayer.sturdy = nextEnemy.sturdy = nextSecondEnemy.sturdy = {};
+
     m_context.player.battleState = nextPlayer;
     m_context.enemy.battleState = nextEnemy;
     m_context.enemy.bossState = nextEnemyBoss;

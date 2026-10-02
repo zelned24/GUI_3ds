@@ -1927,6 +1927,25 @@ extern "C" int runPokemonBattleStateChecks() {
         }
         if (!found) return 10014;
     }
+    // Status residual bypasses endure; tag lapses only on normal turn end.
+    {
+        auto actor = state;
+        actor.maxHp = actor.hp = 1;
+        actor.status = {};
+        actor.status.present = true;
+        actor.status.effect = Pokerogue3DS::PokemonStatusEffect::Burn;
+        actor.sturdy.present = true;
+        Pokerogue3DS::PokemonStatusResidualPolicy policy{};
+        policy.resolved = true;
+        Pokerogue3DS::PokemonStatusResidualEvent event{};
+        if (Pokerogue3DS::applyPokemonStatusResidual(actor, policy, event) !=
+                Pokerogue3DS::PokemonStatusResidualResult::Applied || actor.hp ||
+            !event.fainted || event.appliedDamage != 1 || !actor.sturdy.present) return 10020;
+        Pokerogue3DS::lapsePokemonSturdyTurnEnd(actor.sturdy, true);
+        if (!actor.sturdy.present) return 10021;
+        Pokerogue3DS::lapsePokemonSturdyTurnEnd(actor.sturdy, false);
+        if (actor.sturdy.present) return 10022;
+    }
     // TargetHalfHpDamageAttr: floor, minimum one, no ordinary damage modifiers.
     for (const uint16_t id : {uint16_t(162), uint16_t(717), uint16_t(877)}) {
         const auto* profile = Pokerogue3DS::pokemonFixedDamageMoveProfile(id);

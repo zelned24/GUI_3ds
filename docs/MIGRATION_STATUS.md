@@ -2100,3 +2100,9 @@
 1. Daño de confusión y residual climático reutiliza consumo de tag existente; no invoca activación de habilidad. Confusión conserva cancelación y RNG aunque supervivencia reduzca HP perdido a cero.
 2. La ruta de clima con segmentos de jefe y tag activo se rechaza antes de consumirlo hasta resolver su composición específica.
 3. Regresiones 10010–10014 escritas, sin ejecutar. Rutas de status residual y otros tags siguen pendientes; tests/compilación/validación Old 3DS aplazados.
+
+## Orden de lapse Sturdy e interludios
+
+1. PostTurnStatusEffectPhase pinned pasa preventEndure=true: status residual conserva KO y no consume el tag. La ruta nativa existente era correcta; no se convirtió en supervivencia general.
+2. FirstRunRuntime ahora lapsa Sturdy antes de turn healing y solo fuera de interludio, siguiendo TurnEndPhase; sustituye limpieza incondicional tardía.
+3. Regresiones 10020–10022 cubren burn KO con tag, conservación en interludio y lapse normal. Casos escritos, no ejecutados; cobertura completa de turn end y hardware pendientes.
