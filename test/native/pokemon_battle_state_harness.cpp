@@ -1720,6 +1720,32 @@ extern "C" int runPokemonBattleStateChecks() {
                 fixedRng.randSeedUint32() != expectedFixedRng.randSeedUint32()) return 9820;
         }
     }
+    // Psywave: accuracy draw, then its own damage draw, no critical/85..100 draw.
+    {
+        auto user = state, target = state;
+        user.abilityId = target.abilityId = 65;
+        user.status = target.status = {};
+        const auto* profile = Pokerogue3DS::pokemonFixedDamageMoveProfile(149);
+        if (!profile || !profile->randomLevel) return 9900;
+        auto rng = damageRng, expected = rng;
+        (void)expected.randSeedInt(100);
+        const double raw = user.level * (expected.randSeedIntRange(50, 150) * 0.01);
+        const uint32_t amount = raw < 1 ? 1 : static_cast<uint32_t>(raw);
+        PokemonMoveDamageRoll event{};
+        if (Pokerogue3DS::resolveStandardPokemonMoveDamage(user, target, 149, false, rng, event) !=
+                PokemonMoveDamageResult::Ok || !event.hit || event.damage != amount ||
+            !event.accuracyWasRolled || event.criticalWasRolled || event.randomDamagePercent ||
+            rng.randSeedUint32() != expected.randSeedUint32()) return 9901;
+        uint32_t untouched = 123;
+        if (Pokerogue3DS::calculatePokemonDamageCore(user, target, 149, false, untouched) !=
+                Pokerogue3DS::PokemonDamageCoreResult::InvalidStats || untouched != 123) return 9902;
+        auto simRng = damageRng, expectedSim = simRng;
+        const double simRaw = user.level * (expectedSim.randSeedIntRange(50, 150) * 0.01);
+        if (Pokerogue3DS::calculatePokemonDamageCore(user, target, 149, false, untouched, nullptr, &simRng) !=
+                Pokerogue3DS::PokemonDamageCoreResult::Ok ||
+            untouched != (simRaw < 1 ? 1 : static_cast<uint32_t>(simRaw)) ||
+            simRng.randSeedUint32() != expectedSim.randSeedUint32()) return 9903;
+    }
     // TargetHalfHpDamageAttr: floor, minimum one, no ordinary damage modifiers.
     for (const uint16_t id : {uint16_t(162), uint16_t(717), uint16_t(877)}) {
         const auto* profile = Pokerogue3DS::pokemonFixedDamageMoveProfile(id);

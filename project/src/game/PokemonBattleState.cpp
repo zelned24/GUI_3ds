@@ -1630,7 +1630,7 @@ PokemonDamageCoreResult calculatePokemonDamageCore(
     uint16_t moveId,
     bool moveIsTypeless,
     uint32_t& outputDamage,
-    const PokemonMoveWeatherContext* weatherContext) {
+    const PokemonMoveWeatherContext* weatherContext, PokerogueRngAdapter* simulationRng) {
     const auto* move = PokerogueContent::findMoveById(moveId);
     if (!move) return PokemonDamageCoreResult::MissingMove;
     const auto* fixedDamage = pokemonFixedDamageMoveProfile(moveId);
@@ -1652,7 +1652,15 @@ PokemonDamageCoreResult calculatePokemonDamageCore(
         if (effectiveness == 0.0) { outputDamage = 0; return PokemonDamageCoreResult::Ok; }
         if (!pokemonFixedDamageAbilityCapabilitiesResolved(attacker.abilityId, defender.abilityId))
             return PokemonDamageCoreResult::UnsupportedAbilityCondition;
-        if (fixedDamage->userLevel && !attacker.level) return PokemonDamageCoreResult::InvalidStats;
+        // Pinned FixedDamageAttr evaluation also draws during simulated KO checks.
+        if ((fixedDamage->randomLevel && !simulationRng) ||
+            ((fixedDamage->userLevel || fixedDamage->randomLevel) && !attacker.level))
+            return PokemonDamageCoreResult::InvalidStats;
+        if (fixedDamage->randomLevel) {
+            const double raw = attacker.level * (simulationRng->randSeedIntRange(50, 150) * 0.01);
+            outputDamage = raw < 1 ? 1 : static_cast<uint32_t>(raw);
+            return PokemonDamageCoreResult::Ok;
+        }
         outputDamage = fixedDamage->targetHalfHp ? (defender.hp > 1 ? defender.hp / 2 : 1) :
             fixedDamage->userLevel ? attacker.level : fixedDamage->amount;
         return PokemonDamageCoreResult::Ok;
@@ -1826,7 +1834,8 @@ PokemonMoveDamageResult resolveStandardPokemonMoveDamage(
         // immunities and callbacks must still fail explicitly in this frontier.
         if (!pokemonFixedDamageAbilityCapabilitiesResolved(attacker.abilityId, defender.abilityId))
             return PokemonMoveDamageResult::UnsupportedAbilityCondition;
-        if (fixedDamage->userLevel && !attacker.level) return PokemonMoveDamageResult::InvalidStats;
+        if ((fixedDamage->userLevel || fixedDamage->randomLevel) && !attacker.level)
+            return PokemonMoveDamageResult::InvalidStats;
     }
     const auto baseStatus = fixedDamage ? PokemonBaseDamageResult::Ok :
         calculatePokemonBaseDamage(attacker, defender, moveId, baseDamage, false, weatherContext);
@@ -1875,6 +1884,14 @@ PokemonMoveDamageResult resolveStandardPokemonMoveDamage(
     }
     next.hit = true;
     if (fixedDamage) {
+        if (fixedDamage->randomLevel) {
+            const uint32_t percentage = battleRng.randSeedIntRange(50, 150);
+            // Preserve the pinned Number evaluation order before floor.
+            const double raw = attacker.level * (percentage * 0.01);
+            next.damage = raw < 1 ? 1 : static_cast<uint32_t>(raw);
+            output = next;
+            return PokemonMoveDamageResult::Ok;
+        }
         next.damage = fixedDamage->targetHalfHp ? (defender.hp > 1 ? defender.hp / 2 : 1) :
             fixedDamage->userLevel ? attacker.level : fixedDamage->amount;
         output = next;

@@ -2016,3 +2016,15 @@
 1. Predicción y resolver rechazan maxHp cero o hp > maxHp para TargetHalfHpDamageAttr antes de consumir RNG o publicar daño.
 2. Regresiones de mitad de HP cubren 1/2/3/8/99, estado inválido y comando con PP/HP/RNG. Restore/replay incluye también 162/717/877; inmunidad Ghost de Super Fang se comprueba sin draws.
 3. Revisión estática y diff-check realizados; casos escritos sin ejecutar. Tests/compilación/Azahar/hardware pendientes.
+
+## Psywave: resolver aleatorio por nivel
+
+1. RandomLevelDamageAttr exacto se importa con provenance para Psywave 149. Resolver consume precisión y luego randSeedIntRange(50,150), aplica level*(percentage*0.01), floor y mínimo uno, sin críticos ni variación ordinaria.
+2. FirstRunRuntime no admite todavía esta familia: falta integrar RNG de simulación en predicción/IA. calculatePokemonDamageCore rechaza esa predicción sin publicar un daño ficticio.
+3. Regresiones 9900–9902 escritas; tests/compilación pendientes. Es progreso de resolver, no soporte jugable completo de Psywave.
+
+## Psywave: RNG de predicción y admisión
+
+1. EnemyPokemon.getNextMove calcula KO mediante getAttackDamage(simulated:true), que aplica FixedDamageAttr sin suprimir la tirada RandomLevelDamageAttr; Pokemon.randBattleSeedInt delega al battle RNG. La simulación pinned sí consume esta tirada.
+2. calculatePokemonDamageCore acepta un RNG explícito para esta familia y FirstRunRuntime pasa el mismo stream de selección. No usa media ni copia restaurada del RNG. Admisión habilitada con los gates de contexto/habilidades existentes.
+3. Regresión 9903 compara daño/tirada de predicción; restore/replay incluye Psywave. Corrige el bloqueo documentado en el apartado anterior. Tests/compilación/Azahar/hardware siguen pendientes.

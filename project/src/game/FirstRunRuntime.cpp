@@ -2013,7 +2013,7 @@ bool FirstRunRuntime::selectEnemyMoveSlot(const PokemonBattleState& enemyState,
         // Status moves cannot KO and remain eligible only when no attack can KO.
         if (candidateMove->category != PokerogueContent::MoveStatus &&
             calculatePokemonDamageCore(enemyState, playerState,
-                enemyState.moves[slot].moveId, false, damage, &simulatedWeather) != PokemonDamageCoreResult::Ok) {
+                enemyState.moves[slot].moveId, false, damage, &simulatedWeather, &rng) != PokemonDamageCoreResult::Ok) {
             m_battleFeedback = "Enemy simulated damage unsupported";
             buildScene();
             return false;
@@ -2274,7 +2274,7 @@ bool FirstRunRuntime::advanceBattleTurnInPlace() {
                 if (!cm) return false;
                 if (cm->category != PokerogueContent::MoveStatus &&
                     calculatePokemonDamageCore(m_context.enemy.battleState, playerState,
-                        m_context.enemy.battleState.moves[slot].moveId, false, damage, &simWeather) != PokemonDamageCoreResult::Ok) {
+                        m_context.enemy.battleState.moves[slot].moveId, false, damage, &simWeather, rng) != PokemonDamageCoreResult::Ok) {
                     m_battleFeedback = "Enemy simulated damage unsupported";
                     buildScene();
                     return false;
@@ -2329,7 +2329,7 @@ bool FirstRunRuntime::advanceBattleTurnInPlace() {
                 if (!cm) return false;
                 if (cm->category != PokerogueContent::MoveStatus &&
                     calculatePokemonDamageCore(m_context.secondEnemy.battleState, playerState,
-                        m_context.secondEnemy.battleState.moves[slot].moveId, false, damage, &simWeather) != PokemonDamageCoreResult::Ok) {
+                        m_context.secondEnemy.battleState.moves[slot].moveId, false, damage, &simWeather, rng) != PokemonDamageCoreResult::Ok) {
                     m_battleFeedback = "Enemy simulated damage unsupported";
                     buildScene();
                     return false;

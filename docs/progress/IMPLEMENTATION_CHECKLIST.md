@@ -365,3 +365,8 @@ Los ejemplos describen infraestructura y límites; no son tareas cerradas. Actua
 
 - Perfiles y cálculo conectados para Super Fang, Nature’s Madness y Ruination: floor(HP/2), mínimo uno, sin modificadores ordinarios.
 - Multi Lens/contextos adicionales no habilitados; límites y RNG tienen regresiones escritas sin ejecutar.
+
+### Avance MOV-02 / IA-02: Psywave
+
+- Perfil canónico, ejecución y predicción conectados al RNG de batalla: el KO simulado upstream también consume la tirada de nivel aleatoria.
+- Regresiones de orden RNG y restore escritas, sin ejecutar. No se declara cobertura completa ni validación de consola.

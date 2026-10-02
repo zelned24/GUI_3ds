@@ -246,7 +246,7 @@ const moveSelfThawRows = collections.moves.flatMap(move => {
 }).join(',\n');
 
 const statusMoveFlagRows = collections.moves.filter(move => move.category === 'Status' ||
-  /\b(?:StatusEffectAttr|ConfuseAttr|StatStageChangeAttr|FixedDamageAttr|LevelDamageAttr|TargetHalfHpDamageAttr)\b/.test(move.extensions?.upstreamRawRecord?.value ?? '')).map(move => {
+  /\b(?:StatusEffectAttr|ConfuseAttr|StatStageChangeAttr|FixedDamageAttr|LevelDamageAttr|TargetHalfHpDamageAttr|RandomLevelDamageAttr)\b/.test(move.extensions?.upstreamRawRecord?.value ?? '')).map(move => {
   const raw = move.extensions?.upstreamRawRecord?.value ?? '';
   const calls = [...raw.matchAll(/\.([A-Za-z_$][\w$]*)\s*\(/g)].map(m => m[1]);
   const known = new Set(['attr', 'target', 'reflectable', 'powderMove', 'soundBased', 'recklessMove']);
@@ -1267,22 +1267,23 @@ const immunityHeader = ppHeader.replace('struct MoveAttribute {',
 // FixedDamageAttr literal and exact LevelDamageAttr; derived/random callbacks stay raw.
 const fixedDamageRows = collections.moves.flatMap(move => {
   const raw = move.extensions?.upstreamRawRecord?.value ?? '';
-  const mentions = [...raw.matchAll(/\.attr\s*\(\s*(?:FixedDamageAttr|LevelDamageAttr|TargetHalfHpDamageAttr)\b/g)];
+  const mentions = [...raw.matchAll(/\.attr\s*\(\s*(?:FixedDamageAttr|LevelDamageAttr|TargetHalfHpDamageAttr|RandomLevelDamageAttr)\b/g)];
   if (mentions.length !== 1) return [];
   const fixed = [...raw.matchAll(/\.attr\s*\(\s*FixedDamageAttr\s*,\s*(\d+)\s*\)/g)];
   const level = [...raw.matchAll(/\.attr\s*\(\s*LevelDamageAttr\s*\)/g)];
   const halfHp = [...raw.matchAll(/\.attr\s*\(\s*TargetHalfHpDamageAttr\s*\)/g)];
-  if (fixed.length + level.length + halfHp.length !== 1) return [];
+  const randomLevel = [...raw.matchAll(/\.attr\s*\(\s*RandomLevelDamageAttr\s*\)/g)];
+  if (fixed.length + level.length + halfHp.length + randomLevel.length !== 1) return [];
   const amount = fixed.length ? Number(fixed[0][1]) : 0;
   if (fixed.length && (!Number.isSafeInteger(amount) || amount < 1 || amount > 65535))
     throw new Error(`Invalid fixed damage declaration: ${move.id}`);
   const source = move.source ?? move.metadata;
   if (!source?.sourcePath || !source?.sourceSymbol || !source?.sourceHash)
     throw new Error(`Missing fixed damage provenance: ${move.id}`);
-  return [`    {${move.moveId}, ${level.length === 1}, ${amount}, ${halfHp.length === 1}, "${field(source.sourcePath)}", "${field(source.sourceSymbol)}", "${field(source.sourceHash)}"}`];
+  return [`    {${move.moveId}, ${level.length === 1}, ${amount}, ${halfHp.length === 1}, ${randomLevel.length === 1}, "${field(source.sourcePath)}", "${field(source.sourceSymbol)}", "${field(source.sourceHash)}"}`];
 });
 const fixedDamageHeader = immunityHeader.replace('struct MoveAttribute {',
-  `struct MoveFixedDamageProfile { uint16_t moveId; bool userLevel; uint16_t amount; bool targetHalfHp; const char* sourcePath; const char* sourceSymbol; const char* sourceHash; };\ninline constexpr MoveFixedDamageProfile kMoveFixedDamageProfiles[] = {\n${fixedDamageRows.join(',\n')}\n};\nstruct MoveAttribute {`);
+  `struct MoveFixedDamageProfile { uint16_t moveId; bool userLevel; uint16_t amount; bool targetHalfHp; bool randomLevel; const char* sourcePath; const char* sourceSymbol; const char* sourceHash; };\ninline constexpr MoveFixedDamageProfile kMoveFixedDamageProfiles[] = {\n${fixedDamageRows.join(',\n')}\n};\nstruct MoveAttribute {`);
 // Preserve constant HealAttr constructor semantics; variable/callback healing remains raw.
 const healRows = collections.moves.flatMap(move => {
   const raw = move.extensions?.upstreamEffectMetadata?.value ?? '';

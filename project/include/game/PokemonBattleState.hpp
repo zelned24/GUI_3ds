@@ -527,7 +527,8 @@ inline const PokerogueContent::MoveFixedDamageProfile* pokemonFixedDamageMovePro
         move->upstreamFlags || !move->target || std::strcmp(move->target, "NEAR_OTHER")) return nullptr;
     if (!PokerogueContent::moveHasAttribute(*move, "FixedDamageAttr") &&
         !PokerogueContent::moveHasAttribute(*move, "LevelDamageAttr") &&
-        !PokerogueContent::moveHasAttribute(*move, "TargetHalfHpDamageAttr")) return nullptr;
+        !PokerogueContent::moveHasAttribute(*move, "TargetHalfHpDamageAttr") &&
+        !PokerogueContent::moveHasAttribute(*move, "RandomLevelDamageAttr")) return nullptr;
     bool buildersResolved = false;
     for (const auto& flags : PokerogueContent::kStatusMoveFlagProfiles)
         if (flags.moveId == moveId) buildersResolved = flags.resolved;
@@ -535,8 +536,8 @@ inline const PokerogueContent::MoveFixedDamageProfile* pokemonFixedDamageMovePro
     const PokerogueContent::MoveFixedDamageProfile* found = nullptr;
     for (const auto& row : PokerogueContent::kMoveFixedDamageProfiles)
         if (row.moveId == moveId) {
-            if (found || (row.userLevel && row.targetHalfHp) ||
-                ((row.userLevel || row.targetHalfHp) ? row.amount != 0 : row.amount == 0)) return nullptr;
+            if (found || (unsigned(row.userLevel) + unsigned(row.targetHalfHp) + unsigned(row.randomLevel) > 1) ||
+                ((row.userLevel || row.targetHalfHp || row.randomLevel) ? row.amount != 0 : row.amount == 0)) return nullptr;
             found = &row;
         }
     return found;
@@ -1428,7 +1429,8 @@ PokemonDamageCoreResult calculatePokemonDamageCore(
     uint16_t moveId,
     bool moveIsTypeless,
     uint32_t& outputDamage,
-    const PokemonMoveWeatherContext* weatherContext = nullptr);
+    const PokemonMoveWeatherContext* weatherContext = nullptr,
+    PokerogueRngAdapter* simulationRng = nullptr);
 
 struct PokemonCriticalPolicy {
     bool resolved = false;
