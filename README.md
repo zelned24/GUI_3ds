@@ -30,3 +30,5 @@ Mapa de estructura: `npm run brain-map` regenera [el brain map](docs/BRAIN_MAP.m
 4. [Catálogo actualizable](docs/progress/NATIVE_RUNTIME_CONTENT_PACK_CONTRACT.md).
 
 El historial conserva documentos y suites retirados. Retirarlos por cambio de alcance no demuestra que sus antiguos fallos fueran corregidos.
+
+Checklist de avance por áreas: [implementación pendiente](docs/progress/IMPLEMENTATION_CHECKLIST.md).
