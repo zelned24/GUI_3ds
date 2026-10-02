@@ -1003,7 +1003,7 @@ const PokerogueContent::MoveStatStageEffect* singleDamageStatStageEffect(uint16_
     return effect;
 }
 bool supportsBaselineBattleMove(uint16_t moveId) {
-    if (pokemonFixedDamageMoveProfile(moveId) || singleDamageStatStageEffect(moveId) || singleStatusConfusionEffect(moveId) || singleOpponentStatusEffect(moveId) || singleDamageStatusEffect(moveId) || singleDamageConfusionEffect(moveId) || pokemonWeatherChangeProfile(moveId) || supportsPokemonTrickRoomMove(moveId) || supportsPokemonStatStageMove(moveId) || selfHealingProfile(moveId) || damageDrainProfile(moveId) || damageRecoilProfile(moveId)) return true;
+    if (pokemonSurviveDamageMoveResolved(moveId) || pokemonFixedDamageMoveProfile(moveId) || singleDamageStatStageEffect(moveId) || singleStatusConfusionEffect(moveId) || singleOpponentStatusEffect(moveId) || singleDamageStatusEffect(moveId) || singleDamageConfusionEffect(moveId) || pokemonWeatherChangeProfile(moveId) || supportsPokemonTrickRoomMove(moveId) || supportsPokemonStatStageMove(moveId) || selfHealingProfile(moveId) || damageDrainProfile(moveId) || damageRecoilProfile(moveId)) return true;
     const auto* move = PokerogueContent::findMoveById(moveId);
     // This first resolver only executes plain, single-target damaging moves.
     // Only plain damage or a single migrated weather/critical attribute is
@@ -1049,7 +1049,8 @@ double baselineEnemyMoveScore(const PokemonBattleState& user,
         !calculateCanonicalDamageStatStageAiBenefit(user, target, move.id, statBenefit)) return -20.0;
     const double userBenefit = critBenefit + statBenefit + secondaryBenefit +
         canonicalDamageDrainAiBenefit(user, move) + canonicalRecoilAiBenefit(move) +
-        pokemonCanonicalThawAiBenefit(user, move.id);
+        pokemonCanonicalThawAiBenefit(user, move.id) +
+        (pokemonSurviveDamageMoveResolved(move.id) && target.hp <= 1 ? -20.0 : 0.0);
     // Move.calculateEffectivePower returns zero for the fixed-damage sentinel.
     const bool fixedDamage = pokemonFixedDamageMoveProfile(move.id) != nullptr;
     if (!calculatePlainAttackAiScore(effectiveness, selectedStat, otherStat,
@@ -1274,6 +1275,11 @@ bool FirstRunRuntime::supportsActiveBattleMove(const PokemonBattleState& user,
         if (!profile.resolved || (profile.abilityId != user.abilityId && profile.abilityId != opponent.abilityId)) continue;
         if (m_doubleBattle || m_heldModifierCount || !user.statsAreBaseFormulaOnly ||
             !opponent.statsAreBaseFormulaOnly) return false;
+    }
+    if (pokemonSurviveDamageMoveResolved(moveId)) {
+        return !m_doubleBattle && !m_heldModifierCount && user.statsAreBaseFormulaOnly &&
+            opponent.statsAreBaseFormulaOnly && statusActionAbilitySupported(user.abilityId) &&
+            statusActionAbilitySupported(opponent.abilityId);
     }
     if (pokemonFixedDamageMoveProfile(moveId)) {
         uint8_t ppCost = 1;
@@ -2539,7 +2545,7 @@ bool FirstRunRuntime::executeActiveBattleMove(uint8_t userIndex, uint8_t targetI
     if (moveSlot >= user.moveCount || moveSlot >= 4) return false;
     const auto* move = PokerogueContent::findMoveById(user.moves[moveSlot].moveId);
     if (!move || !supportsBaselineBattleMove(move->id)) return false;
-    if (pokemonFixedDamageMoveProfile(move->id) &&
+    if ((pokemonFixedDamageMoveProfile(move->id) || pokemonSurviveDamageMoveResolved(move->id)) &&
         !supportsActiveBattleMove(user, opponent, move->id)) return false;
 
     bool thawAfterFailureChecks = false;

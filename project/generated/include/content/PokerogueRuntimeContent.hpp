@@ -819,6 +819,7 @@ inline constexpr StatusMoveFlagProfile kStatusMoveFlagProfiles[] = {
     {201, true, false, false, false},
     {203, false, false, false, false},
     {204, true, true, false, false},
+    {206, true, false, false, false},
     {207, true, true, false, false},
     {208, false, false, false, false},
     {209, true, false, false, false},
@@ -1054,6 +1055,7 @@ inline constexpr StatusMoveFlagProfile kStatusMoveFlagProfiles[] = {
     {607, false, false, false, false},
     {608, true, true, false, false},
     {609, true, false, false, false},
+    {610, true, false, false, false},
     {612, false, false, false, false},
     {620, true, false, false, false},
     {621, false, false, false, false},
@@ -6565,6 +6567,11 @@ inline constexpr MoveImmunityAbilityProfile kMoveImmunityAbilityProfiles[] = {
 struct FullHpEndureAbilityProfile { uint16_t abilityId; bool resolved; const char* sourcePath; const char* sourceSymbol; const char* sourceHash; };
 inline constexpr FullHpEndureAbilityProfile kFullHpEndureAbilityProfiles[] = {
     {5, true, "src/data/abilities/init-abilities.ts", "AbilityId.STURDY", "040ccf2ca2e00a2111ef0acf54878ec67c45d98c831e35dda3e0bac52f1ee8e6"}
+};
+struct MoveSurviveDamageProfile { uint16_t moveId; const char* sourcePath; const char* sourceSymbol; const char* sourceHash; };
+inline constexpr MoveSurviveDamageProfile kMoveSurviveDamageProfiles[] = {
+    {206, "src/data/moves/move.ts", "MoveId.FALSE_SWIPE", "012df47701de494d4140e97cd4804b25cc7472fcf61805aa71aaa21fe7b59475"},
+    {610, "src/data/moves/move.ts", "MoveId.HOLD_BACK", "012df47701de494d4140e97cd4804b25cc7472fcf61805aa71aaa21fe7b59475"}
 };
 struct MoveFixedDamageProfile { uint16_t moveId; bool userLevel; uint16_t amount; bool targetHalfHp; bool randomLevel; const char* sourcePath; const char* sourceSymbol; const char* sourceHash; };
 inline constexpr MoveFixedDamageProfile kMoveFixedDamageProfiles[] = {

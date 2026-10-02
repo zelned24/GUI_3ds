@@ -1819,6 +1819,34 @@ extern "C" int runPokemonBattleStateChecks() {
                 PokemonMoveActionStatus::Ok || target.hp != 1 || !event.sturdySurvived ||
             event.targetFainted || target.sturdy.present || event.damageApplied != 1) return 9961;
     }
+    // SurviveDamageAttr applies after min-one rounding, so HP one means zero damage.
+    for (const uint16_t id : {uint16_t(206), uint16_t(610)}) {
+        if (!Pokerogue3DS::pokemonSurviveDamageMoveResolved(id)) return 9980;
+        auto user = state, target = state;
+        user.abilityId = target.abilityId = 65;
+        user.status = target.status = {};
+        user.moveCount = 1;
+        user.moves[0] = {id, 40, 40};
+        target.maxHp = target.hp = 2;
+        uint32_t prediction = 123;
+        if (Pokerogue3DS::calculatePokemonDamageCore(user, target, id, false, prediction) !=
+                Pokerogue3DS::PokemonDamageCoreResult::Ok || prediction != 1) return 9981;
+        auto rng = damageRng;
+        PokemonMoveActionResult event{};
+        if (Pokerogue3DS::useStandardPokemonMove(user, target, 0, false, rng, event) !=
+                PokemonMoveActionStatus::Ok || target.hp != 1 || event.damageApplied != 1 ||
+            event.targetFainted || user.moves[0].pp != 39) return 9982;
+        auto expected = rng;
+        (void)expected.randSeedInt(100);
+        (void)expected.randSeedInt(24);
+        (void)expected.randSeedIntRange(85, 100);
+        if (Pokerogue3DS::calculatePokemonDamageCore(user, target, id, false, prediction) !=
+                Pokerogue3DS::PokemonDamageCoreResult::Ok || prediction) return 9983;
+        if (Pokerogue3DS::useStandardPokemonMove(user, target, 0, false, rng, event) !=
+                PokemonMoveActionStatus::Ok || target.hp != 1 || event.damageApplied ||
+            event.targetFainted || user.moves[0].pp != 38 ||
+            rng.randSeedUint32() != expected.randSeedUint32()) return 9984;
+    }
     // TargetHalfHpDamageAttr: floor, minimum one, no ordinary damage modifiers.
     for (const uint16_t id : {uint16_t(162), uint16_t(717), uint16_t(877)}) {
         const auto* profile = Pokerogue3DS::pokemonFixedDamageMoveProfile(id);

@@ -2076,3 +2076,9 @@
 1. Regresiones 9970–9975 construyen actor Geodude 74 con ability 5 validada contra su catálogo real, IV/nature/identity coherentes y EXP canónica; snapshots de test usan Growl frente a Dragon Rage para provocar supervivencia.
 2. Dos restores ejecutan turno y capture de checkpoint, comparando HP=1, PP, ausencia de tag consumido y battle RNG íntegro. No modifica learnsets de producción.
 3. Caso escrito, sin ejecutar: no demuestra aún run Sturdy verificada ni Classic completo. Tests/compilación/Azahar/hardware siguen pendientes.
+
+## False Swipe / Hold Back canónicos
+
+1. Perfiles SurviveDamageAttr exactos conservan provenance. Predicción y ejecución limitan daño a HP-1 después del redondeo ordinario; a HP uno resulta cero, sin omitir precisión/crítico/variación RNG.
+2. FirstRunRuntime admite familias simples con contexto/abilities resueltos y añade penalización IA upstream de -20 cuando target.hp <= 1. No amplía variantes múltiples ni modifiers/dobles.
+3. Regresiones 9980–9984 de los dos movimientos, PP, HP uno y consumo RNG escritas, sin ejecutar. Tests/compilación/Azahar/hardware pendientes.

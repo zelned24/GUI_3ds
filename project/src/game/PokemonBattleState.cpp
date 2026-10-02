@@ -1703,7 +1703,13 @@ PokemonDamageCoreResult calculatePokemonDamageCore(
     const double adjusted = baseDamage * weatherMultiplier * stabMultiplier * typeMultiplier;
     if (adjusted > 4294967295.0) return PokemonDamageCoreResult::InvalidStats;
     const uint32_t rounded = static_cast<uint32_t>(adjusted);
-    outputDamage = rounded ? rounded : 1;
+    uint32_t result = rounded ? rounded : 1;
+    if (pokemonSurviveDamageMoveResolved(moveId)) {
+        if (!defender.maxHp || defender.hp > defender.maxHp) return PokemonDamageCoreResult::InvalidStats;
+        const uint32_t limit = defender.hp ? defender.hp - 1 : 0;
+        if (result > limit) result = limit;
+    }
+    outputDamage = result;
     return PokemonDamageCoreResult::Ok;
 }
 
@@ -1956,6 +1962,11 @@ PokemonMoveDamageResult resolveStandardPokemonMoveDamage(
     if (damage > 4294967295.0) return PokemonMoveDamageResult::InvalidStats;
     const uint32_t rounded = static_cast<uint32_t>(damage);
     next.damage = rounded ? rounded : 1;
+    if (pokemonSurviveDamageMoveResolved(moveId)) {
+        if (!defender.maxHp || defender.hp > defender.maxHp) return PokemonMoveDamageResult::InvalidStats;
+        const uint32_t limit = defender.hp ? defender.hp - 1 : 0;
+        if (next.damage > limit) next.damage = limit;
+    }
     output = next;
     return PokemonMoveDamageResult::Ok;
 }

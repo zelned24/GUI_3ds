@@ -253,7 +253,7 @@ const moveSelfThawRows = collections.moves.flatMap(move => {
 }).join(',\n');
 
 const statusMoveFlagRows = collections.moves.filter(move => move.category === 'Status' ||
-  /\b(?:StatusEffectAttr|ConfuseAttr|StatStageChangeAttr|FixedDamageAttr|LevelDamageAttr|TargetHalfHpDamageAttr|RandomLevelDamageAttr)\b/.test(move.extensions?.upstreamRawRecord?.value ?? '')).map(move => {
+  /\b(?:StatusEffectAttr|ConfuseAttr|StatStageChangeAttr|FixedDamageAttr|LevelDamageAttr|TargetHalfHpDamageAttr|RandomLevelDamageAttr|SurviveDamageAttr)\b/.test(move.extensions?.upstreamRawRecord?.value ?? '')).map(move => {
   const raw = move.extensions?.upstreamRawRecord?.value ?? '';
   const calls = [...raw.matchAll(/\.([A-Za-z_$][\w$]*)\s*\(/g)].map(m => m[1]);
   const known = new Set(['attr', 'target', 'reflectable', 'powderMove', 'soundBased', 'recklessMove']);
@@ -1308,7 +1308,19 @@ const fullHpEndureRows = collections.abilities.flatMap(ability => {
 });
 const survivalHeader = immunityHeader.replace('struct MoveAttribute {',
   `struct FullHpEndureAbilityProfile { uint16_t abilityId; bool resolved; const char* sourcePath; const char* sourceSymbol; const char* sourceHash; };\ninline constexpr FullHpEndureAbilityProfile kFullHpEndureAbilityProfiles[] = {\n${fullHpEndureRows.join(',\n')}\n};\nstruct MoveAttribute {`);
-const fixedDamageHeader = survivalHeader.replace('struct MoveAttribute {',
+const surviveMoveRows = collections.moves.flatMap(move => {
+  const raw = move.extensions?.upstreamRawRecord?.value ?? '';
+  const mentions = [...raw.matchAll(/\bSurviveDamageAttr\b/g)];
+  const declarations = [...raw.matchAll(/\.attr\s*\(\s*SurviveDamageAttr\s*\)/g)];
+  if (mentions.length !== 1 || declarations.length !== 1) return [];
+  const source = move.source ?? move.metadata;
+  if (!source?.sourcePath || !source?.sourceSymbol || !source?.sourceHash)
+    throw new Error(`Missing survive move provenance: ${move.id}`);
+  return `    {${move.moveId}, "${field(source.sourcePath)}", "${field(source.sourceSymbol)}", "${field(source.sourceHash)}"}`;
+});
+const surviveMoveHeader = survivalHeader.replace('struct MoveAttribute {',
+  `struct MoveSurviveDamageProfile { uint16_t moveId; const char* sourcePath; const char* sourceSymbol; const char* sourceHash; };\ninline constexpr MoveSurviveDamageProfile kMoveSurviveDamageProfiles[] = {\n${surviveMoveRows.join(',\n')}\n};\nstruct MoveAttribute {`);
+const fixedDamageHeader = surviveMoveHeader.replace('struct MoveAttribute {',
   `struct MoveFixedDamageProfile { uint16_t moveId; bool userLevel; uint16_t amount; bool targetHalfHp; bool randomLevel; const char* sourcePath; const char* sourceSymbol; const char* sourceHash; };\ninline constexpr MoveFixedDamageProfile kMoveFixedDamageProfiles[] = {\n${fixedDamageRows.join(',\n')}\n};\nstruct MoveAttribute {`);
 // Preserve constant HealAttr constructor semantics; variable/callback healing remains raw.
 const healRows = collections.moves.flatMap(move => {

@@ -375,3 +375,8 @@ Los ejemplos describen infraestructura y límites; no son tareas cerradas. Actua
 
 - Componentes de preparación/consumo/lapse y proveedor canónico con provenance implementados. Simulación no crea tag; preventEndure no lo consume.
 - Falta conectar actor, codec, fases y comando; FirstRunRuntime sigue rechazando Sturdy. Regresiones escritas sin ejecutar.
+
+### Avance MOV-02 / IA-02: False Swipe y Hold Back
+
+- SurviveDamageAttr canónico conectado a predicción, comando y selección; límite HP-1 aplicado después del redondeo, incluido daño cero a HP uno.
+- Regresiones de HP/PP/RNG escritas; contextos amplios y validación ejecutada permanecen pendientes.
