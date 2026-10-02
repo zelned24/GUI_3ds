@@ -2148,3 +2148,9 @@
 1. Captura de run fuerza snapshots explícitos del equipo cuando hay Sturdy; actor v11 conserva el tag sin cambiar el envelope de run v18. Restore reaplica el tag después de reconstruir el encuentro, que puede limpiar summon data.
 2. Tags en slots de jugador no usados son inválidos. Enemy/segundo enemy/trainer con Sturdy activo continúan rechazados porque sus registros no lo representan; setup y fronteras no soportadas conservan protección.
 3. Regresiones 10080–10083 cubren captura/codec/restore/consumo con Geodude, replay RNG y slot inválido. Escritas sin ejecutar. Esto cierra una pérdida de estado del jugador, no levanta los límites de wave/bioma/trainer ni demuestra Classic completo.
+
+## Envelope de run v19: supervivencia enemiga y entrenador
+
+1. NativeRunSave v19 agrega enemySturdy/memberSturdy; captura y restore conservan tags enemigos y de reservas trainer. Jugadores mantienen actor v11. Setup/dobles/jefes no soportados conservan gates.
+2. Decoder acepta v18 y versiones históricas, migrando tags nuevos a ausentes. Valida booleanos, miembro activo consistente y slots no usados; fallos no publican salida parcial.
+3. Regresiones 10090–10097/10100 de roundtrip, v18 exacto, inconsistencias, campo inválido con checksum válido y restore enemigo escritas. Pruebas/compilación pendientes; wave > 9 y trainers adicionales aún no habilitados.

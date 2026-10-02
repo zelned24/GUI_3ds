@@ -652,6 +652,12 @@ NativeSaveResult decodeNativePokemonSave(const char* bytes, size_t length,
 
 NativeSaveResult validateNativeRunSave(const NativeRunSave& save, const char* expectedContentHash) {
     if (save.playerPartyCount > 6 || save.trainerPartyCount > 6) return NativeSaveResult::InvalidRecord;
+    if (save.stage == NativeSaveStage::RunSetup && save.enemySturdyTag) return NativeSaveResult::InvalidRecord;
+    for (uint8_t i = 0; i < 6; ++i)
+        if (i >= save.trainerPartyCount && save.trainerParty[i].sturdyTag) return NativeSaveResult::InvalidRecord;
+    if (save.trainerPartyCount && save.activeTrainerMember < save.trainerPartyCount &&
+        save.enemySturdyTag != save.trainerParty[save.activeTrainerMember].sturdyTag)
+        return NativeSaveResult::InvalidRecord;
     const auto validConfusion = [](const PokemonConfusionTagState& tag) {
         return validPokemonConfusionTag(tag);
     };
@@ -1018,6 +1024,10 @@ NativeSaveResult encodeNativeRunSave(const NativeRunSave& save, char* output, si
         writer.hex(save.trainerParty[i].confusion.sourcePokemonResolved ? 1 : 0, 1);
         writer.hex(save.trainerParty[i].confusion.sourcePokemonId, 8);
     }
+    writer.text("enemySturdy="); writer.hex(save.enemySturdyTag ? 1 : 0, 1);
+    for (uint8_t i = 0; i < save.trainerPartyCount; ++i) {
+        writer.text("memberSturdy="); writer.hex(save.trainerParty[i].sturdyTag ? 1 : 0, 1);
+    }
     if (!writer.valid) return NativeSaveResult::TooLarge;
     char hash[65];
     IntegritySha256::hashHex(output, writer.position, hash);
@@ -1036,7 +1046,7 @@ NativeSaveResult decodeNativeRunSave(const char* bytes, size_t length, const cha
     auto status = inspectEnvelope(bytes, length, value, payloadStart);
     if (status != NativeSaveResult::Ok) return status;
     if (value.saveVersion > kNativeSaveVersion) return NativeSaveResult::UnsupportedVersion;
-    if (value.saveVersion != 1 && value.saveVersion != 2 && value.saveVersion != 3 && value.saveVersion != 4 && value.saveVersion != 5 && value.saveVersion != 6 && value.saveVersion != 7 && value.saveVersion != 8 && value.saveVersion != 9 && value.saveVersion != 10 && value.saveVersion != 11 && value.saveVersion != 12 && value.saveVersion != 13 && value.saveVersion != 14 && value.saveVersion != 15 && value.saveVersion != 16 && value.saveVersion != 17 &&
+    if (value.saveVersion != 1 && value.saveVersion != 2 && value.saveVersion != 3 && value.saveVersion != 4 && value.saveVersion != 5 && value.saveVersion != 6 && value.saveVersion != 7 && value.saveVersion != 8 && value.saveVersion != 9 && value.saveVersion != 10 && value.saveVersion != 11 && value.saveVersion != 12 && value.saveVersion != 13 && value.saveVersion != 14 && value.saveVersion != 15 && value.saveVersion != 16 && value.saveVersion != 17 && value.saveVersion != 18 &&
         value.saveVersion != kNativeSaveVersion) return NativeSaveResult::UnsupportedVersion;
     const bool legacySetup = value.saveVersion == 1 && value.runtimeVersion == 1;
     const bool legacyBattle = value.saveVersion == 2 && value.runtimeVersion == 2;
@@ -1055,9 +1065,10 @@ NativeSaveResult decodeNativeRunSave(const char* bytes, size_t length, const cha
     const bool legacyStatus = value.saveVersion == 15 && value.runtimeVersion == 15;
     const bool legacyConfusion = value.saveVersion == 16 && value.runtimeVersion == 16;
     const bool legacyConfusionSource = value.saveVersion == 17 && value.runtimeVersion == 17;
+    const bool legacyConfusionActor = value.saveVersion == 18 && value.runtimeVersion == 18;
     const bool currentPayload = value.saveVersion == kNativeSaveVersion &&
         value.runtimeVersion == kNativeSaveRuntimeVersion;
-    if (!currentPayload && !legacySetup && !legacyBattle && !legacyProgress && !legacyTrainer && !legacySwitch && !legacyStages && !legacyWeather && !legacyRoom && !legacyInventory && !legacyParty && !legacyHeld && !legacyProfile && !legacyParticipants && !legacySetupParty && !legacyStatus && !legacyConfusion && !legacyConfusionSource)
+    if (!currentPayload && !legacySetup && !legacyBattle && !legacyProgress && !legacyTrainer && !legacySwitch && !legacyStages && !legacyWeather && !legacyRoom && !legacyInventory && !legacyParty && !legacyHeld && !legacyProfile && !legacyParticipants && !legacySetupParty && !legacyStatus && !legacyConfusion && !legacyConfusionSource && !legacyConfusionActor)
         return NativeSaveResult::IncompatibleRuntime;
     if (!isHash(expectedContentHash)) return NativeSaveResult::InvalidFormat;
     if (!equal(value.contentHash, expectedContentHash)) return NativeSaveResult::ContentMismatch;
@@ -1280,10 +1291,22 @@ NativeSaveResult decodeNativeRunSave(const char* bytes, size_t length, const cha
                 if (!readActor("memberConfusionActor=", value.trainerParty[i].confusion))
                     return NativeSaveResult::InvalidFormat;
         }
+        if (value.saveVersion >= 19) {
+            const auto readSurvival = [&reader](const char* field, bool& tag) {
+                uint32_t parsedTag = 0;
+                if (!reader.literal(field) || !reader.hex(1, parsedTag) || parsedTag > 1) return false;
+                tag = parsedTag != 0;
+                return true;
+            };
+            if (!readSurvival("enemySturdy=", value.enemySturdyTag)) return NativeSaveResult::InvalidFormat;
+            for (uint8_t i = 0; i < value.trainerPartyCount; ++i)
+                if (!readSurvival("memberSturdy=", value.trainerParty[i].sturdyTag))
+                    return NativeSaveResult::InvalidFormat;
+        }
         // All version-specific fields, including confusion source metadata, must be
         // consumed before checking for trailing or missing payload bytes.
         if (reader.position != reader.end) return NativeSaveResult::InvalidFormat;
-        if (legacyBattle || legacyProgress || legacyTrainer || legacySwitch || legacyStages || legacyWeather || legacyRoom || legacyInventory || legacyParty || legacyHeld || legacyProfile || legacyParticipants || legacySetupParty || legacyStatus || legacyConfusion || legacyConfusionSource) {
+        if (legacyBattle || legacyProgress || legacyTrainer || legacySwitch || legacyStages || legacyWeather || legacyRoom || legacyInventory || legacyParty || legacyHeld || legacyProfile || legacyParticipants || legacySetupParty || legacyStatus || legacyConfusion || legacyConfusionSource || legacyConfusionActor) {
             value.saveVersion = kNativeSaveVersion;
             value.runtimeVersion = kNativeSaveRuntimeVersion;
         }

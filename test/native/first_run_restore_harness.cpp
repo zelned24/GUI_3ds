@@ -541,6 +541,16 @@ static int checkStatusActionAdmission() {
                     after.playerPp[0] != repeatedAfter.playerPp[0]) return 10074;
                 const auto a = sharpnessRun.battleRng().state(), b = replay.battleRng().state();
                 if (a.carry != b.carry || a.s0 != b.s0 || a.s1 != b.s1 || a.s2 != b.s2) return 10075;
+                auto enemyTaggedCheckpoint = sharpnessCheckpoint;
+                enemyTaggedCheckpoint.enemySturdyTag = true;
+                FirstRunRuntime enemyTagged(seed), enemyTaggedReplay(seed);
+                NativeRunSave enemyTagSave{};
+                if (!enemyTagged.restoreNativeRunSave(enemyTaggedCheckpoint) ||
+                    !enemyTagged.presentation().enemy.battleState.sturdy.present ||
+                    enemyTagged.captureNativeRunSave(enemyTagSave) != NativeSaveResult::Ok ||
+                    !enemyTagSave.enemySturdyTag || !enemyTaggedReplay.restoreNativeRunSave(enemyTagSave) ||
+                    !enemyTaggedReplay.presentation().enemy.battleState.sturdy.present) return 10100;
+
             }
             NativeRunSave emberCheckpoint = checkpoint;
             emberCheckpoint.playerMoveIds[0] = 52;

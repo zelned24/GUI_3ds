@@ -179,6 +179,51 @@ extern "C" int runNativeSaveChecks() {
         !restored.enemyConfusion.sourcePokemonResolved || restored.enemyConfusion.sourcePokemonId != 0xffffffffu ||
         restored.trainerParty[1].confusion.sourcePokemonId != 42) return 9180;
     {
+        auto survivalSave = confusionSave;
+        survivalSave.enemySturdyTag = true;
+        survivalSave.trainerParty[survivalSave.activeTrainerMember].sturdyTag = true;
+        survivalSave.trainerParty[1].sturdyTag = true;
+        char survivalBytes[kNativeSaveMaxBytes]{};
+        size_t survivalSize = 0;
+        NativeRunSave survivalDecoded{};
+        if (encodeNativeRunSave(survivalSave, survivalBytes, sizeof(survivalBytes), survivalSize) != NativeSaveResult::Ok ||
+            decodeNativeRunSave(survivalBytes, survivalSize, PokerogueContent::kContentHash, survivalDecoded) != NativeSaveResult::Ok ||
+            !survivalDecoded.enemySturdyTag || !survivalDecoded.trainerParty[0].sturdyTag ||
+            !survivalDecoded.trainerParty[1].sturdyTag || survivalDecoded.enemyConfusion.turns != 2) return 10090;
+        char* tagField = std::strstr(survivalBytes, "enemySturdy=");
+        if (!tagField) return 10096;
+        tagField[12] = '2';
+        IntegritySha256::hashHex(survivalBytes, survivalSize - 72, digest);
+        std::memcpy(survivalBytes + survivalSize - 65, digest, 64);
+        if (decodeNativeRunSave(survivalBytes, survivalSize, PokerogueContent::kContentHash, survivalDecoded) !=
+                NativeSaveResult::InvalidFormat || !survivalDecoded.enemySturdyTag) return 10097;
+        auto invalid = survivalSave;
+        invalid.trainerParty[0].sturdyTag = false;
+        if (validateNativeRunSave(invalid, PokerogueContent::kContentHash) != NativeSaveResult::InvalidRecord) return 10091;
+        invalid = survivalSave;
+        invalid.trainerParty[5].sturdyTag = true;
+        if (validateNativeRunSave(invalid, PokerogueContent::kContentHash) != NativeSaveResult::InvalidRecord) return 10092;
+        // Exact v18 payload omits the new suffix; checksum is recalculated.
+        char legacy[kNativeSaveMaxBytes]{};
+        const char* suffix = std::strstr(partyBytes, "enemySturdy=");
+        if (!suffix) return 10093;
+        const size_t payloadSize = static_cast<size_t>(suffix - partyBytes);
+        std::memcpy(legacy, partyBytes, payloadSize);
+        char* version = std::strstr(legacy, "saveVersion=0013");
+        char* runtime = std::strstr(legacy, "runtimeVersion=0013");
+        if (!version || !runtime) return 10094;
+        std::memcpy(version + 12, "0012", 4);
+        std::memcpy(runtime + 15, "0012", 4);
+        IntegritySha256::hashHex(legacy, payloadSize, digest);
+        std::memcpy(legacy + payloadSize, "sha256=", 7);
+        std::memcpy(legacy + payloadSize + 7, digest, 64);
+        legacy[payloadSize + 71] = '\n';
+        if (decodeNativeRunSave(legacy, payloadSize + 72, PokerogueContent::kContentHash, survivalDecoded) != NativeSaveResult::Ok ||
+            survivalDecoded.saveVersion != kNativeSaveVersion || survivalDecoded.enemySturdyTag ||
+            survivalDecoded.trainerParty[0].sturdyTag || survivalDecoded.trainerParty[1].sturdyTag ||
+            survivalDecoded.enemyConfusion.sourcePokemonId != 0xffffffffu) return 10095;
+    }
+    {
         // Build the exact v16 layout by removing only v17 source metadata.
         char legacyBytes[kNativeSaveMaxBytes]{};
         const char* sourceStart = std::strstr(partyBytes, "playerConfusionSource=");
@@ -186,9 +231,9 @@ extern "C" int runNativeSaveChecks() {
         const size_t legacyPayload = static_cast<size_t>(sourceStart - partyBytes);
         std::memcpy(legacyBytes, partyBytes, legacyPayload);
         for (size_t n = 0; n < legacyPayload; ++n) {
-            if (n + 16 <= legacyPayload && std::memcmp(legacyBytes + n, "saveVersion=0012", 16) == 0)
+            if (n + 16 <= legacyPayload && std::memcmp(legacyBytes + n, "saveVersion=0013", 16) == 0)
                 std::memcpy(legacyBytes + n + 12, "0010", 4);
-            if (n + 19 <= legacyPayload && std::memcmp(legacyBytes + n, "runtimeVersion=0012", 19) == 0)
+            if (n + 19 <= legacyPayload && std::memcmp(legacyBytes + n, "runtimeVersion=0013", 19) == 0)
                 std::memcpy(legacyBytes + n + 15, "0010", 4);
         }
         IntegritySha256::hashHex(legacyBytes, legacyPayload, digest);
@@ -206,9 +251,9 @@ extern "C" int runNativeSaveChecks() {
         const size_t v17Payload = static_cast<size_t>(actorStart - partyBytes);
         std::memcpy(legacyBytes, partyBytes, v17Payload);
         for (size_t n = 0; n < v17Payload; ++n) {
-            if (n + 16 <= v17Payload && std::memcmp(legacyBytes + n, "saveVersion=0012", 16) == 0)
+            if (n + 16 <= v17Payload && std::memcmp(legacyBytes + n, "saveVersion=0013", 16) == 0)
                 std::memcpy(legacyBytes + n + 12, "0011", 4);
-            if (n + 19 <= v17Payload && std::memcmp(legacyBytes + n, "runtimeVersion=0012", 19) == 0)
+            if (n + 19 <= v17Payload && std::memcmp(legacyBytes + n, "runtimeVersion=0013", 19) == 0)
                 std::memcpy(legacyBytes + n + 15, "0011", 4);
         }
         IntegritySha256::hashHex(legacyBytes, v17Payload, digest);
