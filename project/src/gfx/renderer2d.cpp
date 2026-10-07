@@ -344,6 +344,25 @@ float Renderer2D::textLineHeight(float size) const {
 #endif
 }
 
+bool Renderer2D::setWindowStyle(unsigned id) {
+    const auto* definition=Pokerogue3DS::findWindowTexture(id);
+    if(!definition || !m_initialized || m_frameActive) return false;
+#if defined(__arm__) || defined(__3DS__) || defined(_3DS)
+    // Keep the previous sheet alive if a new asset cannot be loaded/validated.
+    auto next=C2D_SpriteSheetLoad(definition->path);
+    if(!next) return false;
+    const auto image=C2D_SpriteSheetGetImage(next,0);
+    if(!image.tex || !image.subtex || image.subtex->width!=24 || image.subtex->height!=24) {
+        C2D_SpriteSheetFree(next); return false;
+    }
+    C3D_TexSetFilter(image.tex,GPU_NEAREST,GPU_NEAREST);
+    if(m_window) C2D_SpriteSheetFree(m_window);
+    m_window=next;
+#endif
+    m_windowStyle=id;
+    return true;
+}
+
 bool Renderer2D::drawWindow(float x,float y,float width,float height) {
 #if defined(__arm__) || defined(__3DS__) || defined(_3DS)
     const float border=Pokerogue3DS::kWindowBorder;

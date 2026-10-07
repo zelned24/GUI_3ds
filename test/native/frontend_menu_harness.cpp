@@ -1,10 +1,19 @@
 #include "runtime/FrontendMenuPresenter.hpp"
 #include "runtime/RewardMenuPresenter.hpp"
 #include <cassert>
+#include "content/WindowTexture.hpp"
 using namespace Pokerogue3DS;
 // Navigation-only test: no GPU loads or draws are performed.
 void C2D_SpriteSheetFree(C2D_SpriteSheet) {}
 int main() {
+    assert(findWindowTexture(0)==nullptr);
+    assert(findWindowTexture(999)==nullptr);
+    for(const auto& row:kWindowTextures) {
+        assert(findWindowTexture(row.id)==&row);
+        assert(row.path && row.symbol && std::strlen(row.symbol)>0);
+        for(const auto& other:kWindowTextures)
+            if(&other!=&row) assert(row.id!=other.id && std::strcmp(row.path,other.path)!=0);
+    }
     RewardMenuPresenter rewards;
     assert(!rewards.partySelectionMode() && !rewards.moveSelectionMode());
     rewards.setPartySelectionMode(true);
@@ -38,6 +47,14 @@ int main() {
         fresh.input(KEY_B);assert(fresh.page()==FrontendPage::Settings);
         fresh.input(KEY_DDOWN);
     }
+    // Display -> Window returns a command, leaving renderer/storage ownership outside UI.
+    FrontendMenuPresenter windowMenu(false);
+    windowMenu.input(KEY_TOUCH,25,48+3*29);windowMenu.input(KEY_A);
+    assert(windowMenu.page()==FrontendPage::Settings);
+    windowMenu.input(KEY_DDOWN);windowMenu.input(KEY_A);
+    assert(windowMenu.page()==FrontendPage::SettingsGroup);
+    windowMenu.input(KEY_DDOWN);
+    assert(windowMenu.input(KEY_A)==FrontendCommand::NextWindowStyle);
     FrontendMenuPresenter saved(true);
     assert(saved.input(KEY_A)==FrontendCommand::Continue);
     saved.input(KEY_TOUCH,25,48+2*29);saved.input(KEY_A);

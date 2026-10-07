@@ -34,7 +34,7 @@ El avance se publica como trabajo en curso. Classic completo y la fidelidad visu
 4. Compilación directa `make -f Makefile.3ds 3ds`: ELF y 3DSX producidos con devkitARM. No equivale a validación en Old 3DS.
 5. `python scripts/verify_presentation_media.py`: archivos físicos y tablas de presentación PASS; no prueba fidelidad visual ni efectos de objetos.
 6. Regresiones de navegación, geometría, índice de iconos, guards de pausa/guardado y ownership QuickJS PASS. Los guards de main son comprobaciones estáticas, no interacción real en Azahar.
-7. Logs reproducibles de esta revisión: `build/load-menu-npm-test.log`, `build/load-menu-parity.log`, `build/review-native-test.log`, `build/load-menu-arm.log`, `build/review-media.log`. No se versionan binarios ni logs.
+7. Logs reproducibles de esta revisión: `build/window-style-npm-test.log`, `build/window-style-parity.log`, `build/review-native-test.log`, `build/window-style-arm.log`, `build/window-style-media.log`. No se versionan binarios ni logs.
 
 ## Nitidez de presentación
 
@@ -57,6 +57,12 @@ El avance se publica como trabajo en curso. Classic completo y la fidelidad visu
 1. Continuar y Cargar ejecutan la misma lectura transaccional de progreso desde SD; no abren el estado no guardado que quede en memoria tras iniciar otra run.
 2. Un fallo mantiene el título abierto y muestra `nativeSaveResultName` del resultado, incluido checksum, contenido incompatible o error de I/O. El arranque conserva el error de carga para mostrarlo en el título.
 3. Cargar permite reintentar incluso sin un guardado detectado al arrancar. La navegación y los guards de dispatch se prueban; la lectura/restore usa la suite nativa existente. Interacción completa de SD en Azahar y consola sigue pendiente.
+
+## Marcos de ventana
+
+1. Se importan los cinco IDs de `UiWindowStyle` desde la revisión fijada (`src/enums/ui-window-style.ts`) y sus PNG 24×24 originales; el índice generado conserva ID/símbolo/ruta. El reporte `build/native-presentation/window-provenance.json` registra ambas revisiones y hashes.
+2. Ajustes → Pantalla → Ventana emite un comando; el renderer carga el siguiente marco y lo aplica a todas las ventanas nativas. Conserva el anterior ante fallos y evita liberar texturas durante un frame activo.
+3. El valor mostrado es el ID upstream activo. `settings-ui-items.ts` también muestra los IDs numéricos. La selección es de sesión: persistencia en SD y prueba visual conjunta siguen pendientes. No se cierra GUI-07.
 
 ## Texto de menús
 

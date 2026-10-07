@@ -8,7 +8,7 @@
 #include <cstring>
 namespace Pokerogue3DS {
 enum class FrontendPage {Title,Modes,Load,History,Settings,SettingsGroup};
-enum class FrontendCommand {None,Continue,NewClassic,Load,DeleteSave};
+enum class FrontendCommand {None,Continue,NewClassic,Load,DeleteSave,NextWindowStyle};
 // Owns navigation and presentation only. Returned commands are handled by main.
 class FrontendMenuPresenter {
 public:
@@ -111,7 +111,9 @@ public:
         case FrontendPage::Load:
             return FrontendCommand::Load; // Explicit retry can discover/recover an SD save.
         case FrontendPage::Settings:m_group=m_selected;m_page=FrontendPage::SettingsGroup;m_selected=0;break;
-        case FrontendPage::SettingsGroup:m_feedback="Conexion con el runtime pendiente.";break;
+        case FrontendPage::SettingsGroup:
+            if(m_group==1 && m_selected==1) return FrontendCommand::NextWindowStyle;
+            m_feedback="Conexion con el runtime pendiente.";break;
         default:break;
         }
         return FrontendCommand::None;
@@ -156,7 +158,12 @@ public:
                     m_page==FrontendPage::Settings ? runtimeUiText(groupKeys()[i]) : runtimeUiText(settingKey(m_group,i));
                 const float labelSize=renderer.drawTextFitted(label,43,y,0.4f,m_page==FrontendPage::SettingsGroup ? 220 : 249,0xffffffff);
                 if(i==m_selected) m_title.drawCursor(renderer,25,y,labelSize);
-                if(m_page==FrontendPage::SettingsGroup) renderer.drawText("--",275,y,0.4f,0xffffffff);
+                if(m_page==FrontendPage::SettingsGroup) {
+                    char value[16];
+                    if(m_group==1 && i==1) std::snprintf(value,sizeof(value),"%u",renderer.windowStyle());
+                    else std::snprintf(value,sizeof(value),"--");
+                    renderer.drawTextFitted(value,275,y,0.4f,17,0xffffffff);
+                }
             }
         }
         renderer.drawTextFitted(m_feedback ? m_feedback : "A: elegir   B: volver",12,214,0.3f,296,0xffffffff);

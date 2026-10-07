@@ -12,6 +12,8 @@ import os
 import sys
 import struct
 import json
+import hashlib
+from pathlib import Path
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 ROMFS = os.path.join(ROOT, "build", "romfs")
@@ -119,10 +121,28 @@ def test_intro_cinematic():
     print("  [OK] IntroCinematicData.hpp verified")
     print("  [OK] ALL intro cinematic tests PASSED!\n")
 
+def test_windows():
+    root=Path(ROOT)
+    report=json.loads((root / "build/native-presentation/window-provenance.json").read_text(encoding="utf-8"))
+    header=(root / "project/generated/include/content/WindowTexture.hpp").read_text(encoding="utf-8")
+    ids=set()
+    for row in report["files"]:
+        assert row["id"] not in ids
+        ids.add(row["id"])
+        source=root / "build/native-presentation/source" / row["sourcePath"]
+        converted=root / "build/romfs" / row["runtimePath"].removeprefix("romfs:/")
+        assert hashlib.sha256(source.read_bytes()).hexdigest()==row["sourceSHA256"]
+        assert hashlib.sha256(converted.read_bytes()).hexdigest()==row["convertedSHA256"]
+        assert struct.unpack(">II",source.read_bytes()[16:24])==(24,24)
+        assert '{%d, "%s", "%s"}' % (row["id"],row["symbol"],row["runtimePath"]) in header
+    assert ids
+    print(f"  [OK] {len(ids)} imported window styles: physical paths, hashes and generated IDs")
+
 if __name__ == "__main__":
     test_items()
     test_trainers()
     test_intro_cinematic()
+    test_windows()
     print("==================================================")
     print("  ALL PRESENTATION MEDIA VERIFICATION TESTS PASS  ")
     print("==================================================")

@@ -1,3 +1,4 @@
+#include "content/WindowTexture.hpp"
 #include "game/FirstRunRuntime.hpp"
 #include "gfx/renderer2d.hpp"
 #include "storage/NativeRunSave.hpp"
@@ -237,6 +238,13 @@ int main() {
                 } else {
                     frontend.feedback(Pokerogue3DS::nativeSaveResultName(result));
                 }
+            }
+            else if(command==Pokerogue3DS::FrontendCommand::NextWindowStyle) {
+                unsigned next=Pokerogue3DS::kWindowTextures[0].id;
+                for(std::size_t i=0;i<Pokerogue3DS::kWindowTextureCount;++i)
+                    if(Pokerogue3DS::kWindowTextures[i].id==renderer.windowStyle())
+                        next=Pokerogue3DS::kWindowTextures[(i+1)%Pokerogue3DS::kWindowTextureCount].id;
+                frontend.feedback(renderer.setWindowStyle(next) ? nullptr : "No se pudo cargar el marco.");
             }
             else if(command==Pokerogue3DS::FrontendCommand::NewClassic) {
                 const uint16_t starterDex = game.run().starterDex ? game.run().starterDex : 1;

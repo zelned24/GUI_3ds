@@ -78,6 +78,8 @@ public:
 
     float textLineHeight(float size) const;
     float drawTextFitted(const char* text,float x,float y,float size,float maxWidth,uint32_t color);
+    bool setWindowStyle(unsigned id);
+    unsigned windowStyle() const { return m_windowStyle; }
     bool drawWindow(float x, float y, float width, float height);
 
     // Scaled text; reuses the frame buffer without clearing earlier text draws.
@@ -98,6 +100,7 @@ private:
     C2D_Font m_gameFont = nullptr;
     C2D_SpriteSheet m_window = nullptr;
 #endif
+    unsigned m_windowStyle=1;
     bool m_initialized;
     bool m_frameActive;
 };

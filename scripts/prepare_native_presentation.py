@@ -158,12 +158,27 @@ logo_target.parent.mkdir(parents=True,exist_ok=True)
 subprocess.run(["C:/devkitPro/tools/bin/tex3ds.exe","-f","rgba8","-o",str(logo_target),str(logo_source)],check=True,stdout=subprocess.DEVNULL)
 (output.parent / "logo-provenance.json").write_text(json.dumps({"repository":REPOSITORY,"revision":REVISION,"sourcePath":"images/logo.png","sourceSHA256":hashlib.sha256(logo_source.read_bytes()).hexdigest(),"runtimePath":"romfs:/presentation/images/logo.t3x","convertedSHA256":hashlib.sha256(logo_target.read_bytes()).hexdigest()},sort_keys=True,indent=2)+"\n",encoding="utf-8",newline="\n")
 
-window_source=output / "images/ui/windows/window_1.png"
-window_target=ROOT / "build/romfs/presentation/ui/window_1.t3x"
-window_target.parent.mkdir(parents=True,exist_ok=True)
-subprocess.run(["C:/devkitPro/tools/bin/tex3ds.exe","-f","rgba8","-o",str(window_target),str(window_source)],check=True,stdout=subprocess.DEVNULL)
-(ROOT / "project/generated/include/content/WindowTexture.hpp").write_text("// Authentic red-orange window style from the supplied menu reference; ui-theme.ts uses 8px nine-slice borders.\n#pragma once\nnamespace Pokerogue3DS {\ninline constexpr char kWindowTexturePath[]=\"romfs:/presentation/ui/window_1.t3x\";\ninline constexpr unsigned kWindowBorder=8;\n}\n",encoding="utf-8",newline="\n")
-(output.parent / "window-provenance.json").write_text(json.dumps({"repository":REPOSITORY,"revision":REVISION,"sourcePath":"images/ui/windows/window_1.png","sourceSHA256":hashlib.sha256(window_source.read_bytes()).hexdigest(),"runtimePath":"romfs:/presentation/ui/window_1.t3x","convertedSHA256":hashlib.sha256(window_target.read_bytes()).hexdigest()},sort_keys=True,indent=2)+"\n",encoding="utf-8",newline="\n")
+# Import the style IDs from the pinned enum; require its corresponding physical PNG.
+import re
+GAME_REVISION="8555c08c823b856cbec4eb99ca84ea52a955836d"
+style_source=subprocess.check_output(["git","-C",str(ROOT / "build/upstream/pokerogue"),"show",GAME_REVISION+":src/enums/ui-window-style.ts"],text=True)
+styles=re.findall(r"^\s*([A-Z_]+):\s*(\d+),",style_source,re.MULTILINE)
+if not styles: raise ValueError("No UiWindowStyle IDs imported")
+window_rows=[]
+for symbol,raw_id in styles:
+    style_id=int(raw_id)
+    window_source=output / f"images/ui/windows/window_{style_id}.png"
+    window_target=ROOT / f"build/romfs/presentation/ui/window_{style_id}.t3x"
+    window_target.parent.mkdir(parents=True,exist_ok=True)
+    raw=window_source.read_bytes()
+    if struct.unpack(">II",raw[16:24])!=(24,24): raise ValueError("Invalid nine-slice window dimensions")
+    subprocess.run(["C:/devkitPro/tools/bin/tex3ds.exe","-f","rgba8","-o",str(window_target),str(window_source)],check=True,stdout=subprocess.DEVNULL)
+    window_rows.append({"id":style_id,"symbol":symbol,"sourcePath":window_source.relative_to(output).as_posix(),"sourceSHA256":hashlib.sha256(raw).hexdigest(),"runtimePath":f"romfs:/presentation/ui/window_{style_id}.t3x","convertedSHA256":hashlib.sha256(window_target.read_bytes()).hexdigest()})
+header="// Generated from pinned UiWindowStyle and physical 24x24 window assets.\n#pragma once\n#include <cstddef>\nnamespace Pokerogue3DS {\nstruct WindowTextureDefinition { unsigned id; const char* symbol; const char* path; };\ninline constexpr WindowTextureDefinition kWindowTextures[] = {\n"
+header+="\n".join('    {%d, "%s", "%s"},' % (r["id"],r["symbol"],r["runtimePath"]) for r in window_rows)
+header+="\n};\ninline constexpr unsigned kWindowBorder=8;\ninline constexpr std::size_t kWindowTextureCount=sizeof(kWindowTextures)/sizeof(kWindowTextures[0]);\ninline constexpr const char* kWindowTexturePath=kWindowTextures[0].path;\ninline const WindowTextureDefinition* findWindowTexture(unsigned id) { for(const auto& row:kWindowTextures) if(row.id==id) return &row; return nullptr; }\n}\n"
+(ROOT / "project/generated/include/content/WindowTexture.hpp").write_text(header,encoding="utf-8",newline="\n")
+(output.parent / "window-provenance.json").write_text(json.dumps({"repository":REPOSITORY,"revision":REVISION,"enumRepository":"https://github.com/pagefaultgames/pokerogue","enumRevision":GAME_REVISION,"enumSourcePath":"src/enums/ui-window-style.ts","enumSourceSymbol":"UiWindowStyle","enumSHA256":hashlib.sha256(style_source.encode()).hexdigest(),"files":window_rows},sort_keys=True,indent=2)+"\n",encoding="utf-8",newline="\n")
 
 # UI strings come from the pinned locale repository, not presentation literals.
 locale_revision="23aea1cb0da5a0b15b836f3c243791591cc42303"
