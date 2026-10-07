@@ -9,7 +9,7 @@
 namespace {
 int fail=0,c3Free=0,c2Free=0,fontFree=0,sheetFree=0,bufferFree=0,targets=0;
 int draws=0;u32 lastFlags=0;float lastX=0,lastY=0,lastScale=0;
-int hudTokens[6]={3,4,5,6,7,8};Tex3DS_SubTexture hudSubs[6]={{20,460,0,1,1,0},{20,240,0,1,1,0},{20,240,0,1,1,0},{20,460,0,1,1,0},{20,240,0,1,1,0},{20,240,0,1,1,0}};
+int hudTokens[8]={3,4,5,6,7,8,9,10};Tex3DS_SubTexture hudSubs[8]={{20,460,0,1,1,0},{20,240,0,1,1,0},{20,240,0,1,1,0},{20,460,0,1,1,0},{20,240,0,1,1,0},{20,240,0,1,1,0},{22,64,0,1,1,0},{7,7,0,1,1,0}};
 int hudLoads=0;bool hudMissing=false;
 int typeToken=2,typeLoads=0,imageDraws=0;bool typeMissing=false;float imageScaleX=0,imageScaleY=0;Tex3DS_SubTexture typeSub{32,280,0,1,1,0};
 int token=1;C3D_Tex tex{};Tex3DS_SubTexture sub{24,24,0,1,1,0};C2D_FontInfo fontInfo{26};
@@ -28,9 +28,9 @@ C2D_Font C2D_FontLoad(const char*) {return fail==5 ? nullptr : &token;}
 void C2D_FontFree(C2D_Font) {++fontFree;}
 void C2D_FontSetFilter(C2D_Font,GPU_TEXTURE_FILTER_PARAM a,GPU_TEXTURE_FILTER_PARAM b) {assert(a==GPU_NEAREST && b==GPU_NEAREST);}
 const C2D_FontInfo* C2D_FontGetInfo(C2D_Font font) {assert(font);return &fontInfo;}
-C2D_SpriteSheet C2D_SpriteSheetLoad(const char* path) {for(unsigned i=0;i<6;++i) if(!std::strcmp(path,Pokerogue3DS::kHudTypeAtlases[i].path)) {++hudLoads;return hudMissing ? nullptr : &hudTokens[i];}if(std::strcmp(path,Pokerogue3DS::kTypeLabelPath)==0) {++typeLoads;return typeMissing ? nullptr : &typeToken;}return fail==6 ? nullptr : &token;}
+C2D_SpriteSheet C2D_SpriteSheetLoad(const char* path) {for(unsigned i=0;i<8;++i) if(!std::strcmp(path,Pokerogue3DS::kHudIconAtlases[i].path)) {++hudLoads;return hudMissing ? nullptr : &hudTokens[i];}if(std::strcmp(path,Pokerogue3DS::kTypeLabelPath)==0) {++typeLoads;return typeMissing ? nullptr : &typeToken;}return fail==6 ? nullptr : &token;}
 void C2D_SpriteSheetFree(C2D_SpriteSheet) {++sheetFree;}
-C2D_Image C2D_SpriteSheetGetImage(C2D_SpriteSheet sheet,size_t) {for(unsigned i=0;i<6;++i) if(sheet==&hudTokens[i]) return {&tex,&hudSubs[i]};return {&tex,sheet==&typeToken ? &typeSub : (fail==7 ? nullptr : &sub)};}
+C2D_Image C2D_SpriteSheetGetImage(C2D_SpriteSheet sheet,size_t) {for(unsigned i=0;i<8;++i) if(sheet==&hudTokens[i]) return {&tex,&hudSubs[i]};return {&tex,sheet==&typeToken ? &typeSub : (fail==7 ? nullptr : &sub)};}
 bool C3D_FrameBegin(u8) {return true;}
 void C2D_TextBufClear(C2D_TextBuf) {}
 void C2D_SceneBegin(C3D_RenderTarget*) {}
@@ -89,7 +89,7 @@ int main() {
         hudMissing=true;assert(!renderer.drawHudTypeIcon("FIRE",true,0,false,0,0));hudMissing=false;
         for(unsigned i=0;i<6;++i) {
             const bool player=i<3;const unsigned slot=i%3==2 ? 1 : 0;const bool dual=i%3!=0;
-            const auto& atlas=Pokerogue3DS::kHudTypeAtlases[i];
+            const auto& atlas=Pokerogue3DS::kHudIconAtlases[i];
             for(unsigned f=0;f<atlas.count;++f) {
                 const int before=imageDraws;
                 assert(renderer.drawHudTypeIcon(atlas.frames[f].key,player,slot,dual,1.4f,2.7f));
@@ -98,10 +98,25 @@ int main() {
         }
         hudSubs[0].width=19;assert(!renderer.drawHudTypeIcon("FIRE",true,0,false,0,0));hudSubs[0].width=20;
         assert(renderer.drawHudTypeIcon("Fire",true,0,false,0,0));
+        assert(!renderer.drawHudIndicator(nullptr,false,0,0));
+        assert(!renderer.drawHudIndicator("NONE",false,0,0));
+        assert(!renderer.drawHudIndicator("owned",false,0,0));
+        assert(!renderer.drawHudIndicator("burn",true,0,0));
+        hudMissing=true;assert(!renderer.drawHudIndicator("burn",false,0,0));hudMissing=false;
+        for(unsigned i=6;i<8;++i) {
+            const auto& atlas=Pokerogue3DS::kHudIconAtlases[i];
+            for(unsigned f=0;f<atlas.count;++f) {
+                const int before=imageDraws;
+                assert(renderer.drawHudIndicator(atlas.frames[f].key,i==7,1.4f,2.7f));
+                assert(imageDraws==before+1 && imageScaleX==1 && imageScaleY==1);
+            }
+        }
+        hudSubs[6].width=21;assert(!renderer.drawHudIndicator("burn",false,0,0));hudSubs[6].width=22;
+        assert(renderer.drawHudIndicator("burn",false,0,0));
         assert(!renderer.setWindowStyle(2)); // Never free a texture before GPU submission.
         renderer.endFrame();assert(renderer.setWindowStyle(2) && renderer.windowStyle()==2);
         const int sheetsBeforeClose=sheetFree;
-        renderer.fini();assert(sheetFree==sheetsBeforeClose+8); // Window, localized labels and six HUD variants.
+        renderer.fini();assert(sheetFree==sheetsBeforeClose+10); // Window, localized labels, six type variants and two indicator sheets.
         assert(!renderer.isInitialized());assert(renderer.textLineHeight(0.5f)==0);
         assert(renderer.init() && renderer.windowStyle()==1);renderer.fini();
     }

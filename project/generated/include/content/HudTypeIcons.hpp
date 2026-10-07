@@ -1,9 +1,9 @@
-// Generated pinned BattleInfo type icon variants.
+// Generated pinned BattleInfo type and indicator atlases.
 #pragma once
 #include "content/TypeLabels.hpp"
 #include <cstring>
 namespace Pokerogue3DS {
-inline constexpr TypeLabelFrame kHudTypeFrames0[]={
+inline constexpr TypeLabelFrame kHudIconFrames0[]={
     {"bug",{0,23,20,23,23,29,0,6}},
     {"dark",{0,46,20,23,23,29,0,6}},
     {"dragon",{0,69,20,23,23,29,0,6}},
@@ -25,7 +25,7 @@ inline constexpr TypeLabelFrame kHudTypeFrames0[]={
     {"unknown",{0,0,20,23,23,29,0,6}},
     {"water",{0,414,20,23,23,29,0,6}},
 };
-inline constexpr TypeLabelFrame kHudTypeFrames1[]={
+inline constexpr TypeLabelFrame kHudIconFrames1[]={
     {"bug",{0,12,20,12,23,18,0,6}},
     {"dark",{0,24,20,12,23,18,0,6}},
     {"dragon",{0,36,20,12,23,18,0,6}},
@@ -47,7 +47,7 @@ inline constexpr TypeLabelFrame kHudTypeFrames1[]={
     {"unknown",{0,0,20,12,23,18,0,6}},
     {"water",{0,216,20,12,23,18,0,6}},
 };
-inline constexpr TypeLabelFrame kHudTypeFrames2[]={
+inline constexpr TypeLabelFrame kHudIconFrames2[]={
     {"bug",{0,12,20,12,23,18,0,1}},
     {"dark",{0,24,20,12,23,18,0,1}},
     {"dragon",{0,36,20,12,23,18,0,1}},
@@ -69,7 +69,7 @@ inline constexpr TypeLabelFrame kHudTypeFrames2[]={
     {"unknown",{0,0,20,12,23,18,0,1}},
     {"water",{0,216,20,12,23,18,0,1}},
 };
-inline constexpr TypeLabelFrame kHudTypeFrames3[]={
+inline constexpr TypeLabelFrame kHudIconFrames3[]={
     {"bug",{0,23,20,23,21,25,0,2}},
     {"dark",{0,46,20,23,21,25,0,2}},
     {"dragon",{0,69,20,23,21,25,0,2}},
@@ -91,7 +91,7 @@ inline constexpr TypeLabelFrame kHudTypeFrames3[]={
     {"unknown",{0,0,20,23,21,25,0,2}},
     {"water",{0,414,20,23,21,25,0,2}},
 };
-inline constexpr TypeLabelFrame kHudTypeFrames4[]={
+inline constexpr TypeLabelFrame kHudIconFrames4[]={
     {"bug",{0,12,20,12,21,14,0,2}},
     {"dark",{0,24,20,12,21,14,0,2}},
     {"dragon",{0,36,20,12,21,14,0,2}},
@@ -113,7 +113,7 @@ inline constexpr TypeLabelFrame kHudTypeFrames4[]={
     {"unknown",{0,0,20,12,21,14,0,2}},
     {"water",{0,216,20,12,21,14,0,2}},
 };
-inline constexpr TypeLabelFrame kHudTypeFrames5[]={
+inline constexpr TypeLabelFrame kHudIconFrames5[]={
     {"bug",{0,12,20,12,21,15,0,0}},
     {"dark",{0,24,20,12,21,15,0,0}},
     {"dragon",{0,36,20,12,21,15,0,0}},
@@ -135,14 +135,30 @@ inline constexpr TypeLabelFrame kHudTypeFrames5[]={
     {"unknown",{0,0,20,12,21,15,0,0}},
     {"water",{0,216,20,12,21,15,0,0}},
 };
-struct HudTypeAtlas {const char* key;const char* path;unsigned width,height;const TypeLabelFrame* frames;unsigned count;};
-inline constexpr HudTypeAtlas kHudTypeAtlases[]={
-    {"pbinfo_player_type","romfs:/presentation/ui/pbinfo_player_type.t3x",20,460,kHudTypeFrames0,sizeof(kHudTypeFrames0)/sizeof(kHudTypeFrames0[0])},
-    {"pbinfo_player_type1","romfs:/presentation/ui/pbinfo_player_type1.t3x",20,240,kHudTypeFrames1,sizeof(kHudTypeFrames1)/sizeof(kHudTypeFrames1[0])},
-    {"pbinfo_player_type2","romfs:/presentation/ui/pbinfo_player_type2.t3x",20,240,kHudTypeFrames2,sizeof(kHudTypeFrames2)/sizeof(kHudTypeFrames2[0])},
-    {"pbinfo_enemy_type","romfs:/presentation/ui/pbinfo_enemy_type.t3x",20,460,kHudTypeFrames3,sizeof(kHudTypeFrames3)/sizeof(kHudTypeFrames3[0])},
-    {"pbinfo_enemy_type1","romfs:/presentation/ui/pbinfo_enemy_type1.t3x",20,240,kHudTypeFrames4,sizeof(kHudTypeFrames4)/sizeof(kHudTypeFrames4[0])},
-    {"pbinfo_enemy_type2","romfs:/presentation/ui/pbinfo_enemy_type2.t3x",20,240,kHudTypeFrames5,sizeof(kHudTypeFrames5)/sizeof(kHudTypeFrames5[0])},
+inline constexpr TypeLabelFrame kHudIconFrames6[]={
+    {"burn",{0,8,20,8,20,8,0,0}},
+    {"faint",{0,16,20,8,20,8,0,0}},
+    {"freeze",{0,24,20,8,20,8,0,0}},
+    {"paralysis",{0,32,20,8,20,8,0,0}},
+    {"poison",{0,40,20,8,20,8,0,0}},
+    {"pokerus",{0,0,22,8,22,8,0,0}},
+    {"sleep",{0,48,20,8,20,8,0,0}},
+    {"toxic",{0,56,20,8,20,8,0,0}},
 };
-inline const TypeLabelFrame* findHudTypeFrame(unsigned index,const char* type) {if(index>=sizeof(kHudTypeAtlases)/sizeof(kHudTypeAtlases[0])) return nullptr;const auto* label=findTypeLabel(type);if(!label) return nullptr;const auto& atlas=kHudTypeAtlases[index];for(unsigned i=0;i<atlas.count;++i) if(!std::strcmp(atlas.frames[i].key,label->key)) return &atlas.frames[i];return nullptr;}
+inline constexpr TypeLabelFrame kHudIconFrames7[]={
+    {"owned",{0,0,7,7,7,7,0,0}},
+};
+struct HudIconAtlas {const char* key;const char* path;unsigned width,height;const TypeLabelFrame* frames;unsigned count;};
+inline constexpr HudIconAtlas kHudIconAtlases[]={
+    {"pbinfo_player_type","romfs:/presentation/ui/pbinfo_player_type.t3x",20,460,kHudIconFrames0,sizeof(kHudIconFrames0)/sizeof(kHudIconFrames0[0])},
+    {"pbinfo_player_type1","romfs:/presentation/ui/pbinfo_player_type1.t3x",20,240,kHudIconFrames1,sizeof(kHudIconFrames1)/sizeof(kHudIconFrames1[0])},
+    {"pbinfo_player_type2","romfs:/presentation/ui/pbinfo_player_type2.t3x",20,240,kHudIconFrames2,sizeof(kHudIconFrames2)/sizeof(kHudIconFrames2[0])},
+    {"pbinfo_enemy_type","romfs:/presentation/ui/pbinfo_enemy_type.t3x",20,460,kHudIconFrames3,sizeof(kHudIconFrames3)/sizeof(kHudIconFrames3[0])},
+    {"pbinfo_enemy_type1","romfs:/presentation/ui/pbinfo_enemy_type1.t3x",20,240,kHudIconFrames4,sizeof(kHudIconFrames4)/sizeof(kHudIconFrames4[0])},
+    {"pbinfo_enemy_type2","romfs:/presentation/ui/pbinfo_enemy_type2.t3x",20,240,kHudIconFrames5,sizeof(kHudIconFrames5)/sizeof(kHudIconFrames5[0])},
+    {"statuses_es-ES","romfs:/presentation/ui/statuses_es-ES.t3x",22,64,kHudIconFrames6,sizeof(kHudIconFrames6)/sizeof(kHudIconFrames6[0])},
+    {"icon_owned","romfs:/presentation/ui/icon_owned.t3x",7,7,kHudIconFrames7,sizeof(kHudIconFrames7)/sizeof(kHudIconFrames7[0])},
+};
+inline const TypeLabelFrame* findHudTypeFrame(unsigned index,const char* type) {if(index>=6) return nullptr;const auto* label=findTypeLabel(type);if(!label) return nullptr;const auto& atlas=kHudIconAtlases[index];for(unsigned i=0;i<atlas.count;++i) if(!std::strcmp(atlas.frames[i].key,label->key)) return &atlas.frames[i];return nullptr;}
+inline const TypeLabelFrame* findHudIndicator(unsigned index,const char* key) {if(index<6 || index>=sizeof(kHudIconAtlases)/sizeof(kHudIconAtlases[0]) || !key) return nullptr;const auto& atlas=kHudIconAtlases[index];for(unsigned i=0;i<atlas.count;++i) if(!std::strcmp(atlas.frames[i].key,key)) return &atlas.frames[i];return nullptr;}
 }

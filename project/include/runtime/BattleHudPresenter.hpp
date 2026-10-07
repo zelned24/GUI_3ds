@@ -48,14 +48,8 @@ public:
         constexpr uint32_t kLevelColor = C2D_Color32(0xff, 0xe0, 0x60, 255);
         constexpr uint32_t kLevelShadow = C2D_Color32(0x70, 0x50, 0x10, 255);
 
-        // Enemy caught indicator (small Pokéball dot before name)
+        // Name origin also anchors the status and owned indicator row.
         float nameOffsetX = player ? 18.0f : 12.0f;
-        if (!player && isCaught) {
-            // Draw mini Pokéball mark
-            renderer.drawRect(x + nameOffsetX - 6.0f, y + 6.0f, 4.0f, 2.0f, C2D_Color32(230, 40, 40, 255));
-            renderer.drawRect(x + nameOffsetX - 6.0f, y + 8.0f, 4.0f, 2.0f, C2D_Color32(245, 245, 245, 255));
-        }
-
         // Draw Name with 1px drop shadow
         const char* name = actor.localizedName ? actor.localizedName : "";
         const float nameX = x + nameOffsetX;
@@ -127,26 +121,20 @@ public:
             }
         }
 
-        // Status badge (PAR, VEN, TOX, QUE, DOR, CON)
-        if (actor.battleState.status.present && actor.battleState.status.effect != PokemonStatusEffect::None) {
-            const char* tag = "";
-            uint32_t tagColor = C2D_Color32(0x80, 0x80, 0x80, 255);
-            switch (actor.battleState.status.effect) {
-                case PokemonStatusEffect::Paralysis: tag = "PAR"; tagColor = C2D_Color32(240, 180, 0, 255); break;
-                case PokemonStatusEffect::Poison: tag = "VEN"; tagColor = C2D_Color32(160, 64, 160, 255); break;
-                case PokemonStatusEffect::Toxic: tag = "TOX"; tagColor = C2D_Color32(120, 30, 140, 255); break;
-                case PokemonStatusEffect::Burn: tag = "QUE"; tagColor = C2D_Color32(240, 80, 30, 255); break;
-                case PokemonStatusEffect::Sleep: tag = "DOR"; tagColor = C2D_Color32(140, 140, 150, 255); break;
-                case PokemonStatusEffect::Freeze: tag = "CON"; tagColor = C2D_Color32(60, 180, 240, 255); break;
-                default: break;
-            }
-            if (*tag) {
-                const float tagX = x + (player ? 52.0f : 38.0f);
-                const float tagY = y + 22.0f;
-                renderer.drawRect(tagX, tagY, 20.0f, 8.0f, tagColor);
-                renderer.drawText(tag, tagX + 1.0f, tagY, 0.22f, C2D_Color32(255, 255, 255, 255));
-            }
+        // BattleInfo.updateStatusIcon selects the localized status atlas frame.
+        const char* statusKey=nullptr;
+        if(actor.battleState.status.present) switch(actor.battleState.status.effect) {
+            case PokemonStatusEffect::Paralysis: statusKey="paralysis";break;
+            case PokemonStatusEffect::Poison: statusKey="poison";break;
+            case PokemonStatusEffect::Toxic: statusKey="toxic";break;
+            case PokemonStatusEffect::Burn: statusKey="burn";break;
+            case PokemonStatusEffect::Sleep: statusKey="sleep";break;
+            case PokemonStatusEffect::Freeze: statusKey="freeze";break;
+            default:break;
         }
+        if(statusKey) renderer.drawHudIndicator(statusKey,false,x+nameOffsetX,y+23.0f);
+        // Owned marker shares the name's lower row, offset after a visible status.
+        if(!player && isCaught) renderer.drawHudIndicator("owned",true,x+nameOffsetX+(statusKey ? 22.0f : 0.0f),y+23.0f);
 
         // Player specific: HP numbers ("206 / 276") and smooth EXP bar animation
         if (player) {

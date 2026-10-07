@@ -143,3 +143,14 @@ El avance se publica como trabajo en curso. Classic completo y la fidelidad visu
 6. Quedan pendientes atlas originales de estados, captura y otros indicadores; paneles HUD a 1,25×, barras fraccionarias, formas/tipos temporales y comparación conjunta en Azahar/Old 3DS. Los iconos no cierran esos criterios.
 
 7. Gates de iconos HUD: `npm test` 36/36, `npm run native-parity` 126/126, build ARM ELF/3DSX, verificador físico y `git diff --check` PASS. Reimportación idéntica byte a byte para seis t3x, header y reporte. Logs `build/hud-icons-npm-test.log`, `build/hud-icons-parity.log`, `build/hud-icons-arm.log`, `build/hud-icons-media.log`; no equivalen a comparación visual ni prueba en hardware.
+
+## Estados alterados y marca de captura originales
+
+1. El HUD usa el atlas español `images/statuses_es-ES.png/json` para poison, toxic, paralysis, sleep, freeze y burn. Conserva los ocho frames originales, incluyendo pokerus/faint, cuya conexión al runtime sigue pendiente. Fuente: `BattleInfo.updateStatusIcon` del pin de juego.
+2. La marca de captura usa el PNG físico `images/ui/icon_owned.png`, de 7×7, según `EnemyBattleInfo.constructor`; retirada la mini Poké Ball sintetizada con rectángulos. El estado conserva su fila bajo el nombre; la marca owned se desplaza 22 píxeles cuando hay estado para evitar superposición.
+3. El importador HUD existente incorpora ambas hojas; reporta PNG/JSON/converted hashes y source path/symbol por familia. Para owned, canvas/frame se derivan de las dimensiones físicas del PNG, sin inventar un manifest upstream.
+4. Renderer usa escala 1×, posiciones enteras y NEAREST. Cache acotada a ocho hojas HUD, carga diferida, rechazo de claves/hojas incompatibles/dimensiones inválidas y liberación verificable de todos los recursos. No dibuja una etiqueta sustituta cuando falta la hoja original.
+5. Harness renderer ejecuta los ocho frames de estado y la marca owned, además de los 120 frames de tipos; prueba faltantes, claves cruzadas, dimensiones inválidas, filtros, escala y cleanup. Verificador físico coteja las ocho hojas con PNG/JSON/header/hashes. Un fallo inicial del harness identificó dimensiones simuladas incorrectas de owned (8×8); se corrigieron a las dimensiones reales 7×7, preservando el assert.
+6. Quedan pendientes composición visual completa, Pokérus/faint, otros indicadores, paneles y barras de HUD, Azahar y Old 3DS física. No se declara paridad visual por pruebas con SDK simulado.
+
+7. Gates: `npm test` 36/36, `npm run native-parity` 126/126, ARM ELF/3DSX, verificador físico y `git diff --check` PASS. Ocho t3x, header y reporte reproducibles byte a byte. Logs: `build/hud-indicators-npm-test.log`, `build/hud-indicators-parity.log`, `build/hud-indicators-arm.log`, `build/hud-indicators-media.log`.

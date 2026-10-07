@@ -26,6 +26,9 @@ export function registerPresentationTests(test) {
     expect(hud.includes('canonicalPresentationTypes(actor.dex,actor.formId,type1,type2)'), 'HUD badges must use the actual canonical form');
     expect(hud.includes('drawHudTypeIcon(type1,player,0,dual'), 'HUD uses original compact icon variants');
     expect(!hud.includes('drawTypeBadge(renderer'), 'Type labels cannot overlap the status row');
+    expect(hud.includes('drawHudIndicator(statusKey,false'), 'Status indicator must use the original atlas');
+    expect(hud.includes('drawHudIndicator("owned",true'), 'Owned indicator must use the original physical asset');
+    expect(!hud.includes('tagColor'), 'No synthetic status badge in battle HUD');
     expect(hud.includes('&displayedNameWidth'),'Gender position must use measured fitted glyph width');
     expect(!hud.includes('approxNameWidth'),'UTF-8 byte count cannot estimate glyph width');
     const title=fs.readFileSync(path.join(root,'project/include/runtime/TitleMenuPresenter.hpp'),'utf8');
