@@ -4,7 +4,7 @@ import json
 import subprocess
 import struct
 from pathlib import Path
-from pixel_font import crisp_font
+from pixel_font import crisp_font, compact_font
 
 POINTS=(8,10,12,16)
 REPOSITORY="https://github.com/pagefaultgames/pokerogue-assets"
@@ -23,11 +23,12 @@ def prepare_fonts(root, whitelist):
         name="emerald.bcfnt" if points==16 else f"emerald-{points}.bcfnt"
         path=target/name
         subprocess.run(["C:/devkitPro/tools/bin/mkbcfnt.exe","-s",str(points),"-w",str(whitelist),"-o",str(path),str(source)],check=True)
-        path.write_bytes(crisp_font(path.read_bytes()))
+        original=path.read_bytes()
+        path.write_bytes(compact_font(crisp_font(original)))
         data=path.read_bytes()
         glyph=struct.unpack_from("<I",data,36)[0]
         sheet_bytes=struct.unpack_from("<I",data,glyph+4)[0]*struct.unpack_from("<H",data,glyph+8)[0]
-        rows.append({"rasterCellHeight":data[glyph+1],"lineFeed":data[29],"sheetBytes":sheet_bytes,"points":points,"convertedPath":"romfs:/presentation/fonts/"+name,"convertedSHA256":hashlib.sha256(path.read_bytes()).hexdigest(),"bytes":path.stat().st_size})
+        rows.append({"uncompactedBytes":len(original),"rasterCellHeight":data[glyph+1],"lineFeed":data[29],"sheetBytes":sheet_bytes,"points":points,"convertedPath":"romfs:/presentation/fonts/"+name,"convertedSHA256":hashlib.sha256(path.read_bytes()).hexdigest(),"bytes":path.stat().st_size})
     report={"repository":REPOSITORY,"revision":REVISION,"sourcePath":SOURCE,"sourceSHA256":hashlib.sha256(raw).hexdigest(),"schemaVersion":1,"whitelistSHA256":hashlib.sha256(whitelist.read_bytes()).hexdigest(),"alphaPolicy":"A4 threshold 8/15 to binary alpha; native raster metrics","files":rows}
     (root/"build/native-presentation/font-provenance.json").write_text(json.dumps(report,sort_keys=True,indent=2)+"\n",encoding="utf-8",newline="\n")
     return report

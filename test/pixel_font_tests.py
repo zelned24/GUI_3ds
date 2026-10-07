@@ -3,7 +3,7 @@ import sys
 import unittest
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
-from pixel_font import crisp_font
+from pixel_font import crisp_font, compact_font
 from prepare_azahar_preview import pixel_profile
 
 class PixelFontTests(unittest.TestCase):
@@ -22,6 +22,74 @@ class PixelFontTests(unittest.TestCase):
             self.assertEqual(after >> 4, 15 if before >> 4 >= 8 else 0)
             self.assertEqual(after & 15, 15 if before & 15 >= 8 else 0)
         self.assertEqual(crisp_font(converted), converted)
+    def compact_source(self):
+        sheet=128;old_size=64*64//2;cwdh=sheet+old_size
+        direct=cwdh+36;table=direct+24;scan=table+24
+        data=bytearray(scan+32)
+        struct.pack_into("<4sHHIII",data,0,b"CFNT",0xfeff,20,0x3000000,len(data),6)
+        struct.pack_into("<4sI",data,20,b"FINF",32)
+        data[29]=5;struct.pack_into("<III",data,36,60,cwdh+8,direct+8)
+        data[48]=6
+        struct.pack_into("<4sI4B IHH HHHHI",data,52,b"TGLP",32,3,3,2,3,old_size,1,11,16,16,64,64,sheet)
+        data[sheet:sheet+256]=bytes([0xf0,0x0f,0xff,0])*64
+        struct.pack_into("<4sIHHI",data,cwdh,b"CWDH",36,0,6,0)
+        data[cwdh+16:cwdh+34]=bytes([0,3,4])*6
+        struct.pack_into("<4sIHHHHIH",data,direct,b"CMAP",24,65,66,0,0,table+8,0)
+        struct.pack_into("<4sIHHHHIHH",data,table,b"CMAP",24,67,68,1,0,scan+8,2,0xffff)
+        struct.pack_into("<4sIHHHHIHHHHH",data,scan,b"CMAP",32,0xe9,0x2640,2,0,0,2,0xe9,4,0x2640,5)
+        return bytes(data)
+
+    def test_compact_preserves_glyphs_metrics_and_links(self):
+        source=self.compact_source();result=compact_font(source)
+        delta=64*64//2-64*8//2
+        self.assertEqual(len(result),len(source)-delta)
+        self.assertEqual(struct.unpack_from("<I",result,12)[0],len(result))
+        self.assertEqual(struct.unpack_from("<H",result,78)[0],8)
+        self.assertEqual(struct.unpack_from("<H",result,74)[0],2)
+        self.assertEqual(source[128:384],result[128:384])
+        self.assertEqual(source[28:36],result[28:36])
+        self.assertEqual(source[48:64],result[48:64])
+        cwdh,direct=struct.unpack_from("<II",result,40)
+        self.assertEqual(source[128+2048+16:128+2048+34],result[cwdh+8:cwdh+26])
+        expected=[(0,[0]),(1,[2,0xffff]),(2,[2,0xe9,4,0x2640,5])]
+        for method,payload in expected:
+            self.assertEqual(result[direct-8:direct-4],b"CMAP")
+            self.assertEqual(struct.unpack_from("<H",result,direct+4)[0],method)
+            self.assertEqual(list(struct.unpack_from("<"+"H"*len(payload),result,direct+12)),payload)
+            direct=struct.unpack_from("<I",result,direct+8)[0]
+        self.assertEqual(direct,0)
+        self.assertEqual(compact_font(result),result)
+        self.assertEqual(crisp_font(result),result)
+
+    def test_multi_sheet_preserves_original_sheet_indices(self):
+        original=self.compact_source();old_end=128+2048
+        data=bytearray(original[:old_end]+bytes(2048)+original[old_end:])
+        struct.pack_into("<I",data,12,len(data));struct.pack_into("<H",data,68,2)
+        for field in (40,44):
+            struct.pack_into("<I",data,field,struct.unpack_from("<I",original,field)[0]+2048)
+        pointer=struct.unpack_from("<I",original,44)[0]
+        while pointer:
+            next_pointer=struct.unpack_from("<I",original,pointer+8)[0]
+            if next_pointer: struct.pack_into("<I",data,pointer+2048+8,next_pointer+2048)
+            pointer=next_pointer
+        self.assertEqual(compact_font(bytes(data)),bytes(data))
+
+    def test_unknown_sections_and_cycles_fail_explicitly(self):
+        source=self.compact_source();data=bytearray(source+b"XXXX"+struct.pack("<I",8))
+        struct.pack_into("<I",data,12,len(data));struct.pack_into("<I",data,16,7)
+        with self.assertRaisesRegex(ValueError,"Unsupported"): compact_font(bytes(data))
+        data=bytearray(source);pointer=struct.unpack_from("<I",data,44)[0]
+        struct.pack_into("<I",data,pointer+8,pointer)
+        with self.assertRaisesRegex(ValueError,"Cyclic"): compact_font(bytes(data))
+
+    def test_compact_rejects_loss_or_invalid_offsets(self):
+        source=self.compact_source()
+        for position,value in [(384,15),(40,0xff),(76,63),(74,15)]:
+            changed=bytearray(source);changed[position]=value
+            with self.assertRaises(ValueError): compact_font(bytes(changed))
+        changed=bytearray(source);changed[:4]=b"CFNU"
+        with self.assertRaises(ValueError): compact_font(bytes(changed))
+
     def test_preview_profile(self):
         source = "[Renderer]\ntexture_filter=4\n[System]\nis_new_3ds=true\n[WebService]\nsecret=do-not-copy\n"
         result = pixel_profile(source)

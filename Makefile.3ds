@@ -45,7 +45,7 @@ OFILES      := $(CFILES:%.c=$(BUILD)/%.o) $(CPPFILES:%.cpp=$(BUILD)/%.o)
 
 -include $(OFILES:.o=.d)
 
-.PHONY: all 3ds clean
+.PHONY: all 3ds clean FORCE_ROMFS
 
 all: 3ds
 
@@ -56,7 +56,11 @@ $(BUILD)/$(TARGET).smdh: $(_ICON) Makefile.3ds
 	@echo "Creating SMDH descriptor using smdhtool..."
 	$(_SMDHTOOL) --create "$(APP_TITLE)" "$(APP_DESCRIPTION)" "$(APP_AUTHOR)" $(_ICON) $@
 
-$(BUILD)/$(TARGET).3dsx: $(BUILD)/$(TARGET).elf $(BUILD)/$(TARGET).smdh
+# Asset-only edits and removed RomFS files do not change the ELF. Repack on
+# each requested build so previews cannot silently retain stale media.
+FORCE_ROMFS:
+
+$(BUILD)/$(TARGET).3dsx: $(BUILD)/$(TARGET).elf $(BUILD)/$(TARGET).smdh FORCE_ROMFS
 	@echo "Creating 3DSX with RomFS using 3dsxtool..."
 	$(_3DSXTOOL) $< $@ --smdh=$(BUILD)/$(TARGET).smdh $(if $(wildcard $(ROMFS)),--romfs=$(ROMFS),)
 

@@ -5,7 +5,7 @@ import {fileURLToPath} from 'node:url';
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 export function registerPresentationTests(test) {
   test('Native type atlases: preserve trim offsets, sort deterministically and reject invalid frames',()=>{execFileSync('python',[path.join(root,'test/type_atlas_tests.py')],{stdio:'pipe'});});
-  test('Native pixel font: binary alpha preserves metrics, rejects corrupt data and is deterministic',()=>{execFileSync('python',[path.join(root,'test/pixel_font_tests.py')],{stdio:'pipe'});});
+  test('Native pixel font: binary alpha and compact sheets preserve glyphs, metrics and references',()=>{execFileSync('python',[path.join(root,'test/pixel_font_tests.py')],{stdio:'pipe'});});
   test('Native frontend review: save failures, pause input, deterministic seed and indexed trainer assets',()=>{
     const main=fs.readFileSync(path.join(root,'project/src/main.cpp'),'utf8');
     const trainer=fs.readFileSync(path.join(root,'project/src/runtime/TrainerPresenter.cpp'),'utf8');

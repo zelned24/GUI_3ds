@@ -43,3 +43,98 @@ def crisp_font(data: bytes) -> bytes:
     if not found:
         raise ValueError("Missing TGLP")
     return bytes(result)
+
+
+def compact_font(data: bytes) -> bytes:
+    """Crop transparent bottom tile rows of a single A4 sheet, without repacking
+    glyphs. Keep horizontal stride; relocate every supported CFNT file pointer.
+    Multi-sheet fonts retain their layout, as cropping would change sheet IDs.
+    """
+    crisp_font(data)  # Validate texture bounds before following file pointers.
+    if data[:4] != b"CFNT" or struct.unpack_from("<I",data,8)[0]!=0x03000000:
+        raise ValueError("Compaction requires on-disk CFNT offsets")
+    position=struct.unpack_from("<H",data,6)[0]
+    blocks=[]
+    for _ in range(struct.unpack_from("<I",data,16)[0]):
+        if position+8>len(data): raise ValueError("Truncated font section")
+        signature,size=struct.unpack_from("<4sI",data,position)
+        minimum={b"FINF":32,b"TGLP":32,b"CWDH":16,b"CMAP":24}.get(signature)
+        if minimum is None or size<minimum or position+size>len(data):
+            raise ValueError("Unsupported or invalid font section")
+        blocks.append((signature,position,size))
+        if signature==b"TGLP":
+            sheet_size,sheets=struct.unpack_from("<IH",data,position+12)
+            sheet_offset=struct.unpack_from("<I",data,position+28)[0]
+            position=max(position+size,sheet_offset+sheet_size*sheets)
+        else: position+=size
+    if position!=len(data): raise ValueError("Unparsed font data")
+    finfs=[p for sig,p,_ in blocks if sig==b"FINF"]
+    textures=[p for sig,p,_ in blocks if sig==b"TGLP"]
+    if len(finfs)!=1 or len(textures)!=1: raise ValueError("Ambiguous font sections")
+    finf,tglp=finfs[0],textures[0]
+    size,sheets,fmt,columns,rows,width,height,offset=struct.unpack_from("<IHHHHHHI",data,tglp+12)
+    cell_width,cell_height=data[tglp+8],data[tglp+9]
+    if not columns or not rows or width<8 or height<8 or width&(width-1) or height&(height-1):
+        raise ValueError("Invalid sheet dimensions")
+    if columns!=width//(cell_width+1) or rows!=height//(cell_height+1):
+        raise ValueError("Invalid glyph grid")
+    body_types={p+8:sig for sig,p,_ in blocks}
+    pointers=[(finf+16,b"TGLP"),(finf+20,b"CWDH"),(finf+24,b"CMAP")]
+    maximum=struct.unpack_from("<H",data,finf+10)[0]  # replacement glyph
+    for sig,p,length in blocks:
+        if sig==b"CWDH":
+            start,end=struct.unpack_from("<HH",data,p+8)
+            if start>end: raise ValueError("Invalid glyph range")
+            maximum=max(maximum,end)  # conservative for mkbcfnt exclusive end
+            pointers.append((p+12,b"CWDH"))
+        elif sig==b"CMAP":
+            first,last,method=struct.unpack_from("<HHH",data,p+8)
+            if first>last: raise ValueError("Invalid character range")
+            pointers.append((p+16,b"CMAP"))
+            if method==0:
+                maximum=max(maximum,struct.unpack_from("<H",data,p+20)[0]+last-first)
+            elif method==1:
+                count=last-first+1
+                if 20+2*count>length: raise ValueError("Truncated character table")
+                indices=struct.unpack_from("<"+"H"*count,data,p+20)
+                maximum=max([maximum]+[i for i in indices if i!=0xffff])
+            elif method==2:
+                count=struct.unpack_from("<H",data,p+20)[0]
+                if 22+4*count>length: raise ValueError("Truncated character scan")
+                for i in range(count): maximum=max(maximum,struct.unpack_from("<H",data,p+24+4*i)[0])
+            else: raise ValueError("Unsupported character map")
+    for field,kind in pointers:
+        pointer=struct.unpack_from("<I",data,field)[0]
+        if pointer and body_types.get(pointer)!=kind: raise ValueError("Invalid font pointer")
+    for first_field,next_offset in ((finf+20,4),(finf+24,8)):
+        pointer=struct.unpack_from("<I",data,first_field)[0]
+        visited=set()
+        while pointer:
+            if pointer in visited: raise ValueError("Cyclic font pointer chain")
+            visited.add(pointer)
+            pointer=struct.unpack_from("<I",data,pointer+next_offset)[0]
+    if struct.unpack_from("<I",data,finf+16)[0]!=tglp+8:
+        raise ValueError("Missing glyph texture reference")
+    if maximum>=columns*rows*sheets: raise ValueError("Glyph index outside sheet")
+    if sheets!=1: return data
+    required=((maximum+1+columns-1)//columns)*(cell_height+1)
+    new_height=8
+    while new_height<required: new_height*=2
+    if new_height>=height: return data
+    new_size=width*new_height//2
+    cut_start,cut_end=offset+new_size,offset+size
+    if any(data[cut_start:cut_end]): raise ValueError("Cannot discard nontransparent pixels")
+    delta=cut_end-cut_start
+    result=bytearray(data[:cut_start]+data[cut_end:])
+    def relocated(value):
+        if cut_start<=value<cut_end: raise ValueError("Pointer into removed texture")
+        return value-delta if value>=cut_end else value
+    struct.pack_into("<I",result,12,len(result))
+    struct.pack_into("<I",result,tglp+12,new_size)
+    struct.pack_into("<H",result,tglp+22,new_height//(cell_height+1))
+    struct.pack_into("<H",result,tglp+26,new_height)
+    for field,_ in pointers:
+        pointer=struct.unpack_from("<I",data,field)[0]
+        struct.pack_into("<I",result,relocated(field),relocated(pointer) if pointer else 0)
+    crisp_font(bytes(result))
+    return bytes(result)

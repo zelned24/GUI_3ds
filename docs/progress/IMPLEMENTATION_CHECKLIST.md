@@ -608,7 +608,8 @@ Para cada entrega actualizar esta tabla con IDs, commit, alcance conectado, excl
 1. [ ] Eliminar reducción fraccionaria automática de Pokémon por altura y revisar sprites grandes sin recortarlos accidentalmente. Nearest e integer origins ya activos; no constituyen escalas enteras en todos los casos.
 2. [x] Generar y conectar rasters de fuente 8/10/12/16 con transform efectivo entero, alpha binario, medición y cursor coherentes.
    - [ ] Comprobar legibilidad/composición de todas las pantallas y paginación de mensajes en Azahar/Old 3DS.
-   - [ ] Compactar/perfilar las cuatro sheets A4; actualmente suman 2 MiB.
+   - [x] Compactar las cuatro sheets A4 conservando glifos/métricas; 2 MiB → 288 KiB.
+   - [ ] Perfilar el presupuesto total y validar las fuentes compactadas en Azahar/Old 3DS.
 3. [ ] Evaluar RGBA5551/RGBA4 por clase de asset con comparación de colores/alpha y memoria residente; pipeline de presentación actual usa RGBA8. No dar ETC1A4 por visualmente equivalente sin comparación.
 4. [ ] Medir CPU/GPU/memoria en Old 3DS: nearest y scale 1 no prueban un incremento de FPS.
 
