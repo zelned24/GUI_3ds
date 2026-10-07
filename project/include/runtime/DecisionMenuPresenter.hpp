@@ -21,10 +21,10 @@ public:
                 const auto* form=PokerogueContent::findFormById(actor.formId);
                 const unsigned formIndex=form ? form->upstreamFormIndex : 0;
                 m_icons.draw(renderer,actor.dex,formIndex,34,y+5,1,0.5f);
-                renderer.drawTextFitted(actor.localizedName,61,y+3,0.36f,168,0xffffffff);
+                const float nameSize=renderer.drawTextFitted(actor.localizedName,61,y+3,0.36f,168,0xffffffff);
                 char hp[32];std::snprintf(hp,sizeof(hp),"%u/%u",actor.battleState.hp,actor.battleState.maxHp);
                 renderer.drawText(hp,237,y+3,0.32f,0xffffffff);
-                if(i==game.selectedCapturePartyChoice()) m_cursor.drawCursor(renderer,17,y+3,0.36f);
+                if(i==game.selectedCapturePartyChoice()) m_cursor.drawCursor(renderer,17,y+3,nameSize);
             }
             renderer.drawText("A: sustituir   B: no incorporar",12,213,0.32f,0xffffffff);
             return;
@@ -36,8 +36,8 @@ public:
             for(unsigned i=0;i<4;++i) {
                 const auto& rect=kMoveButtonRects[i];renderer.drawWindow(rect.x,rect.y,rect.width,rect.height);
                 const auto* current=i<actor.moveCount ? PokerogueContent::findMoveById(actor.moves[i].moveId) : nullptr;
-                renderer.drawTextFitted(current ? moveUiName(current->id) : "--",rect.x+21,rect.y+15,0.38f,rect.width-30,0xffffffff);
-                if(i==game.selectedBattleMove()) m_cursor.drawCursor(renderer,rect.x+7,rect.y+15,0.38f);
+                const float nameSize=renderer.drawTextFitted(current ? moveUiName(current->id) : "--",rect.x+21,rect.y+15,0.38f,rect.width-30,0xffffffff);
+                if(i==game.selectedBattleMove()) m_cursor.drawCursor(renderer,rect.x+7,rect.y+15,nameSize);
             }
             renderer.drawText("A: aprender   B: no aprender",12,204,0.32f,0xffffffff);
             return;

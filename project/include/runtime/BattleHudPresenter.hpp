@@ -60,8 +60,11 @@ public:
         const char* name = actor.localizedName ? actor.localizedName : "";
         const float nameX = x + nameOffsetX;
         const float nameY = y + (player ? 7.0f : 5.0f);
-        renderer.drawText(name, nameX + 1.0f, nameY + 1.0f, 0.36f, kShadowColor);
-        renderer.drawText(name, nameX, nameY, 0.36f, kTextColor);
+        const float levelX = x + (player ? 112.0f : (actor.bossState.segmentCount ? 142.0f : 102.0f));
+        const float nameWidth=levelX-nameX-16.0f;
+        float displayedNameWidth=0;
+        renderer.drawTextFitted(name,nameX+1,nameY+1,0.36f,nameWidth,kShadowColor);
+        renderer.drawTextFitted(name,nameX,nameY,0.36f,nameWidth,kTextColor,&displayedNameWidth);
 
         // Gender icon next to name
         const char* genderSymbol = nullptr;
@@ -74,8 +77,7 @@ public:
             genderColor = C2D_Color32(255, 140, 220, 255);
         }
         if (genderSymbol) {
-            const float approxNameWidth = (name ? std::strlen(name) : 0) * 6.5f;
-            const float genderX = nameX + approxNameWidth + 3.0f;
+            const float genderX = nameX + displayedNameWidth + 3.0f;
             renderer.drawText(genderSymbol, genderX + 1.0f, nameY + 1.0f, 0.34f, kShadowColor);
             renderer.drawText(genderSymbol, genderX, nameY, 0.34f, genderColor);
         }
@@ -83,7 +85,6 @@ public:
         // Draw Level ("N. %u") with drop shadow
         char level[24];
         std::snprintf(level, sizeof(level), "N. %u", unsigned(actor.level));
-        const float levelX = x + (player ? 112.0f : (actor.bossState.segmentCount ? 142.0f : 102.0f));
         const float levelY = y + (player ? 7.0f : 5.0f);
         renderer.drawText(level, levelX + 1.0f, levelY + 1.0f, 0.34f, kLevelShadow);
         renderer.drawText(level, levelX, levelY, 0.34f, kLevelColor);
@@ -162,8 +163,8 @@ public:
             std::snprintf(hp, sizeof(hp), "%u / %u", unsigned(actor.battleState.hp), unsigned(actor.battleState.maxHp));
             const float hpTextX = x + 82.0f;
             const float hpTextY = y + 33.0f;
-            renderer.drawText(hp, hpTextX + 1.0f, hpTextY + 1.0f, 0.26f, kShadowColor);
-            renderer.drawText(hp, hpTextX, hpTextY, 0.26f, kTextColor);
+            renderer.drawTextFitted(hp,hpTextX+1,hpTextY+1,0.26f,hudW-86,kShadowColor);
+            renderer.drawTextFitted(hp,hpTextX,hpTextY,0.26f,hudW-86,kTextColor);
 
             // Smooth EXP bar lerp animation towards actor.totalExperience
             if (m_lastPlayerDex != actor.dex || m_displayedExp == 0) {

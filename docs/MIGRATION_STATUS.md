@@ -34,7 +34,7 @@ El avance se publica como trabajo en curso. Classic completo y la fidelidad visu
 4. Compilación directa `make -f Makefile.3ds 3ds`: ELF y 3DSX producidos con devkitARM. No equivale a validación en Old 3DS.
 5. `python scripts/verify_presentation_media.py`: archivos físicos y tablas de presentación PASS; no prueba fidelidad visual ni efectos de objetos.
 6. Regresiones de navegación, geometría, índice de iconos, guards de pausa/guardado y ownership QuickJS PASS. Los guards de main son comprobaciones estáticas, no interacción real en Azahar.
-7. Logs reproducibles de esta revisión: `build/renderer-startup-npm-test.log`, `build/renderer-startup-parity.log`, `build/review-native-test.log`, `build/renderer-startup-arm.log`, `build/window-style-media.log`. No se versionan binarios ni logs.
+7. Logs reproducibles de esta revisión: `build/hud-text-npm-test.log`, `build/hud-text-parity.log`, `build/review-native-test.log`, `build/hud-text-arm.log`, `build/window-style-media.log`. No se versionan binarios ni logs.
 
 ## Nitidez de presentación
 
@@ -81,6 +81,12 @@ El avance se publica como trabajo en curso. Classic completo y la fidelidad visu
 1. La fuente PokéRogue convertida y el marco original son requeridos en 3DS. Si faltan o no cargan, el renderer falla explícitamente y muestra un diagnóstico en consola inferior; no continúa con la fuente del sistema ni una interfaz sin marcos.
 2. Se libera inicialización parcial ante fallos de targets, buffer, fuente o ventana; `fini` es idempotente y permite reintentar. La altura del cursor no consulta un font nulo; reiniciar el renderer restablece la identidad del marco cargado.
 3. El harness ejecuta el renderer C++ real con backend GPU simulado: siete fallos de arranque, limpieza/reintento, nearest, coordenadas enteras, wrapped/fitted text y bloqueo de cambio de textura durante un frame. No prueba lectura real de RomFS ni nitidez en pantalla.
+
+## Texto del HUD y cursores
+
+1. El HUD ajusta el nombre dentro del espacio anterior al nivel y coloca el género usando el ancho medido por Citro2D. Se elimina la estimación por bytes UTF-8; `BattleInfo.updateName` upstream también utiliza displayWidth. Los números de HP quedan acotados al marco.
+2. Cursores de movimientos, sustitución tras captura y aprendizaje usan el tamaño realmente dibujado después del ajuste. El harness del renderer comprueba ancho sin reducción y con reducción; los guards comprueban la conexión al HUD.
+3. Tests host, paridad y build ARM pasan. No se cierra GUI-14: tamaño mínimo de nombres largos, glifos y composición final requieren capturas en Azahar/Old 3DS.
 
 ## Texto de menús
 

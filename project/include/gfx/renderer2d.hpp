@@ -78,7 +78,7 @@ public:
 
     void drawTextWrapped(const char* text,float x,float y,float size,float maxWidth,uint32_t color);
     float textLineHeight(float size) const;
-    float drawTextFitted(const char* text,float x,float y,float size,float maxWidth,uint32_t color);
+    float drawTextFitted(const char* text,float x,float y,float size,float maxWidth,uint32_t color,float* drawnWidth=nullptr);
     bool setWindowStyle(unsigned id);
     unsigned windowStyle() const { return m_windowStyle; }
     bool drawWindow(float x, float y, float width, float height);

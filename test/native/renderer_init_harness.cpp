@@ -59,7 +59,10 @@ int main() {
         assert(lastX==1 && lastY==3 && std::fabs(lastScale-0.8f)<0.0001f);
         renderer.drawTextWrapped("ABC DEF",1,2,0.4f,40,0xffffffff);
         assert((lastFlags & C2D_WordWrap)!=0 && std::fabs(lastScale-0.8f)<0.0001f);
-        assert(std::fabs(renderer.drawTextFitted("ABC",1,2,0.4f,40,0xffffffff)-0.2f)<0.0001f);
+        float width=0;
+        assert(std::fabs(renderer.drawTextFitted("ABC",1,2,0.4f,40,0xffffffff,&width)-0.2f)<0.0001f);
+        assert(width==40);
+        renderer.drawTextFitted("ABC",1,2,0.4f,200,0xffffffff,&width);assert(width==80);
         assert(!renderer.setWindowStyle(2)); // Never free a texture before GPU submission.
         renderer.endFrame();assert(renderer.setWindowStyle(2) && renderer.windowStyle()==2);
         renderer.fini();assert(!renderer.isInitialized());assert(renderer.textLineHeight(0.5f)==0);

@@ -68,17 +68,14 @@ public:
                 const uint8_t maxPp = pokemon.battleState.moves[i].maxPp;
                 const bool outOfPp = (curPp == 0);
 
-                if (isSel) {
-                    cursor().drawCursor(renderer, mx - 12.0f, my, 0.36f);
-                }
-
                 const char* moveName = moveUiName(move->id);
                 const uint32_t textColor = outOfPp ? C2D_Color32(130, 130, 140, 255)
                     : isSel ? C2D_Color32(255, 255, 255, 255) : C2D_Color32(215, 210, 225, 255);
                 const uint32_t shadowColor = C2D_Color32(0x50, 0x40, 0x60, 255);
 
                 renderer.drawTextFitted(moveName, mx + 1.0f, my + 1.0f, 0.36f, 72.0f, shadowColor);
-                renderer.drawTextFitted(moveName, mx, my, 0.36f, 72.0f, textColor);
+                const float nameSize=renderer.drawTextFitted(moveName,mx,my,0.36f,72.0f,textColor);
+                if(isSel) cursor().drawCursor(renderer,mx-12,my,nameSize);
 
                 char ppText[16];
                 std::snprintf(ppText, sizeof(ppText), "PP %u/%u", unsigned(curPp), unsigned(maxPp));

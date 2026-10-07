@@ -339,7 +339,8 @@ void Renderer2D::drawTextWrapped(const char* text,float x,float y,float size,flo
 #endif
 }
 
-float Renderer2D::drawTextFitted(const char* text,float x,float y,float size,float maxWidth,uint32_t color) {
+float Renderer2D::drawTextFitted(const char* text,float x,float y,float size,float maxWidth,uint32_t color,float* drawnWidth) {
+    if(drawnWidth) *drawnWidth=0;
     if(!m_initialized || !m_frameActive || !m_currentTarget || !m_textBuf || !text || size<=0 || maxWidth<=0) return size;
 #if defined(__arm__) || defined(__3DS__) || defined(_3DS)
     C2D_Text value;
@@ -350,6 +351,7 @@ float Renderer2D::drawTextFitted(const char* text,float x,float y,float size,flo
     C2D_TextGetDimensions(&value,scale,scale,&width,nullptr);
     const float fit=width>maxWidth ? maxWidth/width : 1.0f;
     scale*=fit;
+    if(drawnWidth) *drawnWidth=width*fit;
     C2D_DrawText(&value,C2D_WithColor,std::round(x),std::round(y),0.5f,scale,scale,color);
     return size*fit;
 #else

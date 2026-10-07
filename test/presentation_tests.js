@@ -21,6 +21,9 @@ export function registerPresentationTests(test) {
     expect(sprites.includes('anchoredSpriteScale(scale, propScale)'),'Sprite drawing must respect explicit 1x/2x scales');
     expect(sprites.includes('m_trainerFrontFemale != female'),'Trainer cache identity includes gender variant');
     const menus=fs.readFileSync(path.join(root,'project/include/runtime/FrontendMenuPresenter.hpp'),'utf8');
+    const hud=fs.readFileSync(path.join(root,'project/include/runtime/BattleHudPresenter.hpp'),'utf8');
+    expect(hud.includes('&displayedNameWidth'),'Gender position must use measured fitted glyph width');
+    expect(!hud.includes('approxNameWidth'),'UTF-8 byte count cannot estimate glyph width');
     const title=fs.readFileSync(path.join(root,'project/include/runtime/TitleMenuPresenter.hpp'),'utf8');
     expect(menus.includes('m_title.drawCursor(renderer,25,y,labelSize)'),'Submenu cursor uses fitted text height');
     expect(title.includes('drawCursor(renderer,25,y,labelSize)'),'Title cursor uses fitted text height');
