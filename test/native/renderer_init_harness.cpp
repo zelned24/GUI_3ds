@@ -3,6 +3,7 @@
 #include "runtime/NativeTextRaster.hpp"
 #include "runtime/DialoguePresenter.hpp"
 #include "runtime/BattleHudPresenter.hpp"
+#include "runtime/PokemonIconPresenter.hpp"
 #include "content/TypeLabels.hpp"
 #include "content/NativeFontMetrics.hpp"
 #include "content/EntityUiNames.hpp"
@@ -14,6 +15,8 @@
 #include <cmath>
 #include <limits>
 namespace {
+constexpr unsigned iconPageCount=sizeof(Pokerogue3DS::kPokemonIconPages)/sizeof(Pokerogue3DS::kPokemonIconPages[0]);
+int iconTokens[iconPageCount]{},iconLoads=0;Tex3DS_SubTexture iconSub{512,512,0,1,1,0};
 int fail=0,c3Free=0,c2Free=0,fontFree=0,sheetFree=0,bufferFree=0,targets=0;
 unsigned imageWidth=0,imageHeight=0;float imageTop=0;
 int draws=0;u32 lastFlags=0;float lastX=0,lastY=0,lastScale=0;
@@ -42,9 +45,9 @@ C2D_Font C2D_FontLoad(const char* path) {
 void C2D_FontFree(C2D_Font) {++fontFree;}
 void C2D_FontSetFilter(C2D_Font,GPU_TEXTURE_FILTER_PARAM a,GPU_TEXTURE_FILTER_PARAM b) {assert(a==GPU_NEAREST && b==GPU_NEAREST);}
 const C2D_FontInfo* C2D_FontGetInfo(C2D_Font font) {assert(font);for(unsigned i=0;i<3;++i) if(font==&fontTokens[i]) return &smallInfo[i];return &fontInfo;}
-C2D_SpriteSheet C2D_SpriteSheetLoad(const char* path) {for(unsigned i=0;i<17;++i) if(!std::strcmp(path,Pokerogue3DS::kHudIconAtlases[i].path)) {++hudLoads;return hudMissing ? nullptr : &hudTokens[i];}if(std::strcmp(path,Pokerogue3DS::kTypeLabelPath)==0) {++typeLoads;return typeMissing ? nullptr : &typeToken;}return fail==6 ? nullptr : &token;}
+C2D_SpriteSheet C2D_SpriteSheetLoad(const char* path) {for(unsigned p=0;p<iconPageCount;++p) if(!std::strcmp(path,Pokerogue3DS::kPokemonIconPages[p])) {++iconLoads;return &iconTokens[p];}for(unsigned i=0;i<17;++i) if(!std::strcmp(path,Pokerogue3DS::kHudIconAtlases[i].path)) {++hudLoads;return hudMissing ? nullptr : &hudTokens[i];}if(std::strcmp(path,Pokerogue3DS::kTypeLabelPath)==0) {++typeLoads;return typeMissing ? nullptr : &typeToken;}return fail==6 ? nullptr : &token;}
 void C2D_SpriteSheetFree(C2D_SpriteSheet) {++sheetFree;}
-C2D_Image C2D_SpriteSheetGetImage(C2D_SpriteSheet sheet,size_t) {for(unsigned i=0;i<17;++i) if(sheet==&hudTokens[i]) return {&tex,&hudSubs[i]};return {&tex,sheet==&typeToken ? &typeSub : (fail==7 ? nullptr : &sub)};}
+C2D_Image C2D_SpriteSheetGetImage(C2D_SpriteSheet sheet,size_t) {for(unsigned p=0;p<iconPageCount;++p) if(sheet==&iconTokens[p]) return {&tex,&iconSub};for(unsigned i=0;i<17;++i) if(sheet==&hudTokens[i]) return {&tex,&hudSubs[i]};return {&tex,sheet==&typeToken ? &typeSub : (fail==7 ? nullptr : &sub)};}
 bool C3D_FrameBegin(u8) {return true;}
 void C2D_TextBufClear(C2D_TextBuf buf) {if(buf==&measureToken) ++measureClears;else ++mainClears;}
 void C2D_SceneBegin(C3D_RenderTarget*) {}
@@ -248,6 +251,26 @@ int main() {
         renderer.beginFrame();
         assert(sheetFree==beforeRetire+1); // SYNCDRAW completed prior users.
         renderer.endFrame();
+
+        {
+            Pokerogue3DS::PokemonIconPresenter icons;
+            const int before=iconLoads,freeBefore=sheetFree;
+            for(unsigned frame=0;frame<2;++frame) {
+                renderer.beginFrame();renderer.beginTop();
+                for(unsigned page=0;page<iconPageCount;++page) {
+                    const Pokerogue3DS::PokemonIconDefinition* row=nullptr;
+                    for(const auto& candidate:Pokerogue3DS::kPokemonIcons)
+                        if(candidate.page==page) {row=&candidate;break;}
+                    assert(row && icons.draw(renderer,row->dex,row->formIndex,0,0));
+                }
+                assert(iconLoads==before+int(iconPageCount)); // No repeated frame I/O.
+                assert(sheetFree==freeBefore); // No queued GPU texture freed.
+                renderer.endFrame();
+            }
+            renderer.beginFrame(); // Wait before releasing the setup working set.
+            icons.clear();assert(sheetFree==freeBefore+int(iconPageCount));
+            renderer.endFrame();
+        }
 
         const int fontsBeforeClose=fontFree;
         const int buffersBeforeClose=bufferFree;

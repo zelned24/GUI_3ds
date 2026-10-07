@@ -183,3 +183,66 @@ def compact_font(data: bytes) -> bytes:
         struct.pack_into("<I",result,relocated(field),relocated(pointer) if pointer else 0)
     crisp_font(bytes(result))
     return bytes(result)
+
+
+def monochrome_font(data: bytes, rasterize) -> bytes:
+    """Replace glyph coverage with monochrome outlines, retaining advances/baselines.
+
+    rasterize(codepoint) returns a binary mask, (width,height), and baseline
+    offset (left,top). The left bearing remains represented by CWDH; the
+    atlas stores the bitmap at the cell origin, as mkbcfnt does.
+    """
+    compact_font(data)  # Validate CFNT maps, dimensions and offsets first.
+    tglp, cwdh, cmap = struct.unpack_from("<III", data, 36)
+    cell_w, cell_h, baseline = data[tglp:tglp+3]
+    sheet_size, sheets, _, columns, rows, width, height, offset = struct.unpack_from("<IHHHHHHI",data,tglp+4)
+    bitmap_width_offsets={}
+    while cwdh:
+        first,last,next_width=struct.unpack_from("<HHI",data,cwdh)
+        for glyph in range(first,last+1):
+            bitmap_width_offsets[glyph]=cwdh+8+(glyph-first)*3+1
+        cwdh=next_width
+    mappings={}
+    while cmap:
+        first,last,method=struct.unpack_from("<HHH",data,cmap)
+        if method==0:
+            start=struct.unpack_from("<H",data,cmap+12)[0]
+            pairs=((cp,start+cp-first) for cp in range(first,last+1))
+        elif method==1:
+            pairs=((cp,struct.unpack_from("<H",data,cmap+12+2*(cp-first))[0]) for cp in range(first,last+1))
+        else:
+            count=struct.unpack_from("<H",data,cmap+12)[0]
+            pairs=(struct.unpack_from("<HH",data,cmap+14+4*i) for i in range(count))
+        for cp,glyph in pairs:
+            if glyph!=0xffff:
+                if glyph in mappings and mappings[glyph]!=cp:
+                    raise ValueError("Ambiguous glyph mapping")
+                mappings[glyph]=cp
+        cmap=struct.unpack_from("<I",data,cmap+8)[0]
+    result=bytearray(data)
+    result[offset:offset+sheet_size*sheets]=bytes(sheet_size*sheets)
+    for glyph,cp in sorted(mappings.items()):
+        sheet,local=divmod(glyph,columns*rows)
+        if sheet>=sheets: raise ValueError("Glyph exceeds font sheets")
+        mask,(mw,mh),(_,top)=rasterize(cp)
+        if len(mask)!=mw*mh: raise ValueError("Invalid monochrome glyph mask")
+        gy=baseline+top
+        width_offset=bitmap_width_offsets.get(glyph)
+        if width_offset is None: raise ValueError("Missing glyph width metrics")
+        # Monochrome hinting can extend the bitmap by one column. Preserve
+        # advance/bearing while widening its UV rectangle to avoid clipping.
+        ink_width=max((x+1 for y in range(mh) for x in range(mw) if mask[y*mw+x]),default=0)
+        result[width_offset]=max(data[width_offset],ink_width)
+        # Empty rows can extend outside the bitmap's actual ink bounds.
+        for y in range(mh):
+            for x in range(mw):
+                if not mask[y*mw+x]: continue
+                if not (0<=x<cell_w and 0<=gy+y<cell_h):
+                    raise ValueError("Monochrome glyph ink exceeds native cell")
+                px=(local%columns)*(cell_w+1)+1+x
+                py=(local//columns)*(cell_h+1)+1+gy+y
+                if px>=width or py>=height: raise ValueError("Glyph exceeds sheet")
+                morton=sum((((px>>i)&1)<<(2*i))|(((py>>i)&1)<<(2*i+1)) for i in range(3))
+                pixel=((py//8)*(width//8)+px//8)*64+morton
+                result[offset+sheet*sheet_size+pixel//2] |= 15 << (4*(pixel%2))
+    return bytes(result)

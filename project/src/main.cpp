@@ -789,6 +789,7 @@ int main() {
 #endif
 
         renderer.beginFrame();
+        if(game.presentationStage()!=Pokerogue3DS::NativeSaveStage::RunSetup) setup.releaseIconPages();
 #if defined(POKEROGUE_ENABLE_QUICKJS)
         if (!isPaused && bridgeReady && bridge.healthy()) {
             bridge.tick(pressed);

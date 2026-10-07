@@ -4,7 +4,7 @@ import unittest
 import tempfile
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
-from pixel_font import crisp_font, compact_font, glyph_ink_bounds
+from pixel_font import crisp_font, compact_font, glyph_ink_bounds, monochrome_font
 from prepare_azahar_preview import pixel_profile, prepare_portable_preview
 
 class PixelFontTests(unittest.TestCase):
@@ -39,6 +39,33 @@ class PixelFontTests(unittest.TestCase):
         struct.pack_into("<4sIHHHHIHH",data,table,b"CMAP",24,67,68,1,0,scan+8,2,0xffff)
         struct.pack_into("<4sIHHHHIHHHHH",data,scan,b"CMAP",32,0xe9,0x2640,2,0,0,2,0xe9,4,0x2640,5)
         return bytes(data)
+
+    def test_monochrome_preserves_strokes_metrics_and_maps(self):
+        source=self.compact_source()
+        raster=lambda cp: (bytes([0,255,0]),(1,3),(0,-2))
+        result=monochrome_font(source,raster)
+        self.assertEqual(result[:128],source[:128])
+        self.assertEqual(result[128+2048:],source[128+2048:])
+        self.assertEqual(glyph_ink_bounds(result,ord('C')),(1,2))
+        self.assertEqual(monochrome_font(result,raster),result)
+        self.assertEqual(crisp_font(result),result)
+        self.assertNotEqual(source,result)
+
+    def test_monochrome_bitmap_width_does_not_clip_new_hinting(self):
+        source=bytearray(self.compact_source())
+        cwdh=struct.unpack_from("<I",source,40)[0]
+        source[cwdh+8+2*3+1]=1 # C's old grayscale bitmap width.
+        result=monochrome_font(bytes(source),lambda cp:(bytes([255,255]),(2,1),(0,-1)))
+        self.assertEqual(result[cwdh+8+2*3+1],2)
+        self.assertEqual(result[cwdh+8+2*3+2],source[cwdh+8+2*3+2]) # Advance retained.
+        self.assertEqual(glyph_ink_bounds(result,ord('C')),(1,2))
+
+    def test_monochrome_rejects_clipped_ink_and_invalid_masks(self):
+        source=self.compact_source()
+        with self.assertRaisesRegex(ValueError,"exceeds native cell"):
+            monochrome_font(source,lambda cp:(bytes([255]),(1,1),(0,2)))
+        with self.assertRaisesRegex(ValueError,"mask"):
+            monochrome_font(source,lambda cp:(bytes([]),(1,1),(0,0)))
 
     def test_compact_preserves_glyphs_metrics_and_links(self):
         source=self.compact_source();result=compact_font(source)

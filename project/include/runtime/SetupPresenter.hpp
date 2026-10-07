@@ -27,6 +27,7 @@ public:
         m_logo=nullptr;m_background=nullptr;m_grid=nullptr;m_icons.clear();m_prompt.clear();
         m_introCinematic.clear();
     }
+    void releaseIconPages() {m_icons.clear();}
     bool confirmStart=false,confirmYes=true,formsOpen=false,candyStoreOpen=false;
     unsigned selectedForm=0,candyStoreSelection=0;
     const char* formFeedback=nullptr;
@@ -282,7 +283,7 @@ public:
         renderer.drawText(game.presentation().modeName ? game.presentation().modeName : "",16,217,0.4f,0xffffffff);
     }
     void drawBottom(Renderer2D& renderer,const FirstRunRuntime& game) {
-        renderer.clear(0xff606800);
+        renderer.clear(0xff3d303a);
         char label[80];
         const unsigned ordinal=selectedOrdinal(game),start=ordinal/kStarterGridPageSize*kStarterGridPageSize;
         uint16_t totalCost=0;bool costResolved=true;
@@ -298,10 +299,10 @@ public:
         renderer.drawWindow(kStarterGenerationRect.x,kStarterGenerationRect.y,kStarterGenerationRect.width,kStarterGenerationRect.height);
         renderer.drawWindow(kStarterTypeRect.x,kStarterTypeRect.y,kStarterTypeRect.width,kStarterTypeRect.height);
         char filter[64];
-        if(generationFilter) std::snprintf(filter,sizeof(filter),"Y: Generación %u",generationFilter);
-        else std::snprintf(filter,sizeof(filter),"Y: Todas las gen.");
+        if(generationFilter) std::snprintf(filter,sizeof(filter),"Gen: %u",generationFilter);
+        else std::snprintf(filter,sizeof(filter),"Gen: Todas");
         renderer.drawTextFitted(filter,17,29,0.3125f,135,0xffffffff);
-        renderer.drawText("X: Tipo",169,29,0.3125f,0xffffffff);
+        renderer.drawText("Tipo",169,29,0.3125f,0xffffffff);
         if(typeFilter) {
             if(!renderer.drawTypeLabel(typeFilter,231,27,32,14)) renderer.drawTextFitted(typeFilter,228,29,0.3125f,76,0xffffffff);
         } else renderer.drawText("Todos",237,29,0.3125f,0xffffffff);
@@ -312,12 +313,37 @@ public:
                 if(img.tex) C3D_TexSetFilter(img.tex, GPU_NEAREST, GPU_NEAREST);
             }
         }
-        if(m_grid) renderer.drawImageDirect(C2D_SpriteSheetGetImage(m_grid,0),8,51,304,112);
+        if(m_grid) {
+            const auto image=C2D_SpriteSheetGetImage(m_grid,0);
+            if(image.subtex && image.subtex->width>=16 && image.subtex->height>=16) {
+                const unsigned sw=image.subtex->width,sh=image.subtex->height;
+                // Keep the original checkerboard and rounded border at 1:1.
+                for(unsigned y=0;y<112;) {
+                    const unsigned th=(y==0 || y==108) ? 4 : 8;
+                    for(unsigned x=0;x<304;) {
+                        const unsigned tw=(x==0 || x==300) ? 4 : 8;
+                        const unsigned sx=x==0 ? 0 : x==300 ? sw-4 : 4;
+                        const unsigned sy=y==0 ? 0 : y==108 ? sh-4 : 4;
+                        Renderer2D::AtlasFrame tile{uint16_t(sx),uint16_t(sy),uint16_t(tw),uint16_t(th),uint16_t(tw),uint16_t(th),0,0};
+                        renderer.drawAtlasFrame(image,tile,8+x,51+y,tw,th);
+                        x+=tw;
+                    }
+                    y+=th;
+                }
+            }
+        }
         else renderer.drawWindow(8,51,304,112);
         for(unsigned i=0;i<kStarterGridPageSize;++i) {
             const auto* species=at(game,start+i);if(!species) break;
             const float x=16+(i%6)*48,y=54+(i/6)*36;
-            if(start+i==ordinal) renderer.drawRect(x,y,46,34,0xff827660);
+            if(start+i==ordinal) {
+                renderer.drawRect(x,y,46,34,0x407f7660);
+                for(unsigned corner=0;corner<4;++corner) {
+                    const float cx=x+(corner%2 ? 40 : 0),cy=y+(corner/2 ? 28 : 0);
+                    renderer.drawRect(cx,cy+(corner/2 ? 4 : 0),6,2,0xff2424e0);
+                    renderer.drawRect(cx+(corner%2 ? 4 : 0),cy,2,6,0xff2424e0);
+                }
+            }
             if(!m_icons.draw(renderer,species->dex,game.setupStarterFormIndex(species->dex),x+3,y+2,
                 game.starterUnlocked(species->dex) ? 1.0f : 0.35f))
                 renderer.drawText("?",x+16,y+8,0.4f,0xffffffff);
@@ -333,7 +359,7 @@ public:
         renderer.drawText("Formas",18,210,0.3125f,0xffffffff);
         renderer.drawText("Jugar",130,210,0.3125f,0xffffffff);
         renderer.drawText("Volver",237,210,0.3125f,0xffffffff);
-        renderer.drawTextFitted(feedback ? feedback : "L/R: página   SELECT: formas",10,227,0.3125f,300,0xff80ffff);
+        renderer.drawTextFitted(feedback ? feedback : "Y: gen.  X: tipo  L/R: página",10,227,0.3125f,300,0xff80ffff);
         if(confirmStart) {
             renderer.drawWindow(12,66,296,105);
             const char* confirmation=runtimeUiText("starter-select-ui-handler:confirmStartTeam");

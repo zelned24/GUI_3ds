@@ -627,6 +627,7 @@
 {"from":"test/native/renderer_init_harness.cpp","to":"project/include/runtime/BattleHudPresenter.hpp","kind":"include"},
 {"from":"test/native/renderer_init_harness.cpp","to":"project/include/runtime/DialoguePresenter.hpp","kind":"include"},
 {"from":"test/native/renderer_init_harness.cpp","to":"project/include/runtime/NativeTextRaster.hpp","kind":"include"},
+{"from":"test/native/renderer_init_harness.cpp","to":"project/include/runtime/PokemonIconPresenter.hpp","kind":"include"},
 {"from":"test/native/renderer_init_harness.cpp","to":"project/include/runtime/Utf8Abbreviation.hpp","kind":"include"},
 {"from":"test/native/run_3ds_build.mjs","to":"tools/js/generator/AssetPackager.js","kind":"import"},
 {"from":"test/native/run_3ds_build.mjs","to":"tools/js/generator/SceneCppExporter.js","kind":"import"},

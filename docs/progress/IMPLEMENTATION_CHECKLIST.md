@@ -244,6 +244,9 @@ Se conserva presentación C++/ScenePlayer y bridge QuickJS opcional. El editor/S
   - [x] Filtrar starters canónicos por generación con Y/táctil y compartir catálogo entre navegación/dibujo. Cuadrícula de 18 iconos, equipo y botones inferiores con zonas táctiles separadas.
   - [ ] Mostrar el catálogo elegible con estados capturado, visto, desconocido y variantes shiny según el progreso; sustituir la vista actual limitada a desbloqueados. Comparación visual pendiente.
   - [x] Filtrar por tipos canónicos disponibles con X/táctil, combinar con generación y resolver etiquetas originales españolas; catálogo vacío/tipo desconocido y combinación de filtros probados.
+  - [x] Rasterizar el TTF pinned en monocromo sin eliminar trazos de alfa bajo; conservar avances/baselines y ampliar el bitmap cuando el hinting lo requiere. Tests de mapas, métricas, bounds y conversión repetida.
+  - [x] Evitar recargas por frame de páginas de iconos; liberar el conjunto del selector tras sincronización al salir. Prueba host de todas las páginas en dos frames.
+  - [ ] Confirmar en Azahar/Old 3DS las nuevas fuentes, patrón nativo del fondo, cursor y coste de residencia de iconos (hasta 8 MiB del snapshot actual).
   - [ ] Completar filtros restantes de upstream (coste/atributos disponibles), decisiones de starters y verificación visual de fuentes.
 - [ ] **GUI-05.** Completar battle, cambio/objetivos, captura y mensajes/feedback de fallo.
 - [ ] **GUI-06.** Completar mapa/bioma, rewards, tienda, party/items y decisiones de aprendizaje/evolución.
