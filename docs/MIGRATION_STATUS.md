@@ -266,3 +266,11 @@ El avance se publica como trabajo en curso. Classic completo y la fidelidad visu
 
 1. Capturas del usuario muestran deformación de letras/sprites; tamaño de Pokémon aprobado. Configuración global comprobada: resolution_factor=4, texture_filter=4, texture_sampling=0, filter_mode=true, escala entera desactivada. El filtro del emulador se aplica además de GPU_NEAREST del juego.
 2. Instancia portátil preparada en build/azahar-pixel-runtime con user/config independiente. El log de arranque confirma Renderer_UseResolutionFactor=1, Renderer_FilterMode=false, Renderer_TextureFilter=None, Renderer_TextureSampling=NearestNeighbor y System_IsNew3ds=false. Configuración global conservada. Captura comparativa y alineación de cursor/HUD siguen pendientes; no se afirma que esto resuelva todos los defectos.
+
+### Origen de tinta de fuentes
+
+1. BCFNT tenía margen transparente superior de 9/10/12/16 px en la mayúscula C de las fuentes 8/10/12/16. El renderer ubicaba la celda completa en y; el cursor se centraba con lineFeed. El pipeline ahora extrae margen/altura visible desde el A4 pinned y genera NativeFontMetrics.hpp; no resamplea ni modifica glifos.
+2. drawText, wrapped y fitted descuentan ese margen. Fitted usa las métricas del raster finalmente elegido. Cursor usa altura visible de mayúsculas; acentos/descendentes conservan su baseline relativo. Paginación mantiene lineFeed.
+3. Pruebas de bounds A4, referencias inválidas/vacías, offsets del renderer y raster fitted pasaron. Preparación repetida produjo iguales hashes de metadatos/header; verificación de assets, native-parity y build ARM/3DSX pasaron. Suite completa 38/38 PASS. Comparación visual de offsets pendiente. Logs build/font-ink-*.
+
+4. Usuario confirmó mejora visual al retirar filtro Azahar: tamaño de Pokémon y sprites aprobados; todavía observa fallos en letras. La corrección de origen de tinta se compiló después de esa confirmación y necesita captura específica.

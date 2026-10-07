@@ -4,6 +4,7 @@
 #include "runtime/DialoguePresenter.hpp"
 #include "runtime/BattleHudPresenter.hpp"
 #include "content/TypeLabels.hpp"
+#include "content/NativeFontMetrics.hpp"
 #include "content/EntityUiNames.hpp"
 #include "content/HudTypeIcons.hpp"
 #include <cassert>
@@ -86,7 +87,7 @@ int main() {
         assert(sheetFree==(scenario>=7 ? 1 : 0));
         renderer.fini();assert(c3Free==(scenario==1 ? 0 : 1));
         fail=0;assert(renderer.init());assert(renderer.isInitialized() && !renderer.initializationError());
-        assert(renderer.textLineHeight(0.5f)==19.0f);assert(renderer.windowStyle()==1);
+        assert(renderer.textLineHeight(0.5f)==19.0f);assert(renderer.textInkHeight(0.5f)==12.0f);assert(renderer.windowStyle()==1);
         renderer.beginTop();
         const float requested[]={0.25f,0.30f,0.375f,0.5f,1.0f};
         for(float size:requested) {
@@ -96,12 +97,12 @@ int main() {
         }
         renderer.drawText("ABC",1,2,0xffffffff,1.0f);assert(std::fabs(lastScale-1)<0.000001f);
         renderer.drawText("ABC",1.4f,2.7f,0.4f,0xffffffff);
-        assert(lastX==1 && lastY==3 && std::fabs(lastScale-1)<0.000001f);
+        assert(lastX==1 && lastY==3.0f-Pokerogue3DS::kNativeFontInkTop[2] && std::fabs(lastScale-1)<0.000001f);
         renderer.drawTextWrapped("ABC DEF",1,2,0.4f,40,0xffffffff);
         assert((lastFlags & C2D_WordWrap)!=0 && std::fabs(lastScale-1)<0.000001f);
         const int beforeBox=draws;
         assert(renderer.drawTextBox("AB CD",1.4f,2.7f,0.375f,18,2,0xffffffff));
-        assert(draws==beforeBox+2 && lastX==1 && lastY==17 && lastScale==1);
+        assert(draws==beforeBox+2 && lastX==1 && lastY==17.0f-Pokerogue3DS::kNativeFontInkTop[2] && lastScale==1);
         assert(!renderer.drawTextBox("AB CD EF",1,2,0.375f,18,2,0xffffffff));
         assert(draws==beforeBox+2);
         assert(!renderer.drawTextBox("AB",1,2,0.375f,18,13,0xffffffff));
@@ -118,7 +119,7 @@ int main() {
         const int cleared=measureClears;
         dialogue.sync(renderer,std::string(700,'A'));assert(measureClears==cleared);
         const int beforeDialogue=draws;
-        dialogue.draw(renderer);assert(draws==beforeDialogue+3 && lastX==310 && lastY==200 && lastScale==1);
+        dialogue.draw(renderer);assert(draws==beforeDialogue+3 && lastX==310 && lastY==200.0f-Pokerogue3DS::kNativeFontInkTop[0] && lastScale==1);
         assert(dialogue.advance(renderer));
         dialogue.reset();dialogue.draw(renderer);assert(draws==beforeDialogue+3);
         dialogue.sync(renderer,std::string(700,'A'));assert(dialogue.advance(renderer));
@@ -129,6 +130,7 @@ int main() {
         float width=0;
         assert(renderer.drawTextFitted("ABC",1,2,0.4f,10,0xffffffff,&width)==0.25f);
         assert(std::fabs(width-10)<0.000001f && std::fabs(lastScale-1)<0.000001f && !std::strcmp(lastParsed,"A."));
+        assert(lastY==2.0f-Pokerogue3DS::kNativeFontInkTop[0]); // Fitted text uses the chosen raster, not the requested size.
         renderer.drawTextFitted("ABC",1,2,0.4f,200,0xffffffff,&width);assert(width==24.0f && std::fabs(lastScale-1)<0.000001f);
         const int frameClears=mainClears,allocatedBefore=textAllocations;
         char abbreviated[128];float nameWidth=0;

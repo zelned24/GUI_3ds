@@ -6,6 +6,51 @@ are preserved; this is an explicit presentation conversion for Old 3DS.
 import struct
 
 
+def glyph_ink_bounds(data: bytes, codepoint: int):
+    """Read native A4 ink bounds; no raster resampling or metric mutation."""
+    compact_font(data)  # Validate all file offsets, sections and map links.
+    tglp, _, cmap = struct.unpack_from("<III", data, 36)
+    glyph = None
+    while cmap:
+        first, last, method = struct.unpack_from("<HHH", data, cmap)
+        if first <= codepoint <= last:
+            if method == 0:
+                glyph = struct.unpack_from("<H", data, cmap + 12)[0] + codepoint - first
+            elif method == 1:
+                glyph = struct.unpack_from("<H", data, cmap + 12 + 2 * (codepoint-first))[0]
+            else:
+                count = struct.unpack_from("<H", data, cmap + 12)[0]
+                for i in range(count):
+                    cp, index = struct.unpack_from("<HH", data, cmap + 14 + 4*i)
+                    if cp == codepoint:
+                        glyph = index
+                        break
+            break
+        cmap = struct.unpack_from("<I", data, cmap + 8)[0]
+    if glyph is None or glyph == 0xffff:
+        raise ValueError("Missing reference glyph")
+    cell_w, cell_h = data[tglp: tglp+2]
+    sheet_size, sheets, _, columns, rows, width, height, offset = struct.unpack_from("<IHHHHHHI", data, tglp+4)
+    sheet, local = divmod(glyph, columns*rows)
+    if sheet >= sheets:
+        raise ValueError("Invalid reference glyph index")
+    gx, gy = (local % columns)*(cell_w+1)+1, (local // columns)*(cell_h+1)+1
+    if gx+cell_w > width or gy+cell_h > height:
+        raise ValueError("Reference glyph exceeds sheet")
+    ink = []
+    for y in range(cell_h):
+        for x in range(cell_w):
+            px, py = gx+x, gy+y
+            morton = sum((((px >> i)&1) << (2*i)) | (((py >> i)&1) << (2*i+1)) for i in range(3))
+            pixel = ((py//8)*(width//8)+px//8)*64+morton
+            alpha = (data[offset+sheet*sheet_size+pixel//2] >> (4*(pixel%2))) & 15
+            if alpha:
+                ink.append(y)
+    if not ink:
+        raise ValueError("Empty reference glyph")
+    return min(ink), max(ink)+1
+
+
 def crisp_font(data: bytes) -> bytes:
     if len(data) < 20 or data[:4] not in (b"CFNT", b"CFNU"):
         raise ValueError("Invalid BCFNT header")

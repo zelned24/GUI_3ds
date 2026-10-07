@@ -1,3 +1,4 @@
+#include "content/NativeFontMetrics.hpp"
 #include "gfx/renderer2d.hpp"
 #include "gfx/ImageTintPolicy.hpp"
 #include "runtime/Utf8Abbreviation.hpp"
@@ -346,7 +347,7 @@ void Renderer2D::drawText(
 #else
         const float nativeScale=1.0f;
 #endif
-        C2D_DrawText(&c2dText,C2D_WithColor,std::round(x),std::round(y),0.5f,nativeScale,nativeScale,finalColor);
+        C2D_DrawText(&c2dText,C2D_WithColor,std::round(x),textRasterY(y,0.5f),0.5f,nativeScale,nativeScale,finalColor);
     }
 }
 
@@ -362,7 +363,7 @@ void Renderer2D::drawText(const char* text,float x,float y,float size,uint32_t c
     const float scale=size;
 #endif
     C2D_TextOptimize(&value);
-    C2D_DrawText(&value,C2D_WithColor,std::round(x),std::round(y),0.5f,scale,scale,color);
+    C2D_DrawText(&value,C2D_WithColor,std::round(x),textRasterY(y,size),0.5f,scale,scale,color);
 }
 
 void Renderer2D::drawTextWrapped(const char* text,float x,float y,float size,float maxWidth,uint32_t color) {
@@ -373,7 +374,7 @@ void Renderer2D::drawTextWrapped(const char* text,float x,float y,float size,flo
     C2D_TextFontParse(&value,nativeFont(raster.index),m_textBuf,text);
     C2D_TextOptimize(&value);
     const float scale=nativeFontScale(raster.index,raster.scale);
-    C2D_DrawText(&value,C2D_WithColor | C2D_WordWrap,std::round(x),std::round(y),0.5f,scale,scale,color,maxWidth);
+    C2D_DrawText(&value,C2D_WithColor | C2D_WordWrap,std::round(x),textRasterY(y,size),0.5f,scale,scale,color,maxWidth);
 #else
     drawText(text,x,y,size,color);
 #endif
@@ -427,10 +428,28 @@ float Renderer2D::drawTextFitted(const char* text,float x,float y,float size,flo
     C2D_Text value;C2D_TextFontParse(&value,nativeFont(raster.index),m_textBuf,display);
     C2D_TextOptimize(&value);
     if(drawnWidth) *drawnWidth=width;
-    C2D_DrawText(&value,C2D_WithColor,std::round(x),std::round(y),0.5f,nativeFontScale(raster.index,raster.scale),nativeFontScale(raster.index,raster.scale),color);
+    C2D_DrawText(&value,C2D_WithColor,std::round(x),textRasterY(y,raster.authoredSize),0.5f,nativeFontScale(raster.index,raster.scale),nativeFontScale(raster.index,raster.scale),color);
     return raster.authoredSize;
 #else
     drawText(text,x,y,size,color);return size;
+#endif
+}
+
+float Renderer2D::textRasterY(float y,float size) const {
+#if defined(__arm__) || defined(__3DS__) || defined(_3DS)
+    const auto raster=Pokerogue3DS::nativeTextRaster(size);
+    return std::round(y)-Pokerogue3DS::kNativeFontInkTop[raster.index]*raster.scale;
+#else
+    return std::round(y);
+#endif
+}
+float Renderer2D::textInkHeight(float size) const {
+    if(!std::isfinite(size) || size<=0) return 0;
+#if defined(__arm__) || defined(__3DS__) || defined(_3DS)
+    const auto raster=Pokerogue3DS::nativeTextRaster(size);
+    return Pokerogue3DS::kNativeFontInkHeight[raster.index]*raster.scale;
+#else
+    return textLineHeight(size);
 #endif
 }
 

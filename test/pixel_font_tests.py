@@ -3,7 +3,7 @@ import sys
 import unittest
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
-from pixel_font import crisp_font, compact_font
+from pixel_font import crisp_font, compact_font, glyph_ink_bounds
 from prepare_azahar_preview import pixel_profile
 
 class PixelFontTests(unittest.TestCase):
@@ -84,11 +84,25 @@ class PixelFontTests(unittest.TestCase):
 
     def test_compact_rejects_loss_or_invalid_offsets(self):
         source=self.compact_source()
+        self.assertEqual(glyph_ink_bounds(source,65),(1,2))
         for position,value in [(384,15),(40,0xff),(76,63),(74,15)]:
             changed=bytearray(source);changed[position]=value
             with self.assertRaises(ValueError): compact_font(bytes(changed))
         changed=bytearray(source);changed[:4]=b"CFNU"
         with self.assertRaises(ValueError): compact_font(bytes(changed))
+
+    def test_native_ink_bounds_and_invalid_reference(self):
+        source=self.compact_source()
+        self.assertEqual(glyph_ink_bounds(source,65),glyph_ink_bounds(compact_font(source),65))
+        top,bottom=glyph_ink_bounds(source,65)
+        self.assertGreaterEqual(top,0)
+        self.assertLessEqual(bottom,3)
+        self.assertGreater(bottom,top)
+        with self.assertRaisesRegex(ValueError,"Missing reference"): glyph_ink_bounds(source,0x1234)
+        with self.assertRaises(ValueError): glyph_ink_bounds(b"invalid",65)
+        blank=bytearray(source)
+        blank[128:128+64*64//2]=bytes(64*64//2)
+        with self.assertRaisesRegex(ValueError,"Empty reference"): glyph_ink_bounds(bytes(blank),65)
 
     def test_preview_profile(self):
         source = "[Renderer]\ntexture_filter=4\n[System]\nis_new_3ds=true\n[WebService]\nsecret=do-not-copy\n"

@@ -2,6 +2,7 @@
 #include "gfx/renderer2d.hpp"
 #include "runtime/TitleMenuLayout.hpp"
 #include "content/TitleMenuText.hpp"
+#include <cmath>
 namespace Pokerogue3DS {
 class TitleMenuPresenter {
 public:
@@ -26,7 +27,7 @@ public:
         if(m_cursor) {
             const auto image=C2D_SpriteSheetGetImage(m_cursor,0);
             if(image.subtex) {
-                renderer.drawImageDirect(image,x,titleCursorY(y,renderer.textLineHeight(textSize),15),9,15);
+                renderer.drawImageDirect(image,std::round(x),std::round(titleCursorY(y,renderer.textInkHeight(textSize),15)),9,15);
                 return;
             }
         }
