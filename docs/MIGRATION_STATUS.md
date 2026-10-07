@@ -28,7 +28,7 @@ El avance se publica como trabajo en curso. Classic completo y la fidelidad visu
 
 ## Evidencia ejecutada
 
-1. `npm test`: **35 passed, 0 failed**, 35 suites. La suite FirstRunRuntime contiene **50 passing, 0 failing, de 50**. No se desactivaron casos ni se debilitaron assertions.
+1. `npm test`: **36 passed, 0 failed**, 36 suites. La suite FirstRunRuntime contiene **50 passing, 0 failing, de 50**. No se desactivaron casos ni se debilitaron assertions.
 2. `npm run native-parity`: **126/126 PASS**. Compara el contrato C++ con JS; no prueba todo el upstream.
 3. `npm run native-test`: compilación PASS; el ejecutor informa explícitamente que no ejecutó hardware/emulador.
 4. Compilación directa `make -f Makefile.3ds 3ds`: ELF y 3DSX producidos con devkitARM. No equivale a validación en Old 3DS.
@@ -132,3 +132,14 @@ El avance se publica como trabajo en curso. Classic completo y la fidelidad visu
 5. Solo español es-ES en esta adaptación; selección de idioma y comparación visual de todas las pantallas permanecen pendientes. Etiquetas de tipos en el HUD son adaptación 3DS: upstream usa iconos compactos en BattleInfo, por lo que no se declara paridad de esa composición.
 
 6. Gates de esta etapa: `npm test` 35/35, `npm run native-parity` 126/126, build ARM ELF/3DSX y `git diff --check` PASS. Logs: `build/type-label-npm-test.log`, `build/type-label-parity.log`, `build/type-label-arm.log`, `build/type-label-media.log`. Regeneración doble conserva byte a byte header, reporte y textura. No se abrió Azahar ni se validó Old 3DS física.
+
+## Iconos compactos de tipos en BattleInfo
+
+1. Sustituidas las etiquetas textuales del HUD por las seis variantes originales `pbinfo_player_type`, `type1`, `type2` y sus equivalentes enemy, según `BattleInfo.setTypes` en el pin de juego. Las etiquetas es-ES se conservan en el detalle de movimientos.
+2. `scripts/hud_type_icons.py` reutiliza la validación de atlas, convierte sin resampling y genera `HudTypeIcons.hpp`. `build/native-presentation/hud-type-provenance.json` conserva fuentes PNG/JSON, hashes, revisión, bounds, canvas y offsets. Todos los 120 frames permanecen accesibles.
+3. Iconos a escala nativa 1×, posiciones enteras y NEAREST, en el borde izquierdo del jugador/derecho del enemigo. La fila interior queda disponible para el estado alterado y no comparte rectángulos de tipos. Posiciones adaptadas a 400×240; no se declara comparación visual upstream completa.
+4. Renderer posee un máximo de seis hojas, con carga diferida y liberación al cerrar; rechaza tipos, slots, archivos y dimensiones inválidos. Sin sustitutos gráficos para iconos ausentes. La ausencia de asset no se interpreta como ausencia de tipo canónico.
+5. Harness ejecuta los 120 frames contra renderer real con SDK simulado: escala 1×, variantes únicas/dobles, faltantes, dimensiones incorrectas, slots inválidos; el índice verifica los tipos de todas las especies y formas en seis variantes. Verificador físico compara PNG/JSON/header/t3x y hashes. Tests Python rechazan rotación, duplicados, keys inválidas, bounds y trim fuera del canvas.
+6. Quedan pendientes atlas originales de estados, captura y otros indicadores; paneles HUD a 1,25×, barras fraccionarias, formas/tipos temporales y comparación conjunta en Azahar/Old 3DS. Los iconos no cierran esos criterios.
+
+7. Gates de iconos HUD: `npm test` 36/36, `npm run native-parity` 126/126, build ARM ELF/3DSX, verificador físico y `git diff --check` PASS. Reimportación idéntica byte a byte para seis t3x, header y reporte. Logs `build/hud-icons-npm-test.log`, `build/hud-icons-parity.log`, `build/hud-icons-arm.log`, `build/hud-icons-media.log`; no equivalen a comparación visual ni prueba en hardware.

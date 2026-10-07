@@ -669,3 +669,6 @@ print(f"Generated intro cinematic sequence with {len(keyframe_data)} keyframes")
 
 from type_badges import prepare as prepare_type_labels
 prepare_type_labels(ROOT)
+
+from hud_type_icons import prepare as prepare_hud_types
+prepare_hud_types(ROOT)

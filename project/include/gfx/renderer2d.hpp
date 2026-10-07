@@ -79,6 +79,7 @@ public:
     void drawTextWrapped(const char* text,float x,float y,float size,float maxWidth,uint32_t color);
     float textLineHeight(float size) const;
     float drawTextFitted(const char* text,float x,float y,float size,float maxWidth,uint32_t color,float* drawnWidth=nullptr);
+    bool drawHudTypeIcon(const char* type,bool player,unsigned slot,bool dual,float x,float y);
     bool drawTypeLabel(const char* type,float x,float y,float width,float height);
     bool setWindowStyle(unsigned id);
     unsigned windowStyle() const { return m_windowStyle; }
@@ -103,6 +104,7 @@ private:
     C2D_Font m_gameFont = nullptr;
     C2D_SpriteSheet m_window = nullptr;
     C2D_SpriteSheet m_typeLabels = nullptr;
+    C2D_SpriteSheet m_hudTypes[6]{};
 #endif
     const char* m_initError=nullptr;
     unsigned m_windowStyle=1;

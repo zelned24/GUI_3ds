@@ -3,6 +3,7 @@
 #include "screens/SceneAssets.hpp"
 #include "content/WindowTexture.hpp"
 #include "content/TypeLabels.hpp"
+#include "content/HudTypeIcons.hpp"
 #if !defined(__wasm__)
 #include "runtime/RuntimeAssetManager.hpp"
 #endif
@@ -113,6 +114,7 @@ void Renderer2D::fini() {
     if (m_gameFont) { C2D_FontFree(m_gameFont); m_gameFont = nullptr; }
     if (m_window) { C2D_SpriteSheetFree(m_window); m_window = nullptr; }
     if (m_typeLabels) { C2D_SpriteSheetFree(m_typeLabels); m_typeLabels = nullptr; }
+    for(auto& sheet:m_hudTypes) {if(sheet) C2D_SpriteSheetFree(sheet);sheet=nullptr;}
 #endif
     C2D_Fini();
     C3D_Fini();
@@ -429,5 +431,22 @@ bool Renderer2D::drawTypeLabel(const char* type,float x,float y,float width,floa
     return true;
 #else
     (void)type;(void)x;(void)y;(void)width;(void)height;return false;
+#endif
+}
+
+bool Renderer2D::drawHudTypeIcon(const char* type,bool player,unsigned slot,bool dual,float x,float y) {
+#if defined(__arm__) || defined(__3DS__) || defined(_3DS)
+    if(!m_initialized || !m_frameActive || !m_currentTarget || slot>1 || (!dual && slot)) return false;
+    const unsigned index=(player ? 0 : 3)+(dual ? slot+1 : 0);
+    const auto* row=Pokerogue3DS::findHudTypeFrame(index,type);if(!row) return false;
+    const auto& atlas=Pokerogue3DS::kHudTypeAtlases[index];
+    auto& sheet=m_hudTypes[index];if(!sheet) sheet=C2D_SpriteSheetLoad(atlas.path);if(!sheet) return false;
+    const auto image=C2D_SpriteSheetGetImage(sheet,0);
+    if(!image.tex || !image.subtex || image.subtex->width!=atlas.width || image.subtex->height!=atlas.height) {C2D_SpriteSheetFree(sheet);sheet=nullptr;return false;}
+    C3D_TexSetFilter(image.tex,GPU_NEAREST,GPU_NEAREST);
+    drawAtlasFrame(image,row->frame,std::round(x),std::round(y),row->frame.sourceWidth,row->frame.sourceHeight);
+    return true;
+#else
+    (void)type;(void)player;(void)slot;(void)dual;(void)x;(void)y;return false;
 #endif
 }

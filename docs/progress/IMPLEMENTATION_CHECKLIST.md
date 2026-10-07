@@ -590,3 +590,5 @@ Para cada entrega actualizar esta tabla con IDs, commit, alcance conectado, excl
 - Regresión de segundo enemigo real con capacidad canónica escrita sin ejecutar; pasivas/supresión, callbacks de curación y campo completo pendientes.
 
 | GUI-01 / GUI-10 / AST-05 | Parcial | Etiquetas originales de tipos | Atlas es-ES pinned, 20 frames, bounds/hashes físicos y harness renderer; coverage de tipos canónicos | Idiomas, iconos compactos upstream del HUD y comparación visual conjunta |
+
+| GUI-02 / AST-05 / AST-08 | Parcial | Tipos compactos del HUD | Seis atlas upstream, 120 frames, trim/canvas nativos y escala 1×; validación de datos/renderer/archivos físicos | Estado/captura originales, escala de paneles/barras, comparación visual y rendimiento real |

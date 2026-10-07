@@ -156,12 +156,33 @@ def test_type_labels():
     assert hashlib.sha256(path.read_bytes()).hexdigest()==report["convertedSHA256"]
     print(f"  [OK] {len(report['frames'])} original localized type frames and physical hashes")
 
+def test_hud_types():
+    root=Path(ROOT)
+    report=json.loads((root/"build/native-presentation/hud-type-provenance.json").read_text(encoding="utf-8"))
+    header=(root/"project/generated/include/content/HudTypeIcons.hpp").read_text(encoding="utf-8")
+    for row in report["files"]:
+        for source in row["sources"]:
+            raw=(root/"build/native-presentation/source"/source["sourcePath"]).read_bytes()
+            assert hashlib.sha256(raw).hexdigest()==source["sha256"]
+        atlas=json.loads((root/"build/native-presentation/source"/row["sources"][1]["sourcePath"]).read_text())["textures"][0]
+        assert len(row["frames"])==len(atlas["frames"])
+        for f in atlas["frames"]:
+            b=f["frame"];c=f["sourceSize"];t=f["spriteSourceSize"]
+            values=[b["x"],b["y"],b["w"],b["h"],c["w"],c["h"],t["x"],t["y"]]
+            assert {"key":f["filename"],"bounds":values} in row["frames"]
+            assert '{"%s",{%s}}' % (f["filename"],','.join(map(str,values))) in header
+        path=root/"build/romfs"/row["runtimePath"].removeprefix("romfs:/")
+        assert hashlib.sha256(path.read_bytes()).hexdigest()==row["convertedSHA256"]
+    assert len(report["files"])==6
+    print("  [OK] Six original HUD type atlases: frame offsets, physical hashes and generated tables")
+
 if __name__ == "__main__":
     test_items()
     test_trainers()
     test_intro_cinematic()
     test_windows()
     test_type_labels()
+    test_hud_types()
     print("==================================================")
     print("  ALL PRESENTATION MEDIA VERIFICATION TESTS PASS  ")
     print("==================================================")

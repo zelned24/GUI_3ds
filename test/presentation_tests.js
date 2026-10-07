@@ -4,6 +4,7 @@ import {execFileSync} from 'node:child_process';
 import {fileURLToPath} from 'node:url';
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 export function registerPresentationTests(test) {
+  test('Native type atlases: preserve trim offsets, sort deterministically and reject invalid frames',()=>{execFileSync('python',[path.join(root,'test/type_atlas_tests.py')],{stdio:'pipe'});});
   test('Native pixel font: binary alpha preserves metrics, rejects corrupt data and is deterministic',()=>{execFileSync('python',[path.join(root,'test/pixel_font_tests.py')],{stdio:'pipe'});});
   test('Native frontend review: save failures, pause input, deterministic seed and indexed trainer assets',()=>{
     const main=fs.readFileSync(path.join(root,'project/src/main.cpp'),'utf8');
@@ -23,6 +24,8 @@ export function registerPresentationTests(test) {
     const menus=fs.readFileSync(path.join(root,'project/include/runtime/FrontendMenuPresenter.hpp'),'utf8');
     const hud=fs.readFileSync(path.join(root,'project/include/runtime/BattleHudPresenter.hpp'),'utf8');
     expect(hud.includes('canonicalPresentationTypes(actor.dex,actor.formId,type1,type2)'), 'HUD badges must use the actual canonical form');
+    expect(hud.includes('drawHudTypeIcon(type1,player,0,dual'), 'HUD uses original compact icon variants');
+    expect(!hud.includes('drawTypeBadge(renderer'), 'Type labels cannot overlap the status row');
     expect(hud.includes('&displayedNameWidth'),'Gender position must use measured fitted glyph width');
     expect(!hud.includes('approxNameWidth'),'UTF-8 byte count cannot estimate glyph width');
     const title=fs.readFileSync(path.join(root,'project/include/runtime/TitleMenuPresenter.hpp'),'utf8');

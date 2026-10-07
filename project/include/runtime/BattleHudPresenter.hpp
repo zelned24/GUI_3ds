@@ -89,25 +89,15 @@ public:
         renderer.drawText(level, levelX + 1.0f, levelY + 1.0f, 0.34f, kLevelShadow);
         renderer.drawText(level, levelX, levelY, 0.34f, kLevelColor);
 
-        // Native 32x14 localized labels, kept clear of the HP groove.
+        // BattleInfo.setTypes uses single/dual compact icons outside the panel.
         const auto* species = PokerogueContent::findSpeciesByDex(actor.dex);
         const char* type1=nullptr;const char* type2=nullptr;
         if (canonicalPresentationTypes(actor.dex,actor.formId,type1,type2)) {
-            if (player) {
-                const float badgeX = x + 18.0f;
-                const float badgeY = y + 25.0f;
-                drawTypeBadge(renderer, type1, badgeX, badgeY, 32.0f, 14.0f, 0.18f);
-                if (type2 && *type2 && !typeIEquals(type1, type2)) {
-                    drawTypeBadge(renderer, type2, badgeX + 33.0f, badgeY, 32.0f, 14.0f, 0.18f);
-                }
-            } else {
-                const float badgeX = x + 8.0f;
-                const float badgeY = y + 23.0f;
-                drawTypeBadge(renderer, type1, badgeX, badgeY, 32.0f, 14.0f, 0.18f);
-                if (type2 && *type2 && !typeIEquals(type1, type2)) {
-                    drawTypeBadge(renderer, type2, badgeX + 33.0f, badgeY, 32.0f, 14.0f, 0.18f);
-                }
-            }
+            const bool dual=type2 && *type2;
+            const float iconX=player ? x-15.0f : x+hudW-5.0f;
+            const float iconY=y+(player ? 0.0f : 4.0f);
+            renderer.drawHudTypeIcon(type1,player,0,dual,iconX,iconY);
+            if(dual) renderer.drawHudTypeIcon(type2,player,1,true,iconX,iconY+(player ? 16.0f : 14.0f));
         }
 
         // HP Bar in the exact texture groove (hpH = 2.5f, fits frame groove cleanly):
