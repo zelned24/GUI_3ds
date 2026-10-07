@@ -1,6 +1,8 @@
 #pragma once
 #include "gfx/renderer2d.hpp"
 #include <cstdint>
+#include <cstring>
+#include "content/PokerogueRuntimeContent.hpp"
 
 namespace Pokerogue3DS {
 
@@ -14,6 +16,20 @@ inline bool typeIEquals(const char* a, const char* b) {
         ++b;
     }
     return *a == *b;
+}
+
+// Canonical species/form metadata only; transient battle type changes remain separate.
+inline bool canonicalPresentationTypes(uint16_t dex,const char* formId,const char*& first,const char*& second) {
+    first=second=nullptr;
+    const auto* species=PokerogueContent::findSpeciesByDex(dex);
+    if(!species) return false;
+    if(formId && *formId) {
+        const auto* form=PokerogueContent::findFormById(formId);
+        if(!form || std::strcmp(form->speciesId,species->id)!=0) return false;
+        first=form->type1;second=form->type2;
+    } else { first=species->type1;second=species->type2; }
+    if(second && (!*second || typeIEquals(second,"NONE") || typeIEquals(first,second))) second=nullptr;
+    return first && *first;
 }
 
 inline uint32_t pokemonTypeColor(const char* type) {
@@ -67,7 +83,7 @@ inline void drawTypeBadge(Renderer2D& renderer, const char* type, float x, float
     const uint32_t col = pokemonTypeColor(type);
     renderer.drawRect(x, y, w, h, col);
     const char* label = pokemonTypeUiName(type);
-    renderer.drawText(label, x + 3.0f, y + 1.0f, textSize, C2D_Color32(255, 255, 255, 255));
+    renderer.drawTextFitted(label,x+3,y+1,textSize,w-6,C2D_Color32(255,255,255,255));
 }
 
 }

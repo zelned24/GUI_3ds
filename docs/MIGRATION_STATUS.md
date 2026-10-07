@@ -34,7 +34,7 @@ El avance se publica como trabajo en curso. Classic completo y la fidelidad visu
 4. Compilación directa `make -f Makefile.3ds 3ds`: ELF y 3DSX producidos con devkitARM. No equivale a validación en Old 3DS.
 5. `python scripts/verify_presentation_media.py`: archivos físicos y tablas de presentación PASS; no prueba fidelidad visual ni efectos de objetos.
 6. Regresiones de navegación, geometría, índice de iconos, guards de pausa/guardado y ownership QuickJS PASS. Los guards de main son comprobaciones estáticas, no interacción real en Azahar.
-7. Logs reproducibles de esta revisión: `build/hud-text-npm-test.log`, `build/hud-text-parity.log`, `build/review-native-test.log`, `build/hud-text-arm.log`, `build/window-style-media.log`. No se versionan binarios ni logs.
+7. Logs reproducibles de esta revisión: `build/form-hud-npm-test.log`, `build/form-hud-parity.log`, `build/review-native-test.log`, `build/form-hud-arm.log`, `build/window-style-media.log`. No se versionan binarios ni logs.
 
 ## Nitidez de presentación
 
@@ -81,6 +81,12 @@ El avance se publica como trabajo en curso. Classic completo y la fidelidad visu
 1. La fuente PokéRogue convertida y el marco original son requeridos en 3DS. Si faltan o no cargan, el renderer falla explícitamente y muestra un diagnóstico en consola inferior; no continúa con la fuente del sistema ni una interfaz sin marcos.
 2. Se libera inicialización parcial ante fallos de targets, buffer, fuente o ventana; `fini` es idempotente y permite reintentar. La altura del cursor no consulta un font nulo; reiniciar el renderer restablece la identidad del marco cargado.
 3. El harness ejecuta el renderer C++ real con backend GPU simulado: siete fallos de arranque, limpieza/reintento, nearest, coordenadas enteras, wrapped/fitted text y bloqueo de cambio de textura durante un frame. No prueba lectura real de RomFS ni nitidez en pantalla.
+
+## Tipos de la forma en el HUD
+
+1. Las insignias consumen tipos de la forma canónica real y validan su pertenencia a la especie. Una forma inválida no se sustituye silenciosamente por datos base; NONE, segundo tipo vacío o duplicado no producen otra insignia.
+2. La prueba host recorre las 1084 especies y 609 formas, comprueba tipos importados y rechaza referencias cruzadas/desconocidas. Los nombres de las insignias se ajustan a sus límites.
+3. Esto representa tipos canónicos de especie/forma; no implementa cambios temporales de tipo ni Teracristalización. La revisión visual sigue pendiente. Validación completa: npm test 35/35, paridad 126/126 y build ARM PASS; logs `build/form-hud-npm-test.log`, `build/form-hud-arm.log`, `build/form-hud-parity.log`.
 
 ## Texto del HUD y cursores
 
