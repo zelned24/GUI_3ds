@@ -8,7 +8,7 @@
 6. RNG y outputs deterministas; sin reloj ni aleatoriedad no seeded en resultados, IDs o generación. Fixtures exclusivamente para tests, nunca producción.
 7. Buscar/reutilizar antes de crear sistemas; inspeccionar referencias antes de borrar. Conservar historial y cambios de otras IA.
 8. Reparto: este agente combate/gameplay; otra IA presentación/assets. Coordinar archivos compartidos antes de editar simultáneamente.
-9. Por instrucción del usuario, tests y compilación del programa se ejecutan al final. Conversión PNG→t3x y revisión estática permitidas. Escribir pruebas relevantes; no ocultar fallos ni cambiar asserts para obtener PASS.
+9. Tests y compilación están autorizados por la instrucción posterior del usuario. Ejecutar gates pertinentes antes de declarar terminado; no ocultar fallos ni cambiar asserts solo para obtener PASS.
 10. No declarar Classic completo sin progresión, encuentros, combate, rewards, save/continue/export, win/lose/summary y evidencia de hardware. OTA requiere catálogo cargable y firma, no solo texturas.
 11. Leer README.md y docs/MIGRATION_STATUS.md, luego únicamente la sección pertinente de docs/progress/POKEROGUE_3DS_REMAINING_WORK.md. No cargar todos los catálogos/docs por defecto.
 12. Para localizar archivos, consultar docs/BRAIN_MAP.md y el perfil pertinente de docs/brain-map.json; regenerar con npm run brain-map si cambia la estructura.

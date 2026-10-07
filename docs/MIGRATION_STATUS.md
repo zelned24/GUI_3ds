@@ -28,13 +28,13 @@ El avance se publica como trabajo en curso. Classic completo y la fidelidad visu
 
 ## Evidencia ejecutada
 
-1. `npm test`: **33 passed, 1 failed**, 34 suites. La suite FirstRunRuntime contiene **31 casos passing y 18 failing, de 49**. No se desactivaron casos ni se debilitaron assertions.
+1. `npm test`: **34 passed, 0 failed**, 34 suites. La suite FirstRunRuntime contiene **50 passing, 0 failing, de 50**. No se desactivaron casos ni se debilitaron assertions.
 2. `npm run native-parity`: **126/126 PASS**. Compara el contrato C++ con JS; no prueba todo el upstream.
 3. `npm run native-test`: compilación PASS; el ejecutor informa explícitamente que no ejecutó hardware/emulador.
 4. Compilación directa `make -f Makefile.3ds 3ds`: ELF y 3DSX producidos con devkitARM. No equivale a validación en Old 3DS.
 5. `python scripts/verify_presentation_media.py`: archivos físicos y tablas de presentación PASS; no prueba fidelidad visual ni efectos de objetos.
 6. Regresiones de navegación, geometría, índice de iconos, guards de pausa/guardado y ownership QuickJS PASS. Los guards de main son comprobaciones estáticas, no interacción real en Azahar.
-7. Logs reproducibles de esta revisión: `build/review-final-npm-test.log`, `build/review-native-parity.log`, `build/review-native-test.log`, `build/review-arm-build.log`, `build/review-media.log`. No se versionan binarios ni logs.
+7. Logs reproducibles de esta revisión: `build/replay-final-npm-test.log`, `build/replay-native-parity.log`, `build/review-native-test.log`, `build/replay-arm-build.log`, `build/review-media.log`. No se versionan binarios ni logs.
 
 ## Nitidez de presentación
 
@@ -43,32 +43,18 @@ El avance se publica como trabajo en curso. Classic completo y la fidelidad visu
 3. Azahar local tenía xBRZ activo y modo New 3DS. `scripts/prepare_azahar_preview.py` prepara un perfil aislado Old 3DS, resolución nativa, sin xBRZ y con muestreo nearest/display sin filtro; no modifica la configuración global ni inicia/cierra procesos.
 4. `python test/pixel_font_tests.py`: 3 PASS (alpha/métricas/determinismo, rechazo de corrupción, perfil aislado). Compilación ARM PASS; comprobación visual conjunta pendiente.
 
-## Fallos abiertos de FirstRunRuntime
+## Replay y tipos verificados
 
-- `checkBattleFleeMechanicsAndRestrictions`: `10306`.
-- `checkLegacyFirstRunRestore`: `408`.
-- `checkDoublePlainAreaDamage`: `10376`.
-- `checkDoubleSingleTargetSleepCheckpoint`: `10354`.
-- `checkDoubleStatusResidualCheckpoint`: `10344`.
-- `checkDoublePartialExperienceCheckpoint`: `10304`.
-- `checkDoubleCheckpointRoundtrip`: `10283`.
-- `checkExhaustedPpStruggleReplay`: `10222`.
-- `checkStatusActionAdmission`: `9381`.
-- `checkModifierRewardGenerationAndClaim`: `60`.
-- `checkFirstRivalEncounterTraceability`: `11008`.
-- `checkCanonicalBerryEffects`: `10364`.
-- `checkCanonicalBerryGeneration`: `10263`.
-- `checkFlinchTurnLifecycle`: `10236`.
-- `checkBiomeTransitionProgression`: `86`.
-- `checkPokeballCaptureMechanics`: `150`.
-- `checkPlayerPartyManagementAndSwitching`: `167`.
-- `checkInitialTeamFirstTurnRoundtrip`: `671`.
-
-Los fallos incluyen restore/checkpoints, recompensas, bayas, capturas, cambios, dobles y una expectativa de huida. Su origen requiere distinguir regresiones de expectativas antiguas mediante upstream; no se declaran corregidos.
+1. Retirada la regla de anti-repetición de especies y su estado global: no existen en `Arena.randomSpecies` / `EncounterPhase` del pin de juego. El replay mantiene especies, identidades, movimientos, habilidades y RNG entre runtimes independientes, para 32 semillas reales, con especies distintas y campos dobles.
+2. Especies sin formas conservan la segunda habilidad regular en `initializePokemonBattleStateForActor`; regresión explícita Purrloin/Limber. Fuente: `src/data/pokemon-species.ts::getAbility` y `src/field/pokemon.ts::getAbility` del pin de juego.
+3. `NONE` representa ausencia de segundo tipo; no entra como tipo de combate. Inmunidades de estados normalizan nombres canónicos (Grass/Dark); resolver de estados acepta la especie base cuando no existe forma.
+4. Huida: `CommandPhase.handleRunCommand` restringe End y entrenadores; un jefe ordinario no prohíbe huir por ser wave múltiplo de diez. `AttemptRunPhase` distingue boss por ambos enemigos y `BattleEndPhase(false)` no otorga victoria, EXP ni recompensa. Regresión verifica el roll seeded, la wave siguiente y el feedback.
+5. Los 18 fallos registrados en la revisión anterior ya no se reproducen. Esto no demuestra cobertura completa: trampas, callbacks de huida, persistencia del contador de intentos y segundo jugador activo siguen pendientes.
+6. TypeSafe instalado para Codex en `.agents/skills/typesafe-ai/` mediante npx. Se aplicó su instrucción de conservar reglas conocidas y ejecución en código; no se añadió un servicio de IA al runtime.
 
 ## Pendiente
 
-1. Resolver los fallos anteriores y verificar Classic de principio a fin, todas las reglas/effects, cuatro actores en dobles y callbacks de habilidades/items.
+1. Verificar Classic de principio a fin, todas las reglas/effects, cuatro actores en dobles y callbacks de habilidades/items.
 2. Cerrar ajustes, historial, selección de destinatario y movimiento de recompensas en la ruta QuickJS, idiomas y fidelidad de todos los submenús. La ruta nativa y la ruta QuickJS no están completamente alineadas.
 3. Actualización desde consola con catálogo cargable y firma; compatibilidad y export/import completos de estados pendientes.
 4. Audio, recursos residentes/VRAM, cargas de atlas y rendimiento en Old 3DS física.

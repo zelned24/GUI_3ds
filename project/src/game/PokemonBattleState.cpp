@@ -511,8 +511,8 @@ bool resolvePokemonStatusMoveTypeImmunity(uint16_t moveId,
     if (!flags || !flags->resolved) return false;
     bool immune = false;
     for (size_t i = 0; i < policy.typeCount; ++i) {
-        const char* type = policy.originalIfStellarTypes[i];
-        if (!type || !resolvePokemonTypeSymbol(type)) return false;
+        const char* type = resolvePokemonTypeSymbol(policy.originalIfStellarTypes[i]);
+        if (!type) return false;
         if (std::strcmp(type, "GRASS") == 0 && flags->powder) immune = true;
         if (std::strcmp(type, "DARK") == 0 && policy.userHasPrankster && policy.opponents) immune = true;
     }
@@ -1192,7 +1192,8 @@ PokemonBattleInitResult initializePokemonBattleStateForActor(
         ? PokerogueContent::findFormById(nonIdentityInput.formId)
         : (species->firstFormId[0] ? PokerogueContent::findFormById(species->firstFormId) : nullptr);
     const uint16_t ability1 = form && form->ability1 ? form->ability1 : species->ability1;
-    const uint16_t ability2 = form && form->ability2 ? form->ability2 : ability1;
+    const uint16_t ability2 = form ? (form->ability2 ? form->ability2 : ability1)
+        : (species->ability2 ? species->ability2 : ability1);
     const uint16_t abilityHidden = form && form->abilityHidden
         ? form->abilityHidden : species->abilityHidden;
     if (identity.abilityIndex > 2) return PokemonBattleInitResult::InvalidAbility;

@@ -28,10 +28,6 @@
 #include <new>
 
 namespace Pokerogue3DS {
-namespace {
-thread_local uint16_t s_previousEncounterDex = 0;
-}
-#define m_previousEncounterDex s_previousEncounterDex
 #define m_escapeAttempts (m_context.enemy.battleState.escapeAttempts)
 namespace {
 Citro2D::SceneNodeData textNode(const char* id, Citro2D::ScreenTarget screen,
@@ -1270,14 +1266,14 @@ bool FirstRunRuntime::resolveActiveStatusRecipientPolicies(const PokemonBattleSt
         (form && std::strcmp(form->speciesId, species->id) != 0)) return false;
     const char* types[] = {form ? form->type1 : species->type1, form ? form->type2 : species->type2};
     if (!types[0] || !resolvePokemonTypeSymbol(types[0])) return false;
-    const size_t count = types[1] && types[1][0] ? 2 : 1;
+    const size_t count = types[1] && types[1][0] && std::strcmp(types[1], "NONE") ? 2 : 1;
     if (count == 2 && !resolvePokemonTypeSymbol(types[1])) return false;
     PokemonStatusFieldContext field{};
     field.resolved = true;
     field.effectiveTypes = field.originalIfStellarTypes = types;
     field.effectiveTypeCount = field.originalIfStellarTypeCount = count;
-    field.grounded = std::strcmp(types[0], "FLYING") != 0 &&
-        (count == 1 || std::strcmp(types[1], "FLYING") != 0);
+    field.grounded = std::strcmp(resolvePokemonTypeSymbol(types[0]), "FLYING") != 0 &&
+        (count == 1 || std::strcmp(resolvePokemonTypeSymbol(types[1]), "FLYING") != 0);
     field.sunnyOrHarshSun = m_arenaWeather.type == PokemonEffectiveWeather::Sunny ||
         m_arenaWeather.type == PokemonEffectiveWeather::HarshSun;
     // Admitted status-action abilities have no bypassFaint builder; HP controls
@@ -1326,13 +1322,15 @@ bool FirstRunRuntime::resolveActiveStatusCommandPolicies(const PokemonBattleStat
     }
     if (!composePokemonStatusAccuracyStagePolicy(user, opponent, command.move.hit, command.move.hit,
             ignoreUserAccuracy, ignoreTargetEvasion)) return false;
-    const auto* form = PokerogueContent::findFormById(opponent.formId);
-    if (!form) return false;
-    const char* types[] = {form->type1, form->type2};
+    const auto* form = opponent.formId ? PokerogueContent::findFormById(opponent.formId) : nullptr;
+    const auto* species = PokerogueContent::findSpeciesByDex(opponent.speciesDex);
+    if (!species || (opponent.formId && !form) ||
+        (form && std::strcmp(form->speciesId, species->id))) return false;
+    const char* types[] = {form ? form->type1 : species->type1, form ? form->type2 : species->type2};
     PokemonStatusMoveTypeImmunityPolicy typePolicy{};
     typePolicy.resolved = typePolicy.opponents = true;
     typePolicy.originalIfStellarTypes = types;
-    typePolicy.typeCount = types[1] && types[1][0] ? 2 : 1;
+    typePolicy.typeCount = types[1] && types[1][0] && std::strcmp(types[1], "NONE") ? 2 : 1;
     const PokemonStatusAbilityComponent defenders[] = {{opponent.abilityId, true, true}};
     if (!composePokemonStatusMoveTypeHitPolicy(move->id, command.move.hit, typePolicy, command.move.hit) ||
         !composePokemonStatusFlagAbilityHitPolicy(move->id, command.move.hit, false,
@@ -1432,7 +1430,7 @@ bool FirstRunRuntime::resolveActiveStatStageCommandPolicy(const PokemonBattleSta
         PokemonStatusMoveTypeImmunityPolicy typePolicy{};
         typePolicy.resolved = typePolicy.opponents = true;
         typePolicy.originalIfStellarTypes = types;
-        typePolicy.typeCount = types[1] && types[1][0] ? 2 : 1;
+        typePolicy.typeCount = types[1] && types[1][0] && std::strcmp(types[1], "NONE") ? 2 : 1;
         const PokemonStatusAbilityComponent defenders[] = {{opponent.abilityId, true, true}};
         stagedAccuracy.blockedBeforeAccuracy = hit.blockedByAbility;
         stagedAccuracy.bypassAccuracy = hit.bypassAccuracy || move->accuracy < 0;
@@ -3879,20 +3877,21 @@ bool FirstRunRuntime::fleeBattle() {
         buildScene();
         return false;
     }
-    if ((m_run.wave % 10 == 0) || m_run.wave == PokerogueContent::kClassicFinalWave) {
+    if (m_run.biomeId && !std::strcmp(m_run.biomeId, "end")) {
         m_battleFeedback = "No puedes huir de un combate contra un jefe.";
         buildScene();
         return false;
     }
 
-    const bool isBoss = m_context.enemy.bossState.segmentCount > 0;
+    const bool isBoss = m_context.enemy.bossState.segmentCount > 0 ||
+        (m_doubleBattle && m_secondEncounterResolved && m_context.secondEnemy.bossState.segmentCount > 0);
     uint16_t playerSpeedStat = m_context.player.battleState.stats[5];
-    uint16_t enemySpeedStat = m_context.enemy.battleState.stats[5];
+    uint32_t enemySpeedStat = m_context.enemy.battleState.stats[5];
     if (m_doubleBattle && m_secondEncounterResolved && m_context.secondEnemy.battleState.hp > 0) {
         enemySpeedStat += m_context.secondEnemy.battleState.stats[5];
     }
     const float playerSpeed = float(std::max<uint16_t>(1, playerSpeedStat));
-    const float enemySpeed = float(std::max<uint16_t>(1, enemySpeedStat));
+    const float enemySpeed = float(std::max<uint32_t>(1, enemySpeedStat));
     const float speedRatio = playerSpeed / enemySpeed;
     const float speedCap = isBoss ? 6.0f : 4.0f;
     const float minChance = 5.0f;
@@ -3923,6 +3922,7 @@ bool FirstRunRuntime::fleeBattle() {
         const uint16_t nextWave = static_cast<uint16_t>(m_run.wave + 1);
         m_run.wave = nextWave;
         resolve(true);
+        m_battleFeedback = "¡Escapaste sin problemas!";
         buildScene();
         return true;
     }
@@ -4574,11 +4574,6 @@ void FirstRunRuntime::resolve(bool carryPlayer, const char* checkpointBiomeId) {
     m_trainerBattle = false;
     m_secondEncounterResolved = false;
     m_doubleExperienceGrantedMask = 0;
-    const uint16_t prevDex = carryPlayer
-        ? (m_run.encounterDex ? m_run.encounterDex : (m_context.player.battleState.previousEncounterDex ? m_context.player.battleState.previousEncounterDex : s_previousEncounterDex))
-        : 0;
-    s_previousEncounterDex = prevDex;
-    m_context.player.battleState.previousEncounterDex = prevDex;
     m_context.enemy = {};
     m_context.secondEnemy = {};
     m_run.encounterDex = 0;
@@ -5187,30 +5182,9 @@ void FirstRunRuntime::resolve(bool carryPlayer, const char* checkpointBiomeId) {
     if (enemyIndex == PokerogueContent::kSpeciesCount) return;
     auto enemy = PokerogueContent::kSpecies[enemyIndex];
 
-    if (waveKind != ClassicWaveKind::FinalBoss && waveKind != ClassicWaveKind::MajorBoss) {
-        if (pool.poolSize > 1 && m_previousEncounterDex != 0 && enemy.dex == m_previousEncounterDex) {
-            for (int attempt = 0; attempt < 8; ++attempt) {
-                const auto rerollPool = PokerogueEncounterResolver::resolveNonBoss(
-                    m_run.biomeId, time, m_run.wave, waveRng);
-                if (rerollPool.valid && rerollPool.speciesId) {
-                    const char* rerollSpeciesId = PokerogueEncounterResolver::resolveWildSpeciesForLevel(
-                        rerollPool.speciesId, level, true, waveRng);
-                    if (rerollSpeciesId) {
-                        const std::size_t rerollIndex = findSpeciesIndex(rerollSpeciesId);
-                        if (rerollIndex < PokerogueContent::kSpeciesCount &&
-                            PokerogueContent::kSpecies[rerollIndex].dex != m_previousEncounterDex) {
-                            pool = rerollPool;
-                            resolvedSpeciesId = rerollSpeciesId;
-                            enemyIndex = rerollIndex;
-                            enemy = PokerogueContent::kSpecies[enemyIndex];
-                            break;
-                        }
-                    }
-                }
-            }
-        }
-    }
-
+    // Arena.randomSpecies / EncounterPhase upstream do not reject a species
+    // because it appeared in the previous wave. Never inject extra RNG draws
+    // or cross-run state into this deterministic encounter stream.
     const auto resolveEnemyActor = [&](const PokerogueContent::Species& species,
                                        ResolvedPokemon& destination) -> bool {
         PokemonFormSelectionContext formContext{};
@@ -5269,8 +5243,6 @@ void FirstRunRuntime::resolve(bool carryPlayer, const char* checkpointBiomeId) {
     };
 
     m_run.encounterDex = enemy.dex;
-    m_context.player.battleState.previousEncounterDex = enemy.dex;
-    s_previousEncounterDex = enemy.dex;
     const std::string enemyLocaleId = std::string("pokemon:") + enemy.id;
     m_context.enemy = {enemy.dex, level, enemy.id, locale(enemyLocaleId.c_str(), enemy.name), enemy.firstFormId, enemy.assetSourcePath};
     if (!resolveEnemyActor(enemy, m_context.enemy)) return;

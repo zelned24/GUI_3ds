@@ -2,7 +2,7 @@
 
 ## Cómo medir el avance
 
-- Referencia de código inspeccionado: commit `c1901fb`, rama `codex/pokerogue-3ds-migration`.
+- Referencia de código inspeccionado: commit `6ef4610`, rama `codex/pokerogue-3ds-migration`.
 - Objetivo: PokéRogue jugable y fiel al snapshot upstream en Old 3DS, con ambas pantallas, progreso exportable y actualizaciones desde consola.
 - Cada ID es estable para reportar avances: `MOV-07`, `GUI-03`, etc. No equivale a un movimiento/habilidad individual.
 - Una casilla sin marcar puede tener código parcial; el resumen de cada área indica lo existente. Marcarla solo con integración completa y evidencia ejecutada pertinente.
@@ -35,7 +35,7 @@ Estos son criterios de cierre, no cantidades de ataques o habilidades pendientes
 | Validación y entrega final | 10 |
 | **Total** | **128** |
 
-Prioridad inmediata: completar el segundo Pokémon activo del jugador y el campo de cuatro actores (**TUR-05**), checks previos y cola dinámica de acciones (**TUR-01–04**), ampliar habilidades/movimientos (**HAB / MOV**) y cerrar Eternatus con persistencia (**FLU-09 / SAV-03**). Struggle por PP agotados y guardado del campo actual de tres actores ya tienen rutas conectadas; no cubren todos los contextos. La última suite ejecutada conserva 18 fallos de FirstRunRuntime; consultar MIGRATION_STATUS.md.
+Prioridad inmediata: completar el segundo Pokémon activo del jugador y el campo de cuatro actores (**TUR-05**), checks previos y cola dinámica de acciones (**TUR-01–04**), ampliar habilidades/movimientos (**HAB / MOV**) y cerrar Eternatus con persistencia (**FLU-09 / SAV-03**). Struggle por PP agotados y guardado del campo actual de tres actores ya tienen rutas conectadas; no cubren todos los contextos. Las regresiones de replay y restauración se verifican en la suite FirstRunRuntime; consultar resultados vigentes en MIGRATION_STATUS.md.
 
 ## Estado consolidado para seguimiento
 
@@ -52,7 +52,7 @@ Esta tabla describe código inspeccionado, no resultados de ejecución. Las nota
 | HP-05 / MOV-07 | Struggle virtual conectado a selección jugador/IA, orden, locales, daño/retroceso boss y campo actual de tres actores | Segundo activo jugador, modifiers, restricciones por otros tags y validación ejecutada |
 | HP-01–08 | HP/PP/status, daño/curación, EXP parcial persistida, checkpoint de derrota simultánea y residual de Poison/Toxic/Burn para ambos enemigos | Composición completa, fases tras faint/summon, otros tags/callbacks y feedback visual; falta ejecución de pruebas |
 | FLU-05 / SAV-03 | Checkpoint v22: bioma, actores explícitos, jefes, RNG global, trainer resuelto y segundo enemigo del campo doble | Segundo activo jugador, fase final, decisiones pendientes y recorrido completo; casos de trainer posterior/dobles sin verificar |
-| GUI-01–12 / AST-01–08 | Presentación nativa, índices, filtrado GPU nearest-neighbor para sprites nítidos y assets convertidos | Todas las pantallas, HUD HP/PP/EXP, animación/audio, controles y comparación visual |
+| GUI-01–14 / AST-01–08 | Presentación nativa, índices, filtrado GPU nearest-neighbor para sprites nítidos y assets convertidos | Todas las pantallas, HUD HP/PP/EXP, animación/audio, controles y comparación visual |
 | SAV-01–08 | Codecs, journals y bundles | Todos los estados de run/perfil, export/import conectado a UI y compatibilidad de contenido |
 | OTA-01–08 | Infraestructura de packs | Catálogo de gameplay cargable, firma, descarga e instalación desde consola |
 | 3DS-01–06 / VAL-01–12 | Pruebas escritas y pipeline | Ejecución final, build, Azahar y medición en Old 3DS XL física |
@@ -246,8 +246,8 @@ Se conserva presentación C++/ScenePlayer y bridge QuickJS opcional. El editor/S
 - [ ] **GUI-07.** Completar settings, idioma, audio, exportación y actualización de contenido.
 - [ ] **GUI-08.** Completar win/lose/summary y recuperación de errores de carga.
 - [ ] **GUI-09.** Completar D-pad/A/B/X/Y/L/R/Start/Select y táctil resistivo con foco coherente.
-- [x] **GUI-10.** Convertir alpha antialias de la fuente A4 a alpha binario, conservar métricas, alinear coordenadas de texto a píxeles y preparar un perfil Azahar Old 3DS sin suavizado; pruebas de conversión/determinismo/corrupción ejecutadas.
-- [ ] **GUI-11.** Verificar nitidez, tamaños y alineación de letras/sprites en todas las pantallas mediante Azahar y Old 3DS; contrastar capturas con la referencia web.
+- [x] **GUI-13.** Convertir alpha antialias de la fuente A4 a alpha binario, conservar métricas, alinear coordenadas de texto a píxeles y preparar un perfil Azahar Old 3DS sin suavizado; pruebas de conversión/determinismo/corrupción ejecutadas.
+- [ ] **GUI-14.** Verificar nitidez, tamaños y alineación de letras/sprites en todas las pantallas mediante Azahar y Old 3DS; contrastar capturas con la referencia web.
 
 - [ ] **GUI-10.** Completar locales, glyphs, fallback y texto largo; retirar strings fijas donde exista localización.
 - [ ] **GUI-11.** Mantener UI → comando → evento → binding; sin reglas ni especies hardcodeadas.
@@ -323,7 +323,7 @@ Sin mediciones concluyentes de hardware; Azahar tampoco las reemplaza.
 
 ### Estado actual
 
-Por instrucción del usuario, tests y compilación del programa están aplazados. Pruebas escritas no se marcan como pasadas.
+Tests y compilación están autorizados. Solo se marcan como verificadas las pruebas ejecutadas; Azahar y hardware requieren evidencia propia.
 
 ### Pendientes y criterios de cierre
 

@@ -258,7 +258,6 @@ struct PokemonBattleState {
     bool pauseEvolutions = false; // Persistent Pokemon option, independent of battle stages.
     bool statsAreBaseFormulaOnly = true;
     uint8_t escapeAttempts = 0; // Escape attempts during current battle.
-    uint16_t previousEncounterDex = 0; // Previous wave encounter dex for variety rerolls.
     uint16_t speed() const { return stats[5]; }
 };
 

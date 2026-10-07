@@ -3088,6 +3088,18 @@ extern "C" int runPokemonBattleStateChecks() {
         actorBattleState.abilityId != charizard->ability1 || actorBattleState.gender != actorIdentity.gender ||
         !actorBattleState.ivsWereDerivedFromPokemonId || actorBattleState.level != actorBattleInput.level ||
         actorBattleState.moves[0].moveId != 33) return 72;
+    // Base species without forms must retain their second regular ability.
+    // Purrloin's slot 1 is Limber, not its slot 0 Unburden.
+    PokemonBattleInit secondaryInput = actorBattleInput;
+    secondaryInput.speciesDex = 509;
+    auto secondaryIdentity = actorIdentity;
+    secondaryIdentity.formId = nullptr;
+    secondaryIdentity.abilityIndex = 1;
+    PokemonBattleState secondaryState{};
+    const auto* purrloin = PokerogueContent::findSpeciesByDex(509);
+    if (!purrloin || Pokerogue3DS::initializePokemonBattleStateForActor(
+            secondaryInput, secondaryIdentity, secondaryState) != PokemonBattleInitResult::Ok ||
+        secondaryState.abilityId != purrloin->ability2) return 11108;
     PokemonBattleInit explicitNatureInput = actorBattleInput;
     explicitNatureInput.pokemonId = actorIdentity.pokemonId;
     explicitNatureInput.deriveIvsFromPokemonId = true;
@@ -4652,6 +4664,13 @@ extern "C" int runPokemonBattleStateChecks() {
     typeImmunityPolicy.userHasPrankster = typeImmunityPolicy.opponents = true;
     if (!Pokerogue3DS::resolvePokemonStatusMoveTypeImmunity(95, typeImmunityPolicy, typeImmune) ||
         !typeImmune) return 9322;
+    // Canonical catalog spelling is title case; runtime enum checks normalize it.
+    const char* canonicalTargetTypes[] = {"Grass", "Dark"};
+    typeImmunityPolicy.originalIfStellarTypes = canonicalTargetTypes;
+    if (!Pokerogue3DS::resolvePokemonStatusMoveTypeImmunity(77, typeImmunityPolicy, typeImmune) ||
+        !typeImmune || !Pokerogue3DS::resolvePokemonStatusMoveTypeImmunity(95, typeImmunityPolicy, typeImmune) ||
+        !typeImmune) return 11109;
+    typeImmunityPolicy.originalIfStellarTypes = powderTargetTypes;
     typeImmunityPolicy.opponents = false;
     if (!Pokerogue3DS::resolvePokemonStatusMoveTypeImmunity(95, typeImmunityPolicy, typeImmune) ||
         typeImmune) return 9323;

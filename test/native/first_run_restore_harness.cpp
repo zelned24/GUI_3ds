@@ -3,6 +3,8 @@
 #include "content/PokerogueRuntimeContent.hpp"
 #include <cstring>
 #include <cstdio>
+#include <cmath>
+#include <algorithm>
 #include "storage/IntegritySha256.hpp"
 #include "storage/NativeStarterCandyProfile.hpp"
 #include "storage/NativeProgressStore.hpp"
@@ -5926,15 +5928,66 @@ static int checkBattleFleeMechanicsAndRestrictions() {
     if (!game.restoreSetup(1, 1)) return 10302;
     if (!game.startRun()) return 10303;
     if (!game.runStarted() || game.battleFinished()) return 10304;
+    // AttemptRunPhase consumes one battle roll; success starts the next battle
+    // through BattleEndPhase(false), with no victory, EXP or reward grant.
+    auto expectedRng = *game.battleRng().currentStream();
+    const unsigned roll = expectedRng.randSeedInt(100);
+    const auto& field = game.presentation();
+    const double ratio = double(field.player.battleState.stats[5]) / field.enemy.battleState.stats[5];
+    const unsigned chance = unsigned(std::min(95.0, std::max(5.0, std::floor(22.5 * ratio + 5.0 + 0.5))));
+    const auto experience = field.player.totalExperience;
     if (!game.fleeBattle()) return 10305;
-    if (!game.battleFinished() || !game.playerWon() || !game.experienceGranted()) return 10306;
-    if (game.battleFeedback() != "Has huido del combate.") return 10307;
+    if (game.playerWon() || game.experienceGranted() || game.rewardsPending() ||
+        game.presentation().player.totalExperience != experience) return 10306;
+    NativeRunSave after{};
+    if (game.captureNativeRunSave(after) != NativeSaveResult::Ok) return 10307;
+    if (after.wave != (roll < chance ? 2 : 1)) return 10308;
+    if (game.battleFeedback() != (roll < chance ? "¡Escapaste sin problemas!" : "¡No pudiste escapar!")) return 10309;
     return 0;
+}
+
+// Multiple runtimes and replay candidates must never share encounter history.
+// Upstream Arena.randomSpecies has no anti-repeat rule across ordinary waves.
+static int checkIndependentEncounterReplay() {
+    using namespace Pokerogue3DS;
+    uint16_t firstDex = 0;
+    bool sawDistinctSpecies = false, sawDouble = false;
+    for (uint32_t seed = 1; seed <= 32; ++seed) {
+        FirstRunRuntime original(seed);
+        if (!original.startRun()) return 11101;
+        NativeRunSave snapshot{};
+        if (original.captureNativeRunSave(snapshot) != NativeSaveResult::Ok) return 11102;
+        FirstRunRuntime unrelated(seed + 100), restored(999);
+        if (!unrelated.startRun()) return 11103;
+        if (!restored.restoreNativeRunSave(snapshot)) return 11104;
+        const auto& left = original.presentation();
+        const auto& right = restored.presentation();
+        if (!firstDex) firstDex = left.enemy.dex;
+        sawDistinctSpecies |= left.enemy.dex != firstDex;
+        if (left.enemy.battleState.abilityId != right.enemy.battleState.abilityId) return 11110;
+        if (original.doubleBattle()) {
+            sawDouble = true;
+            if (!restored.doubleBattle() || left.secondEnemy.dex != right.secondEnemy.dex ||
+                left.secondEnemy.actor.pokemonId != right.secondEnemy.actor.pokemonId ||
+                left.secondEnemy.battleState.abilityId != right.secondEnemy.battleState.abilityId ||
+                left.secondEnemy.moveCount != right.secondEnemy.moveCount) return 11111;
+            for (uint8_t slot = 0; slot < left.secondEnemy.moveCount; ++slot)
+                if (left.secondEnemy.moveIds[slot] != right.secondEnemy.moveIds[slot]) return 11112;
+        }
+        if (left.enemy.dex != right.enemy.dex || left.enemy.actor.pokemonId != right.enemy.actor.pokemonId ||
+            left.enemy.moveCount != right.enemy.moveCount) return 11105;
+        for (uint8_t slot = 0; slot < left.enemy.moveCount; ++slot)
+            if (left.enemy.moveIds[slot] != right.enemy.moveIds[slot]) return 11106;
+        const auto l = original.battleRng().state(), r = restored.battleRng().state();
+        if (l.carry != r.carry || l.s0 != r.s0 || l.s1 != r.s1 || l.s2 != r.s2) return 11107;
+    }
+    return sawDistinctSpecies && sawDouble ? 0 : 11113;
 }
 
 extern "C" int runFirstRunRestoreChecks() {
     struct Check { const char* name; int (*run)(); };
     const Check checks[] = {
+        {"checkIndependentEncounterReplay", checkIndependentEncounterReplay},
         {"checkSetupCatalogNavigation", checkSetupCatalogNavigation},
         {"checkBattleFleeMechanicsAndRestrictions", checkBattleFleeMechanicsAndRestrictions},
         {"checkLegacyFirstRunRestore", checkLegacyFirstRunRestore},
