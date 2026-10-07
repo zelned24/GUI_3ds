@@ -29,7 +29,7 @@ int main() {
     fresh.input(KEY_DDOWN);assert(fresh.input(KEY_A)==FrontendCommand::None);
     fresh.input(KEY_B);assert(fresh.page()==FrontendPage::Title);
     fresh.input(KEY_DDOWN);fresh.input(KEY_A);assert(fresh.page()==FrontendPage::Load);
-    assert(fresh.input(KEY_A)==FrontendCommand::None);
+    assert(fresh.input(KEY_A)==FrontendCommand::Load); // Empty menu permits retry after an SD failure.
     fresh.input(KEY_B);fresh.input(KEY_DDOWN);fresh.input(KEY_A);assert(fresh.page()==FrontendPage::History);
     fresh.input(KEY_B);fresh.input(KEY_DDOWN);fresh.input(KEY_A);assert(fresh.page()==FrontendPage::Settings);
     for(unsigned group=0;group<4;++group) {
@@ -61,5 +61,5 @@ int main() {
     assert(toDelete.input(KEY_A)==FrontendCommand::DeleteSave);
     assert(!toDelete.isConfirmingDelete());
     toDelete.setHasSave(false);
-    assert(toDelete.input(KEY_A)==FrontendCommand::None);
+    assert(toDelete.input(KEY_A)==FrontendCommand::Load);
 }

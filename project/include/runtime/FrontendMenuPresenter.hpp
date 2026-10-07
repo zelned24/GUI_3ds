@@ -109,8 +109,7 @@ public:
             if(std::strcmp(kFrontendModes[m_selected].id,"classic")==0) return FrontendCommand::NewClassic;
             m_feedback="Runtime de este modo pendiente.";break;
         case FrontendPage::Load:
-            if(m_titleSelection.hasContinue) return FrontendCommand::Load;
-            break;
+            return FrontendCommand::Load; // Explicit retry can discover/recover an SD save.
         case FrontendPage::Settings:m_group=m_selected;m_page=FrontendPage::SettingsGroup;m_selected=0;break;
         case FrontendPage::SettingsGroup:m_feedback="Conexion con el runtime pendiente.";break;
         default:break;
@@ -130,6 +129,7 @@ public:
         } else if(m_page==FrontendPage::Load) {
             if(!saved || !m_titleSelection.hasContinue) {
                 renderer.drawTextFitted(runtimeUiText("menu:noSaves"),28,58,0.36f,264,0xffffffff);
+                renderer.drawTextFitted("A: reintentar lectura   B: volver",28,104,0.32f,264,0xff80ffff);
             } else if(m_confirmingDelete) {
                 renderer.drawWindow(28,55,264,115);
                 renderer.drawTextFitted("¿Eliminar partida guardada?",44,70,0.40f,232,0xffff6060);

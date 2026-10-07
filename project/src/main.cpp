@@ -151,6 +151,8 @@ int main() {
     player.setLoop(true);
 
     static Pokerogue3DS::FrontendMenuPresenter frontend(loaded==Pokerogue3DS::NativeSaveResult::Ok);
+    if(loaded!=Pokerogue3DS::NativeSaveResult::Ok && loaded!=Pokerogue3DS::NativeSaveResult::NotFound)
+        frontend.feedback(Pokerogue3DS::nativeSaveResultName(loaded));
     bool titleVisible = true;
     bool isPaused = false;
     const char* pauseFeedback = nullptr;
@@ -220,9 +222,21 @@ int main() {
             // The menu consumes input before the battle/JS command loop.
             touchPosition titleTouch{};if(rawPressed & KEY_TOUCH) hidTouchRead(&titleTouch);
             const auto command=frontend.input(rawPressed,titleTouch.px,titleTouch.py);
-            if(command==Pokerogue3DS::FrontendCommand::Continue) {
-                player.load(game.scene());
-                titleVisible=false;
+            if(command==Pokerogue3DS::FrontendCommand::Continue || command==Pokerogue3DS::FrontendCommand::Load) {
+                const auto result=game.loadNativeProgress(saves,profiles,profileStaging,
+                    PokerogueContent::kSpeciesCount,offlineFriendship,&restored);
+                loaded=result;
+                if(result==Pokerogue3DS::NativeSaveResult::Ok) {
+                    frontend.setHasSave(true);
+                    frontend.feedback(nullptr);
+                    player.load(game.scene());
+                    titleVisible=false;
+#if defined(POKEROGUE_ENABLE_QUICKJS)
+                    bridge.setJournalGeneration(restored.generation);
+#endif
+                } else {
+                    frontend.feedback(Pokerogue3DS::nativeSaveResultName(result));
+                }
             }
             else if(command==Pokerogue3DS::FrontendCommand::NewClassic) {
                 const uint16_t starterDex = game.run().starterDex ? game.run().starterDex : 1;
@@ -232,15 +246,6 @@ int main() {
                     player.load(game.scene());
                     titleVisible=false;
                 } else frontend.feedback("No se pudo iniciar la partida.");
-            } else if(command==Pokerogue3DS::FrontendCommand::Load) {
-                if(game.loadNativeProgress(saves,profiles,profileStaging,
-                    PokerogueContent::kSpeciesCount,offlineFriendship,&restored)==Pokerogue3DS::NativeSaveResult::Ok) {
-                    player.load(game.scene());
-                    titleVisible=false;
-#if defined(POKEROGUE_ENABLE_QUICKJS)
-                    bridge.setJournalGeneration(restored.generation);
-#endif
-                } else frontend.feedback("No hay partida guardada.");
             } else if(command==Pokerogue3DS::FrontendCommand::DeleteSave) {
                 const auto delResult = saves.deleteSave();
                 if(delResult == Pokerogue3DS::NativeSaveResult::Ok) {

@@ -25,6 +25,9 @@ export function registerPresentationTests(test) {
     expect(menus.includes('m_title.drawCursor(renderer,25,y,labelSize)'),'Submenu cursor uses fitted text height');
     expect(title.includes('drawCursor(renderer,25,y,labelSize)'),'Title cursor uses fitted text height');
     expect(menus.includes('m_page==FrontendPage::SettingsGroup ? 220 : 249'),'Settings reserve room for their value column');
+    expect(main.includes('FrontendCommand::Continue || command==Pokerogue3DS::FrontendCommand::Load'),'Continue and Load must read the committed save, not current unsaved state');
+    expect(main.includes('frontend.feedback(Pokerogue3DS::nativeSaveResultName(result))'),'SD failure must retain its specific error');
+    expect(!main.includes('frontend.feedback("No hay partida guardada.")'),'Corruption/content mismatch cannot be reported as absent save');
     expect(!main.includes('osGetTime()'),'New runs must use an explicit seed');
     expect(!main.includes('1.500'),'No fabricated money display');
     expect(main.includes('rawPressed &= ~KEY_START'),'Opening pause must consume START');
