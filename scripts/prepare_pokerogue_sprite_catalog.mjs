@@ -30,7 +30,8 @@ for (const entry of [...staged.unsupported]) {
 staged = await report('staged-sprite-assets.json');
 if (staged.unsupported.length) throw new Error('Some staged atlases remain unsupported');
 
-run(process.execPath, ['scripts/convert_pokerogue_sprite_atlases.mjs', '--convert']);
+run(python, ['scripts/native_sprite_pixels.py', '--tex3ds', tex3ds]);
+run(process.execPath, ['scripts/convert_pokerogue_sprite_atlases.mjs', '--convert', '--native-pixels']);
 const plan = await report('atlas-conversion-plan.json');
 for (const entry of plan.unsupported) {
   if (entry.classification !== 'NOT_YET_SUPPORTED_BY_3DS_TEXTURE_EDGE')

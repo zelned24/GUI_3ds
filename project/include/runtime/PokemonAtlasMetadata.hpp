@@ -27,11 +27,14 @@ public:
     std::size_t frameCount() const { return m_frames.size(); }
     uint16_t width() const { return m_width; }
     uint16_t height() const { return m_height; }
+    uint16_t canvasWidth() const { return m_canvasWidth; }
+    uint16_t canvasHeight() const { return m_canvasHeight; }
     bool paged() const { return m_paged; }
     const uint8_t* imageSha256() const { return m_imageHash; }
     const uint8_t* manifestSha256() const { return m_manifestHash; }
 private:
     uint16_t m_width = 0, m_height = 0;
+    uint16_t m_canvasWidth=0,m_canvasHeight=0;
     bool m_paged = false;
     uint8_t m_imageHash[32]{}, m_manifestHash[32]{};
     std::vector<PokemonAtlasFrame> m_frames;

@@ -2,10 +2,12 @@
 #include "game/FirstRunRuntime.hpp"
 #include "gfx/renderer2d.hpp"
 #include "runtime/DualScreenLayout.hpp"
+#include "content/NativeSpritePolicy.hpp"
 #include "content/PokerogueRuntimeContent.hpp"
 #include <cmath>
 #include <cstdio>
 #include <cstring>
+#include <algorithm>
 
 namespace Pokerogue3DS {
 
@@ -49,6 +51,11 @@ bool PokemonAtlasPresenter::selectMetadata(Slot& slot, const std::string& key, b
         "romfs:/sprites/pokemon/atlas/%s%s.p3a", facing, key.c_str());
     if (metadataLength < 0 || metadataLength >= int(sizeof(metadataPath))
         || !slot.metadata.load(metadataPath)) return false;
+    if(slot.metadata.canvasWidth()>(back ? kNativeBackCanvasWidth : kNativeFrontCanvasWidth)
+        || slot.metadata.canvasHeight()>(back ? kNativeBackCanvasHeight : kNativeFrontCanvasHeight)) {
+        std::fprintf(stderr,"NOT_YET_SUPPORTED_NATIVE_CANVAS: %s; prepare native sprite overrides\n",metadataPath);
+        slot.metadata.clear();return false;
+    }
     return true;
 }
 
@@ -99,23 +106,20 @@ void PokemonAtlasPresenter::draw(Renderer2D& renderer, const ResolvedPokemon& po
     if (!frame || !selectPage(slot, key, back, frame->page())) return;
     const Renderer2D::AtlasFrame view{frame->x, frame->y, frame->width, frame->height,
         frame->sourceWidth, frame->sourceHeight, frame->trimX, frame->trimY};
-    const float drawX = std::round(x);
-    const float drawY = std::round(y);
-    const float drawW = std::round(width);
-    const float drawH = std::round(height);
-    renderer.drawAtlasFrame(slot.image, view, drawX, drawY, drawW, drawH);
+    const float canvasW=slot.metadata.canvasWidth(),canvasH=slot.metadata.canvasHeight();
+    if(!canvasW || !canvasH || !std::isfinite(width) || !std::isfinite(height) || width<canvasW || height<canvasH) return;
+    const float scale=std::min(2.0f,std::floor(std::min(width/canvasW,height/canvasH)));
+    const float drawW=frame->sourceWidth*scale,drawH=frame->sourceHeight*scale;
+    renderer.drawAtlasFrame(slot.image,view,std::round(x+(width-drawW)/2),std::round(y+(height-drawH)/2),drawW,drawH);
+
 }
 
 float PokemonAtlasPresenter::calculateProportionalScale(uint32_t sourceWidth, uint32_t sourceHeight,
                                                         bool isBossOrLegendary, bool back,
                                                         float anchorY) {
     (void)anchorY;
-    float scale = (sourceWidth <= 48 && sourceHeight <= 48 && !isBossOrLegendary) ? 2.0f : 1.0f;
-    const float maxHeight = back ? 100.0f : 72.0f;
-    if (sourceHeight > 0 && (sourceHeight * scale) > maxHeight) {
-        scale = maxHeight / static_cast<float>(sourceHeight);
-    }
-    return scale;
+    return nativeCombatSpriteScale(sourceWidth,sourceHeight,isBossOrLegendary,
+        back ? kNativeBackCanvasHeight : kNativeFrontCanvasHeight);
 }
 
 float PokemonAtlasPresenter::calculateProportionalScale(const ResolvedPokemon& pokemon,
@@ -145,7 +149,7 @@ void PokemonAtlasPresenter::drawAnchored(Renderer2D& renderer, const ResolvedPok
     if (!frame || !selectPage(slot, key, back, frame->page())) return;
     const Renderer2D::AtlasFrame view{frame->x, frame->y, frame->width, frame->height,
         frame->sourceWidth, frame->sourceHeight, frame->trimX, frame->trimY};
-    const float propScale = calculateProportionalScale(pokemon, frame->sourceWidth, frame->sourceHeight, back, anchorY);
+    const float propScale = calculateProportionalScale(pokemon, slot.metadata.canvasWidth(), slot.metadata.canvasHeight(), back, anchorY);
     const float finalScale = anchoredSpriteScale(scale, propScale);
     const float width = std::round(frame->sourceWidth * finalScale);
     const float height = std::round(frame->sourceHeight * finalScale);

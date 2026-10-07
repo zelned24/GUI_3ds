@@ -22,7 +22,7 @@ bool validName(const char* name) {
 void PokemonAtlasMetadata::clear() {
     m_frames.clear();
     m_animationIndices.clear();
-    m_width = m_height = 0;
+    m_width = m_height = m_canvasWidth = m_canvasHeight = 0;
     m_paged = false;
     std::memset(m_imageHash, 0, sizeof(m_imageHash));
     std::memset(m_manifestHash, 0, sizeof(m_manifestHash));
@@ -71,6 +71,8 @@ bool PokemonAtlasMetadata::load(const char* path, const uint8_t expectedImageSha
             || uint32_t(frame.trimY) + frame.height > uint32_t(frame.sourceHeight) + 1) {
             valid = false; break;
         }
+        if(frame.sourceWidth>m_canvasWidth) m_canvasWidth=frame.sourceWidth;
+        if(frame.sourceHeight>m_canvasHeight) m_canvasHeight=frame.sourceHeight;
         m_frames.push_back(frame);
     }
     std::fclose(file);

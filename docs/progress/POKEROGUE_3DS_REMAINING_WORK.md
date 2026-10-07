@@ -7,7 +7,7 @@
 3. Base de coordinación: rama `codex/pokerogue-3ds-migration`, repositorio `https://github.com/zelned24/GUI_3ds`, checkpoint publicado antes de este cierre `2d10ce6`. El commit que contiene este documento también cierra la parte de IA descrita abajo.
 4. Checkout de publicación usado por este agente: `D:/Proyectos/3ds_gui/GUI_3DS-publish`. No confundirlo con otros checkouts locales. Consultar HEAD y cambios locales antes de integrar trabajo externo.
 5. Fuentes de requisitos: instrucciones del usuario, AGENTS.md, GUI_3DS_NORTH_STAR.md y el estado consolidado `docs/MIGRATION_STATUS.md`. Incluye requisitos posteriores del usuario: estética web, doble pantalla, C++, OTA y exportación de progreso.
-6. Tests y compilación del programa están aplazados por instrucción del usuario. Se permite escribir pruebas y convertir PNG a `.t3x`. No describir funcionalidad como verificada en Azahar/Old 3DS hasta realizar esa validación final.
+6. Tests y compilación están autorizados por instrucciones posteriores del usuario. No describir funcionalidad como verificada en Azahar/Old 3DS hasta realizar esa validación; los gates host/ARM se registran por separado en MIGRATION_STATUS.md.
 7. Los documentos históricos de progreso/paridad contienen estados anteriores. El código y los informes de conversión actuales son la referencia para resolver discrepancias. Actualizar esos documentos al completar cada bloque.
 
 ## 2. Reparto inmediato entre las dos IA

@@ -36,6 +36,15 @@ const hash = bytes => crypto.createHash('sha256').update(bytes).digest('hex');
 const plan = { schemaVersion: 1, repository: pinned.url, revision: pinned.revision,
   textureFormat: 'rgba4', maximumTextureEdge: 1024, conversionTool: 'tex3ds',
   total: staged.assets.length, eligible: 0, converted: 0, unsupported: [], assets: [] };
+const native = process.argv.includes('--native-pixels')
+  ? JSON.parse(await fs.readFile(path.join(root,'build/upstream-assets/native-sprite-overrides.json'),'utf8')) : null;
+if(native && (native.repository!==pinned.url || native.revision!==pinned.revision
+  || native.policySHA256!==hash(await fs.readFile(path.join(root,'project/data/assets/presentation-overrides.json')))
+  || native.converterSHA256!==hash(await fs.readFile(path.join(root,'scripts/native_sprite_pixels.py')))))
+  throw new Error('Native sprite override pin/policy/converter mismatch');
+const nativeById=new Map((native?.assets ?? []).map(row=>[`${row.atlasKey}:${row.facing}`,row]));
+if(nativeById.size!==(native?.assets ?? []).length) throw new Error('Duplicate native sprite override');
+if(native) plan.nativePixelPolicy={policySHA256:native.policySHA256,converterSHA256:native.converterSHA256};
 const seen = new Set();
 const previousAssets = convert && previous?.revision === pinned.revision
   ? new Map(previous.assets.filter(entry => entry.outputSha256)
@@ -69,6 +78,19 @@ for (const asset of staged.assets) {
   if (sourceBytes.length < 24 || !sourceBytes.subarray(0, 8).equals(Buffer.from('89504e470d0a1a0a', 'hex'))
       || sourceBytes.readUInt32BE(16) !== asset.width || sourceBytes.readUInt32BE(20) !== asset.height) {
     throw new Error(`Pinned PNG dimensions changed ${asset.atlasKey}:${asset.facing}`);
+  }
+  const adjusted=nativeById.get(`${asset.atlasKey}:${asset.facing}`);
+  if(adjusted) {
+    if(adjusted.sourceSHA256!==sourceHash || adjusted.sourceMetadataSHA256!==asset.metadataSha256
+      || adjusted.manifestSha256!==asset.manifestSha256) throw new Error('Native sprite source mismatch');
+    if(adjusted.metadataPath!==`build/${asset.romfsMetadataPath}`
+      || !Array.isArray(adjusted.textures) || adjusted.textures.length<1 || adjusted.textures.length>4
+      || adjusted.textures.some((texture,index)=>texture.path!==`build/${asset.romfsPath.replace(/\.t3x$/,`-p${index}.t3x`)}`))
+      throw new Error('Native sprite page/path mismatch');
+    for(const file of [{path:adjusted.metadataPath,sha256:adjusted.metadataSha256},...adjusted.textures])
+      if(hash(await fs.readFile(inside(file.path)))!==file.sha256) throw new Error('Native sprite physical hash mismatch');
+    plan.assets.push({atlasKey:asset.atlasKey,facing:asset.facing,sourceSha256:sourceHash,nativeOverride:adjusted});
+    ++plan.eligible;if(convert) ++plan.converted;continue;
   }
   if (asset.width > plan.maximumTextureEdge || asset.height > plan.maximumTextureEdge) {
     plan.unsupported.push({ atlasKey: asset.atlasKey, facing: asset.facing,

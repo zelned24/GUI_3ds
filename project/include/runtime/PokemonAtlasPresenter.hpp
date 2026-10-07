@@ -54,7 +54,7 @@ public:
     }
     void invalidate(); // Retry after an installed content pack becomes active.
 
-    // Proportional combat sprite scaling helper (2.0x for <=48px, 1.0x for >48px/boss, platform height clamping)
+    // Integer combat scale: 2x only when the entire animation fits; oversized canvases are adapted by the asset pipeline.
     static float calculateProportionalScale(uint32_t sourceWidth, uint32_t sourceHeight,
                                             bool isBossOrLegendary, bool back,
                                             float anchorY = 0.0f);

@@ -5,6 +5,10 @@ inline constexpr float anchoredSpriteScale(float requested,float automatic) {
     return requested>0.0f ? requested : automatic;
 }
 
+inline constexpr float nativeCombatSpriteScale(unsigned width,unsigned height,bool boss,unsigned maxHeight) {
+    return width && height && !boss && width<=48 && height<=48 && height<=maxHeight/2 ? 2.0f : 1.0f;
+}
+
 struct TouchRect {
     unsigned x,y,width,height;
     constexpr bool contains(unsigned px,unsigned py) const {

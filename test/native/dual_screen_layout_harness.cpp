@@ -13,6 +13,12 @@ int main() {
     static_assert(anchoredSpriteScale(2.0f,0.75f)==2.0f,"Explicit double size must not be reduced");
     static_assert(anchoredSpriteScale(1.25f,2.0f)==1.25f,"Explicit adaptation scale is preserved");
     static_assert(anchoredSpriteScale(0.0f,0.75f)==0.75f,"Zero retains automatic layout");
+    static_assert(nativeCombatSpriteScale(48,36,false,72)==2,"Small canvas fits 2x");
+    static_assert(nativeCombatSpriteScale(48,37,false,72)==1,"No fractional clamp");
+    static_assert(nativeCombatSpriteScale(48,48,false,100)==2,"Back canvas fits 2x");
+    static_assert(nativeCombatSpriteScale(32,32,true,72)==1,"Boss stays native");
+    for(unsigned h=1;h<=100;++h) for(unsigned w=1;w<=200;++w)
+        assert(nativeCombatSpriteScale(w,h,false,72)==1 || nativeCombatSpriteScale(w,h,false,72)==2);
     for(unsigned n=1;n<=4096;++n) {
         const float requested=float(n)/4096;
         const auto raster=nativeTextRaster(requested);

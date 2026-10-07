@@ -30,12 +30,22 @@ const checkedFile = async (relative, expected) => {
 };
 const normalById = new Map(normal.assets.map(asset => [`${asset.atlasKey}:${asset.facing}`, asset]));
 const output = { schemaVersion: 1, repository: pinned.url, revision: pinned.revision,
+  nativePixelPolicy: normal.nativePixelPolicy ?? null,
   atlasCount: 0, textureCount: 0, textureBytes: 0, assets: [] };
+if(normal.assets.some(asset=>asset.nativeOverride) && (!output.nativePixelPolicy
+    || output.nativePixelPolicy.policySHA256!==sha256(await fs.readFile(path.join(root,'project/data/assets/presentation-overrides.json')))
+    || output.nativePixelPolicy.converterSHA256!==sha256(await fs.readFile(path.join(root,'scripts/native_sprite_pixels.py')))))
+  throw new Error('Native sprite plan uses an obsolete policy/converter');
 for (const source of staged.assets) {
   const id = `${source.atlasKey}:${source.facing}`;
   const regular = normalById.get(id);
   let metadataPath, metadataSha256, textures;
-  if (regular && regular.outputSha256) {
+  if(regular?.nativeOverride) {
+    const native=regular.nativeOverride;
+    if(native.sourceSHA256!==source.expectedSha256.slice(7) || native.sourceMetadataSHA256!==source.metadataSha256
+      || native.manifestSha256!==source.manifestSha256) throw new Error(`Native source mismatch: ${id}`);
+    metadataPath=native.metadataPath;metadataSha256=native.metadataSha256;textures=native.textures;
+  } else if (regular && regular.outputSha256) {
     if (regular.sourceSha256 !== source.expectedSha256.slice(7)
         || regular.outputPath !== source.romfsPath)
       throw new Error(`Converted atlas/source mismatch: ${id}`);
@@ -70,6 +80,8 @@ for (const source of staged.assets) {
     sourceSha256: source.upstreamImageSha256 ?? source.expectedSha256.slice(7),
     conversionInputSha256: source.expectedSha256.slice(7),
     sourceAdjustment: source.sourceAdjustment ?? null,
+    nativeAdjustment: regular?.nativeOverride?.adjustment ?? null,
+    sourceMetadataSha256: source.metadataSha256,
     manifestPath: source.manifestPath, manifestSha256: source.manifestSha256,
     referencedImage: source.referencedImage ?? null,
     imageReferenceOverridden: source.imageReferenceOverridden === true,

@@ -15,5 +15,18 @@
       "sourceSHA256": "936cb0fc93492623ec8faa771387daf9ca60af215b41cee27b485ca549ac5237"
     }
   },
+  "pokemonNativePixels": {
+    "back": {
+      "height": 100,
+      "width": 200
+    },
+    "front": {
+      "height": 72,
+      "width": 112
+    },
+    "reason": "Resample oversized animation canvases once, then draw integer pixel multiples on Old 3DS.",
+    "resampler": "nearest",
+    "revision": "056a1f408f26a3be4fef243f7462cb43608c7928"
+  },
   "schemaVersion": 1
 }

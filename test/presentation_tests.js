@@ -4,6 +4,7 @@ import {execFileSync} from 'node:child_process';
 import {fileURLToPath} from 'node:url';
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 export function registerPresentationTests(test) {
+  test('Native sprite pixels: normalize animation canvases without fractional draw scales',()=>{execFileSync('python',[path.join(root,'test/native_sprite_pixel_tests.py')],{stdio:'pipe'});});
   test('Native type atlases: preserve trim offsets, sort deterministically and reject invalid frames',()=>{execFileSync('python',[path.join(root,'test/type_atlas_tests.py')],{stdio:'pipe'});});
   test('Native pixel font: binary alpha and compact sheets preserve glyphs, metrics and references',()=>{execFileSync('python',[path.join(root,'test/pixel_font_tests.py')],{stdio:'pipe'});});
   test('Native frontend review: save failures, pause input, deterministic seed and indexed trainer assets',()=>{
