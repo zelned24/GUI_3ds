@@ -261,3 +261,8 @@ El avance se publica como trabajo en curso. Classic completo y la fidelidad visu
 2. BattleHudGeometry prepara duración/easing upstream; todavía no alimenta la animación. EXP continúa interpolando por frame: tramos de nivel, pausas y cadencias siguen abiertos.
 3. Intro usa GPU_NEAREST; conserva escala 400x200 y crossfade de frames muestreados. No se declara vídeo completo ni escala entera.
 4. Suite completa 38/38 PASS; nueve suites enfocadas posteriores, native-parity 126/126, compilación ARM/3DSX y diff-check PASS. Primer intento de suite EXP: 37/1 por mock no constexpr; se conserva build/exp-timing-npm-test.log. Logs finales build/exp-identity-*. Preview copiado a build/Pokerogue-pixel-preview.3dsx y proceso Azahar iniciado; capturas pendientes. El parámetro --user no aisló el perfil de esta versión: conserva configuración global, que puede aplicar suavizado adicional.
+
+### Diagnóstico del preview Azahar
+
+1. Capturas del usuario muestran deformación de letras/sprites; tamaño de Pokémon aprobado. Configuración global comprobada: resolution_factor=4, texture_filter=4, texture_sampling=0, filter_mode=true, escala entera desactivada. El filtro del emulador se aplica además de GPU_NEAREST del juego.
+2. Instancia portátil preparada en build/azahar-pixel-runtime con user/config independiente. El log de arranque confirma Renderer_UseResolutionFactor=1, Renderer_FilterMode=false, Renderer_TextureFilter=None, Renderer_TextureSampling=NearestNeighbor y System_IsNew3ds=false. Configuración global conservada. Captura comparativa y alineación de cursor/HUD siguen pendientes; no se afirma que esto resuelva todos los defectos.
