@@ -8,6 +8,7 @@
 #include "runtime/RuntimeAssetManager.hpp"
 #endif
 #include <cmath>
+#include <algorithm>
 
 #if defined(__arm__) || defined(__3DS__) || defined(_3DS)
 // Citro2D C2D_DrawImageAtRotatedScaled bridge to real C2D_DrawImageAtRotated
@@ -116,6 +117,7 @@ void Renderer2D::fini() {
     if (m_typeLabels) { C2D_SpriteSheetFree(m_typeLabels); m_typeLabels = nullptr; }
     for(auto& sheet:m_hudTypes) {if(sheet) C2D_SpriteSheetFree(sheet);sheet=nullptr;}
     for(auto& sheet:m_hudIndicators) {if(sheet) C2D_SpriteSheetFree(sheet);sheet=nullptr;}
+    for(auto& sheet:m_hudBars) {if(sheet) C2D_SpriteSheetFree(sheet);sheet=nullptr;}
 #endif
     C2D_Fini();
     C3D_Fini();
@@ -466,5 +468,27 @@ bool Renderer2D::drawHudIndicator(const char* key,bool owned,float x,float y) {
     return true;
 #else
     (void)key;(void)owned;(void)x;(void)y;return false;
+#endif
+}
+
+bool Renderer2D::drawHudBar(bool experience,bool boss,float fraction,float x,float y) {
+#if defined(__arm__) || defined(__3DS__) || defined(_3DS)
+    if(!m_initialized || !m_frameActive || !m_currentTarget || !std::isfinite(fraction)) return false;
+    fraction=std::max(0.0f,std::min(1.0f,fraction));
+    if(fraction==0) return true;
+    const unsigned index=experience ? 10 : (boss ? 9 : 8);
+    const char* key=experience ? "exp" : (fraction>0.5f ? "high" : (fraction>0.25f ? "medium" : "low"));
+    const auto* row=Pokerogue3DS::findHudIndicator(index,key);if(!row) return false;
+    const auto& atlas=Pokerogue3DS::kHudIconAtlases[index];
+    auto& sheet=m_hudBars[index-8];if(!sheet) sheet=C2D_SpriteSheetLoad(atlas.path);if(!sheet) return false;
+    const auto image=C2D_SpriteSheetGetImage(sheet,0);
+    if(!image.tex || !image.subtex || image.subtex->width!=atlas.width || image.subtex->height!=atlas.height) {C2D_SpriteSheetFree(sheet);sheet=nullptr;return false;}
+    C3D_TexSetFilter(image.tex,GPU_NEAREST,GPU_NEAREST);
+    auto frame=row->frame;
+    frame.width=static_cast<uint16_t>(std::max(1.0f,std::floor(frame.width*fraction)));
+    drawAtlasFrame(image,frame,std::round(x),std::round(y),frame.sourceWidth,frame.sourceHeight);
+    return true;
+#else
+    (void)experience;(void)boss;(void)fraction;(void)x;(void)y;return false;
 #endif
 }

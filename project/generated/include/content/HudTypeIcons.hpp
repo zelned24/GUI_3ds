@@ -148,6 +148,19 @@ inline constexpr TypeLabelFrame kHudIconFrames6[]={
 inline constexpr TypeLabelFrame kHudIconFrames7[]={
     {"owned",{0,0,7,7,7,7,0,0}},
 };
+inline constexpr TypeLabelFrame kHudIconFrames8[]={
+    {"high",{0,0,48,2,48,2,0,0}},
+    {"low",{0,4,48,2,48,2,0,0}},
+    {"medium",{0,2,48,2,48,2,0,0}},
+};
+inline constexpr TypeLabelFrame kHudIconFrames9[]={
+    {"high",{0,0,86,4,86,4,0,0}},
+    {"low",{0,8,86,4,86,4,0,0}},
+    {"medium",{0,4,86,4,86,4,0,0}},
+};
+inline constexpr TypeLabelFrame kHudIconFrames10[]={
+    {"exp",{0,0,85,2,85,2,0,0}},
+};
 struct HudIconAtlas {const char* key;const char* path;unsigned width,height;const TypeLabelFrame* frames;unsigned count;};
 inline constexpr HudIconAtlas kHudIconAtlases[]={
     {"pbinfo_player_type","romfs:/presentation/ui/pbinfo_player_type.t3x",20,460,kHudIconFrames0,sizeof(kHudIconFrames0)/sizeof(kHudIconFrames0[0])},
@@ -158,6 +171,9 @@ inline constexpr HudIconAtlas kHudIconAtlases[]={
     {"pbinfo_enemy_type2","romfs:/presentation/ui/pbinfo_enemy_type2.t3x",20,240,kHudIconFrames5,sizeof(kHudIconFrames5)/sizeof(kHudIconFrames5[0])},
     {"statuses_es-ES","romfs:/presentation/ui/statuses_es-ES.t3x",22,64,kHudIconFrames6,sizeof(kHudIconFrames6)/sizeof(kHudIconFrames6[0])},
     {"icon_owned","romfs:/presentation/ui/icon_owned.t3x",7,7,kHudIconFrames7,sizeof(kHudIconFrames7)/sizeof(kHudIconFrames7[0])},
+    {"overlay_hp","romfs:/presentation/ui/overlay_hp.t3x",48,6,kHudIconFrames8,sizeof(kHudIconFrames8)/sizeof(kHudIconFrames8[0])},
+    {"overlay_hp_boss","romfs:/presentation/ui/overlay_hp_boss.t3x",86,12,kHudIconFrames9,sizeof(kHudIconFrames9)/sizeof(kHudIconFrames9[0])},
+    {"overlay_exp","romfs:/presentation/ui/overlay_exp.t3x",85,2,kHudIconFrames10,sizeof(kHudIconFrames10)/sizeof(kHudIconFrames10[0])},
 };
 inline const TypeLabelFrame* findHudTypeFrame(unsigned index,const char* type) {if(index>=6) return nullptr;const auto* label=findTypeLabel(type);if(!label) return nullptr;const auto& atlas=kHudIconAtlases[index];for(unsigned i=0;i<atlas.count;++i) if(!std::strcmp(atlas.frames[i].key,label->key)) return &atlas.frames[i];return nullptr;}
 inline const TypeLabelFrame* findHudIndicator(unsigned index,const char* key) {if(index<6 || index>=sizeof(kHudIconAtlases)/sizeof(kHudIconAtlases[0]) || !key) return nullptr;const auto& atlas=kHudIconAtlases[index];for(unsigned i=0;i<atlas.count;++i) if(!std::strcmp(atlas.frames[i].key,key)) return &atlas.frames[i];return nullptr;}

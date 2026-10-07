@@ -29,6 +29,10 @@ export function registerPresentationTests(test) {
     expect(hud.includes('drawHudIndicator(statusKey,false'), 'Status indicator must use the original atlas');
     expect(hud.includes('drawHudIndicator("owned",true'), 'Owned indicator must use the original physical asset');
     expect(!hud.includes('tagColor'), 'No synthetic status badge in battle HUD');
+    expect(hud.includes('constexpr float scale = 1.0f'), 'HUD panels must preserve native pixel scale');
+    expect(hud.includes('drawHudBar(false,boss,fraction'), 'HP uses the original two-tone bar atlas');
+    expect(hud.includes('drawHudBar(true,false,expFraction'), 'EXP uses the original patterned texture');
+    expect(main.includes('true, 258.0f, 146.0f'), 'Player HUD remains above the feedback panel');
     expect(hud.includes('&displayedNameWidth'),'Gender position must use measured fitted glyph width');
     expect(!hud.includes('approxNameWidth'),'UTF-8 byte count cannot estimate glyph width');
     const title=fs.readFileSync(path.join(root,'project/include/runtime/TitleMenuPresenter.hpp'),'utf8');

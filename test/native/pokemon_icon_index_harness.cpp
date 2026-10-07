@@ -1,6 +1,7 @@
 #include "content/PokemonIcons.hpp"
 #include "runtime/PokemonAtlasPresenter.hpp"
 #include "runtime/TypePresentation.hpp"
+#include "runtime/BattleHudGeometry.hpp"
 #include "content/TypeLabels.hpp"
 #include "content/HudTypeIcons.hpp"
 #include "content/PokerogueRuntimeContent.hpp"
@@ -8,6 +9,18 @@
 #include <initializer_list>
 using namespace Pokerogue3DS;
 int main() {
+    assert(bossDividerPixel(100,3,1,86)==28 && bossDividerPixel(100,3,2,86)==57);
+    assert(bossDividerPixel(100,2,1,86)==43);
+    assert(bossDividerPixel(0,2,1,86)==0 && bossDividerPixel(100,1,1,86)==0);
+    assert(bossDividerPixel(100,2,0,86)==0 && bossDividerPixel(100,2,2,86)==0);
+    for(unsigned hp=1;hp<=100;++hp) for(unsigned segments=2;segments<=16;++segments) {
+        unsigned previous=0;
+        for(unsigned s=1;s<segments;++s) {
+            const unsigned pixel=bossDividerPixel(hp,segments,s,86);
+            assert(pixel<86 && pixel>=previous);previous=pixel;
+        }
+    }
+
     std::string key;const char* first=nullptr;const char* second=nullptr;
     for(const auto& species:PokerogueContent::kSpecies) {
         assert(PokemonAtlasPresenter::resolveAtlasKey(species.dex,nullptr,key));

@@ -3,9 +3,16 @@ import hashlib,json,struct,subprocess
 from pathlib import Path
 from type_badges import REVISION,REPOSITORY,atlas_frames
 NAMES=["pbinfo_player_type","pbinfo_player_type1","pbinfo_player_type2","pbinfo_enemy_type","pbinfo_enemy_type1","pbinfo_enemy_type2"]
+def validate_size(atlas,width,height,path,png,manifest,overrides):
+    if atlas["size"]=={"w":width,"h":height}: return None
+    override=overrides.get(path)
+    if not override or override["revision"]!=REVISION or override["sourceSHA256"]!=hashlib.sha256(manifest).hexdigest() or override["imageSHA256"]!=hashlib.sha256(png).hexdigest() or override["declaredSize"]!=atlas["size"] or override["physicalSize"]!={"w":width,"h":height}: raise ValueError("HUD atlas dimensions mismatch without matching explicit override")
+    return override
+
 def prepare(root):
     rows=[]
-    for name,sourceBase,hasManifest in [(n,"images/ui/"+n,True) for n in NAMES]+[("statuses_es-ES","images/statuses_es-ES",True),("icon_owned","images/ui/icon_owned",False)]:
+    overrides=json.loads((root/"project/data/assets/presentation-overrides.json").read_text(encoding="utf-8"))["overrides"]
+    for name,sourceBase,hasManifest in [(n,"images/ui/"+n,True) for n in NAMES]+[("statuses_es-ES","images/statuses_es-ES",True),("icon_owned","images/ui/icon_owned",False),("overlay_hp","images/ui/overlay_hp",True),("overlay_hp_boss","images/ui/overlay_hp_boss",True),("overlay_exp","images/ui/overlay_exp",False)]:
         sources=[];data=[]
         for ext in (["png","json"] if hasManifest else ["png"]):
             path=sourceBase+"."+ext
@@ -13,12 +20,12 @@ def prepare(root):
             file=root/"build/native-presentation/source"/path;file.parent.mkdir(parents=True,exist_ok=True);file.write_bytes(raw)
             sources.append({"sourcePath":path,"sha256":hashlib.sha256(raw).hexdigest()});data.append(raw)
         w,h=struct.unpack(">II",data[0][16:24])
-        atlas=json.loads(data[1])["textures"][0] if hasManifest else {"size":{"w":w,"h":h},"frames":[{"filename":"owned","frame":{"x":0,"y":0,"w":w,"h":h},"sourceSize":{"w":w,"h":h},"spriteSourceSize":{"x":0,"y":0}}]}
-        if atlas["size"]!={"w":w,"h":h}: raise ValueError("HUD type atlas dimensions mismatch")
+        atlas=json.loads(data[1])["textures"][0] if hasManifest else {"size":{"w":w,"h":h},"frames":[{"filename":"exp" if name=="overlay_exp" else "owned","frame":{"x":0,"y":0,"w":w,"h":h},"sourceSize":{"w":w,"h":h},"spriteSourceSize":{"x":0,"y":0}}]}
+        appliedOverride=validate_size(atlas,w,h,sourceBase+".json",data[0],data[1] if hasManifest else b"",overrides)
         frames=atlas_frames(atlas,w,h)
         target=root/"build/romfs/presentation/ui"/(name+".t3x");target.parent.mkdir(parents=True,exist_ok=True)
         subprocess.run(["C:/devkitPro/tools/bin/tex3ds.exe","-f","rgba8","-o",str(target),str(root/"build/native-presentation/source"/sources[0]["sourcePath"])],check=True)
-        rows.append({"key":name,"width":w,"height":h,"sources":sources,"runtimePath":"romfs:/presentation/ui/"+name+".t3x","convertedSHA256":hashlib.sha256(target.read_bytes()).hexdigest(),"frames":[{"key":key,"bounds":values} for key,values in frames],"upstreamSourcePath":"src/ui/battle-info/enemy-battle-info.ts" if name=="icon_owned" else "src/ui/battle-info/battle-info.ts","upstreamSourceSymbol":"EnemyBattleInfo.constructor" if name=="icon_owned" else ("BattleInfo.updateStatusIcon" if name=="statuses_es-ES" else "BattleInfo.setTypes")})
+        rows.append({"key":name,"sizeOverride":appliedOverride,"width":w,"height":h,"sources":sources,"runtimePath":"romfs:/presentation/ui/"+name+".t3x","convertedSHA256":hashlib.sha256(target.read_bytes()).hexdigest(),"frames":[{"key":key,"bounds":values} for key,values in frames],"upstreamSourcePath":"src/ui/battle-info/enemy-battle-info.ts" if name=="icon_owned" else ("src/ui/battle-info/player-battle-info.ts" if name=="overlay_exp" else "src/ui/battle-info/battle-info.ts"),"upstreamSourceSymbol":"EnemyBattleInfo.constructor" if name=="icon_owned" else ("BattleInfo.updateStatusIcon" if name=="statuses_es-ES" else ("PlayerBattleInfo.initInfo" if name=="overlay_exp" else ("BattleInfo.updateHpFrame" if name.startswith("overlay_hp") else "BattleInfo.setTypes")))})
     header='// Generated pinned BattleInfo type and indicator atlases.\n#pragma once\n#include "content/TypeLabels.hpp"\n#include <cstring>\nnamespace Pokerogue3DS {\n'
     for i,row in enumerate(rows):
         header+='inline constexpr TypeLabelFrame kHudIconFrames%d[]={\n' % i

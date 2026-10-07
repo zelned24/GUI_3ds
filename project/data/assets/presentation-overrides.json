@@ -1,0 +1,19 @@
+{
+  "overrides": {
+    "images/ui/overlay_hp_boss.json": {
+      "declaredSize": {
+        "h": 12,
+        "w": 96
+      },
+      "imageSHA256": "b71f016e81ca684bf27361a809a6d21edcdebc1d318ceffd4ae44d97186b4fd7",
+      "physicalSize": {
+        "h": 12,
+        "w": 86
+      },
+      "reason": "Pinned metadata width differs from PNG IHDR; all source frames fit the physical 86px image.",
+      "revision": "056a1f408f26a3be4fef243f7462cb43608c7928",
+      "sourceSHA256": "936cb0fc93492623ec8faa771387daf9ca60af215b41cee27b485ca549ac5237"
+    }
+  },
+  "schemaVersion": 1
+}

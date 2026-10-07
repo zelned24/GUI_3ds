@@ -6,10 +6,12 @@
 #include <cstring>
 #include <cstdarg>
 #include <cmath>
+#include <limits>
 namespace {
 int fail=0,c3Free=0,c2Free=0,fontFree=0,sheetFree=0,bufferFree=0,targets=0;
+unsigned imageWidth=0,imageHeight=0;float imageTop=0;
 int draws=0;u32 lastFlags=0;float lastX=0,lastY=0,lastScale=0;
-int hudTokens[8]={3,4,5,6,7,8,9,10};Tex3DS_SubTexture hudSubs[8]={{20,460,0,1,1,0},{20,240,0,1,1,0},{20,240,0,1,1,0},{20,460,0,1,1,0},{20,240,0,1,1,0},{20,240,0,1,1,0},{22,64,0,1,1,0},{7,7,0,1,1,0}};
+int hudTokens[11]={3,4,5,6,7,8,9,10,11,12,13};Tex3DS_SubTexture hudSubs[11]={{20,460,0,1,1,0},{20,240,0,1,1,0},{20,240,0,1,1,0},{20,460,0,1,1,0},{20,240,0,1,1,0},{20,240,0,1,1,0},{22,64,0,1,1,0},{7,7,0,1,1,0},{48,6,0,1,1,0},{86,12,0,1,1,0},{85,2,0,1,1,0}};
 int hudLoads=0;bool hudMissing=false;
 int typeToken=2,typeLoads=0,imageDraws=0;bool typeMissing=false;float imageScaleX=0,imageScaleY=0;Tex3DS_SubTexture typeSub{32,280,0,1,1,0};
 int token=1;C3D_Tex tex{};Tex3DS_SubTexture sub{24,24,0,1,1,0};C2D_FontInfo fontInfo{26};
@@ -28,15 +30,15 @@ C2D_Font C2D_FontLoad(const char*) {return fail==5 ? nullptr : &token;}
 void C2D_FontFree(C2D_Font) {++fontFree;}
 void C2D_FontSetFilter(C2D_Font,GPU_TEXTURE_FILTER_PARAM a,GPU_TEXTURE_FILTER_PARAM b) {assert(a==GPU_NEAREST && b==GPU_NEAREST);}
 const C2D_FontInfo* C2D_FontGetInfo(C2D_Font font) {assert(font);return &fontInfo;}
-C2D_SpriteSheet C2D_SpriteSheetLoad(const char* path) {for(unsigned i=0;i<8;++i) if(!std::strcmp(path,Pokerogue3DS::kHudIconAtlases[i].path)) {++hudLoads;return hudMissing ? nullptr : &hudTokens[i];}if(std::strcmp(path,Pokerogue3DS::kTypeLabelPath)==0) {++typeLoads;return typeMissing ? nullptr : &typeToken;}return fail==6 ? nullptr : &token;}
+C2D_SpriteSheet C2D_SpriteSheetLoad(const char* path) {for(unsigned i=0;i<11;++i) if(!std::strcmp(path,Pokerogue3DS::kHudIconAtlases[i].path)) {++hudLoads;return hudMissing ? nullptr : &hudTokens[i];}if(std::strcmp(path,Pokerogue3DS::kTypeLabelPath)==0) {++typeLoads;return typeMissing ? nullptr : &typeToken;}return fail==6 ? nullptr : &token;}
 void C2D_SpriteSheetFree(C2D_SpriteSheet) {++sheetFree;}
-C2D_Image C2D_SpriteSheetGetImage(C2D_SpriteSheet sheet,size_t) {for(unsigned i=0;i<8;++i) if(sheet==&hudTokens[i]) return {&tex,&hudSubs[i]};return {&tex,sheet==&typeToken ? &typeSub : (fail==7 ? nullptr : &sub)};}
+C2D_Image C2D_SpriteSheetGetImage(C2D_SpriteSheet sheet,size_t) {for(unsigned i=0;i<11;++i) if(sheet==&hudTokens[i]) return {&tex,&hudSubs[i]};return {&tex,sheet==&typeToken ? &typeSub : (fail==7 ? nullptr : &sub)};}
 bool C3D_FrameBegin(u8) {return true;}
 void C2D_TextBufClear(C2D_TextBuf) {}
 void C2D_SceneBegin(C3D_RenderTarget*) {}
 void C2D_TargetClear(C3D_RenderTarget*,u32) {}
 void C2D_DrawRectSolid(float,float,float,float,float,u32) {}
-void C2D_DrawImageAtRotated(C2D_Image,float,float,float,float,const C2D_ImageTint*,float sx,float sy) {++imageDraws;imageScaleX=sx;imageScaleY=sy;}
+void C2D_DrawImageAtRotated(C2D_Image image,float,float,float,float,const C2D_ImageTint*,float sx,float sy) {++imageDraws;imageWidth=image.subtex->width;imageHeight=image.subtex->height;imageTop=image.subtex->top;imageScaleX=sx;imageScaleY=sy;}
 void C2D_PlainImageTint(C2D_ImageTint*,u32,float) {}
 void C2D_TextParse(C2D_Text*,C2D_TextBuf,const char*) {assert(false && "System font fallback in production path");}
 void C2D_TextFontParse(C2D_Text* text,C2D_Font,C2D_TextBuf,const char*) {text->width=100;}
@@ -113,10 +115,24 @@ int main() {
         }
         hudSubs[6].width=21;assert(!renderer.drawHudIndicator("burn",false,0,0));hudSubs[6].width=22;
         assert(renderer.drawHudIndicator("burn",false,0,0));
+        const int beforeBar=imageDraws;
+        assert(renderer.drawHudBar(false,false,0,0,0));assert(imageDraws==beforeBar);
+        assert(renderer.drawHudBar(false,false,-1,0,0));assert(imageDraws==beforeBar);
+        assert(!renderer.drawHudBar(false,false,std::numeric_limits<float>::quiet_NaN(),0,0));
+        assert(!renderer.drawHudBar(false,false,std::numeric_limits<float>::infinity(),0,0));
+        hudMissing=true;assert(!renderer.drawHudBar(false,false,1,0,0));hudMissing=false;
+        assert(renderer.drawHudBar(false,false,1,0,0));assert(imageWidth==48 && imageHeight==2 && imageTop==1);
+        assert(renderer.drawHudBar(false,false,0.5f,0,0));assert(imageWidth==24 && std::fabs(imageTop-2.0f/3)<0.0001f);
+        assert(renderer.drawHudBar(false,false,0.25f,0,0));assert(imageWidth==12 && std::fabs(imageTop-1.0f/3)<0.0001f);
+        assert(renderer.drawHudBar(false,false,0.0001f,0,0));assert(imageWidth==1);
+        assert(renderer.drawHudBar(false,true,2,0,0));assert(imageWidth==86 && imageHeight==4);
+        assert(renderer.drawHudBar(true,false,0.5f,0,0));assert(imageWidth==42 && imageHeight==2 && imageScaleX==1 && imageScaleY==1);
+        hudSubs[8].width=47;assert(!renderer.drawHudBar(false,false,1,0,0));hudSubs[8].width=48;
+        assert(renderer.drawHudBar(false,false,1,0,0));
         assert(!renderer.setWindowStyle(2)); // Never free a texture before GPU submission.
         renderer.endFrame();assert(renderer.setWindowStyle(2) && renderer.windowStyle()==2);
         const int sheetsBeforeClose=sheetFree;
-        renderer.fini();assert(sheetFree==sheetsBeforeClose+10); // Window, localized labels, six type variants and two indicator sheets.
+        renderer.fini();assert(sheetFree==sheetsBeforeClose+13); // Window, localized labels, six type variants and two indicator sheets.
         assert(!renderer.isInitialized());assert(renderer.textLineHeight(0.5f)==0);
         assert(renderer.init() && renderer.windowStyle()==1);renderer.fini();
     }
