@@ -97,7 +97,7 @@ public:
         bool touchActivated = false;
         if (keys & KEY_TOUCH) {
             for (unsigned i = 0; i < count; ++i) {
-                if (TouchRect{16, 34 + i * 27, 288, 27}.contains(x, y)) {
+                if (ballMenuRectangle(i).contains(x, y)) {
                     m_selected = i;
                     touchActivated = true;
                     break;
@@ -192,18 +192,18 @@ public:
             static const char* rates[] = {"1.0x", "1.5x", "2.0x", "3.0x", "100%"};
             for (unsigned i = 0; i < sizeof(kBallMenuDefinitions) / sizeof(kBallMenuDefinitions[0]); ++i) {
                 const auto& ball = kBallMenuDefinitions[i];
-                const float y = 24.0f + i * 28.0f;
+                const float y=ballMenuRectangle(i).y;
                 const unsigned count = game.pokeballCount(static_cast<PokeballType>(ball.id));
-                m_icons.draw(renderer, ball.iconKey, 36, y, 24, count ? 1.0f : 0.35f);
-                renderer.drawText(ball.label, 68, y + 2.0f, 0.36f, count ? 0xffffffff : 0xff909090);
+                m_icons.draw(renderer,ball.iconKey,36,y,32,count ? 1.0f : 0.35f);
+                renderer.drawTextFitted(ball.label,76,y+8,0.3125f,110,count ? 0xffffffff : 0xff909090);
                 if (i < sizeof(rates) / sizeof(rates[0])) {
-                    renderer.drawText(rates[i], 192, y + 3.0f, 0.30f, count ? 0xffa0d0f0 : 0xff708090);
+                    renderer.drawText(rates[i],192,y+8,0.30f,count ? 0xffa0d0f0 : 0xff708090);
                 }
                 char quantity[16];
                 std::snprintf(quantity, sizeof(quantity), "x%u", count);
-                renderer.drawText(quantity, 257, y + 2.0f, 0.36f, count ? 0xffffffff : 0xff808080);
+                renderer.drawTextFitted(quantity,257,y+8,0.3125f,42,count ? 0xffffffff : 0xff808080);
                 if (i == m_selected) {
-                    m_cursor.drawCursor(renderer, 21, y + 2.0f, 0.36f);
+                    m_cursor.drawCursor(renderer,21,y+8,0.3125f);
                 }
             }
 

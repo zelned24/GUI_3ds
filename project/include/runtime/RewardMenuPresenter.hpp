@@ -84,7 +84,8 @@ public:
             renderer.drawWindow(cx + 2.0f, cardY + 2.0f, cardW - 4.0f, cardH - 4.0f);
 
             // Item Icon centered in upper card
-            m_icons.drawItem(renderer, reward->poolEntry->itemId, cx + (cardW - 36.0f) * 0.5f, cardY + 16.0f, 36.0f);
+            // Original item canvases are 32x32; avoid the previous 1.125x enlargement.
+            m_icons.drawItem(renderer,reward->poolEntry->itemId,cx+(cardW-32)*0.5f,cardY+16,32);
 
             // Item Name
             if(!renderer.drawTextBox(name,cx+6,cardY+68,0.3125f,cardW-12,3,0xffffffff))

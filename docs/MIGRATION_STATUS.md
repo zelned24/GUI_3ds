@@ -241,3 +241,10 @@ El avance se publica como trabajo en curso. Classic completo y la fidelidad visu
 2. Feedback de setup y formas ahora tiene un ancho máximo explícito: no se dibuja fuera del panel por ausencia de restricciones. Sigue pendiente exponer detalles completos para los textos abreviados y revisar capturas.
 3. Logo pinned físico 150×33: título cambia de 270px (1,8×) a 300×66 centrado (2×). No se modifica el PNG fuente. Comparación visual todavía pendiente.
 4. Gates: npm test 38/38, nueve suites de presentación, native-parity 126/126, build ARM/3DSX y diff-check PASS. Logs build/decision-layout-*; Azahar no se abrió.
+
+### Iconos de objetos a escala nativa
+
+1. Recompensas pasa de iconos 36×36 (1,125×) a 32×32 centrados. Inventario de Poké Balls pasa de 24×24 (0,75×) a 32×32; las etiquetas/cantidades permanecen acotadas a sus columnas.
+2. Las filas de Poké Balls ahora comparten `ballMenuRectangle` para dibujo/táctil. Antes usaban y=24+28i al dibujar y y=34+27i al tocar. Cinco rectángulos de 32px con separación de 2px caben en el panel sin invadir el footer.
+3. Harness valida canvas/trim de los 528 frames del catálogo y todos los 76800 píxeles de la pantalla táctil contra solapamientos. Nueve suites específicas, parity 126/126, build ARM/3DSX y diff-check PASS; suite completa en ejecución. Logs build/reward-icons-* y build/ball-icons-*; comparación Azahar/Old 3DS pendiente.
+4. Primera ejecución completa: 37 PASS/1 FAIL. Había cargado la invocación antigua del compilador antes de añadir el include del catálogo al harness: faltaba project/generated/include. Se corrigió el argumento; focused actualizado y reejecución completa 38/38 PASS. Resultado final en build/ball-icons-npm-test-final.log; se conserva el log del fallo anterior.

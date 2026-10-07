@@ -545,6 +545,8 @@
 {"from":"test/native/challenger_r2_stress.cpp","to":"project/include/storage/NativeStarterCandyProfile.hpp","kind":"include"},
 {"from":"test/native/challenger_r2_stress.cpp","to":"project/include/storage/NativeStarterCandyStore.hpp","kind":"include"},
 {"from":"test/native/content_index_bounds_harness.cpp","to":"project/include/content/ContentUpdateStore.hpp","kind":"include"},
+{"from":"test/native/dual_screen_layout_harness.cpp","to":"project/generated/include/content/BallMenuContent.hpp","kind":"include"},
+{"from":"test/native/dual_screen_layout_harness.cpp","to":"project/generated/include/content/ItemIcons.hpp","kind":"include"},
 {"from":"test/native/dual_screen_layout_harness.cpp","to":"project/include/gfx/ImageTintPolicy.hpp","kind":"include"},
 {"from":"test/native/dual_screen_layout_harness.cpp","to":"project/include/runtime/DualScreenLayout.hpp","kind":"include"},
 {"from":"test/native/dual_screen_layout_harness.cpp","to":"project/include/runtime/NativeTextRaster.hpp","kind":"include"},

@@ -22,6 +22,8 @@ export function registerPresentationTests(test) {
     const expect=(value,message)=>{if(!value) throw new Error(message);};
     const renderer=fs.readFileSync(path.join(root,'project/src/gfx/renderer2d.cpp'),'utf8');
     const setup=fs.readFileSync(path.join(root,'project/include/runtime/SetupPresenter.hpp'),'utf8');
+    const rewards=fs.readFileSync(path.join(root,'project/include/runtime/RewardMenuPresenter.hpp'),'utf8');
+    expect(rewards.includes('cx+(cardW-32)*0.5f,cardY+16,32'),'Reward item icons retain their original 32 pixel canvases');
     expect(!setup.includes('270.0f/image.subtex->width'),'Title logo must not use the previous fractional 1.8x scale');
     expect(setup.includes('const unsigned scale=image.subtex->width<=200 ? 2 : 1'),'Title logo uses native integer multiples');
     expect(renderer.includes('float(info->tglp->cellHeight)*pixelMultiple/30.0f'), 'Native font drawing must undo Citro2D normalization');
@@ -83,7 +85,7 @@ export function registerPresentationTests(test) {
     const compiler=process.platform==='win32' ? 'C:/devkitPro/msys2/usr/bin/g++.exe' : 'g++';
     const output=path.join(root,'build','dual-screen-layout-test'+(process.platform==='win32'?'.exe':''));
     fs.mkdirSync(path.dirname(output),{recursive:true});
-    execFileSync(compiler,['-std=c++17','-O2','-I'+path.join(root,'project/include'),path.join(root,'test/native/dual_screen_layout_harness.cpp'),'-o',output],{stdio:'pipe'});
+    execFileSync(compiler,['-std=c++17','-O2','-I'+path.join(root,'project/include'),'-I'+path.join(root,'project/generated/include'),path.join(root,'test/native/dual_screen_layout_harness.cpp'),'-o',output],{stdio:'pipe'});
     execFileSync(output,[],{stdio:'pipe'});
   });
   test('Native frontend: title, canonical modes, SD load, history and settings navigation',()=>{

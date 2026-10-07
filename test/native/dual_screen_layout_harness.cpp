@@ -3,12 +3,29 @@
 #include <cmath>
 #include "runtime/TitleMenuLayout.hpp"
 #include "runtime/StarterGridLayout.hpp"
+#include "content/BallMenuContent.hpp"
+#include "content/ItemIcons.hpp"
 #include "gfx/ImageTintPolicy.hpp"
 #include <cassert>
 #include <climits>
 #include <initializer_list>
 using namespace Pokerogue3DS;
 int main() {
+    for(const auto& frame:kItemIconFrames) {
+        assert(frame.sourceWidth==32 && frame.sourceHeight==32);
+        assert(frame.trimX+frame.width<=32 && frame.trimY+frame.height<=32);
+    }
+    constexpr unsigned balls=sizeof(kBallMenuDefinitions)/sizeof(kBallMenuDefinitions[0]);
+    for(unsigned i=0;i<balls;++i) {
+        const auto rect=ballMenuRectangle(i);
+        assert(rect.y>=24 && rect.y+rect.height<=198 && rect.width==288 && rect.height==32);
+        assert(rect.contains(36,rect.y) && rect.contains(67,rect.y+31));
+        if(i) assert(ballMenuRectangle(i-1).y+32<rect.y);
+    }
+    for(unsigned y=0;y<240;++y) for(unsigned x=0;x<320;++x) {
+        unsigned hits=0;for(unsigned i=0;i<balls;++i) hits+=ballMenuRectangle(i).contains(x,y);
+        assert(hits<=1);
+    }
     assert(kDialogueAdvanceRect.contains(12,208) && kDialogueAdvanceRect.contains(167,227));
     assert(!kDialogueAdvanceRect.contains(168,227) && !kDialogueAdvanceRect.contains(12,228));
     for(unsigned y=0;y<240;++y) for(unsigned x=0;x<320;++x)

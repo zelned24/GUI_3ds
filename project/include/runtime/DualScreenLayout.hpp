@@ -16,6 +16,7 @@ struct TouchRect {
     }
 };
 inline constexpr TouchRect kDialogueAdvanceRect{12,208,156,20};
+inline constexpr TouchRect ballMenuRectangle(unsigned index) {return {16,24+index*34,288,32};}
 inline constexpr TouchRect kMoveButtonRects[] = {
     {8, 36, 88, 64},
     {100, 36, 88, 64},
