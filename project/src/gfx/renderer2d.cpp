@@ -316,6 +316,20 @@ void Renderer2D::drawText(const char* text, float x, float y, float size, uint32
     C2D_DrawText(&value, C2D_WithColor, std::round(x), std::round(y), 0.5f, scale, scale, color);
 }
 
+void Renderer2D::drawTextWrapped(const char* text,float x,float y,float size,float maxWidth,uint32_t color) {
+    if(!m_initialized || !m_frameActive || !m_currentTarget || !m_textBuf || !text || size<=0 || maxWidth<=0) return;
+#if defined(__arm__) || defined(__3DS__) || defined(_3DS)
+    C2D_Text value;
+    if(m_gameFont) C2D_TextFontParse(&value,m_gameFont,m_textBuf,text);
+    else C2D_TextParse(&value,m_textBuf,text);
+    C2D_TextOptimize(&value);
+    const float scale=size*(m_gameFont ? 2.0f : 1.0f);
+    C2D_DrawText(&value,C2D_WithColor | C2D_WordWrap,std::round(x),std::round(y),0.5f,scale,scale,color,maxWidth);
+#else
+    drawText(text,x,y,size,color);
+#endif
+}
+
 float Renderer2D::drawTextFitted(const char* text,float x,float y,float size,float maxWidth,uint32_t color) {
     if(!m_initialized || !m_frameActive || !m_currentTarget || !m_textBuf || !text || size<=0 || maxWidth<=0) return size;
 #if defined(__arm__) || defined(__3DS__) || defined(_3DS)

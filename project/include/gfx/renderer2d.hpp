@@ -76,6 +76,7 @@ public:
         float opacity = 1.0f
     );
 
+    void drawTextWrapped(const char* text,float x,float y,float size,float maxWidth,uint32_t color);
     float textLineHeight(float size) const;
     float drawTextFitted(const char* text,float x,float y,float size,float maxWidth,uint32_t color);
     bool setWindowStyle(unsigned id);

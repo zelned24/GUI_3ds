@@ -34,7 +34,7 @@ El avance se publica como trabajo en curso. Classic completo y la fidelidad visu
 4. Compilación directa `make -f Makefile.3ds 3ds`: ELF y 3DSX producidos con devkitARM. No equivale a validación en Old 3DS.
 5. `python scripts/verify_presentation_media.py`: archivos físicos y tablas de presentación PASS; no prueba fidelidad visual ni efectos de objetos.
 6. Regresiones de navegación, geometría, índice de iconos, guards de pausa/guardado y ownership QuickJS PASS. Los guards de main son comprobaciones estáticas, no interacción real en Azahar.
-7. Logs reproducibles de esta revisión: `build/ui-settings-npm-test.log`, `build/ui-settings-parity.log`, `build/review-native-test.log`, `build/ui-settings-arm.log`, `build/window-style-media.log`. No se versionan binarios ni logs.
+7. Logs reproducibles de esta revisión: `build/touch-settings-npm-test.log`, `build/touch-settings-parity.log`, `build/review-native-test.log`, `build/touch-settings-arm.log`, `build/window-style-media.log`. No se versionan binarios ni logs.
 
 ## Nitidez de presentación
 
@@ -69,6 +69,12 @@ El avance se publica como trabajo en curso. Classic completo y la fidelidad visu
 1. `NativePresentationSettingsStore` reutiliza la interfaz de almacenamiento y SHA-256 existentes, con un envelope pequeño independiente del guardado de partida. Escribe el slot alterno y comprueba los bytes leídos; no serializa structs nativos ni modifica el catálogo.
 2. Un slot truncado/corrupto permite recuperar el otro y se informa al arrancar. Errores I/O, versiones futuras, generaciones contradictorias y agotamiento bloquean escritura; un fallo de guardado se muestra como cambio aplicado sin persistencia.
 3. La prueba C++ host cubre guardado/restauración, determinismo byte a byte, corrupción de cada byte, interrupción, verificación tras escritura, conflicto y versión futura. El build ARM conecta los archivos SD fijos. Reinicio y fallos reales de SD en Azahar/consola siguen pendientes.
+
+## Controles táctiles
+
+1. Ajustes → Mando → Control táctil muestra el valor activo y emite un comando. Desactivar pide confirmación, como `enableTouchControls` en `src/ui/settings/settings-ui-items.ts` upstream fijado. Old 3DS siempre dispone de pantalla táctil: el modo automático upstream se adapta como activado/desactivado, conservando botones físicos.
+2. El filtro se aplica antes de intro, título, submenús, pausa y comandos de juego/QuickJS; solo elimina KEY_TOUCH. La preferencia se guarda junto con el marco en el envelope v2; v1 conserva su marco y toma táctil activado como default upstream.
+3. Pruebas host cubren confirmación/cancelación, reactivación física, los 32 bits de entrada, persistencia on/off y migración v1. La pregunta usa C2D_WordWrap con escala legible, sin reducir todo el texto a una única línea diminuta. Comparación visual y acción real con SD/táctil en Azahar/consola siguen pendientes.
 
 ## Texto de menús
 

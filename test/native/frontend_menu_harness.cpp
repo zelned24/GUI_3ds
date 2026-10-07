@@ -53,8 +53,27 @@ static void checkPreferences() {
     NativePresentationSettings conflict{0xffffffffu,2};
     NativePresentationSettingsStore::encode(conflict,disk.bytes[0]);disk.sizes[0]=sizeof(first);
     assert(store.load(restored)==NativeSaveResult::AmbiguousJournal);
+    PreferenceDisk touchDisk;NativePresentationSettingsStore touches(touchDisk);
+    assert(touches.save(3,false)==NativeSaveResult::Ok);
+    assert(touches.load(restored)==NativeSaveResult::Ok && !restored.touchControls && restored.windowStyle==3);
+    assert(touches.save(4,true)==NativeSaveResult::Ok);
+    assert(touches.load(restored)==NativeSaveResult::Ok && restored.touchControls && restored.windowStyle==4);
+    // Legacy version 1 has no touch preference; use the canonical default enabled.
+    NativePresentationSettings legacy{1,2,false};char legacyBytes[NativePresentationSettingsStore::kBytes];
+    NativePresentationSettingsStore::encode(legacy,legacyBytes);legacyBytes[8]=1;
+    IntegritySha256 legacyHash;legacyHash.update(legacyBytes,20);legacyHash.finish(reinterpret_cast<uint8_t*>(legacyBytes+20));
+    assert(NativePresentationSettingsStore::decode(legacyBytes,sizeof(legacyBytes),restored)==NativeSaveResult::Ok);
+    assert(restored.windowStyle==2 && restored.touchControls);
+    // Unknown flags with a valid digest must not be silently discarded.
+    NativePresentationSettingsStore::encode(legacy,legacyBytes);legacyBytes[10]=2;
+    IntegritySha256 flagsHash;flagsHash.update(legacyBytes,20);flagsHash.finish(reinterpret_cast<uint8_t*>(legacyBytes+20));
+    assert(NativePresentationSettingsStore::decode(legacyBytes,sizeof(legacyBytes),restored)==NativeSaveResult::InvalidRecord);
+    // Same generation with different touch state is a conflict even if style matches.
+    NativePresentationSettings yes{1,2,true},no{1,2,false};
+    NativePresentationSettingsStore::encode(yes,touchDisk.bytes[0]);NativePresentationSettingsStore::encode(no,touchDisk.bytes[1]);
+    assert(touches.load(restored)==NativeSaveResult::AmbiguousJournal);
     // A checksummed future version blocks fallback and overwrite.
-    disk.bytes[0][8]=2;IntegritySha256 hash;hash.update(disk.bytes[0],20);hash.finish(reinterpret_cast<uint8_t*>(disk.bytes[0]+20));
+    disk.bytes[0][8]=3;IntegritySha256 hash;hash.update(disk.bytes[0],20);hash.finish(reinterpret_cast<uint8_t*>(disk.bytes[0]+20));
     assert(store.save(1)==NativeSaveResult::UnsupportedVersion);
     disk.sizes[0]=sizeof(first)+1;
     assert(store.save(1)==NativeSaveResult::TooLarge);
@@ -117,6 +136,24 @@ int main() {
     assert(windowMenu.input(KEY_A)==FrontendCommand::NextWindowStyle);
     assert(windowMenu.input(KEY_DLEFT)==FrontendCommand::PreviousWindowStyle);
     assert(windowMenu.input(KEY_DRIGHT)==FrontendCommand::NextWindowStyle);
+    FrontendMenuPresenter touchMenu(false);
+    touchMenu.input(KEY_TOUCH,25,48+3*29);touchMenu.input(KEY_A);
+    for(unsigned i=0;i<3;++i) touchMenu.input(KEY_DDOWN);
+    touchMenu.input(KEY_A);
+    assert(touchMenu.page()==FrontendPage::SettingsGroup);
+    assert(touchMenu.input(KEY_A)==FrontendCommand::None && touchMenu.confirmingTouchDisable());
+    assert(touchMenu.input(KEY_B)==FrontendCommand::None && !touchMenu.confirmingTouchDisable());
+    touchMenu.input(KEY_A);
+    assert(touchMenu.input(KEY_TOUCH,32,130)==FrontendCommand::ToggleTouchControls);
+    touchMenu.setTouchControls(false);
+    // Physical navigation remains available after global touch filtering.
+    assert(FrontendMenuPresenter::filterTouchInput(KEY_TOUCH | KEY_A,false)==KEY_A);
+    assert(touchMenu.input(KEY_A)==FrontendCommand::ToggleTouchControls);
+    for(unsigned bit=0;bit<32;++bit) {
+        const uint32_t keys=uint32_t(1)<<bit;
+        assert(FrontendMenuPresenter::filterTouchInput(keys,true)==keys);
+        assert(FrontendMenuPresenter::filterTouchInput(keys,false)==(keys & ~KEY_TOUCH));
+    }
     FrontendMenuPresenter saved(true);
     assert(saved.input(KEY_A)==FrontendCommand::Continue);
     saved.input(KEY_TOUCH,25,48+2*29);saved.input(KEY_A);

@@ -165,6 +165,7 @@ int main() {
         else if(recoveredPreferences) frontend.feedback("Ajustes recuperados del respaldo SD.");
     } else if(preferenceResult!=Pokerogue3DS::NativeSaveResult::NotFound)
         frontend.feedback(Pokerogue3DS::nativeSaveResultName(preferenceResult));
+    frontend.setTouchControls(preferences.touchControls);
     bool titleVisible = true;
     bool isPaused = false;
     const char* pauseFeedback = nullptr;
@@ -208,7 +209,7 @@ int main() {
         ++m_renderTicks;
         const uint64_t frameAnimationTimeMs = m_renderTicks * 1000 / 60;
         hidScanInput();
-        uint32_t rawPressed = hidKeysDown();
+        uint32_t rawPressed = Pokerogue3DS::FrontendMenuPresenter::filterTouchInput(hidKeysDown(),preferences.touchControls);
         if (titleVisible) {
             if (introActive) {
                 if (rawPressed & (KEY_A | KEY_B | KEY_START | KEY_TOUCH)) {
@@ -258,10 +259,17 @@ int main() {
                             (command==Pokerogue3DS::FrontendCommand::PreviousWindowStyle ? -1 : 1))%Pokerogue3DS::kWindowTextureCount].id;
                 if(!renderer.setWindowStyle(next)) frontend.feedback("No se pudo cargar el marco.");
                 else {
-                    const auto saved=uiSettings.save(next);
+                    const auto saved=uiSettings.save(next,preferences.touchControls);
                     frontend.feedback(saved==Pokerogue3DS::NativeSaveResult::Ok ? nullptr :
                         "Marco aplicado; no se pudieron guardar los ajustes SD.");
                 }
+            }
+            else if(command==Pokerogue3DS::FrontendCommand::ToggleTouchControls) {
+                preferences.touchControls=!preferences.touchControls;
+                frontend.setTouchControls(preferences.touchControls);
+                const auto saved=uiSettings.save(renderer.windowStyle(),preferences.touchControls);
+                frontend.feedback(saved==Pokerogue3DS::NativeSaveResult::Ok ? nullptr :
+                    "Control aplicado; no se pudieron guardar los ajustes SD.");
             }
             else if(command==Pokerogue3DS::FrontendCommand::NewClassic) {
                 const uint16_t starterDex = game.run().starterDex ? game.run().starterDex : 1;

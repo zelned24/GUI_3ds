@@ -8,12 +8,15 @@
 #include <cstring>
 namespace Pokerogue3DS {
 enum class FrontendPage {Title,Modes,Load,History,Settings,SettingsGroup};
-enum class FrontendCommand {None,Continue,NewClassic,Load,DeleteSave,NextWindowStyle,PreviousWindowStyle};
+enum class FrontendCommand {None,Continue,NewClassic,Load,DeleteSave,NextWindowStyle,PreviousWindowStyle,ToggleTouchControls};
 // Owns navigation and presentation only. Returned commands are handled by main.
 class FrontendMenuPresenter {
 public:
     explicit FrontendMenuPresenter(bool hasSave):m_titleSelection{hasSave,0} {}
     void clear() {m_title.clear(); m_confirmingDelete=false;}
+    void setTouchControls(bool enabled) { m_touchControls=enabled; }
+    bool confirmingTouchDisable() const { return m_confirmingTouchDisable; }
+    static uint32_t filterTouchInput(uint32_t keys,bool enabled) {return enabled ? keys : keys & ~KEY_TOUCH;}
     FrontendPage page() const {return m_page;}
     void feedback(const char* value) {m_feedback=value;}
     bool isConfirmingDelete() const {return m_confirmingDelete;}
@@ -26,6 +29,17 @@ public:
         m_title.drawCursor(renderer, x, y, size);
     }
     FrontendCommand input(uint32_t keys,unsigned touchX=0,unsigned touchY=0) {
+        if(m_confirmingTouchDisable) {
+            if(keys & KEY_B) {m_confirmingTouchDisable=false;return FrontendCommand::None;}
+            if(keys & KEY_A) {m_confirmingTouchDisable=false;return FrontendCommand::ToggleTouchControls;}
+            if(keys & KEY_TOUCH) {
+                if(TouchRect{32,125,120,30}.contains(touchX,touchY)) {
+                    m_confirmingTouchDisable=false;return FrontendCommand::ToggleTouchControls;
+                }
+                if(TouchRect{160,125,128,30}.contains(touchX,touchY)) m_confirmingTouchDisable=false;
+            }
+            return FrontendCommand::None;
+        }
         if((keys & KEY_B) || ((keys & KEY_TOUCH) && touchY >= 205 && m_page != FrontendPage::Title)) {
             if(m_confirmingDelete) {
                 m_confirmingDelete = false;
@@ -117,6 +131,11 @@ public:
         case FrontendPage::Settings:m_group=m_selected;m_page=FrontendPage::SettingsGroup;m_selected=0;break;
         case FrontendPage::SettingsGroup:
             if(m_group==1 && m_selected==1) return FrontendCommand::NextWindowStyle;
+            if(m_group==3 && m_selected==0) {
+                if(m_touchControls) m_confirmingTouchDisable=true;
+                else return FrontendCommand::ToggleTouchControls;
+                break;
+            }
             m_feedback="Conexion con el runtime pendiente.";break;
         default:break;
         }
@@ -130,7 +149,11 @@ public:
             m_page==FrontendPage::History ? runtimeUiText("menu:runHistory") : runtimeUiText("menu:settings");
         renderer.drawTextFitted(heading,12,8,0.45f,296,0xffffffff);
         renderer.drawWindow(16,33,288,168);
-        if(m_page==FrontendPage::History) {
+        if(m_confirmingTouchDisable) {
+            renderer.drawTextWrapped(runtimeUiText("settings:confirmDisableTouch"),28,62,0.4f,264,0xffffffff);
+            renderer.drawTextFitted("A: Sí",32,130,0.4f,120,0xffffffff);
+            renderer.drawTextFitted("B: No",160,130,0.4f,128,0xffffffff);
+        } else if(m_page==FrontendPage::History) {
             renderer.drawTextFitted("No hay partidas finalizadas registradas.",28,58,0.32f,264,0xffffffff);
         } else if(m_page==FrontendPage::Load) {
             if(!saved || !m_titleSelection.hasContinue) {
@@ -165,6 +188,7 @@ public:
                 if(m_page==FrontendPage::SettingsGroup) {
                     char value[16];
                     if(m_group==1 && i==1) std::snprintf(value,sizeof(value),"%u",renderer.windowStyle());
+                    else if(m_group==3 && i==0) std::snprintf(value,sizeof(value),"%s",runtimeUiText(m_touchControls ? "settings:on" : "settings:off"));
                     else std::snprintf(value,sizeof(value),"--");
                     renderer.drawTextFitted(value,275,y,0.4f,17,0xffffffff);
                 }
@@ -195,7 +219,7 @@ private:
     TitleMenuSelection m_titleSelection;
     FrontendPage m_page=FrontendPage::Title;
     unsigned m_selected=0,m_group=0;
-    bool m_confirmingDelete=false;
+    bool m_confirmingDelete=false,m_touchControls=true,m_confirmingTouchDisable=false;
     const char* m_feedback=nullptr;
 };
 }

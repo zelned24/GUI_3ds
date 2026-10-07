@@ -5,14 +5,14 @@
 #include <cstring>
 namespace Pokerogue3DS {
 // Device presentation preferences are independent from game progress/catalog hashes.
-struct NativePresentationSettings { uint32_t generation=0; unsigned windowStyle=1; };
+struct NativePresentationSettings { uint32_t generation=0; unsigned windowStyle=1; bool touchControls=true; };
 class NativePresentationSettingsStore {
 public:
     explicit NativePresentationSettingsStore(NativeSaveStorage& storage):m_storage(storage) {}
     static constexpr size_t kBytes=52;
     static NativeSaveResult encode(const NativePresentationSettings& value,char (&bytes)[kBytes]) {
         if(!value.generation || !findWindowTexture(value.windowStyle)) return NativeSaveResult::InvalidRecord;
-        std::memcpy(bytes,"P3UIPREF",8);put(bytes+8,1);put(bytes+12,value.generation);put(bytes+16,value.windowStyle);
+        std::memcpy(bytes,"P3UIPREF",8);put(bytes+8,2u | (value.touchControls ? 0x10000u : 0u));put(bytes+12,value.generation);put(bytes+16,value.windowStyle);
         IntegritySha256 digest;digest.update(bytes,20);digest.finish(reinterpret_cast<uint8_t*>(bytes+20));
         return NativeSaveResult::Ok;
     }
@@ -20,8 +20,11 @@ public:
         if(!bytes || size!=kBytes || std::memcmp(bytes,"P3UIPREF",8)!=0) return NativeSaveResult::InvalidFormat;
         uint8_t hash[32];IntegritySha256 digest;digest.update(bytes,20);digest.finish(hash);
         if(std::memcmp(hash,bytes+20,32)!=0) return NativeSaveResult::ChecksumMismatch;
-        if(get(bytes+8)!=1) return NativeSaveResult::UnsupportedVersion;
-        NativePresentationSettings value{get(bytes+12),get(bytes+16)};
+        const uint32_t versionFlags=get(bytes+8),version=versionFlags & 0xffffu;
+        if(version!=1 && version!=2) return NativeSaveResult::UnsupportedVersion;
+        if((version==1 && (versionFlags & 0xffff0000u)) || (versionFlags & 0xfffe0000u)) return NativeSaveResult::InvalidRecord;
+        NativePresentationSettings value{get(bytes+12),get(bytes+16),
+            version==1 || (versionFlags & 0x10000u)!=0};
         if(!value.generation || !findWindowTexture(value.windowStyle)) return NativeSaveResult::InvalidRecord;
         output=value;return NativeSaveResult::Ok;
     }
@@ -37,18 +40,18 @@ public:
         }
         const bool valid0=results[0]==NativeSaveResult::Ok,valid1=results[1]==NativeSaveResult::Ok;
         if(!valid0 && !valid1) return results[0]!=NativeSaveResult::NotFound ? results[0] : results[1];
-        if(valid0 && valid1 && values[0].generation==values[1].generation && values[0].windowStyle!=values[1].windowStyle)
+        if(valid0 && valid1 && values[0].generation==values[1].generation && (values[0].windowStyle!=values[1].windowStyle || values[0].touchControls!=values[1].touchControls))
             return NativeSaveResult::AmbiguousJournal;
         const unsigned selected=valid1 && (!valid0 || values[1].generation>values[0].generation) ? 1 : 0;
         if(recovered) *recovered=results[1-selected]!=NativeSaveResult::Ok && results[1-selected]!=NativeSaveResult::NotFound;
         output=values[selected];return NativeSaveResult::Ok;
     }
-    NativeSaveResult save(unsigned windowStyle) {
+    NativeSaveResult save(unsigned windowStyle,bool touchControls=true) {
         if(!findWindowTexture(windowStyle)) return NativeSaveResult::InvalidRecord;
         NativePresentationSettings previous;const auto result=load(previous);
         if(result!=NativeSaveResult::Ok && result!=NativeSaveResult::NotFound) return result;
         if(previous.generation==0xffffffffu) return NativeSaveResult::SequenceExhausted;
-        NativePresentationSettings next{previous.generation+1,windowStyle};char bytes[kBytes];
+        NativePresentationSettings next{previous.generation+1,windowStyle,touchControls};char bytes[kBytes];
         auto status=encode(next,bytes);if(status!=NativeSaveResult::Ok) return status;
         const unsigned slot=(next.generation-1)%2;
         status=m_storage.writeSlot(slot,bytes,sizeof(bytes));if(status!=NativeSaveResult::Ok) return status;

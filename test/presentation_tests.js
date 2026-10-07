@@ -25,8 +25,10 @@ export function registerPresentationTests(test) {
     expect(menus.includes('m_title.drawCursor(renderer,25,y,labelSize)'),'Submenu cursor uses fitted text height');
     expect(title.includes('drawCursor(renderer,25,y,labelSize)'),'Title cursor uses fitted text height');
     expect(menus.includes('m_page==FrontendPage::SettingsGroup ? 220 : 249'),'Settings reserve room for their value column');
+    expect(main.includes('filterTouchInput(hidKeysDown(),preferences.touchControls)'), 'Touch disable must apply before title, menus and gameplay dispatch');
+    expect(menus.includes('drawTextWrapped(runtimeUiText("settings:confirmDisableTouch")'), 'Confirmation keeps readable font scale with word wrapping');
     expect(main.includes('uiSettings.load(preferences,&recoveredPreferences)'), 'Boot restores persisted device preferences');
-    expect(main.includes('uiSettings.save(next)'), 'Applied window style must reach the SD journal');
+    expect(main.includes('uiSettings.save(next,preferences.touchControls)'), 'Applied window style must reach the SD journal');
     expect(main.includes('renderer.setWindowStyle(next)'), 'Window setting must reach the renderer through a command');
     expect(menus.includes('return FrontendCommand::NextWindowStyle'), 'Window option must emit a runtime command');
     expect(main.includes('FrontendCommand::Continue || command==Pokerogue3DS::FrontendCommand::Load'),'Continue and Load must read the committed save, not current unsaved state');
