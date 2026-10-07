@@ -16,10 +16,10 @@ public:
         renderer.drawWindow(16,36,288,menu.count()*29+28);
         for(unsigned i=0;i<menu.count();++i) {
             const float y=48+i*29;
-            renderer.drawText(kTitleMenuLabels[i+(menu.hasContinue ? 0 : 1)],43,y,0.48f,0xffffffff);
-            if(i==menu.selected) drawCursor(renderer,25,y,0.48f);
+            const float labelSize=renderer.drawTextFitted(kTitleMenuLabels[i+(menu.hasContinue ? 0 : 1)],43,y,0.48f,249,0xffffffff);
+            if(i==menu.selected) drawCursor(renderer,25,y,labelSize);
         }
-        renderer.drawText(feedback ? feedback : "D-Pad: mover   A: elegir",16,212,0.3f,0xffffffff);
+        renderer.drawTextFitted(feedback ? feedback : "D-Pad: mover   A: elegir",16,212,0.3f,288,0xffffffff);
     }
     void drawCursor(Renderer2D& renderer,float x,float y,float textSize) {
         ensureCursor();

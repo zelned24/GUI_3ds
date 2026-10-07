@@ -20,6 +20,11 @@ export function registerPresentationTests(test) {
     const sprites=fs.readFileSync(path.join(root,'project/src/runtime/PokemonAtlasPresenter.cpp'),'utf8');
     expect(sprites.includes('anchoredSpriteScale(scale, propScale)'),'Sprite drawing must respect explicit 1x/2x scales');
     expect(sprites.includes('m_trainerFrontFemale != female'),'Trainer cache identity includes gender variant');
+    const menus=fs.readFileSync(path.join(root,'project/include/runtime/FrontendMenuPresenter.hpp'),'utf8');
+    const title=fs.readFileSync(path.join(root,'project/include/runtime/TitleMenuPresenter.hpp'),'utf8');
+    expect(menus.includes('m_title.drawCursor(renderer,25,y,labelSize)'),'Submenu cursor uses fitted text height');
+    expect(title.includes('drawCursor(renderer,25,y,labelSize)'),'Title cursor uses fitted text height');
+    expect(menus.includes('m_page==FrontendPage::SettingsGroup ? 220 : 249'),'Settings reserve room for their value column');
     expect(!main.includes('osGetTime()'),'New runs must use an explicit seed');
     expect(!main.includes('1.500'),'No fabricated money display');
     expect(main.includes('rawPressed &= ~KEY_START'),'Opening pause must consume START');

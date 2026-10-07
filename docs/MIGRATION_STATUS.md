@@ -34,7 +34,7 @@ El avance se publica como trabajo en curso. Classic completo y la fidelidad visu
 4. Compilación directa `make -f Makefile.3ds 3ds`: ELF y 3DSX producidos con devkitARM. No equivale a validación en Old 3DS.
 5. `python scripts/verify_presentation_media.py`: archivos físicos y tablas de presentación PASS; no prueba fidelidad visual ni efectos de objetos.
 6. Regresiones de navegación, geometría, índice de iconos, guards de pausa/guardado y ownership QuickJS PASS. Los guards de main son comprobaciones estáticas, no interacción real en Azahar.
-7. Logs reproducibles de esta revisión: `build/atlas-identity-npm-test.log`, `build/atlas-identity-parity.log`, `build/review-native-test.log`, `build/atlas-identity-arm.log`, `build/review-media.log`. No se versionan binarios ni logs.
+7. Logs reproducibles de esta revisión: `build/menu-text-npm-test.log`, `build/menu-text-parity.log`, `build/review-native-test.log`, `build/menu-text-arm.log`, `build/review-media.log`. No se versionan binarios ni logs.
 
 ## Nitidez de presentación
 
@@ -51,6 +51,12 @@ El avance se publica como trabajo en curso. Classic completo y la fidelidad visu
 4. Huida: `CommandPhase.handleRunCommand` restringe End y entrenadores; un jefe ordinario no prohíbe huir por ser wave múltiplo de diez. `AttemptRunPhase` distingue boss por ambos enemigos y `BattleEndPhase(false)` no otorga victoria, EXP ni recompensa. Regresión verifica el roll seeded, la wave siguiente y el feedback.
 5. Los 18 fallos registrados en la revisión anterior ya no se reproducen. Esto no demuestra cobertura completa: trampas, callbacks de huida, persistencia del contador de intentos y segundo jugador activo siguen pendientes.
 6. TypeSafe instalado para Codex en `.agents/skills/typesafe-ai/` mediante npx. Se aplicó su instrucción de conservar reglas conocidas y ejecución en código; no se añadió un servicio de IA al runtime.
+
+## Texto de menús
+
+1. Título, modos, carga, confirmación de borrado, historial y ajustes usan anchos explícitos dentro de cada ventana. Ajustes reserva una columna para valores.
+2. El cursor de las listas toma el tamaño devuelto por el texto ajustado; se mantiene el filtrado nearest y las coordenadas de texto enteras del renderer.
+3. Los guards de presentación comprueban esta conexión y la compilación ARM la integra. La comparación visual de textos largos y glifos en las dos pantallas sigue pendiente; ajustes e historial conservan sus limitaciones funcionales.
 
 ## Escala y caché de sprites
 

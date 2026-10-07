@@ -123,30 +123,30 @@ public:
         const char* heading=m_page==FrontendPage::Modes ? runtimeUiText("menu:selectGameMode") :
             m_page==FrontendPage::Load ? runtimeUiText("menu:loadGame") :
             m_page==FrontendPage::History ? runtimeUiText("menu:runHistory") : runtimeUiText("menu:settings");
-        renderer.drawText(heading,12,8,0.45f,0xffffffff);
+        renderer.drawTextFitted(heading,12,8,0.45f,296,0xffffffff);
         renderer.drawWindow(16,33,288,168);
         if(m_page==FrontendPage::History) {
-            renderer.drawText("No hay partidas finalizadas registradas.",28,58,0.32f,0xffffffff);
+            renderer.drawTextFitted("No hay partidas finalizadas registradas.",28,58,0.32f,264,0xffffffff);
         } else if(m_page==FrontendPage::Load) {
             if(!saved || !m_titleSelection.hasContinue) {
-                renderer.drawText(runtimeUiText("menu:noSaves"),28,58,0.36f,0xffffffff);
+                renderer.drawTextFitted(runtimeUiText("menu:noSaves"),28,58,0.36f,264,0xffffffff);
             } else if(m_confirmingDelete) {
                 renderer.drawWindow(28,55,264,115);
-                renderer.drawText("¿Eliminar partida guardada?",44,70,0.40f,0xffff6060);
-                renderer.drawText("Esta acción no se puede deshacer.",34,98,0.32f,0xffffffff);
-                renderer.drawText("A: Sí (eliminar)   B: No (cancelar)",32,134,0.34f,0xff80ffff);
+                renderer.drawTextFitted("¿Eliminar partida guardada?",44,70,0.40f,232,0xffff6060);
+                renderer.drawTextFitted("Esta acción no se puede deshacer.",34,98,0.32f,252,0xffffffff);
+                renderer.drawTextFitted("A: Sí (eliminar)   B: No (cancelar)",32,134,0.34f,256,0xff80ffff);
             } else {
                 char line[80];std::snprintf(line,sizeof(line),"Partida SD  -  Ola %u / 200",unsigned(saved->wave));
-                renderer.drawText(line,43,43,0.43f,0xffffffff);
+                renderer.drawTextFitted(line,43,43,0.43f,249,0xffffffff);
                 if(saved->biomeId[0]) {
                     char biomeLine[80];std::snprintf(biomeLine,sizeof(biomeLine),"Bioma: %s",saved->biomeId);
-                    renderer.drawText(biomeLine,43,68,0.35f,0xffffffff);
+                    renderer.drawTextFitted(biomeLine,43,68,0.35f,249,0xffffffff);
                 }
                 const unsigned partyCount = saved->playerPartyCount ? saved->playerPartyCount : 1;
                 std::snprintf(line,sizeof(line),"Lider: Nivel %u   PS %u   (Equipo: %u/6)",
                     unsigned(saved->playerLevel),unsigned(saved->playerHp),partyCount);
-                renderer.drawText(line,43,92,0.34f,0xffffffff);
-                renderer.drawText("A: cargar partida   X: eliminar   B: volver",26,126,0.34f,0xff80ffff);
+                renderer.drawTextFitted(line,43,92,0.34f,249,0xffffffff);
+                renderer.drawTextFitted("A: cargar partida   X: eliminar   B: volver",26,126,0.34f,272,0xff80ffff);
                 m_title.drawCursor(renderer,25,43,0.43f);
             }
         } else {
@@ -154,12 +154,12 @@ public:
                 const float y=43+i*29;
                 const char* label=m_page==FrontendPage::Modes ? kFrontendModes[i].label :
                     m_page==FrontendPage::Settings ? runtimeUiText(groupKeys()[i]) : runtimeUiText(settingKey(m_group,i));
-                renderer.drawText(label,43,y,0.4f,0xffffffff);
-                if(i==m_selected) m_title.drawCursor(renderer,25,y,0.4f);
+                const float labelSize=renderer.drawTextFitted(label,43,y,0.4f,m_page==FrontendPage::SettingsGroup ? 220 : 249,0xffffffff);
+                if(i==m_selected) m_title.drawCursor(renderer,25,y,labelSize);
                 if(m_page==FrontendPage::SettingsGroup) renderer.drawText("--",275,y,0.4f,0xffffffff);
             }
         }
-        renderer.drawText(m_feedback ? m_feedback : "A: elegir   B: volver",12,214,0.3f,0xffffffff);
+        renderer.drawTextFitted(m_feedback ? m_feedback : "A: elegir   B: volver",12,214,0.3f,296,0xffffffff);
     }
 private:
     unsigned rowCount() const {
