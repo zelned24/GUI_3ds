@@ -620,5 +620,6 @@ Para cada entrega actualizar esta tabla con IDs, commit, alcance conectado, excl
    - [ ] Perfilar el presupuesto total y validar las fuentes compactadas en Azahar/Old 3DS.
 3. [ ] Evaluar RGBA5551/RGBA4 por clase de asset con comparación de colores/alpha y memoria residente. Pokémon ya usa RGBA4, fuentes A4 y presentación RGBA8; no dar ETC1A4 por visualmente equivalente sin comparación.
 4. [ ] Medir CPU/GPU/memoria en Old 3DS: nearest y scale 1 no prueban un incremento de FPS.
+5. [ ] Portar la animación EXP por tramos de nivel de `src/ui/battle-info/player-battle-info.ts` (pin del juego): base 1650ms, Sine.easeIn, multiplicadores por nivel/ganancia/configuración y pausa tras subir nivel. El HUD actual avanza por frame; distinguir miembros de igual especie, continuar/reiniciar y cambios de actor. Conectar eventos temporales, probar cadencias distintas y comparar captura; no reemplazarlo con un lerp genérico.
 
 | GUI-01 / GUI-10 / GUI-14 | Parcial | Raster nativo de letras | Cuatro fuentes pinned, compensación Citro2D, anchos/cursor reales, determinismo y gates host/ARM | Comparación conjunta, paginación y presupuesto en Old 3DS |
