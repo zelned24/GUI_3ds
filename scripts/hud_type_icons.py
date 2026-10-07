@@ -12,7 +12,7 @@ def validate_size(atlas,width,height,path,png,manifest,overrides):
 def prepare(root):
     rows=[]
     overrides=json.loads((root/"project/data/assets/presentation-overrides.json").read_text(encoding="utf-8"))["overrides"]
-    for name,sourceBase,hasManifest in [(n,"images/ui/"+n,True) for n in NAMES]+[("statuses_es-ES","images/statuses_es-ES",True),("icon_owned","images/ui/icon_owned",False),("overlay_hp","images/ui/overlay_hp",True),("overlay_hp_boss","images/ui/overlay_hp_boss",True),("overlay_exp","images/ui/overlay_exp",False)]:
+    for name,sourceBase,hasManifest in [(n,"images/ui/"+n,True) for n in NAMES]+[("statuses_es-ES","images/statuses_es-ES",True),("icon_owned","images/ui/icon_owned",False),("overlay_hp","images/ui/overlay_hp",True),("overlay_hp_boss","images/ui/overlay_hp_boss",True),("overlay_exp","images/ui/overlay_exp",False),("numbers","images/ui/numbers",True),("numbers_red","images/ui/numbers_red",True)]+[(n,"images/ui/text_images/es-ES/battle_ui/"+n+"_es-ES",False) for n in ["overlay_lv","overlay_hp_label","overlay_hp_label_boss","overlay_exp_label"]]:
         sources=[];data=[]
         for ext in (["png","json"] if hasManifest else ["png"]):
             path=sourceBase+"."+ext
@@ -20,12 +20,17 @@ def prepare(root):
             file=root/"build/native-presentation/source"/path;file.parent.mkdir(parents=True,exist_ok=True);file.write_bytes(raw)
             sources.append({"sourcePath":path,"sha256":hashlib.sha256(raw).hexdigest()});data.append(raw)
         w,h=struct.unpack(">II",data[0][16:24])
-        atlas=json.loads(data[1])["textures"][0] if hasManifest else {"size":{"w":w,"h":h},"frames":[{"filename":"exp" if name=="overlay_exp" else "owned","frame":{"x":0,"y":0,"w":w,"h":h},"sourceSize":{"w":w,"h":h},"spriteSourceSize":{"x":0,"y":0}}]}
+        atlas=json.loads(data[1])["textures"][0] if hasManifest else {"size":{"w":w,"h":h},"frames":[{"filename":"exp" if name=="overlay_exp" else ("owned" if name=="icon_owned" else name),"frame":{"x":0,"y":0,"w":w,"h":h},"sourceSize":{"w":w,"h":h},"spriteSourceSize":{"x":0,"y":0}}]}
         appliedOverride=validate_size(atlas,w,h,sourceBase+".json",data[0],data[1] if hasManifest else b"",overrides)
-        frames=atlas_frames(atlas,w,h)
+        frames=atlas_frames(atlas,w,h,allow_numbers=name in ["numbers","numbers_red"])
         target=root/"build/romfs/presentation/ui"/(name+".t3x");target.parent.mkdir(parents=True,exist_ok=True)
         subprocess.run(["C:/devkitPro/tools/bin/tex3ds.exe","-f","rgba8","-o",str(target),str(root/"build/native-presentation/source"/sources[0]["sourcePath"])],check=True)
         rows.append({"key":name,"sizeOverride":appliedOverride,"width":w,"height":h,"sources":sources,"runtimePath":"romfs:/presentation/ui/"+name+".t3x","convertedSHA256":hashlib.sha256(target.read_bytes()).hexdigest(),"frames":[{"key":key,"bounds":values} for key,values in frames],"upstreamSourcePath":"src/ui/battle-info/enemy-battle-info.ts" if name=="icon_owned" else ("src/ui/battle-info/player-battle-info.ts" if name=="overlay_exp" else "src/ui/battle-info/battle-info.ts"),"upstreamSourceSymbol":"EnemyBattleInfo.constructor" if name=="icon_owned" else ("BattleInfo.updateStatusIcon" if name=="statuses_es-ES" else ("PlayerBattleInfo.initInfo" if name=="overlay_exp" else ("BattleInfo.updateHpFrame" if name.startswith("overlay_hp") else "BattleInfo.setTypes")))})
+    symbols={"numbers":("battle-info","BattleInfo.setLevelDisplay"),"numbers_red":("player-battle-info","PlayerBattleInfo.setLevelDisplay"),"overlay_lv":("battle-info","BattleInfo.constructor"),"overlay_hp_label":("battle-info","BattleInfo.constructor"),"overlay_hp_label_boss":("enemy-battle-info","EnemyBattleInfo.updateBossSegments"),"overlay_exp_label":("player-battle-info","PlayerBattleInfo.constructor")}
+    for row in rows:
+        if row["key"] in symbols:
+            file,symbol=symbols[row["key"]]
+            row["upstreamSourcePath"]="src/ui/battle-info/"+file+".ts";row["upstreamSourceSymbol"]=symbol
     header='// Generated pinned BattleInfo type and indicator atlases.\n#pragma once\n#include "content/TypeLabels.hpp"\n#include <cstring>\nnamespace Pokerogue3DS {\n'
     for i,row in enumerate(rows):
         header+='inline constexpr TypeLabelFrame kHudIconFrames%d[]={\n' % i

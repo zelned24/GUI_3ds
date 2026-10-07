@@ -3,11 +3,11 @@ import hashlib,json,struct,subprocess
 from pathlib import Path
 REVISION="056a1f408f26a3be4fef243f7462cb43608c7928"
 REPOSITORY="https://github.com/pagefaultgames/pokerogue-assets"
-def atlas_frames(atlas,width,height):
+def atlas_frames(atlas,width,height,allow_numbers=False):
     frames=[];keys=set()
     for f in sorted(atlas["frames"],key=lambda f:f["filename"]):
         key=f["filename"]
-        if key in keys or not key.isascii() or not key.isalpha() or f.get("rotated"): raise ValueError("Invalid type frame")
+        if key in keys or not key.isascii() or not (key.replace("_", "").isalpha() or (allow_numbers and (key in "0123456789/" and len(key)==1))) or f.get("rotated"): raise ValueError("Invalid type frame")
         keys.add(key);b=f["frame"];s=f["sourceSize"];t=f["spriteSourceSize"]
         if min(b["w"],b["h"],s["w"],s["h"])<=0 or min(b["x"],b["y"],t["x"],t["y"])<0 or b["x"]+b["w"]>width or b["y"]+b["h"]>height or t["x"]+b["w"]>s["w"] or t["y"]+b["h"]>s["h"]: raise ValueError("Type frame outside atlas/canvas")
         frames.append((key,[b["x"],b["y"],b["w"],b["h"],s["w"],s["h"],t["x"],t["y"]]))

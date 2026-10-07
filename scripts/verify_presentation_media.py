@@ -168,7 +168,7 @@ def test_hud_types():
             atlas=json.loads((root/"build/native-presentation/source"/row["sources"][1]["sourcePath"]).read_text())["textures"][0]
         else:
             w,h=struct.unpack(">II",(root/"build/native-presentation/source"/row["sources"][0]["sourcePath"]).read_bytes()[16:24])
-            atlas={"frames":[{"filename":"exp" if row["key"]=="overlay_exp" else "owned","frame":{"x":0,"y":0,"w":w,"h":h},"sourceSize":{"w":w,"h":h},"spriteSourceSize":{"x":0,"y":0}}]}
+            atlas={"frames":[{"filename":"exp" if row["key"]=="overlay_exp" else ("owned" if row["key"]=="icon_owned" else row["key"]),"frame":{"x":0,"y":0,"w":w,"h":h},"sourceSize":{"w":w,"h":h},"spriteSourceSize":{"x":0,"y":0}}]}
         if row["sizeOverride"]:
             override=json.loads((root/"project/data/assets/presentation-overrides.json").read_text())["overrides"][row["sources"][1]["sourcePath"]]
             assert override==row["sizeOverride"] and override["declaredSize"]==atlas["size"]
@@ -181,8 +181,8 @@ def test_hud_types():
             assert '{"%s",{%s}}' % (f["filename"],','.join(map(str,values))) in header
         path=root/"build/romfs"/row["runtimePath"].removeprefix("romfs:/")
         assert hashlib.sha256(path.read_bytes()).hexdigest()==row["convertedSHA256"]
-    assert len(report["files"])==11
-    print("  [OK] Eleven original HUD type/status/owned/bar sheets: frame offsets, physical hashes and generated tables")
+    assert len(report["files"])==17
+    print("  [OK] Seventeen original HUD sheets including digit/label assets: frame offsets, physical hashes and generated tables")
 
 if __name__ == "__main__":
     test_items()

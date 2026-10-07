@@ -33,6 +33,9 @@ export function registerPresentationTests(test) {
     expect(hud.includes('drawHudBar(false,boss,fraction'), 'HP uses the original two-tone bar atlas');
     expect(hud.includes('drawHudBar(true,false,expFraction'), 'EXP uses the original patterned texture');
     expect(main.includes('true, 258.0f, 146.0f'), 'Player HUD remains above the feedback panel');
+    expect(hud.includes('drawHudGraphic("numbers",digit'), 'HUD numbers must use original digit atlas');
+    expect(hud.includes('drawHudGraphic("overlay_exp_label"'), 'EXP label must use original localized artwork');
+    expect(!hud.includes('renderer.drawText(level'), 'Level numbers must not use scaled font glyphs');
     expect(hud.includes('&displayedNameWidth'),'Gender position must use measured fitted glyph width');
     expect(!hud.includes('approxNameWidth'),'UTF-8 byte count cannot estimate glyph width');
     const title=fs.readFileSync(path.join(root,'project/include/runtime/TitleMenuPresenter.hpp'),'utf8');

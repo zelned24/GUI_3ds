@@ -15,6 +15,14 @@ class TypeAtlasTests(unittest.TestCase):
         for path,image,meta,over in [("other.json",png,manifest,overrides),("boss.json",png+b"changed",manifest,overrides),("boss.json",png,manifest+b"changed",overrides),("boss.json",png,manifest,{"boss.json":dict(row,revision="changed")})]:
             with self.assertRaises(ValueError):validate_size(atlas,86,12,path,image,meta,over)
 
+    def test_digit_keys_are_explicit_and_path_keys_rejected(self):
+        f={"filename":"/","frame":{"x":0,"y":0,"w":8,"h":8},"sourceSize":{"w":8,"h":8},"spriteSourceSize":{"x":0,"y":0}}
+        self.assertEqual(atlas_frames({"frames":[f]},8,8,allow_numbers=True)[0][0],"/")
+        with self.assertRaises(ValueError):atlas_frames({"frames":[f]},8,8)
+        for key in ["../","0/1",'bad"key',"", "12"]:
+            bad=dict(f,filename=key)
+            with self.assertRaises(ValueError):atlas_frames({"frames":[bad]},8,8,allow_numbers=True)
+
     def test_bounds_trim_and_sorted_keys(self):
         f={"filename":"fire","rotated":False,"frame":{"x":0,"y":0,"w":20,"h":12},"sourceSize":{"w":23,"h":18},"spriteSourceSize":{"x":0,"y":6}}
         atlas={"frames":[dict(f,filename="water"),f]}

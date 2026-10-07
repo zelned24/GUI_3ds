@@ -118,6 +118,7 @@ void Renderer2D::fini() {
     for(auto& sheet:m_hudTypes) {if(sheet) C2D_SpriteSheetFree(sheet);sheet=nullptr;}
     for(auto& sheet:m_hudIndicators) {if(sheet) C2D_SpriteSheetFree(sheet);sheet=nullptr;}
     for(auto& sheet:m_hudBars) {if(sheet) C2D_SpriteSheetFree(sheet);sheet=nullptr;}
+    for(auto& sheet:m_hudGraphics) {if(sheet) C2D_SpriteSheetFree(sheet);sheet=nullptr;}
 #endif
     C2D_Fini();
     C3D_Fini();
@@ -490,5 +491,25 @@ bool Renderer2D::drawHudBar(bool experience,bool boss,float fraction,float x,flo
     return true;
 #else
     (void)experience;(void)boss;(void)fraction;(void)x;(void)y;return false;
+#endif
+}
+
+bool Renderer2D::drawHudGraphic(const char* asset,const char* frame,float x,float y) {
+#if defined(__arm__) || defined(__3DS__) || defined(_3DS)
+    if(!m_initialized || !m_frameActive || !m_currentTarget || !asset || !frame) return false;
+    unsigned index=11;
+    for(;index<sizeof(Pokerogue3DS::kHudIconAtlases)/sizeof(Pokerogue3DS::kHudIconAtlases[0]);++index)
+        if(!std::strcmp(Pokerogue3DS::kHudIconAtlases[index].key,asset)) break;
+    if(index>=17) return false;
+    const auto* row=Pokerogue3DS::findHudIndicator(index,frame);if(!row) return false;
+    const auto& atlas=Pokerogue3DS::kHudIconAtlases[index];
+    auto& sheet=m_hudGraphics[index-11];if(!sheet) sheet=C2D_SpriteSheetLoad(atlas.path);if(!sheet) return false;
+    const auto image=C2D_SpriteSheetGetImage(sheet,0);
+    if(!image.tex || !image.subtex || image.subtex->width!=atlas.width || image.subtex->height!=atlas.height) {C2D_SpriteSheetFree(sheet);sheet=nullptr;return false;}
+    C3D_TexSetFilter(image.tex,GPU_NEAREST,GPU_NEAREST);
+    drawAtlasFrame(image,row->frame,std::round(x),std::round(y),row->frame.sourceWidth,row->frame.sourceHeight);
+    return true;
+#else
+    (void)asset;(void)frame;(void)x;(void)y;return false;
 #endif
 }
