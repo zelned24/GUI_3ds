@@ -293,7 +293,7 @@ void Renderer2D::drawText(
 #endif
         C2D_TextParse(&c2dText, m_textBuf, text);
         C2D_TextOptimize(&c2dText);
-        C2D_DrawText(&c2dText, C2D_WithColor, x, y, 0.5f, 1.0f, 1.0f, finalColor);
+        C2D_DrawText(&c2dText, C2D_WithColor, std::round(x), std::round(y), 0.5f, 1.0f, 1.0f, finalColor);
     }
 }
 
@@ -313,7 +313,7 @@ void Renderer2D::drawText(const char* text, float x, float y, float size, uint32
     // The pinned game font is rasterized at 16px by our asset pipeline.
     if (m_gameFont) scale*=2.0f;
 #endif
-    C2D_DrawText(&value, C2D_WithColor, x, y, 0.5f, scale, scale, color);
+    C2D_DrawText(&value, C2D_WithColor, std::round(x), std::round(y), 0.5f, scale, scale, color);
 }
 
 float Renderer2D::drawTextFitted(const char* text,float x,float y,float size,float maxWidth,uint32_t color) {
@@ -327,7 +327,7 @@ float Renderer2D::drawTextFitted(const char* text,float x,float y,float size,flo
     C2D_TextGetDimensions(&value,scale,scale,&width,nullptr);
     const float fit=width>maxWidth ? maxWidth/width : 1.0f;
     scale*=fit;
-    C2D_DrawText(&value,C2D_WithColor,x,y,0.5f,scale,scale,color);
+    C2D_DrawText(&value,C2D_WithColor,std::round(x),std::round(y),0.5f,scale,scale,color);
     return size*fit;
 #else
     drawText(text,x,y,size,color);

@@ -28,13 +28,20 @@ El avance se publica como trabajo en curso. Classic completo y la fidelidad visu
 
 ## Evidencia ejecutada
 
-1. `npm test`: **32 passed, 1 failed**, 33 suites. La suite FirstRunRuntime contiene **31 casos passing y 18 failing, de 49**. No se desactivaron casos ni se debilitaron assertions.
+1. `npm test`: **33 passed, 1 failed**, 34 suites. La suite FirstRunRuntime contiene **31 casos passing y 18 failing, de 49**. No se desactivaron casos ni se debilitaron assertions.
 2. `npm run native-parity`: **126/126 PASS**. Compara el contrato C++ con JS; no prueba todo el upstream.
 3. `npm run native-test`: compilación PASS; el ejecutor informa explícitamente que no ejecutó hardware/emulador.
 4. Compilación directa `make -f Makefile.3ds 3ds`: ELF y 3DSX producidos con devkitARM. No equivale a validación en Old 3DS.
 5. `python scripts/verify_presentation_media.py`: archivos físicos y tablas de presentación PASS; no prueba fidelidad visual ni efectos de objetos.
 6. Regresiones de navegación, geometría, índice de iconos, guards de pausa/guardado y ownership QuickJS PASS. Los guards de main son comprobaciones estáticas, no interacción real en Azahar.
 7. Logs reproducibles de esta revisión: `build/review-final-npm-test.log`, `build/review-native-parity.log`, `build/review-native-test.log`, `build/review-arm-build.log`, `build/review-media.log`. No se versionan binarios ni logs.
+
+## Nitidez de presentación
+
+1. Fuente convertida: alpha A4 binario (umbral 8/15), sin alterar métricas ni mapeo de glifos; 3267 bytes de alpha intermedio corregidos en el asset actual.
+2. Posiciones de texto ajustadas a píxeles enteros; se mantiene NEAREST para texturas y fuente.
+3. Azahar local tenía xBRZ activo y modo New 3DS. `scripts/prepare_azahar_preview.py` prepara un perfil aislado Old 3DS, resolución nativa, sin xBRZ y con muestreo nearest/display sin filtro; no modifica la configuración global ni inicia/cierra procesos.
+4. `python test/pixel_font_tests.py`: 3 PASS (alpha/métricas/determinismo, rechazo de corrupción, perfil aislado). Compilación ARM PASS; comprobación visual conjunta pendiente.
 
 ## Fallos abiertos de FirstRunRuntime
 

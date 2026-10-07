@@ -2,7 +2,7 @@
 
 ## Cómo medir el avance
 
-- Referencia de código inspeccionado: commit `ddcb4ff`, rama `codex/pokerogue-3ds-migration`.
+- Referencia de código inspeccionado: commit `c1901fb`, rama `codex/pokerogue-3ds-migration`.
 - Objetivo: PokéRogue jugable y fiel al snapshot upstream en Old 3DS, con ambas pantallas, progreso exportable y actualizaciones desde consola.
 - Cada ID es estable para reportar avances: `MOV-07`, `GUI-03`, etc. No equivale a un movimiento/habilidad individual.
 - Una casilla sin marcar puede tener código parcial; el resumen de cada área indica lo existente. Marcarla solo con integración completa y evidencia ejecutada pertinente.
@@ -14,28 +14,28 @@
 
 ## Resumen del checklist
 
-Estos son criterios de cierre, no cantidades de ataques o habilidades pendientes. Todas las casillas siguen abiertas hasta aportar evidencia de integración y validación; muchas tienen implementación parcial.
+Estos son criterios de cierre, no cantidades de ataques o habilidades pendientes. Las casillas se cierran con evidencia de su alcance exacto; las abiertas pueden tener implementación parcial.
 
 | Área | Criterios abiertos |
 |---|---:|
 | Contenido canónico y catálogo | 6 |
-| Inicio, modos y progresión | 9 |
-| Turnos y comandos | 7 |
+| Inicio, modos y progresión | 10 |
+| Turnos y comandos | 8 |
 | Movimientos y cálculo de daño | 13 |
 | Habilidades y pasivas | 10 |
 | HP, PP, EXP y estados | 8 |
 | Campo, clima y transformaciones | 6 |
 | Entrenadores e IA | 6 |
 | Captura, items, recompensas y perfil | 8 |
-| Interfaz del juego en dos pantallas | 5 |
+| Interfaz del juego en dos pantallas | 13 |
 | Assets, animación y audio | 8 |
 | Guardado, continuar y exportación | 8 |
 | Actualización desde la consola | 8 |
 | Memoria y rendimiento Old 3DS XL | 6 |
-| Validación y entrega final | 7 |
-| **Total** | **115** |
+| Validación y entrega final | 10 |
+| **Total** | **128** |
 
-Prioridad inmediata: completar el segundo Pokémon activo del jugador y el campo de cuatro actores (**TUR-05**), checks previos y cola dinámica de acciones (**TUR-01–04**), ampliar habilidades/movimientos (**HAB / MOV**) y cerrar Eternatus con persistencia (**FLU-09 / SAV-03**). Struggle por PP agotados y guardado del campo actual de tres actores ya tienen rutas conectadas; no cubren todos los contextos. Los tests escritos permanecen sin ejecutar.
+Prioridad inmediata: completar el segundo Pokémon activo del jugador y el campo de cuatro actores (**TUR-05**), checks previos y cola dinámica de acciones (**TUR-01–04**), ampliar habilidades/movimientos (**HAB / MOV**) y cerrar Eternatus con persistencia (**FLU-09 / SAV-03**). Struggle por PP agotados y guardado del campo actual de tres actores ya tienen rutas conectadas; no cubren todos los contextos. La última suite ejecutada conserva 18 fallos de FirstRunRuntime; consultar MIGRATION_STATUS.md.
 
 ## Estado consolidado para seguimiento
 
@@ -246,6 +246,9 @@ Se conserva presentación C++/ScenePlayer y bridge QuickJS opcional. El editor/S
 - [ ] **GUI-07.** Completar settings, idioma, audio, exportación y actualización de contenido.
 - [ ] **GUI-08.** Completar win/lose/summary y recuperación de errores de carga.
 - [ ] **GUI-09.** Completar D-pad/A/B/X/Y/L/R/Start/Select y táctil resistivo con foco coherente.
+- [x] **GUI-10.** Convertir alpha antialias de la fuente A4 a alpha binario, conservar métricas, alinear coordenadas de texto a píxeles y preparar un perfil Azahar Old 3DS sin suavizado; pruebas de conversión/determinismo/corrupción ejecutadas.
+- [ ] **GUI-11.** Verificar nitidez, tamaños y alineación de letras/sprites en todas las pantallas mediante Azahar y Old 3DS; contrastar capturas con la referencia web.
+
 - [ ] **GUI-10.** Completar locales, glyphs, fallback y texto largo; retirar strings fijas donde exista localización.
 - [ ] **GUI-11.** Mantener UI → comando → evento → binding; sin reglas ni especies hardcodeadas.
 - [ ] **GUI-12.** Auditar rol QuickJS/Phaser→Citro2D y bundle: bridge no equivale a ejecutar todo PokéRogue upstream.

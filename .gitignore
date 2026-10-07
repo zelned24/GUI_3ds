@@ -12,3 +12,6 @@ test/native/build/
 test/build_romfs_*/
 test/native/host_compat/*.wasm
 test/native/host_compat/*.o
+
+__pycache__/
+*.pyc

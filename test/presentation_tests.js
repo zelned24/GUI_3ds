@@ -4,6 +4,7 @@ import {execFileSync} from 'node:child_process';
 import {fileURLToPath} from 'node:url';
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 export function registerPresentationTests(test) {
+  test('Native pixel font: binary alpha preserves metrics, rejects corrupt data and is deterministic',()=>{execFileSync('python',[path.join(root,'test/pixel_font_tests.py')],{stdio:'pipe'});});
   test('Native frontend review: save failures, pause input, deterministic seed and indexed trainer assets',()=>{
     const main=fs.readFileSync(path.join(root,'project/src/main.cpp'),'utf8');
     const trainer=fs.readFileSync(path.join(root,'project/src/runtime/TrainerPresenter.cpp'),'utf8');

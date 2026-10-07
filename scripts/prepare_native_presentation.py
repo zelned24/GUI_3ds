@@ -108,7 +108,9 @@ codepoints=sorted(ord(ch) for ch in characters if ord(ch)>=32)
 whitelist=output.parent / "font-codepoints.txt"
 whitelist.write_text(" ".join(hex(cp) for cp in codepoints)+"\n",encoding="utf-8",newline="\n")
 subprocess.run(["C:/devkitPro/tools/bin/mkbcfnt.exe","-s","16","-w",str(whitelist),"-o",str(font_target),str(font_source)],check=True)
-(output.parent / "font-provenance.json").write_text(json.dumps({"repository":REPOSITORY,"revision":REVISION,"sourcePath":"fonts/pokemon-emerald-pro.ttf","sourceSHA256":hashlib.sha256(font_source.read_bytes()).hexdigest(),"convertedPath":"romfs:/presentation/fonts/emerald.bcfnt","convertedSHA256":hashlib.sha256(font_target.read_bytes()).hexdigest(),"bytes":font_target.stat().st_size},sort_keys=True,indent=2)+"\n",encoding="utf-8",newline="\n")
+from pixel_font import crisp_font
+font_target.write_bytes(crisp_font(font_target.read_bytes()))
+(output.parent / "font-provenance.json").write_text(json.dumps({"repository":REPOSITORY,"revision":REVISION,"sourcePath":"fonts/pokemon-emerald-pro.ttf","sourceSHA256":hashlib.sha256(font_source.read_bytes()).hexdigest(),"convertedPath":"romfs:/presentation/fonts/emerald.bcfnt","convertedSHA256":hashlib.sha256(font_target.read_bytes()).hexdigest(),"bytes":font_target.stat().st_size,"alphaPolicy":"A4 threshold 8/15 to binary alpha; metrics unchanged"},sort_keys=True,indent=2)+"\n",encoding="utf-8",newline="\n")
 
 layer_rows=[]
 unsupported=[]

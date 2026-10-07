@@ -1,4 +1,12 @@
 {
+  "fontConversion": {
+    "alphaPolicy": "threshold 8/15 to binary alpha",
+    "changedAlphaBytes": 3267,
+    "format": "GPU_A4",
+    "glyphMetrics": "preserved",
+    "runtimePosition": "integer pixel coordinates",
+    "visualVerification": "pending Azahar and Old 3DS"
+  },
   "generator": "scripts/prepare_native_presentation.py",
   "itemIconReferences": {
     "resolved": 88,
@@ -137,7 +145,7 @@
       "records": 0,
       "repository": "https://github.com/pagefaultgames/pokerogue-assets",
       "revision": "056a1f408f26a3be4fef243f7462cb43608c7928",
-      "sha256": "cd56c30109c97b6753c93dcef2111efef3aa86368fa29658317fb61f70f961ba"
+      "sha256": "6512d9970b041da2b35cb6e76b964b85c5d393aa56070beee7831e694012104a"
     },
     {
       "manifest": "hud-provenance.json",
