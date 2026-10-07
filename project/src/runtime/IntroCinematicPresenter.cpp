@@ -50,7 +50,7 @@ bool IntroCinematicPresenter::draw(Renderer2D& renderer, uint64_t currentTimesta
         return false;
     }
 
-    C3D_TexSetFilter(img.tex, GPU_LINEAR, GPU_LINEAR);
+    C3D_TexSetFilter(img.tex, GPU_NEAREST, GPU_NEAREST);
 
     // Compute elapsed playback time
     uint64_t elapsedMs = 0;

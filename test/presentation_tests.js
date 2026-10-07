@@ -20,6 +20,7 @@ export function registerPresentationTests(test) {
     if(converter.includes('CanonicalFallback')) throw new Error('Generic modifier families must not pretend to be specific item sprites');
     const intro=fs.readFileSync(path.join(root,'project/src/runtime/IntroCinematicPresenter.cpp'),'utf8');
     const expect=(value,message)=>{if(!value) throw new Error(message);};
+    expect(intro.includes('C3D_TexSetFilter(img.tex, GPU_NEAREST, GPU_NEAREST)') && !intro.includes('GPU_LINEAR'),'Intro must use nearest texture filtering');
     const renderer=fs.readFileSync(path.join(root,'project/src/gfx/renderer2d.cpp'),'utf8');
     const setup=fs.readFileSync(path.join(root,'project/include/runtime/SetupPresenter.hpp'),'utf8');
     const rewards=fs.readFileSync(path.join(root,'project/include/runtime/RewardMenuPresenter.hpp'),'utf8');
@@ -39,6 +40,8 @@ export function registerPresentationTests(test) {
     expect(sprites.includes('m_trainerFrontFemale != female'),'Trainer cache identity includes gender variant');
     const menus=fs.readFileSync(path.join(root,'project/include/runtime/FrontendMenuPresenter.hpp'),'utf8');
     const hud=fs.readFileSync(path.join(root,'project/include/runtime/BattleHudPresenter.hpp'),'utf8');
+    expect(hud.includes('m_lastPlayerId != actor.battleState.pokemonId') && !hud.includes('m_lastPlayerDex'),'EXP display must distinguish actors of the same species');
+    expect(main.includes('if(titleVisible) battleHud.resetExperienceDisplay()'),'A new run/restore must not inherit the previous EXP animation');
     expect(hud.includes('canonicalPresentationTypes(actor.dex,actor.formId,type1,type2)'), 'HUD badges must use the actual canonical form');
     expect(hud.includes('drawHudTypeIcon(type1,player,0,dual'), 'HUD uses original compact icon variants');
     expect(!hud.includes('drawTypeBadge(renderer'), 'Type labels cannot overlap the status row');

@@ -6,12 +6,32 @@
 #include "content/BallMenuContent.hpp"
 #include "content/ItemIcons.hpp"
 #include "runtime/PresentationClock.hpp"
+#include "runtime/BattleHudGeometry.hpp"
 #include "gfx/ImageTintPolicy.hpp"
 #include <cassert>
 #include <climits>
 #include <initializer_list>
 using namespace Pokerogue3DS;
 int main() {
+    double duration=0,pause=0;
+    assert(expSegmentTiming(50,50,1,0,true,duration,pause));
+    assert(std::fabs(duration-1650)<1e-9 && pause==500);
+    assert(expSegmentTiming(50,60,1,0,true,duration,pause));
+    assert(std::fabs(duration-165)<1e-9 && pause==50);
+    for(unsigned level=1;level<=250;++level) for(unsigned speed=0;speed<4;++speed) {
+        assert(expSegmentTiming(level,level,0.5,speed,true,duration,pause));
+        assert(duration>=0 && pause==500);
+        if(speed==3) assert(duration==0);
+    }
+    assert(expSegmentTiming(100,100,1,1,true,duration,pause) && std::fabs(duration-825)<1e-9);
+    assert(expSegmentTiming(100,100,1,2,true,duration,pause) && std::fabs(duration-412.5)<1e-9);
+    assert(expSegmentTiming(100,100,1,0,false,duration,pause) && duration==0);
+    assert(!expSegmentTiming(0,5,1,0,true,duration,pause));
+    assert(!expSegmentTiming(6,5,1,0,true,duration,pause));
+    assert(!expSegmentTiming(5,5,NAN,0,true,duration,pause));
+    assert(!expSegmentTiming(5,5,1,4,true,duration,pause));
+    assert(expSegmentFraction(0.2,1,0,100)==0.2 && expSegmentFraction(0.2,1,100,100)==1);
+    assert(std::fabs(expSegmentFraction(0.2,1,50,100)-(0.2+0.8*(1-std::sqrt(0.5))))<1e-12);
     constexpr uint64_t frequency=268123480;
     static_assert(presentationMilliseconds(100,100+frequency,frequency)==1000,"Real ticks define visual duration");
     static_assert(presentationMilliseconds(100,99,frequency)==0,"Clock reset is bounded");

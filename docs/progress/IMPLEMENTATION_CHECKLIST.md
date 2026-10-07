@@ -622,5 +622,8 @@ Para cada entrega actualizar esta tabla con IDs, commit, alcance conectado, excl
 4. [ ] Medir CPU/GPU/memoria en Old 3DS: nearest y scale 1 no prueban un incremento de FPS.
 5. [ ] Portar la animación EXP por tramos de nivel de `src/ui/battle-info/player-battle-info.ts` (pin del juego): base 1650ms, Sine.easeIn, multiplicadores por nivel/ganancia/configuración y pausa tras subir nivel. El HUD actual avanza por frame; distinguir miembros de igual especie, continuar/reiniciar y cambios de actor. Conectar eventos temporales, probar cadencias distintas y comparar captura; no reemplazarlo con un lerp genérico.
    - [x] Conectar reloj visual libctru de ticks transcurridos: retirar el supuesto de 60 frames por segundo en los timestamps de sprites/intro. Harness comprueba cadencias de 15/30/60 con error máximo de truncamiento de 1ms; simulación/RNG no consumen este reloj.
+   - [x] Identificar la caché EXP por pokemonId, tratar cero como un valor válido y reiniciarla al volver al título; prueba C++ host de dos actores de igual especie, EXP cero y reinicio pasó.
+   - [ ] Integrar los cálculos EXP temporales preparados en BattleHudGeometry; el HUD aún usa interpolación por frame.
+   - [x] Retirar GPU_LINEAR de la cinemática inicial y comprobar GPU_NEAREST; escala fraccionaria/crossfade y fidelidad de vídeo siguen pendientes.
 
 | GUI-01 / GUI-10 / GUI-14 | Parcial | Raster nativo de letras | Cuatro fuentes pinned, compensación Citro2D, anchos/cursor reales, determinismo y gates host/ARM | Comparación conjunta, paginación y presupuesto en Old 3DS |

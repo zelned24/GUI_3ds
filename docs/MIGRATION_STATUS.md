@@ -254,3 +254,10 @@ El avance se publica como trabajo en curso. Classic completo y la fidelidad visu
 1. `main.cpp` antes calculaba timestamp=m_renderTicks*1000/60; a 30 FPS entregaba medio segundo de tiempo visual por segundo real. Ahora `svcGetSystemTick` y `SYSCLOCK_ARM11` de libctru convierten ticks transcurridos en milisegundos. Se comparte el timestamp visual existente, sin alimentar RNG, contenido o reglas de batalla.
 2. `PresentationClock` divide antes de multiplicar el total de ticks; rechaza frecuencia cero y retroceso respecto al inicio. Harness compara diez segundos muestreados a 15/30/60 FPS, monotonía y truncamiento de máximo 1ms. Nueve suites específicas, npm test 38/38, native-parity 126/126, build ARM/3DSX y diff-check PASS.
 3. EXP sigue avanzando por frame dentro del HUD; conectar el reloj es una dependencia previa, no un port completo de su tween. Pausa/suspensión, audio y capturas Azahar/Old 3DS aún pendientes. Logs build/presentation-clock-*.
+
+### Identidad EXP y filtro de intro
+
+1. El HUD identifica la caché EXP por pokemonId, conserva cero como valor y reinicia al título. Harness C++ dibuja dos actores de igual especie y comprueba cambio de identidad, EXP cero y reset. Mock C2D_Color32 ahora admite constantes como la API Citro2D.
+2. BattleHudGeometry prepara duración/easing upstream; todavía no alimenta la animación. EXP continúa interpolando por frame: tramos de nivel, pausas y cadencias siguen abiertos.
+3. Intro usa GPU_NEAREST; conserva escala 400x200 y crossfade de frames muestreados. No se declara vídeo completo ni escala entera.
+4. Suite completa 38/38 PASS; nueve suites enfocadas posteriores, native-parity 126/126, compilación ARM/3DSX y diff-check PASS. Primer intento de suite EXP: 37/1 por mock no constexpr; se conserva build/exp-timing-npm-test.log. Logs finales build/exp-identity-*. Preview copiado a build/Pokerogue-pixel-preview.3dsx y proceso Azahar iniciado; capturas pendientes. El parámetro --user no aisló el perfil de esta versión: conserva configuración global, que puede aplicar suavizado adicional.

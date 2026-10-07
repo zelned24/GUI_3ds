@@ -18,9 +18,10 @@ public:
             if (sheet) C2D_SpriteSheetFree(sheet);
             sheet = nullptr;
         }
-        m_displayedExp = 0;
-        m_lastPlayerDex = 0;
+        resetExperienceDisplay();
     }
+    void resetExperienceDisplay() {m_displayedExp=0;m_lastPlayerId=0;m_expInitialized=false;}
+    uint32_t displayedExperience() const {return m_displayedExp;}
     ~BattleHudPresenter() { clear(); }
     BattleHudPresenter() = default;
     BattleHudPresenter(const BattleHudPresenter&) = delete;
@@ -145,9 +146,10 @@ public:
             }
 
             // Smooth EXP bar lerp animation towards actor.totalExperience
-            if (m_lastPlayerDex != actor.dex || m_displayedExp == 0) {
+            if (!m_expInitialized || m_lastPlayerId != actor.battleState.pokemonId) {
                 m_displayedExp = actor.totalExperience;
-                m_lastPlayerDex = actor.dex;
+                m_lastPlayerId = actor.battleState.pokemonId;
+                m_expInitialized = true;
             } else if (m_displayedExp < actor.totalExperience) {
                 const uint32_t diff = actor.totalExperience - m_displayedExp;
                 const uint32_t step = std::max<uint32_t>(1, diff / 8 + (diff % 8 != 0));
@@ -184,7 +186,8 @@ public:
 private:
     C2D_SpriteSheet m_sheets[3]{};
     uint32_t m_displayedExp = 0;
-    uint16_t m_lastPlayerDex = 0;
+    uint32_t m_lastPlayerId = 0;
+    bool m_expInitialized = false;
 };
 
 } // namespace Pokerogue3DS

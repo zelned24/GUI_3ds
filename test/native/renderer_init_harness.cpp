@@ -2,6 +2,7 @@
 #include "runtime/Utf8Abbreviation.hpp"
 #include "runtime/NativeTextRaster.hpp"
 #include "runtime/DialoguePresenter.hpp"
+#include "runtime/BattleHudPresenter.hpp"
 #include "content/TypeLabels.hpp"
 #include "content/EntityUiNames.hpp"
 #include "content/HudTypeIcons.hpp"
@@ -216,7 +217,25 @@ int main() {
         hudSubs[11].width=87;assert(!renderer.drawHudGraphic("numbers","0",0,0));hudSubs[11].width=88;
         assert(renderer.drawHudGraphic("numbers","0",0,0));
         assert(!renderer.setWindowStyle(2)); // Never free a texture before GPU submission.
-        renderer.endFrame();assert(renderer.setWindowStyle(2) && renderer.windowStyle()==2);
+        {
+            Pokerogue3DS::BattleHudPresenter hud;
+            Pokerogue3DS::ResolvedPokemon actor{};
+            actor.actorIdentityResolved=true;actor.dex=1;actor.level=10;
+            actor.localizedName="Bulbasaur";actor.battleState.pokemonId=11;
+            actor.battleState.maxHp=20;actor.battleState.hp=20;actor.totalExperience=125;
+            hud.draw(renderer,actor,true,258,146);
+            assert(hud.displayedExperience()==125);
+            actor.totalExperience=225;hud.draw(renderer,actor,true,258,146);
+            assert(hud.displayedExperience()==138);
+            actor.battleState.pokemonId=12;actor.totalExperience=1000;
+            hud.draw(renderer,actor,true,258,146);assert(hud.displayedExperience()==1000);
+            actor.totalExperience=0;hud.draw(renderer,actor,true,258,146);assert(hud.displayedExperience()==0);
+            actor.totalExperience=10;hud.draw(renderer,actor,true,258,146);assert(hud.displayedExperience()==2);
+            hud.resetExperienceDisplay();hud.draw(renderer,actor,true,258,146);assert(hud.displayedExperience()==10);
+            renderer.endFrame(); // Submit before the temporary HUD releases its sheet.
+        }
+        assert(renderer.setWindowStyle(2) && renderer.windowStyle()==2);
+
         const int fontsBeforeClose=fontFree;
         const int buffersBeforeClose=bufferFree;
         const int sheetsBeforeClose=sheetFree;

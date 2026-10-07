@@ -220,6 +220,7 @@ int main() {
             presentationStartTicks,svcGetSystemTick(),SYSCLOCK_ARM11);
         hidScanInput();
         uint32_t rawPressed = Pokerogue3DS::FrontendMenuPresenter::filterTouchInput(hidKeysDown(),preferences.touchControls);
+        if(titleVisible) battleHud.resetExperienceDisplay();
         if(titleVisible || game.presentationStage()==Pokerogue3DS::NativeSaveStage::RunSetup
             || game.presentationStage()==Pokerogue3DS::NativeSaveStage::BattleActive) dialogue.reset();
         if (titleVisible) {
