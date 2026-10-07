@@ -49,7 +49,7 @@ export function registerPresentationTests(test) {
   test('Native icon index: every starter, canonical species/forms, physical page bounds and unique references',()=>{
     const compiler=process.platform==='win32' ? 'C:/devkitPro/msys2/usr/bin/g++.exe' : 'g++';
     const output=path.join(root,'build','pokemon-icon-index-test'+(process.platform==='win32'?'.exe':''));
-    execFileSync(compiler,['-std=c++17','-O2','-I'+path.join(root,'project/generated/include'),path.join(root,'test/native/pokemon_icon_index_harness.cpp'),'-o',output],{stdio:'pipe'});
+    execFileSync(compiler,['-std=c++17','-O2','-idirafter',path.join(root,'test/native/host_compat'),'-I'+path.join(root,'project/include'),'-I'+path.join(root,'project/generated/include'),path.join(root,'test/native/pokemon_icon_index_harness.cpp'),'-o',output],{stdio:'pipe'});
     execFileSync(output,[],{stdio:'pipe'});
   });
 

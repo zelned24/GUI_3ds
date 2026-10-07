@@ -5,6 +5,9 @@
 #include <citro2d.h>
 #include <cstdint>
 #include <string>
+#include <cstring>
+#include <cstdio>
+#include "content/PokerogueRuntimeContent.hpp"
 
 class Renderer2D;
 namespace Pokerogue3DS {
@@ -29,6 +32,26 @@ public:
                              float anchorX, float anchorY, float scale, uint64_t animationTimeMs);
     void drawPlayerBackAnchored(Renderer2D& renderer, bool female,
                                 float anchorX, float anchorY, float scale, uint64_t animationTimeMs);
+    // Resolve canonical identity before constructing any RomFS path.
+    static bool resolveAtlasKey(uint16_t dex,const char* formId,std::string& out) {
+        out.clear();
+        const auto* species=PokerogueContent::findSpeciesByDex(dex);
+        if(!species) return false;
+        const bool hasForm=formId && *formId;
+        const auto* form=hasForm ? PokerogueContent::findFormById(formId) : nullptr;
+        if(hasForm && (!form || std::strcmp(form->speciesId,species->id))) return false;
+        if(form) {
+            if(!form->atlasKey || !*form->atlasKey) return false;
+            out=form->atlasKey;
+        } else {
+            char digits[8];std::snprintf(digits,sizeof(digits),"%u",unsigned(dex));out=digits;
+        }
+        if(out.empty() || out.size()>63) {out.clear();return false;}
+        for(char c:out) if(!((c>='0' && c<='9') || (c>='a' && c<='z') || c=='-')) {
+            out.clear();return false;
+        }
+        return true;
+    }
     void invalidate(); // Retry after an installed content pack becomes active.
 
     // Proportional combat sprite scaling helper (2.0x for <=48px, 1.0x for >48px/boss, platform height clamping)

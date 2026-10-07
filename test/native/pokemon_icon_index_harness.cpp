@@ -1,9 +1,31 @@
 #include "content/PokemonIcons.hpp"
+#include "runtime/PokemonAtlasPresenter.hpp"
 #include "content/PokerogueRuntimeContent.hpp"
 #include <cassert>
 #include <initializer_list>
 using namespace Pokerogue3DS;
 int main() {
+    std::string key;
+    for(const auto& species:PokerogueContent::kSpecies) {
+        assert(PokemonAtlasPresenter::resolveAtlasKey(species.dex,nullptr,key));
+        assert(key==std::to_string(species.dex));
+        assert(PokemonAtlasPresenter::resolveAtlasKey(species.dex,"",key));
+        assert(key==std::to_string(species.dex));
+    }
+    for(const auto& form:PokerogueContent::kForms) {
+        uint16_t owner=0;
+        for(const auto& species:PokerogueContent::kSpecies)
+            if(!std::strcmp(species.id,form.speciesId)) owner=species.dex;
+        assert(owner);
+        assert(PokemonAtlasPresenter::resolveAtlasKey(owner,form.id,key));
+        assert(key==form.atlasKey);
+        uint16_t different=owner==1 ? 4 : 1;
+        assert(!PokemonAtlasPresenter::resolveAtlasKey(different,form.id,key) && key.empty());
+    }
+    key="old";assert(!PokemonAtlasPresenter::resolveAtlasKey(0,nullptr,key) && key.empty());
+    key="old";assert(!PokemonAtlasPresenter::resolveAtlasKey(65535,nullptr,key) && key.empty());
+    key="old";assert(!PokemonAtlasPresenter::resolveAtlasKey(1,"missing_form",key) && key.empty());
+
     const unsigned pages=sizeof(kPokemonIconPages)/sizeof(kPokemonIconPages[0]);
     const unsigned count=sizeof(kPokemonIcons)/sizeof(kPokemonIcons[0]);
     assert(pages>0 && count>0);

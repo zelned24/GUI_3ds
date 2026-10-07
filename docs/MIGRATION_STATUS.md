@@ -34,7 +34,7 @@ El avance se publica como trabajo en curso. Classic completo y la fidelidad visu
 4. Compilación directa `make -f Makefile.3ds 3ds`: ELF y 3DSX producidos con devkitARM. No equivale a validación en Old 3DS.
 5. `python scripts/verify_presentation_media.py`: archivos físicos y tablas de presentación PASS; no prueba fidelidad visual ni efectos de objetos.
 6. Regresiones de navegación, geometría, índice de iconos, guards de pausa/guardado y ownership QuickJS PASS. Los guards de main son comprobaciones estáticas, no interacción real en Azahar.
-7. Logs reproducibles de esta revisión: `build/sprite-layout-npm-test.log`, `build/sprite-layout-parity.log`, `build/review-native-test.log`, `build/sprite-layout-arm.log`, `build/review-media.log`. No se versionan binarios ni logs.
+7. Logs reproducibles de esta revisión: `build/atlas-identity-npm-test.log`, `build/atlas-identity-parity.log`, `build/review-native-test.log`, `build/atlas-identity-arm.log`, `build/review-media.log`. No se versionan binarios ni logs.
 
 ## Nitidez de presentación
 
@@ -56,7 +56,8 @@ El avance se publica como trabajo en curso. Classic completo y la fidelidad visu
 
 1. `drawAnchored` conserva escalas explícitas positivas, incluidas 1× y 2×. Cero solicita la adaptación automática existente; `main.cpp` utiliza esa ruta sin repetir una clasificación por wave.
 2. La clave de caché de entrenadores incluye tipo y variante femenina; cambiar de variante recarga el asset indexado correspondiente.
-3. Regresiones cubren selección de escala explícita/automática y el guard de identidad de caché. La adaptación automática de tamaños sigue siendo una política de presentación 3DS; no se declara equivalente a todo `Pokemon.getSpriteScale` upstream.
+3. El resolver de atlas comprueba especie y pertenencia de forma antes de construir rutas; no sustituye una forma inválida por el sprite base. Regresión sobre las 1084 especies y 609 formas canónicas, formas cruzadas, IDs inexistentes y ausencia explícita de forma. La resolución de clave no demuestra disponibilidad física de cada sprite.
+4. Regresiones cubren selección de escala explícita/automática y el guard de identidad de caché. La adaptación automática de tamaños sigue siendo una política de presentación 3DS; no se declara equivalente a todo `Pokemon.getSpriteScale` upstream.
 
 ## Selección de recompensas en ambas pantallas
 

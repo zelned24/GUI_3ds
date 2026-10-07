@@ -35,22 +35,7 @@ void PokemonAtlasPresenter::invalidate() {
 }
 
 bool PokemonAtlasPresenter::atlasKey(const ResolvedPokemon& pokemon, std::string& out) {
-    out.clear();
-    if (!pokemon.dex) return false;
-    const auto* form = pokemon.formId ? PokerogueContent::findFormById(pokemon.formId) : nullptr;
-    if (form) {
-        if (!form->atlasKey || !*form->atlasKey) return false;
-        out = form->atlasKey;
-    } else {
-        char digits[8];
-        std::snprintf(digits, sizeof(digits), "%u", static_cast<unsigned>(pokemon.dex));
-        out = digits;
-    }
-    if (out.empty() || out.size() > 63) return false;
-    for (char c : out) {
-        if (!((c >= '0' && c <= '9') || (c >= 'a' && c <= 'z') || c == '-')) return false;
-    }
-    return true;
+    return resolveAtlasKey(pokemon.dex,pokemon.formId,out);
 }
 
 bool PokemonAtlasPresenter::selectMetadata(Slot& slot, const std::string& key, bool back, uint64_t nowMs) {
