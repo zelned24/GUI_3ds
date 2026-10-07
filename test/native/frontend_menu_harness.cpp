@@ -1,9 +1,28 @@
 #include "runtime/FrontendMenuPresenter.hpp"
+#include "runtime/RewardMenuPresenter.hpp"
 #include <cassert>
 using namespace Pokerogue3DS;
 // Navigation-only test: no GPU loads or draws are performed.
 void C2D_SpriteSheetFree(C2D_SpriteSheet) {}
 int main() {
+    RewardMenuPresenter rewards;
+    assert(!rewards.partySelectionMode() && !rewards.moveSelectionMode());
+    rewards.setPartySelectionMode(true);
+    assert(rewards.partySelectionMode() && !rewards.moveSelectionMode());
+    rewards.setMoveSelectionMode(true);
+    assert(!rewards.partySelectionMode() && rewards.moveSelectionMode());
+    rewards.moveSelection().move(1,4);
+    assert(rewards.moveSelection().selected==1);
+    rewards.setPartySelectionMode(true);
+    assert(rewards.partySelectionMode() && !rewards.moveSelectionMode());
+    rewards.setMoveSelectionMode(true);
+    assert(rewards.moveSelection().selected==0);
+    rewards.resetSelection();
+    assert(!rewards.partySelectionMode() && !rewards.moveSelectionMode());
+    for(unsigned i=0;i<3;++i) {
+        const auto rect=rewards.rectangle(i);
+        assert(rewards.hitTest(rect.x,rect.y,3)==int(i));
+    }
     FrontendMenuPresenter fresh(false);
     assert(fresh.input(KEY_A)==FrontendCommand::None && fresh.page()==FrontendPage::Modes);
     assert(fresh.input(KEY_A)==FrontendCommand::NewClassic);

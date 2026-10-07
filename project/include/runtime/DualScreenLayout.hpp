@@ -44,6 +44,29 @@ inline constexpr int commandButtonAt(unsigned x, unsigned y) {
     return -1;
 }
 
+// Reward choices and recipient moves use the same rectangles for draw and input.
+inline constexpr TouchRect kRewardChoiceRects[]={{16,54,88,40},{116,54,88,40},{216,54,88,40}};
+inline constexpr TouchRect kRewardMoveRects[]={{16,44,288,32},{16,81,288,32},{16,118,288,32},{16,155,288,32}};
+inline constexpr int rewardChoiceAt(unsigned x,unsigned y,unsigned count) {
+    if(count>3) return -1;
+    for(unsigned i=0;i<count;++i) if(kRewardChoiceRects[i].contains(x,y)) return int(i);
+    return -1;
+}
+struct RewardMoveSelection {
+    unsigned selected=0;
+    void reset() {selected=0;}
+    bool move(int direction,unsigned count) {
+        if(!count || count>4 || !direction) return false;
+        selected=direction>0 ? (selected+1)%count : (selected+count-1)%count;
+        return true;
+    }
+    static int hit(unsigned x,unsigned y,unsigned count) {
+        if(count>4) return -1;
+        for(unsigned i=0;i<count;++i) if(kRewardMoveRects[i].contains(x,y)) return int(i);
+        return -1;
+    }
+};
+
 // Reward screen action buttons (Bottom screen 320x240)
 inline constexpr TouchRect kRewardClaimButtonRect{16, 170, 136, 54};
 inline constexpr TouchRect kRewardSkipButtonRect{168, 170, 136, 54};

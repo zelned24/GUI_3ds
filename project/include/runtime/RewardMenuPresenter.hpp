@@ -12,23 +12,24 @@ namespace Pokerogue3DS {
 
 class RewardMenuPresenter {
 public:
-    static TouchRect rectangle(unsigned index) { return {16, 32 + index * 46, 288, 40}; }
+    static TouchRect rectangle(unsigned index) { return index<3 ? kRewardChoiceRects[index] : TouchRect{}; }
     static int hitTest(unsigned x, unsigned y, unsigned count) {
-        if (count > 3) return -1;
-        for (unsigned i = 0; i < count; ++i) if (rectangle(i).contains(x, y)) return int(i);
-        return -1;
+        return rewardChoiceAt(x,y,count);
     }
 
     void clear() {
         m_icons.clear();
         m_partyPresenter.clear();
         m_cursor.clear();
-        m_partySelectMode = false;
+        resetSelection();
     }
 
     bool partySelectionMode() const { return m_partySelectMode; }
-    void setPartySelectionMode(bool mode) { m_partySelectMode = mode; }
-    void togglePartySelectionMode() { m_partySelectMode = !m_partySelectMode; }
+    void resetSelection() { m_partySelectMode=false; m_moveSelectMode=false; m_moveSelection.reset(); }
+    void setPartySelectionMode(bool mode) { m_partySelectMode=mode; if(mode) m_moveSelectMode=false; }
+    bool moveSelectionMode() const { return m_moveSelectMode; }
+    void setMoveSelectionMode(bool mode) { m_moveSelectMode=mode; if(mode) {m_partySelectMode=false;m_moveSelection.reset();} }
+    RewardMoveSelection& moveSelection() {return m_moveSelection;}
     PartyMenuPresenter& partyPresenter() { return m_partyPresenter; }
     const PartyMenuPresenter& partyPresenter() const { return m_partyPresenter; }
 
@@ -58,7 +59,7 @@ public:
             const float cx = startX + i * spacing;
             const bool isSelected = (i == game.selectedRewardChoice());
 
-            // Canonical rarity tints:
+            // Presentation accents by the imported rarity tier:
             // Common: Green (0xff50d250)
             // Great/Super: Blue-Orange (0xff3ca0f0)
             // Ultra: Pink/Magenta (0xfff06496)
@@ -103,20 +104,48 @@ public:
     void drawBottom(Renderer2D& renderer, const FirstRunRuntime& game, bool assigningParty = false) {
         renderer.clear(0xff241c2c);
 
+        if(m_moveSelectMode) {
+            renderer.drawWindow(16,6,288,30);
+            renderer.drawText("Elige el movimiento",28,11,0.38f,0xffffffff);
+            const auto& field=game.presentation();
+            if(m_partyPresenter.selected>=field.playerPartyCount) return;
+            const auto& actor=m_partyPresenter.selected==field.activePlayerPartyIndex ? field.player : field.playerParty[m_partyPresenter.selected];
+            for(unsigned i=0;i<actor.battleState.moveCount && i<4;++i) {
+                const auto& bounds=kRewardMoveRects[i];
+                renderer.drawWindow(bounds.x,bounds.y,bounds.width,bounds.height);
+                const auto& move=actor.battleState.moves[i];
+                const auto* definition=PokerogueContent::findMoveById(move.moveId);
+                renderer.drawTextFitted(definition ? definition->name : "Movimiento desconocido",44,bounds.y+6,0.34f,180,0xffffffff);
+                char pp[32];std::snprintf(pp,sizeof(pp),"PP %u/%u",unsigned(move.pp),unsigned(move.maxPp));
+                renderer.drawTextFitted(pp,234,bounds.y+6,0.28f,58,0xff80ffff);
+                if(i==m_moveSelection.selected) m_cursor.drawCursor(renderer,27,bounds.y+6,0.34f);
+            }
+            renderer.drawText("A: aplicar   B: volver al equipo",16,204,0.30f,0xff80ffff);
+            renderer.drawTextFitted(game.battleFeedback().c_str(),16,225,0.24f,288,0xffffffff);
+            return;
+        }
         if (assigningParty || m_partySelectMode) {
             // Party selection mode for applying held items, berries, or potions
             m_partyPresenter.draw(renderer, game);
             renderer.drawWindow(8.0f, 6.0f, 304.0f, 26.0f);
             renderer.drawText("Elige el Pokémon destinatario", 18.0f, 11.0f, 0.32f, 0xff70d8f0);
+            renderer.drawWindow(8,204,304,30);
+            renderer.drawTextFitted("A: elegir   B: volver a recompensas",18,207,0.30f,284,0xff80ffff);
+            renderer.drawTextFitted(game.battleFeedback().c_str(),18,225,0.24f,284,0xffffffff);
             return;
         }
 
-        // Clean instruction window (no duplicate reward cards on Bottom Screen)
-        renderer.drawWindow(16.0f, 20.0f, 288.0f, 130.0f);
-        renderer.drawText("Recompensas de Combate", 32.0f, 34.0f, 0.42f, 0xffffffff);
-        renderer.drawText("Navega entre recompensas con el D-Pad.", 32.0f, 66.0f, 0.32f, 0xffd0c0d8);
-        renderer.drawText("Pulsa A para seleccionar la recompensa.", 32.0f, 92.0f, 0.32f, 0xff70d8f0);
-        renderer.drawText("Pulsa B para omitir la recompensa.", 32.0f, 116.0f, 0.32f, 0xfff08080);
+        renderer.drawWindow(16,12,288,32);
+        renderer.drawText("Recompensas de combate",28,18,0.40f,0xffffffff);
+        for(unsigned i=0;i<game.rewardChoiceCount() && i<3;++i) {
+            const auto& bounds=kRewardChoiceRects[i];
+            renderer.drawWindow(bounds.x,bounds.y,bounds.width,bounds.height);
+            char label[24];std::snprintf(label,sizeof(label),"%u",i+1);
+            renderer.drawText(label,bounds.x+38,bounds.y+9,0.40f,0xffffffff);
+            if(i==game.selectedRewardChoice()) m_cursor.drawCursor(renderer,bounds.x+20,bounds.y+9,0.40f);
+        }
+        renderer.drawTextFitted("D-Pad o táctil: elegir recompensa",20,108,0.34f,280,0xffd0c0d8);
+        renderer.drawTextFitted("A: seleccionar   B: omitir",20,135,0.34f,280,0xff80ffff);
 
         // Clean action buttons on Bottom Screen
         // Left: A: Elegir (TouchRect{16, 170, 136, 54})
@@ -126,6 +155,7 @@ public:
         // Right: B: Omitir (TouchRect{168, 170, 136, 54})
         renderer.drawWindow(168.0f, 170.0f, 136.0f, 54.0f);
         renderer.drawText("B: Omitir", 198.0f, 188.0f, 0.42f, 0xfff08080);
+        renderer.drawTextFitted(game.battleFeedback().c_str(),16,226,0.24f,288,0xffffffff);
     }
 
     // Backwards compatibility draw helpers
@@ -141,6 +171,8 @@ private:
     PartyMenuPresenter m_partyPresenter;
     TitleMenuPresenter m_cursor;
     bool m_partySelectMode = false;
+    bool m_moveSelectMode = false;
+    RewardMoveSelection m_moveSelection{};
 };
 
 } // namespace Pokerogue3DS

@@ -307,9 +307,12 @@ int main() {
             rawPressed = 0; // Pause owns this input, including the resume button.
         }
         if (titleVisible) continue; // A menu action cannot also become a battle action.
+        if(!partyMenu.available(game)) partyMenu.open=false;
         const bool partyInput=!isPaused && (partyMenu.open || ((rawPressed & KEY_SELECT) && partyMenu.available(game)));
         const bool battleMenuInput=!isPaused && !partyInput && Pokerogue3DS::MoveMenuPresenter::visible(game) && !game.capturePartyChoicePending();
-        const uint32_t pressed=(isPaused || partyInput) ? 0 : (setupInput || battleMenuInput) ? rawPressed & (KEY_X | KEY_Y) : rawPressed;
+        const bool rewardInput=!isPaused && game.rewardsPending() && !game.moveLearningPending() && !game.evolutionPending();
+        const uint32_t pressed=(isPaused || partyInput) ? 0 : (setupInput || battleMenuInput) ? rawPressed & (KEY_X | KEY_Y)
+            : rewardInput ? rawPressed & (KEY_X | KEY_Y | KEY_L | KEY_R) : rawPressed;
         bool changed = false;
         if (!isPaused) {
         if(setupInput && setup.confirmStart) {
@@ -485,6 +488,78 @@ int main() {
                 if (changed) partyMenu.open=false;
             }
         }
+        // Native reward selection owns buttons and touch together, including when
+        // QuickJS is healthy. UI dispatches the existing transactional commands.
+        if(rewardInput && rawPressed) {
+            touchPosition touch{};
+            if(rawPressed & KEY_TOUCH) hidTouchRead(&touch);
+            const auto* choice=game.rewardChoice(game.selectedRewardChoice());
+            const char* itemId=choice && choice->poolEntry ? choice->poolEntry->itemId : nullptr;
+            const auto claimForMember=[&]() {
+                const auto member=static_cast<uint8_t>(rewardMenu.partyPresenter().selected);
+                const auto* restore=Pokerogue3DS::ppRestoreItemProfile(itemId);
+                if(Pokerogue3DS::ppUpItemProfile(itemId) || (restore && !restore->allMoves)) {
+                    rewardMenu.setMoveSelectionMode(true);
+                    return;
+                }
+                const bool applied=isRecoveryReward(itemId) ? game.claimRecoveryRewardChoice(member)
+                    : game.claimHeldRewardChoice(member);
+                if(applied) rewardMenu.resetSelection();
+            };
+            const auto chooseReward=[&]() {
+                if(isPartyTargetReward(itemId)) {
+                    rewardMenu.partyPresenter().selected=game.activePlayerPartyIndex();
+                    rewardMenu.setPartySelectionMode(true);
+                } else if(game.claimRewardChoice()) rewardMenu.resetSelection();
+            };
+            if(rewardMenu.moveSelectionMode()) {
+                const auto& field=game.presentation();
+                const unsigned member=rewardMenu.partyPresenter().selected;
+                if(member>=field.playerPartyCount) rewardMenu.resetSelection();
+                else {
+                    const auto& actor=member==field.activePlayerPartyIndex ? field.player : field.playerParty[member];
+                    auto& selection=rewardMenu.moveSelection();
+                    bool confirm=(rawPressed & KEY_A)!=0;
+                    if(rawPressed & KEY_B) {rewardMenu.setPartySelectionMode(true);confirm=false;}
+                    else if(rawPressed & (KEY_UP | KEY_CPAD_UP)) selection.move(-1,actor.battleState.moveCount);
+                    else if(rawPressed & (KEY_DOWN | KEY_CPAD_DOWN)) selection.move(1,actor.battleState.moveCount);
+                    else if(rawPressed & KEY_TOUCH) {
+                        const int slot=Pokerogue3DS::RewardMoveSelection::hit(touch.px,touch.py,actor.battleState.moveCount);
+                        if(slot>=0) {confirm=selection.selected==unsigned(slot);selection.selected=unsigned(slot);}
+                        else if(touch.py>=200) rewardMenu.setPartySelectionMode(true);
+                    }
+                    if(confirm && game.claimRecoveryRewardChoice(static_cast<uint8_t>(member),static_cast<uint8_t>(selection.selected))) rewardMenu.resetSelection();
+                }
+            } else if(rewardMenu.partySelectionMode()) {
+                if(rawPressed & KEY_B) rewardMenu.resetSelection();
+                else if(rawPressed & (KEY_UP | KEY_CPAD_UP)) rewardMenu.partyPresenter().move(-1,game.playerPartyCount());
+                else if(rawPressed & (KEY_DOWN | KEY_CPAD_DOWN)) rewardMenu.partyPresenter().move(1,game.playerPartyCount());
+                else if(rawPressed & KEY_A) claimForMember();
+                else if(rawPressed & KEY_TOUCH) {
+                    const int member=Pokerogue3DS::partyButtonAt(touch.px,touch.py,game.playerPartyCount());
+                    if(member>=0) {
+                        if(rewardMenu.partyPresenter().selected==unsigned(member)) claimForMember();
+                        else rewardMenu.partyPresenter().selected=unsigned(member);
+                    } else if(touch.py>=200) rewardMenu.resetSelection();
+                }
+            } else if(rawPressed & KEY_B) game.skipVictoryReward();
+            else if(rawPressed & (KEY_LEFT | KEY_CPAD_LEFT)) game.selectRewardChoice(-1);
+            else if(rawPressed & (KEY_RIGHT | KEY_CPAD_RIGHT)) game.selectRewardChoice(1);
+            else if(rawPressed & KEY_A) chooseReward();
+            else if(rawPressed & KEY_TOUCH) {
+                const int choiceIndex=Pokerogue3DS::RewardMenuPresenter::hitTest(touch.px,touch.py,game.rewardChoiceCount());
+                if(choiceIndex>=0) {
+                    if(game.selectedRewardChoice()==unsigned(choiceIndex)) chooseReward();
+                    else {
+                        const int delta=choiceIndex-int(game.selectedRewardChoice());
+                        for(int steps=delta<0 ? -delta : delta;steps>0;--steps) game.selectRewardChoice(delta<0 ? -1 : 1);
+                    }
+                } else if(Pokerogue3DS::kRewardClaimButtonRect.contains(touch.px,touch.py)) chooseReward();
+                else if(Pokerogue3DS::kRewardSkipButtonRect.contains(touch.px,touch.py)) game.skipVictoryReward();
+            }
+            changed=true;
+            rawPressed=0; // Reward input cannot also trigger a battle/touch command.
+        }
 #if defined(POKEROGUE_ENABLE_QUICKJS)
         const bool jsCommands = bridgeReady && bridge.healthy();
         if (jsCommands) changed = bridge.processPendingAction() || changed;
@@ -492,46 +567,7 @@ int main() {
 #endif
         if (pressed & KEY_SELECT)
             changed = game.togglePlayerEvolutionPause(game.activePlayerPartyIndex()) || changed;
-        if (game.rewardsPending()) {
-            const auto* currentChoice = game.rewardChoice(game.selectedRewardChoice());
-            const char* currentItemId = (currentChoice && currentChoice->poolEntry) ? currentChoice->poolEntry->itemId : nullptr;
-            if (rewardMenu.partySelectionMode()) {
-                if (pressed & (KEY_UP | KEY_CPAD_UP)) {
-                    rewardMenu.partyPresenter().move(-1, game.presentation().playerPartyCount);
-                    changed = true;
-                } else if (pressed & (KEY_DOWN | KEY_CPAD_DOWN)) {
-                    rewardMenu.partyPresenter().move(1, game.presentation().playerPartyCount);
-                    changed = true;
-                } else if (pressed & KEY_B) {
-                    rewardMenu.setPartySelectionMode(false);
-                    changed = true;
-                } else if (pressed & KEY_A) {
-                    const uint8_t targetMember = static_cast<uint8_t>(rewardMenu.partyPresenter().selected);
-                    if (isRecoveryReward(currentItemId)) {
-                        changed = game.claimRecoveryRewardChoice(targetMember);
-                    } else {
-                        changed = game.claimHeldRewardChoice(targetMember);
-                    }
-                    if (changed) rewardMenu.setPartySelectionMode(false);
-                }
-            } else {
-                if (pressed & (KEY_LEFT | KEY_CPAD_LEFT)) {
-                    changed = game.selectRewardChoice(-1);
-                } else if (pressed & (KEY_RIGHT | KEY_CPAD_RIGHT)) {
-                    changed = game.selectRewardChoice(1);
-                } else if (pressed & KEY_B) {
-                    changed = game.skipVictoryReward();
-                } else if (pressed & KEY_A) {
-                    if (isPartyTargetReward(currentItemId)) {
-                        rewardMenu.partyPresenter().selected = game.activePlayerPartyIndex();
-                        rewardMenu.setPartySelectionMode(true);
-                        changed = true;
-                    } else {
-                        changed = game.claimRewardChoice();
-                    }
-                }
-            }
-        } else {
+        if (!rewardInput && !game.rewardsPending()) {
             if (pressed & (KEY_LEFT | KEY_CPAD_LEFT)) changed = game.cycleStarter(-1);
             else if (pressed & (KEY_RIGHT | KEY_CPAD_RIGHT)) changed = game.cycleStarter(1);
             else if (pressed & (KEY_UP | KEY_CPAD_UP)) { game.selectBattleMove(-1); changed = true; }
@@ -541,7 +577,7 @@ int main() {
         }
 #if defined(POKEROGUE_ENABLE_QUICKJS)
         }
-        // Healthy JS owns menu/game controls; fallback native input runs only without it.
+        // Native presenters own battle/setup/rewards; JS retains the remaining queued controls.
         // JS queues storage/game commands outside rendering.
 #endif
         uint32_t hostStorageKeys = pressed & (KEY_X | KEY_Y | KEY_L | KEY_R);
@@ -631,57 +667,6 @@ int main() {
                 if (touch.px < 160) changed=game.advanceBattleTurn();
                 else changed=game.skipVictoryReward();
             }
-        } else if ((rawPressed & KEY_TOUCH) && game.rewardsPending()) {
-            touchPosition touch{};hidTouchRead(&touch);
-            const auto* currentChoice = game.rewardChoice(game.selectedRewardChoice());
-            const char* currentItemId = (currentChoice && currentChoice->poolEntry) ? currentChoice->poolEntry->itemId : nullptr;
-            if (rewardMenu.partySelectionMode()) {
-                const int member = Pokerogue3DS::partyButtonAt(touch.px, touch.py, game.presentation().playerPartyCount);
-                if (member >= 0) {
-                    if (rewardMenu.partyPresenter().selected == unsigned(member)) {
-                        if (isRecoveryReward(currentItemId)) {
-                            changed = game.claimRecoveryRewardChoice(static_cast<uint8_t>(member));
-                        } else {
-                            changed = game.claimHeldRewardChoice(static_cast<uint8_t>(member));
-                        }
-                        if (changed) rewardMenu.setPartySelectionMode(false);
-                    } else {
-                        rewardMenu.partyPresenter().selected = unsigned(member);
-                    }
-                } else if (touch.py >= 200) {
-                    rewardMenu.setPartySelectionMode(false);
-                }
-            } else {
-                if (Pokerogue3DS::kRewardClaimButtonRect.contains(touch.px, touch.py)) {
-                    if (isPartyTargetReward(currentItemId)) {
-                        rewardMenu.partyPresenter().selected = game.activePlayerPartyIndex();
-                        rewardMenu.setPartySelectionMode(true);
-                        changed = true;
-                    } else {
-                        changed = game.claimRewardChoice();
-                    }
-                } else if (Pokerogue3DS::kRewardSkipButtonRect.contains(touch.px, touch.py)) {
-                    changed = game.skipVictoryReward();
-                } else {
-                    const int choice = Pokerogue3DS::RewardMenuPresenter::hitTest(touch.px, touch.py, game.rewardChoiceCount());
-                    if (choice >= 0) {
-                        if (game.selectedRewardChoice() == unsigned(choice)) {
-                            if (isPartyTargetReward(currentItemId)) {
-                                rewardMenu.partyPresenter().selected = game.activePlayerPartyIndex();
-                                rewardMenu.setPartySelectionMode(true);
-                                changed = true;
-                            } else {
-                                changed = game.claimRewardChoice();
-                            }
-                        } else {
-                            const int delta = choice - int(game.selectedRewardChoice());
-                            for (int steps = delta < 0 ? -delta : delta; steps > 0; --steps)
-                                game.selectRewardChoice(delta < 0 ? -1 : 1);
-                            changed = true;
-                        }
-                    }
-                }
-            }
         } else if((rawPressed & KEY_TOUCH) && game.battleFinished()) {
             touchPosition touch{};hidTouchRead(&touch);
             if (touch.py >= 130 && touch.py < 170) {
@@ -697,7 +682,7 @@ int main() {
         }
         } // !isPaused
         if (changed) player.load(game.scene());
-        if (!game.rewardsPending() && rewardMenu.partySelectionMode()) rewardMenu.setPartySelectionMode(false);
+        if (!game.rewardsPending()) rewardMenu.resetSelection();
 #if defined(POKEROGUE_ENABLE_QUICKJS)
         if (!isPaused && bridgeReady && bridge.healthy()) {
             // Presentation reads live state; checkpoint construction belongs to storage commands.
@@ -755,7 +740,7 @@ int main() {
         renderer.beginTop();
         // Native presentation owns the top screen; do not draw diagnostic scene nodes.
         renderer.clear(0xff281f22);
-        if (romfsReady) {
+        if (romfsReady && !game.rewardsPending()) {
             const uint64_t animationTimeMs = frameAnimationTimeMs;
             if (game.presentationStage()==Pokerogue3DS::NativeSaveStage::RunSetup) {
                 setup.drawBackground(renderer);

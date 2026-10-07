@@ -12,6 +12,11 @@ export function registerPresentationTests(test) {
     if(converter.includes('CanonicalFallback')) throw new Error('Generic modifier families must not pretend to be specific item sprites');
     const intro=fs.readFileSync(path.join(root,'project/src/runtime/IntroCinematicPresenter.cpp'),'utf8');
     const expect=(value,message)=>{if(!value) throw new Error(message);};
+    expect(main.includes('rewardInput ? rawPressed & (KEY_X | KEY_Y | KEY_L | KEY_R)'),'Native rewards must own the pressed keys before QuickJS tick');
+    expect(main.includes('rawPressed=0; // Reward input'),'Reward touch must be consumed before battle/decision touch');
+    expect(main.includes('game.claimRecoveryRewardChoice(static_cast<uint8_t>(member),static_cast<uint8_t>(selection.selected))'),'PP reward must submit the selected recipient and move');
+    expect(main.includes('if(!partyMenu.available(game)) partyMenu.open=false;'),'Unavailable party menu must release focus for reward/decision selectors');
+    expect(!main.includes('rewardMenu.togglePartySelectionMode'),'Reward navigation has one native owner');
     expect(!main.includes('osGetTime()'),'New runs must use an explicit seed');
     expect(!main.includes('1.500'),'No fabricated money display');
     expect(main.includes('rawPressed &= ~KEY_START'),'Opening pause must consume START');
@@ -34,7 +39,7 @@ export function registerPresentationTests(test) {
   test('Native frontend: title, canonical modes, SD load, history and settings navigation',()=>{
     const compiler=process.platform==='win32' ? 'C:/devkitPro/msys2/usr/bin/g++.exe' : 'g++';
     const output=path.join(root,'build','frontend-menu-test'+(process.platform==='win32'?'.exe':''));
-    execFileSync(compiler,['-std=c++17','-O2','-I'+path.join(root,'test/native/host_compat'),'-I'+path.join(root,'project/include'),'-I'+path.join(root,'project/generated/include'),path.join(root,'test/native/frontend_menu_harness.cpp'),'-o',output],{stdio:'pipe'});
+    execFileSync(compiler,['-std=c++17','-O2','-idirafter',path.join(root,'test/native/host_compat'),'-I'+path.join(root,'project/include'),'-I'+path.join(root,'project/generated/include'),path.join(root,'test/native/frontend_menu_harness.cpp'),'-o',output],{stdio:'pipe'});
     execFileSync(output,[],{stdio:'pipe'});
   });
 

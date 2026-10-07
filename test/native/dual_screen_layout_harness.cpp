@@ -52,6 +52,32 @@ int main() {
     assert(targetButtonAt(UINT_MAX,UINT_MAX)==-1);
     assert(moveButtonAt(UINT_MAX,UINT_MAX)==-1);
     assert(moveButtonAt(320,240)==-1);
+    for(unsigned count=0;count<=4;++count) {
+        RewardMoveSelection selection;
+        assert(selection.selected==0);
+        if(count) {
+            assert(selection.move(-1,count) && selection.selected==count-1);
+            assert(selection.move(1,count) && selection.selected==0);
+        } else assert(!selection.move(1,count));
+        assert(!selection.move(0,count));
+        selection.reset();assert(selection.selected==0);
+        for(unsigned y=0;y<240;++y) for(unsigned x=0;x<320;++x) {
+            const int row=y>=44 && y<187 ? int((y-44)/37) : -1;
+            const int expected=x>=16 && x<304 && row>=0 && unsigned(row)<count && (y-44)%37<32 ? row : -1;
+            assert(RewardMoveSelection::hit(x,y,count)==expected);
+        }
+    }
+    assert(RewardMoveSelection::hit(UINT_MAX,UINT_MAX,4)==-1);
+    assert(RewardMoveSelection::hit(16,44,5)==-1);
+    for(unsigned count=0;count<=3;++count) {
+        for(unsigned y=0;y<240;++y) for(unsigned x=0;x<320;++x) {
+            const int col=x>=16 && x<304 ? int((x-16)/100) : -1;
+            const int expected=y>=54 && y<94 && col>=0 && unsigned(col)<count && (x-16)%100<88 ? col : -1;
+            assert(rewardChoiceAt(x,y,count)==expected);
+        }
+    }
+    assert(rewardChoiceAt(UINT_MAX,UINT_MAX,3)==-1);
+    assert(rewardChoiceAt(16,54,4)==-1);
     for (const auto& rect:kMoveButtonRects) {
         assert(rect.x+rect.width<=320 && rect.y+rect.height<=240);
     }

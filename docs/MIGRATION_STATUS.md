@@ -34,7 +34,7 @@ El avance se publica como trabajo en curso. Classic completo y la fidelidad visu
 4. Compilación directa `make -f Makefile.3ds 3ds`: ELF y 3DSX producidos con devkitARM. No equivale a validación en Old 3DS.
 5. `python scripts/verify_presentation_media.py`: archivos físicos y tablas de presentación PASS; no prueba fidelidad visual ni efectos de objetos.
 6. Regresiones de navegación, geometría, índice de iconos, guards de pausa/guardado y ownership QuickJS PASS. Los guards de main son comprobaciones estáticas, no interacción real en Azahar.
-7. Logs reproducibles de esta revisión: `build/replay-final-npm-test.log`, `build/replay-native-parity.log`, `build/review-native-test.log`, `build/replay-arm-build.log`, `build/review-media.log`. No se versionan binarios ni logs.
+7. Logs reproducibles de esta revisión: `build/reward-final-npm-test.log`, `build/reward-native-parity.log`, `build/review-native-test.log`, `build/reward-arm-build.log`, `build/review-media.log`. No se versionan binarios ni logs.
 
 ## Nitidez de presentación
 
@@ -52,10 +52,18 @@ El avance se publica como trabajo en curso. Classic completo y la fidelidad visu
 5. Los 18 fallos registrados en la revisión anterior ya no se reproducen. Esto no demuestra cobertura completa: trampas, callbacks de huida, persistencia del contador de intentos y segundo jugador activo siguen pendientes.
 6. TypeSafe instalado para Codex en `.agents/skills/typesafe-ai/` mediante npx. Se aplicó su instrucción de conservar reglas conocidas y ejecución en código; no se añadió un servicio de IA al runtime.
 
+## Selección de recompensas en ambas pantallas
+
+1. Citro2D y el input nativo comparten la selección: recompensa → miembro del equipo → movimiento, si el perfil importado de PP lo requiere. No se duplica el cursor oculto de QuickJS.
+2. Táctil y botones usan los mismos rectángulos visibles. Se eligen movimientos existentes del destinatario, con nombre y PP; los elixires para todos los movimientos no exigen un slot.
+3. Aplicación conserva los comandos transaccionales de recuperación/held del runtime. Un rechazo mantiene el selector y muestra su feedback; B vuelve al equipo o a las recompensas. El menú de cambio libera foco cuando ya no está disponible.
+4. Pruebas de navegación y geometría cubren 0–4 movimientos, 0–3 recompensas, límites y overflow; los guards de main comprueban ownership y envío de recipient/slot. No sustituyen interacción real en Azahar.
+5. No se dibuja el campo ni se cargan sprites de batalla detrás de la pantalla de recompensas. No se declara una mejora de FPS sin medirla.
+
 ## Pendiente
 
 1. Verificar Classic de principio a fin, todas las reglas/effects, cuatro actores en dobles y callbacks de habilidades/items.
-2. Cerrar ajustes, historial, selección de destinatario y movimiento de recompensas en la ruta QuickJS, idiomas y fidelidad de todos los submenús. La ruta nativa y la ruta QuickJS no están completamente alineadas.
+2. Cerrar ajustes, historial, idiomas y fidelidad de todos los submenús. La selección de recompensa/destinatario/movimiento ya usa un único estado nativo con QuickJS habilitado o deshabilitado; la revisión visual conjunta sigue pendiente.
 3. Actualización desde consola con catálogo cargable y firma; compatibilidad y export/import completos de estados pendientes.
 4. Audio, recursos residentes/VRAM, cargas de atlas y rendimiento en Old 3DS física.
 5. Una revisión visual conjunta en Azahar cuando el conjunto de menús esté listo; no se solicita captura por cada cambio.
