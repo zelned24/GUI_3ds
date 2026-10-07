@@ -1,6 +1,7 @@
 #include "storage/NativeRunSave.hpp"
 #include "storage/NativeStarterCandyStore.hpp"
 #include "storage/NativeProgressBundle.hpp"
+#include "storage/NativePresentationSettings.hpp"
 #include <cstdio>
 #include <cerrno>
 #include <sys/stat.h>
@@ -84,5 +85,13 @@ NativeSaveResult SdNativeStarterCandyStorage::readExport(char* output, size_t ca
 }
 NativeSaveResult SdNativeStarterCandyStorage::writeExport(const char* bytes, size_t length) {
     return writeFile(kExportPath, bytes, length, kStarterCandyProfileMaxBytes);
+}
+NativeSaveResult SdNativePresentationStorage::readSlot(unsigned slot,char* bytes,size_t capacity,size_t& size) {
+    if(slot>1) return NativeSaveResult::InvalidRecord;
+    return readFile(slot==0 ? "sdmc:/3ds/pokerogue/saves/ui0.p3prefs" : "sdmc:/3ds/pokerogue/saves/ui1.p3prefs",bytes,capacity,size);
+}
+NativeSaveResult SdNativePresentationStorage::writeSlot(unsigned slot,const char* bytes,size_t size) {
+    if(slot>1) return NativeSaveResult::InvalidRecord;
+    return writeFile(slot==0 ? "sdmc:/3ds/pokerogue/saves/ui0.p3prefs" : "sdmc:/3ds/pokerogue/saves/ui1.p3prefs",bytes,size,NativePresentationSettingsStore::kBytes);
 }
 } // namespace Pokerogue3DS

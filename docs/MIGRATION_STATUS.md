@@ -34,7 +34,7 @@ El avance se publica como trabajo en curso. Classic completo y la fidelidad visu
 4. Compilación directa `make -f Makefile.3ds 3ds`: ELF y 3DSX producidos con devkitARM. No equivale a validación en Old 3DS.
 5. `python scripts/verify_presentation_media.py`: archivos físicos y tablas de presentación PASS; no prueba fidelidad visual ni efectos de objetos.
 6. Regresiones de navegación, geometría, índice de iconos, guards de pausa/guardado y ownership QuickJS PASS. Los guards de main son comprobaciones estáticas, no interacción real en Azahar.
-7. Logs reproducibles de esta revisión: `build/window-style-npm-test.log`, `build/window-style-parity.log`, `build/review-native-test.log`, `build/window-style-arm.log`, `build/window-style-media.log`. No se versionan binarios ni logs.
+7. Logs reproducibles de esta revisión: `build/ui-settings-npm-test.log`, `build/ui-settings-parity.log`, `build/review-native-test.log`, `build/ui-settings-arm.log`, `build/window-style-media.log`. No se versionan binarios ni logs.
 
 ## Nitidez de presentación
 
@@ -62,7 +62,13 @@ El avance se publica como trabajo en curso. Classic completo y la fidelidad visu
 
 1. Se importan los cinco IDs de `UiWindowStyle` desde la revisión fijada (`src/enums/ui-window-style.ts`) y sus PNG 24×24 originales; el índice generado conserva ID/símbolo/ruta. El reporte `build/native-presentation/window-provenance.json` registra ambas revisiones y hashes.
 2. Ajustes → Pantalla → Ventana emite un comando; el renderer carga el siguiente marco y lo aplica a todas las ventanas nativas. Conserva el anterior ante fallos y evita liberar texturas durante un frame activo.
-3. El valor mostrado es el ID upstream activo. `settings-ui-items.ts` también muestra los IDs numéricos. La selección es de sesión: persistencia en SD y prueba visual conjunta siguen pendientes. No se cierra GUI-07.
+3. El valor mostrado es el ID upstream activo. `settings-ui-items.ts` también muestra los IDs numéricos. El marco se restaura al arrancar desde `ui0.p3prefs`/`ui1.p3prefs`; A o izquierda/derecha lo cambian. No se cierra GUI-07.
+
+## Persistencia de presentación
+
+1. `NativePresentationSettingsStore` reutiliza la interfaz de almacenamiento y SHA-256 existentes, con un envelope pequeño independiente del guardado de partida. Escribe el slot alterno y comprueba los bytes leídos; no serializa structs nativos ni modifica el catálogo.
+2. Un slot truncado/corrupto permite recuperar el otro y se informa al arrancar. Errores I/O, versiones futuras, generaciones contradictorias y agotamiento bloquean escritura; un fallo de guardado se muestra como cambio aplicado sin persistencia.
+3. La prueba C++ host cubre guardado/restauración, determinismo byte a byte, corrupción de cada byte, interrupción, verificación tras escritura, conflicto y versión futura. El build ARM conecta los archivos SD fijos. Reinicio y fallos reales de SD en Azahar/consola siguen pendientes.
 
 ## Texto de menús
 

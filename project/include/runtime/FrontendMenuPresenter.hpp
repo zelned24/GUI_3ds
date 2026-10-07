@@ -8,7 +8,7 @@
 #include <cstring>
 namespace Pokerogue3DS {
 enum class FrontendPage {Title,Modes,Load,History,Settings,SettingsGroup};
-enum class FrontendCommand {None,Continue,NewClassic,Load,DeleteSave,NextWindowStyle};
+enum class FrontendCommand {None,Continue,NewClassic,Load,DeleteSave,NextWindowStyle,PreviousWindowStyle};
 // Owns navigation and presentation only. Returned commands are handled by main.
 class FrontendMenuPresenter {
 public:
@@ -90,6 +90,10 @@ public:
                     return FrontendCommand::None;
                 }
             }
+        }
+        if(m_page==FrontendPage::SettingsGroup && m_group==1 && m_selected==1) {
+            if(keys & (KEY_DLEFT | KEY_CPAD_LEFT)) return FrontendCommand::PreviousWindowStyle;
+            if(keys & (KEY_DRIGHT | KEY_CPAD_RIGHT)) return FrontendCommand::NextWindowStyle;
         }
         const unsigned total=rowCount();
         bool activatedByTouch = false;

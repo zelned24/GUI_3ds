@@ -2,6 +2,7 @@
 #include "game/FirstRunRuntime.hpp"
 #include "gfx/renderer2d.hpp"
 #include "storage/NativeRunSave.hpp"
+#include "storage/NativePresentationSettings.hpp"
 #include "storage/NativeStarterCandyStore.hpp"
 #include "storage/NativeProgressStore.hpp"
 #include "content/PokerogueRuntimeContent.hpp"
@@ -154,6 +155,16 @@ int main() {
     static Pokerogue3DS::FrontendMenuPresenter frontend(loaded==Pokerogue3DS::NativeSaveResult::Ok);
     if(loaded!=Pokerogue3DS::NativeSaveResult::Ok && loaded!=Pokerogue3DS::NativeSaveResult::NotFound)
         frontend.feedback(Pokerogue3DS::nativeSaveResultName(loaded));
+    Pokerogue3DS::SdNativePresentationStorage uiStorage;
+    Pokerogue3DS::NativePresentationSettingsStore uiSettings(uiStorage);
+    Pokerogue3DS::NativePresentationSettings preferences;
+    bool recoveredPreferences=false;
+    const auto preferenceResult=uiSettings.load(preferences,&recoveredPreferences);
+    if(preferenceResult==Pokerogue3DS::NativeSaveResult::Ok) {
+        if(!renderer.setWindowStyle(preferences.windowStyle)) frontend.feedback("No se pudo cargar el marco guardado.");
+        else if(recoveredPreferences) frontend.feedback("Ajustes recuperados del respaldo SD.");
+    } else if(preferenceResult!=Pokerogue3DS::NativeSaveResult::NotFound)
+        frontend.feedback(Pokerogue3DS::nativeSaveResultName(preferenceResult));
     bool titleVisible = true;
     bool isPaused = false;
     const char* pauseFeedback = nullptr;
@@ -239,12 +250,18 @@ int main() {
                     frontend.feedback(Pokerogue3DS::nativeSaveResultName(result));
                 }
             }
-            else if(command==Pokerogue3DS::FrontendCommand::NextWindowStyle) {
+            else if(command==Pokerogue3DS::FrontendCommand::NextWindowStyle || command==Pokerogue3DS::FrontendCommand::PreviousWindowStyle) {
                 unsigned next=Pokerogue3DS::kWindowTextures[0].id;
                 for(std::size_t i=0;i<Pokerogue3DS::kWindowTextureCount;++i)
                     if(Pokerogue3DS::kWindowTextures[i].id==renderer.windowStyle())
-                        next=Pokerogue3DS::kWindowTextures[(i+1)%Pokerogue3DS::kWindowTextureCount].id;
-                frontend.feedback(renderer.setWindowStyle(next) ? nullptr : "No se pudo cargar el marco.");
+                        next=Pokerogue3DS::kWindowTextures[(i+Pokerogue3DS::kWindowTextureCount+
+                            (command==Pokerogue3DS::FrontendCommand::PreviousWindowStyle ? -1 : 1))%Pokerogue3DS::kWindowTextureCount].id;
+                if(!renderer.setWindowStyle(next)) frontend.feedback("No se pudo cargar el marco.");
+                else {
+                    const auto saved=uiSettings.save(next);
+                    frontend.feedback(saved==Pokerogue3DS::NativeSaveResult::Ok ? nullptr :
+                        "Marco aplicado; no se pudieron guardar los ajustes SD.");
+                }
             }
             else if(command==Pokerogue3DS::FrontendCommand::NewClassic) {
                 const uint16_t starterDex = game.run().starterDex ? game.run().starterDex : 1;
