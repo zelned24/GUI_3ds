@@ -37,15 +37,19 @@ Renderer2D::~Renderer2D() {
 
 bool Renderer2D::init(size_t maxObjects) {
     if (m_initialized) return true;
+    m_initError=nullptr;
 
     // 1. Initialize Citro3D and Citro2D
     if (!C3D_Init(C3D_DEFAULT_CMDBUF_SIZE)) {
+        m_initError="Citro3D initialization failed";
         return false;
     }
     if (!C2D_Init(maxObjects)) {
+        m_initError="Citro2D initialization failed";
         C3D_Fini();
         return false;
     }
+    m_initialized=true; // fini must release partial initialization after this point.
     C2D_Prepare();
 
     // 2. Create hardware render targets for Top (400x240) and Bottom (320x240)
@@ -53,25 +57,30 @@ bool Renderer2D::init(size_t maxObjects) {
     m_bottomTarget = C2D_CreateScreenTarget(GFX_BOTTOM, GFX_LEFT);
 
     if (!m_topTarget || !m_bottomTarget) {
+        m_initError="Dual-screen render target allocation failed";
         fini();
         return false;
     }
 
     // 3. Pre-allocate static text buffer to eliminate dynamic allocation per frame (Requirement 36)
     m_textBuf = C2D_TextBufNew(1024);
+    if(!m_textBuf) { m_initError="Text buffer allocation failed"; fini(); return false; }
 #if defined(__arm__) || defined(__3DS__) || defined(_3DS)
     // Physical font is produced from the pinned PokéRogue TTF by mkbcfnt.
     m_gameFont = C2D_FontLoad("romfs:/presentation/fonts/emerald.bcfnt");
-    if (m_gameFont) {
-        C2D_FontSetFilter(m_gameFont, GPU_NEAREST, GPU_NEAREST);
+    if(!m_gameFont) {
+        m_initError="Missing or invalid romfs:/presentation/fonts/emerald.bcfnt";
+        fini();return false;
     }
+    C2D_FontSetFilter(m_gameFont,GPU_NEAREST,GPU_NEAREST);
     m_window = C2D_SpriteSheetLoad(Pokerogue3DS::kWindowTexturePath);
-    if (m_window) {
-        const auto img = C2D_SpriteSheetGetImage(m_window, 0);
-        if (img.tex) {
-            C3D_TexSetFilter(img.tex, GPU_NEAREST, GPU_NEAREST);
-        }
+    if(!m_window) { m_initError="Missing or invalid default window texture"; fini();return false; }
+    const auto windowImage=C2D_SpriteSheetGetImage(m_window,0);
+    if(!windowImage.tex || !windowImage.subtex || windowImage.subtex->width!=24 || windowImage.subtex->height!=24) {
+        m_initError="Invalid default window texture dimensions";fini();return false;
     }
+    C3D_TexSetFilter(windowImage.tex,GPU_NEAREST,GPU_NEAREST);
+    m_windowStyle=Pokerogue3DS::kWindowTextures[0].id;
 #endif
 
 #if !defined(__wasm__)
@@ -310,7 +319,7 @@ void Renderer2D::drawText(const char* text, float x, float y, float size, uint32
     float scale=size;
 #if defined(__arm__) || defined(__3DS__) || defined(_3DS)
     // Existing UI scale was authored against the 32px system font.
-    // The pinned game font is rasterized at 16px by our asset pipeline.
+    // Custom-font compensation preserves existing authored UI sizes; line height uses font metrics.
     if (m_gameFont) scale*=2.0f;
 #endif
     C2D_DrawText(&value, C2D_WithColor, std::round(x), std::round(y), 0.5f, scale, scale, color);
@@ -351,7 +360,7 @@ float Renderer2D::drawTextFitted(const char* text,float x,float y,float size,flo
 
 float Renderer2D::textLineHeight(float size) const {
 #if defined(__arm__) || defined(__3DS__) || defined(_3DS)
-    const auto* info=C2D_FontGetInfo(m_gameFont);
+    const auto* info=m_gameFont ? C2D_FontGetInfo(m_gameFont) : nullptr;
     return info ? info->height*size*(m_gameFont ? 2.0f : 1.0f) : 0.0f;
 #else
     return 30.0f*size;

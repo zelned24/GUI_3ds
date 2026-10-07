@@ -91,6 +91,7 @@ public:
     C3D_RenderTarget* getBottomTarget() const { return m_bottomTarget; }
     C3D_RenderTarget* getCurrentTarget() const { return m_currentTarget; }
     bool isInitialized() const { return m_initialized; }
+    const char* initializationError() const { return m_initError; }
 
 private:
     C3D_RenderTarget* m_topTarget;
@@ -101,6 +102,7 @@ private:
     C2D_Font m_gameFont = nullptr;
     C2D_SpriteSheet m_window = nullptr;
 #endif
+    const char* m_initError=nullptr;
     unsigned m_windowStyle=1;
     bool m_initialized;
     bool m_frameActive;

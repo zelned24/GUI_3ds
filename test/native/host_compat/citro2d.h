@@ -76,8 +76,10 @@ void C2D_DrawImageAt(C2D_Image img, float x, float y, float z, const C2D_ImageTi
 void C2D_DrawImageAtRotated(C2D_Image img, float x, float y, float z, float rotation, const C2D_ImageTint* tint, float scaleX, float scaleY);
 void C2D_PlainImageTint(C2D_ImageTint* tint, u32 color, float blend);
 #define C2D_WithColor (1 << 0)
+#define C2D_WordWrap (1 << 4)
 C2D_TextBuf C2D_TextBufNew(size_t maxGlyphs);
 void C2D_TextBufDelete(C2D_TextBuf buf);
+void C2D_TextBufClear(C2D_TextBuf buf);
 void C2D_TextParse(C2D_Text* text, C2D_TextBuf buf, const char* str);
 void C2D_TextOptimize(const C2D_Text* text);
 void C2D_DrawText(const C2D_Text* text, u32 flags, float x, float y, float z, float scaleX, float scaleY, ...);
@@ -88,6 +90,7 @@ void C2D_SpriteSheetFree(C2D_SpriteSheet sheet);
 
 C2D_Font C2D_FontLoad(const char* filename);
 void C2D_FontFree(C2D_Font font);
+void C2D_FontSetFilter(C2D_Font font,GPU_TEXTURE_FILTER_PARAM mag,GPU_TEXTURE_FILTER_PARAM min);
 void C2D_TextFontParse(C2D_Text* text, C2D_Font font, C2D_TextBuf buf, const char* str);
 const C2D_FontInfo* C2D_FontGetInfo(C2D_Font font);
 void C2D_TextGetDimensions(const C2D_Text* text, float scaleX, float scaleY, float* outWidth, float* outHeight);

@@ -60,6 +60,13 @@ export function registerPresentationTests(test) {
     execFileSync(output,[],{stdio:'pipe'});
   });
 
+  test('Native renderer startup: required font/window, partial cleanup and retry',()=>{
+    const compiler=process.platform==='win32' ? 'C:/devkitPro/msys2/usr/bin/g++.exe' : 'g++';
+    const output=path.join(root,'build','renderer-init-test'+(process.platform==='win32'?'.exe':''));
+    execFileSync(compiler,['-std=c++17','-O2','-ffunction-sections','-fdata-sections','-Wl,--gc-sections','-D__wasm__','-D__3DS__','-idirafter',path.join(root,'test/native/host_compat'),'-I'+path.join(root,'project/include'),'-I'+path.join(root,'project/generated/include'),path.join(root,'test/native/renderer_init_harness.cpp'),path.join(root,'project/src/gfx/renderer2d.cpp'),'-o',output],{stdio:'pipe'});
+    execFileSync(output,[],{stdio:'pipe'});
+  });
+
   test('Native icon index: every starter, canonical species/forms, physical page bounds and unique references',()=>{
     const compiler=process.platform==='win32' ? 'C:/devkitPro/msys2/usr/bin/g++.exe' : 'g++';
     const output=path.join(root,'build','pokemon-icon-index-test'+(process.platform==='win32'?'.exe':''));

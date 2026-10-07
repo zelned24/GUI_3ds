@@ -349,6 +349,7 @@ Tests y compilación están autorizados. Solo se marcan como verificadas las pru
 | SAV-03 / TUR-05 | Parcial | f8ee639 | Codec v22 y capture/restore inspeccionados; regresiones sin ejecutar | Campo de cuatro actores, decisiones y fase final |
 | SAV-03 / HP-03 / HP-06 | Parcial | 7c64484 | Revisión estática de EXP parcial y derrota simultánea | Fases tras faint y ejecución de regresiones |
 | CAM-03 / HP-07 / TUR-05 | Parcial | ddcb4ff | Residual doble y dos colas de orden inspeccionados | Callbacks, faint/summon, segundo jugador y pruebas |
+| GUI-01 / GUI-14 | Parcial | Arranque del renderer | Harness C++ con siete fallos de inicialización, cleanup/retry y pipeline de fuente requerida; no hay sustitución silenciosa por font del sistema | Comparación de todas las pantallas con web en Azahar y Old 3DS física |
 | GUI-07 | Parcial | Cambio de marcos nativos | Cinco IDs/símbolos upstream y PNG convertidos; selector aplica/persiste marco y táctil con confirmación; diario v2 y migración v1 probados en host | Interacción SD real, otros ajustes, audio, idioma, exportación y OTA |
 | GUI-01–05, 08–09 | Parcial | 760b65b y corrección de carga | Navegación C++ host y guards de dispatch; build ARM. Continuar/Cargar releen SD y muestran errores específicos | Menús completos, comparación visual conjunta en Azahar, interacción SD y Old 3DS |
 | TUR-07 / FLU-09 | Parcial | b18388c | FirstRunRuntime: 50/50 PASS; huida conserva RNG/avance sin EXP y hay casos de wave 200 | Trampas, callbacks, cuatro actores y recorrido Classic completo en Azahar |

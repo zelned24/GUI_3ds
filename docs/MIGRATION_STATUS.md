@@ -28,13 +28,13 @@ El avance se publica como trabajo en curso. Classic completo y la fidelidad visu
 
 ## Evidencia ejecutada
 
-1. `npm test`: **34 passed, 0 failed**, 34 suites. La suite FirstRunRuntime contiene **50 passing, 0 failing, de 50**. No se desactivaron casos ni se debilitaron assertions.
+1. `npm test`: **35 passed, 0 failed**, 35 suites. La suite FirstRunRuntime contiene **50 passing, 0 failing, de 50**. No se desactivaron casos ni se debilitaron assertions.
 2. `npm run native-parity`: **126/126 PASS**. Compara el contrato C++ con JS; no prueba todo el upstream.
 3. `npm run native-test`: compilación PASS; el ejecutor informa explícitamente que no ejecutó hardware/emulador.
 4. Compilación directa `make -f Makefile.3ds 3ds`: ELF y 3DSX producidos con devkitARM. No equivale a validación en Old 3DS.
 5. `python scripts/verify_presentation_media.py`: archivos físicos y tablas de presentación PASS; no prueba fidelidad visual ni efectos de objetos.
 6. Regresiones de navegación, geometría, índice de iconos, guards de pausa/guardado y ownership QuickJS PASS. Los guards de main son comprobaciones estáticas, no interacción real en Azahar.
-7. Logs reproducibles de esta revisión: `build/touch-settings-npm-test.log`, `build/touch-settings-parity.log`, `build/review-native-test.log`, `build/touch-settings-arm.log`, `build/window-style-media.log`. No se versionan binarios ni logs.
+7. Logs reproducibles de esta revisión: `build/renderer-startup-npm-test.log`, `build/renderer-startup-parity.log`, `build/review-native-test.log`, `build/renderer-startup-arm.log`, `build/window-style-media.log`. No se versionan binarios ni logs.
 
 ## Nitidez de presentación
 
@@ -76,6 +76,12 @@ El avance se publica como trabajo en curso. Classic completo y la fidelidad visu
 2. El filtro se aplica antes de intro, título, submenús, pausa y comandos de juego/QuickJS; solo elimina KEY_TOUCH. La preferencia se guarda junto con el marco en el envelope v2; v1 conserva su marco y toma táctil activado como default upstream.
 3. Pruebas host cubren confirmación/cancelación, reactivación física, los 32 bits de entrada, persistencia on/off y migración v1. La pregunta usa C2D_WordWrap con escala legible, sin reducir todo el texto a una única línea diminuta. Comparación visual y acción real con SD/táctil en Azahar/consola siguen pendientes.
 
+## Arranque de la presentación
+
+1. La fuente PokéRogue convertida y el marco original son requeridos en 3DS. Si faltan o no cargan, el renderer falla explícitamente y muestra un diagnóstico en consola inferior; no continúa con la fuente del sistema ni una interfaz sin marcos.
+2. Se libera inicialización parcial ante fallos de targets, buffer, fuente o ventana; `fini` es idempotente y permite reintentar. La altura del cursor no consulta un font nulo; reiniciar el renderer restablece la identidad del marco cargado.
+3. El harness ejecuta el renderer C++ real con backend GPU simulado: siete fallos de arranque, limpieza/reintento, nearest, coordenadas enteras, wrapped/fitted text y bloqueo de cambio de textura durante un frame. No prueba lectura real de RomFS ni nitidez en pantalla.
+
 ## Texto de menús
 
 1. Título, modos, carga, confirmación de borrado, historial y ajustes usan anchos explícitos dentro de cada ventana. Ajustes reserva una columna para valores.
@@ -100,7 +106,7 @@ El avance se publica como trabajo en curso. Classic completo y la fidelidad visu
 ## Pendiente
 
 1. Verificar Classic de principio a fin, todas las reglas/effects, cuatro actores en dobles y callbacks de habilidades/items.
-2. Cerrar ajustes, historial, idiomas y fidelidad de todos los submenús. La selección de recompensa/destinatario/movimiento ya usa un único estado nativo con QuickJS habilitado o deshabilitado; la revisión visual conjunta sigue pendiente.
+2. Cerrar ajustes, historial, idiomas y fidelidad de todos los submenús. Historial upstream (`RunEntry`/`saveRunHistory`) conserva una sesión completa y hasta 25 entradas; necesita identidad persistente de run y captura terminal verificable para evitar duplicados al cargar finales. La selección de recompensa/destinatario/movimiento ya usa un único estado nativo con QuickJS habilitado o deshabilitado; la revisión visual conjunta sigue pendiente.
 3. Actualización desde consola con catálogo cargable y firma; compatibilidad y export/import completos de estados pendientes.
 4. Audio, recursos residentes/VRAM, cargas de atlas y rendimiento en Old 3DS física.
 5. Una revisión visual conjunta en Azahar cuando el conjunto de menús esté listo; no se solicita captura por cada cambio.

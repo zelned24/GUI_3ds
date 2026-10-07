@@ -20,6 +20,7 @@
 #include "game/PokerogueModifierReward.hpp"
 #include "content/IntroCinematicData.hpp"
 #include <3ds.h>
+#include <cstdio>
 #if defined(POKEROGUE_ENABLE_QUICKJS)
 #include "runtime/QuickJSBridge.hpp"
 #include <cstdio>
@@ -48,6 +49,12 @@ int main() {
     const bool romfsReady = R_SUCCEEDED(romfsInit());
     Renderer2D renderer;
     if (!renderer.init()) {
+        consoleInit(GFX_BOTTOM,nullptr);
+        std::printf("PokeRogue 3DS: renderer error\n\n%s\n\nA / B / START: exit\n",renderer.initializationError() ? renderer.initializationError() : "Unknown initialization failure");
+        while(aptMainLoop()) {
+            hidScanInput();if(hidKeysDown() & (KEY_A | KEY_B | KEY_START)) break;
+            gspWaitForVBlank();
+        }
         if (romfsReady) romfsExit();
         gfxExit();
         return 1;
