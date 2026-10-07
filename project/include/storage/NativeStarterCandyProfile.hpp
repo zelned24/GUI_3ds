@@ -16,6 +16,7 @@ struct NativeStarterCandyRecord {
     uint32_t friendship = 0; // Starter progress, separate from Pokemon friendship.
     bool caught = false; // Exact canonical species; separate from starter/root progress.
     uint8_t costReduction = 0; // Pinned starterData.valueReduction, maximum two.
+    bool passiveUnlocked = false;
     uint32_t natureAttr = 0; // Upstream bit n+1; zero means metadata unavailable.
     uint8_t dexIvs[6]{}; // Per-stat maxima, never actor IVs overwritten in place.
     uint8_t abilityAttr = 0; // Upstream AbilityAttr 1/2/4; zero is unavailable.
@@ -159,6 +160,30 @@ inline StarterCostPurchaseResult applyNativeStarterCostReduction(NativeStarterCa
     return StarterCostPurchaseResult::Applied;
 }
 
+enum class StarterPassivePurchaseResult : uint8_t {
+    Applied, InvalidRecord, MissingPrice, AlreadyUnlocked, InsufficientCandy
+};
+inline StarterPassivePurchaseResult applyNativeStarterPassiveUnlock(
+    NativeStarterCandyRecord& record, uint16_t price = 0) {
+    const auto* species = PokerogueContent::findSpeciesByDex(record.speciesDex);
+    if (!species || !species->starterEligible || species->starterCost < 1 ||
+        record.candyCount > PokerogueContent::kMaxStarterCandyCount)
+        return StarterPassivePurchaseResult::InvalidRecord;
+    if (record.passiveUnlocked) return StarterPassivePurchaseResult::AlreadyUnlocked;
+    uint16_t required = price;
+    if (!required) {
+        const PokerogueContent::StarterCandyPrice* candyPrice = nullptr;
+        for (const auto& row : PokerogueContent::kStarterCandyPrices)
+            if (row.cost == species->starterCost) { candyPrice = &row; break; }
+        if (!candyPrice) return StarterPassivePurchaseResult::MissingPrice;
+        required = candyPrice->passive;
+    }
+    if (record.candyCount < required) return StarterPassivePurchaseResult::InsufficientCandy;
+    record.candyCount -= required;
+    record.passiveUnlocked = true;
+    return StarterPassivePurchaseResult::Applied;
+}
+
 enum class NativeFriendshipApplyResult : uint8_t {
     Applied = 0, UnresolvedPolicy, RootMismatch, InvalidProgress
 };
@@ -235,7 +260,8 @@ inline uint64_t get64(const char* input) {
 inline NativeStarterCandyRecord record(const char* input, uint8_t v) {
     NativeStarterCandyRecord value{static_cast<uint16_t>(get(input, 2)), static_cast<uint16_t>(get(input + 2, 2)), get(input + 4, 4),
         v >= 2 && (static_cast<uint8_t>(input[8]) & 1) != 0,
-        static_cast<uint8_t>(v >= 3 ? (static_cast<uint8_t>(input[8]) >> 1) & 3 : 0)};
+        static_cast<uint8_t>(v >= 3 ? (static_cast<uint8_t>(input[8]) >> 1) & 3 : 0),
+        (v >= 8) && ((static_cast<uint8_t>(input[8]) & 8u) != 0)};
     if (v >= 4) {
         value.natureAttr = get(input + 9, 4);
         for (uint8_t i = 0; i < 6; ++i) value.dexIvs[i] = static_cast<uint8_t>(input[13 + i]);
@@ -266,6 +292,7 @@ inline bool valid(const NativeStarterCandyRecord& value, uint16_t previous, uint
     const auto* root = pokemonRootSpecies(value.speciesDex);
     return species && root && value.speciesDex > previous && value.candyCount <= candyLimit && value.costReduction <= 2 &&
         (!value.costReduction || (species->starterEligible && species->starterCost >= 1)) &&
+        (!value.passiveUnlocked || (value.caught && species->starterEligible && species->starterCost >= 1)) &&
         (root->dex == value.speciesDex || (!value.candyCount && !value.friendship));
 }
 }
@@ -296,7 +323,7 @@ inline NativeSaveResult encodeNativeStarterCandyProfile(const NativeStarterCandy
         StarterCandyProfileCodec::put(records[i].speciesDex, target, 2);
         StarterCandyProfileCodec::put(records[i].candyCount, target + 2, 2);
         StarterCandyProfileCodec::put(records[i].friendship, target + 4, 4);
-        target[8] = static_cast<char>((records[i].caught ? 1 : 0) | (records[i].costReduction << 1));
+        target[8] = static_cast<char>((records[i].caught ? 1 : 0) | (records[i].costReduction << 1) | (records[i].passiveUnlocked ? 8 : 0));
         StarterCandyProfileCodec::put(records[i].natureAttr, target + 9, 4);
         for (uint8_t iv = 0; iv < 6; ++iv) target[13 + iv] = static_cast<char>(records[i].dexIvs[iv]);
         target[19] = static_cast<char>(records[i].abilityAttr);
@@ -334,8 +361,13 @@ inline NativeSaveResult inspectNativeStarterCandyProfile(const char* input, size
     uint16_t previous = 0;
     for (size_t i = 0; i < entries; ++i) {
         const char* source = input + 80 + i * recordBytes;
-        if (!legacy && (reduced ? (static_cast<uint8_t>(source[8]) & ~7u) != 0 : static_cast<uint8_t>(source[8]) > 1)) return NativeSaveResult::InvalidRecord;
-        const auto value = StarterCandyProfileCodec::record(source, v);
+        if (!legacy) {
+            const uint8_t mask = (v >= 8) ? ~15u : (reduced ? ~7u : 0);
+            if (reduced ? (static_cast<uint8_t>(source[8]) & mask) != 0 : static_cast<uint8_t>(source[8]) > 1)
+                return NativeSaveResult::InvalidRecord;
+        }
+        auto value = StarterCandyProfileCodec::record(source, v);
+        value.passiveUnlocked = (v >= 8) && ((static_cast<uint8_t>(source[8]) & 8u) != 0);
         if (legacy) {
             const auto* root = pokemonRootSpecies(value.speciesDex);
             if (!root || root->dex != value.speciesDex) return NativeSaveResult::InvalidRecord;

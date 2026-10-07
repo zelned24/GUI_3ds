@@ -20,6 +20,118 @@ struct NativeHeldModifierInstance {
     bool transferable = true;
     char rawArguments[128]{}; // Opaque until the modifier-specific adapter resolves them.
 };
+// Team-wide modifiers preserve canonical identity and opaque constructor args.
+// Capacity follows the generated catalog; it is not a maximum item ID.
+struct NativePersistentModifierInstance {
+    size_t canonicalItemIndex = 0;
+    uint16_t stackCount = 0;
+    char rawArguments[128]{};
+};
+inline constexpr size_t kNativePersistentModifierCapacity = PokerogueContent::kItemCount;
+
+inline const PokerogueContent::Entity* persistentModifierDefinition(const NativePersistentModifierInstance& instance) {
+    return instance.canonicalItemIndex < PokerogueContent::kItemCount
+        ? &PokerogueContent::kItems[instance.canonicalItemIndex] : nullptr;
+}
+inline bool validatePersistentModifierInstance(const NativePersistentModifierInstance& instance) {
+    if (!persistentModifierDefinition(instance) || !instance.stackCount) return false;
+    for (char ch : instance.rawArguments) if (!ch) return true;
+    return false;
+}
+inline bool initializePersistentModifierInstance(const char* itemId, uint16_t stacks,
+    const char* rawArguments, NativePersistentModifierInstance& output) {
+    if (!itemId || !stacks) return false;
+    NativePersistentModifierInstance next{};
+    next.canonicalItemIndex = PokerogueContent::kItemCount;
+    for (size_t i = 0; i < PokerogueContent::kItemCount; ++i)
+        if (!std::strcmp(PokerogueContent::kItems[i].id, itemId)) { next.canonicalItemIndex = i; break; }
+    if (rawArguments) {
+        size_t i = 0;
+        for (; rawArguments[i]; ++i) {
+            if (i + 1 >= sizeof(next.rawArguments)) return false;
+            next.rawArguments[i] = rawArguments[i];
+        }
+    }
+    next.stackCount = stacks;
+    if (!validatePersistentModifierInstance(next)) return false;
+    output = next;
+    return true;
+}
+inline const PokerogueContent::ExpBoosterItemProfile* expBoosterItemProfile(const char* itemId) {
+    if (!itemId) return nullptr;
+    for (const auto& row : PokerogueContent::kExpBoosterItemProfiles)
+        if (!std::strcmp(row.itemId, itemId)) return &row;
+    return nullptr;
+}
+inline bool persistentExperienceInventorySupported(const NativePersistentModifierInstance* records, size_t count) {
+    if ((count && !records) || count > kNativePersistentModifierCapacity) return false;
+    for (size_t i = 0; i < count; ++i) {
+        const auto* definition = persistentModifierDefinition(records[i]);
+        const auto* profile = definition ? expBoosterItemProfile(definition->id) : nullptr;
+        if (!validatePersistentModifierInstance(records[i]) || !profile || records[i].rawArguments[0] ||
+            records[i].stackCount > profile->maxStacks) return false;
+        for (size_t prior = 0; prior < i; ++prior) {
+            const auto* previous = persistentModifierDefinition(records[prior]);
+            const auto* previousProfile = previous ? expBoosterItemProfile(previous->id) : nullptr;
+            if (!previousProfile || previousProfile->boostPercent == profile->boostPercent) return false;
+        }
+    }
+    return true;
+}
+inline bool addPersistentExperienceReward(NativePersistentModifierInstance* records, size_t capacity,
+    size_t& count, const char* itemId) {
+    if (!records || count > capacity || capacity > kNativePersistentModifierCapacity ||
+        !persistentExperienceInventorySupported(records, count)) return false;
+    const auto* profile = expBoosterItemProfile(itemId);
+    if (!profile) return false;
+    for (size_t i = 0; i < count; ++i) {
+        const auto* existing = expBoosterItemProfile(persistentModifierDefinition(records[i])->id);
+        // ExpBoosterModifier.match compares boost multipliers, not item names.
+        if (existing->boostPercent != profile->boostPercent) continue;
+        if (records[i].stackCount >= existing->maxStacks) return false;
+        ++records[i].stackCount;
+        return true;
+    }
+    NativePersistentModifierInstance instance{};
+    if (count == capacity || !initializePersistentModifierInstance(itemId, 1, nullptr, instance)) return false;
+    records[count++] = instance;
+    return true;
+}
+inline bool applyPersistentExperienceBoosters(uint32_t baseExperience,
+    const NativePersistentModifierInstance* records, size_t count, uint32_t& output) {
+    if (!persistentExperienceInventorySupported(records, count)) return false;
+    uint32_t next = baseExperience;
+    for (size_t i = 0; i < count; ++i) {
+        const auto* profile = expBoosterItemProfile(persistentModifierDefinition(records[i])->id);
+        // Preserve upstream list order and a separate floor after every apply.
+        const double boosted = next * (1.0 + records[i].stackCount * (profile->boostPercent * 0.01));
+        if (!(boosted >= 0.0 && boosted <= 4294967295.0)) return false;
+        next = static_cast<uint32_t>(boosted);
+    }
+    output = next;
+    return true;
+}
+
+struct ClassicFixedModifierRewards {
+    const char* itemIds[3]{};
+    uint8_t count = 0;
+};
+inline bool planClassicFixedModifierRewards(uint16_t wave, bool offsetGym, ClassicFixedModifierRewards& output) {
+    const auto& policy = PokerogueContent::kClassicFixedModifierRewardPolicy;
+    if (!wave || wave >= PokerogueContent::kClassicFinalWave || !policy.interval ||
+        wave % policy.interval || !policy.superPeriod || !policy.goldenInterval) return false;
+    ClassicFixedModifierRewards next{};
+    if (wave == policy.extraFirstWave) next.itemIds[next.count++] = policy.extraFirstItemId;
+    const auto superRemainder = offsetGym ? policy.offsetGymRemainder : policy.ordinaryRemainder;
+    if (wave <= policy.limitWave && (wave <= policy.regularUntilWave || wave % policy.superPeriod == superRemainder))
+        next.itemIds[next.count++] = wave % policy.superPeriod != superRemainder || wave > policy.maxSuperWave
+            ? policy.experienceItemId : policy.superExperienceItemId;
+    if (wave <= policy.maxGoldenWave && !(wave % policy.goldenInterval))
+        next.itemIds[next.count++] = policy.goldenItemId;
+    output = next;
+    return true;
+}
+
 enum class HeldModifierStorageResult : uint8_t { Ok, MissingItem, InvalidState, CapacityExceeded };
 
 inline const PokerogueContent::Entity* heldModifierDefinition(const NativeHeldModifierInstance& instance) {
@@ -54,6 +166,60 @@ inline HeldModifierStorageResult initializeHeldModifierInstance(const char* cano
         }
     }
     output = next;
+    return HeldModifierStorageResult::Ok;
+}
+
+inline const PokerogueContent::BerryTypeDefinition* canonicalBerryType(uint16_t id) {
+    for (const auto& row : PokerogueContent::kBerryTypes) if (row.id == id) return &row;
+    return nullptr;
+}
+inline bool heldBerryType(const NativeHeldModifierInstance& instance, uint16_t& output) {
+    const auto* definition = heldModifierDefinition(instance);
+    if (!validateHeldModifierInstance(instance) || !definition || std::strcmp(definition->id, "BERRY") ||
+        std::memcmp(instance.rawArguments, "berry:1:", 8) || instance.rawArguments[12]) return false;
+    uint16_t id = 0;
+    for (size_t i = 8; i < 12; ++i) {
+        const char ch = instance.rawArguments[i];
+        const int digit = ch >= '0' && ch <= '9' ? ch - '0' : ch >= 'A' && ch <= 'F' ? ch - 'A' + 10 : -1;
+        if (digit < 0) return false;
+        id = static_cast<uint16_t>((id << 4) | digit);
+    }
+    const auto* type = canonicalBerryType(id);
+    if (!type || !type->maxHeldStacks || instance.stackCount > type->maxHeldStacks) return false;
+    output = id;
+    return true;
+}
+inline HeldModifierStorageResult initializeHeldBerry(uint16_t berryType, uint32_t ownerPokemonId,
+    uint16_t stacks, bool transferable, NativeHeldModifierInstance& output) {
+    const auto* type = canonicalBerryType(berryType);
+    if (!type || !stacks || stacks > type->maxHeldStacks) return HeldModifierStorageResult::InvalidState;
+    char arguments[13] = "berry:1:0000";
+    const char* digits = "0123456789ABCDEF";
+    for (size_t i = 0; i < 4; ++i) arguments[8 + i] = digits[(berryType >> ((3 - i) * 4)) & 15];
+    return initializeHeldModifierInstance("BERRY", ownerPokemonId, stacks, transferable, arguments, output);
+}
+// BerryModifier.matchType compares variant; PokemonHeldItemModifier.match also
+// requires the same Pokemon owner. Other arguments remain explicit unsupported data.
+inline HeldModifierStorageResult addHeldBerry(NativeHeldModifierInstance* records,
+    size_t capacity, size_t& count, const NativeHeldModifierInstance& incoming) {
+    uint16_t incomingType = 0;
+    if ((!records && capacity) || count > capacity || !heldBerryType(incoming, incomingType))
+        return HeldModifierStorageResult::InvalidState;
+    for (size_t i = 0; i < count; ++i) {
+        if (!validateHeldModifierInstance(records[i])) return HeldModifierStorageResult::InvalidState;
+        const auto* definition = heldModifierDefinition(records[i]);
+        if (std::strcmp(definition->id, "BERRY")) continue;
+        uint16_t existingType = 0;
+        if (!heldBerryType(records[i], existingType)) return HeldModifierStorageResult::InvalidState;
+        if (records[i].ownerPokemonId != incoming.ownerPokemonId || existingType != incomingType) continue;
+        const auto* type = canonicalBerryType(existingType);
+        if (incoming.stackCount > type->maxHeldStacks - records[i].stackCount)
+            return HeldModifierStorageResult::CapacityExceeded;
+        records[i].stackCount += incoming.stackCount;
+        return HeldModifierStorageResult::Ok;
+    }
+    if (count == capacity) return HeldModifierStorageResult::CapacityExceeded;
+    records[count++] = incoming;
     return HeldModifierStorageResult::Ok;
 }
 
@@ -668,10 +834,34 @@ enum class ModifierRewardRollResult : uint8_t {
     Ok, InvalidLuck, MissingWeight, InvalidWeight, EmptyPool, MissingItem
 };
 
+inline bool generateCanonicalBerryType(PokerogueRngAdapter& rng, uint16_t& output) {
+    constexpr size_t count = sizeof(PokerogueContent::kBerryTypes) / sizeof(PokerogueContent::kBerryTypes[0]);
+    if (!PokerogueContent::kBerryGenerationRollRange ||
+        count <= PokerogueContent::kBerryGenerationExcludedCount ||
+        PokerogueContent::kBerryGenerationOffset + count - PokerogueContent::kBerryGenerationExcludedCount > count) return false;
+    auto draw = rng;
+    const auto roll = draw.randSeedInt(PokerogueContent::kBerryGenerationRollRange);
+    uint16_t id = 0; bool found = false;
+    for (const auto& threshold : PokerogueContent::kBerryGenerationThresholds) {
+        if (roll < threshold.upperExclusive) { id = threshold.berryId; found = true; break; }
+    }
+    if (!found) {
+        const size_t index = draw.randSeedInt(static_cast<int32_t>(count - PokerogueContent::kBerryGenerationExcludedCount)) +
+            PokerogueContent::kBerryGenerationOffset;
+        id = PokerogueContent::kBerryTypes[index].id;
+    }
+    bool valid = false;
+    for (const auto& row : PokerogueContent::kBerryTypes) valid |= row.id == id;
+    if (!valid) return false;
+    output = id; rng = draw;
+    return true;
+}
+
 struct ModifierRewardRoll {
     const PokerogueContent::ModifierPoolEntry* poolEntry = nullptr;
     uint8_t tier = 0;
     uint16_t upgrades = 0;
+    int16_t berryType = -1; // Generated upstream variant; -1 means non-Berry.
 };
 
 // The caller supplies evaluated, current-party weights. The pinned pool has
@@ -706,13 +896,42 @@ public:
         if (std::strcmp(entry.pool, "modifierPool") != 0) return false;
         if (!m_starter.maxHp || m_starter.hp > m_starter.maxHp ||
             m_starter.moveCount > 4) return false;
-        if (m_party && (std::strcmp(entry.tier, "GREAT") == 0 || std::strcmp(entry.tier, "COMMON") == 0)) {
+        if (m_party && (std::strcmp(entry.tier, "GREAT") == 0 || std::strcmp(entry.tier, "COMMON") == 0 ||
+                        std::strcmp(entry.tier, "ULTRA") == 0 || std::strcmp(entry.tier, "ROGUE") == 0 ||
+                        std::strcmp(entry.tier, "MASTER") == 0)) {
             bool handled = false;
             if (!partyRecoveryWeight(entry.itemId, weight, handled)) return false;
             if (handled) return true;
         }
         if (std::strcmp(entry.tier, "GREAT") == 0)
             return greatWeight(entry, weight);
+        if (std::strcmp(entry.tier, "ULTRA") == 0) {
+            if (std::strcmp(entry.itemId, "ULTRA_BALL") == 0) return ballWeight(2, 6, weight);
+            if (entry.staticWeight >= 0 && entry.staticWeight <= 0x7fffffff &&
+                entry.staticWeight == static_cast<int32_t>(static_cast<uint32_t>(entry.staticWeight))) {
+                weight = static_cast<uint32_t>(entry.staticWeight);
+                return true;
+            }
+            return false;
+        }
+        if (std::strcmp(entry.tier, "ROGUE") == 0) {
+            if (std::strcmp(entry.itemId, "ROGUE_BALL") == 0) return ballWeight(3, 6, weight);
+            if (entry.staticWeight >= 0 && entry.staticWeight <= 0x7fffffff &&
+                entry.staticWeight == static_cast<int32_t>(static_cast<uint32_t>(entry.staticWeight))) {
+                weight = static_cast<uint32_t>(entry.staticWeight);
+                return true;
+            }
+            return false;
+        }
+        if (std::strcmp(entry.tier, "MASTER") == 0) {
+            if (std::strcmp(entry.itemId, "MASTER_BALL") == 0) return ballWeight(4, 6, weight);
+            if (entry.staticWeight >= 0 && entry.staticWeight <= 0x7fffffff &&
+                entry.staticWeight == static_cast<int32_t>(static_cast<uint32_t>(entry.staticWeight))) {
+                weight = static_cast<uint32_t>(entry.staticWeight);
+                return true;
+            }
+            return false;
+        }
         if (std::strcmp(entry.tier, "COMMON") != 0) return false;
         if (std::strcmp(entry.itemId, "POKEBALL") == 0) return ballWeight(0, 6, weight);
         const bool living = m_starter.hp != 0;
@@ -761,7 +980,9 @@ private:
         const bool elixir = !std::strcmp(id, "ELIXIR") || !std::strcmp(id, "MAX_ELIXIR");
         const bool revive = !std::strcmp(id, "REVIVE"), maxRevive = !std::strcmp(id, "MAX_REVIVE");
         const bool ash = !std::strcmp(id, "SACRED_ASH");
-        handled = potion || super || hyper || max || ether || elixir || revive || maxRevive || ash;
+        const bool fullHeal = !std::strcmp(id, "FULL_HEAL");
+        const bool fullRestore = !std::strcmp(id, "FULL_RESTORE");
+        handled = potion || super || hyper || max || ether || elixir || revive || maxRevive || ash || fullHeal || fullRestore;
         if (!handled) return true;
         if (!m_partyCount || m_partyCount > 6) return false;
         uint8_t eligible = 0;
@@ -769,6 +990,14 @@ private:
             const auto* actor = m_party[member];
             if (!actor || !actor->maxHp || actor->hp > actor->maxHp || actor->moveCount > 4) return false;
             if (revive || maxRevive || ash) { eligible += !actor->hp; continue; }
+            if (fullHeal) {
+                eligible += actor->hp && (actor->status.present || actor->status.effect != PokemonStatusEffect::None);
+                continue;
+            }
+            if (fullRestore) {
+                eligible += actor->hp && (actor->hp < actor->maxHp || actor->status.present || actor->status.effect != PokemonStatusEffect::None);
+                continue;
+            }
             const uint32_t missing = actor->maxHp - actor->hp;
             bool lowPp = false;
             for (uint8_t slot = 0; slot < actor->moveCount; ++slot) {
@@ -784,7 +1013,7 @@ private:
         }
         if (ash) { weight = eligible >= (m_partyCount + 1) / 2 ? 1 : 0; return true; }
         const uint32_t capped = eligible > 3 ? 3 : eligible;
-        const uint32_t multiplier = revive ? 9 : maxRevive ? 3 :
+        const uint32_t multiplier = revive ? 9 : maxRevive ? 3 : fullHeal ? 3 : fullRestore ? 1 :
             (potion || hyper || !std::strcmp(id, "ETHER") || !std::strcmp(id, "ELIXIR")) ? 3 : 1;
         weight = capped * multiplier;
         return true;
@@ -806,13 +1035,17 @@ private:
         const bool living = m_starter.hp != 0;
         const uint32_t missingHp = m_starter.maxHp - m_starter.hp;
         if (std::strcmp(id, "GREAT_BALL") == 0) return ballWeight(1, 6, weight);
-        // The supported first battle has one living starter and no status,
-        // held items, fusion, lures, rerolls, or existing modifiers.
-        if (std::strcmp(id, "FULL_HEAL") == 0 ||
-            std::strcmp(id, "REVIVE") == 0 ||
+        if (std::strcmp(id, "FULL_HEAL") == 0) {
+            weight = living && (m_starter.status.present || m_starter.status.effect != PokemonStatusEffect::None) ? 3u : 0u;
+            return true;
+        }
+        if (std::strcmp(id, "FULL_RESTORE") == 0) {
+            weight = living && (missingHp > 0 || m_starter.status.present || m_starter.status.effect != PokemonStatusEffect::None) ? 1u : 0u;
+            return true;
+        }
+        if (std::strcmp(id, "REVIVE") == 0 ||
             std::strcmp(id, "MAX_REVIVE") == 0 ||
             std::strcmp(id, "SACRED_ASH") == 0 ||
-            std::strcmp(id, "FULL_RESTORE") == 0 ||
             std::strcmp(id, "DNA_SPLICERS") == 0) { weight = 0; return true; }
         if (std::strcmp(id, "HYPER_POTION") == 0) {
             weight = living && missingHp >= 100 &&
@@ -926,7 +1159,13 @@ inline ModifierRewardRollResult rollPlayerModifierReward(
         if (choice < threshold) {
             for (const auto& item : PokerogueContent::kItems) {
                 if (std::strcmp(item.id, entry.itemId) == 0) {
-                    output = {&entry, static_cast<uint8_t>(tier), upgrades};
+                    ModifierRewardRoll generated{&entry, static_cast<uint8_t>(tier), upgrades};
+                    if (!std::strcmp(entry.itemId, "BERRY")) {
+                        uint16_t berry = 0;
+                        if (!generateCanonicalBerryType(draw, berry)) return ModifierRewardRollResult::MissingItem;
+                        generated.berryType = static_cast<int16_t>(berry);
+                    }
+                    output = generated;
                     rng = draw;
                     return ModifierRewardRollResult::Ok;
                 }

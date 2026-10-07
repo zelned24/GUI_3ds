@@ -137,7 +137,7 @@ export function registerRngTests(test) {
       '-o', wasmPath,
       path.join(testDir, 'native', 'pokerogue_rng_harness.cpp'),
     ], { stdio: 'pipe' });
-    const { instance } = await WebAssembly.instantiate(fs.readFileSync(wasmPath));
+    const { instance } = await WebAssembly.instantiate(fs.readFileSync(wasmPath), { env: { pokerogueTestPow: Math.pow } });
     const api = instance.exports;
     const close = (actual, expected, label) => assert.ok(Math.abs(actual - expected) <= 1e-15, `${label}: ${actual} != ${expected}`);
     const readString = pointer => {

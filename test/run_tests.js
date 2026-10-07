@@ -1,3 +1,4 @@
+import { registerPresentationTests } from './presentation_tests.js';
 import { registerQuickJsStorageTests } from './quickjs_storage_tests.js';
 import { registerMigrationContentTests } from './migration_content_tests.js';
 import { registerRngTests } from './rng_tests.js';
@@ -8,6 +9,7 @@ registerMigrationContentTests(register);
 registerRngTests(register);
 registerBattleTests(register);
 registerQuickJsStorageTests(register);
+registerPresentationTests(register);
 let failed = 0;
 for (const { name, run } of cases) {
   try { await run(); console.log(`PASS ${name}`); }

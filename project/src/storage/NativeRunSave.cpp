@@ -4,6 +4,7 @@
 #include "game/PokemonExperience.hpp"
 #include "game/PokemonStarterMoveset.hpp"
 #include "game/PokemonBattleState.hpp"
+#include "game/PokemonBerryEffect.hpp"
 #include "game/PokerogueModifierReward.hpp"
 #include "game/PokerogueTurnOrder.hpp"
 #include "content/PokerogueRuntimeContent.hpp"
@@ -14,7 +15,7 @@
 namespace Pokerogue3DS {
 namespace {
 // Stable envelope marker; saveVersion carries the independently migrated
-// payload schema (currently version 22).
+// payload schema (currently version 26).
 constexpr char kMagic[] = "POKEROGUE-3DS-SAVE 1\n";
 constexpr size_t kDigestLineLength = 72;
 
@@ -272,17 +273,17 @@ bool restoreNativePokemonSave(const NativePokemonSave& saved, PokemonBattleState
     if (!pokemonStatusStateValid(saved.status) ||
         !validPokemonConfusionTag(saved.confusion)) return false;
     if (saved.nature > 24 || saved.gender > static_cast<uint8_t>(PokemonGender::Female) ||
-        !saved.moveCount || saved.moveCount > 4 || !saved.formId[0]) return false;
+        !saved.moveCount || saved.moveCount > 4) return false;
     bool terminated = false;
     for (size_t i = 0; i < sizeof(saved.formId); ++i)
         if (!saved.formId[i]) { terminated = true; break; }
     if (!terminated) return false;
-    const auto* form = PokerogueContent::findFormById(saved.formId);
+    const auto* form = saved.formId[0] ? PokerogueContent::findFormById(saved.formId) : nullptr;
     const auto* species = PokerogueContent::findSpeciesByDex(saved.speciesDex);
-    if (!form || !species) return false;
+    if (!species || (saved.formId[0] && !form) || (!saved.formId[0] && species->firstFormId[0])) return false;
     PokemonBattleInit input{};
     input.speciesDex = saved.speciesDex;
-    input.formId = form->id; // Catalog owns the pointer, never the save buffer.
+    input.formId = form ? form->id : nullptr; // Catalog owns explicit form pointers; null is the imported base.
     input.level = saved.level;
     input.pokemonId = saved.pokemonId;
     input.abilityId = saved.abilityId;
@@ -311,6 +312,9 @@ bool restoreNativePokemonSave(const NativePokemonSave& saved, PokemonBattleState
     // EXP may also exceed the next threshold while the wave cap is active.
     if (saved.friendshipResolved) actor.friendship = saved.friendship;
     actor.pauseEvolutions = saved.pauseEvolutions;
+    if (saved.berryCriticalBoostStages > 2) return false;
+    actor.berryCriticalBoostStages = saved.berryCriticalBoostStages;
+    actor.hasEatenBerry = saved.hasEatenBerry;
     actor.heldItemLostTags.unburden = saved.unburdenTag;
     actor.hp = saved.hp;
     actor.status = saved.status;
@@ -335,11 +339,11 @@ bool restoreNativePokemonSave(const NativePokemonSave& saved, PokemonBattleState
 bool captureNativePokemonSave(const PokemonBattleState& state, uint32_t experience,
     NativePokemonSave& output) {
     // Mid-turn snapshots require turnData serialization; checkpoints reset it.
-    if (!state.statsAreBaseFormulaOnly || !state.formId || state.turnDamageDealt ||
+    if (!state.statsAreBaseFormulaOnly || state.moveCount > 4 || state.turnDamageDealt ||
         state.pendingStatus != PokemonStatusEffect::None ||
         !validPokemonConfusionTag(state.confusion)) return false;
     NativePokemonSave saved{};
-    if (!copyText(saved.formId, sizeof(saved.formId), state.formId)) return false;
+    if (state.formId && !copyText(saved.formId, sizeof(saved.formId), state.formId)) return false;
     saved.speciesDex = state.speciesDex;
     saved.level = state.level;
     saved.pokemonId = state.pokemonId;
@@ -353,6 +357,8 @@ bool captureNativePokemonSave(const PokemonBattleState& state, uint32_t experien
     saved.friendship = state.friendship;
     saved.friendshipResolved = true;
     saved.unburdenTag = state.heldItemLostTags.unburden;
+    saved.berryCriticalBoostStages = state.berryCriticalBoostStages;
+    saved.hasEatenBerry = state.hasEatenBerry;
     saved.hp = state.hp;
     saved.status = state.status;
     saved.confusion = state.confusion;
@@ -360,7 +366,7 @@ bool captureNativePokemonSave(const PokemonBattleState& state, uint32_t experien
     saved.experience = experience;
     saved.moveCount = state.moveCount;
     for (uint8_t i = 0; i < 6; ++i) saved.ivs[i] = state.ivs[i];
-    for (uint8_t i = 0; i < 4; ++i) {
+    for (uint8_t i = 0; i < state.moveCount; ++i) {
         saved.moveIds[i] = state.moves[i].moveId;
         saved.pp[i] = state.moves[i].pp;
     }
@@ -378,12 +384,13 @@ bool restoreNativePokemonActorSave(const NativePokemonSave& saved,
         !saved.initialTeraTypeResolved || saved.initialTeraTypeIndex > 1) return false;
     PokemonBattleState restored{};
     if (!restoreNativePokemonSave(saved, restored)) return false;
-    const auto* form = PokerogueContent::findFormById(restored.formId);
+    const auto* form = restored.formId ? PokerogueContent::findFormById(restored.formId) : nullptr;
     const auto* species = PokerogueContent::findSpeciesByDex(restored.speciesDex);
-    if (!form || !species) return false;
-    const uint16_t first = form->ability1 ? form->ability1 : species->ability1;
-    const uint16_t second = form->ability2 ? form->ability2 : first;
-    const uint16_t hidden = form->abilityHidden ? form->abilityHidden : species->abilityHidden;
+    if (!species || (restored.formId && !form)) return false;
+    const uint16_t first = form && form->ability1 ? form->ability1 : species->ability1;
+    const uint16_t second = form ? (form->ability2 ? form->ability2 : first) :
+        (species->ability2 ? species->ability2 : first);
+    const uint16_t hidden = form && form->abilityHidden ? form->abilityHidden : species->abilityHidden;
     if (restored.abilityId != (saved.abilityIndex == 2 ? hidden : saved.abilityIndex == 1 ? second : first))
         return false;
     // Legacy actors lack the concrete type. Resolve their former ordinal once;
@@ -392,7 +399,7 @@ bool restoreNativePokemonActorSave(const NativePokemonSave& saved,
     for (char ch : saved.initialTeraType) if (!ch) { typeTerminated = true; break; }
     if (!typeTerminated) return false;
     const char* initialType = resolvePokemonTypeSymbol(saved.initialTeraType[0]
-        ? saved.initialTeraType : saved.initialTeraTypeIndex ? form->type2 : form->type1);
+        ? saved.initialTeraType : saved.initialTeraTypeIndex ? (form ? form->type2 : species->type2) : (form ? form->type1 : species->type1));
     if (!initialType) return false;
     PokemonActorIdentity actor{};
     actor.pokemonId = restored.pokemonId;
@@ -412,7 +419,8 @@ bool restoreNativePokemonActorSave(const NativePokemonSave& saved,
 bool captureNativePokemonActorSave(const PokemonBattleState& state,
     const PokemonActorIdentity& identity, uint32_t experience, NativePokemonSave& output) {
     if (identity.pokemonId != state.pokemonId || identity.gender != state.gender ||
-        identity.nature != state.nature || !equal(identity.formId, state.formId)) return false;
+        identity.nature != state.nature ||
+        (identity.formId != state.formId && !equal(identity.formId, state.formId))) return false;
     for (uint8_t i = 0; i < 6; ++i) if (identity.ivs[i] != state.ivs[i]) return false;
     NativePokemonSave saved{};
     if (!captureNativePokemonSave(state, experience, saved)) return false;
@@ -428,6 +436,43 @@ bool captureNativePokemonActorSave(const PokemonBattleState& state,
     if (!copyText(saved.initialTeraType, sizeof(saved.initialTeraType), restoredIdentity.initialTeraType)) return false;
     output = saved;
     return true;
+}
+
+NativeSaveResult encodeNativePersistentModifier(const NativePersistentModifierInstance& instance,
+    char* output, size_t capacity, size_t& written) {
+    written = 0;
+    if (!validatePersistentModifierInstance(instance)) return NativeSaveResult::InvalidRecord;
+    if (!output) return NativeSaveResult::InvalidFormat;
+    Writer writer{output, capacity};
+    writer.text("persistent=1\n");
+    writer.text(persistentModifierDefinition(instance)->id); writer.character('\n');
+    writer.hex(instance.stackCount, 4);
+    size_t count = 0;
+    while (instance.rawArguments[count]) ++count;
+    writer.hex(static_cast<uint32_t>(count), 2);
+    for (size_t i = 0; i < count; ++i) writer.hex(static_cast<unsigned char>(instance.rawArguments[i]), 2);
+    if (!writer.valid) return NativeSaveResult::TooLarge;
+    written = writer.position;
+    return NativeSaveResult::Ok;
+}
+NativeSaveResult decodeNativePersistentModifier(const char* bytes, size_t length,
+    NativePersistentModifierInstance& output) {
+    if (!bytes || !length || length > 1024) return NativeSaveResult::InvalidFormat;
+    Reader reader{bytes, length};
+    char id[128]{}, args[128]{};
+    uint32_t stacks = 0, count = 0;
+    if (!reader.literal("persistent=1\n") || !reader.line(id, sizeof(id)) ||
+        !reader.hex(4, stacks) || !reader.hex(2, count) || count >= sizeof(args)) return NativeSaveResult::InvalidFormat;
+    for (uint32_t i = 0; i < count; ++i) {
+        uint32_t value = 0;
+        if (!reader.hex(2, value) || !value) return NativeSaveResult::InvalidFormat;
+        args[i] = static_cast<char>(value);
+    }
+    if (reader.position != reader.end) return NativeSaveResult::InvalidFormat;
+    NativePersistentModifierInstance next{};
+    if (!initializePersistentModifierInstance(id, static_cast<uint16_t>(stacks), args, next)) return NativeSaveResult::InvalidRecord;
+    output = next;
+    return NativeSaveResult::Ok;
 }
 
 NativeSaveResult encodeNativeHeldModifier(const NativeHeldModifierInstance& instance,
@@ -477,6 +522,229 @@ NativeSaveResult decodeNativeHeldModifier(const char* bytes, size_t length,
     return NativeSaveResult::Ok;
 }
 
+static bool validNativeBerryHistoryStore(const NativeBerryHistoryStore& store) {
+    if (store.recordCount > kNativeBerryActorSlots || store.valueCount > kNativeBerryHistoryValues ||
+        (!store.resolved && (store.recordCount || store.valueCount))) return false;
+    size_t offset = 0;
+    for (size_t i = 0; i < store.recordCount; ++i) {
+        const auto& row = store.records[i];
+        if (row.actorSlot >= kNativeBerryActorSlots || row.offset != offset) return false;
+        for (size_t j = 0; j < i; ++j)
+            if (store.records[j].actorSlot == row.actorSlot || store.records[j].ownerPokemonId == row.ownerPokemonId)
+                return false;
+        for (const auto count : row.counts) {
+            if (count > store.valueCount - offset) return false;
+            offset += count;
+        }
+    }
+    if (offset != store.valueCount) return false;
+    for (size_t i = 0; i < offset; ++i) if (!canonicalBerryType(store.values[i])) return false;
+    return true;
+}
+
+bool nativeBerryHistoryView(NativeBerryHistoryStore& store, size_t index,
+    PokemonBerryHistoryView& output) {
+    if (!validNativeBerryHistoryStore(store) || index >= store.recordCount) return false;
+    const auto& row = store.records[index];
+    auto* start = store.values + row.offset;
+    output = {row.ownerPokemonId, {start, row.counts[0], row.counts[0]},
+        {start + row.counts[0], row.counts[1], row.counts[1]},
+        {start + row.counts[0] + row.counts[1], row.counts[2], row.counts[2]}};
+    return true;
+}
+
+NativeSaveResult captureNativeBerryHistory(NativeBerryHistoryStore& store,
+    uint8_t actorSlot, const PokemonBerryHistoryView& history) {
+    if (!store.resolved || !validNativeBerryHistoryStore(store) || actorSlot >= kNativeBerryActorSlots)
+        return NativeSaveResult::InvalidRecord;
+    const PokemonBerryHistoryList* lists[] = {&history.battleConsumed, &history.turnEaten, &history.lastTurnEaten};
+    size_t size = 0;
+    for (const auto* list : lists) {
+        if (list->count > kNativeBerryHistoryValues || !validPokemonBerryHistoryList(*list))
+            return list->count > kNativeBerryHistoryValues ? NativeSaveResult::TooLarge : NativeSaveResult::InvalidRecord;
+        size += list->count;
+    }
+    size_t replace = store.recordCount, removed = 0;
+    for (size_t i = 0; i < store.recordCount; ++i) {
+        if (store.records[i].actorSlot == actorSlot) {
+            if (store.records[i].ownerPokemonId != history.ownerPokemonId) return NativeSaveResult::InvalidRecord;
+            replace = i;
+            for (const auto count : store.records[i].counts) removed += count;
+        } else if (store.records[i].ownerPokemonId == history.ownerPokemonId) return NativeSaveResult::InvalidRecord;
+    }
+    if (size > kNativeBerryHistoryValues - (store.valueCount - removed) ||
+        (replace == store.recordCount && store.recordCount == kNativeBerryActorSlots)) return NativeSaveResult::TooLarge;
+    std::unique_ptr<NativeBerryHistoryStore> storage(new (std::nothrow) NativeBerryHistoryStore{});
+    if (!storage) return NativeSaveResult::MemoryUnavailable;
+    auto& next = *storage;
+    next.resolved = true;
+    const size_t records = store.recordCount + (replace == store.recordCount ? 1 : 0);
+    for (size_t i = 0; i < records; ++i) {
+        auto& row = next.records[i];
+        row.offset = next.valueCount;
+        if (i == replace) {
+            row.ownerPokemonId = history.ownerPokemonId;
+            row.actorSlot = actorSlot;
+            for (size_t j = 0; j < 3; ++j) {
+                row.counts[j] = static_cast<uint16_t>(lists[j]->count);
+                for (size_t k = 0; k < lists[j]->count; ++k) next.values[next.valueCount++] = lists[j]->values[k];
+            }
+        } else {
+            row = store.records[i];
+            row.offset = next.valueCount;
+            size_t count = 0;
+            for (const auto length : row.counts) count += length;
+            for (size_t j = 0; j < count; ++j) next.values[next.valueCount++] = store.values[store.records[i].offset + j];
+        }
+        ++next.recordCount;
+    }
+    store = next;
+    return NativeSaveResult::Ok;
+}
+
+// leaveField/resetSummonData clear turn/summon lists, not PokemonBattleData.
+// Repack the shared pool transactionally so remaining actors retain their order.
+NativeSaveResult resetNativeBerrySummonHistory(NativeBerryHistoryStore& store, uint32_t ownerPokemonId) {
+    if (!validNativeBerryHistoryStore(store)) return NativeSaveResult::InvalidRecord;
+    for (size_t i = 0; i < store.recordCount; ++i) {
+        if (store.records[i].ownerPokemonId != ownerPokemonId) continue;
+        PokemonBerryHistoryView view{};
+        if (!nativeBerryHistoryView(store, i, view)) return NativeSaveResult::InvalidRecord;
+        view.turnEaten.count = view.lastTurnEaten.count = 0;
+        return captureNativeBerryHistory(store, store.records[i].actorSlot, view);
+    }
+    // No recorded consumption is valid; legacy unknown state stays unknown.
+    return NativeSaveResult::Ok;
+}
+
+NativeSaveResult retainNativeBerryHistoryActors(NativeBerryHistoryStore& store, uint16_t actorSlotMask) {
+    if (!validNativeBerryHistoryStore(store) || (actorSlotMask & 0x8000)) return NativeSaveResult::InvalidRecord;
+    std::unique_ptr<NativeBerryHistoryStore> storage(new (std::nothrow) NativeBerryHistoryStore{});
+    if (!storage) return NativeSaveResult::MemoryUnavailable;
+    auto& next = *storage;
+    next.resolved = store.resolved;
+    for (size_t i = 0; i < store.recordCount; ++i) {
+        const auto& source = store.records[i];
+        if (!(actorSlotMask & (1U << source.actorSlot))) continue;
+        auto& row = next.records[next.recordCount++];
+        row = source;
+        row.offset = next.valueCount;
+        size_t size = 0;
+        for (const auto count : row.counts) size += count;
+        for (size_t j = 0; j < size; ++j) next.values[next.valueCount++] = store.values[source.offset + j];
+    }
+    store = next;
+    return NativeSaveResult::Ok;
+}
+
+NativeSaveResult removeNativeBerryHistoryOwner(NativeBerryHistoryStore& store, uint32_t ownerPokemonId) {
+    if (!validNativeBerryHistoryStore(store)) return NativeSaveResult::InvalidRecord;
+    for (size_t i = 0; i < store.recordCount; ++i)
+        if (store.records[i].ownerPokemonId == ownerPokemonId)
+            return retainNativeBerryHistoryActors(store, static_cast<uint16_t>(0x7FFFU & ~(1U << store.records[i].actorSlot)));
+    return NativeSaveResult::Ok;
+}
+
+NativeSaveResult transferNativeBerryHistoryToParty(NativeBerryHistoryStore& store,
+    uint32_t ownerPokemonId, uint8_t partySlot) {
+    if (!validNativeBerryHistoryStore(store) || partySlot >= 6) return NativeSaveResult::InvalidRecord;
+    std::unique_ptr<NativeBerryHistoryStore> storage(new (std::nothrow) NativeBerryHistoryStore(store));
+    if (!storage) return NativeSaveResult::MemoryUnavailable;
+    auto& next = *storage;
+    for (size_t i = 0; i < next.recordCount; ++i) {
+        const auto& row = next.records[i];
+        if (row.actorSlot == partySlot && row.ownerPokemonId != ownerPokemonId) {
+            const auto result = retainNativeBerryHistoryActors(next, static_cast<uint16_t>(0x7FFFU & ~(1U << partySlot)));
+            if (result != NativeSaveResult::Ok) return result;
+            break;
+        }
+    }
+    for (size_t i = 0; i < next.recordCount; ++i)
+        if (next.records[i].ownerPokemonId == ownerPokemonId) next.records[i].actorSlot = partySlot;
+    store = next;
+    return NativeSaveResult::Ok;
+}
+
+NativeSaveResult encodeNativeBerryHistory(const PokemonBerryHistoryView& history,
+    char* output, size_t capacity, size_t& written) {
+    written = 0;
+    const PokemonBerryHistoryList* lists[] = {&history.battleConsumed, &history.turnEaten, &history.lastTurnEaten};
+    for (const auto* list : lists)
+        if (list->count > UINT32_MAX || !validPokemonBerryHistoryList(*list)) return NativeSaveResult::InvalidRecord;
+    if (!output) return NativeSaveResult::InvalidFormat;
+    Writer writer{output, capacity};
+    writer.text("berryHistory="); writer.hex(1, 1);
+    writer.hex(history.ownerPokemonId, 8);
+    for (const auto* list : lists) {
+        writer.hex(static_cast<uint32_t>(list->count), 8);
+        for (size_t i = 0; i < list->count; ++i) writer.hex(list->values[i], 4);
+    }
+    if (!writer.valid) return NativeSaveResult::TooLarge;
+    written = writer.position;
+    return NativeSaveResult::Ok;
+}
+
+static NativeSaveResult decodeBerryHistoryChecked(const char* bytes, size_t length,
+    const PokemonBattleState* actor, PokemonBerryHistoryView& output) {
+    if (!bytes || !length) return NativeSaveResult::InvalidFormat;
+    PokemonBerryHistoryList* lists[] = {&output.battleConsumed, &output.turnEaten, &output.lastTurnEaten};
+    Reader reader{bytes, length};
+    uint32_t version = 0, owner = 0, counts[3]{}, value = 0;
+    if (!reader.literal("berryHistory=") || !reader.hex(1, version)) return NativeSaveResult::InvalidFormat;
+    if (version != 1) return NativeSaveResult::UnsupportedVersion;
+    if (!reader.hex(8, owner)) return NativeSaveResult::InvalidFormat;
+    // First pass checks every reference and byte before publishing any list.
+    for (size_t list = 0; list < 3; ++list) {
+        if (!reader.hex(8, counts[list]) || counts[list] > (reader.end - reader.position) / 5)
+            return NativeSaveResult::InvalidFormat;
+        if (counts[list] > lists[list]->capacity || (counts[list] && !lists[list]->values)) return NativeSaveResult::TooLarge;
+        for (uint32_t i = 0; i < counts[list]; ++i)
+            if (!reader.hex(4, value) || !canonicalBerryType(static_cast<uint16_t>(value))) return NativeSaveResult::InvalidRecord;
+    }
+    if (reader.position != reader.end) return NativeSaveResult::InvalidFormat;
+    if (actor && (owner != actor->pokemonId || output.ownerPokemonId != actor->pokemonId ||
+        (!actor->hasEatenBerry && (counts[0] || counts[1] || counts[2]))))
+        return NativeSaveResult::InvalidRecord;
+    // The second pass must not overwrite its input or another output list.
+    // Check written ranges, not unused capacity, without comparing unrelated pointers.
+    const auto overlaps = [](const void* a, size_t aBytes, const void* b, size_t bBytes) {
+        if (!aBytes || !bBytes) return false;
+        const uintptr_t first = reinterpret_cast<uintptr_t>(a);
+        const uintptr_t second = reinterpret_cast<uintptr_t>(b);
+        return first <= second ? second - first < aBytes : first - second < bBytes;
+    };
+    for (size_t i = 0; i < 3; ++i) {
+        if (counts[i] > static_cast<size_t>(-1) / sizeof(uint16_t)) return NativeSaveResult::TooLarge;
+        const size_t size = static_cast<size_t>(counts[i]) * sizeof(uint16_t);
+        if (overlaps(bytes, length, lists[i]->values, size)) return NativeSaveResult::InvalidRecord;
+        for (size_t j = 0; j < i; ++j)
+            if (overlaps(lists[i]->values, size, lists[j]->values,
+                static_cast<size_t>(counts[j]) * sizeof(uint16_t))) return NativeSaveResult::InvalidRecord;
+    }
+    Reader publish{bytes, length};
+    publish.literal("berryHistory="); publish.hex(1, version); publish.hex(8, owner);
+    for (size_t list = 0; list < 3; ++list) {
+        publish.hex(8, value);
+        for (uint32_t i = 0; i < counts[list]; ++i) {
+            publish.hex(4, value);
+            lists[list]->values[i] = static_cast<uint16_t>(value);
+        }
+        lists[list]->count = counts[list];
+    }
+    output.ownerPokemonId = owner;
+    return NativeSaveResult::Ok;
+}
+
+NativeSaveResult decodeNativeBerryHistory(const char* bytes, size_t length,
+    PokemonBerryHistoryView& output) {
+    return decodeBerryHistoryChecked(bytes, length, nullptr, output);
+}
+
+NativeSaveResult restoreNativePokemonBerryHistory(const char* bytes, size_t length,
+    const PokemonBattleState& actor, PokemonBerryHistoryView& output) {
+    return decodeBerryHistoryChecked(bytes, length, &actor, output);
+}
+
 NativeSaveResult encodeNativePokemonSave(const NativePokemonSave& saved, char* output,
     size_t capacity, size_t& written) {
     written = 0;
@@ -485,7 +753,7 @@ NativeSaveResult encodeNativePokemonSave(const NativePokemonSave& saved, char* o
     if (!restoreNativePokemonActorSave(saved, state, identity)) return NativeSaveResult::InvalidRecord;
     if (!output) return NativeSaveResult::InvalidFormat;
     Writer writer{output, capacity};
-    writer.text(saved.sturdyTag ? "pokemon=b\n" : saved.confusion.present ? "pokemon=a\n" : saved.status.present ? "pokemon=7\n" : "pokemon=6\n");
+    writer.text(saved.hasEatenBerry ? "pokemon=d\n" : saved.berryCriticalBoostStages ? "pokemon=c\n" : saved.sturdyTag ? "pokemon=b\n" : saved.confusion.present ? "pokemon=a\n" : saved.status.present ? "pokemon=7\n" : "pokemon=6\n");
     writer.hex(saved.speciesDex, 4);
     writer.text(saved.formId); writer.character('\n');
     writer.hex(saved.level, 4);
@@ -510,18 +778,19 @@ NativeSaveResult encodeNativePokemonSave(const NativePokemonSave& saved, char* o
     writer.hex(saved.unburdenTag ? 1 : 0, 2);
     writer.hex(state.friendship, 2);
     for (uint8_t slot = 0; slot < 4; ++slot) writer.hex(state.moves[slot].maxPp, 2);
-    if (saved.sturdyTag) {
+    const bool extended = saved.sturdyTag || saved.berryCriticalBoostStages || saved.hasEatenBerry;
+    if (extended) {
         writeStatus(writer, saved.status);
         writer.hex(saved.confusion.present ? 1 : 0, 1);
     }
     if (saved.confusion.present) {
-        if (!saved.sturdyTag) writeStatus(writer, saved.status);
+        if (!extended) writeStatus(writer, saved.status);
         writer.hex(saved.confusion.turns, 8);
         writer.hex(saved.confusion.sourceMoveResolved ? 1 : 0, 1);
         writer.hex(saved.confusion.sourceMoveId, 4);
         writer.hex(saved.confusion.sourcePokemonResolved ? 1 : 0, 1);
         writer.hex(saved.confusion.sourcePokemonId, 8);
-    } else if (saved.status.present && !saved.sturdyTag) {
+    } else if (saved.status.present && !extended) {
         writer.hex(static_cast<uint8_t>(saved.status.effect), 2);
         writer.hex((saved.status.hasSleepTurnsRemaining ? 1 : 0) |
             (saved.status.hasFreezeTurnsRemaining ? 2 : 0), 2);
@@ -529,7 +798,9 @@ NativeSaveResult encodeNativePokemonSave(const NativePokemonSave& saved, char* o
         writer.hex(saved.status.sleepTurnsRemaining, 8);
         writer.hex(saved.status.freezeTurnsRemaining, 8);
     }
-    if (saved.sturdyTag) writer.hex(1, 1);
+    if (extended) writer.hex(saved.sturdyTag ? 1 : 0, 1);
+    if (saved.berryCriticalBoostStages || saved.hasEatenBerry) writer.hex(saved.berryCriticalBoostStages, 1);
+    if (saved.hasEatenBerry) writer.hex(1, 1);
     if (!writer.valid) return NativeSaveResult::TooLarge;
     written = writer.position;
     return NativeSaveResult::Ok;
@@ -541,8 +812,10 @@ NativeSaveResult decodeNativePokemonSave(const char* bytes, size_t length,
     Reader reader{bytes, length};
     NativePokemonSave saved{};
     uint32_t value = 0;
-    if (!reader.literal("pokemon=") || !reader.hex(1, value) || (value < 1 || value > 11))
+    if (!reader.literal("pokemon=") || !reader.hex(1, value) || (value < 1 || value > 13))
         return NativeSaveResult::InvalidFormat;
+    const bool hasEatenBerry = value >= 13;
+    const bool hasBerryCriticalBoost = value >= 12;
     const bool hasSurvival = value >= 11;
     const bool hasConfusionActor = value >= 10;
     const bool hasConfusionSource = value >= 9;
@@ -642,6 +915,14 @@ NativeSaveResult decodeNativePokemonSave(const char* bytes, size_t length,
         if (!reader.hex(1, value) || value > 1) return NativeSaveResult::InvalidFormat;
         saved.sturdyTag = value != 0;
     }
+    if (hasBerryCriticalBoost) {
+        if (!reader.hex(1, value) || (!hasEatenBerry && value < 1) || value > 2) return NativeSaveResult::InvalidFormat;
+        saved.berryCriticalBoostStages = static_cast<uint8_t>(value);
+    }
+    if (hasEatenBerry) {
+        if (!reader.hex(1, value) || value != 1) return NativeSaveResult::InvalidFormat;
+        saved.hasEatenBerry = true;
+    }
     saved.actorIdentityResolved = saved.initialTeraTypeResolved = true;
     if (reader.position != reader.end) return NativeSaveResult::InvalidFormat;
     PokemonBattleState state{};
@@ -652,6 +933,45 @@ NativeSaveResult decodeNativePokemonSave(const char* bytes, size_t length,
 }
 
 NativeSaveResult validateNativeRunSave(const NativeRunSave& save, const char* expectedContentHash) {
+    if (!validNativeBerryHistoryStore(save.berryHistories) ||
+        (save.stage == NativeSaveStage::RunSetup && save.berryHistories.recordCount)) return NativeSaveResult::InvalidRecord;
+    for (size_t i = 0; i < save.berryHistories.recordCount; ++i) {
+        const auto& row = save.berryHistories.records[i];
+        bool eaten = false;
+        if (row.actorSlot < 6) {
+            if (row.actorSlot >= save.playerPartyCount || row.ownerPokemonId != save.playerParty[row.actorSlot].pokemonId)
+                return NativeSaveResult::InvalidRecord;
+            eaten = save.playerParty[row.actorSlot].hasEatenBerry;
+        } else if (row.actorSlot < 12) {
+            if (row.actorSlot - 6 >= save.trainerPartyCount) return NativeSaveResult::InvalidRecord;
+            eaten = save.trainerParty[row.actorSlot - 6].hasEatenBerry;
+        } else if (row.actorSlot == 12) {
+            if (save.playerPartyCount || save.stage == NativeSaveStage::RunSetup) return NativeSaveResult::InvalidRecord;
+            eaten = save.playerHasEatenBerry;
+        } else if (row.actorSlot == 13) {
+            if (save.trainerPartyCount || save.stage == NativeSaveStage::RunSetup) return NativeSaveResult::InvalidRecord;
+            eaten = save.enemyHasEatenBerry;
+        } else {
+            if (!save.doubleBattle || row.ownerPokemonId != save.secondEnemy.pokemonId) return NativeSaveResult::InvalidRecord;
+            eaten = save.secondEnemy.hasEatenBerry;
+        }
+        if (!eaten && (row.counts[0] || row.counts[1] || row.counts[2])) return NativeSaveResult::InvalidRecord;
+    }
+
+    if (save.berryHistories.resolved) {
+        const auto hasRecord = [&](uint8_t slot) {
+            for (size_t i = 0; i < save.berryHistories.recordCount; ++i)
+                if (save.berryHistories.records[i].actorSlot == slot) return true;
+            return false;
+        };
+        for (uint8_t i = 0; i < save.playerPartyCount && i < 6; ++i)
+            if (save.playerParty[i].hasEatenBerry && !hasRecord(i)) return NativeSaveResult::InvalidRecord;
+        for (uint8_t i = 0; i < save.trainerPartyCount && i < 6; ++i)
+            if (save.trainerParty[i].hasEatenBerry && !hasRecord(i + 6)) return NativeSaveResult::InvalidRecord;
+        if ((!save.playerPartyCount && save.playerHasEatenBerry && !hasRecord(12)) ||
+            (!save.trainerPartyCount && save.enemyHasEatenBerry && !hasRecord(13)) ||
+            (save.doubleBattle && save.secondEnemy.hasEatenBerry && !hasRecord(14))) return NativeSaveResult::InvalidRecord;
+    }
     if (save.doubleBattle) {
         PokemonBattleState restoredSecond{};
         PokemonActorIdentity identity{};
@@ -677,7 +997,7 @@ NativeSaveResult validateNativeRunSave(const NativeRunSave& save, const char* ex
             actor.confusion.turns || actor.confusion.sourceMoveId || actor.confusion.sourceMoveResolved ||
             actor.confusion.sourcePokemonId || actor.confusion.sourcePokemonResolved || actor.sturdyTag ||
             actor.ivsDerivedFromId || actor.pauseEvolutions || actor.maxPpResolved || actor.friendship ||
-            actor.friendshipResolved || actor.unburdenTag || actor.actorIdentityResolved || actor.abilityIndex ||
+            actor.friendshipResolved || actor.unburdenTag || actor.berryCriticalBoostStages || actor.hasEatenBerry || actor.actorIdentityResolved || actor.abilityIndex ||
             actor.initialTeraType[0] || actor.initialTeraTypeIndex || actor.initialTeraTypeResolved ||
             save.secondEnemyBoss.segmentCount || save.secondEnemyBoss.segmentIndex ||
             save.secondEnemyBoss.classicFinalBossFirstPhase || save.secondEnemyBoss.hasTrainer)
@@ -707,6 +1027,33 @@ NativeSaveResult validateNativeRunSave(const NativeRunSave& save, const char* ex
         if (i >= save.trainerPartyCount && save.trainerParty[i].sturdyTag) return NativeSaveResult::InvalidRecord;
     if (save.trainerPartyCount && save.activeTrainerMember < save.trainerPartyCount &&
         save.enemySturdyTag != save.trainerParty[save.activeTrainerMember].sturdyTag)
+        return NativeSaveResult::InvalidRecord;
+    if (save.stage == NativeSaveStage::RunSetup && (save.playerHasEatenBerry || save.enemyHasEatenBerry))
+        return NativeSaveResult::InvalidRecord;
+    for (uint8_t i = 0; i < 6; ++i)
+        if ((i >= save.trainerPartyCount || save.stage == NativeSaveStage::RunSetup) && save.trainerParty[i].hasEatenBerry)
+            return NativeSaveResult::InvalidRecord;
+    if (save.playerPartyCount && save.activePlayerMember < save.playerPartyCount &&
+        save.playerParty[save.activePlayerMember].hasEatenBerry != save.playerHasEatenBerry) return NativeSaveResult::InvalidRecord;
+    if (save.trainerPartyCount && save.activeTrainerMember < save.trainerPartyCount &&
+        save.trainerParty[save.activeTrainerMember].hasEatenBerry != save.enemyHasEatenBerry) return NativeSaveResult::InvalidRecord;
+    if (save.stage == NativeSaveStage::RunSetup) {
+        for (const auto& member : save.playerParty)
+            if (member.berryCriticalBoostStages || member.hasEatenBerry) return NativeSaveResult::InvalidRecord;
+        for (const auto& member : save.trainerParty)
+            if (member.berryCriticalBoostStages || member.hasEatenBerry) return NativeSaveResult::InvalidRecord;
+    }
+    if (save.playerBerryCriticalBoostStages > 2 || save.enemyBerryCriticalBoostStages > 2 ||
+        (save.stage == NativeSaveStage::RunSetup && (save.playerBerryCriticalBoostStages || save.enemyBerryCriticalBoostStages)))
+        return NativeSaveResult::InvalidRecord;
+    for (uint8_t i = 0; i < 6; ++i)
+        if (save.trainerParty[i].berryCriticalBoostStages > 2 ||
+            (i >= save.trainerPartyCount && save.trainerParty[i].berryCriticalBoostStages)) return NativeSaveResult::InvalidRecord;
+    if (save.playerPartyCount && save.activePlayerMember < save.playerPartyCount &&
+        save.playerParty[save.activePlayerMember].berryCriticalBoostStages != save.playerBerryCriticalBoostStages)
+        return NativeSaveResult::InvalidRecord;
+    if (save.trainerPartyCount && save.activeTrainerMember < save.trainerPartyCount &&
+        save.trainerParty[save.activeTrainerMember].berryCriticalBoostStages != save.enemyBerryCriticalBoostStages)
         return NativeSaveResult::InvalidRecord;
     const auto& boss = save.enemyBoss;
     if ((!boss.segmentCount && (boss.segmentIndex || boss.classicFinalBossFirstPhase || boss.hasTrainer)) ||
@@ -757,6 +1104,18 @@ NativeSaveResult validateNativeRunSave(const NativeRunSave& save, const char* ex
         if (save.pokeballCounts[ball] > 99 ||
             (save.stage == NativeSaveStage::RunSetup && save.pokeballCounts[ball] != (ball ? 0 : 5)))
             return NativeSaveResult::InvalidRecord;
+    if (save.persistentModifierCount > kNativePersistentModifierCapacity ||
+        (save.persistentModifierCount && (save.stage == NativeSaveStage::RunSetup || !save.playerPartyCount)))
+        return NativeSaveResult::InvalidRecord;
+    for (size_t i = 0; i < kNativePersistentModifierCapacity; ++i) {
+        const auto& record = save.persistentModifiers[i];
+        if (i < save.persistentModifierCount) {
+            if (!validatePersistentModifierInstance(record)) return NativeSaveResult::InvalidRecord;
+        } else {
+            if (record.canonicalItemIndex || record.stackCount) return NativeSaveResult::InvalidRecord;
+            for (char value : record.rawArguments) if (value) return NativeSaveResult::InvalidRecord;
+        }
+    }
     if (save.heldModifierCount > kNativeHeldModifierCapacity ||
         (save.heldModifierCount && (save.stage == NativeSaveStage::RunSetup || !save.playerPartyCount)))
         return NativeSaveResult::InvalidRecord;
@@ -838,8 +1197,10 @@ NativeSaveResult validateNativeRunSave(const NativeRunSave& save, const char* ex
         || !isId(save.modeId, sizeof(save.modeId))
         || !isId(save.biomeId, sizeof(save.biomeId)) || !equal(save.modeId, "classic"))
         return NativeSaveResult::InvalidRecord;
-    if (!PokerogueContent::findBiomeById(save.biomeId))
-        return NativeSaveResult::InvalidRecord;
+    bool registeredBiome = false;
+    for (const auto& biome : PokerogueContent::kBiomes)
+        if (equal(biome.id, save.biomeId)) { registeredBiome = true; break; }
+    if (!registeredBiome) return NativeSaveResult::InvalidRecord;
     const auto* starter = canonicalStarter(save.starterDex);
     if (!starter) return NativeSaveResult::InvalidRecord;
     uint32_t initialExperience = 0, currentThreshold = 0;
@@ -907,9 +1268,10 @@ NativeSaveResult validateNativeRunSave(const NativeRunSave& save, const char* ex
             }
         }
     }
-    if (save.trainerPartyCount &&
-        ((save.stage == NativeSaveStage::BattleWon || save.stage == NativeSaveStage::ExperienceGranted)
-            ? hasLivingTrainerMember : (save.stage == NativeSaveStage::BattleActive && !hasLivingTrainerMember)))
+    // Pinned VictoryPhase grants EXP per fainted actor. A living trainer reserve
+    // does not invalidate the checkpoint between victory and its replacement.
+    // Active-enemy HP and party aliases are validated separately above/below.
+    if (save.trainerPartyCount && save.stage == NativeSaveStage::BattleActive && !hasLivingTrainerMember)
         return NativeSaveResult::InvalidRecord;
     if (save.stage == NativeSaveStage::RunSetup) {
         if (save.wave != 1 || !equal(save.biomeId, PokerogueContent::kStartingBiomeId)
@@ -1113,6 +1475,39 @@ NativeSaveResult encodeNativeRunSave(const NativeRunSave& save, char* output, si
         writer.text("doubleExperience="); writer.hex(save.doubleExperienceGrantedMask, 1);
         writer.text("selectedTarget="); writer.hex(save.selectedTarget, 1);
     }
+    {
+        writer.text("persistentModifierCount="); writer.hex(save.persistentModifierCount, 4);
+        for (uint16_t i = 0; i < save.persistentModifierCount; ++i) {
+            char payload[1024]{}; size_t size = 0;
+            const auto status = encodeNativePersistentModifier(save.persistentModifiers[i], payload, sizeof(payload), size);
+            if (status != NativeSaveResult::Ok) return status;
+            writer.text("persistentModifierBytes="); writer.hex(static_cast<uint32_t>(size), 4);
+            for (size_t byte = 0; byte < size; ++byte) writer.character(payload[byte]);
+        }
+    }
+    writer.text("berryCriticalTags=");
+    writer.hex(save.playerBerryCriticalBoostStages, 1);
+    writer.hex(save.enemyBerryCriticalBoostStages, 1);
+    for (const auto& member : save.trainerParty) writer.hex(member.berryCriticalBoostStages, 1);
+    writer.text("berryEatenFlags=");
+    writer.hex(save.playerHasEatenBerry ? 1 : 0, 1);
+    writer.hex(save.enemyHasEatenBerry ? 1 : 0, 1);
+    for (const auto& member : save.trainerParty) writer.hex(member.hasEatenBerry ? 1 : 0, 1);
+    writer.text("berryHistories=");
+    writer.hex(save.berryHistories.resolved ? 1 : 0, 1);
+    writer.hex(save.berryHistories.recordCount, 2);
+    for (size_t i = 0; i < save.berryHistories.recordCount; ++i) {
+        const auto& row = save.berryHistories.records[i];
+        writer.hex(row.actorSlot, 2);
+        writer.hex(row.ownerPokemonId, 8);
+        size_t offset = row.offset;
+        for (const auto count : row.counts) {
+            writer.hex(count, 4);
+            for (size_t j = 0; j < count; ++j) writer.hex(save.berryHistories.values[offset++], 4);
+        }
+    }
+
+
     if (!writer.valid) return NativeSaveResult::TooLarge;
     char hash[65];
     IntegritySha256::hashHex(output, writer.position, hash);
@@ -1131,7 +1526,7 @@ NativeSaveResult decodeNativeRunSave(const char* bytes, size_t length, const cha
     auto status = inspectEnvelope(bytes, length, value, payloadStart);
     if (status != NativeSaveResult::Ok) return status;
     if (value.saveVersion > kNativeSaveVersion) return NativeSaveResult::UnsupportedVersion;
-    if (value.saveVersion != 1 && value.saveVersion != 2 && value.saveVersion != 3 && value.saveVersion != 4 && value.saveVersion != 5 && value.saveVersion != 6 && value.saveVersion != 7 && value.saveVersion != 8 && value.saveVersion != 9 && value.saveVersion != 10 && value.saveVersion != 11 && value.saveVersion != 12 && value.saveVersion != 13 && value.saveVersion != 14 && value.saveVersion != 15 && value.saveVersion != 16 && value.saveVersion != 17 && value.saveVersion != 18 && value.saveVersion != 19 && value.saveVersion != 20 && value.saveVersion != 21 &&
+    if (value.saveVersion != 1 && value.saveVersion != 2 && value.saveVersion != 3 && value.saveVersion != 4 && value.saveVersion != 5 && value.saveVersion != 6 && value.saveVersion != 7 && value.saveVersion != 8 && value.saveVersion != 9 && value.saveVersion != 10 && value.saveVersion != 11 && value.saveVersion != 12 && value.saveVersion != 13 && value.saveVersion != 14 && value.saveVersion != 15 && value.saveVersion != 16 && value.saveVersion != 17 && value.saveVersion != 18 && value.saveVersion != 19 && value.saveVersion != 20 && value.saveVersion != 21 && value.saveVersion != 22 && value.saveVersion != 23 && value.saveVersion != 24 && value.saveVersion != 25 &&
         value.saveVersion != kNativeSaveVersion) return NativeSaveResult::UnsupportedVersion;
     const bool legacySetup = value.saveVersion == 1 && value.runtimeVersion == 1;
     const bool legacyBattle = value.saveVersion == 2 && value.runtimeVersion == 2;
@@ -1154,9 +1549,13 @@ NativeSaveResult decodeNativeRunSave(const char* bytes, size_t length, const cha
     const bool legacySurvival = value.saveVersion == 19 && value.runtimeVersion == 19;
     const bool legacyBoss = value.saveVersion == 20 && value.runtimeVersion == 20;
     const bool legacyGlobalRng = value.saveVersion == 21 && value.runtimeVersion == 21;
+    const bool legacyDoubleField = value.saveVersion == 22 && value.runtimeVersion == 22;
+    const bool legacyPersistent = value.saveVersion == 23 && value.runtimeVersion == 23;
+    const bool legacyCriticalTags = value.saveVersion == 24 && value.runtimeVersion == 24;
+    const bool legacyBerryFlags = value.saveVersion == 25 && value.runtimeVersion == 25;
     const bool currentPayload = value.saveVersion == kNativeSaveVersion &&
         value.runtimeVersion == kNativeSaveRuntimeVersion;
-    if (!currentPayload && !legacySetup && !legacyBattle && !legacyProgress && !legacyTrainer && !legacySwitch && !legacyStages && !legacyWeather && !legacyRoom && !legacyInventory && !legacyParty && !legacyHeld && !legacyProfile && !legacyParticipants && !legacySetupParty && !legacyStatus && !legacyConfusion && !legacyConfusionSource && !legacyConfusionActor && !legacySurvival && !legacyBoss && !legacyGlobalRng)
+    if (!currentPayload && !legacySetup && !legacyBattle && !legacyProgress && !legacyTrainer && !legacySwitch && !legacyStages && !legacyWeather && !legacyRoom && !legacyInventory && !legacyParty && !legacyHeld && !legacyProfile && !legacyParticipants && !legacySetupParty && !legacyStatus && !legacyConfusion && !legacyConfusionSource && !legacyConfusionActor && !legacySurvival && !legacyBoss && !legacyGlobalRng && !legacyDoubleField && !legacyPersistent && !legacyCriticalTags && !legacyBerryFlags)
         return NativeSaveResult::IncompatibleRuntime;
     if (!isHash(expectedContentHash)) return NativeSaveResult::InvalidFormat;
     if (!equal(value.contentHash, expectedContentHash)) return NativeSaveResult::ContentMismatch;
@@ -1433,10 +1832,69 @@ NativeSaveResult decodeNativeRunSave(const char* bytes, size_t length, const cha
                 value.selectedTarget = static_cast<uint8_t>(parsed);
             }
         }
+        if (value.saveVersion >= 23 && reader.position < reader.end) {
+            if (!reader.literal("persistentModifierCount=") || !reader.hex(4, parsed) ||
+                (value.saveVersion == 23 && !parsed) || parsed > kNativePersistentModifierCapacity) return NativeSaveResult::InvalidFormat;
+            value.persistentModifierCount = static_cast<uint16_t>(parsed);
+            for (uint16_t i = 0; i < value.persistentModifierCount; ++i) {
+                if (!reader.literal("persistentModifierBytes=") || !reader.hex(4, parsed) ||
+                    !parsed || parsed > reader.end - reader.position) return NativeSaveResult::InvalidFormat;
+                const auto decoded = decodeNativePersistentModifier(reader.bytes + reader.position, parsed, value.persistentModifiers[i]);
+                if (decoded != NativeSaveResult::Ok) return decoded;
+                reader.position += parsed;
+            }
+        }
+        if (value.saveVersion >= 24) {
+            const auto readCritical = [&](uint8_t& stages) {
+                if (!reader.hex(1, parsed) || parsed > 2) return false;
+                stages = static_cast<uint8_t>(parsed);
+                return true;
+            };
+            if (!reader.literal("berryCriticalTags=") || !readCritical(value.playerBerryCriticalBoostStages) ||
+                !readCritical(value.enemyBerryCriticalBoostStages)) return NativeSaveResult::InvalidFormat;
+            for (auto& member : value.trainerParty)
+                if (!readCritical(member.berryCriticalBoostStages)) return NativeSaveResult::InvalidFormat;
+        }
+        if (value.saveVersion >= 25) {
+            const auto readEaten = [&](bool& eaten) {
+                if (!reader.hex(1, parsed) || parsed > 1) return false;
+                eaten = parsed != 0;
+                return true;
+            };
+            if (!reader.literal("berryEatenFlags=") || !readEaten(value.playerHasEatenBerry) ||
+                !readEaten(value.enemyHasEatenBerry)) return NativeSaveResult::InvalidFormat;
+            for (auto& member : value.trainerParty)
+                if (!readEaten(member.hasEatenBerry)) return NativeSaveResult::InvalidFormat;
+        }
+        if (value.saveVersion >= 26) {
+            auto& histories = value.berryHistories;
+            if (!reader.literal("berryHistories=") || !reader.hex(1, parsed) || parsed > 1)
+                return NativeSaveResult::InvalidFormat;
+            histories.resolved = parsed != 0;
+            if (!reader.hex(2, parsed) || parsed > kNativeBerryActorSlots) return NativeSaveResult::InvalidFormat;
+            histories.recordCount = static_cast<uint8_t>(parsed);
+            for (size_t i = 0; i < histories.recordCount; ++i) {
+                auto& row = histories.records[i];
+                if (!reader.hex(2, parsed) || parsed >= kNativeBerryActorSlots) return NativeSaveResult::InvalidFormat;
+                row.actorSlot = static_cast<uint8_t>(parsed);
+                if (!reader.hex(8, row.ownerPokemonId)) return NativeSaveResult::InvalidFormat;
+                row.offset = histories.valueCount;
+                for (auto& count : row.counts) {
+                    if (!reader.hex(4, parsed) || parsed > kNativeBerryHistoryValues - histories.valueCount)
+                        return NativeSaveResult::TooLarge;
+                    count = static_cast<uint16_t>(parsed);
+                    for (size_t j = 0; j < count; ++j) {
+                        if (!reader.hex(4, parsed) || !canonicalBerryType(static_cast<uint16_t>(parsed)))
+                            return NativeSaveResult::InvalidRecord;
+                        histories.values[histories.valueCount++] = static_cast<uint16_t>(parsed);
+                    }
+                }
+            }
+        }
         // All version-specific fields, including confusion source metadata, must be
         // consumed before checking for trailing or missing payload bytes.
         if (reader.position != reader.end) return NativeSaveResult::InvalidFormat;
-        if (legacyBattle || legacyProgress || legacyTrainer || legacySwitch || legacyStages || legacyWeather || legacyRoom || legacyInventory || legacyParty || legacyHeld || legacyProfile || legacyParticipants || legacySetupParty || legacyStatus || legacyConfusion || legacyConfusionSource || legacyConfusionActor || legacySurvival || legacyBoss || legacyGlobalRng) {
+        if (legacyBattle || legacyProgress || legacyTrainer || legacySwitch || legacyStages || legacyWeather || legacyRoom || legacyInventory || legacyParty || legacyHeld || legacyProfile || legacyParticipants || legacySetupParty || legacyStatus || legacyConfusion || legacyConfusionSource || legacyConfusionActor || legacySurvival || legacyBoss || legacyGlobalRng || legacyDoubleField || legacyPersistent || legacyCriticalTags || legacyBerryFlags) {
             value.saveVersion = kNativeSaveVersion;
             value.runtimeVersion = kNativeSaveRuntimeVersion;
         }
@@ -1534,6 +1992,14 @@ NativeSaveResult NativeRunSaveStore::exportLatest(const char* contentHash) {
     if (status != NativeSaveResult::Ok) return status;
     if (verifiedSize != size) return NativeSaveResult::IoError;
     for (size_t i = 0; i < size; ++i) if (verified[i] != bytes[i]) return NativeSaveResult::IoError;
+    return NativeSaveResult::Ok;
+}
+
+NativeSaveResult NativeRunSaveStore::deleteSave() {
+    auto r0 = m_storage.deleteSlot(0);
+    auto r1 = m_storage.deleteSlot(1);
+    if (r0 != NativeSaveResult::Ok && r0 != NativeSaveResult::NotFound) return r0;
+    if (r1 != NativeSaveResult::Ok && r1 != NativeSaveResult::NotFound) return r1;
     return NativeSaveResult::Ok;
 }
 

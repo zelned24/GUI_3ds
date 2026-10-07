@@ -10,6 +10,13 @@ typedef struct {
     void* data;
 } C3D_Tex;
 
+typedef enum {
+    GPU_NEAREST = 0x0,
+    GPU_LINEAR = 0x1,
+} GPU_TEXTURE_FILTER_PARAM;
+
+void C3D_TexSetFilter(C3D_Tex* tex, GPU_TEXTURE_FILTER_PARAM magFilter, GPU_TEXTURE_FILTER_PARAM minFilter);
+
 typedef struct {
     u16 width;
     u16 height;
@@ -39,6 +46,11 @@ typedef struct {
 typedef void* C2D_TextBuf;
 
 typedef void* C2D_SpriteSheet;
+typedef void* C2D_Font;
+
+typedef struct {
+    float height;
+} C2D_FontInfo;
 
 #ifdef __cplusplus
 extern "C" {
@@ -69,6 +81,12 @@ void C2D_DrawText(const C2D_Text* text, u32 flags, float x, float y, float z, fl
 C2D_SpriteSheet C2D_SpriteSheetLoad(const char* filename);
 C2D_Image C2D_SpriteSheetGetImage(C2D_SpriteSheet sheet, size_t index);
 void C2D_SpriteSheetFree(C2D_SpriteSheet sheet);
+
+C2D_Font C2D_FontLoad(const char* filename);
+void C2D_FontFree(C2D_Font font);
+void C2D_TextFontParse(C2D_Text* text, C2D_Font font, C2D_TextBuf buf, const char* str);
+const C2D_FontInfo* C2D_FontGetInfo(C2D_Font font);
+void C2D_TextGetDimensions(const C2D_Text* text, float scaleX, float scaleY, float* outWidth, float* outHeight);
 
 #ifdef __cplusplus
 }

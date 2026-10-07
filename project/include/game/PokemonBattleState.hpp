@@ -242,6 +242,8 @@ struct PokemonBattleState {
     PokemonConfusionTagState confusion{}; // Transient summon tag; actor v10 / run v18.
     PokemonSturdyTagState sturdy{}; // Transient summon tag; codec integration pending.
     HeldItemLostTagState heldItemLostTags{}; // Transient summon data.
+    uint8_t berryCriticalBoostStages = 0; // CRIT_BOOST summon tag: 0 absent, legacy 1, current 2.
+    bool hasEatenBerry = false; // PokemonBattleData: preserved across switches, reset on new arena transitions.
     uint32_t turnDamageDealt = 0; // PokemonTurnData.totalDamageDealt; reset after turn effects.
     PokemonGender gender = PokemonGender::Unspecified;
     uint16_t maxHp = 0;
@@ -255,6 +257,9 @@ struct PokemonBattleState {
     bool ivsWereDerivedFromPokemonId = false;
     bool pauseEvolutions = false; // Persistent Pokemon option, independent of battle stages.
     bool statsAreBaseFormulaOnly = true;
+    uint8_t escapeAttempts = 0; // Escape attempts during current battle.
+    uint16_t previousEncounterDex = 0; // Previous wave encounter dex for variety rerolls.
+    uint16_t speed() const { return stats[5]; }
 };
 
 struct PokemonStatusApplicationPolicy {
@@ -530,7 +535,8 @@ inline bool pokemonFixedDamageAbilityCapabilitiesResolved(uint16_t attackerAbili
 inline const PokerogueContent::MoveFixedDamageProfile* pokemonFixedDamageMoveProfile(uint16_t moveId) {
     const auto* move = PokerogueContent::findMoveById(moveId);
     if (!move || move->category == PokerogueContent::MoveStatus || move->attributeCount != 1 ||
-        move->upstreamFlags || !move->target || std::strcmp(move->target, "NEAR_OTHER")) return nullptr;
+        // STAB blacklist is moveset-generation metadata; fixed damage never applies STAB.
+        (move->upstreamFlags & ~PokerogueContent::MoveIsStabBlacklisted) || !move->target || std::strcmp(move->target, "NEAR_OTHER")) return nullptr;
     if (!PokerogueContent::moveHasAttribute(*move, "FixedDamageAttr") &&
         !PokerogueContent::moveHasAttribute(*move, "LevelDamageAttr") &&
         !PokerogueContent::moveHasAttribute(*move, "TargetHalfHpDamageAttr") &&
@@ -551,7 +557,8 @@ inline const PokerogueContent::MoveFixedDamageProfile* pokemonFixedDamageMovePro
 inline bool pokemonSurviveDamageMoveResolved(uint16_t moveId) {
     const auto* move = PokerogueContent::findMoveById(moveId);
     if (!move || move->category == PokerogueContent::MoveStatus || move->power <= 0 ||
-        move->attributeCount != 1 || move->upstreamFlags || !move->target ||
+        move->attributeCount != 1 ||
+        (move->upstreamFlags & ~PokerogueContent::MoveIsStabBlacklisted) || !move->target ||
         std::strcmp(move->target, "NEAR_OTHER") || !PokerogueContent::moveHasAttribute(*move, "SurviveDamageAttr"))
         return false;
     bool builders = false;
@@ -721,6 +728,16 @@ inline bool composePokemonStatusFlagAbilityHitPolicy(uint16_t moveId,
     }
     output = policy;
     return true;
+}
+
+inline bool pokemonStatusEffectMoveAttributesResolved(const PokerogueContent::Move& move) {
+    const PokerogueContent::StatusMoveFlagProfile* flags = nullptr;
+    for (const auto& row : PokerogueContent::kStatusMoveFlagProfiles)
+        if (row.moveId == move.id) { flags = &row; break; }
+    if (!flags || !flags->resolved || move.attributeCount != 1 + unsigned(flags->respectsAttackTypeImmunity) ||
+        !PokerogueContent::moveHasAttribute(move, "StatusEffectAttr")) return false;
+    return !flags->respectsAttackTypeImmunity ||
+        PokerogueContent::moveHasAttribute(move, "RespectAttackTypeImmunityAttr");
 }
 
 struct PokemonStatusEffectMovePolicy {
@@ -1246,6 +1263,7 @@ inline void resetPokemonStatStages(PokemonBattleState& state) {
 inline void resetPokemonSummonState(PokemonBattleState& state) {
     resetPokemonStatStages(state);
     state.heldItemLostTags = {};
+    state.berryCriticalBoostStages = 0;
     state.sturdy = {};
     state.confusion = {};
     state.turnDamageDealt = 0;
@@ -1660,5 +1678,33 @@ PokemonStatusResidualResult applyPokemonBossStatusResidual(PokemonBattleState& a
     PokemonBossState& boss, const PokemonStatusResidualPolicy& policy,
     PokerogueRngAdapter& globalRng, PokemonStatusResidualEvent& output,
     PokemonBossDamageEvent& bossOutput);
+
+// Pinned FlinchAttr is AddBattlerTagAttr(FLINCHED, false). Chance rolls
+// occur before tag admission; fixed [0,0] duration consumes no RNG.
+inline bool singleDamageFlinchMove(uint16_t id) {
+    bool declarationResolved = false;
+    for (const auto& row : PokerogueContent::kFlinchMoveProfiles)
+        if (row.moveId == id) declarationResolved = row.resolved;
+    if (!declarationResolved) return false;
+    const auto* move = PokerogueContent::findMoveById(id);
+    return move && move->category != PokerogueContent::MoveStatus && move->power > 0 &&
+        !move->upstreamFlags && move->target && !std::strcmp(move->target, "NEAR_OTHER") &&
+        move->attributeCount == 1 && PokerogueContent::moveHasAttribute(*move, "FlinchAttr");
+}
+inline const PokerogueContent::FlinchAbilityProfile* pokemonFlinchAbilityProfile(uint16_t abilityId) {
+    for (const auto& row : PokerogueContent::kFlinchAbilityProfiles)
+        if (row.abilityId == abilityId) return &row;
+    return nullptr;
+}
+inline bool resolvedPokemonFlinchCallbacks(uint16_t abilityId) {
+    const auto* row = pokemonFlinchAbilityProfile(abilityId);
+    return row && row->callbacksResolved;
+}
+inline bool neutralPokemonFlinchCallbacks(uint16_t abilityId) {
+    const auto* row = pokemonFlinchAbilityProfile(abilityId);
+    return row && row->callbacksResolved && !row->blocksFlinch && !row->reactionStatMask;
+}
+bool applyPokemonMoveFlinch(int16_t chance, bool callbacksResolved,
+    bool recipientAlive, bool& flinched, PokerogueRngAdapter& rng, bool immune = false);
 
 } // namespace Pokerogue3DS

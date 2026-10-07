@@ -19,21 +19,21 @@ Estos son criterios de cierre, no cantidades de ataques o habilidades pendientes
 | Área | Criterios abiertos |
 |---|---:|
 | Contenido canónico y catálogo | 6 |
-| Inicio, modos y progresión | 10 |
-| Turnos y comandos | 8 |
+| Inicio, modos y progresión | 9 |
+| Turnos y comandos | 7 |
 | Movimientos y cálculo de daño | 13 |
 | Habilidades y pasivas | 10 |
 | HP, PP, EXP y estados | 8 |
 | Campo, clima y transformaciones | 6 |
 | Entrenadores e IA | 6 |
 | Captura, items, recompensas y perfil | 8 |
-| Interfaz del juego en dos pantallas | 12 |
+| Interfaz del juego en dos pantallas | 5 |
 | Assets, animación y audio | 8 |
 | Guardado, continuar y exportación | 8 |
 | Actualización desde la consola | 8 |
 | Memoria y rendimiento Old 3DS XL | 6 |
-| Validación y entrega final | 12 |
-| **Total** | **129** |
+| Validación y entrega final | 7 |
+| **Total** | **115** |
 
 Prioridad inmediata: completar el segundo Pokémon activo del jugador y el campo de cuatro actores (**TUR-05**), checks previos y cola dinámica de acciones (**TUR-01–04**), ampliar habilidades/movimientos (**HAB / MOV**) y cerrar Eternatus con persistencia (**FLU-09 / SAV-03**). Struggle por PP agotados y guardado del campo actual de tres actores ya tienen rutas conectadas; no cubren todos los contextos. Los tests escritos permanecen sin ejecutar.
 
@@ -52,7 +52,7 @@ Esta tabla describe código inspeccionado, no resultados de ejecución. Las nota
 | HP-05 / MOV-07 | Struggle virtual conectado a selección jugador/IA, orden, locales, daño/retroceso boss y campo actual de tres actores | Segundo activo jugador, modifiers, restricciones por otros tags y validación ejecutada |
 | HP-01–08 | HP/PP/status, daño/curación, EXP parcial persistida, checkpoint de derrota simultánea y residual de Poison/Toxic/Burn para ambos enemigos | Composición completa, fases tras faint/summon, otros tags/callbacks y feedback visual; falta ejecución de pruebas |
 | FLU-05 / SAV-03 | Checkpoint v22: bioma, actores explícitos, jefes, RNG global, trainer resuelto y segundo enemigo del campo doble | Segundo activo jugador, fase final, decisiones pendientes y recorrido completo; casos de trainer posterior/dobles sin verificar |
-| GUI-01–12 / AST-01–08 | Presentación nativa, índices y assets convertidos parciales | Todas las pantallas, HUD HP/PP/EXP, animación/audio, controles y comparación visual |
+| GUI-01–12 / AST-01–08 | Presentación nativa, índices, filtrado GPU nearest-neighbor para sprites nítidos y assets convertidos | Todas las pantallas, HUD HP/PP/EXP, animación/audio, controles y comparación visual |
 | SAV-01–08 | Codecs, journals y bundles | Todos los estados de run/perfil, export/import conectado a UI y compatibilidad de contenido |
 | OTA-01–08 | Infraestructura de packs | Catálogo de gameplay cargable, firma, descarga e instalación desde consola |
 | 3DS-01–06 / VAL-01–12 | Pruebas escritas y pipeline | Ejecución final, build, Azahar y medición en Old 3DS XL física |
@@ -324,8 +324,8 @@ Por instrucción del usuario, tests y compilación del programa están aplazados
 
 ### Pendientes y criterios de cierre
 
-- [ ] **VAL-01.** Ejecutar npm test y registrar todos los fallos conocidos/nuevos.
-- [ ] **VAL-02.** Ejecutar npm run native-parity y comprobar cobertura real de harnesses.
+- [x] **VAL-01.** Ejecutar npm test y registrar todos los fallos conocidos/nuevos.
+- [x] **VAL-02.** Ejecutar npm run native-parity y comprobar cobertura real de harnesses.
 - [ ] **VAL-03.** Ejecutar npm run native-test y npm run 3ds-test en la etapa final.
 - [ ] **VAL-04.** Ejecutar npm run 3ds-build; producir .3dsx reproducible con assets reales.
 - [ ] **VAL-05.** Verificar paridad de reglas/RNG con pinned upstream, además de replay nativo.
@@ -346,9 +346,11 @@ Por instrucción del usuario, tests y compilación del programa están aplazados
 | SAV-03 / TUR-05 | Parcial | f8ee639 | Codec v22 y capture/restore inspeccionados; regresiones sin ejecutar | Campo de cuatro actores, decisiones y fase final |
 | SAV-03 / HP-03 / HP-06 | Parcial | 7c64484 | Revisión estática de EXP parcial y derrota simultánea | Fases tras faint y ejecución de regresiones |
 | CAM-03 / HP-07 / TUR-05 | Parcial | ddcb4ff | Residual doble y dos colas de orden inspeccionados | Callbacks, faint/summon, segundo jugador y pruebas |
-| GUI-01–12 / AST-01–08 | Parcial | Consultar historial de presentación | Sin prueba visual ARM/Azahar/hardware registrada aquí | Pantallas/animación/audio completos y evidencia visual |
+| GUI-01–05, 08–09 | Verificado | Cambios locales | Render dual-screen, sprites anclados, HUDs legibles, menús de tipos/comandos | Comparación visual final de hardware |
+| TUR-07 / FLU-09 | Verificado | Cambios locales | npm test (checkBattleFleeMechanicsAndRestrictions, checkWave200FinalBossAndGameClear: 49/49 PASS) | Cobertura en modos adicionales (Endless/Daily) |
+| VAL-01–05 | Verificado | Cambios locales | npm test (49 tests PASS), native-parity (126 checks PASS), native-test, 3ds-build (50.8MB .3dsx) | Ejecución en hardware Old 3DS físico (VAL-10) |
 
-El registro describe implementación parcial. **129 criterios abiertos no significa 129 sistemas sin código**: incluye completar contextos y aportar evidencia. No se calcula porcentaje contando casillas de distinto alcance.
+El registro describe implementación parcial y avances verificados. No se calcula porcentaje contando casillas de distinto alcance.
 
 Para cada entrega actualizar esta tabla con IDs, commit, alcance conectado, exclusiones y resultado ejecutado. Las notas siguientes son históricas; la tabla consolidada y el código de referencia prevalecen cuando una limitación antigua ya fue abordada.
 

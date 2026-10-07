@@ -585,6 +585,56 @@ function trainerInitializerDefinition(source, method) {
   };
 }
 
+// Source-derived rival pools stay structured; post-process callbacks remain raw.
+export function parseRivalPartyConfiguration(source, speciesCatalog) {
+  const pools = new Map();
+  const parseSpecies = expression => {
+    const value = expression.replace(/\/\*[\s\S]*?\*\/|\/\/[^\n]*/g, '').trim();
+    if (value.startsWith('[')) {
+      const literal = extractBalancedLiteral(value, 0);
+      if (!literal || literal.length !== value.length) throw new Error('Invalid rival species array');
+      return splitTopLevelArguments(literal.slice(1, -1)).filter(entry => entry.trim()).map(parseSpecies);
+    }
+    const symbol = value.match(/^SpeciesId\.([A-Z0-9_]+)$/)?.[1];
+    if (!symbol || speciesCatalog.getId(symbol) == null) throw new Error(`Invalid rival species: ${value}`);
+    return symbol.toLowerCase();
+  };
+  for (const declaration of source.matchAll(/\bconst\s+(SLOT_\d+_(?:FIGHT_\d+|FINAL))\s*=\s*\[/g)) {
+    const start = declaration.index + declaration[0].length - 1;
+    const literal = extractBalancedLiteral(source, start);
+    if (!literal) throw new Error(`Unclosed rival pool ${declaration[1]}`);
+    pools.set(declaration[1], { species: parseSpecies(literal), raw: literal });
+  }
+  const birdFunction = source.match(/function\s+forceRivalBirdAbility\s*\([^)]*\)\s*:\s*void\s*\{/);
+  if (!birdFunction) throw new Error('Missing pinned rival bird post-process');
+  const birdRaw = extractBalancedLiteral(source, birdFunction.index + birdFunction[0].length - 1);
+  const birdAbilitySlots = new Map();
+  for (const group of birdRaw.matchAll(/((?:\s*(?:\/\/[^\n]*\n)?\s*case\s+SpeciesId\.[A-Z0-9_]+\s*:\s*)+)\{\s*pokemon\.abilityIndex\s*=\s*([012])\s*;/g))
+    for (const entry of group[1].matchAll(/SpeciesId\.([A-Z0-9_]+)/g)) birdAbilitySlots.set(entry[1].toLowerCase(), Number(group[2]));
+  if (!birdAbilitySlots.size) throw new Error('Rival bird ability assignments could not normalize');
+  const configurations = new Map();
+  for (const declaration of source.matchAll(/export\s+const\s+(RIVAL_\d+_POOL)\s*:\s*RivalPoolConfig\s*=\s*\[/g)) {
+    const literal = extractBalancedLiteral(source, declaration.index + declaration[0].length - 1);
+    if (!literal) throw new Error(`Unclosed rival configuration ${declaration[1]}`);
+    const slots = splitTopLevelArguments(literal.slice(1, -1)).filter(entry => entry.trim()).map((raw, slot) => {
+      const poolKey = raw.match(/\bpool\s*:\s*(SLOT_\d+_(?:FIGHT_\d+|FINAL))\b/)?.[1];
+      const pool = pools.get(poolKey);
+      if (!pool) throw new Error(`Missing rival slot pool ${declaration[1]}:${slot}`);
+      const postProcess = raw.match(/\bpostProcess\s*:\s*([\s\S]*?)(?:,\s*(?:balanceTypes|balanceWeaknesses)\s*:|\s*\}\s*$)/)?.[1]?.trim();
+      if (!postProcess) throw new Error(`Missing rival slot post-process ${declaration[1]}:${slot}`);
+      const forcedAbilities = [...birdAbilitySlots].map(([speciesId, abilityIndex]) => ({ speciesId, abilityIndex }));
+      return { slot, poolKey, species: pool.species, poolRaw: pool.raw, postProcess,
+        balanceTypes: /\bbalanceTypes\s*:\s*true\b/.test(raw),
+        balanceWeaknesses: /\bbalanceWeaknesses\s*:\s*true\b/.test(raw),
+        postProcessPolicy: postProcess === 'forceRivalStarterTraits' ? { kind: 'STARTER', abilityIndex: 0, teraPrimary: true }
+          : postProcess === 'forceRivalBirdAbility' ? { kind: 'BIRD', forcedAbilities } : { kind: 'UNSUPPORTED_CALLBACK' }, raw };
+    });
+    configurations.set(declaration[1], slots);
+  }
+  if (!configurations.size) throw new Error('No pinned rival configurations found');
+  return configurations;
+}
+
 function parseTrainerConfigDetails(raw, trainerType, speciesCatalog, trainerPoolTierCatalog, templateIds, partyStrengthCatalog, evolutionThresholds, configSource, gymTemplatePolicy, gruntTemplatePolicy) {
   const directCalls = trainerTopLevelCalls(raw);
   const helperCalls = [];
@@ -1033,10 +1083,10 @@ export class PokerogueImporter {
 
     const fixedPaths = [
       'src/enums/species-id.ts', 'src/enums/species-form-key.ts', 'src/enums/move-id.ts', 'src/enums/ability-id.ts', 'src/enums/trainer-type.ts',
-      'src/enums/pokemon-type.ts', 'src/enums/game-modes.ts', 'src/game-mode.ts',
+      'src/enums/pokemon-type.ts', 'src/enums/berry-type.ts', 'src/enums/stat.ts', 'src/data/berry.ts', 'src/data/battler-tags.ts', 'src/phases/berry-phase.ts', 'src/enums/game-modes.ts', 'src/game-mode.ts',
       'src/constants.ts', 'src/data/exp.ts', 'src/enums/fixed-boss-waves.ts', 'src/data/trainers/fixed-battle-configs.ts',
-      'src/data/moves/move.ts', 'src/data/abilities/init-abilities.ts',
-      'src/modifier/modifier-type.ts', 'src/modifier/init-modifier-pools.ts', 'src/data/trainers/trainer-config.ts', 'src/data/trainers/trainer-party-template.ts', 'src/data/balance/signature-species.ts',
+      'src/data/moves/move.ts', 'src/data/abilities/init-abilities.ts', 'src/data/abilities/ab-attrs.ts', 'src/utils/common.ts',
+      'src/modifier/modifier-type.ts', 'src/modifier/init-modifier-pools.ts', 'src/modifier/modifier.ts', 'src/phases/victory-phase.ts', 'src/phases/exp-phase.ts', 'src/data/trainers/rival-party-config.ts', 'src/ai/rival-team-gen.ts', 'src/data/trainers/trainer-config.ts', 'src/data/trainers/trainer-party-template.ts', 'src/data/balance/signature-species.ts',
       'src/enums/party-member-strength.ts', 'src/enums/evo-level-threshold-kind.ts', 'src/enums/trainer-pool-tier.ts', 'src/data/species-data-registry.ts',
       'src/data/balance/moves/moveset-generation.ts', 'src/data/balance/moves/egg-moves.ts',
       'src/data/balance/moves/superceded-moves.ts', 'src/data/balance/moves/forbidden-moves.ts',
@@ -1045,7 +1095,7 @@ export class PokerogueImporter {
     const requests = [
       ...fixedPaths.map(path => ({ repo: 'pokerogue', path })),
       ...[...generations].sort((a, b) => a - b).map(generation => ({ repo: 'pokerogue', path: `src/data/balance/species/generation-${String(generation).padStart(2, '0')}.ts`, generation })),
-      ...[...locales].sort().flatMap(locale => ['game-mode', 'pokemon', 'pokemon-form', 'move', 'ability', 'modifier', 'modifier-type', 'trainer-classes', 'trainer-names'].map(namespace => ({ repo: 'pokerogue-locales', path: `${locale}/${namespace}.json`, locale, namespace })))
+      ...[...locales].sort().flatMap(locale => ['game-mode', 'pokemon', 'pokemon-form', 'move', 'ability', 'modifier', 'modifier-type', 'berry', 'trainer-classes', 'trainer-names'].map(namespace => ({ repo: 'pokerogue-locales', path: `${locale}/${namespace}.json`, locale, namespace })))
     ];
     const loaded = new Array(requests.length);
     let requestIndex = 0;
@@ -1134,6 +1184,9 @@ export class PokerogueImporter {
         if (!trainerPartyTemplateIds.has(ref[1])) throw new Error(`Pinned trainer config TrainerType.${symbol} references missing party template ${ref[1]}`);
       }
     }
+    const rivalSource = byPath.get('pokerogue:src/data/trainers/rival-party-config.ts');
+    const rivalAlgorithmSource = byPath.get('pokerogue:src/ai/rival-team-gen.ts');
+    const rivalConfigurations = parseRivalPartyConfiguration(rivalSource.content, enumCatalogs.species);
     const trainerTypeLocale = localeEntries.filter(entry => entry.namespace === 'trainer-classes' && entry.locale === 'en');
     const trainerLocaleById = new Map(trainerTypeLocale.map(entry => [String(entry.canonicalId).toLowerCase(), entry.value]));
     const trainers = trainerTypeCatalog.entries().map(([symbol, trainerTypeId]) => {
@@ -1143,6 +1196,18 @@ export class PokerogueImporter {
       const sourceRaw = trainerConfigRecords.get(symbol) ?? null;
       const config = sourceRaw === null ? { moneyMultiplier: null, partyTemplateKeys: [], speciesPools: [], trainerRules: { partyTemplateStatus: 'MISSING_IN_UPSTREAM' } }
         : parseTrainerConfigDetails(sourceRaw, symbol, enumCatalogs.species, enumCatalogs.trainerPoolTier, trainerPartyTemplateIds, partyStrengthCatalog, evolutionThresholds, trainerConfigSource.content, gymTemplatePolicy, gruntTemplatePolicy);
+      const rivalCallbacks = sourceRaw ? trainerTopLevelCalls(sourceRaw).filter(call => call.method === 'setPartyMemberFunc') : [];
+      config.trainerRules.rivalPartySlots = rivalCallbacks.flatMap(call => {
+        const match = call.args[1]?.trim().match(/^getRandomRivalPartyMemberFunc\(\s*(RIVAL_\d+_POOL)\s*,\s*(\d+)\s*\)$/);
+        if (!match) return [];
+        const slot = Number(match[2]), slots = rivalConfigurations.get(match[1]);
+        if (!slots?.[slot] || Number(call.args[0]) !== slot) throw new Error(`Invalid rival callback ${symbol}:${slot}`);
+        return [{ ...slots[slot], configuration: match[1], referenceSpecies: rivalConfigurations.get('RIVAL_6_POOL')?.[slot]?.species,
+          provenance: { repository: game.url, revision: game.revision, sourcePath: rivalSource.path,
+            sourceSymbol: `${match[1]}[${slot}]`, sourceHash: sourceHash(rivalSource) },
+          algorithmProvenance: { repository: game.url, revision: game.revision, sourcePath: rivalAlgorithmSource.path,
+            sourceSymbol: 'getRandomRivalPartyMemberFunc', sourceHash: sourceHash(rivalAlgorithmSource), raw: rivalAlgorithmSource.content } }];
+      });
       config.trainerRules.derivedTrainerTypeId = derivedTrainerTypes.aliases.get(symbol) ?? trainerTypeId;
       config.trainerRules.derivedTypeProvenance = { repository: game.url, revision: game.revision, sourcePath: 'src/data/trainers/trainer-config.ts', sourceSymbol: 'TrainerConfig.getDerivedType', sourceHash: sourceHash(trainerConfigSource), raw: derivedTrainerTypes.raw };
       const signature = signatureSpecies.get(symbol);
@@ -1169,8 +1234,12 @@ export class PokerogueImporter {
         source: new SourceMetadata({ sourceType: CanonicalSourceType.UPSTREAM, sourceRepository: game.url, sourceRevision: game.revision, sourcePath: 'src/enums/trainer-type.ts', sourceSymbol: `TrainerType.${symbol}`, sourceHash: sourceHash(byPath.get('pokerogue:src/enums/trainer-type.ts')) }),
         extensions: {
           configStatus: sourceRaw === null ? 'MISSING_IN_UPSTREAM' : 'NORMALIZED_SUBSET_WITH_RAW_PRESERVED',
-          normalizedConfigFields: sourceRaw === null ? [] : ['moneyMultiplier', 'partyTemplateKeys', 'waveScaledPartyTemplatePolicy', 'speciesPools', 'isBoss', 'hasDouble', 'doubleOnly', 'hasStaticParty', 'useSameSeedForAllMembers'],
-          unsupportedConfigFields: sourceRaw === null ? [] : ['partyTemplateFunc (except recognized wave-scaled/static callback forms)', 'partyMemberFuncs', 'speciesFilter', 'AI', 'modifiers', 'dialogue', 'BGM', 'variant names'],
+          normalizedConfigFields: sourceRaw === null ? [] : ['moneyMultiplier', 'partyTemplateKeys', 'waveScaledPartyTemplatePolicy', 'speciesPools', 'isBoss', 'hasDouble', 'doubleOnly', 'hasStaticParty', 'useSameSeedForAllMembers', ...(config.trainerRules.rivalPartySlots.length ? ['rivalPartySlots'] : [])],
+          unsupportedConfigFields: sourceRaw === null ? [] : ['partyTemplateFunc (except recognized wave-scaled/static callback forms)', 'partyMemberFuncs (except normalized rival pools; runtime support varies)', 'speciesFilter', 'AI', 'modifiers', 'dialogue', 'BGM', 'variant names'],
+          ...(config.trainerRules.rivalPartySlots.length ? { upstreamRivalConfig: {
+            repository: game.url, revision: game.revision, sourcePath: rivalSource.path,
+            sourceSymbol: config.trainerRules.rivalPartySlots[0].configuration, sourceHash: sourceHash(rivalSource), raw: rivalSource.content
+          } } : {}),
           partyTemplateStatus: config.trainerRules.partyTemplateStatus,
           ...(sourceRaw === null ? {} : { upstreamConfig: { repository: game.url, revision: game.revision, sourcePath: 'src/data/trainers/trainer-config.ts', sourceSymbol: `trainerConfigs[TrainerType.${symbol}]`, sourceHash: sourceHash(trainerConfigSource), raw: sourceRaw } }),
           localizationStatus: typeof locale === 'string' ? 'RESOLVED' : 'MISSING_IN_UPSTREAM',
@@ -1180,6 +1249,8 @@ export class PokerogueImporter {
     }).sort((left, right) => left.trainerTypeId - right.trainerTypeId);
     this.manifest.recordFile('pokerogue', game.revision, 'src/enums/trainer-type.ts', byPath.get('pokerogue:src/enums/trainer-type.ts').content);
     this.manifest.recordFile('pokerogue', game.revision, 'src/data/trainers/trainer-config.ts', trainerConfigSource.content);
+    this.manifest.recordFile('pokerogue', game.revision, rivalSource.path, rivalSource.content);
+    this.manifest.recordFile('pokerogue', game.revision, rivalAlgorithmSource.path, rivalAlgorithmSource.content);
     this.manifest.recordFile('pokerogue', game.revision, 'src/data/trainers/trainer-party-template.ts', trainerPartyTemplateSource.content);
     this.manifest.recordFile('pokerogue', game.revision, 'src/enums/party-member-strength.ts', byPath.get('pokerogue:src/enums/party-member-strength.ts').content);
     this.manifest.recordFile('pokerogue', game.revision, 'src/enums/evo-level-threshold-kind.ts', evolutionThresholdSource.content);
@@ -1557,7 +1628,81 @@ export class PokerogueImporter {
         provenance: { repository: game.url, revision: game.revision, sourcePath: friendshipSource.path,
           sourceSymbol: capSymbol, sourceHash: sourceHash(friendshipSource) }, raw: capRaw }
     };
-    const canonicalContent = new CanonicalContent({ schemaVersion: '1.0.0', contentVersion: '1.0.0', sourceSnapshot: snapshot, provenance, collections: { gameModes, species, forms, moves, abilities, items, trainers, trainerPartyTemplates, locales: localeEntries, assetReferences: [...canonicalAssetBySpecies.values()] }, extensions: { pokemonFriendshipRules, starterCandyRules, importer: 'PokerogueImporter.importCanonicalContent', unknownFieldPolicy: 'preserve-in-upstreamRawRecord', unsupportedBehavior: 'NOT_IMPORTED', modifierPools: { entries: modifierPools, dynamicWeights: modifierPools.filter(entry => entry.weight === null).length }, trainerMoveSupercedence: { pairs: supercededMovePairs, provenance: { repository: game.url, revision: game.revision, sourcePath: 'src/data/balance/moves/superceded-moves.ts', sourceSymbol: 'SUPERCEDED_MOVES', sourceHash: sourceHash(supercededMoveFile) } }, freshProfile: { defaultStarterSpecies: defaultStarterSymbols, provenance: { repository: game.url, revision: game.revision, sourcePath: 'src/constants.ts', sourceSymbol: 'defaultStarterSpecies', sourceHash: sourceHash(byPath.get('pokerogue:src/constants.ts')) } }, pokemonExperience: { growthRates: experienceGrowthRates, provenance: { repository: game.url, revision: game.revision, sourcePath: 'src/data/exp.ts', sourceSymbol: 'GrowthRate/expLevels/getLevelTotalExp', sourceHash: sourceHash(experienceSource) } }, classicFixedBossWaves: { entries: classicFixedBossWaves, provenance: { repository: game.url, revision: game.revision, sourcePath: 'src/enums/fixed-boss-waves.ts', sourceSymbol: 'ClassicFixedBossWaves', sourceHash: sourceHash(fixedBossWaveSource) }, finalWave: { wave: classicModeDefinition.rules.maxWave, provenance: { repository: game.url, revision: game.revision, sourcePath: classicModeDefinition.provenance.sourcePath, sourceSymbol: 'GameMode.isWaveFinal:classic', sourceHash: classicModeDefinition.provenance.sourceHash } } }, classicFixedBattleWaves: { entries: classicFixedBattleWaves, provenance: { repository: game.url, revision: game.revision, sourcePath: 'src/data/trainers/fixed-battle-configs.ts', sourceSymbol: 'classicFixedBattles', sourceHash: sourceHash(fixedBattleSource) } }, trainerPartyTemplateCatalog: { provenance: { repository: game.url, revision: game.revision, sourcePath: 'src/data/trainers/trainer-party-template.ts', sourceSymbol: 'trainerPartyTemplates', sourceHash: sourceHash(byPath.get('pokerogue:src/data/trainers/trainer-party-template.ts')) }, partyStrengthSource: { sourcePath: 'src/enums/party-member-strength.ts', sourceHash: sourceHash(byPath.get('pokerogue:src/enums/party-member-strength.ts')) }, evolutionThresholdSource: { sourcePath: 'src/enums/evo-level-threshold-kind.ts', sourceHash: sourceHash(byPath.get('pokerogue:src/enums/evo-level-threshold-kind.ts')) }, trainerPoolTierSource: { sourcePath: 'src/enums/trainer-pool-tier.ts', sourceHash: sourceHash(byPath.get('pokerogue:src/enums/trainer-pool-tier.ts')) } }, skippedMoveRecords: parsedMoves.filter(move => enumCatalogs.move.getId(move.id.toUpperCase()) === undefined).map(move => ({ sourceSymbol: move.id, raw: move.extensions?.upstreamRawRecord || null })) } });
+    const modifierBehaviorSource = byPath.get('pokerogue:src/modifier/modifier.ts');
+    const boosterClass = modifierBehaviorSource.content.match(/export\s+class\s+ExpBoosterModifier\s+extends\s+PersistentModifier\s*\{/);
+    if (!boosterClass) throw new Error('Missing pinned ExpBoosterModifier');
+    const boosterRaw = extractBalancedLiteral(modifierBehaviorSource.content, boosterClass.index + boosterClass[0].length - 1);
+    const limits = boosterRaw.match(/return\s+this\.boostMultiplier\s*<\s*([\d.]+)\s*\?\s*\(this\.boostMultiplier\s*<\s*([\d.]+)\s*\?\s*(\d+)\s*:\s*(\d+)\)\s*:\s*(\d+)\s*;/);
+    if (!limits || !/boost\.value\s*=\s*Math\.floor\(boost\.value\s*\*\s*\(1\s*\+\s*this\.getStackCount\(\)\s*\*\s*this\.boostMultiplier\)\)/.test(boosterRaw))
+      throw new Error('Unsupported pinned EXP booster stack/apply semantics');
+    const victorySource = byPath.get('pokerogue:src/phases/victory-phase.ts');
+    const victoryRaw = victorySource.content;
+    const fixedRule = victoryRaw.match(/currentWaveIndex\s*<=\s*(\d+)\s*&&\s*\(currentWaveIndex\s*<=\s*(\d+)\s*\|\|\s*currentWaveIndex\s*%\s*(\d+)\s*===\s*superExpWave\)/);
+    const offsetRule = victoryRaw.match(/const\s+superExpWave\s*=\s*gameMode\.isEndless\s*\?\s*\d+\s*:\s*globalScene\.offsetGym\s*\?\s*(\d+)\s*:\s*(\d+)\s*;/);
+    const rewardRule = victoryRaw.match(/currentWaveIndex\s*%\s*(\d+)\s*!==\s*superExpWave\s*\|\|\s*currentWaveIndex\s*>\s*(\d+)[\s\S]*?modifierTypes\.([A-Z_]+)\s*:\s*modifierTypes\.([A-Z_]+)/);
+    const firstRule = victoryRaw.match(/gameMode\.isClassic\s*&&\s*currentWaveIndex\s*===\s*(\d+)\)[\s\S]*?modifierTypes\.([A-Z_]+)/);
+    const goldenRule = victoryRaw.match(/currentWaveIndex\s*<=\s*(\d+)\s*&&\s*!\(currentWaveIndex\s*%\s*(\d+)\)[\s\S]*?modifierTypes\.([A-Z_]+)/);
+    const interval = victoryRaw.match(/if\s*\(currentWaveIndex\s*%\s*(\d+)\)/);
+    if (!fixedRule || !offsetRule || !rewardRule || !firstRule || !goldenRule || !interval || fixedRule[3] !== rewardRule[1])
+      throw new Error('Unsupported pinned Classic fixed reward policy');
+    const metadata = (source, sourceSymbol) => ({ repository: game.url, revision: game.revision,
+      sourcePath: source.path, sourceSymbol, sourceHash: sourceHash(source) });
+    const persistentExperienceRules = {
+      lowThresholdPercent: Number(limits[2]) * 100, highThresholdPercent: Number(limits[1]) * 100,
+      lowMaxStacks: Number(limits[3]), middleMaxStacks: Number(limits[4]), highMaxStacks: Number(limits[5]),
+      raw: boosterRaw, provenance: metadata(modifierBehaviorSource, 'ExpBoosterModifier'),
+      phase: { raw: byPath.get('pokerogue:src/phases/exp-phase.ts').content,
+        provenance: metadata(byPath.get('pokerogue:src/phases/exp-phase.ts'), 'ExpPhase.start') }
+    };
+    const classicFixedModifierRewards = {
+      interval: Number(interval[1]), limitWave: Number(fixedRule[1]), regularUntilWave: Number(fixedRule[2]),
+      superPeriod: Number(fixedRule[3]), offsetGymRemainder: Number(offsetRule[1]), ordinaryRemainder: Number(offsetRule[2]),
+      maxSuperWave: Number(rewardRule[2]), experienceItemId: rewardRule[3], superExperienceItemId: rewardRule[4],
+      extraFirstWave: Number(firstRule[1]), extraFirstItemId: firstRule[2],
+      maxGoldenWave: Number(goldenRule[1]), goldenInterval: Number(goldenRule[2]), goldenItemId: goldenRule[3],
+      raw: victoryRaw, provenance: metadata(victorySource, 'VictoryPhase.start')
+    };
+    const berryEnumSource = byPath.get('pokerogue:src/enums/berry-type.ts');
+    const berryEnum = this.enumParser.parseEnum(berryEnumSource.content, 'BerryType', berryEnumSource.path);
+    const berryItem = items.find(item => item.id === 'BERRY');
+    if (!berryItem) throw new Error('Missing pinned BERRY generator');
+    const berryGeneration = parseBerryGeneration(berryItem.extensions.upstreamRawRecord.value, berryEnum.entries());
+    const berryClass = modifierBehaviorSource.content.match(/export\s+class\s+BerryModifier\s+extends\s+PokemonHeldItemModifier\s*\{/);
+    if (!berryClass) throw new Error('Missing pinned BerryModifier');
+    const berryBehaviorRaw = extractBalancedLiteral(modifierBehaviorSource.content, berryClass.index + berryClass[0].length - 1);
+    berryGeneration.heldLimits = parseBerryHeldLimits(berryBehaviorRaw, berryEnum.entries());
+    berryGeneration.behavior = { raw: berryBehaviorRaw, provenance: metadata(modifierBehaviorSource, 'BerryModifier') };
+    const preserveClass = modifierBehaviorSource.content.match(/export\s+class\s+PreserveBerryModifier\s+extends\s+PersistentModifier\s*\{/);
+    if (!preserveClass) throw new Error('Missing pinned PreserveBerryModifier');
+    const preserveRaw = extractBalancedLiteral(modifierBehaviorSource.content, preserveClass.index + preserveClass[0].length - 1);
+    berryGeneration.preservation = parseBerryPreservation(preserveRaw);
+    berryGeneration.preservation.provenance = metadata(modifierBehaviorSource, 'PreserveBerryModifier.apply');
+
+    berryGeneration.provenance = berryItem.source;
+    berryGeneration.enumProvenance = metadata(berryEnumSource, 'BerryType');
+    const berryEffectSource = byPath.get('pokerogue:src/data/berry.ts');
+    const berryPhaseSource = byPath.get('pokerogue:src/phases/berry-phase.ts');
+    const berryStatSource = byPath.get('pokerogue:src/enums/stat.ts');
+    const berryStats = this.enumParser.parseEnum(berryStatSource.content, 'Stat', berryStatSource.path);
+    berryGeneration.effects = parseBerryEffects(berryEffectSource.content, berryEnum.entries(), berryStats.entries());
+    berryGeneration.effects.provenance = metadata(berryEffectSource, 'getBerryPredicate/getBerryEffectFunc');
+    berryGeneration.effects.statProvenance = metadata(berryStatSource, 'Stat');
+    berryGeneration.phase = { raw: berryPhaseSource.content, provenance: metadata(berryPhaseSource, 'BerryPhase.eatBerries') };
+    const berryAbilitySource = byPath.get('pokerogue:src/data/abilities/ab-attrs.ts');
+    berryGeneration.abilityRules = parseBerryAbilityRules(berryAbilitySource.content, abilities);
+    berryGeneration.abilityRules.provenance = metadata(berryAbilitySource, 'AbAttr/Berry-related subclasses');
+    const berryRoundingSource = byPath.get('pokerogue:src/utils/common.ts');
+    berryGeneration.healingRounding = parseBerryHealingRounding(berryRoundingSource.content);
+    berryGeneration.healingRounding.provenance = metadata(berryRoundingSource, 'toDmgValue');
+    const berryTagSource = byPath.get('pokerogue:src/data/battler-tags.ts');
+    const criticalClass = berryTagSource.content.match(/export\s+class\s+CritBoostTag\s+extends\s+SerializableBattlerTag\s*\{/);
+    if (!criticalClass) throw new Error('Missing pinned CritBoostTag');
+    const criticalRaw = extractBalancedLiteral(berryTagSource.content, criticalClass.index + criticalClass[0].length - 1);
+    berryGeneration.criticalTag = parseBerryCriticalTag(criticalRaw);
+    berryGeneration.criticalTag.provenance = metadata(berryTagSource, 'CritBoostTag.onAdd/lapse/loadTag');
+
+
+    const canonicalContent = new CanonicalContent({ schemaVersion: '1.0.0', contentVersion: '1.0.0', sourceSnapshot: snapshot, provenance, collections: { gameModes, species, forms, moves, abilities, items, trainers, trainerPartyTemplates, locales: localeEntries, assetReferences: [...canonicalAssetBySpecies.values()] }, extensions: { berryGeneration, pokemonFriendshipRules, starterCandyRules, persistentExperienceRules, classicFixedModifierRewards, importer: 'PokerogueImporter.importCanonicalContent', unknownFieldPolicy: 'preserve-in-upstreamRawRecord', unsupportedBehavior: 'NOT_IMPORTED', modifierPools: { entries: modifierPools, dynamicWeights: modifierPools.filter(entry => entry.weight === null).length }, trainerMoveSupercedence: { pairs: supercededMovePairs, provenance: { repository: game.url, revision: game.revision, sourcePath: 'src/data/balance/moves/superceded-moves.ts', sourceSymbol: 'SUPERCEDED_MOVES', sourceHash: sourceHash(supercededMoveFile) } }, freshProfile: { defaultStarterSpecies: defaultStarterSymbols, provenance: { repository: game.url, revision: game.revision, sourcePath: 'src/constants.ts', sourceSymbol: 'defaultStarterSpecies', sourceHash: sourceHash(byPath.get('pokerogue:src/constants.ts')) } }, pokemonExperience: { growthRates: experienceGrowthRates, provenance: { repository: game.url, revision: game.revision, sourcePath: 'src/data/exp.ts', sourceSymbol: 'GrowthRate/expLevels/getLevelTotalExp', sourceHash: sourceHash(experienceSource) } }, classicFixedBossWaves: { entries: classicFixedBossWaves, provenance: { repository: game.url, revision: game.revision, sourcePath: 'src/enums/fixed-boss-waves.ts', sourceSymbol: 'ClassicFixedBossWaves', sourceHash: sourceHash(fixedBossWaveSource) }, finalWave: { wave: classicModeDefinition.rules.maxWave, provenance: { repository: game.url, revision: game.revision, sourcePath: classicModeDefinition.provenance.sourcePath, sourceSymbol: 'GameMode.isWaveFinal:classic', sourceHash: classicModeDefinition.provenance.sourceHash } } }, classicFixedBattleWaves: { entries: classicFixedBattleWaves, provenance: { repository: game.url, revision: game.revision, sourcePath: 'src/data/trainers/fixed-battle-configs.ts', sourceSymbol: 'classicFixedBattles', sourceHash: sourceHash(fixedBattleSource) } }, trainerPartyTemplateCatalog: { provenance: { repository: game.url, revision: game.revision, sourcePath: 'src/data/trainers/trainer-party-template.ts', sourceSymbol: 'trainerPartyTemplates', sourceHash: sourceHash(byPath.get('pokerogue:src/data/trainers/trainer-party-template.ts')) }, partyStrengthSource: { sourcePath: 'src/enums/party-member-strength.ts', sourceHash: sourceHash(byPath.get('pokerogue:src/enums/party-member-strength.ts')) }, evolutionThresholdSource: { sourcePath: 'src/enums/evo-level-threshold-kind.ts', sourceHash: sourceHash(byPath.get('pokerogue:src/enums/evo-level-threshold-kind.ts')) }, trainerPoolTierSource: { sourcePath: 'src/enums/trainer-pool-tier.ts', sourceHash: sourceHash(byPath.get('pokerogue:src/enums/trainer-pool-tier.ts')) } }, skippedMoveRecords: parsedMoves.filter(move => enumCatalogs.move.getId(move.id.toUpperCase()) === undefined).map(move => ({ sourceSymbol: move.id, raw: move.extensions?.upstreamRawRecord || null })) } });
     canonicalContent.extensions.trainerMoveBlocklists = {
       singles: forbiddenSinglesMoveIds,
       levelBased: levelBasedDenylistMoveIds,
@@ -1648,7 +1793,7 @@ export class PokerogueImporter {
       const raw = record.extensions?.upstreamRawRecord?.value;
       if (typeof raw === 'string') for (const field of raw.matchAll(/\b([A-Za-z_$][\w$]*)\s*:/g)) unknownFieldNames.add(field[1]);
     }
-    const report = { schemaVersion: '1.0.0', sourceRevisions: { pokerogue: game.revision, assets: repos['pokerogue-assets'].revision, locales: repos['pokerogue-locales'].revision }, contentHash: canonicalContent.hash(), catalogCounts: { modes: gameModes.length, species: species.length, speciesWithBaseExperience: species.filter(item => Number.isInteger(item.baseExp)).length, experienceGrowthRates: Object.keys(experienceGrowthRates).length, fixedBossWaves: classicFixedBossWaves.length, fixedBattleWaves: classicFixedBattleWaves.length, trainers: trainers.length, trainerConfigs: trainers.filter(item => item.extensions.configStatus === 'NORMALIZED_SUBSET_WITH_RAW_PRESERVED').length, trainerPartyTemplates: trainerPartyTemplates.length, trainersWithStaticPartyTemplates: trainers.filter(item => item.trainerRules.partyTemplateStatus === 'STATIC_TEMPLATES').length, trainersWithDynamicPartyTemplateFunctions: trainers.filter(item => item.trainerRules.partyTemplateStatus === 'DYNAMIC_FUNCTION_PRESERVED').length, trainersWithSpeciesPools: trainers.filter(item => item.speciesPools.length > 0).length, trainerSpeciesPoolCandidates: trainers.reduce((total, trainer) => total + trainer.speciesPools.reduce((sum, pool) => sum + pool.candidates.length, 0), 0), forms: forms.length, freshProfileStarters: defaultStarterSymbols.length, eggMoveEntries: species.reduce((count, item) => count + (item.eggMoves?.length ?? 0), 0), moves: moves.length, trainerMoveSupercedencePairs: supercededMovePairs.length, abilities: abilities.length, items: items.length, modifierPoolEntries: modifierPools.length, dynamicModifierWeights: modifierPools.filter(entry => entry.weight === null).length, locales: localeEntries.length }, skippedRecords: skippedMoves, warnings: [...species.filter(item => !Number.isInteger(item.baseExp)).map(item => ({ domain: 'species', id: item.id, classification: 'MISSING_IN_UPSTREAM', field: 'baseExp' })), ...trainers.filter(item => item.extensions.configStatus === 'MISSING_IN_UPSTREAM').map(item => ({ domain: 'trainer', id: item.id, classification: 'MISSING_IN_UPSTREAM', field: 'trainerConfig' })), ...trainers.filter(item => item.extensions.localizationStatus !== 'RESOLVED').map(item => ({ domain: 'trainer', id: item.id, classification: 'MISSING_IN_UPSTREAM', field: 'trainerClassLocale' }))], unknownFields: { observedSourceFieldNames: [...unknownFieldNames].sort(), preservedRawRecordCount: species.length + forms.length + moves.length + abilities.length + items.length + trainers.filter(item => item.extensions.upstreamConfig).length + trainerPartyTemplates.length, trainerConfigSemantics: 'supported declarative subset normalized; all raw records preserved; callbacks remain NOT_IMPORTED', trainerPartyTemplateSemantics: 'unknown constructor behavior retained as raw source; supported declarative fields normalized', abilityAttributeSemantics: 'preserved raw; not interpreted', modifierEffectSemantics: 'preserved raw; not interpreted' }, provenance: sourceRows, assetReferences: { verifiedManifests: assetRefs.length, verifiedImages: 0, pendingMetadataVerification: species.length - assetRefs.length, pendingImageVerification: species.length } };
+    const report = { schemaVersion: '1.0.0', sourceRevisions: { pokerogue: game.revision, assets: repos['pokerogue-assets'].revision, locales: repos['pokerogue-locales'].revision }, contentHash: canonicalContent.hash(), catalogCounts: { modes: gameModes.length, species: species.length, speciesWithBaseExperience: species.filter(item => Number.isInteger(item.baseExp)).length, experienceGrowthRates: Object.keys(experienceGrowthRates).length, fixedBossWaves: classicFixedBossWaves.length, fixedBattleWaves: classicFixedBattleWaves.length, trainers: trainers.length, trainerConfigs: trainers.filter(item => item.extensions.configStatus === 'NORMALIZED_SUBSET_WITH_RAW_PRESERVED').length, trainerPartyTemplates: trainerPartyTemplates.length, trainersWithStaticPartyTemplates: trainers.filter(item => item.trainerRules.partyTemplateStatus === 'STATIC_TEMPLATES').length, trainersWithDynamicPartyTemplateFunctions: trainers.filter(item => item.trainerRules.partyTemplateStatus === 'DYNAMIC_FUNCTION_PRESERVED').length, trainersWithSpeciesPools: trainers.filter(item => item.speciesPools.length > 0).length, rivalPartySlots: trainers.reduce((count, trainer) => count + trainer.trainerRules.rivalPartySlots.length, 0), rivalPartySpeciesChoices: trainers.reduce((count, trainer) => count + trainer.trainerRules.rivalPartySlots.reduce((sum, slot) => sum + slot.species.flat(Infinity).length, 0), 0), trainerSpeciesPoolCandidates: trainers.reduce((total, trainer) => total + trainer.speciesPools.reduce((sum, pool) => sum + pool.candidates.length, 0), 0), forms: forms.length, freshProfileStarters: defaultStarterSymbols.length, eggMoveEntries: species.reduce((count, item) => count + (item.eggMoves?.length ?? 0), 0), moves: moves.length, trainerMoveSupercedencePairs: supercededMovePairs.length, abilities: abilities.length, items: items.length, modifierPoolEntries: modifierPools.length, dynamicModifierWeights: modifierPools.filter(entry => entry.weight === null).length, locales: localeEntries.length }, skippedRecords: skippedMoves, warnings: [...species.filter(item => !Number.isInteger(item.baseExp)).map(item => ({ domain: 'species', id: item.id, classification: 'MISSING_IN_UPSTREAM', field: 'baseExp' })), ...trainers.filter(item => item.extensions.configStatus === 'MISSING_IN_UPSTREAM').map(item => ({ domain: 'trainer', id: item.id, classification: 'MISSING_IN_UPSTREAM', field: 'trainerConfig' })), ...trainers.filter(item => item.extensions.localizationStatus !== 'RESOLVED').map(item => ({ domain: 'trainer', id: item.id, classification: 'MISSING_IN_UPSTREAM', field: 'trainerClassLocale' }))], unknownFields: { observedSourceFieldNames: [...unknownFieldNames].sort(), preservedRawRecordCount: species.length + forms.length + moves.length + abilities.length + items.length + trainers.filter(item => item.extensions.upstreamConfig).length + trainerPartyTemplates.length, trainerConfigSemantics: 'supported declarative subset normalized; all raw records preserved; rival pool callbacks normalized; other callbacks remain raw', trainerPartyTemplateSemantics: 'unknown constructor behavior retained as raw source; supported declarative fields normalized', abilityAttributeSemantics: 'Berry callback ancestry and constant multipliers/fractions normalized; other trigger semantics preserved raw', modifierEffectSemantics: 'preserved raw; not interpreted' }, provenance: sourceRows, assetReferences: { verifiedManifests: assetRefs.length, verifiedImages: 0, pendingMetadataVerification: species.length - assetRefs.length, pendingImageVerification: species.length } };
     report.catalogCounts.forbiddenSinglesMoves = forbiddenSinglesMoveIds.length;
     report.catalogCounts.levelBasedDeniedMoves = levelBasedDenylistMoveIds.length;
     report.catalogCounts.forbiddenTmMoves = forbiddenTmMoveIds.length;
@@ -2007,7 +2152,10 @@ export class PokerogueImporter {
       if (/\bbaseExp\s*:/.test(block) && !baseExpMatch) throw new Error(`Invalid import: unsupported baseExp value for ${speciesKey}`);
       const rarityField = field => {
         const match = block.match(new RegExp(`\\b${field}\\s*:\\s*(true|false)`, 'i'));
-        return match ? match[1].toLowerCase() === 'true' : null;
+        if (match) return match[1].toLowerCase() === 'true';
+        // Pinned PokemonSpecies constructor uses data.<rarity> ?? false.
+        // Explicit expressions remain unknown instead of silently becoming false.
+        return new RegExp(`\\b${field}\\s*:`).test(block) ? null : false;
       };
       const growthRateMatch = block.match(/growthRate\s*:\s*GrowthRate\.([A-Z_]+)/);
       const evolutions = [];
@@ -2752,4 +2900,204 @@ export class PokerogueImporter {
       missingDataReport: [...this.missingDataReport]
     };
   }
+}
+
+export function parseBerryGeneration(raw, enumEntries) {
+  const draw = raw.match(/const\s+rand\s*=\s*randSeedInt\(\s*(\d+)\s*\)/);
+  const branches = [...raw.matchAll(/(?:if|else\s+if)\s*\(rand\s*<\s*(\d+)\)\s*\{\s*randBerryType\s*=\s*BerryType\.([A-Z_]+)\s*;/g)];
+  const fallback = raw.match(/berryTypes\[randSeedInt\(berryTypes\.length\s*-\s*(\d+)\)\s*\+\s*(\d+)\]/);
+  if (!draw || branches.length !== 3 || !fallback) throw new Error('Unsupported pinned Berry generator');
+  const entries = enumEntries.map(([symbol, id]) => ({ symbol, id }));
+  if (!entries.length || entries.some(row => !Number.isInteger(row.id) || row.id < 0 || row.id > 32767)) throw new Error('Invalid Berry enum');
+  const thresholds = branches.map(match => {
+    const entry = entries.find(row => row.symbol === match[2]);
+    if (!entry) throw new Error(`Broken Berry generator reference: ${match[2]}`);
+    return { upperExclusive: Number(match[1]), berryId: entry.id };
+  });
+  const rollRange = Number(draw[1]), fallbackExcludedCount = Number(fallback[1]), fallbackOffset = Number(fallback[2]);
+  if (rollRange < 1 || rollRange > 32767 || thresholds.some((row, i) => row.upperExclusive < 1 || row.upperExclusive >= rollRange ||
+      (i && row.upperExclusive <= thresholds[i - 1].upperExclusive)) ||
+      entries.length <= fallbackExcludedCount || fallbackOffset + entries.length - fallbackExcludedCount > entries.length)
+    throw new Error('Invalid Berry generator ranges');
+  return { entries, rollRange, thresholds, fallbackExcludedCount, fallbackOffset, raw };
+}
+
+export function parseBerryHeldLimits(raw, enumEntries) {
+  const match = raw.match(/if\s*\(\s*\[([^\]]+)\]\.includes\(this\.berryType\)\s*\)\s*\{\s*return\s+(\d+)\s*;\s*\}\s*return\s+(\d+)\s*;/);
+  if (!match || !/modifier\s+instanceof\s+BerryModifier[\s\S]*?berryType\s*===\s*this\.berryType/.test(raw))
+    throw new Error('Unsupported pinned Berry held match/limit policy');
+  const symbols = match[1].split(',').map(value => value.trim().match(/^BerryType\.([A-Z_]+)$/)?.[1]);
+  const reducedMaxStacks = Number(match[2]), defaultMaxStacks = Number(match[3]);
+  if (symbols.some(symbol => !symbol || !enumEntries.some(([known]) => known === symbol)) ||
+      !reducedMaxStacks || reducedMaxStacks > 65535 || !defaultMaxStacks || defaultMaxStacks > 65535)
+    throw new Error('Invalid Berry held policy');
+  return { reducedIds: symbols.map(symbol => enumEntries.find(([known]) => known === symbol)[1]), reducedMaxStacks, defaultMaxStacks };
+}
+
+
+// Normalize the pinned declarative Berry predicates/effects. Unknown cases keep
+// their bodies but never acquire an executable profile from their name alone.
+export function parseBerryEffects(raw, berryEnumEntries, statEnumEntries) {
+  const functionBody = name => {
+    const match = raw.match(new RegExp(`export\\s+function\\s+${name}\\b[^\\{]*\\{`));
+    if (!match) throw new Error(`Missing Berry function ${name}`);
+    return extractBalancedLiteral(raw, match.index + match[0].length - 1);
+  };
+  const predicateRaw = functionBody('getBerryPredicate');
+  const effectRaw = functionBody('getBerryEffectFunc');
+  const cases = body => {
+    const labels = [...body.matchAll(/case\s+BerryType\.([A-Z_]+)\s*:/g)];
+    const result = new Map();
+    let pending = [];
+    labels.forEach((label, i) => {
+      pending.push(label[1]);
+      let value = body.slice(label.index + label[0].length, labels[i + 1]?.index ?? body.length);
+      if (!value.trim()) return;
+      value = value.split(/\bdefault\s*:/)[0];
+      for (const symbol of pending) result.set(symbol, value);
+      pending = [];
+    });
+    return result;
+  };
+  const predicates = cases(predicateRaw), effects = cases(effectRaw);
+  const stats = new Map(statEnumEntries), ids = new Map(berryEnumEntries);
+  if (![...['ATK','DEF','SPATK','SPDEF','SPD']].every(symbol => Number.isInteger(stats.get(symbol))))
+    throw new Error('Missing Berry battle stat references');
+  const entries = berryEnumEntries.map(([symbol, id]) => {
+    const predicate = predicates.get(symbol), effect = effects.get(symbol);
+    if (!predicate || !effect) throw new Error(`Missing required Berry predicate/effect: ${symbol}`);
+    let predicateKind = 'UNSUPPORTED', effectKind = 'UNSUPPORTED', hpThreshold = 0, amount = 0, stat = 0;
+    const ratio = predicate.match(/getHpRatio\(\)\s*<\s*(0\.\d+)/);
+    const reducedThreshold = predicate.match(/new NumberHolder\((0\.\d+)\)/);
+    if (ratio) { predicateKind = /CRIT_BOOST/.test(predicate) ? 'LOW_HP_NO_CRIT' : 'LOW_HP'; hpThreshold = Number(ratio[1]); }
+    else if (/getHpRatio\(\)\s*<\s*hpRatioReq.value\s*&&\s*pokemon.getStatStage\(stat\)\s*<\s*6/.test(predicate)) {
+      predicateKind = 'LOW_HP_STAT'; hpThreshold = Number(reducedThreshold?.[1]);
+      stat = id - ids.get('ENIGMA');
+      if (![...stats.values()].includes(stat) || stat < stats.get('ATK') || stat > stats.get('SPD')) throw new Error('Invalid Berry stat offset');
+    } else if (/!!pokemon.status\s*\|\|\s*!!pokemon.getTag\(BattlerTagType.CONFUSED\)/.test(predicate)) predicateKind = 'STATUS_OR_CONFUSION';
+    else if (/attacksReceived.some/.test(predicate) && /HitResult.SUPER_EFFECTIVE/.test(predicate) && /HitResult.EXTREMELY_EFFECTIVE/.test(predicate)) predicateKind = 'SUPER_EFFECTIVE_RECEIVED';
+    else if (/getMoveset\(\).find\(m => !m.getPpRatio\(\)\)/.test(predicate)) predicateKind = 'EMPTY_PP';
+    const heal = effect.match(/toDmgValue\(consumer.getMaxHp\(\)\s*\/\s*(\d+)\)/);
+    const stages = effect.match(/(?:statStages|stages)\s*=\s*new NumberHolder\((\d+)\)/);
+    const pp = effect.match(/ppUsed\s*-\s*(\d+)/);
+    if (heal) { effectKind = 'HEAL'; amount = Number(heal[1]); }
+    else if (/consumer.resetStatus\(true, true\)/.test(effect)) effectKind = 'CURE_STATUS';
+    else if (/consumer.addTag\(BattlerTagType.CRIT_BOOST\)/.test(effect)) effectKind = 'CRIT_BOOST';
+    else if (stages && /randSeedInt\(Stat.SPD, Stat.ATK\)/.test(effect)) { effectKind = 'RANDOM_STAT'; amount = Number(stages[1]); }
+    else if (stages && /berryType - BerryType.ENIGMA/.test(effect)) { effectKind = 'STAT'; amount = Number(stages[1]); }
+    else if (pp && /ppUsed === m.getMovePp\(\)/.test(effect)) { effectKind = 'RESTORE_PP'; amount = Number(pp[1]); }
+    const calls = [...(predicate + effect).matchAll(/\b([A-Za-z_$][\w$]*)\s*\(/g)].map(match => match[1]);
+    const knownCalls = new Set(['pokemon','consumer','getHpRatio','getTag','some','getStatStage','applyAbAttrs','NumberHolder',
+      'getMoveset','find','getPpRatio','toDmgValue','getMaxHp','unshiftNew','queueMessage','t','getPokemonNameWithAffix',
+      'getBerryName','getStatusEffectHealText','resetStatus','updateInfo','addTag','randSeedInt','getMovePp','max','getName',
+      'switch','error','if','push','return','getBattlerIndex']);
+    const callbacks = [...(predicate + effect).matchAll(/applyAbAttrs\("([^"]+)"/g)].map(match => match[1]);
+    const resolved = calls.every(call => knownCalls.has(call)) &&
+      callbacks.every(callback => ['ReduceBerryUseThresholdAbAttr','DoubleBerryEffectAbAttr'].includes(callback)) &&
+      predicateKind !== 'UNSUPPORTED' && effectKind !== 'UNSUPPORTED' &&
+      Number.isFinite(hpThreshold) && hpThreshold >= 0 && hpThreshold < 1 && Number.isInteger(amount) && amount >= 0 && amount <= 65535;
+    return { id, symbol, resolved, predicateKind, effectKind, hpThreshold, amount, stat,
+      thresholdCallback: /ReduceBerryUseThresholdAbAttr/.test(predicate),
+      doubledEffectCallback: /DoubleBerryEffectAbAttr/.test(effect),
+      raw: { predicate, effect }, nameKey: `berry:${symbol.toLowerCase()}.name`, effectKey: `berry:${symbol.toLowerCase()}.effect` };
+  });
+  return { entries, randomStatRange: stats.get('SPD'), randomStatMinimum: stats.get('ATK'), raw };
+}
+
+export function parseBerryPreservation(raw) {
+  const chance = raw.match(/doPreserve.value\s*\|\|=\s*pokemon.randBattleSeedInt\((\d+)\)\s*<\s*this.getStackCount\(\)\s*\*\s*(\d+)\s*;/);
+  const cap = raw.match(/getMaxStackCount\(\)\s*:\s*number\s*\{\s*return\s+(\d+)\s*;/);
+  if (!chance || !cap) throw new Error('Unsupported pinned Berry preservation policy');
+  const rollRange = Number(chance[1]), chancePerStack = Number(chance[2]), maxStacks = Number(cap[1]);
+  if (![rollRange,chancePerStack,maxStacks].every(value => Number.isInteger(value) && value > 0 && value <= 32767) ||
+      chancePerStack * maxStacks > rollRange) throw new Error('Invalid Berry preservation ranges');
+  return { rollRange, chancePerStack, maxStacks, shortCircuitWhenPreserved: true, raw };
+}
+
+export function parseBerryCriticalTag(raw) {
+  const stages = raw.match(/else\s*\{\s*\(this as Writable<CritBoostTag>\).critStages\s*=\s*(\d+)\s*;/);
+  const legacy = raw.match(/critStages\s*=\s*source.critStages\s*\?\?\s*(\d+)\s*;/);
+  if (!stages || !legacy || !/return lapseType !== BattlerTagLapseType.CUSTOM \|\| super.lapse\(pokemon, lapseType\)/.test(raw) ||
+      !/this.tagType === BattlerTagType.DRAGON_CHEER/.test(raw)) throw new Error('Unsupported pinned Berry critical tag');
+  const boostStages = Number(stages[1]), legacyStages = Number(legacy[1]);
+  if (boostStages < 1 || boostStages > 2 || legacyStages < 1 || legacyStages > boostStages)
+    throw new Error('Invalid Berry critical stages');
+  return { boostStages, legacyStages, lapseOnCustomOnly: true, raw };
+}
+
+// Class ancestry is data: it proves callback absence without a hand-maintained
+// ability whitelist. Unknown builders/subclasses stay explicit and retain raw.
+export function parseBerryAbilityRules(source, abilities) {
+  const classes = new Map();
+  const declarations = /^\s*(?:export\s+)?(?:abstract\s+)?class\s+([A-Za-z_$][\w$]*)(?:\s+extends\s+([A-Za-z_$][\w$]*))?\s*\{/gm;
+  for (const match of source.matchAll(declarations)) {
+    if (classes.has(match[1])) throw new Error(`Duplicate ability attribute class: ${match[1]}`);
+    classes.set(match[1], { name: match[1], parent: match[2] ?? null,
+      raw: extractBalancedLiteral(source, match.index + match[0].length - 1) });
+  }
+  if (!classes.has('AbAttr')) throw new Error('Missing upstream AbAttr');
+  const required = ['DoubleBerryEffectAbAttr', 'ReduceBerryUseThresholdAbAttr', 'PreventBerryUseAbAttr',
+    'HealFromBerryUseAbAttr', 'CudChewConsumeBerryAbAttr', 'CudChewRecordBerryAbAttr', 'PostTurnRestoreBerryAbAttr'];
+  for (const name of required) if (!classes.has(name)) throw new Error(`Missing upstream ${name}`);
+  const effect = classes.get('DoubleBerryEffectAbAttr').raw.match(/effectValue\.value\s*\*=\s*(\d+(?:\.\d+)?)\s*;/);
+  const threshold = classes.get('ReduceBerryUseThresholdAbAttr').raw.match(/hpRatioReq\.value\s*\*=\s*(\d+(?:\.\d+)?)\s*;/);
+  if (!effect || !threshold || !/return hpRatioReq\.value < hpRatio\s*;/.test(classes.get('ReduceBerryUseThresholdAbAttr').raw))
+    throw new Error('Unsupported upstream Berry multiplier semantics');
+  if (!/toDmgValue\(pokemon\.getMaxHp\(\) \* this\.healPercent\)/.test(classes.get('HealFromBerryUseAbAttr').raw))
+    throw new Error('Unsupported upstream Berry healing semantics');
+  const parents = name => {
+    const chain = [], visited = new Set();
+    while (name) {
+      if (visited.has(name) || !classes.has(name)) return null;
+      visited.add(name); chain.push(name);
+      name = classes.get(name).parent;
+    }
+    return chain.includes('AbAttr') ? chain : null;
+  };
+  const entries = abilities.map(ability => {
+    const raw = ability.extensions?.upstreamRawRecord?.value ?? '';
+    const declarations = [...raw.matchAll(/\.(?:attr|conditionalAttr)\s*\(\s*([A-Za-z_$][\w$]*)/g)];
+    const calls = [...raw.matchAll(/\.(?:attr|conditionalAttr)\s*\(/g)];
+    const callbacks = [];
+    let resolved = calls.length === declarations.length;
+    for (const declaration of declarations) {
+      const chain = parents(declaration[1]);
+      if (!chain) { resolved = false; continue; }
+      for (const name of required) if (chain.includes(name)) {
+        callbacks.push(name);
+        // A new subclass can override apply/canApply; do not inherit behavior blindly.
+        if (declaration[1] !== name) resolved = false;
+      }
+    }
+    if (callbacks.length && /\.(?:condition|conditionalAttr|unimplemented|partial)\s*\(/.test(raw)) resolved = false;
+    let healFraction = 0;
+    if (callbacks.includes('HealFromBerryUseAbAttr')) {
+      const literal = raw.match(/\.attr\s*\(\s*HealFromBerryUseAbAttr\s*,\s*(\d+(?:\.\d+)?)\s*(?:\/\s*(\d+(?:\.\d+)?))?\s*\)/);
+      if (!literal) resolved = false;
+      else {
+        const value = Number(literal[1]) / Number(literal[2] ?? 1);
+        if (!Number.isFinite(value)) resolved = false;
+        else healFraction = Math.max(0, Math.min(1, value));
+      }
+    }
+    return { abilityId: ability.abilityId, id: ability.id, resolved, callbacks,
+      effectMultiplier: callbacks.includes('DoubleBerryEffectAbAttr') ? Number(effect[1]) : 1,
+      thresholdMultiplier: callbacks.includes('ReduceBerryUseThresholdAbAttr') ? Number(threshold[1]) : 1,
+      preventsUse: callbacks.includes('PreventBerryUseAbAttr'), healFraction,
+      cudChewConsume: callbacks.includes('CudChewConsumeBerryAbAttr'),
+      cudChewRecord: callbacks.includes('CudChewRecordBerryAbAttr'),
+      harvest: callbacks.includes('PostTurnRestoreBerryAbAttr'), raw,
+      provenance: ability.source ?? ability.provenance };
+  });
+  return { entries, ancestry: [...classes.values()].map(({name,parent}) => ({name,parent})),
+    raw: source, thresholdConditional: 'threshold < hpRatio', healingRounding: 'toDmgValue' };
+}
+
+export function parseBerryHealingRounding(source) {
+  const declaration = /export\s+function\s+toDmgValue\s*\(\s*value\s*:\s*number\s*\)\s*:\s*number\s*\{/.exec(source);
+  if (!declaration) throw new Error('Missing pinned toDmgValue');
+  const raw = extractBalancedLiteral(source, declaration.index + declaration[0].length - 1);
+  const match = /^\{\s*return\s+Math\.max\(Math\.floor\(value\),\s*(\d+)\)\s*;\s*\}$/.exec(raw);
+  if (!match || Number(match[1]) < 1 || Number(match[1]) > 65535) throw new Error('Unsupported pinned toDmgValue semantics');
+  return { kind: 'FLOOR_WITH_MINIMUM', minimum: Number(match[1]), raw };
 }

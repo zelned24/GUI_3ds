@@ -27,7 +27,11 @@ enum {
     KEY_L       = BIT(9),
     KEY_X       = BIT(10),
     KEY_Y       = BIT(11),
-    KEY_TOUCH   = BIT(20)
+    KEY_TOUCH   = BIT(20),
+    KEY_CPAD_RIGHT = BIT(28),
+    KEY_CPAD_LEFT  = BIT(29),
+    KEY_CPAD_UP    = BIT(30),
+    KEY_CPAD_DOWN  = BIT(31)
 };
 
 typedef enum {

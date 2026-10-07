@@ -32,6 +32,9 @@ bool C3D_Init(size_t cmdBufSize) { (void)cmdBufSize; return true; }
 void C3D_Fini(void) {}
 bool C3D_FrameBegin(u8 flags) { (void)flags; return true; }
 void C3D_FrameEnd(u8 flags) { (void)flags; }
+void C3D_TexSetFilter(C3D_Tex* tex, GPU_TEXTURE_FILTER_PARAM magFilter, GPU_TEXTURE_FILTER_PARAM minFilter) {
+    (void)tex; (void)magFilter; (void)minFilter;
+}
 
 bool C2D_Init(size_t maxObjects) { (void)maxObjects; return true; }
 void C2D_Fini(void) {}
@@ -89,5 +92,17 @@ C2D_Image C2D_SpriteSheetGetImage(C2D_SpriteSheet sheet, size_t index) {
     return img;
 }
 void C2D_SpriteSheetFree(C2D_SpriteSheet sheet) { (void)sheet; }
+
+static int s_dummyFont = 43;
+static C2D_FontInfo s_dummyFontInfo = { 16.0f };
+C2D_Font C2D_FontLoad(const char* filename) { (void)filename; return (C2D_Font)&s_dummyFont; }
+void C2D_FontFree(C2D_Font font) { (void)font; }
+void C2D_TextFontParse(C2D_Text* text, C2D_Font font, C2D_TextBuf buf, const char* str) { (void)text; (void)font; (void)buf; (void)str; }
+const C2D_FontInfo* C2D_FontGetInfo(C2D_Font font) { (void)font; return &s_dummyFontInfo; }
+void C2D_TextGetDimensions(const C2D_Text* text, float scaleX, float scaleY, float* outWidth, float* outHeight) {
+    (void)text; (void)scaleX; (void)scaleY;
+    if (outWidth) *outWidth = 64.0f;
+    if (outHeight) *outHeight = 16.0f;
+}
 
 }

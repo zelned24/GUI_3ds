@@ -78,6 +78,9 @@ bool RuntimeAssetManager::preload(const char* assetId) {
     }
 
     C2D_Image img = C2D_SpriteSheetGetImage(sheet, 0);
+    if (img.tex) {
+        C3D_TexSetFilter(img.tex, GPU_NEAREST, GPU_NEAREST);
+    }
 
     CachedAsset cached;
     cached.assetId = key;

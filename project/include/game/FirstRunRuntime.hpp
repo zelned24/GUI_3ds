@@ -90,6 +90,7 @@ public:
     explicit FirstRunRuntime(uint32_t seed);
     bool cycleStarter(int direction);
     bool browseSetupStarter(int direction);
+    bool selectSetupStarter(uint16_t dex);
     uint16_t selectedSetupStarterDex() const { return m_setupCursorDex ? m_setupCursorDex : m_run.starterDex; }
     bool toggleSetupStarter();
     bool restoreSetup(uint32_t seed, uint16_t starterDex);
@@ -102,6 +103,8 @@ public:
     NativeSaveResult selectSetupStarterForm(uint16_t dex, uint16_t formIndex, NativeProgressStore& store);
     NativeSaveResult purchaseStarterCostReduction(uint16_t dex, NativeProgressStore& store,
         StarterCostPurchaseResult* purchaseResult = nullptr);
+    bool purchaseStarterPassiveUnlock(uint16_t dex, NativeProgressStore& store,
+        StarterPassivePurchaseResult* purchaseResult = nullptr);
     // Live presentation phase; this does not claim the state is saveable.
     NativeSaveStage presentationStage() const {
         if (!m_runStarted) return NativeSaveStage::RunSetup;
@@ -142,6 +145,7 @@ public:
     bool claimHeldRewardChoice(uint8_t partyMember); // Explicit party target for supported held rewards.
     bool claimRecoveryRewardChoice(uint8_t partyMember, uint8_t moveSlot = 0);
     bool selectBattleMove(int direction);
+    const char* pendingEvolutionSpeciesId() const {return m_pendingEvolutionSpeciesId;}
     bool evolutionPending() const { return m_pendingEvolutionSpeciesId != nullptr || m_evolutionPauseConfirmation; }
     bool evolutionPauseConfirmationPending() const { return m_evolutionPauseConfirmation; }
     bool moveLearningPending() const { return m_pendingLevelMoves.count != 0; }
@@ -154,6 +158,8 @@ public:
     uint16_t pendingLearnMoveId() const { return m_pendingLevelMoves.count ? m_pendingLevelMoves.moveIds[0] : 0; }
     bool resolvePendingLearnMove(int selectedSlot); // -1 rejects; 0..3 replaces.
     bool advanceBattleTurn();
+    bool fleeBattle();
+    bool startRun();
     bool skipVictoryReward();
     uint8_t selectedBattleMove() const { return m_selectedBattleMove; }
     uint8_t selectedTarget() const { return m_selectedTarget; }
@@ -205,6 +211,7 @@ private:
     bool resolvePendingLearnMoveInPlace(int selectedSlot);
     bool finishPendingEvolution(bool accepted = false);
     bool skipVictoryRewardInPlace();
+    bool advanceFixedVictoryRewardsInPlace();
     bool throwPokeballInPlace(PokeballType ball);
     bool switchPlayerPokemonInPlace(uint8_t targetIndex);
     bool selectEnemyMoveSlot(const PokemonBattleState& enemy, const PokemonBattleState& player,
@@ -300,6 +307,7 @@ private:
     uint8_t m_participantCount = 0;
     std::array<uint32_t, 6> m_participantIds{};
     uint32_t m_turn = 1;
+    uint8_t m_flinchedActors = 0; // TURN_END tag: never present at a save checkpoint.
     uint32_t m_enemySwitchCounter = 0;
     bool m_battleFinished = false;
     bool m_playerWon = false;
@@ -325,6 +333,9 @@ private:
     std::array<uint16_t, 6> m_pokeballs{ 5, 0, 0, 0, 0, 0 };
     std::array<NativeHeldModifierInstance, kHeldModifierStorageCapacity> m_heldModifiers{};
     size_t m_heldModifierCount = 0;
+    NativeBerryHistoryStore m_berryHistories{};
+    std::array<NativePersistentModifierInstance, kNativePersistentModifierCapacity> m_persistentModifiers{};
+    size_t m_persistentModifierCount = 0;
 };
 
 } // namespace Pokerogue3DS

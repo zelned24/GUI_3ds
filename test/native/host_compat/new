@@ -1,0 +1,11 @@
+#pragma once
+#include <cstddef>
+namespace std { struct nothrow_t {}; inline constexpr nothrow_t nothrow{}; }
+extern "C" __attribute__((import_module("env"), import_name("testAllocate"))) void* testAllocate(size_t);
+extern "C" __attribute__((import_module("env"), import_name("testRelease"))) void testRelease(void*);
+inline void* operator new(size_t n, const std::nothrow_t&) noexcept { return testAllocate(n); }
+inline void* operator new[](size_t n, const std::nothrow_t&) noexcept { return testAllocate(n); }
+inline void operator delete(void* p) noexcept { testRelease(p); }
+inline void operator delete[](void* p) noexcept { testRelease(p); }
+inline void operator delete(void* p, size_t) noexcept { testRelease(p); }
+inline void operator delete[](void* p, size_t) noexcept { testRelease(p); }

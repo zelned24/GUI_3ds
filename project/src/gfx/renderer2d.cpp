@@ -1,5 +1,7 @@
 #include "gfx/renderer2d.hpp"
+#include "gfx/ImageTintPolicy.hpp"
 #include "screens/SceneAssets.hpp"
+#include "content/WindowTexture.hpp"
 #if !defined(__wasm__)
 #include "runtime/RuntimeAssetManager.hpp"
 #endif
@@ -57,6 +59,20 @@ bool Renderer2D::init(size_t maxObjects) {
 
     // 3. Pre-allocate static text buffer to eliminate dynamic allocation per frame (Requirement 36)
     m_textBuf = C2D_TextBufNew(1024);
+#if defined(__arm__) || defined(__3DS__) || defined(_3DS)
+    // Physical font is produced from the pinned PokéRogue TTF by mkbcfnt.
+    m_gameFont = C2D_FontLoad("romfs:/presentation/fonts/emerald.bcfnt");
+    if (m_gameFont) {
+        C2D_FontSetFilter(m_gameFont, GPU_NEAREST, GPU_NEAREST);
+    }
+    m_window = C2D_SpriteSheetLoad(Pokerogue3DS::kWindowTexturePath);
+    if (m_window) {
+        const auto img = C2D_SpriteSheetGetImage(m_window, 0);
+        if (img.tex) {
+            C3D_TexSetFilter(img.tex, GPU_NEAREST, GPU_NEAREST);
+        }
+    }
+#endif
 
 #if !defined(__wasm__)
     // 4. Initialize global RuntimeAssetManager
@@ -83,6 +99,10 @@ void Renderer2D::fini() {
     Citro2D::getRuntimeAssetManager().fini();
 #endif
 
+#if defined(__arm__) || defined(__3DS__) || defined(_3DS)
+    if (m_gameFont) { C2D_FontFree(m_gameFont); m_gameFont = nullptr; }
+    if (m_window) { C2D_SpriteSheetFree(m_window); m_window = nullptr; }
+#endif
     C2D_Fini();
     C3D_Fini();
 
@@ -153,6 +173,9 @@ void Renderer2D::drawImageDirect(
     if (!m_currentTarget || opacity <= 0.001f || !img.tex || !img.subtex
         || !img.subtex->width || !img.subtex->height) return;
 
+    // Force nearest-neighbor sampling on PICA200 GPU to preserve crisp pixel art
+    C3D_TexSetFilter(img.tex, GPU_NEAREST, GPU_NEAREST);
+
     float scaleX = width / img.subtex->width;
     float scaleY = height / img.subtex->height;
     if (flipX) scaleX = -scaleX;
@@ -163,7 +186,10 @@ void Renderer2D::drawImageDirect(
     uint32_t a = (tintColor >> 24) & 0xFF;
     a = static_cast<uint32_t>(a * opacity);
     uint32_t modulatedTint = (tintColor & 0x00FFFFFF) | (a << 24);
-    C2D_PlainImageTint(&tint, modulatedTint, opacity);
+    // Citro2D blend replaces RGB; it is independent of alpha.
+    // White is our neutral tint, so preserve the source texture colors.
+    const float blend = Pokerogue3DS::imageTintBlend(tintColor);
+    C2D_PlainImageTint(&tint, modulatedTint, blend);
 
     // Call real Citro2D rotated & scaled image renderer
     C2D_DrawImageAtRotated(
@@ -261,6 +287,10 @@ void Renderer2D::drawText(
 
     if (m_textBuf) {
         C2D_Text c2dText;
+        #if defined(__arm__) || defined(__3DS__) || defined(_3DS)
+        if (m_gameFont) C2D_TextFontParse(&c2dText, m_gameFont, m_textBuf, text);
+        else
+#endif
         C2D_TextParse(&c2dText, m_textBuf, text);
         C2D_TextOptimize(&c2dText);
         C2D_DrawText(&c2dText, C2D_WithColor, x, y, 0.5f, 1.0f, 1.0f, finalColor);
@@ -271,7 +301,65 @@ void Renderer2D::drawText(const char* text, float x, float y, float size, uint32
     if (!m_initialized || !m_frameActive || !m_currentTarget || !m_textBuf || !text || size <= 0) return;
     C2D_Text value;
     // beginFrame clears the shared buffer once, preserving all strings until GPU submission.
-    C2D_TextParse(&value, m_textBuf, text);
+    #if defined(__arm__) || defined(__3DS__) || defined(_3DS)
+        if (m_gameFont) C2D_TextFontParse(&value, m_gameFont, m_textBuf, text);
+        else
+#endif
+        C2D_TextParse(&value, m_textBuf, text);
     C2D_TextOptimize(&value);
-    C2D_DrawText(&value, C2D_WithColor, x, y, 0.5f, size, size, color);
+    float scale=size;
+#if defined(__arm__) || defined(__3DS__) || defined(_3DS)
+    // Existing UI scale was authored against the 32px system font.
+    // The pinned game font is rasterized at 16px by our asset pipeline.
+    if (m_gameFont) scale*=2.0f;
+#endif
+    C2D_DrawText(&value, C2D_WithColor, x, y, 0.5f, scale, scale, color);
+}
+
+float Renderer2D::drawTextFitted(const char* text,float x,float y,float size,float maxWidth,uint32_t color) {
+    if(!m_initialized || !m_frameActive || !m_currentTarget || !m_textBuf || !text || size<=0 || maxWidth<=0) return size;
+#if defined(__arm__) || defined(__3DS__) || defined(_3DS)
+    C2D_Text value;
+    if(m_gameFont) C2D_TextFontParse(&value,m_gameFont,m_textBuf,text);
+    else C2D_TextParse(&value,m_textBuf,text);
+    C2D_TextOptimize(&value);
+    float scale=size*(m_gameFont ? 2.0f : 1.0f),width=0;
+    C2D_TextGetDimensions(&value,scale,scale,&width,nullptr);
+    const float fit=width>maxWidth ? maxWidth/width : 1.0f;
+    scale*=fit;
+    C2D_DrawText(&value,C2D_WithColor,x,y,0.5f,scale,scale,color);
+    return size*fit;
+#else
+    drawText(text,x,y,size,color);
+    return size;
+#endif
+}
+
+float Renderer2D::textLineHeight(float size) const {
+#if defined(__arm__) || defined(__3DS__) || defined(_3DS)
+    const auto* info=C2D_FontGetInfo(m_gameFont);
+    return info ? info->height*size*(m_gameFont ? 2.0f : 1.0f) : 0.0f;
+#else
+    return 30.0f*size;
+#endif
+}
+
+bool Renderer2D::drawWindow(float x,float y,float width,float height) {
+#if defined(__arm__) || defined(__3DS__) || defined(_3DS)
+    const float border=Pokerogue3DS::kWindowBorder;
+    if (!m_initialized || !m_frameActive || !m_currentTarget || !m_window ||
+        width<2*border || height<2*border) return false;
+    const auto image=C2D_SpriteSheetGetImage(m_window,0);
+    if (!image.subtex || image.subtex->width!=24 || image.subtex->height!=24) return false;
+    const float xs[]={x,x+border,x+width-border},ys[]={y,y+border,y+height-border};
+    const float widths[]={border,width-2*border,border},heights[]={border,height-2*border,border};
+    for (unsigned row=0;row<3;++row) for (unsigned column=0;column<3;++column) {
+        AtlasFrame frame{uint16_t(column*8),uint16_t(row*8),8,8,8,8,0,0};
+        drawAtlasFrame(image,frame,xs[column],ys[row],widths[column],heights[row]);
+    }
+    return true;
+#else
+    (void)x;(void)y;(void)width;(void)height;
+    return false;
+#endif
 }

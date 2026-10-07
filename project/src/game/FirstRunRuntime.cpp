@@ -21,12 +21,18 @@
 #include "game/PokerogueModifierReward.hpp"
 #include "content/PokerogueRuntimeContent.hpp"
 #include <algorithm>
+#include <cmath>
 #include <cstdio>
 #include <cstring>
 #include <memory>
 #include <new>
 
 namespace Pokerogue3DS {
+namespace {
+thread_local uint16_t s_previousEncounterDex = 0;
+}
+#define m_previousEncounterDex s_previousEncounterDex
+#define m_escapeAttempts (m_context.enemy.battleState.escapeAttempts)
 namespace {
 Citro2D::SceneNodeData textNode(const char* id, Citro2D::ScreenTarget screen,
                                 float x, float y, int16_t z) {
@@ -112,6 +118,16 @@ bool FirstRunRuntime::cycleStarter(int direction) {
         }
     }
     return false;
+}
+
+bool FirstRunRuntime::selectSetupStarter(uint16_t dex) {
+    if(m_runStarted) return false;
+    const auto* species=PokerogueContent::findSpeciesByDex(dex);
+    if(!species || !species->starterEligible) return false;
+    // Browsing a locked species is allowed; selecting it for the party still
+    // passes the existing unlock, cost and capacity validation.
+    m_setupCursorDex=dex;
+    return true;
 }
 
 bool FirstRunRuntime::browseSetupStarter(int direction) {
@@ -267,6 +283,30 @@ NativeSaveResult FirstRunRuntime::purchaseStarterCostReduction(uint16_t dex, Nat
     return NativeSaveResult::Ok;
 }
 
+bool FirstRunRuntime::purchaseStarterPassiveUnlock(uint16_t dex, NativeProgressStore& store,
+    StarterPassivePurchaseResult* purchaseResult) {
+    if (purchaseResult) *purchaseResult = StarterPassivePurchaseResult::InvalidRecord;
+    if (m_runStarted || !m_starterProfileReady || !starterUnlocked(dex)) return false;
+    std::unique_ptr<FirstRunRuntime> prepared(new (std::nothrow) FirstRunRuntime(*this));
+    if (!prepared) return false;
+    bool found = false;
+    for (size_t i = 0; i < prepared->m_starterProfileCount; ++i) {
+        if (prepared->m_starterProfileRecords[i].speciesDex != dex) continue;
+        const auto applied = applyNativeStarterPassiveUnlock(prepared->m_starterProfileRecords[i]);
+        if (purchaseResult) *purchaseResult = applied;
+        if (applied != StarterPassivePurchaseResult::Applied) return false;
+        prepared->m_starterProfileRecords[i].passiveUnlocked = true;
+        found = true;
+        break;
+    }
+    if (!found) return false;
+    const auto committed = prepared->saveNativeProgress(store);
+    if (committed != NativeSaveResult::Ok) return false;
+    *this = *prepared;
+    buildScene(); // Rebind nodes and text after publishing the heap candidate.
+    return true;
+}
+
 bool FirstRunRuntime::restoreStarterTeamSetup(uint32_t seed, const uint16_t* dexes, size_t count) {
     if (!seed || !starterSelectionAllowed(dexes, count)) return false;
     std::unique_ptr<FirstRunRuntime> prepared(new (std::nothrow) FirstRunRuntime(*this));
@@ -315,6 +355,9 @@ bool FirstRunRuntime::restoreSetupInPlace(uint32_t seed, uint16_t starterDex) {
         if (species.dex == starterDex && species.starterEligible) break;
     }
     if (index == PokerogueContent::kSpeciesCount) return false;
+    m_flinchedActors = 0;
+    m_persistentModifiers = {};
+    m_persistentModifierCount = 0;
     m_run.seed = seed;
     m_setupCursorDex = 0;
     m_arenaWeather = {};
@@ -345,6 +388,14 @@ NativeSaveResult FirstRunRuntime::captureNativeRunSave(NativeRunSave& output) co
     for (const auto& member : m_context.trainerParty) pending |= member.battleState.pendingStatus != PokemonStatusEffect::None;
     // Setup has no summon-state representation; active actors use explicit codecs.
     if (!m_runStarted) {
+        pending |= m_context.player.battleState.hasEatenBerry || m_context.enemy.battleState.hasEatenBerry ||
+            m_context.secondEnemy.battleState.hasEatenBerry;
+        for (const auto& member : m_context.playerParty) pending |= member.battleState.hasEatenBerry;
+        for (const auto& member : m_context.trainerParty) pending |= member.battleState.hasEatenBerry;
+        pending |= m_context.player.battleState.berryCriticalBoostStages ||
+            m_context.enemy.battleState.berryCriticalBoostStages || m_context.secondEnemy.battleState.berryCriticalBoostStages;
+        for (const auto& member : m_context.playerParty) pending |= member.battleState.berryCriticalBoostStages != 0;
+        for (const auto& member : m_context.trainerParty) pending |= member.battleState.berryCriticalBoostStages != 0;
         pending |= m_context.player.battleState.sturdy.present || m_context.enemy.battleState.sturdy.present ||
             m_context.secondEnemy.battleState.sturdy.present;
         for (const auto& member : m_context.playerParty) pending |= member.battleState.sturdy.present;
@@ -368,11 +419,9 @@ NativeSaveResult FirstRunRuntime::captureNativeRunSave(NativeRunSave& output) co
     std::unique_ptr<NativeRunSave> valueStorage(new (std::nothrow) NativeRunSave{});
     if (!valueStorage) { output = {}; return NativeSaveResult::MemoryUnavailable; }
     auto& value = *valueStorage;
-    // Active fields preserve actors/segments; final phase two and setup doubles remain unsupported.
+    // Active fields preserve actors/segments; setup doubles remain unsupported.
     // Never report a setup checkpoint as a successful save of an active double battle.
-    if (m_capturePartyChoicePending || (m_doubleBattle && !m_runStarted) || m_pokeballs[5] ||
-        (m_run.wave == PokerogueContent::kClassicFinalWave && m_context.enemy.bossState.segmentCount &&
-            !m_context.enemy.bossState.classicFinalBossFirstPhase)) {
+    if (m_capturePartyChoicePending || (m_doubleBattle && !m_runStarted) || m_pokeballs[5]) {
         output = {};
         return NativeSaveResult::UnsupportedStage;
     }
@@ -391,6 +440,8 @@ NativeSaveResult FirstRunRuntime::captureNativeRunSave(NativeRunSave& output) co
     }
     std::snprintf(value.biomeId, sizeof(value.biomeId), "%s", checkpointBiome->id);
     for (uint8_t ball = 0; ball < 5; ++ball) value.pokeballCounts[ball] = m_pokeballs[ball];
+    value.persistentModifierCount = static_cast<uint16_t>(m_persistentModifierCount);
+    for (size_t i = 0; i < m_persistentModifierCount; ++i) value.persistentModifiers[i] = m_persistentModifiers[i];
     value.starterProfileGeneration = m_starterProfileGeneration;
     if (!m_runStarted && m_context.playerPartyCount > 1) {
         if (m_context.playerPartyCount > 6) { output = {}; return NativeSaveResult::InvalidRecord; }
@@ -412,6 +463,10 @@ NativeSaveResult FirstRunRuntime::captureNativeRunSave(NativeRunSave& output) co
             : NativeSaveStage::BattleActive;
         value.encounterDex = m_context.enemy.dex;
         value.playerHp = m_context.player.battleState.hp;
+        value.playerHasEatenBerry = m_context.player.battleState.hasEatenBerry;
+        value.enemyHasEatenBerry = m_context.enemy.battleState.hasEatenBerry;
+        value.playerBerryCriticalBoostStages = m_context.player.battleState.berryCriticalBoostStages;
+        value.enemyBerryCriticalBoostStages = m_context.enemy.battleState.berryCriticalBoostStages;
         for (uint8_t stat = 0; stat < 7; ++stat) {
             value.playerStatStages[stat] = m_context.player.battleState.statStages[stat];
             value.enemyStatStages[stat] = m_context.enemy.battleState.statStages[stat];
@@ -476,6 +531,8 @@ NativeSaveResult FirstRunRuntime::captureNativeRunSave(NativeRunSave& output) co
                 saved.status = actor.battleState.status;
                 saved.confusion = actor.battleState.confusion;
                 saved.sturdyTag = actor.battleState.sturdy.present;
+                saved.berryCriticalBoostStages = actor.battleState.berryCriticalBoostStages;
+                saved.hasEatenBerry = actor.battleState.hasEatenBerry;
                 saved.moveCount = actor.battleState.moveCount;
                 for (uint8_t slot = 0; slot < saved.moveCount && slot < 4; ++slot) {
                     saved.moveIds[slot] = actor.battleState.moves[slot].moveId;
@@ -502,7 +559,7 @@ NativeSaveResult FirstRunRuntime::captureNativeRunSave(NativeRunSave& output) co
         hasSummonTags |= m_context.playerParty[member].battleState.heldItemLostTags.unburden ||
             m_context.playerParty[member].battleState.sturdy.present;
     if (value.stage != NativeSaveStage::RunSetup &&
-        (m_doubleBattle || (m_battleFinished && !m_playerWon) || m_run.wave > 9 || (m_trainerBattle && m_run.wave != 5) || m_context.playerPartyCount > 1 || m_playerHistoryRequiresSnapshot || m_heldModifierCount || value.playerStatus.present || value.playerConfusion.present || hasSummonTags || hasChangedFriendship || hasModifiedMaxPp)) {
+        (m_doubleBattle || (m_battleFinished && !m_playerWon) || m_run.wave > 9 || (m_trainerBattle && m_run.wave != 5) || m_context.playerPartyCount > 1 || m_playerHistoryRequiresSnapshot || m_heldModifierCount || m_persistentModifierCount || value.playerStatus.present || value.playerConfusion.present || hasSummonTags || hasChangedFriendship || hasModifiedMaxPp)) {
         if (m_context.playerPartyCount > 6 ||
             m_context.activePlayerPartyIndex >= m_context.playerPartyCount) { output = {}; return NativeSaveResult::InvalidRecord; }
         value.playerPartyCount = m_context.playerPartyCount;
@@ -516,6 +573,7 @@ NativeSaveResult FirstRunRuntime::captureNativeRunSave(NativeRunSave& output) co
         }
     }
     if (m_heldModifierCount && value.stage == NativeSaveStage::RunSetup) { output = {}; return NativeSaveResult::InvalidRecord; }
+    value.berryHistories = m_berryHistories;
     value.heldModifierCount = static_cast<uint8_t>(m_heldModifierCount);
     for (size_t i = 0; i < m_heldModifierCount; ++i) value.heldModifiers[i] = m_heldModifiers[i];
     if (value.doubleBattle) {
@@ -688,6 +746,12 @@ bool FirstRunRuntime::restoreNativeRunSave(const NativeRunSave& save,
     const NativeStarterCandyRecord* records, size_t count, const PokemonFriendshipPolicy* policy) {
     if (validateNativeRunSave(save, PokerogueContent::kContentHash) != NativeSaveResult::Ok)
         return false;
+    // The codec preserves Berry arguments, but battle consumption is not yet
+    // implemented. Reject these checkpoints before publishing a live runtime.
+    for (size_t i = 0; i < save.heldModifierCount; ++i) {
+        const auto* definition = heldModifierDefinition(save.heldModifiers[i]);
+        if (definition && !std::strcmp(definition->id, "BERRY")) return false;
+    }
     const auto* starter = PokerogueContent::findSpeciesByDex(save.starterDex);
     if (!starter || !starter->starterEligible || count > PokerogueContent::kSpeciesCount || (count && !records)) return false;
     bool unlocked = starter->freshProfileStarter;
@@ -743,6 +807,9 @@ bool FirstRunRuntime::restoreNativeRunSaveInPlace(const NativeRunSave& save) {
     // Legacy snapshots cannot reconstruct later evolution/reward/route history.
     if (save.wave > 9 && !save.playerPartyCount) return false;
     if (!restoreSetupInPlace(save.seed, save.starterDex)) return false;
+    if (!persistentExperienceInventorySupported(save.persistentModifiers, save.persistentModifierCount)) return false;
+    m_persistentModifierCount = save.persistentModifierCount;
+    for (size_t i = 0; i < m_persistentModifierCount; ++i) m_persistentModifiers[i] = save.persistentModifiers[i];
     m_participantHistoryResolved = false; // Seed replay is the legacy single-starter path.
     // A skipped reward adds no modifier or party member. Replay each earlier
     // supported wild/fixed trainer victory to reconstruct level/EXP;
@@ -772,6 +839,10 @@ bool FirstRunRuntime::restoreNativeRunSaveInPlace(const NativeRunSave& save) {
             actor.moveCount = saved.moveCount;
             for (uint8_t slot = 0; slot < saved.moveCount; ++slot) actor.moveIds[slot] = saved.moveIds[slot];
         }
+        for (uint8_t member = 0; member < save.playerPartyCount; ++member)
+            m_context.playerParty[member].battleState.berryCriticalBoostStages = save.playerParty[member].berryCriticalBoostStages;
+        for (uint8_t member = 0; member < save.playerPartyCount; ++member)
+            m_context.playerParty[member].battleState.hasEatenBerry = save.playerParty[member].hasEatenBerry;
         m_context.player = m_context.playerParty[save.activePlayerMember];
         m_run.wave = save.wave;
         resolve(true, save.biomeId);
@@ -838,8 +909,15 @@ bool FirstRunRuntime::restoreNativeRunSaveInPlace(const NativeRunSave& save) {
         m_context.enemy = initialEnemy;
         m_experienceGranted = false;
     }
-    const auto& reconstructedEnemy = save.trainerPartyCount
+    auto& reconstructedEnemy = save.trainerPartyCount
         ? m_context.trainerParty[save.activeTrainerMember] : m_context.enemy;
+    if (save.wave == PokerogueContent::kClassicFinalWave && !save.enemyBoss.classicFinalBossFirstPhase &&
+        save.enemyBoss.segmentCount && reconstructedEnemy.bossState.classicFinalBossFirstPhase) {
+        if (!preparePokemonFinalBossSecondPhase(save.wave, reconstructedEnemy.battleState, reconstructedEnemy.bossState))
+            return false;
+        reconstructedEnemy.formId = reconstructedEnemy.battleState.formId;
+        reconstructedEnemy.actor.formId = reconstructedEnemy.battleState.formId;
+    }
 
     if (!save.playerPartyCount && !save.trainerPartyCount && save.stage == NativeSaveStage::ExperienceGranted &&
         (!grantVictoryExperience() || moveLearningPending() || evolutionPending())) return false;
@@ -882,6 +960,8 @@ bool FirstRunRuntime::restoreNativeRunSaveInPlace(const NativeRunSave& save) {
             save.secondEnemyBoss.hasTrainer != second.bossState.hasTrainer) return false;
         // Verify all immutable identity/constructor data through the existing codec.
         expected.hp = save.secondEnemy.hp;
+        expected.berryCriticalBoostStages = save.secondEnemy.berryCriticalBoostStages;
+        expected.hasEatenBerry = save.secondEnemy.hasEatenBerry;
         expected.status = save.secondEnemy.status;
         expected.confusion = save.secondEnemy.confusion;
         expected.sturdyTag = save.secondEnemy.sturdyTag;
@@ -906,6 +986,10 @@ bool FirstRunRuntime::restoreNativeRunSaveInPlace(const NativeRunSave& save) {
         m_run.encounterDex = m_context.enemy.dex;
     }
     m_context.player.battleState.hp = save.playerHp;
+    m_context.player.battleState.hasEatenBerry = save.playerHasEatenBerry;
+    m_context.enemy.battleState.hasEatenBerry = save.enemyHasEatenBerry;
+    m_context.player.battleState.berryCriticalBoostStages = save.playerBerryCriticalBoostStages;
+    m_context.enemy.battleState.berryCriticalBoostStages = save.enemyBerryCriticalBoostStages;
     for (uint8_t stat = 0; stat < 7; ++stat) {
         m_context.player.battleState.statStages[stat] = save.playerStatStages[stat];
         m_context.enemy.battleState.statStages[stat] = save.enemyStatStages[stat];
@@ -929,6 +1013,8 @@ bool FirstRunRuntime::restoreNativeRunSaveInPlace(const NativeRunSave& save) {
             actor.battleState.status = saved.status;
             actor.battleState.confusion = saved.confusion;
             actor.battleState.sturdy.present = saved.sturdyTag;
+            actor.battleState.berryCriticalBoostStages = saved.berryCriticalBoostStages;
+            actor.battleState.hasEatenBerry = saved.hasEatenBerry;
             for (uint8_t stat = 0; stat < 7; ++stat) actor.battleState.statStages[stat] = saved.statStages[stat];
             for (uint8_t slot = 0; slot < saved.moveCount; ++slot)
                 actor.battleState.moves[slot].pp = saved.pp[slot];
@@ -945,6 +1031,25 @@ bool FirstRunRuntime::restoreNativeRunSaveInPlace(const NativeRunSave& save) {
     m_pokeballs[5] = 0;
     m_context.playerParty[m_context.activePlayerPartyIndex] = m_context.player;
     if (!restoreHeldModifierInventory(save.heldModifiers, save.heldModifierCount)) return false;
+    // Trainer/legacy actor PIDs are reconstructed from the pinned encounter.
+    // Verify them here before the transaction publishes the loaded run.
+    for (size_t i = 0; i < save.berryHistories.recordCount; ++i) {
+        const auto& row = save.berryHistories.records[i];
+        const PokemonBattleState* actor = nullptr;
+        if (row.actorSlot < 6 && row.actorSlot < m_context.playerPartyCount)
+            actor = row.actorSlot == m_context.activePlayerPartyIndex ? &m_context.player.battleState
+                : &m_context.playerParty[row.actorSlot].battleState;
+        else if (row.actorSlot >= 6 && row.actorSlot < 12 && row.actorSlot - 6 < m_context.trainerPartyCount)
+            actor = row.actorSlot - 6 == m_context.activeTrainerPartyIndex ? &m_context.enemy.battleState
+                : &m_context.trainerParty[row.actorSlot - 6].battleState;
+        else if (row.actorSlot == 12 && !save.playerPartyCount) actor = &m_context.player.battleState;
+        else if (row.actorSlot == 13 && !m_context.trainerPartyCount) actor = &m_context.enemy.battleState;
+        else if (row.actorSlot == 14 && m_doubleBattle) actor = &m_context.secondEnemy.battleState;
+        if (!actor || actor->pokemonId != row.ownerPokemonId ||
+            (!actor->hasEatenBerry && (row.counts[0] || row.counts[1] || row.counts[2]))) return false;
+    }
+    m_berryHistories = save.berryHistories;
+
     if (save.globalRngResolved) m_globalRng.restore(save.globalRng);
     m_turn = save.battleTurn;
     m_enemySwitchCounter = save.enemySwitchCounter;
@@ -1004,8 +1109,7 @@ bool statusActionAbilitySupported(uint16_t abilityId) {
 }
 const PokerogueContent::MoveStatusEffect* singleOpponentStatusEffect(uint16_t moveId) {
     const auto* move = PokerogueContent::findMoveById(moveId);
-    if (!move || move->category != PokerogueContent::MoveStatus || move->attributeCount != 1 ||
-        !PokerogueContent::moveHasAttribute(*move, "StatusEffectAttr") || !move->target ||
+    if (!move || move->category != PokerogueContent::MoveStatus || !pokemonStatusEffectMoveAttributesResolved(*move) || !move->target ||
         (std::strcmp(move->target, "NEAR_OTHER") && std::strcmp(move->target, "NEAR_ENEMY"))) return nullptr;
     bool flagsKnown = false;
     for (const auto& flags : PokerogueContent::kStatusMoveFlagProfiles)
@@ -1064,7 +1168,9 @@ bool singleStatusConfusionEffect(uint16_t moveId) {
 }
 const PokerogueContent::MoveStatStageEffect* singleDamageStatStageEffect(uint16_t moveId) {
     const auto* move = PokerogueContent::findMoveById(moveId);
-    if (!move || move->power <= 0 || move->upstreamFlags || !move->target ||
+    // STAB_BLACKLIST is a moveset-generation filter, not a battle callback.
+    if (!move || move->power <= 0 ||
+        (move->upstreamFlags & ~PokerogueContent::MoveIsStabBlacklisted) || !move->target ||
         std::strcmp(move->target, "NEAR_OTHER") ||
         !pokemonDamageSecondaryAttributesResolved(*move, "StatStageChangeAttr")) return nullptr;
     bool buildersResolved = false;
@@ -1091,7 +1197,7 @@ bool sharedAreaActionMove(const PokerogueContent::Move& move) {
 
 bool supportsBaselineBattleMove(uint16_t moveId) {
     if (PokerogueContent::kStruggleDefinitionResolved && moveId == PokerogueContent::kStruggleMoveId) return true;
-    if (pokemonIgnoreOpponentStatStagesMoveResolved(moveId) || pokemonSurviveDamageMoveResolved(moveId) || pokemonFixedDamageMoveProfile(moveId) || singleDamageStatStageEffect(moveId) || singleStatusConfusionEffect(moveId) || singleOpponentStatusEffect(moveId) || singleDamageStatusEffect(moveId) || singleDamageConfusionEffect(moveId) || pokemonWeatherChangeProfile(moveId) || supportsPokemonTrickRoomMove(moveId) || supportsPokemonStatStageMove(moveId) || selfHealingProfile(moveId) || damageDrainProfile(moveId) || damageRecoilProfile(moveId)) return true;
+    if (singleDamageFlinchMove(moveId) || pokemonIgnoreOpponentStatStagesMoveResolved(moveId) || pokemonSurviveDamageMoveResolved(moveId) || pokemonFixedDamageMoveProfile(moveId) || singleDamageStatStageEffect(moveId) || singleStatusConfusionEffect(moveId) || singleOpponentStatusEffect(moveId) || singleDamageStatusEffect(moveId) || singleDamageConfusionEffect(moveId) || pokemonWeatherChangeProfile(moveId) || supportsPokemonTrickRoomMove(moveId) || supportsPokemonStatStageMove(moveId) || selfHealingProfile(moveId) || damageDrainProfile(moveId) || damageRecoilProfile(moveId)) return true;
     const auto* move = PokerogueContent::findMoveById(moveId);
     if (move && plainAreaDamageMove(*move)) return true;
     // Other plain attacks currently use the single-target damage path.
@@ -1160,8 +1266,9 @@ bool FirstRunRuntime::resolveActiveStatusRecipientPolicies(const PokemonBattleSt
         !statusActionAbilitySupported(source.abilityId)) return false;
     const auto* form = recipient.formId ? PokerogueContent::findFormById(recipient.formId) : nullptr;
     const auto* species = PokerogueContent::findSpeciesByDex(recipient.speciesDex);
-    if (!form || !species || std::strcmp(form->speciesId, species->id) != 0) return false;
-    const char* types[] = {form->type1, form->type2};
+    if (!species || (recipient.formId && !form) ||
+        (form && std::strcmp(form->speciesId, species->id) != 0)) return false;
+    const char* types[] = {form ? form->type1 : species->type1, form ? form->type2 : species->type2};
     if (!types[0] || !resolvePokemonTypeSymbol(types[0])) return false;
     const size_t count = types[1] && types[1][0] ? 2 : 1;
     if (count == 2 && !resolvePokemonTypeSymbol(types[1])) return false;
@@ -1317,9 +1424,11 @@ bool FirstRunRuntime::resolveActiveStatStageCommandPolicy(const PokemonBattleSta
         if (!userAccuracyResolved || !targetAccuracyResolved ||
             !composePokemonStatusAccuracyStagePolicy(user, opponent, baseAccuracy, stagedAccuracy,
                 ignoreUserAccuracy, ignoreTargetEvasion)) return false;
-        const auto* form = PokerogueContent::findFormById(opponent.formId);
-        if (!form) return false;
-        const char* types[] = {form->type1, form->type2};
+        const auto* form = opponent.formId ? PokerogueContent::findFormById(opponent.formId) : nullptr;
+        const auto* species = PokerogueContent::findSpeciesByDex(opponent.speciesDex);
+        if (!species || (opponent.formId && !form) ||
+            (form && std::strcmp(form->speciesId, species->id) != 0)) return false;
+        const char* types[] = {form ? form->type1 : species->type1, form ? form->type2 : species->type2};
         PokemonStatusMoveTypeImmunityPolicy typePolicy{};
         typePolicy.resolved = typePolicy.opponents = true;
         typePolicy.originalIfStellarTypes = types;
@@ -1445,6 +1554,14 @@ bool FirstRunRuntime::supportsActiveBattleMove(const PokemonBattleState& user,
             resolveActiveStatusRecipientPolicies(user, opponent, status, source) &&
             resolvePokemonPostSetStatusPolicy(opponent, user, status, recipient, source, true, true, true, reactions);
     }
+    if (singleDamageFlinchMove(moveId)) {
+        int16_t chance = 0;
+        return !m_doubleBattle && !m_heldModifierCount && user.statsAreBaseFormulaOnly &&
+            opponent.statsAreBaseFormulaOnly && statusActionAbilitySupported(user.abilityId) &&
+            statusActionAbilitySupported(opponent.abilityId) && resolvedPokemonFlinchCallbacks(user.abilityId) &&
+            resolvedPokemonFlinchCallbacks(opponent.abilityId) &&
+            resolvePokemonMoveEffectChance(moveId, user.abilityId, opponent.abilityId, false, chance);
+    }
     if (singleDamageConfusionEffect(moveId)) {
         PokemonStatusRecipientPolicies recipient{};
         int16_t chance = 0;
@@ -1485,6 +1602,10 @@ double FirstRunRuntime::scoreActiveEnemyMove(const PokemonBattleState& user,
             if (!resolvePokemonMoveEffectChance(move.id, user.abilityId, target.abilityId, false, chance) ||
                 !calculatePokemonConfusionMoveAiBenefit(move.id, chance, benefit)) return -20.0;
             secondaryBenefit -= benefit;
+        }
+        if (singleDamageFlinchMove(move.id)) {
+            if (!resolvePokemonMoveEffectChance(move.id, user.abilityId, target.abilityId, false, chance)) return -20.0;
+            secondaryBenefit -= std::floor(-5.0 * (chance < 0 ? 100 : chance) / 100.0);
         }
         const double opponentScore = baselineEnemyMoveScore(user, target, move, secondaryBenefit);
         if (m_doubleBattle && plainAreaDamageMove(move) && !std::strcmp(move.target, "ALL_NEAR_OTHERS") &&
@@ -1547,7 +1668,12 @@ bool FirstRunRuntime::resolveActiveMoveCritical(const PokemonBattleState& user,
         {user.abilityId, true, true},
         {opponent.abilityId, true, false}
     };
-    return composePokemonCriticalAbilityPolicy(components, 2, false, output);
+    PokemonCriticalPolicy policy{};
+    if (user.berryCriticalBoostStages > 2 || !composePokemonCriticalAbilityPolicy(components, 2, false, policy) ||
+        policy.bonusStages > 255 - user.berryCriticalBoostStages) return false;
+    policy.bonusStages += user.berryCriticalBoostStages;
+    output = policy;
+    return true;
 }
 
 bool FirstRunRuntime::resolveActiveMoveCritical(bool enemyAttacks,
@@ -1692,7 +1818,7 @@ bool FirstRunRuntime::battleInputSupported() const {
         const auto& move = m_context.enemy.battleState.moves[i];
         if (!move.pp) continue;
         if (!supportsActiveBattleMove(m_context.enemy.battleState, m_context.player.battleState, move.moveId) || !weatherMoveAllowed(move.moveId) ||
-            (damageDrainProfile(move.moveId) && hasCanonicalReverseDrain(m_context.player.battleState.abilityId))) return false;
+            (damageDrainProfile(move.moveId) && hasCanonicalReverseDrain(m_context.player.battleState.abilityId))) continue;
         ++enemyUsable;
     }
     const bool enemyStruggle = pokemonMovePpExhausted(m_context.enemy.battleState) &&
@@ -1839,7 +1965,14 @@ bool FirstRunRuntime::claimRewardChoiceInPlace(uint8_t heldPartyMember, bool rec
             m_battleFeedback = "Selected reward has no supported held recipient policy";
             return false;
         }
-        if (knownHeldReward) {
+        if (expBoosterItemProfile(itemId)) {
+            if (!addPersistentExperienceReward(m_persistentModifiers.data(), m_persistentModifiers.size(),
+                    m_persistentModifierCount, itemId)) {
+                m_battleFeedback = "Persistent EXP reward limit reached";
+                return false;
+            }
+            m_playerHistoryRequiresSnapshot = true;
+        } else if (knownHeldReward) {
             const auto added = addKnownHealingHeldReward(m_heldModifiers.data(), m_heldModifiers.size(),
                 m_heldModifierCount, heldReward);
             if (added != HeldRewardAddResult::Added && added != HeldRewardAddResult::Merged) {
@@ -1886,6 +2019,10 @@ bool FirstRunRuntime::claimRewardChoiceInPlace(uint8_t heldPartyMember, bool rec
         } else {
             m_battleFeedback = "Reward effect requires a canonical native adapter";
             return false;
+        }
+        m_context.playerParty[targetMember].battleState = targetState;
+        if (targetMember == m_context.activePlayerPartyIndex) {
+            m_context.player.battleState = targetState;
         }
     }
     m_rewardsPending = false;
@@ -2109,7 +2246,8 @@ bool FirstRunRuntime::grantVictoryExperience(bool pokemonDefeated, uint8_t enemy
         policy.eligible = target.battleState.hp && target.level < classicExperienceLevelCap(m_run.wave);
         uint32_t memberAward = 0;
         if (pokemonParticipantExperience(rawExperience, m_trainerBattle, policy, memberAward) !=
-                PokemonExperienceResult::Ok) return false;
+                PokemonExperienceResult::Ok || !applyPersistentExperienceBoosters(memberAward,
+                    m_persistentModifiers.data(), m_persistentModifierCount, memberAward)) return false;
         if (m_doubleBattle && enemyMask == 3) {
             const auto* species2 = PokerogueContent::findSpeciesByDex(m_context.secondEnemy.dex);
             const auto* form2 = m_context.secondEnemy.formId
@@ -2118,7 +2256,8 @@ bool FirstRunRuntime::grantVictoryExperience(bool pokemonDefeated, uint8_t enemy
             uint32_t award2 = 0;
             if (!species2 || pokemonExperienceForDefeat(*species2, m_context.secondEnemy.level, raw2, form2) !=
                     PokemonExperienceResult::Ok || pokemonParticipantExperience(raw2, false, policy, award2) !=
-                    PokemonExperienceResult::Ok || award2 > 0xffffffffU - memberAward) return false;
+                    PokemonExperienceResult::Ok || !applyPersistentExperienceBoosters(award2,
+                        m_persistentModifiers.data(), m_persistentModifierCount, award2) || award2 > 0xffffffffU - memberAward) return false;
             memberAward += award2;
         }
         const uint8_t friendshipDefeats = pokemonDefeated ? (enemyMask == 3 ? 2 : 1) : 0;
@@ -2206,6 +2345,8 @@ bool FirstRunRuntime::selectEnemyMoveSlot(const PokemonBattleState& enemyState,
         uint32_t damage = 0;
         const auto* candidateMove = PokerogueContent::findMoveById(enemyState.moves[slot].moveId);
         if (!candidateMove) return false;
+        if (!supportsActiveBattleMove(enemyState, playerState, candidateMove->id) ||
+            (damageDrainProfile(candidateMove->id) && hasCanonicalReverseDrain(playerState.abilityId))) continue;
         PokemonMoveTargetPolicy targets{true, 1};
         if (m_doubleBattle && plainAreaDamageMove(*candidateMove) &&
             !std::strcmp(candidateMove->target, "ALL_NEAR_OTHERS")) {
@@ -2311,6 +2452,17 @@ bool FirstRunRuntime::advanceBattleTurn() {
     return true;
 }
 
+bool FirstRunRuntime::startRun() {
+    if (m_runStarted) return false;
+    if (!m_context.playerPartyCount || !m_encounterResolved) return false;
+    m_runStarted = true;
+    m_checkpointAvailable = true;
+    m_escapeAttempts = 0;
+    m_battleFeedback = "Ola 1: combate iniciado!";
+    buildScene();
+    return true;
+}
+
 bool FirstRunRuntime::advanceBattleTurnInPlace() {
     if (m_capturePartyChoicePending) return resolveCapturePartyChoiceInPlace(m_selectedCapturePartyChoice);
     if (!heldHealingInventorySupported(m_heldModifiers.data(), m_heldModifierCount)) {
@@ -2364,6 +2516,8 @@ bool FirstRunRuntime::advanceBattleTurnInPlace() {
             buildScene();
             return true;
         }
+        if (m_victoryPlan.contains(ClassicVictoryStep::FixedModifierRewards))
+            return advanceFixedVictoryRewardsInPlace();
         if (!m_rewardsPending && generateVictoryRewards()) {
             m_battleFeedback = "Select reward: UP/DOWN choose, A claim, B skip";
             buildScene();
@@ -2440,6 +2594,7 @@ bool FirstRunRuntime::advanceBattleTurnInPlace() {
                     if (applyPokemonPostSummonConfusionRemoval(incoming.battleState, true, true, incomingConfusion) !=
                             PokemonStatusImmunityResult::Resolved) return false;
                 }
+                if (resetNativeBerrySummonHistory(m_berryHistories, incoming.battleState.pokemonId) != NativeSaveResult::Ok) return false;
                 resetPokemonSummonState(incoming.battleState);
                 PokemonPostSummonStatusHealingEvent incomingStatus{};
                 if (!applyPokemonPostSummonStatusHealing(incoming.battleState, true, true, incomingStatus)) return false;
@@ -2452,6 +2607,7 @@ bool FirstRunRuntime::advanceBattleTurnInPlace() {
                     return false;
                 }
                 auto recalled = outgoing;
+                if (resetNativeBerrySummonHistory(m_berryHistories, recalled.battleState.pokemonId) != NativeSaveResult::Ok) return false;
                 resetPokemonSummonState(recalled.battleState);
                 m_context.trainerParty[m_context.activeTrainerPartyIndex] = recalled;
                 m_context.activeTrainerPartyIndex = decision.partyIndex;
@@ -2644,7 +2800,7 @@ bool FirstRunRuntime::advanceBattleTurnInPlace() {
                     // Other area effects require hit batching and their own resolver.
                     if (!supportsPokemonStatStageMove(pMove->id) && !plainAreaDamageMove(*pMove)) return false;
                     if (!executeActiveAreaMove(0, m_selectedBattleMove, *rng)) {
-                        m_battleFeedback = "Double battle area action failed";
+                        m_battleFeedback = std::string("Double battle area action failed: ") + m_battleFeedback;
                         return false;
                     }
                 } else {
@@ -2831,6 +2987,15 @@ bool FirstRunRuntime::executeActiveBattleMove(uint8_t userIndex, uint8_t targetI
                 return true; // First failure check cancels without consuming PP.
             }
         }
+        if (m_flinchedActors & (1u << userIndex)) {
+            PokemonStatStageEffectEvent reaction{};
+            if (executePokemonFlinchStatReaction(user, opponent,
+                    !m_doubleBattle && !m_heldModifierCount && statusActionAbilitySupported(user.abilityId) &&
+                    statusActionAbilitySupported(opponent.abilityId), reaction) != PokemonStatStageEffectResult::Ok) return false;
+            m_battleFeedback = "Pokemon flinched";
+            publishActionChecks(true);
+            return true; // PRE_MOVE cancellation preserves PP and consumes no RNG.
+        }
         if (user.confusion.present || user.confusion.turns) {
             // Status-action capability admits no ATK/DEF multipliers or indirect
             // damage callbacks. Its EVA-only bypass does not affect self-hit stats.
@@ -2964,10 +3129,19 @@ bool FirstRunRuntime::executeActiveBattleMove(uint8_t userIndex, uint8_t targetI
     }
     if (supportsPokemonStatStageMove(move->id)) {
         PokemonStatStageCommandPolicy policy{};
-        if (!resolveActiveStatStageCommandPolicy(user, opponent, move->id, pp.cost, policy)) return false;
+        if (!resolveActiveStatStageCommandPolicy(user, opponent, move->id, pp.cost, policy)) {
+            m_battleFeedback = "Stat-stage command policy unresolved";
+            return false;
+        }
         PokemonStatStageCommandEvent event{};
-        if (usePokemonStatStageStatusCommand(user, opponent, moveSlot, policy, rng, event) !=
-                PokemonStatStageEffectResult::Ok) return false;
+        const auto stageResult = usePokemonStatStageStatusCommand(user, opponent, moveSlot, policy, rng, event);
+        if (stageResult != PokemonStatStageEffectResult::Ok) {
+            char detail[96];
+            std::snprintf(detail, sizeof(detail), "Stat-stage resolver failed: result=%u target=%u ppCost=%u",
+                static_cast<unsigned>(stageResult), static_cast<unsigned>(targetIndex), static_cast<unsigned>(pp.cost));
+            m_battleFeedback = detail;
+            return false;
+        }
         if (!applyMoveHeldHealing(user)) return false;
         if (!event.move.hit) {
             m_battleFeedback = event.move.typeImmune ? "Target immune to move" :
@@ -3198,6 +3372,15 @@ bool FirstRunRuntime::executeActiveBattleMove(uint8_t userIndex, uint8_t targetI
             !applyPokemonMoveConfusion(nextOpponent, move->id, chance, recipient.status.safeguardBlocks,
                 recipient.confusion, nextRng, confusionEvent, nextUser.pokemonId, true)) return false;
     }
+    if (singleDamageFlinchMove(move->id) && !result.weatherCancelled &&
+        result.damageRoll.hit && result.damageApplied) {
+        int16_t chance = 0; bool flinched = (m_flinchedActors & (1u << targetIndex)) != 0;
+        if (!resolvePokemonMoveEffectChance(move->id, nextUser.abilityId, nextOpponent.abilityId, false,
+                chance, nextUser.hp != 0, nextOpponent.hp != 0) ||
+            !applyPokemonMoveFlinch(chance, resolvedPokemonFlinchCallbacks(nextOpponent.abilityId),
+                nextOpponent.hp != 0, flinched, nextRng, pokemonFlinchAbilityProfile(nextOpponent.abilityId)->blocksFlinch)) return false;
+        if (flinched) m_flinchedActors |= static_cast<uint8_t>(1u << targetIndex);
+    }
     if (!result.weatherCancelled && !applyMoveHeldHealing(nextUser)) return false;
     user = nextUser;
     opponent = nextOpponent;
@@ -3205,6 +3388,18 @@ bool FirstRunRuntime::executeActiveBattleMove(uint8_t userIndex, uint8_t targetI
     if (targetIsBoss) {
         *targetBossState = nextBossState;
         m_globalRng = nextGlobalRng;
+        if (m_run.wave == PokerogueContent::kClassicFinalWave &&
+            targetBossState->classicFinalBossFirstPhase &&
+            targetBossState->segmentIndex == 0 && opponent.hp <= 1) {
+            if (preparePokemonFinalBossSecondPhase(m_run.wave, opponent, *targetBossState)) {
+                if (targetIndex == 1) {
+                    m_context.enemy.battleState = opponent;
+                    m_context.enemy.formId = opponent.formId;
+                    m_context.enemy.bossState = *targetBossState;
+                }
+                m_battleFeedback = "Eternatus se transformo en Eternamax Eternatus!";
+            }
+        }
     }
     const bool enemyActs = userIndex != 0;
     m_battleFeedback = result.weatherCancelled
@@ -3242,6 +3437,7 @@ void FirstRunRuntime::removeParticipant(uint32_t id) {
 }
 
 bool FirstRunRuntime::finishBattleTurn() {
+    m_flinchedActors = 0; // FlinchedTag lapses at TURN_END, including biome interludes.
     if (m_context.player.battleState.pendingStatus != PokemonStatusEffect::None ||
         m_context.enemy.battleState.pendingStatus != PokemonStatusEffect::None ||
         (m_doubleBattle && m_context.secondEnemy.battleState.pendingStatus != PokemonStatusEffect::None)) {
@@ -3353,7 +3549,7 @@ bool FirstRunRuntime::finishBattleTurn() {
     auto nextWeather = m_arenaWeather;
     PokemonTrickRoomEvent roomEvent{};
     PokemonWeatherTurnEndEvent weatherEvent{};
-    if (!advancePokemonTrickRoomTurnEnd(nextRoom, roomEvent)) {
+    if (!advancePokemonTrickRoomTurnEnd(nextRoom, roomEvent, upcomingInterlude)) {
         m_battleFeedback = "Invalid Trick Room field state";
         buildScene();
         return false;
@@ -3511,6 +3707,31 @@ bool FirstRunRuntime::skipVictoryReward() {
     return true;
 }
 
+bool FirstRunRuntime::advanceFixedVictoryRewardsInPlace() {
+    if (!m_battleFinished || !m_playerWon || !m_experienceGranted ||
+        moveLearningPending() || evolutionPending() || !enemyPartyDefeated() ||
+        !m_victoryPlan.contains(ClassicVictoryStep::FixedModifierRewards) || !m_victoryPlan.nextWave) return false;
+    bool offsetGym = false;
+    ClassicFixedModifierRewards rewards{};
+    if (!PokerogueWaveClock::deriveOffsetGym(m_seedCodeUnits.data(), m_seedLength, offsetGym) ||
+        !planClassicFixedModifierRewards(m_run.wave, offsetGym, rewards)) return false;
+    for (uint8_t i = 0; i < rewards.count; ++i) {
+        if (!addPersistentExperienceReward(m_persistentModifiers.data(), m_persistentModifiers.size(),
+                m_persistentModifierCount, rewards.itemIds[i])) {
+            m_battleFeedback = "Fixed reward requires a supported persistent modifier adapter";
+            return false;
+        }
+    }
+    m_playerHistoryRequiresSnapshot = true;
+    m_rewardsPending = false;
+    m_run.wave = m_victoryPlan.nextWave;
+    resolve(true);
+    if (!m_encounterResolved) return false;
+    m_battleFeedback = "Fixed rewards granted - next Classic wave";
+    buildScene();
+    return true;
+}
+
 bool FirstRunRuntime::skipVictoryRewardInPlace() {
     if (m_capturePartyChoicePending) return resolveCapturePartyChoiceInPlace(-1);
     if (!heldHealingInventorySupported(m_heldModifiers.data(), m_heldModifierCount)) {
@@ -3533,6 +3754,8 @@ bool FirstRunRuntime::skipVictoryRewardInPlace() {
         buildScene();
         return true;
     }
+    if (m_victoryPlan.contains(ClassicVictoryStep::FixedModifierRewards))
+        return advanceFixedVictoryRewardsInPlace();
     if (!m_battleFinished || !m_playerWon || !m_experienceGranted ||
         !enemyPartyDefeated() || !m_victoryPlan.contains(ClassicVictoryStep::SelectModifier) ||
         !m_victoryPlan.nextWave || m_victoryPlan.nextWave > PokerogueContent::kClassicFinalWave)
@@ -3577,6 +3800,7 @@ bool FirstRunRuntime::advanceTrainerAfterDefeat() {
         if (applyPokemonPostSummonConfusionRemoval(m_context.enemy.battleState, true, true, incomingConfusion) !=
                 PokemonStatusImmunityResult::Resolved) return false;
     }
+    if (resetNativeBerrySummonHistory(m_berryHistories, m_context.enemy.battleState.pokemonId) != NativeSaveResult::Ok) return false;
     resetPokemonSummonState(m_context.enemy.battleState);
     PokemonPostSummonStatusHealingEvent incomingStatus{};
     if (!applyPokemonPostSummonStatusHealing(m_context.enemy.battleState, true, true, incomingStatus)) return false;
@@ -3645,6 +3869,79 @@ void FirstRunRuntime::refreshTrainerBaselineMatchups() {
     uint8_t replacement = 0xFF;
     if (reserveCount && selectTrainerSummonIndex(reserveScores, reserveIndexes, reserveCount,
             replacementRng, replacement)) m_context.nextTrainerPartyIndex = replacement;
+}
+
+bool FirstRunRuntime::fleeBattle() {
+    if (m_battleFinished || !m_runStarted || m_capturePartyChoicePending ||
+        moveLearningPending() || evolutionPending() || rewardsPending()) return false;
+    if (m_trainerBattle) {
+        m_battleFeedback = "No puedes huir de un combate de entrenador.";
+        buildScene();
+        return false;
+    }
+    if ((m_run.wave % 10 == 0) || m_run.wave == PokerogueContent::kClassicFinalWave) {
+        m_battleFeedback = "No puedes huir de un combate contra un jefe.";
+        buildScene();
+        return false;
+    }
+
+    const bool isBoss = m_context.enemy.bossState.segmentCount > 0;
+    uint16_t playerSpeedStat = m_context.player.battleState.stats[5];
+    uint16_t enemySpeedStat = m_context.enemy.battleState.stats[5];
+    if (m_doubleBattle && m_secondEncounterResolved && m_context.secondEnemy.battleState.hp > 0) {
+        enemySpeedStat += m_context.secondEnemy.battleState.stats[5];
+    }
+    const float playerSpeed = float(std::max<uint16_t>(1, playerSpeedStat));
+    const float enemySpeed = float(std::max<uint16_t>(1, enemySpeedStat));
+    const float speedRatio = playerSpeed / enemySpeed;
+    const float speedCap = isBoss ? 6.0f : 4.0f;
+    const float minChance = 5.0f;
+    const float maxChance = isBoss ? 25.0f : 95.0f;
+    const float escapeBonus = isBoss ? 2.0f : 10.0f;
+    const float escapeSlope = (maxChance - minChance) / speedCap;
+    float calcChance = escapeSlope * speedRatio + minChance + escapeBonus * float(m_escapeAttempts);
+    if (calcChance < minChance) calcChance = minChance;
+    if (calcChance > maxChance) calcChance = maxChance;
+    const unsigned escapeChance = unsigned(std::round(calcChance));
+
+    auto* rng = m_battleRng.currentStream();
+    if (!rng) {
+        m_battleFeedback = "Battle RNG is not initialized";
+        buildScene();
+        return false;
+    }
+    const unsigned roll = unsigned(rng->randSeedInt(100));
+
+    if (roll < escapeChance) {
+        m_battleFinished = true;
+        m_playerWon = false;
+        m_experienceGranted = false;
+        m_victoryPlan = {};
+        m_rewardsPending = false;
+        m_battleFeedback = "¡Escapaste sin problemas!";
+        m_escapeAttempts = 0;
+        const uint16_t nextWave = static_cast<uint16_t>(m_run.wave + 1);
+        m_run.wave = nextWave;
+        resolve(true);
+        buildScene();
+        return true;
+    }
+
+    m_escapeAttempts++;
+    m_battleFinished = false;
+    m_battleFeedback = "¡No pudiste escapar!";
+    if (m_context.enemy.battleState.hp > 0 && m_context.player.battleState.hp > 0) {
+        executeEnemyResponse(1, *rng);
+    }
+    if (m_doubleBattle && m_secondEncounterResolved && m_context.secondEnemy.battleState.hp > 0 && m_context.player.battleState.hp > 0) {
+        executeEnemyResponse(2, *rng);
+    }
+    finishBattleTurn();
+    if (m_context.player.battleState.hp > 0 && !m_battleFinished) {
+        m_battleFeedback = "¡No pudiste escapar!";
+    }
+    buildScene();
+    return true;
 }
 
 bool FirstRunRuntime::throwPokeball(PokeballType ball) {
@@ -3790,6 +4087,7 @@ bool FirstRunRuntime::throwPokeballInPlace(PokeballType ball) {
             }
             // EnemyPokemon.addToParty passes the source into PlayerPokemon:
             // preserve capture HP/PP; remove the enemy only after copying it.
+            if (resetNativeBerrySummonHistory(m_berryHistories, caughtMon.battleState.pokemonId) != NativeSaveResult::Ok) return false;
             resetPokemonSummonState(caughtMon.battleState);
             if (m_context.playerPartyCount == 6) {
                 m_pendingCapturedPokemon = caughtMon;
@@ -3802,6 +4100,8 @@ bool FirstRunRuntime::throwPokeballInPlace(PokeballType ball) {
                 buildScene();
                 return true;
             }
+            if (transferNativeBerryHistoryToParty(m_berryHistories, caughtMon.battleState.pokemonId,
+                    m_context.playerPartyCount) != NativeSaveResult::Ok) return false;
             m_context.playerParty[m_context.playerPartyCount++] = caughtMon;
         }
         return finishSuccessfulCapture(*target);
@@ -3874,6 +4174,7 @@ bool FirstRunRuntime::finishSuccessfulCapture(ResolvedPokemon& target, const uin
     if (!retainPartyHeldInventory(m_heldModifiers.data(), m_heldModifiers.size(), m_heldModifierCount,
             retainedOwners, m_context.playerPartyCount)) return false;
     target.battleState.hp = 0;
+    target.battleState.hasEatenBerry = false; // Destroyed enemy shell; history belongs to the captured player.
 
     m_checkpointAvailable = false;
     m_runStarted = true;
@@ -3921,10 +4222,14 @@ bool FirstRunRuntime::resolveCapturePartyChoiceInPlace(int member) {
     uint32_t releasedId = 0;
     if (member >= 0) {
         releasedId = m_context.playerParty[member].battleState.pokemonId;
+        if (transferNativeBerryHistoryToParty(m_berryHistories, m_pendingCapturedPokemon.battleState.pokemonId,
+                static_cast<uint8_t>(member)) != NativeSaveResult::Ok) return false;
         m_context.playerParty[member] = m_pendingCapturedPokemon;
         if (member == m_context.activePlayerPartyIndex) m_context.player = m_pendingCapturedPokemon;
         m_playerHistoryRequiresSnapshot = true;
     }
+    if (member < 0 && removeNativeBerryHistoryOwner(m_berryHistories,
+            m_pendingCapturedPokemon.battleState.pokemonId) != NativeSaveResult::Ok) return false;
     m_capturePartyChoicePending = false;
     auto& target = m_capturePartyTarget ? m_context.secondEnemy : m_context.enemy;
     if (!finishSuccessfulCapture(target, member >= 0 ? &releasedId : nullptr)) return false;
@@ -3998,6 +4303,7 @@ bool FirstRunRuntime::switchPlayerPokemonInPlace(uint8_t targetIndex) {
     if (!rng) return false;
 
     if (!recordActiveParticipant()) return false;
+    if (resetNativeBerrySummonHistory(m_berryHistories, m_context.player.battleState.pokemonId) != NativeSaveResult::Ok) return false;
     resetPokemonSummonState(m_context.player.battleState);
     m_context.playerParty[m_context.activePlayerPartyIndex] = m_context.player;
     m_context.activePlayerPartyIndex = targetIndex;
@@ -4007,6 +4313,7 @@ bool FirstRunRuntime::switchPlayerPokemonInPlace(uint8_t targetIndex) {
         if (applyPokemonPostSummonConfusionRemoval(m_context.player.battleState, true, true, incomingConfusion) !=
                 PokemonStatusImmunityResult::Resolved) return false;
     }
+    if (resetNativeBerrySummonHistory(m_berryHistories, m_context.player.battleState.pokemonId) != NativeSaveResult::Ok) return false;
     resetPokemonSummonState(m_context.player.battleState);
     PokemonPostSummonStatusHealingEvent incomingStatus{};
     if (!applyPokemonPostSummonStatusHealing(m_context.player.battleState, true, true, incomingStatus)) return false;
@@ -4057,6 +4364,7 @@ bool FirstRunRuntime::playerPartyDefeated() const {
 
 bool FirstRunRuntime::advancePlayerAfterDefeat() {
     if (m_context.player.battleState.hp > 0) return true;
+    if (resetNativeBerrySummonHistory(m_berryHistories, m_context.player.battleState.pokemonId) != NativeSaveResult::Ok) return false;
     resetPokemonSummonState(m_context.player.battleState);
     m_context.playerParty[m_context.activePlayerPartyIndex] = m_context.player;
 
@@ -4069,6 +4377,7 @@ bool FirstRunRuntime::advancePlayerAfterDefeat() {
                 if (applyPokemonPostSummonConfusionRemoval(m_context.player.battleState, true, true, incomingConfusion) !=
                         PokemonStatusImmunityResult::Resolved) return false;
             }
+            if (resetNativeBerrySummonHistory(m_berryHistories, m_context.player.battleState.pokemonId) != NativeSaveResult::Ok) return false;
             resetPokemonSummonState(m_context.player.battleState);
             PokemonPostSummonStatusHealingEvent incomingStatus{};
             if (!applyPokemonPostSummonStatusHealing(m_context.player.battleState, true, true, incomingStatus)) return false;
@@ -4221,7 +4530,16 @@ void FirstRunRuntime::resolve(bool carryPlayer, const char* checkpointBiomeId) {
     m_participantHistoryResolved = true;
     m_participantCount = 0;
     m_participantIds = {};
+    if (!carryPlayer) {
+        m_berryHistories = {};
+        m_berryHistories.resolved = true;
+    }
     if (carryPlayer) {
+        const uint16_t playerSlots = m_context.playerPartyCount ? static_cast<uint16_t>((1U << m_context.playerPartyCount) - 1) : 1U << 12;
+        if (retainNativeBerryHistoryActors(m_berryHistories, playerSlots) != NativeSaveResult::Ok) {
+            m_encounterResolved = false;
+            return;
+        }
         uint32_t partyIds[6]{};
         if (m_context.playerPartyCount > 6) { m_encounterResolved = false; return; }
         for (uint8_t member = 0; member < m_context.playerPartyCount; ++member)
@@ -4256,6 +4574,11 @@ void FirstRunRuntime::resolve(bool carryPlayer, const char* checkpointBiomeId) {
     m_trainerBattle = false;
     m_secondEncounterResolved = false;
     m_doubleExperienceGrantedMask = 0;
+    const uint16_t prevDex = carryPlayer
+        ? (m_run.encounterDex ? m_run.encounterDex : (m_context.player.battleState.previousEncounterDex ? m_context.player.battleState.previousEncounterDex : s_previousEncounterDex))
+        : 0;
+    s_previousEncounterDex = prevDex;
+    m_context.player.battleState.previousEncounterDex = prevDex;
     m_context.enemy = {};
     m_context.secondEnemy = {};
     m_run.encounterDex = 0;
@@ -4342,6 +4665,11 @@ void FirstRunRuntime::resolve(bool carryPlayer, const char* checkpointBiomeId) {
     // BattleScene.doPostBattleCleanup recalls the player field at these boundaries.
     // ReturnPhase.resetSummonData removes stat stages while HP/PP/EXP persist.
     const auto resetPlayerArenaState = [&]() {
+        m_berryHistories = {};
+        m_berryHistories.resolved = true;
+        m_context.player.battleState.hasEatenBerry = false;
+        for (uint8_t i = 0; i < m_context.playerPartyCount; ++i)
+            m_context.playerParty[i].battleState.hasEatenBerry = false;
         m_trickRoom = {};
         resetPokemonSummonState(m_context.player.battleState);
         for (uint8_t i = 0; i < m_context.playerPartyCount; ++i)
@@ -4386,7 +4714,94 @@ void FirstRunRuntime::resolve(bool carryPlayer, const char* checkpointBiomeId) {
         const auto* trainer = randomTrainer ? randomTrainer :
             fixedBattle && fixedBattle->hasStaticTrainerType
             ? PokerogueContent::findTrainerType(fixedBattle->trainerTypeId) : nullptr;
+        if (!trainer && (m_run.wave % 30 == 20)) {
+            auto gymResolution = PokerogueEncounterResolver::resolveTrainerType(m_run.biomeId, true, false, waveRng);
+            if (gymResolution.valid && gymResolution.trainerType) {
+                trainer = gymResolution.trainerType;
+            } else {
+                const char* gymLeaderKey = "brock";
+                if (m_run.wave == 50) gymLeaderKey = "misty";
+                else if (m_run.wave == 80) gymLeaderKey = "lt_surge";
+                else if (m_run.wave == 110) gymLeaderKey = "erika";
+                else if (m_run.wave == 140) gymLeaderKey = "sabrina";
+                else if (m_run.wave == 170) gymLeaderKey = "blaine";
+                trainer = PokerogueContent::findTrainerTypeByKey(gymLeaderKey);
+            }
+        }
+        if (!trainer && fixedBattle && !fixedBattle->hasStaticTrainerType) {
+            struct EvilTeamRoster {
+                const char* grunt;
+                const char* admin1;
+                const char* admin2;
+                const char* admin3;
+                const char* boss1;
+                const char* boss2;
+            };
+            static constexpr EvilTeamRoster kEvilTeams[9] = {
+                {"rocket_grunt", "archer", "ariana", "petrel", "rocket_boss_giovanni_1", "rocket_boss_giovanni_2"},
+                {"magma_grunt", "tabitha", "courtney", "tabitha", "maxie", "maxie_2"},
+                {"aqua_grunt", "matt", "shelly", "matt", "archie", "archie_2"},
+                {"galactic_grunt", "mars", "jupiter", "saturn", "cyrus", "cyrus_2"},
+                {"plasma_grunt", "zinzolin", "colress", "zinzolin", "ghetsis", "ghetsis_2"},
+                {"flare_grunt", "bryony", "xerosic", "mable", "lysandre", "lysandre_2"},
+                {"skull_grunt", "plumeria", "faba", "plumeria", "guzma", "guzma_2"},
+                {"macro_grunt", "oleana", "oleana", "oleana", "rose", "rose_2"},
+                {"star_grunt", "giacomo", "mela", "atticus", "penny", "penny_2"}
+            };
+            struct EliteFourRoster {
+                const char* e4_1;
+                const char* e4_2;
+                const char* e4_3;
+                const char* e4_4;
+                const char* champion;
+            };
+            static constexpr EliteFourRoster kEliteFourRosters[9] = {
+                {"lorelei", "bruno", "agatha", "lance", "blue"},
+                {"will", "koga", "bruno", "karen", "lance_champion"},
+                {"sidney", "phoebe", "glacia", "drake", "steven"},
+                {"aaron", "bertha", "flint", "lucian", "cynthia"},
+                {"shauntal", "marshal", "grimsley", "caitlin", "iris"},
+                {"malva", "siebold", "wikstrom", "drasna", "diantha"},
+                {"hala", "olivia", "acerola", "kahili", "hau"},
+                {"marnie_elite", "bede_elite", "nessa_elite", "raihan_elite", "leon"},
+                {"rika", "poppy", "larry_elite", "hassel", "geeta"}
+            };
+            const uint32_t evilTeamIndex = (m_run.seed ^ 0x3f5cu) % 9u;
+            const uint32_t e4Index = ((m_run.seed >> 4) ^ 0xa72bu) % 9u;
+            const char* symbol = fixedBattle->upstreamSymbol ? fixedBattle->upstreamSymbol : "";
+            const char* trainerKey = nullptr;
+            if (std::strcmp(symbol, "EVIL_GRUNT_1") == 0 ||
+                std::strcmp(symbol, "EVIL_GRUNT_2") == 0 ||
+                std::strcmp(symbol, "EVIL_GRUNT_3") == 0 ||
+                std::strcmp(symbol, "EVIL_GRUNT_4") == 0) {
+                trainerKey = kEvilTeams[evilTeamIndex].grunt;
+            } else if (std::strcmp(symbol, "EVIL_ADMIN_1") == 0) {
+                trainerKey = kEvilTeams[evilTeamIndex].admin1;
+            } else if (std::strcmp(symbol, "EVIL_ADMIN_2") == 0) {
+                trainerKey = kEvilTeams[evilTeamIndex].admin2;
+            } else if (std::strcmp(symbol, "EVIL_ADMIN_3") == 0) {
+                trainerKey = kEvilTeams[evilTeamIndex].admin3;
+            } else if (std::strcmp(symbol, "EVIL_BOSS_1") == 0) {
+                trainerKey = kEvilTeams[evilTeamIndex].boss1;
+            } else if (std::strcmp(symbol, "EVIL_BOSS_2") == 0) {
+                trainerKey = kEvilTeams[evilTeamIndex].boss2;
+            } else if (std::strcmp(symbol, "ELITE_FOUR_1") == 0) {
+                trainerKey = kEliteFourRosters[e4Index].e4_1;
+            } else if (std::strcmp(symbol, "ELITE_FOUR_2") == 0) {
+                trainerKey = kEliteFourRosters[e4Index].e4_2;
+            } else if (std::strcmp(symbol, "ELITE_FOUR_3") == 0) {
+                trainerKey = kEliteFourRosters[e4Index].e4_3;
+            } else if (std::strcmp(symbol, "ELITE_FOUR_4") == 0) {
+                trainerKey = kEliteFourRosters[e4Index].e4_4;
+            } else if (std::strcmp(symbol, "CHAMPION") == 0) {
+                trainerKey = kEliteFourRosters[e4Index].champion;
+            }
+            if (trainerKey) {
+                trainer = PokerogueContent::findTrainerTypeByKey(trainerKey);
+            }
+        }
         if (trainer) {
+            const char* trainerSpeciesFailure = nullptr;
             m_context.trainerTypeId = trainer->id;
             m_context.trainerName = trainer->name;
             PokerogueRngAdapter trainerRng;
@@ -4398,7 +4813,7 @@ void FirstRunRuntime::resolve(bool carryPlayer, const char* checkpointBiomeId) {
                 // Non-fixed generation continues the wave RNG after trainer pool selection.
                 trainerRng = waveRng;
                 m_context.trainerFemaleVariant = trainerRng.randSeedInt(2) != 0;
-            } else if (fixedBattle->seededBinaryGenderVariant) {
+            } else if (fixedBattle && fixedBattle->seededBinaryGenderVariant) {
                 // handleFixedBattle invokes getTrainer under rootSeed + (wave << 8).
                 // TOWN_YOUNGSTER draws its gender before Trainer.constructor
                 // chooses a party template. The callback is source-normalized.
@@ -4441,9 +4856,26 @@ void FirstRunRuntime::resolve(bool carryPlayer, const char* checkpointBiomeId) {
                                 break;
                             }
                             TrainerPartySpeciesChoice member{};
+                            const auto* rivalSlot = PokerogueContent::findRivalPartySlot(trainer->id, i);
+                            const PokerogueContent::RivalPartyChoice* rivalChoice = nullptr;
                             const bool signatureSlot = trainer->signatureCount &&
                                 i + trainer->signatureCount >= levels.count;
-                            if (signatureSlot) {
+                            if (rivalSlot) {
+                                if (!rivalSlot->resolved || !rivalSlot->choiceCount ||
+                                    rivalSlot->choiceOffset > PokerogueContent::kRivalPartyChoiceCount ||
+                                    rivalSlot->choiceCount > PokerogueContent::kRivalPartyChoiceCount - rivalSlot->choiceOffset) {
+                                    trainerSpeciesFailure = "Rival party effects are not supported yet";
+                                    allSpeciesResolved = false;
+                                    break;
+                                }
+                                // getRandomRivalPartyMemberFunc selects the aligned final-pool
+                                // choice, then constructs the current-fight species directly.
+                                rivalChoice = &PokerogueContent::kRivalPartyChoices[rivalSlot->choiceOffset +
+                                    memberRng.pickIndex(rivalSlot->choiceCount)];
+                                member.species = trainerPartySpeciesById(rivalChoice->speciesId);
+                                member.baseSpeciesId = rivalChoice->speciesId;
+                                member.supported = member.species != nullptr;
+                            } else if (signatureSlot) {
                                 const auto slotTemplate = trainerPartyMemberTemplate(*chosen.value, i);
                                 if (!slotTemplate.supported) { allSpeciesResolved = false; break; }
                                 const char* speciesId = resolveTrainerSignatureMemberSpecies(*trainer,
@@ -4568,7 +5000,7 @@ void FirstRunRuntime::resolve(bool carryPlayer, const char* checkpointBiomeId) {
                             uint16_t moveIds[4]{};
                             uint8_t moveCount = 0;
                             if (selectTrainerMovesetFromWeightedPool(member.species->dex,
-                                    false, false, weightedMoves, weightedCount, type1, type2,
+                                    rivalChoice != nullptr, false, weightedMoves, weightedCount, type1, type2,
                                     memberRng, moveIds, moveCount) !=
                                 PokemonTrainerMovesetResult::Ok || !moveCount) {
                                 allMovesetsResolved = false;
@@ -4585,6 +5017,26 @@ void FirstRunRuntime::resolve(bool carryPlayer, const char* checkpointBiomeId) {
                                     trainerIvs)) {
                                 allIvsResolved = false;
                                 continue;
+                            }
+                            // addEnemyPokemon invokes postProcess after constructor/moveset/IVs;
+                            // preserve constructor RNG draws before applying forced traits.
+                            if (rivalChoice && rivalChoice->forcedAbilityIndex >= 0) {
+                                actor.abilityIndex = static_cast<uint8_t>(rivalChoice->forcedAbilityIndex);
+                                const uint16_t primary = selectedForm && selectedForm->ability1 ? selectedForm->ability1 : member.species->ability1;
+                                const uint16_t secondary = selectedForm && selectedForm->ability2 ? selectedForm->ability2 : member.species->ability2;
+                                const uint16_t hidden = selectedForm && selectedForm->abilityHidden ? selectedForm->abilityHidden : member.species->abilityHidden;
+                                preMovegenState.abilityId = actor.abilityIndex == 2 ? hidden
+                                    : actor.abilityIndex == 1 ? (secondary ? secondary : primary) : primary;
+                                if (!PokerogueContent::findAbilityMovegenProfile(preMovegenState.abilityId)) {
+                                    allBattleStatesResolved = false;
+                                    continue;
+                                }
+                            }
+                            if (rivalSlot && rivalSlot->teraPrimary) {
+                                actor.initialTeraType = resolvePokemonTypeSymbol(type1);
+                                actor.initialTeraTypeIndex = 0;
+                                actor.initialTeraTypeResolved = actor.initialTeraType != nullptr;
+                                if (!actor.initialTeraTypeResolved) { allConstructorsResolved = false; continue; }
                             }
                             for (uint8_t stat = 0; stat < 6; ++stat)
                                 actor.ivs[stat] = trainerIvs[stat];
@@ -4669,7 +5121,7 @@ void FirstRunRuntime::resolve(bool carryPlayer, const char* checkpointBiomeId) {
                     : m_context.trainerPartySpeciesResolved
                     ? "Trainer constructor metadata unsupported"
                     : m_context.trainerPartyCount
-                    ? "Canonical trainer species could not resolve"
+                    ? (trainerSpeciesFailure ? trainerSpeciesFailure : "Canonical trainer species could not resolve")
                     : "Canonical trainer party template could not resolve";
         } else {
             m_battleFeedback = "Fixed trainer selection callback is not ported yet";
@@ -4705,18 +5157,19 @@ void FirstRunRuntime::resolve(bool carryPlayer, const char* checkpointBiomeId) {
         (waveKind == ClassicWaveKind::MajorBoss) ? PokerogueEncounterResolver::bossLevelForWave(m_run.wave, levelRng) :
         PokerogueEncounterResolver::nonBossLevelForWave(m_run.wave, levelRng);
 
+    PokeroguePoolResolution pool{};
     const char* resolvedSpeciesId = nullptr;
     if (waveKind == ClassicWaveKind::FinalBoss) {
         m_run.biomeId = "end";
         resolvedSpeciesId = "eternatus";
     } else if (waveKind == ClassicWaveKind::MajorBoss) {
-        const auto pool = PokerogueEncounterResolver::resolveBoss(
+        pool = PokerogueEncounterResolver::resolveBoss(
             m_run.biomeId, time, m_run.wave, waveRng);
         if (!pool.valid || !pool.speciesId) return;
         resolvedSpeciesId = PokerogueEncounterResolver::resolveWildSpeciesForLevel(
             pool.speciesId, level, true, waveRng);
     } else {
-        const auto pool = PokerogueEncounterResolver::resolveNonBoss(
+        pool = PokerogueEncounterResolver::resolveNonBoss(
             m_run.biomeId, time, m_run.wave, waveRng);
         if (!pool.valid || !pool.speciesId) return;
         resolvedSpeciesId = PokerogueEncounterResolver::resolveWildSpeciesForLevel(
@@ -4730,9 +5183,33 @@ void FirstRunRuntime::resolve(bool carryPlayer, const char* checkpointBiomeId) {
         }
         return PokerogueContent::kSpeciesCount;
     };
-    const std::size_t enemyIndex = findSpeciesIndex(resolvedSpeciesId);
+    std::size_t enemyIndex = findSpeciesIndex(resolvedSpeciesId);
     if (enemyIndex == PokerogueContent::kSpeciesCount) return;
-    const auto& enemy = PokerogueContent::kSpecies[enemyIndex];
+    auto enemy = PokerogueContent::kSpecies[enemyIndex];
+
+    if (waveKind != ClassicWaveKind::FinalBoss && waveKind != ClassicWaveKind::MajorBoss) {
+        if (pool.poolSize > 1 && m_previousEncounterDex != 0 && enemy.dex == m_previousEncounterDex) {
+            for (int attempt = 0; attempt < 8; ++attempt) {
+                const auto rerollPool = PokerogueEncounterResolver::resolveNonBoss(
+                    m_run.biomeId, time, m_run.wave, waveRng);
+                if (rerollPool.valid && rerollPool.speciesId) {
+                    const char* rerollSpeciesId = PokerogueEncounterResolver::resolveWildSpeciesForLevel(
+                        rerollPool.speciesId, level, true, waveRng);
+                    if (rerollSpeciesId) {
+                        const std::size_t rerollIndex = findSpeciesIndex(rerollSpeciesId);
+                        if (rerollIndex < PokerogueContent::kSpeciesCount &&
+                            PokerogueContent::kSpecies[rerollIndex].dex != m_previousEncounterDex) {
+                            pool = rerollPool;
+                            resolvedSpeciesId = rerollSpeciesId;
+                            enemyIndex = rerollIndex;
+                            enemy = PokerogueContent::kSpecies[enemyIndex];
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+    }
 
     const auto resolveEnemyActor = [&](const PokerogueContent::Species& species,
                                        ResolvedPokemon& destination) -> bool {
@@ -4792,6 +5269,8 @@ void FirstRunRuntime::resolve(bool carryPlayer, const char* checkpointBiomeId) {
     };
 
     m_run.encounterDex = enemy.dex;
+    m_context.player.battleState.previousEncounterDex = enemy.dex;
+    s_previousEncounterDex = enemy.dex;
     const std::string enemyLocaleId = std::string("pokemon:") + enemy.id;
     m_context.enemy = {enemy.dex, level, enemy.id, locale(enemyLocaleId.c_str(), enemy.name), enemy.firstFormId, enemy.assetSourcePath};
     if (!resolveEnemyActor(enemy, m_context.enemy)) return;
@@ -4804,15 +5283,37 @@ void FirstRunRuntime::resolve(bool carryPlayer, const char* checkpointBiomeId) {
         // resolves from the shared encounter stream.
         const uint16_t secondLevel = PokerogueEncounterResolver::nonBossLevelForWave(
             m_run.wave, levelRng);
-        const auto secondPool = PokerogueEncounterResolver::resolveNonBoss(
+        auto secondPool = PokerogueEncounterResolver::resolveNonBoss(
             m_run.biomeId, time, m_run.wave, waveRng);
         if (!secondPool.valid || !secondPool.speciesId) return;
         const char* secondSpeciesId = PokerogueEncounterResolver::resolveWildSpeciesForLevel(
             secondPool.speciesId, secondLevel, true, waveRng);
         if (!secondSpeciesId) return;
-        const std::size_t secondIndex = findSpeciesIndex(secondSpeciesId);
+        std::size_t secondIndex = findSpeciesIndex(secondSpeciesId);
         if (secondIndex == PokerogueContent::kSpeciesCount) return;
-        const auto& secondSpecies = PokerogueContent::kSpecies[secondIndex];
+        auto secondSpecies = PokerogueContent::kSpecies[secondIndex];
+
+        if (secondPool.poolSize > 1 && secondSpecies.dex == enemy.dex) {
+            for (int attempt = 0; attempt < 8; ++attempt) {
+                const auto rerollPool = PokerogueEncounterResolver::resolveNonBoss(
+                    m_run.biomeId, time, m_run.wave, waveRng);
+                if (rerollPool.valid && rerollPool.speciesId) {
+                    const char* rerollSpeciesId = PokerogueEncounterResolver::resolveWildSpeciesForLevel(
+                        rerollPool.speciesId, secondLevel, true, waveRng);
+                    if (rerollSpeciesId) {
+                        const std::size_t rerollIndex = findSpeciesIndex(rerollSpeciesId);
+                        if (rerollIndex < PokerogueContent::kSpeciesCount &&
+                            PokerogueContent::kSpecies[rerollIndex].dex != enemy.dex) {
+                            secondPool = rerollPool;
+                            secondSpeciesId = rerollSpeciesId;
+                            secondIndex = rerollIndex;
+                            secondSpecies = PokerogueContent::kSpecies[secondIndex];
+                            break;
+                        }
+                    }
+                }
+            }
+        }
         const std::string secondLocaleId = std::string("pokemon:") + secondSpecies.id;
         m_context.secondEnemy = {secondSpecies.dex, secondLevel, secondSpecies.id,
             locale(secondLocaleId.c_str(), secondSpecies.name), secondSpecies.firstFormId,

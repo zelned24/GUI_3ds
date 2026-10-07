@@ -1,12 +1,129 @@
 import assert from 'assert';
-import { readFile } from 'node:fs/promises';
-import { PokerogueImporter, parseStarterCandyPriceTable } from '../tools/js/data/PokerogueImporter.js';
+import { readFile, mkdir, rm } from 'node:fs/promises';
+import { execFileSync } from 'node:child_process';
+import path from 'node:path';
+import { PokerogueImporter, parseStarterCandyPriceTable, parseRivalPartyConfiguration, parseBerryGeneration, parseBerryHeldLimits, parseBerryEffects, parseBerryPreservation, parseBerryCriticalTag, parseBerryAbilityRules, parseBerryHealingRounding } from '../tools/js/data/PokerogueImporter.js';
 import { PokerogueRepository } from '../tools/js/data/PokerogueRepository.js';
+import { PinnedLocalRepository } from '../scripts/PinnedLocalRepository.mjs';
 import { EncounterResolver, FirstRunFlow } from '../tools/js/game/FirstRunFlow.js';
 import { CanonicalContent, RuntimeContent } from '../tools/js/data/CanonicalDataContract.js';
 import { DataManager } from '../tools/js/data/DataManager.js';
 
 export function registerMigrationContentTests(test) {
+  test('Runtime generator: isolated output is deterministic and cannot escape the repository', async () => {
+    const root = process.cwd();
+    const outputs = ['build/test-runtime-repeat-a.hpp', 'build/test-runtime-repeat-b.hpp'];
+    await mkdir(path.join(root, 'build'), { recursive: true });
+    const generate = output => execFileSync(process.execPath, ['scripts/generate_3ds_runtime_content.mjs'],
+      { cwd: root, env: { ...process.env, POKEROGUE_RUNTIME_CONTENT_OUTPUT: output }, stdio: 'pipe' });
+    try {
+      for (const output of outputs) generate(output);
+      const first = await readFile(path.join(root, outputs[0]));
+      const second = await readFile(path.join(root, outputs[1]));
+      const production = await readFile(path.join(root, 'project/generated/include/content/PokerogueRuntimeContent.hpp'));
+      assert.deepEqual(first, second);
+      assert.deepEqual(first, production);
+      assert.throws(() => generate('../runtime-must-not-be-written.hpp'), /must stay inside the repository/);
+    } finally {
+      for (const output of outputs) await rm(path.join(root, output), { force: true });
+    }
+  });
+
+  test('Berry healing rounding: preserve pinned helper and reject changed semantics', () => {
+    const source = execFileSync('git', ['show', '8555c08c823b856cbec4eb99ca84ea52a955836d:src/utils/common.ts'],
+      {cwd:path.resolve('build/upstream/pokerogue'),encoding:'utf8'});
+    const rule = parseBerryHealingRounding(source);
+    assert.equal(rule.kind, 'FLOOR_WITH_MINIMUM');
+    assert.equal(rule.minimum, 1);
+    assert.ok(rule.raw.includes('Math.floor(value)'));
+    assert.throws(() => parseBerryHealingRounding(source.replace('Math.floor(value), 1', 'Math.round(value), 1')));
+    assert.throws(() => parseBerryHealingRounding(source.replace('Math.floor(value), 1', 'Math.floor(value), 0')));
+  });
+  test('Berry ability rules: pinned ancestry distinguishes callbacks and unknown subclasses', async () => {
+    const root = path.resolve('build/upstream/pokerogue');
+    const source = execFileSync('git', ['show', '8555c08c823b856cbec4eb99ca84ea52a955836d:src/data/abilities/ab-attrs.ts'], { cwd: root, encoding: 'utf8' });
+    const content = JSON.parse(await readFile('project/data/pokerogue/canonical-content.json', 'utf8'));
+    const rules = parseBerryAbilityRules(source, content.collections.abilities);
+    const row = id => rules.entries.find(entry => entry.id === id);
+    assert.equal(row('ripen').resolved, true);
+    assert.equal(row('ripen').effectMultiplier, 2);
+    assert.equal(row('gluttony').thresholdMultiplier, 2);
+    assert.equal(row('unnerve').preventsUse, true);
+    assert.equal(row('cheek_pouch').healFraction, 1 / 3);
+    assert.equal(row('cud_chew').cudChewConsume, true);
+    assert.equal(row('cud_chew').cudChewRecord, true);
+    assert.equal(row('harvest').harvest, true);
+    assert.equal(row('overgrow').resolved, true);
+    assert.deepEqual(row('overgrow').callbacks, []);
+    const unknown = {id:'unknown', abilityId:999, extensions:{upstreamRawRecord:{value:'new AbBuilder().attr(FutureAttr).build()'}}};
+    assert.equal(parseBerryAbilityRules(source, [unknown]).entries[0].resolved, false);
+    unknown.extensions.upstreamRawRecord.value = 'new AbBuilder().attr(FutureRipenAttr).build()';
+    const future = parseBerryAbilityRules(source + '\nexport class FutureRipenAttr extends DoubleBerryEffectAbAttr {}', [unknown]);
+    assert.equal(future.entries[0].resolved, false);
+    assert.deepEqual(future.entries[0].callbacks, ['DoubleBerryEffectAbAttr']);
+    assert.ok(future.raw.includes('FutureRipenAttr'));
+  });
+  test('Berry critical tag: normalize stage count, legacy value and lapse policy', () => {
+    const raw = 'if (this.tagType === BattlerTagType.DRAGON_CHEER) {} else { (this as Writable<CritBoostTag>).critStages = 2; } return lapseType !== BattlerTagLapseType.CUSTOM || super.lapse(pokemon, lapseType); (this as Writable<CritBoostTag>).critStages = source.critStages ?? 1; futureField';
+    const tag = parseBerryCriticalTag(raw);
+    assert.equal(tag.boostStages, 2);
+    assert.equal(tag.legacyStages, 1);
+    assert.equal(tag.lapseOnCustomOnly, true);
+    assert.ok(tag.raw.includes('futureField'));
+    assert.throws(() => parseBerryCriticalTag(raw.replace('critStages = 2', 'critStages = 3')));
+    assert.throws(() => parseBerryCriticalTag(raw.replace('CUSTOM', 'TURN_END')));
+  });
+
+  test('Berry preservation: normalize seeded chance, short circuit and stack cap', () => {
+    const raw = 'doPreserve.value ||= pokemon.randBattleSeedInt(10) < this.getStackCount() * 3; getMaxStackCount(): number { return 3; } futureMetadata';
+    const policy = parseBerryPreservation(raw);
+    assert.equal(policy.rollRange, 10);
+    assert.equal(policy.chancePerStack, 3);
+    assert.equal(policy.maxStacks, 3);
+    assert.equal(policy.shortCircuitWhenPreserved, true);
+    assert.ok(policy.raw.includes('futureMetadata'));
+    assert.throws(() => parseBerryPreservation(raw.replace('||=', '=')));
+    assert.throws(() => parseBerryPreservation(raw.replace('return 3', 'return 4')));
+  });
+
+  test('Berry effects: pinned semantics retain quirks and reject unknown callbacks', async () => {
+    const root = path.resolve('build/upstream/pokerogue');
+    const source = execFileSync('git', ['show', '8555c08c823b856cbec4eb99ca84ea52a955836d:src/data/berry.ts'], { cwd: root, encoding: 'utf8' });
+    const enumEntries = ['SITRUS','LUM','ENIGMA','LIECHI','GANLON','PETAYA','APICOT','SALAC','LANSAT','STARF','LEPPA'].map((symbol,id) => [symbol,id]);
+    const stats = ['HP','ATK','DEF','SPATK','SPDEF','SPD','ACC','EVA'].map((symbol,id) => [symbol,id]);
+    const parsed = parseBerryEffects(source, enumEntries, stats);
+    assert.equal(parsed.entries.length, 11);
+    assert.ok(parsed.entries.every(row => row.resolved && row.raw.predicate && row.raw.effect));
+    assert.equal(parsed.entries[0].amount, 4);
+    assert.equal(parsed.entries[3].stat, 1);
+    assert.equal(parsed.entries[7].stat, 5);
+    assert.equal(parsed.entries[8].hpThreshold, .25);
+    assert.equal(parsed.entries[9].amount, 2);
+    assert.equal(parsed.entries[10].amount, 10);
+    assert.equal(parsed.randomStatRange, 5);
+    assert.equal(parsed.randomStatMinimum, 1);
+    const changed = parseBerryEffects(source.replace('"DoubleBerryEffectAbAttr"', '"UnknownBerryCallback"'), enumEntries, stats);
+    assert.equal(changed.entries[0].resolved, false);
+    assert.ok(changed.raw.includes('UnknownBerryCallback'));
+    assert.throws(() => parseBerryEffects(source, [...enumEntries, ['NEW_BERRY',99]], stats));
+  });
+
+  test('Berry held policy: parse source limits and reject unknown enum references', () => {
+    const raw = 'matchType(modifier) { return modifier instanceof BerryModifier && modifier.berryType === this.berryType; } if ([BerryType.LUM, BerryType.SITRUS].includes(this.berryType)) { return 2; } return 3;';
+    assert.deepEqual(parseBerryHeldLimits(raw, [['LUM',1],['SITRUS',0],['STARF',9]]),
+      { reducedIds: [1,0], reducedMaxStacks: 2, defaultMaxStacks: 3 });
+    assert.throws(() => parseBerryHeldLimits(raw.replace('BerryType.LUM', 'BerryType.UNKNOWN'), [['SITRUS',0]]));
+  });
+  test('Berry generator: pinned thresholds preserve enum IDs and reject broken references', () => {
+    const raw = 'const rand = randSeedInt(12); if (rand < 2) { randBerryType = BerryType.SITRUS; } else if (rand < 4) { randBerryType = BerryType.LUM; } else if (rand < 6) { randBerryType = BerryType.LEPPA; } else { randBerryType = berryTypes[randSeedInt(berryTypes.length - 3) + 2]; } futureField';
+    const entries = [['SITRUS',0],['LUM',1],['ENIGMA',2],['LIECHI',3],['LEPPA',4]];
+    const parsed = parseBerryGeneration(raw, entries);
+    assert.deepEqual(parsed.thresholds.map(row => row.berryId), [0,1,4]);
+    assert.ok(parsed.raw.includes('futureField'));
+    assert.throws(() => parseBerryGeneration(raw.replace('BerryType.LEPPA', 'BerryType.UNKNOWN'), entries));
+    assert.throws(() => parseBerryGeneration(raw.replace('rand < 4', 'rand < 1'), entries));
+  });
+
   test('Starter candy prices: normalize literals and preserve unknown fields', () => {
     const source = 'const allStarterCandyCosts: readonly StarterCandyCosts[] = [{passive: 40, costReduction: [25,60], eggCosts: [30,15], eggCostReductionThresholds: [20], futureField: 7},];';
     const parsed = parseStarterCandyPriceTable(source);
@@ -16,11 +133,62 @@ export function registerMigrationContentTests(test) {
     assert.throws(() => parseStarterCandyPriceTable(source.replace('40', 'getPrice()')));
   });
 
+  test('Rival pools: preserve grouped choices and unknown metadata; reject broken species', () => {
+    const fixture = `
+      const SLOT_1_FIGHT_1 = [SpeciesId.BULBASAUR, [SpeciesId.CHARMANDER, SpeciesId.SQUIRTLE]];
+      function forceRivalBirdAbility(pokemon: EnemyPokemon): void {
+        switch (pokemon.species.speciesId) { case SpeciesId.HOOTHOOT: { pokemon.abilityIndex = 2; break; } }
+      }
+      export const RIVAL_1_POOL: RivalPoolConfig = [
+        { pool: SLOT_1_FIGHT_1, postProcess: forceRivalStarterTraits, futureField: 7 },
+      ];`;
+    const catalog = { getId: symbol => ['BULBASAUR', 'CHARMANDER', 'SQUIRTLE', 'HOOTHOOT'].includes(symbol) ? 1 : null };
+    const slots = parseRivalPartyConfiguration(fixture, catalog).get('RIVAL_1_POOL');
+    assert.deepEqual(slots[0].species, ['bulbasaur', ['charmander', 'squirtle']]);
+    assert.ok(slots[0].raw.includes('futureField: 7'));
+    assert.throws(() => parseRivalPartyConfiguration(fixture.replace('SpeciesId.SQUIRTLE', 'SpeciesId.UNKNOWN'), catalog), /Invalid rival species/);
+    assert.throws(() => parseRivalPartyConfiguration(fixture.replace('pool: SLOT_1_FIGHT_1', 'pool: SLOT_9_FINAL'), catalog), /Missing rival slot pool/);
+  });
+
   test('Content migration: pinned upstream content completes a deterministic first-run presentation flow', async () => {
-    const importer = new PokerogueImporter(new PokerogueRepository());
-    const imported = await importer.importPlayableCanonicalContent(undefined, { generations: [1] });
-    const repeatedImport = await importer.importPlayableCanonicalContent(undefined, { generations: [1] });
+    const importer = new PokerogueImporter(new PinnedLocalRepository(process.cwd()));
+    const imported = await importer.importPlayableCanonicalContent();
+    const repeatedImport = await importer.importPlayableCanonicalContent();
     assert.strictEqual(repeatedImport.importReport.contentHash, imported.importReport.contentHash, 'same pins/import/normalization produce the same canonical hash');
+    const rival = imported.canonicalContent.collections.trainers.find(trainer => trainer.id === 'rival');
+    assert.deepEqual(rival.trainerRules.rivalPartySlots.map(slot => slot.species.length), [27, 9]);
+    assert.ok(rival.extensions.upstreamRivalConfig.raw.includes('function forceRivalBirdAbility'));
+    assert.ok(rival.extensions.normalizedConfigFields.includes('rivalPartySlots'));
+    const bird = rival.trainerRules.rivalPartySlots[1];
+    assert.equal(bird.postProcessPolicy.forcedAbilities.find(row => row.speciesId === 'hoothoot').abilityIndex, 2);
+    assert.equal(bird.postProcessPolicy.forcedAbilities.find(row => row.speciesId === 'wattrel').abilityIndex, 1);
+    assert.equal(bird.provenance.sourcePath, 'src/data/trainers/rival-party-config.ts');
+    assert.match(bird.provenance.sourceHash, /^[a-f0-9]{64}$/);
+    assert.ok(bird.algorithmProvenance.raw.includes('CHOSEN_RIVAL_ROLLS'));
+    assert.deepEqual(bird.referenceSpecies.slice(0, 2), ['pidgeot', 'noctowl']);
+    const berry = imported.canonicalContent.extensions.berryGeneration;
+    assert.deepEqual(berry.thresholds.map(row => [row.upperExclusive, row.berryId]), [[2,0],[4,1],[6,10]]);
+    assert.equal(berry.entries.find(row => row.symbol === 'LEPPA').id, 10);
+    assert.equal(berry.rollRange, 12);
+    assert.equal(berry.fallbackExcludedCount, 3);
+    assert.equal(berry.fallbackOffset, 2);
+    assert.equal(berry.provenance.sourceSymbol, 'modifierTypeInitObj.BERRY');
+    assert.equal(berry.enumProvenance.sourcePath, 'src/enums/berry-type.ts');
+    assert.equal(berry.enumProvenance.revision, imported.canonicalContent.sourceSnapshot.revision);
+    assert.match(berry.enumProvenance.sourceHash, /^[a-f0-9]{64}$/);
+    assert.ok(berry.raw.includes('pregenArgs'));
+    assert.equal(berry.effects.entries.length, 11);
+    assert.ok(berry.effects.entries.every(row => row.resolved));
+    assert.equal(berry.effects.provenance.sourcePath, 'src/data/berry.ts');
+    assert.equal(berry.phase.provenance.sourceSymbol, 'BerryPhase.eatBerries');
+    assert.match(berry.effects.provenance.sourceHash, /^[a-f0-9]{64}$/);
+    for (const row of berry.effects.entries) {
+      const localized = imported.canonicalContent.collections.locales.find(entry => entry.locale === 'en' &&
+        entry.namespace === 'berry' && entry.id === row.symbol.toLowerCase());
+      assert.ok(localized?.value?.name, `Missing Berry name ${row.symbol}`);
+      assert.ok(localized?.value?.effect, `Missing Berry effect ${row.symbol}`);
+    }
+
     const friendship = imported.canonicalContent.extensions.pokemonFriendshipRules;
     assert.deepStrictEqual(Object.fromEntries(Object.entries(friendship).map(([key, rule]) => [key, rule.value])),
       { battleGain: 3, rareCandyGain: 6, faintLoss: 5, rareCandyCap: 200 });
@@ -64,10 +232,10 @@ export function registerMigrationContentTests(test) {
     assert.deepStrictEqual(indexedForms.map(form => form.extensions.upstreamFormIndex),
       indexedForms.map((_, index) => index), 'form indexes preserve source constructor order');
 
-    assert.deepStrictEqual(pikachu.rarity, { legendary: null, subLegendary: null, mythical: null }, 'absent upstream rarity fields remain distinguishable from explicit false');
+    assert.deepStrictEqual(pikachu.rarity, { legendary: false, subLegendary: false, mythical: false }, 'pinned PokemonSpecies constructor defaults omitted rarity flags to false');
     const legendary = imported.species.find(species => species.rarity.legendary === true);
     assert.ok(legendary, 'explicit upstream legendary classification is retained');
-    assert.strictEqual(imported.canonicalContent.extensions.biomePoolReferenceAudit.status, 'PARTIAL_SPECIES_SNAPSHOT_UNVERIFIED', 'filtered generation imports declare cross-reference limits');
+    assert.strictEqual(imported.canonicalContent.extensions.biomePoolReferenceAudit.status, 'COMPLETE_AND_VALIDATED', 'complete production import validates biome species references');
     const plains = imported.canonicalContent.collections.biomes.find(biome => biome.id === 'plains');
     const poolSpecies = [...new Set(Object.values(plains.encounterPools).flatMap(tier => Object.values(tier).flat()))].map(id => ({ id }));
     const poolResolver = new EncounterResolver();
@@ -141,7 +309,23 @@ export function registerMigrationContentTests(test) {
     for (const domain of ['kSpecies', 'kForms', 'kMoves', 'kAbilities', 'kItems', 'kLocales', 'kModes', 'kBiomes', 'kBiomeEncounterPools', 'kBiomeTrainerPools', 'kRoutes']) {
       assert.ok(header.includes(`${domain}[] = {`), `native ROM bundle contains ${domain}`);
     }
-    assert.match(header, /\{1, 0, 875, 1, 3, true, true, 318, 45, 49, 49, 65, 65, 45, 65, 65, 34, 0, 0, 17, -1, -1, -1, "MEDIUM_SLOW", "bulbasaur", "Bulbasaur"/);
+    // Read fields by name; attribute ranges added to the schema retain coverage.
+    const generatedRow = (model, key, name) => {
+      const declaration = header.match(new RegExp(`struct ${model} \\{([^}]+)\\}`));
+      assert.ok(declaration, `${model} declaration exists`);
+      const fields = declaration[1].split(';').filter(field => field.trim())
+        .map(field => field.trim().split(/\s+/).at(-1));
+      const line = header.split('\n').find(line => line.includes(`, "${key}", "${name}"`));
+      assert.ok(line, `real ${key} row exists`);
+      const values = line.slice(line.indexOf('{') + 1, line.lastIndexOf('}'))
+        .match(/"(?:[^"\\]|\\.)*"|[^,]+/g).map(value => value.trim());
+      assert.strictEqual(values.length, fields.length, `${model} row matches its schema`);
+      return Object.fromEntries(fields.map((field, index) => [field, values[index]]));
+    };
+    const row = generatedRow('Species', 'bulbasaur', 'Bulbasaur');
+    assert.deepStrictEqual(Object.fromEntries(['dex','malePercentTenths','baseTotal','hp','atk','def','spatk','spdef','speed','ability1','ability2','abilityHidden','legendary','subLegendary','mythical'].map(field => [field, Number(row[field])])),
+      { dex:1, malePercentTenths:875, baseTotal:318, hp:45, atk:49, def:49, spatk:65, spdef:65, speed:45, ability1:65, ability2:65, abilityHidden:34, legendary:0, subLegendary:0, mythical:0 });
+    assert.strictEqual(row.growthRate, '"MEDIUM_SLOW"');
     assert.ok(canonical.extensions.freshProfile.defaultStarterSpecies.includes('bulbasaur'));
     assert.ok(canonical.sourceSnapshot.sources.some(source => source.sourcePath === 'src/constants.ts'), 'fresh-profile starter allowlist is pinned and hashed');
     assert.deepStrictEqual(canonical.collections.species.find(species => species.id === 'bulbasaur').eggMoves,
@@ -154,18 +338,22 @@ export function registerMigrationContentTests(test) {
     assert.strictEqual(ivysaur.prevolutionSpeciesId, 'bulbasaur');
     assert.ok(header.includes('findSpeciesByDex(6)->malePercentTenths == 875'), 'native content preserves the upstream numeric gender ratio');
     assert.ok(header.includes('findSpeciesByDex(81)->malePercentTenths == 65534'), 'native content preserves explicit genderless null');
-    assert.match(header, /\{33, 0, 40, 100, 35, 0, -1, 1, 0, 0, "tackle", "Tackle", "NORMAL", "NEAR_OTHER"/);
-    assert.match(header, /\{117, 0, -1, -1, 10, 1, -1, 1, MoveIsUnimplemented, 0, "bide", "Bide"/);
-    assert.match(header, /\{262, 2, -1, 100, 10, 0, -1, 3, MoveHasSacrificialAttrOnHit \| MoveHasSacrificialAttr, 0, "memento", "Memento"/);
+    const expectMove = (key, name, expected) => {
+      const actual = generatedRow('Move', key, name);
+      assert.deepStrictEqual(Object.fromEntries(Object.keys(expected).map(field => [field, actual[field]])), expected);
+    };
+    expectMove('tackle', 'Tackle', { id:'33', category:'0', power:'40', accuracy:'100', pp:'35', priority:'0', upstreamChance:'-1', generation:'1', upstreamFlags:'0', multiHitType:'0', attributeCount:'0', type:'"NORMAL"', target:'"NEAR_OTHER"' });
+    expectMove('bide', 'Bide', { id:'117', category:'0', power:'-1', accuracy:'-1', pp:'10', priority:'1', upstreamChance:'-1', generation:'1', upstreamFlags:'MoveIsUnimplemented | MoveIsStabBlacklisted', multiHitType:'0', attributeCount:'0' });
+    expectMove('memento', 'Memento', { id:'262', category:'2', power:'-1', accuracy:'100', pp:'10', priority:'0', upstreamChance:'-1', generation:'3', upstreamFlags:'MoveHasSacrificialAttrOnHit | MoveHasSacrificialAttr', multiHitType:'0', attributeCount:'2' });
     assert.ok(header.includes('uint16_t upstreamFlags'), 'native move metadata exposes upstream move-generation and power flags');
     assert.match(header, /MoveIsStabBlacklisted = 2048/, 'native move metadata preserves pinned forced-STAB blacklist');
-    assert.match(header, /\{3, 0, 15, 85, 10, 0, -1, 1, MoveHasMultiHit, 1, "double_slap"/, 'default MultiHitAttr maps to pinned TWO_TO_FIVE');
+    expectMove('double_slap', 'Double Slap', { id:'3', category:'0', power:'15', accuracy:'85', pp:'10', priority:'0', upstreamChance:'-1', generation:'1', upstreamFlags:'MoveHasMultiHit', multiHitType:'1', attributeCount:'1' });
     assert.ok(header.includes('int8_t level; uint16_t moveId;'), 'native learnset retains upstream signed sentinel levels');
     assert.ok(header.includes('levelMovesFor(const Form& form)'), 'native runtime exposes form-specific learnset ranges');
     assert.ok(header.includes('kMoveStatusEffects[]'), 'real StatusEffectAttr metadata reaches C++ tables');
     const thunderWave = canonical.collections.moves.find(move => move.id === 'thunder_wave');
     assert.ok(thunderWave.extensions.upstreamRawRecord.value.includes('StatusEffectAttr, StatusEffect.PARALYSIS'));
-    assert.ok(header.includes(`{${thunderWave.moveId}, "PARALYSIS", false, true,`),
+    assert.ok(header.includes(`{${thunderWave.moveId}, "PARALYSIS", 3, false, true,`),
       'Thunder Wave preserves the pinned constant effect and constructor selfTarget default');
     assert.ok(header.includes('kFormChangeReferences[]'), 'form-change targets reach native capture rules');
     const venusaurChanges = canonical.collections.species.find(species => species.id === 'venusaur')
@@ -181,7 +369,7 @@ export function registerMigrationContentTests(test) {
     }
     assert.strictEqual(canonical.collections.forms.find(form => form.id === 'pikachu:gigantamax')
       .extensions.isStarterSelectable, false, 'Gigantamax is not granted starter selection by observation');
-    const gigantamaxRow = header.split(/\r?\n/).find(line => line.includes('{"pikachu:gigantamax"'));
+    const gigantamaxRow = header.split(/\r?\n/).find(line => line.includes('{"pikachu:gigantamax"') && line.includes('"ELECTRIC"'));
     const gigantamaxRange = gigantamaxRow?.match(/, (\d+), (\d+), "ELECTRIC"/);
     assert.ok(gigantamaxRange, 'native Pikachu Gigantamax form exposes a learnset range');
     const formOffset = Number(gigantamaxRange[1]);

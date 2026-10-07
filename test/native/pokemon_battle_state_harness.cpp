@@ -1,3 +1,4 @@
+#include <initializer_list>
 #include "game/PokemonBattleState.hpp"
 #include "game/PokemonFreshProfile.hpp"
 #include "game/PokemonLevelMovePool.hpp"
@@ -175,11 +176,15 @@ extern "C" int runPokemonBattleStateChecks() {
     weatherActorInput.speciesDex = normalSpecies->dex;
     weatherActorInput.level = 50;
     weatherActorInput.abilityId = normalSpecies->ability1;
+    weatherActorInput.gender = normalSpecies->malePercentTenths == 65534 ? PokemonGender::Genderless :
+        normalSpecies->malePercentTenths == 0 ? PokemonGender::Female : PokemonGender::Male;
     PokemonBattleState phasePlayer{}, phaseEnemy{};
     if (Pokerogue3DS::initializePokemonBattleState(weatherActorInput, phasePlayer) != PokemonBattleInitResult::Ok)
         return 436;
     weatherActorInput.speciesDex = rockSpecies->dex;
     weatherActorInput.abilityId = rockSpecies->ability1;
+    weatherActorInput.gender = rockSpecies->malePercentTenths == 65534 ? PokemonGender::Genderless :
+        rockSpecies->malePercentTenths == 0 ? PokemonGender::Female : PokemonGender::Male;
     if (Pokerogue3DS::initializePokemonBattleState(weatherActorInput, phaseEnemy) != PokemonBattleInitResult::Ok)
         return 437;
     Pokerogue3DS::PokemonArenaWeatherState phaseWeather{Pokerogue3DS::PokemonEffectiveWeather::Sandstorm, 3, 5};
@@ -641,20 +646,20 @@ extern "C" int runPokemonBattleStateChecks() {
     replacementParty[2].hp = 0;
     if (Pokerogue3DS::selectBaselineTrainerReplacement(replacementParty, 3, 0,
             matchupOpponent, replacementRng, replacementIndex)) return 203;
-    const double reserveScores[] = {6.0};
-    const uint8_t reserveIndexes[] = {1};
+    const double switchReserveScores[] = {6.0};
+    const uint8_t switchReserveIndexes[] = {1};
     Pokerogue3DS::TrainerSwitchDecision switchDecision{};
-    if (!Pokerogue3DS::resolveTrainerSwitchDecision(2.0, reserveScores, reserveIndexes,
+    if (!Pokerogue3DS::resolveTrainerSwitchDecision(2.0, switchReserveScores, switchReserveIndexes,
             1, 0, false, false, false, replacementRng, switchDecision) ||
         !switchDecision.switchPokemon || switchDecision.partyIndex != 1 ||
         switchDecision.nextSwitchCounter != 1) return 204;
-    if (!Pokerogue3DS::resolveTrainerSwitchDecision(2.0, reserveScores, reserveIndexes,
+    if (!Pokerogue3DS::resolveTrainerSwitchDecision(2.0, switchReserveScores, switchReserveIndexes,
             1, 1, false, false, false, replacementRng, switchDecision) ||
         switchDecision.switchPokemon || switchDecision.nextSwitchCounter) return 205;
-    if (!Pokerogue3DS::resolveTrainerSwitchDecision(2.0, reserveScores, reserveIndexes,
+    if (!Pokerogue3DS::resolveTrainerSwitchDecision(2.0, switchReserveScores, switchReserveIndexes,
             1, 2, true, true, false, replacementRng, switchDecision) ||
         switchDecision.switchPokemon || switchDecision.nextSwitchCounter != 1) return 206;
-    if (!Pokerogue3DS::resolveTrainerSwitchDecision(2.0, reserveScores, reserveIndexes,
+    if (!Pokerogue3DS::resolveTrainerSwitchDecision(2.0, switchReserveScores, switchReserveIndexes,
             1, 2, true, false, true, replacementRng, switchDecision) ||
         switchDecision.switchPokemon || switchDecision.nextSwitchCounter != 1) return 207;
     PokemonBattleState staged = state;
@@ -763,7 +768,7 @@ extern "C" int runPokemonBattleStateChecks() {
         protectedPolicy.stageMultiplier != 1 || protectedPolicy.cancelledStatMask != 1) return 228;
     PokemonBattleState growlUser = state, growlTarget = state;
     growlUser.moves[0].moveId = 45;
-    growlUser.moves[0].pp = 40;
+    growlUser.moves[0].pp = growlUser.moves[0].maxPp = 40;
     Pokerogue3DS::PokemonStatStageMovePolicy supportPolicy{};
     Pokerogue3DS::PokemonStatStageMoveEvent supportEvent{};
     if (Pokerogue3DS::usePokemonStatStageStatusMove(growlUser, growlTarget, 0,
@@ -833,7 +838,7 @@ extern "C" int runPokemonBattleStateChecks() {
         PokemonBattleState stageUser = state, stageTarget = state;
         stageUser.moves[0] = {94, 10, 10};
         for (auto& value : stageTarget.statStages) value = 0;
-        const PokerogueContent::MoveStatStageEffect psychic{94, 16, -1, false};
+        const PokerogueContent::MoveStatStageEffect psychic{94, 8, -1, false};
         Pokerogue3DS::PokemonStatStageCommandPolicy stagePolicy{};
         stagePolicy.postChangePoliciesResolved = stagePolicy.move.stagePolicy.resolved = true;
         stagePolicy.move.stagePolicy.chance = 100;
@@ -842,7 +847,7 @@ extern "C" int runPokemonBattleStateChecks() {
         const auto userHp = stageUser.hp, targetHp = stageTarget.hp;
         if (Pokerogue3DS::executePokemonDamageStatStagePhase(stageUser, stageTarget, psychic,
                 stagePolicy, stageRng, phaseEvent) != Pokerogue3DS::PokemonStatStageEffectResult::Ok ||
-            stageTarget.statStages[4] != -1 || phaseEvent.move.stages.changedStatMask != 16 ||
+            stageTarget.statStages[3] != -1 || phaseEvent.move.stages.changedStatMask != 8 ||
             stageUser.moves[0].pp != 10 || stageUser.hp != userHp || stageTarget.hp != targetHp ||
             stageRng.randSeedUint32() != expectedStageRng.randSeedUint32()) return 9560;
         stageTarget.hp = 0;
@@ -850,7 +855,7 @@ extern "C" int runPokemonBattleStateChecks() {
         stageRng = expectedStageRng;
         if (Pokerogue3DS::executePokemonDamageStatStagePhase(stageUser, stageTarget, psychic,
                 stagePolicy, stageRng, phaseEvent) != Pokerogue3DS::PokemonStatStageEffectResult::Ok ||
-            phaseEvent.move.stages.triggered || stageTarget.statStages[4] != -1 || stageUser.moves[0].pp != 10 ||
+            phaseEvent.move.stages.triggered || stageTarget.statStages[3] != -1 || stageUser.moves[0].pp != 10 ||
             stageRng.randSeedUint32() != expectedStageRng.randSeedUint32()) return 9561;
         // Even a fainted recipient cannot legitimize a forged definition.
         auto forgedPsychic = psychic;
@@ -858,14 +863,14 @@ extern "C" int runPokemonBattleStateChecks() {
         phaseEvent.move.stages.changedStatMask = 123;
         if (Pokerogue3DS::executePokemonDamageStatStagePhase(stageUser, stageTarget, forgedPsychic,
                 stagePolicy, stageRng, phaseEvent) != Pokerogue3DS::PokemonStatStageEffectResult::InvalidDefinition ||
-            phaseEvent.move.stages.changedStatMask != 123 || stageTarget.statStages[4] != -1) return 9590;
+            phaseEvent.move.stages.changedStatMask != 123 || stageTarget.statStages[3] != -1) return 9590;
         auto malformedPolicy = stagePolicy;
         malformedPolicy.move.stagePolicy.chance = 101;
         if (Pokerogue3DS::executePokemonDamageStatStagePhase(stageUser, stageTarget, psychic,
                 malformedPolicy, stageRng, phaseEvent) != Pokerogue3DS::PokemonStatStageEffectResult::InvalidDefinition ||
             phaseEvent.move.stages.changedStatMask != 123 || stageTarget.hp) return 9660;
         malformedPolicy = stagePolicy;
-        malformedPolicy.move.stagePolicy.reflectedStatMask = 16;
+        malformedPolicy.move.stagePolicy.reflectedStatMask = 8;
         if (Pokerogue3DS::executePokemonDamageStatStagePhase(stageUser, stageTarget, psychic,
                 malformedPolicy, stageRng, phaseEvent) != Pokerogue3DS::PokemonStatStageEffectResult::InvalidDefinition ||
             phaseEvent.move.stages.changedStatMask != 123 || stageTarget.hp) return 9661;
@@ -898,7 +903,7 @@ extern "C" int runPokemonBattleStateChecks() {
             phaseEvent.move.stages.changedStatMask = 123;
             if (Pokerogue3DS::executePokemonDamageStatStagePhase(stageUser, stageTarget, psychic,
                     stagePolicy, lateRng, phaseEvent) != Pokerogue3DS::PokemonStatStageEffectResult::UnresolvedPolicy ||
-                stageTarget.statStages[4] != -1 || stageTarget.hp != targetHp || stageUser.hp != userHp ||
+                stageTarget.statStages[3] != -1 || stageTarget.hp != targetHp || stageUser.hp != userHp ||
                 stageUser.moves[0].pp != 10 || phaseEvent.move.stages.changedStatMask != 123 ||
                 lateRng.randSeedUint32() != expectedLateRng.randSeedUint32()) return 9600;
             checkedLateFailure = true;
@@ -910,7 +915,7 @@ extern "C" int runPokemonBattleStateChecks() {
         stageRng = expectedStageRng;
         if (Pokerogue3DS::executePokemonDamageStatStagePhase(stageUser, stageTarget, psychic,
                 stagePolicy, stageRng, phaseEvent) != Pokerogue3DS::PokemonStatStageEffectResult::UnresolvedPolicy ||
-            stageTarget.statStages[4] != -1 || stageUser.moves[0].pp != 10 ||
+            stageTarget.statStages[3] != -1 || stageUser.moves[0].pp != 10 ||
             stageRng.randSeedUint32() != expectedStageRng.randSeedUint32()) return 9562;
     }
     {
@@ -1048,7 +1053,7 @@ extern "C" int runPokemonBattleStateChecks() {
         double combinedScore = 0;
         if (!Pokerogue3DS::calculatePlainAttackAiScore(2, 100, 100, 90, 100, true, combinedScore, statBenefit) ||
             combinedScore != 66) return 9572;
-        aiTarget.statStages[4] = -6;
+        aiTarget.statStages[3] = -6;
         if (!Pokerogue3DS::calculateCanonicalDamageStatStageAiBenefit(aiUser, aiTarget, 94, statBenefit) ||
             statBenefit != -2) return 9573; // Pinned levels==0 keeps the +2 term.
         statBenefit = 123;
@@ -1299,7 +1304,7 @@ extern "C" int runPokemonBattleStateChecks() {
     growlUser = state;
     growlTarget = state;
     growlUser.moves[0].moveId = 45;
-    growlUser.moves[0].pp = 40;
+    growlUser.moves[0].pp = growlUser.moves[0].maxPp = 40;
     Pokerogue3DS::PokemonStatStageCommandPolicy commandPolicy{};
     commandPolicy.postChangePoliciesResolved = true;
     commandPolicy.move.hitPolicyResolved = true;
@@ -1333,7 +1338,7 @@ extern "C" int runPokemonBattleStateChecks() {
         if (std::strcmp(profile.sourceSymbol, "AbilityId.OPPORTUNIST") == 0) opportunist = &profile;
     if (!opportunist || !opportunist->copiesRaises) return 254;
     PokemonBattleState copyingActor = state;
-    PokemonStatStageEffectEvent requestedRaise{};
+    Pokerogue3DS::PokemonStatStageEffectEvent requestedRaise{};
     requestedRaise.triggered = true;
     requestedRaise.processedStatMask = 1;
     requestedRaise.requestedStages = 2;
@@ -1372,7 +1377,9 @@ extern "C" int runPokemonBattleStateChecks() {
     lowHpAttacker.hp = 33;
     if (Pokerogue3DS::calculatePokemonBaseDamage(lowHpAttacker, state, 22,
             lowHpDamage) != Pokerogue3DS::PokemonBaseDamageResult::Ok ||
-        lowHpDamage != (aboveThresholdDamage - 2.0) * 1.5 + 2.0) return 261;
+        // Pinned getBaseDamage applies the ability to power before division.
+        lowHpDamage != ((2.0 * lowHpAttacker.level / 5.0 + 2.0) * (45.0 * 1.5) *
+            lowHpAttacker.stats[1]) / state.stats[2] / 50.0 + 2.0) return 261;
     lowHpAttacker.maxHp = 3;
     lowHpAttacker.hp = 1;
     if (Pokerogue3DS::calculatePokemonBaseDamage(lowHpAttacker, state, 22,
@@ -2821,6 +2828,15 @@ extern "C" int runPokemonBattleStateChecks() {
     if (!Pokerogue3DS::applyPokemonTrickRoomMove(roomState, 433, 456, roomEvent) ||
         !roomEvent.removed || roomEvent.activated || roomState.turnsLeft) return 380;
     if (!Pokerogue3DS::applyPokemonTrickRoomMove(roomState, 433, 123, roomEvent)) return 381;
+    roomEvent.expired = roomEvent.removed = true;
+    if (!Pokerogue3DS::advancePokemonTrickRoomTurnEnd(roomState, roomEvent, true) ||
+        roomState.turnsLeft != 5 || roomState.sourceMoveId != 433 ||
+        roomState.sourcePokemonId != 123 || roomEvent.expired || roomEvent.removed) return 10480;
+    auto invalidInterludeRoom = roomState;
+    invalidInterludeRoom.turnsLeft = 6;
+    roomEvent.expired = true;
+    if (Pokerogue3DS::advancePokemonTrickRoomTurnEnd(invalidInterludeRoom, roomEvent, true) ||
+        invalidInterludeRoom.turnsLeft != 6 || !roomEvent.expired) return 10481;
     for (unsigned i = 0; i < 4; ++i)
         if (!Pokerogue3DS::advancePokemonTrickRoomTurnEnd(roomState, roomEvent) || roomEvent.expired) return 382;
     if (!Pokerogue3DS::advancePokemonTrickRoomTurnEnd(roomState, roomEvent) ||
@@ -2864,28 +2880,30 @@ extern "C" int runPokemonBattleStateChecks() {
     if (Pokerogue3DS::useStandardPokemonMove(ppActor, ppTarget, 0, false, ppRng, ppEvent,
             nullptr, nullptr, nullptr, &ppPolicy) != Pokerogue3DS::PokemonMoveActionStatus::Ok ||
         ppActor.moves[0].pp || ppEvent.ppConsumed) return 392;
+    {
     uint16_t soundproofId = 0;
     for (const auto& profile : PokerogueContent::kMoveImmunityAbilityProfiles)
         if (std::strcmp(profile.sourceSymbol, "AbilityId.SOUNDPROOF") == 0) soundproofId = profile.abilityId;
     if (!soundproofId) return 396;
     Pokerogue3DS::PokemonWeatherAbilityComponent soundComponents[] = {{soundproofId, true, false}};
-    Pokerogue3DS::PokemonHitPolicy soundPolicy{};
-    if (!Pokerogue3DS::composePokemonAlwaysHitPolicy(soundComponents, 1, soundPolicy, 304) ||
-        !soundPolicy.blockedByAbility) return 397;
+    Pokerogue3DS::PokemonHitPolicy soundHitPolicy{};
+    if (!Pokerogue3DS::composePokemonAlwaysHitPolicy(soundComponents, 1, soundHitPolicy, 304) ||
+        !soundHitPolicy.blockedByAbility) return 397;
     PokemonBattleState soundActor = state, soundTarget = state;
     soundActor.moves[0] = {304, 10, 10};
     PokerogueRngAdapter soundRng;
     soundRng.sow(damageSeed, sizeof(damageSeed) / sizeof(damageSeed[0]));
     const auto soundBefore = soundRng.state();
-    Pokerogue3DS::PokemonMoveActionResult soundEvent{};
-    if (Pokerogue3DS::useStandardPokemonMove(soundActor, soundTarget, 0, false, soundRng, soundEvent,
-            nullptr, nullptr, &soundPolicy) != Pokerogue3DS::PokemonMoveActionStatus::Ok ||
-        !soundEvent.damageRoll.abilityBlocked || soundEvent.damageApplied || soundActor.moves[0].pp != 9 ||
+    Pokerogue3DS::PokemonMoveActionResult soundHitEvent{};
+    if (Pokerogue3DS::useStandardPokemonMove(soundActor, soundTarget, 0, false, soundRng, soundHitEvent,
+            nullptr, nullptr, &soundHitPolicy) != Pokerogue3DS::PokemonMoveActionStatus::Ok ||
+        !soundHitEvent.damageRoll.abilityBlocked || soundHitEvent.damageApplied || soundActor.moves[0].pp != 9 ||
         soundRng.state().s0 != soundBefore.s0 || soundRng.state().s1 != soundBefore.s1 ||
-        soundRng.state().s2 != soundBefore.s2 || soundRng.state().c != soundBefore.c) return 398;
+        soundRng.state().s2 != soundBefore.s2 || soundRng.state().carry != soundBefore.carry) return 398;
     soundComponents[0].belongsToAttacker = true;
-    if (!Pokerogue3DS::composePokemonAlwaysHitPolicy(soundComponents, 1, soundPolicy, 304) ||
-        soundPolicy.blockedByAbility) return 399;
+    if (!Pokerogue3DS::composePokemonAlwaysHitPolicy(soundComponents, 1, soundHitPolicy, 304) ||
+        soundHitPolicy.blockedByAbility) return 399;
+    }
     PokemonBattleState noPpActor = state;
     noPpActor.moves[0].pp = 0;
     PokemonBattleState unchangedTarget = state;
@@ -3298,6 +3316,10 @@ extern "C" int runPokemonBattleStateChecks() {
         starterMoves[2] != 45 || starterMoves[3] != 22) return 119;
     if (Pokerogue3DS::selectPokemonStarterMoveset(dexFor("bulbasaur"), nullptr, 0x10,
             nullptr, 0, starterMoves, starterMoveCount) != Pokerogue3DS::PokemonStarterMovesetResult::InvalidEggMoveMask) return 120;
+    // Restore the normal starter choice after preferred/invalid-mask cases.
+    if (Pokerogue3DS::selectPokemonStarterMoveset(dexFor("bulbasaur"), nullptr, 0,
+            nullptr, 0, starterMoves, starterMoveCount) != Pokerogue3DS::PokemonStarterMovesetResult::Ok)
+        return 10482;
     PokemonBattleInit freshStarterInput{};
     freshStarterInput.speciesDex = dexFor("bulbasaur");
     freshStarterInput.level = 5;
@@ -3412,21 +3434,21 @@ extern "C" int runPokemonBattleStateChecks() {
     const uint16_t bossSeed[] = {'b', 'o', 's', 's'};
     bossBoostRng.sow(bossSeed, 4);
     const auto beforeBoostRng = bossBoostRng.state();
-    Pokerogue3DS::PokemonBossSegmentClearEvent clearEvent{};
-    if (!Pokerogue3DS::planPokemonBossSegmentCleared(bossBoostState, 3, 2, 0, false, bossBoostRng, clearEvent) ||
-        clearEvent.nextSegmentIndex != 0) return 475;
+    Pokerogue3DS::PokemonBossSegmentClearEvent bossClearEvent{};
+    if (!Pokerogue3DS::planPokemonBossSegmentCleared(bossBoostState, 3, 2, 0, false, bossBoostRng, bossClearEvent) ||
+        bossClearEvent.nextSegmentIndex != 0) return 475;
     const auto afterBoostRng = bossBoostRng.state();
     if (beforeBoostRng.carry != afterBoostRng.carry || beforeBoostRng.s0 != afterBoostRng.s0 ||
         beforeBoostRng.s1 != afterBoostRng.s1 || beforeBoostRng.s2 != afterBoostRng.s2) return 476;
-    for (auto stages : clearEvent.statStages) if (stages) return 477;
+    for (auto stages : bossClearEvent.statStages) if (stages) return 477;
     bossBoostState.statStages[0] = 0;
-    if (!Pokerogue3DS::planPokemonBossSegmentCleared(bossBoostState, 3, 1, 1, false, bossBoostRng, clearEvent) ||
-        clearEvent.nextSegmentIndex || clearEvent.statStages[0] != 2) return 478;
-    if (!Pokerogue3DS::planPokemonBossSegmentCleared(bossBoostState, 5, 2, 0, true, bossBoostRng, clearEvent) ||
-        clearEvent.nextSegmentIndex) return 479;
-    for (auto stages : clearEvent.statStages) if (stages) return 480;
+    if (!Pokerogue3DS::planPokemonBossSegmentCleared(bossBoostState, 3, 1, 1, false, bossBoostRng, bossClearEvent) ||
+        bossClearEvent.nextSegmentIndex || bossClearEvent.statStages[0] != 2) return 478;
+    if (!Pokerogue3DS::planPokemonBossSegmentCleared(bossBoostState, 5, 2, 0, true, bossBoostRng, bossClearEvent) ||
+        bossClearEvent.nextSegmentIndex) return 479;
+    for (auto stages : bossClearEvent.statStages) if (stages) return 480;
     const auto beforeInvalidBoost = bossBoostRng.state();
-    if (Pokerogue3DS::planPokemonBossSegmentCleared(bossBoostState, 3, 3, 0, false, bossBoostRng, clearEvent)) return 481;
+    if (Pokerogue3DS::planPokemonBossSegmentCleared(bossBoostState, 3, 3, 0, false, bossBoostRng, bossClearEvent)) return 481;
     const auto afterInvalidBoost = bossBoostRng.state();
     if (beforeInvalidBoost.s0 != afterInvalidBoost.s0 || beforeInvalidBoost.s1 != afterInvalidBoost.s1 ||
         beforeInvalidBoost.s2 != afterInvalidBoost.s2 || beforeInvalidBoost.carry != afterInvalidBoost.carry) return 482;
@@ -3545,6 +3567,7 @@ extern "C" int runPokemonBattleStateChecks() {
     weatherBossInput.speciesDex = eternatus->dex;
     weatherBossInput.level = 200;
     weatherBossInput.abilityId = eternatus->ability1;
+    weatherBossInput.gender = PokemonGender::Genderless;
     PokemonBattleState weatherBossActor{};
     if (Pokerogue3DS::initializePokemonBattleState(weatherBossInput, weatherBossActor) != PokemonBattleInitResult::Ok)
         return 505;
@@ -3599,16 +3622,16 @@ extern "C" int runPokemonBattleStateChecks() {
         Pokerogue3DS::calculatePokemonBossSegmentDamage(1, 1, 300, 3, 1, 2, bossDamage) ||
         bossDamage.adjustedDamage != beforeBossDamage.adjustedDamage ||
         bossDamage.clearedSegmentIndex != beforeBossDamage.clearedSegmentIndex) return 474;
-    const auto* eternatus = PokerogueContent::findSpeciesByDex(890);
+    const auto* finalEternatus = PokerogueContent::findSpeciesByDex(890);
     const auto* eternamax = PokerogueContent::findFormById("eternatus:eternamax");
-    if (!eternatus || !eternamax) return 510;
+    if (!finalEternatus || !eternamax) return 510;
     Pokerogue3DS::PokemonBattleInit finalInput{};
-    finalInput.speciesDex = eternatus->dex;
-    finalInput.formId = eternatus->firstFormId;
+    finalInput.speciesDex = finalEternatus->dex;
+    finalInput.formId = finalEternatus->firstFormId;
     finalInput.level = 200;
     finalInput.pokemonId = 0x12345678u;
     finalInput.deriveIvsFromPokemonId = true;
-    finalInput.abilityId = eternatus->ability1;
+    finalInput.abilityId = finalEternatus->ability1;
     finalInput.gender = Pokerogue3DS::PokemonGender::Genderless;
     finalInput.nature = Pokerogue3DS::PokemonNature::Hardy;
     finalInput.moveCount = 1;
@@ -3633,11 +3656,11 @@ extern "C" int runPokemonBattleStateChecks() {
         finalActor.hp != preservedFinalActor.hp || finalActor.formId != preservedFinalActor.formId) return 514;
     auto invalidFormActor = finalActor;
     invalidFormActor.statStages[0] = 7;
-    if (Pokerogue3DS::changePokemonBattleForm(invalidFormActor, eternatus->firstFormId, eternatus->ability1) ||
+    if (Pokerogue3DS::changePokemonBattleForm(invalidFormActor, finalEternatus->firstFormId, finalEternatus->ability1) ||
         invalidFormActor.statStages[0] != 7 || invalidFormActor.formId != finalActor.formId) return 516;
     invalidFormActor = finalActor;
     ++invalidFormActor.moves[0].maxPp;
-    if (Pokerogue3DS::changePokemonBattleForm(invalidFormActor, eternatus->firstFormId, eternatus->ability1, true) ||
+    if (Pokerogue3DS::changePokemonBattleForm(invalidFormActor, finalEternatus->firstFormId, finalEternatus->ability1, true) ||
         invalidFormActor.moves[0].maxPp != finalActor.moves[0].maxPp + 1 ||
         invalidFormActor.formId != finalActor.formId) return 517;
     finalActor.hp = 0;
@@ -3647,11 +3670,11 @@ extern "C" int runPokemonBattleStateChecks() {
     statusFormActor.status.effect = Pokerogue3DS::PokemonStatusEffect::Burn;
     statusFormActor.pendingStatus = Pokerogue3DS::PokemonStatusEffect::Poison;
     statusFormActor.confusion = {3, true};
-    if (!Pokerogue3DS::changePokemonBattleForm(statusFormActor, eternatus->firstFormId, eternatus->ability1) ||
+    if (!Pokerogue3DS::changePokemonBattleForm(statusFormActor, finalEternatus->firstFormId, finalEternatus->ability1) ||
         !statusFormActor.status.present || statusFormActor.status.effect != Pokerogue3DS::PokemonStatusEffect::Burn ||
         statusFormActor.pendingStatus != Pokerogue3DS::PokemonStatusEffect::Poison ||
         !statusFormActor.confusion.present || statusFormActor.confusion.turns != 3) return 9162;
-    if (!Pokerogue3DS::changePokemonBattleForm(finalActor, eternatus->firstFormId, eternatus->ability1) ||
+    if (!Pokerogue3DS::changePokemonBattleForm(finalActor, finalEternatus->firstFormId, finalEternatus->ability1) ||
         finalActor.hp || finalActor.moves[0].pp != 1) return 515;
     auto unburdenActor = finalActor;
     unburdenActor.abilityId = 84;
@@ -3740,28 +3763,28 @@ extern "C" int runPokemonBattleStateChecks() {
     residualActor.maxHp = residualActor.hp = 101;
     residualActor.status.present = true;
     residualActor.status.effect = Pokerogue3DS::PokemonStatusEffect::Toxic;
-    Pokerogue3DS::PokemonStatusResidualPolicy residualPolicy{};
-    Pokerogue3DS::PokemonStatusResidualEvent residualEvent{};
-    if (Pokerogue3DS::applyPokemonStatusResidual(residualActor, residualPolicy, residualEvent) !=
+    Pokerogue3DS::PokemonStatusResidualPolicy statusResidualPolicy{};
+    Pokerogue3DS::PokemonStatusResidualEvent statusResidualEvent{};
+    if (Pokerogue3DS::applyPokemonStatusResidual(residualActor, statusResidualPolicy, statusResidualEvent) !=
             Pokerogue3DS::PokemonStatusResidualResult::UnsupportedPolicy || residualActor.status.toxicTurnCount) return 575;
-    residualPolicy.resolved = true;
-    if (Pokerogue3DS::applyPokemonStatusResidual(residualActor, residualPolicy, residualEvent) !=
-            Pokerogue3DS::PokemonStatusResidualResult::Applied || residualEvent.requestedDamage != 6 ||
+    statusResidualPolicy.resolved = true;
+    if (Pokerogue3DS::applyPokemonStatusResidual(residualActor, statusResidualPolicy, statusResidualEvent) !=
+            Pokerogue3DS::PokemonStatusResidualResult::Applied || statusResidualEvent.requestedDamage != 6 ||
         residualActor.hp != 95 || residualActor.status.toxicTurnCount != 1) return 576;
-    residualPolicy.blockStatusDamage = true;
-    if (Pokerogue3DS::applyPokemonStatusResidual(residualActor, residualPolicy, residualEvent) !=
+    statusResidualPolicy.blockStatusDamage = true;
+    if (Pokerogue3DS::applyPokemonStatusResidual(residualActor, statusResidualPolicy, statusResidualEvent) !=
             Pokerogue3DS::PokemonStatusResidualResult::Blocked || residualActor.hp != 95 ||
-        residualActor.status.toxicTurnCount != 2 || !residualEvent.blocked) return 577;
-    residualPolicy.blockStatusDamage = false;
+        residualActor.status.toxicTurnCount != 2 || !statusResidualEvent.blocked) return 577;
+    statusResidualPolicy.blockStatusDamage = false;
     residualActor.status.effect = Pokerogue3DS::PokemonStatusEffect::Burn;
-    residualPolicy.burnMultiplierDenominator = 2;
-    if (Pokerogue3DS::applyPokemonStatusResidual(residualActor, residualPolicy, residualEvent) !=
-            Pokerogue3DS::PokemonStatusResidualResult::Applied || residualEvent.requestedDamage != 3) return 578;
+    statusResidualPolicy.burnMultiplierDenominator = 2;
+    if (Pokerogue3DS::applyPokemonStatusResidual(residualActor, statusResidualPolicy, statusResidualEvent) !=
+            Pokerogue3DS::PokemonStatusResidualResult::Applied || statusResidualEvent.requestedDamage != 3) return 578;
     residualActor.maxHp = 1;
     residualActor.hp = 1;
-    if (Pokerogue3DS::applyPokemonStatusResidual(residualActor, residualPolicy, residualEvent) !=
-            Pokerogue3DS::PokemonStatusResidualResult::Applied || residualEvent.appliedDamage != 1 ||
-        !residualEvent.fainted || residualActor.hp) return 579;
+    if (Pokerogue3DS::applyPokemonStatusResidual(residualActor, statusResidualPolicy, statusResidualEvent) !=
+            Pokerogue3DS::PokemonStatusResidualResult::Applied || statusResidualEvent.appliedDamage != 1 ||
+        !statusResidualEvent.fainted || residualActor.hp) return 579;
     Pokerogue3DS::PokemonStatusApplicationPolicy statusPolicy{};
     Pokerogue3DS::PokemonStatusState absentStatus{};
     using Effect = Pokerogue3DS::PokemonStatusEffect;
@@ -3957,14 +3980,14 @@ extern "C" int runPokemonBattleStateChecks() {
         residualActor.hp = residualActor.maxHp = 160;
         residualActor.status.present = true;
         residualActor.status.effect = Effect::Toxic;
-        Pokerogue3DS::PokemonStatusResidualPolicy residualPolicy{};
-        residualPolicy.resolved = profile.bossDamageCallbacksResolved;
-        Pokerogue3DS::PokemonStatusResidualEvent residualEvent{};
-        if (Pokerogue3DS::applyPokemonStatusResidual(residualActor, residualPolicy, residualEvent) !=
+        Pokerogue3DS::PokemonStatusResidualPolicy statusResidualPolicy{};
+        statusResidualPolicy.resolved = profile.bossDamageCallbacksResolved;
+        Pokerogue3DS::PokemonStatusResidualEvent statusResidualEvent{};
+        if (Pokerogue3DS::applyPokemonStatusResidual(residualActor, statusResidualPolicy, statusResidualEvent) !=
                 Pokerogue3DS::PokemonStatusResidualResult::Applied || residualActor.hp != 150 ||
             residualActor.status.toxicTurnCount != 1) return 9011;
-        residualPolicy.bossDamageNeedsDispatcher = true;
-        if (Pokerogue3DS::applyPokemonStatusResidual(residualActor, residualPolicy, residualEvent) !=
+        statusResidualPolicy.bossDamageNeedsDispatcher = true;
+        if (Pokerogue3DS::applyPokemonStatusResidual(residualActor, statusResidualPolicy, statusResidualEvent) !=
                 Pokerogue3DS::PokemonStatusResidualResult::UnsupportedPolicy || residualActor.hp != 150 ||
             residualActor.status.toxicTurnCount != 1) return 9012;
     }
@@ -4010,11 +4033,11 @@ extern "C" int runPokemonBattleStateChecks() {
         actor.hp = 100;
         actor.status.present = true;
         actor.status.effect = Effect::Toxic;
-        Pokerogue3DS::PokemonStatusResidualPolicy residualPolicy{};
+        Pokerogue3DS::PokemonStatusResidualPolicy statusResidualPolicy{};
         if (!Pokerogue3DS::resolvePokemonStatusResidualPolicy(actor.abilityId, Effect::Toxic, true, true,
-                residualPolicy)) return 9020;
-        Pokerogue3DS::PokemonStatusResidualEvent residualEvent{};
-        if (Pokerogue3DS::applyPokemonStatusResidual(actor, residualPolicy, residualEvent) !=
+                statusResidualPolicy)) return 9020;
+        Pokerogue3DS::PokemonStatusResidualEvent statusResidualEvent{};
+        if (Pokerogue3DS::applyPokemonStatusResidual(actor, statusResidualPolicy, statusResidualEvent) !=
                 Pokerogue3DS::PokemonStatusResidualResult::Blocked || actor.hp != 100 ||
             actor.status.toxicTurnCount != 1) return 9021;
         Pokerogue3DS::PokemonHealingPolicy healing{};
@@ -4040,6 +4063,7 @@ extern "C" int runPokemonBattleStateChecks() {
     }
     if (!foundStatusHealing) return 9027;
     PokemonBattleState statusRecipient{};
+    statusRecipient.speciesDex = 1; // Real Grass/Poison recipient for Thunder Wave type checks.
     statusRecipient.hp = statusRecipient.maxHp = 100;
     Pokerogue3DS::PokemonStatusApplicationPolicy applicationPolicy{};
     applicationPolicy.resolved = true;
@@ -4094,6 +4118,25 @@ extern "C" int runPokemonBattleStateChecks() {
         statusMoveUser.moves[0].pp != 19 || !statusCommandEvent.application.requestObtainStatusPhase ||
         statusRecipient.status.present || !statusCommandEvent.hit.hit ||
         statusApplicationRng.randSeedUint32() != expectedApplicationRng.randSeedUint32()) return 9034;
+    {
+        auto groundTarget = statusRecipient;
+        groundTarget.speciesDex = 27; // Pinned Sandshrew, Ground.
+        auto groundUser = statusMoveUser;
+        auto groundRng = statusApplicationRng, unchangedRng = groundRng;
+        Pokerogue3DS::PokemonStatusEffectMoveEvent groundEvent{};
+        const auto pp = groundUser.moves[0].pp;
+        if (!Pokerogue3DS::usePokemonStatusEffectMove(groundUser, groundTarget, 0,
+                statusCommandPolicy, groundRng, groundEvent) ||
+            groundUser.moves[0].pp != pp - 1 || groundEvent.hit.hit || !groundEvent.hit.typeImmune ||
+            groundEvent.hit.accuracyRolled || groundEvent.application.requestObtainStatusPhase ||
+            groundTarget.status.present || groundRng.randSeedUint32() != unchangedRng.randSeedUint32()) return 10483;
+        groundTarget.speciesDex = 65535;
+        const auto preservedPp = groundUser.moves[0].pp;
+        groundRng = statusApplicationRng; unchangedRng = groundRng;
+        if (Pokerogue3DS::usePokemonStatusEffectMove(groundUser, groundTarget, 0,
+                statusCommandPolicy, groundRng, groundEvent) || groundUser.moves[0].pp != preservedPp ||
+            groundRng.randSeedUint32() != unchangedRng.randSeedUint32()) return 10484;
+    }
     statusCommandPolicy.hit.bypassAccuracy = false;
     statusCommandPolicy.hit.accuracyMultiplier = 0;
     expectedApplicationRng = statusApplicationRng;
@@ -4361,11 +4404,11 @@ extern "C" int runPokemonBattleStateChecks() {
     syncEvent.abilityActivates = true;
     if (Pokerogue3DS::resolvePokemonSynchronizeReaction(28, true, false, appliedStatus, syncEvent) !=
             Pokerogue3DS::PokemonStatusImmunityResult::UnsupportedCondition || !syncEvent.abilityActivates) return 9105;
-    PokemonBattleState synchronizeActor{}, reflectedSource{};
+    PokemonBattleState synchronizeActor{}, synchronizeSource{};
     synchronizeActor.abilityId = 28;
     synchronizeActor.pokemonId = 81;
-    reflectedSource.pokemonId = 82;
-    reflectedSource.hp = reflectedSource.maxHp = 100;
+    synchronizeSource.pokemonId = 82;
+    synchronizeSource.hp = synchronizeSource.maxHp = 100;
     Pokerogue3DS::PokemonQueuedStatusRequest synchronizedRequest{};
     synchronizedRequest.recipientPokemonId = 81;
     synchronizedRequest.sourcePokemonId = 82;
@@ -4374,42 +4417,42 @@ extern "C" int runPokemonBattleStateChecks() {
     applicationPolicy = {};
     applicationPolicy.resolved = applicationPolicy.hasSource = true;
     Pokerogue3DS::PokemonSynchronizeCommandEvent synchronizedEvent{};
-    if (!Pokerogue3DS::executePokemonSynchronizeReaction(synchronizeActor, reflectedSource, synchronizedRequest,
+    if (!Pokerogue3DS::executePokemonSynchronizeReaction(synchronizeActor, synchronizeSource, synchronizedRequest,
             true, true, applicationPolicy, true, statusApplicationRng, synchronizedEvent) ||
-        !synchronizedEvent.statusApplied || !reflectedSource.status.present ||
-        reflectedSource.status.effect != Effect::Burn || reflectedSource.pendingStatus != Effect::None) return 9210;
-    reflectedSource.status = {};
+        !synchronizedEvent.statusApplied || !synchronizeSource.status.present ||
+        synchronizeSource.status.effect != Effect::Burn || synchronizeSource.pendingStatus != Effect::None) return 9210;
+    synchronizeSource.status = {};
     applicationPolicy.fireType = true;
     expectedApplicationRng = statusApplicationRng;
-    if (!Pokerogue3DS::executePokemonSynchronizeReaction(synchronizeActor, reflectedSource, synchronizedRequest,
+    if (!Pokerogue3DS::executePokemonSynchronizeReaction(synchronizeActor, synchronizeSource, synchronizedRequest,
             true, true, applicationPolicy, true, statusApplicationRng, synchronizedEvent) ||
         !synchronizedEvent.reaction.abilityActivates || synchronizedEvent.statusApplied ||
         synchronizedEvent.eligibility != Pokerogue3DS::PokemonStatusEligibility::FireType ||
-        reflectedSource.status.present ||
+        synchronizeSource.status.present ||
         statusApplicationRng.randSeedUint32() != expectedApplicationRng.randSeedUint32()) return 9211;
     applicationPolicy.fireType = false;
     synchronizedEvent.statusApplied = true;
     expectedApplicationRng = statusApplicationRng;
-    if (Pokerogue3DS::executePokemonSynchronizeReaction(synchronizeActor, reflectedSource, synchronizedRequest,
+    if (Pokerogue3DS::executePokemonSynchronizeReaction(synchronizeActor, synchronizeSource, synchronizedRequest,
             true, true, applicationPolicy, false, statusApplicationRng, synchronizedEvent) ||
-        reflectedSource.status.present || reflectedSource.pendingStatus != Effect::None ||
+        synchronizeSource.status.present || synchronizeSource.pendingStatus != Effect::None ||
         !synchronizedEvent.statusApplied ||
         statusApplicationRng.randSeedUint32() != expectedApplicationRng.randSeedUint32()) return 9212;
-    reflectedSource.hp = 0;
+    synchronizeSource.hp = 0;
     expectedApplicationRng = statusApplicationRng;
-    if (!Pokerogue3DS::executePokemonSynchronizeReaction(synchronizeActor, reflectedSource, synchronizedRequest,
+    if (!Pokerogue3DS::executePokemonSynchronizeReaction(synchronizeActor, synchronizeSource, synchronizedRequest,
             true, true, applicationPolicy, true, statusApplicationRng, synchronizedEvent) ||
         !synchronizedEvent.reaction.abilityActivates || synchronizedEvent.statusApplied ||
         synchronizedEvent.eligibility != Pokerogue3DS::PokemonStatusEligibility::Fainted ||
-        reflectedSource.status.present || reflectedSource.pendingStatus != Effect::None ||
+        synchronizeSource.status.present || synchronizeSource.pendingStatus != Effect::None ||
         statusApplicationRng.randSeedUint32() != expectedApplicationRng.randSeedUint32()) return 9220;
-    reflectedSource.hp = 100;
+    synchronizeSource.hp = 100;
     applicationPolicy.resolved = false;
     expectedApplicationRng = statusApplicationRng;
-    if (!Pokerogue3DS::executePokemonSynchronizeReaction(synchronizeActor, reflectedSource, synchronizedRequest,
+    if (!Pokerogue3DS::executePokemonSynchronizeReaction(synchronizeActor, synchronizeSource, synchronizedRequest,
             true, true, applicationPolicy, false, statusApplicationRng, synchronizedEvent, true) ||
         !synchronizedEvent.reaction.abilityActivates || synchronizedEvent.statusApplied ||
-        reflectedSource.status.present || reflectedSource.pendingStatus != Effect::None ||
+        synchronizeSource.status.present || synchronizeSource.pendingStatus != Effect::None ||
         statusApplicationRng.randSeedUint32() != expectedApplicationRng.randSeedUint32()) return 9221;
     PokemonBattleState reactionRecipient{}, reactionSource{};
     reactionRecipient.abilityId = 28;
@@ -4571,6 +4614,8 @@ extern "C" int runPokemonBattleStateChecks() {
     if (!Pokerogue3DS::pokemonStatusFormCallbacksAbsent(1) ||
         !Pokerogue3DS::pokemonStatusFormCallbacksAbsent(492) ||
         Pokerogue3DS::pokemonStatusFormCallbacksAbsent(65535)) return 9290;
+    Pokerogue3DS::PokemonStatusRecipientPolicies recipientPolicies{};
+    PokemonBattleState policyRecipient{}, policySource{};
     policyRecipient.speciesDex = 1;
     policyRecipient.abilityId = 28;
     policySource.speciesDex = 492;
@@ -4735,8 +4780,7 @@ extern "C" int runPokemonBattleStateChecks() {
     summonHealingActor.status = {};
     summonHealingActor.status.present = true;
     summonHealingActor.status.effect = Effect::Toxic;
-    summonHealingActor.status.turnCountPresent = true;
-    summonHealingActor.status.turnCount = 3;
+    summonHealingActor.status.toxicTurnCount = 3;
     summonHealingActor.confusion = {2, true};
     Pokerogue3DS::PokemonPostSummonStatusHealingEvent summonHealingEvent{};
     if (!Pokerogue3DS::applyPokemonPostSummonStatusHealing(summonHealingActor, true, true, summonHealingEvent) ||
@@ -4817,6 +4861,7 @@ extern "C" int runPokemonBattleStateChecks() {
     expiryPolicy.effectiveAttack = expiryPolicy.effectiveDefense = 1;
     Pokerogue3DS::PokemonConfusionMoveEvent expiryEvent{};
     auto expiryActor = confuseMoveTarget;
+    expiryActor.level = 5; // Before-move confusion requires an initialized combat level.
     auto expiryRng = confuseMoveRng, expectedExpiryRng = expiryRng;
     if (!Pokerogue3DS::checkPokemonConfusionBeforeMove(expiryActor, sourcedTag,
             expiryPolicy, expiryRng, expiryEvent) || !expiryEvent.removed || sourcedTag.present ||
@@ -4973,20 +5018,20 @@ extern "C" int runPokemonBattleStateChecks() {
             statusApplicationRng, puppeteerEvent) != Pokerogue3DS::PokemonStatusImmunityResult::UnsupportedCondition ||
         puppeteerTag.present || puppeteerEvent.tagAttempted ||
         statusApplicationRng.randSeedUint32() != expectedApplicationRng.randSeedUint32()) return 9153;
-    PokemonBattleState ownTempoActor{};
-    ownTempoActor.abilityId = 20;
-    ownTempoActor.confusion = {3, true};
+    PokemonBattleState recipientOwnTempoActor{};
+    recipientOwnTempoActor.abilityId = 20;
+    recipientOwnTempoActor.confusion = {3, true};
     Pokerogue3DS::PokemonConfusionRemovalEvent removalEvent{};
-    if (Pokerogue3DS::applyPokemonPostSummonConfusionRemoval(ownTempoActor, false, true, removalEvent) !=
+    if (Pokerogue3DS::applyPokemonPostSummonConfusionRemoval(recipientOwnTempoActor, false, true, removalEvent) !=
             Pokerogue3DS::PokemonStatusImmunityResult::Resolved || removalEvent.removed ||
-        ownTempoActor.confusion.turns != 3) return 9200;
-    if (Pokerogue3DS::applyPokemonPostSummonConfusionRemoval(ownTempoActor, true, false, removalEvent) !=
-            Pokerogue3DS::PokemonStatusImmunityResult::UnsupportedCondition || ownTempoActor.confusion.turns != 3)
+        recipientOwnTempoActor.confusion.turns != 3) return 9200;
+    if (Pokerogue3DS::applyPokemonPostSummonConfusionRemoval(recipientOwnTempoActor, true, false, removalEvent) !=
+            Pokerogue3DS::PokemonStatusImmunityResult::UnsupportedCondition || recipientOwnTempoActor.confusion.turns != 3)
         return 9201;
-    if (Pokerogue3DS::applyPokemonPostSummonConfusionRemoval(ownTempoActor, true, true, removalEvent) !=
+    if (Pokerogue3DS::applyPokemonPostSummonConfusionRemoval(recipientOwnTempoActor, true, true, removalEvent) !=
             Pokerogue3DS::PokemonStatusImmunityResult::Resolved || !removalEvent.abilityActivates ||
-        !removalEvent.removed || ownTempoActor.confusion.present || ownTempoActor.confusion.turns) return 9202;
-    if (Pokerogue3DS::applyPokemonPostSummonConfusionRemoval(ownTempoActor, true, true, removalEvent) !=
+        !removalEvent.removed || recipientOwnTempoActor.confusion.present || recipientOwnTempoActor.confusion.turns) return 9202;
+    if (Pokerogue3DS::applyPokemonPostSummonConfusionRemoval(recipientOwnTempoActor, true, true, removalEvent) !=
             Pokerogue3DS::PokemonStatusImmunityResult::Resolved || removalEvent.abilityActivates) return 9203;
     probeConfusion.resolved = applyConfusion.resolved = false;
     expectedApplicationRng = statusApplicationRng;
@@ -5030,8 +5075,8 @@ extern "C" int runPokemonBattleStateChecks() {
     sharedField.resolved = sharedField.grounded = sharedField.mistyTerrain = sharedField.ignoreField = true;
     sharedField.effectiveTypes = sharedField.originalIfStellarTypes = recipientTypes;
     sharedField.effectiveTypeCount = sharedField.originalIfStellarTypeCount = 1;
-    Pokerogue3DS::PokemonStatusRecipientPolicies recipientPolicies{};
-    PokemonBattleState policyRecipient{}, policySource{};
+    recipientPolicies = {};
+    policyRecipient = {}; policySource = {};
     policyRecipient.hp = policyRecipient.maxHp = 100;
     const Pokerogue3DS::PokemonStatusAbilityComponent neutralComponents[] = {{0, true, true}};
     if (!Pokerogue3DS::resolvePokemonStatusRecipientPolicies(policyRecipient, &policySource, Effect::Burn,

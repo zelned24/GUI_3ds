@@ -76,6 +76,10 @@ public:
         float opacity = 1.0f
     );
 
+    float textLineHeight(float size) const;
+    float drawTextFitted(const char* text,float x,float y,float size,float maxWidth,uint32_t color);
+    bool drawWindow(float x, float y, float width, float height);
+
     // Scaled text; reuses the frame buffer without clearing earlier text draws.
     void drawText(const char* text, float x, float y, float size, uint32_t color);
 
@@ -90,6 +94,10 @@ private:
     C3D_RenderTarget* m_bottomTarget;
     C3D_RenderTarget* m_currentTarget;
     C2D_TextBuf m_textBuf;
+#if defined(__arm__) || defined(__3DS__) || defined(_3DS)
+    C2D_Font m_gameFont = nullptr;
+    C2D_SpriteSheet m_window = nullptr;
+#endif
     bool m_initialized;
     bool m_frameActive;
 };

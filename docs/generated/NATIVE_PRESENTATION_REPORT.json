@@ -1,0 +1,230 @@
+{
+  "generator": "scripts/prepare_native_presentation.py",
+  "itemIconReferences": {
+    "resolved": 88,
+    "unsupported": [
+      {
+        "constructor": "EvolutionItemModifierTypeGenerator",
+        "id": "EVOLUTION_ITEM",
+        "status": "NOT_YET_SUPPORTED_BY_ICON_ADAPTER"
+      },
+      {
+        "constructor": "EvolutionItemModifierTypeGenerator",
+        "id": "RARE_EVOLUTION_ITEM",
+        "status": "NOT_YET_SUPPORTED_BY_ICON_ADAPTER"
+      },
+      {
+        "constructor": "FormChangeItemModifierTypeGenerator",
+        "id": "FORM_CHANGE_ITEM",
+        "status": "NOT_YET_SUPPORTED_BY_ICON_ADAPTER"
+      },
+      {
+        "constructor": "FormChangeItemModifierTypeGenerator",
+        "id": "RARE_FORM_CHANGE_ITEM",
+        "status": "NOT_YET_SUPPORTED_BY_ICON_ADAPTER"
+      },
+      {
+        "constructor": "SpeciesStatBoosterModifierTypeGenerator",
+        "id": "SPECIES_STAT_BOOSTER",
+        "status": "NOT_YET_SUPPORTED_BY_ICON_ADAPTER"
+      },
+      {
+        "constructor": "SpeciesStatBoosterModifierTypeGenerator",
+        "id": "RARE_SPECIES_STAT_BOOSTER",
+        "status": "NOT_YET_SUPPORTED_BY_ICON_ADAPTER"
+      },
+      {
+        "constructor": "TempStatStageBoosterModifierTypeGenerator",
+        "id": "TEMP_STAT_STAGE_BOOSTER",
+        "status": "NOT_YET_SUPPORTED_BY_ICON_ADAPTER"
+      },
+      {
+        "constructor": "TempCritBoosterModifier",
+        "id": "DIRE_HIT",
+        "status": "NOT_YET_SUPPORTED_BY_ICON_ADAPTER"
+      },
+      {
+        "constructor": "BaseStatBoosterModifierTypeGenerator",
+        "id": "BASE_STAT_BOOSTER",
+        "status": "NOT_YET_SUPPORTED_BY_ICON_ADAPTER"
+      },
+      {
+        "constructor": "AttackTypeBoosterModifierTypeGenerator",
+        "id": "ATTACK_TYPE_BOOSTER",
+        "status": "NOT_YET_SUPPORTED_BY_ICON_ADAPTER"
+      },
+      {
+        "constructor": "ModifierTypeGenerator",
+        "id": "MINT",
+        "status": "NOT_YET_SUPPORTED_BY_ICON_ADAPTER"
+      },
+      {
+        "constructor": "ModifierTypeGenerator",
+        "id": "TERA_SHARD",
+        "status": "NOT_YET_SUPPORTED_BY_ICON_ADAPTER"
+      },
+      {
+        "constructor": "ModifierTypeGenerator",
+        "id": "BERRY",
+        "status": "NOT_YET_SUPPORTED_BY_ICON_ADAPTER"
+      },
+      {
+        "constructor": "TmModifierTypeGenerator",
+        "id": "TM_COMMON",
+        "status": "NOT_YET_SUPPORTED_BY_ICON_ADAPTER"
+      },
+      {
+        "constructor": "TmModifierTypeGenerator",
+        "id": "TM_GREAT",
+        "status": "NOT_YET_SUPPORTED_BY_ICON_ADAPTER"
+      },
+      {
+        "constructor": "TmModifierTypeGenerator",
+        "id": "TM_ULTRA",
+        "status": "NOT_YET_SUPPORTED_BY_ICON_ADAPTER"
+      },
+      {
+        "constructor": "AddVoucherModifierType",
+        "id": "VOUCHER",
+        "status": "NOT_YET_SUPPORTED_BY_ICON_ADAPTER"
+      },
+      {
+        "constructor": "AddVoucherModifierType",
+        "id": "VOUCHER_PLUS",
+        "status": "NOT_YET_SUPPORTED_BY_ICON_ADAPTER"
+      },
+      {
+        "constructor": "AddVoucherModifierType",
+        "id": "VOUCHER_PREMIUM",
+        "status": "NOT_YET_SUPPORTED_BY_ICON_ADAPTER"
+      },
+      {
+        "constructor": "ModifierTypeGenerator",
+        "id": "MYSTERY_ENCOUNTER_SHUCKLE_JUICE",
+        "status": "NOT_YET_SUPPORTED_BY_ICON_ADAPTER"
+      },
+      {
+        "constructor": "ModifierTypeGenerator",
+        "id": "MYSTERY_ENCOUNTER_BLACK_SLUDGE",
+        "status": "NOT_YET_SUPPORTED_BY_ICON_ADAPTER"
+      }
+    ]
+  },
+  "manifests": [
+    {
+      "manifest": "ball-menu-provenance.json",
+      "records": 0,
+      "repository": "https://github.com/pagefaultgames/pokerogue",
+      "revision": "8555c08c823b856cbec4eb99ca84ea52a955836d",
+      "sha256": "7808bbc5fb8e31b171b64146c4cadb351bb974a0fafc9476a15889c87c24b8fb"
+    },
+    {
+      "manifest": "converted-provenance.json",
+      "records": 39,
+      "repository": "https://github.com/pagefaultgames/pokerogue-assets",
+      "revision": "056a1f408f26a3be4fef243f7462cb43608c7928",
+      "sha256": "cf3915245a2dd1789062744d8eaedf70736be2905262952225416c52b1df5b6b"
+    },
+    {
+      "manifest": "cursor-provenance.json",
+      "records": 0,
+      "repository": "https://github.com/pagefaultgames/pokerogue-assets",
+      "revision": "056a1f408f26a3be4fef243f7462cb43608c7928",
+      "sha256": "c180faad6dc5baee6283fb584fb418cbc9a41d1c91a3a008073a7d72f46f17eb"
+    },
+    {
+      "manifest": "font-provenance.json",
+      "records": 0,
+      "repository": "https://github.com/pagefaultgames/pokerogue-assets",
+      "revision": "056a1f408f26a3be4fef243f7462cb43608c7928",
+      "sha256": "cd56c30109c97b6753c93dcef2111efef3aa86368fa29658317fb61f70f961ba"
+    },
+    {
+      "manifest": "hud-provenance.json",
+      "records": 3,
+      "repository": "https://github.com/pagefaultgames/pokerogue-assets",
+      "revision": "056a1f408f26a3be4fef243f7462cb43608c7928",
+      "sha256": "645be4c38312bd3649b5607191a4aa68bbcecb67c6528bae95b826ba249496d0"
+    },
+    {
+      "manifest": "icon-provenance.json",
+      "records": 1500,
+      "repository": "https://github.com/pagefaultgames/pokerogue-assets",
+      "revision": "056a1f408f26a3be4fef243f7462cb43608c7928",
+      "sha256": "494fa4d9125d9163697cfe9a1a5e6191baf5d9379de782997f86bca47a5f3f75"
+    },
+    {
+      "manifest": "intro-provenance.json",
+      "records": 0,
+      "repository": "https://github.com/pagefaultgames/pokerogue-assets",
+      "revision": "056a1f408f26a3be4fef243f7462cb43608c7928",
+      "sha256": "b1aae867bf57fde449908d01e135eb4a2a474954e39e1050f1b7e568373360a7"
+    },
+    {
+      "manifest": "item-icon-provenance.json",
+      "records": 0,
+      "repository": "https://github.com/pagefaultgames/pokerogue-assets",
+      "revision": "056a1f408f26a3be4fef243f7462cb43608c7928",
+      "sha256": "778b1a18394c232a96e2c8136a9316fcb32bc791e6c752f00d1ff7228e8a2e41"
+    },
+    {
+      "manifest": "layer-provenance.json",
+      "records": 74,
+      "repository": "https://github.com/pagefaultgames/pokerogue-assets",
+      "revision": "056a1f408f26a3be4fef243f7462cb43608c7928",
+      "sha256": "952e55e063e6bea2d09807c4068f3c17ce514c0ac41775ff40512993c4eeab4e"
+    },
+    {
+      "manifest": "logo-provenance.json",
+      "records": 0,
+      "repository": "https://github.com/pagefaultgames/pokerogue-assets",
+      "revision": "056a1f408f26a3be4fef243f7462cb43608c7928",
+      "sha256": "f1565e3dbfc3d39bf38d93abdaefbba844bbbb7dc83cf98c4f36e4b660f59c4d"
+    },
+    {
+      "manifest": "setup-provenance.json",
+      "records": 2,
+      "repository": "https://github.com/pagefaultgames/pokerogue-assets",
+      "revision": "056a1f408f26a3be4fef243f7462cb43608c7928",
+      "sha256": "6a89c4c653c9b35166ba6316141e16ab8b395f0298ba8ef257340f4bbb1a748a"
+    },
+    {
+      "manifest": "source-provenance.json",
+      "records": 2922,
+      "repository": "https://github.com/pagefaultgames/pokerogue-assets",
+      "revision": "056a1f408f26a3be4fef243f7462cb43608c7928",
+      "sha256": "8c8fe0bd331bf31d6e42438686f964d41bd6888f392d377c6f9b127c3ca3d6c1"
+    },
+    {
+      "manifest": "title-locale-provenance.json",
+      "records": 0,
+      "repository": "https://github.com/pagefaultgames/pokerogue-locales",
+      "revision": "23aea1cb0da5a0b15b836f3c243791591cc42303",
+      "sha256": "0b50aa30e433409d0663b5d71f1d24b32e4c2de963d9ebccdf171808f4734299"
+    },
+    {
+      "manifest": "trainer-provenance.json",
+      "records": 306,
+      "repository": "https://github.com/pagefaultgames/pokerogue-assets",
+      "revision": "056a1f408f26a3be4fef243f7462cb43608c7928",
+      "sha256": "aa2a95e5883649e03ad06f7c4c002657054c762591314bf63b5e41fb78861ef0"
+    },
+    {
+      "manifest": "ui-locale-provenance.json",
+      "records": 8,
+      "repository": "https://github.com/pagefaultgames/pokerogue-locales",
+      "revision": "23aea1cb0da5a0b15b836f3c243791591cc42303",
+      "sha256": "ba26620117cf45076c2acd717dde062971f072f8178d08dd2886d477defb2425"
+    },
+    {
+      "manifest": "window-provenance.json",
+      "records": 0,
+      "repository": "https://github.com/pagefaultgames/pokerogue-assets",
+      "revision": "056a1f408f26a3be4fef243f7462cb43608c7928",
+      "sha256": "5f5b9c1ec941d3cdcae710d543b9b6f98a1fc7cca9a01c424e993c1118cbfc40"
+    }
+  ],
+  "runtimeBudget": "Old 3DS hardware memory and performance measurement pending",
+  "schemaVersion": 1,
+  "verificationScope": "Physical assets and generated metadata; not complete visual or gameplay parity"
+}

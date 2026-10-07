@@ -48,6 +48,14 @@ NativeSaveResult SdNativeSaveStorage::writeSlot(unsigned slot, const char* bytes
     if (slot > 1) return NativeSaveResult::InvalidRecord;
     return writeFile(slotPath(slot), bytes, size);
 }
+NativeSaveResult SdNativeSaveStorage::deleteSlot(unsigned slot) {
+    if (slot > 1) return NativeSaveResult::InvalidRecord;
+    const char* path = slotPath(slot);
+    if (std::remove(path) != 0 && errno != ENOENT) {
+        return NativeSaveResult::IoError;
+    }
+    return NativeSaveResult::Ok;
+}
 NativeSaveResult SdNativeSaveStorage::readExport(char* output, size_t capacity, size_t& size) {
     return readFile(kExportPath, output, capacity, size);
 }

@@ -8,8 +8,8 @@
 
 namespace Pokerogue3DS {
 
-inline constexpr uint16_t kNativeSaveVersion = 22;
-inline constexpr uint16_t kNativeSaveRuntimeVersion = 22;
+inline constexpr uint16_t kNativeSaveVersion = 26;
+inline constexpr uint16_t kNativeSaveRuntimeVersion = 26;
 // Bounded text envelope including six trainer members and field/inventory state.
 inline constexpr size_t kNativeSaveMaxBytes = 8192;
 inline constexpr size_t kNativeHeldModifierCapacity = 32;
@@ -34,6 +34,8 @@ struct NativeTrainerMemberSave {
     PokemonStatusState status{};
     PokemonConfusionTagState confusion{};
     bool sturdyTag = false; // Run envelope v19.
+    uint8_t berryCriticalBoostStages = 0; // Run envelope v24.
+    bool hasEatenBerry = false; // Run envelope v25.
 };
 
 // Explicit actor snapshot: canonical IDs only; computed stats are reconstructed.
@@ -63,6 +65,8 @@ struct NativePokemonSave {
     uint8_t friendship = 0;
     bool friendshipResolved = false; // Legacy payloads resolve to pinned species base.
     bool unburdenTag = false;
+    uint8_t berryCriticalBoostStages = 0; // Actor payload v12; absent in earlier payloads.
+    bool hasEatenBerry = false; // Actor payload v13; per-battle consumption history.
     bool actorIdentityResolved = false;
     uint8_t abilityIndex = 0;
     char initialTeraType[16]{}; // Empty only for legacy actor payloads.
@@ -79,6 +83,26 @@ bool captureNativePokemonActorSave(const PokemonBattleState& state,
     const PokemonActorIdentity& identity, uint32_t experience, NativePokemonSave& output);
 bool restoreNativePokemonActorSave(const NativePokemonSave& saved,
     PokemonBattleState& state, PokemonActorIdentity& identity);
+
+// Current checkpoint actor slots: player party 0..5, trainer party 6..11,
+// legacy standalone player 12, wild primary enemy 13, second enemy 14.
+// Histories share one pool bounded by the serialized run envelope, not by species
+// or Berry catalog counts. Pool exhaustion is explicit; no history is truncated.
+inline constexpr size_t kNativeBerryActorSlots = 15;
+inline constexpr size_t kNativeBerryHistoryValues = kNativeSaveMaxBytes / 5;
+struct NativeBerryHistoryRecord {
+    uint32_t ownerPokemonId = 0;
+    uint8_t actorSlot = 0;
+    uint16_t offset = 0;
+    uint16_t counts[3]{};
+};
+struct NativeBerryHistoryStore {
+    bool resolved = false; // Legacy runs did not retain ordered Berry history.
+    uint8_t recordCount = 0;
+    uint16_t valueCount = 0;
+    NativeBerryHistoryRecord records[kNativeBerryActorSlots]{};
+    uint16_t values[kNativeBerryHistoryValues]{};
+};
 
 struct NativeRunSave {
     uint32_t generation = 0;
@@ -107,6 +131,10 @@ struct NativeRunSave {
     PokemonConfusionTagState playerConfusion{};
     PokemonConfusionTagState enemyConfusion{};
     PokemonBossState enemyBoss{}; // Run envelope v20; actor form remains reconstructed.
+    bool playerHasEatenBerry = false;
+    bool enemyHasEatenBerry = false;
+    uint8_t playerBerryCriticalBoostStages = 0;
+    uint8_t enemyBerryCriticalBoostStages = 0;
     bool enemySturdyTag = false; // Player tags remain in explicit actor payloads.
     bool globalRngResolved = false; // v21; legacy snapshots cannot recover shield RNG history.
     PokerogueRngState globalRng{};
@@ -143,6 +171,9 @@ struct NativeRunSave {
     NativePokemonSave playerParty[6]{};
     uint8_t heldModifierCount = 0;
     NativeHeldModifierInstance heldModifiers[kNativeHeldModifierCapacity]{};
+    uint16_t persistentModifierCount = 0; // v23: ordered team-wide modifiers.
+    NativePersistentModifierInstance persistentModifiers[kNativePersistentModifierCapacity]{};
+    NativeBerryHistoryStore berryHistories{}; // Run envelope v26.
     char modeId[32]{};
     char biomeId[48]{};
 };
@@ -157,10 +188,35 @@ const char* nativeSaveResultName(NativeSaveResult result);
 // Bounded member payload; enclosing run journal supplies version/hash/checksum.
 struct NativeHeldModifierInstance;
 // Component payload; enclosing run journal owns checksum/content hash/version.
+NativeSaveResult encodeNativePersistentModifier(const NativePersistentModifierInstance& instance,
+    char* output, size_t capacity, size_t& written);
+NativeSaveResult decodeNativePersistentModifier(const char* bytes, size_t length,
+    NativePersistentModifierInstance& output);
 NativeSaveResult encodeNativeHeldModifier(const NativeHeldModifierInstance& instance,
     char* output, size_t capacity, size_t& written);
 NativeSaveResult decodeNativeHeldModifier(const char* bytes, size_t length,
     NativeHeldModifierInstance& output);
+
+struct PokemonBerryHistoryView;
+NativeSaveResult captureNativeBerryHistory(NativeBerryHistoryStore& store,
+    uint8_t actorSlot, const PokemonBerryHistoryView& history);
+bool nativeBerryHistoryView(NativeBerryHistoryStore& store, size_t index,
+    PokemonBerryHistoryView& output);
+NativeSaveResult retainNativeBerryHistoryActors(NativeBerryHistoryStore& store, uint16_t actorSlotMask);
+NativeSaveResult resetNativeBerrySummonHistory(NativeBerryHistoryStore& store, uint32_t ownerPokemonId);
+NativeSaveResult removeNativeBerryHistoryOwner(NativeBerryHistoryStore& store, uint32_t ownerPokemonId);
+NativeSaveResult transferNativeBerryHistoryToParty(NativeBerryHistoryStore& store, uint32_t ownerPokemonId, uint8_t partySlot);
+
+// Versioned component; the enclosing run envelope owns content hash/checksum.
+// Lists are variable length and keep order/duplicates. Caller supplies storage.
+NativeSaveResult encodeNativeBerryHistory(const PokemonBerryHistoryView& history,
+    char* output, size_t capacity, size_t& written);
+NativeSaveResult decodeNativeBerryHistory(const char* bytes, size_t length,
+    PokemonBerryHistoryView& output);
+// Restore against the reconstructed actor before publishing caller-owned lists.
+// A nonempty history requires its per-arena hasEatenBerry flag.
+NativeSaveResult restoreNativePokemonBerryHistory(const char* bytes, size_t length,
+    const PokemonBattleState& actor, PokemonBerryHistoryView& output);
 
 NativeSaveResult encodeNativePokemonSave(const NativePokemonSave& saved, char* output,
     size_t capacity, size_t& written);
@@ -186,6 +242,7 @@ public:
     virtual ~NativeSaveStorage() = default;
     virtual NativeSaveResult readSlot(unsigned slot, char* output, size_t capacity, size_t& read) = 0;
     virtual NativeSaveResult writeSlot(unsigned slot, const char* bytes, size_t length) = 0;
+    virtual NativeSaveResult deleteSlot(unsigned slot) { (void)slot; return NativeSaveResult::Ok; }
     virtual NativeSaveResult readExport(char* output, size_t capacity, size_t& read) = 0;
     virtual NativeSaveResult writeExport(const char* bytes, size_t length) = 0;
 };
@@ -207,6 +264,7 @@ public:
     void bindStarterProfiles(NativeStarterCandyStore& profiles) { m_profiles = &profiles; }
     NativeSaveResult load(const char* contentHash, NativeRunSave& output);
     NativeSaveResult save(const NativeRunSave& value);
+    NativeSaveResult deleteSave();
     NativeSaveResult exportLatest(const char* contentHash);
     NativeSaveResult importExport(const char* contentHash);
 
@@ -226,6 +284,7 @@ public:
     NativeSaveResult writeBundle(const char* bytes, size_t length) override;
     NativeSaveResult readSlot(unsigned slot, char* output, size_t capacity, size_t& read) override;
     NativeSaveResult writeSlot(unsigned slot, const char* bytes, size_t length) override;
+    NativeSaveResult deleteSlot(unsigned slot) override;
     NativeSaveResult readExport(char* output, size_t capacity, size_t& read) override;
     NativeSaveResult writeExport(const char* bytes, size_t length) override;
 };

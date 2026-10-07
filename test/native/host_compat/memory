@@ -1,5 +1,6 @@
 #pragma once
 #include <cstddef>
+#include <new>
 
 namespace std {
 
@@ -50,6 +51,19 @@ public:
         ptr = p;
         delete old;
     }
+};
+
+template <typename T>
+class unique_ptr<T[]> {
+    T* ptr;
+public:
+    explicit unique_ptr(T* p=nullptr) noexcept : ptr(p) {}
+    ~unique_ptr() { delete[] ptr; }
+    unique_ptr(const unique_ptr&)=delete;
+    unique_ptr& operator=(const unique_ptr&)=delete;
+    T* get() const noexcept { return ptr; }
+    T& operator[](size_t i) const { return ptr[i]; }
+    explicit operator bool() const noexcept { return ptr!=nullptr; }
 };
 
 template <typename T, typename... Args>

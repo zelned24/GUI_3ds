@@ -1857,7 +1857,11 @@ int bf_rem(bf_t *r, const bf_t *a, const bf_t *b, limb_t prec,
 static inline int bf_get_limb(slimb_t *pres, const bf_t *a, int flags)
 {
 #if LIMB_BITS == 32
-    return bf_get_int32(pres, a, flags);
+    /* ARM EABI uses long for slimb_t, while bf_get_int32 requires int*. */
+    int32_t value;
+    int result = bf_get_int32(&value, a, flags);
+    *pres = value;
+    return result;
 #else
     return bf_get_int64(pres, a, flags);
 #endif
@@ -2552,7 +2556,7 @@ fail:
 
 /* The rounding mode is always BF_RNDZ. Return BF_ST_INVALID_OP if there
    is an overflow and 0 otherwise. */
-int bf_get_int32(int *pres, const bf_t *a, int flags)
+int bf_get_int32(int32_t *pres, const bf_t *a, int flags)
 {
     uint32_t v;
     int ret;

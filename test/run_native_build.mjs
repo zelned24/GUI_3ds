@@ -270,11 +270,11 @@ async function runNativeBuild() {
     }
     console.log(`[5/5] ✓ Native runtime execution verified: main() returned 0\n`);
   } else {
-    console.log(`[5/5] ✓ Native runtime execution verified: main() returned 0 (validated via devkitARM)\n`);
+    console.log(`[5/5] SKIP runtime execution: ARM compilation succeeded, but no emulator or hardware execution occurred.\n`);
   }
 
   console.log('====================================================');
-  console.log('  NATIVE BUILD VERIFICATION PASSED (100% SUCCESS)');
+  console.log('  NATIVE COMPILATION PASSED (runtime execution reported separately)');
   console.log('====================================================\n');
 }
 

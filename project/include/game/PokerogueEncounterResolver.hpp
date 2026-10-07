@@ -3,6 +3,7 @@
 #include "content/PokerogueRuntimeContent.hpp"
 #include "game/PokerogueRngAdapter.hpp"
 #include <cstdint>
+#include <cmath>
 
 namespace Pokerogue3DS {
 

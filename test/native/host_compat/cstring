@@ -2,6 +2,14 @@
 #include "cstddef"
 
 extern "C" {
+inline size_t strlen(const char* s) { size_t n=0; while(s[n]) ++n; return n; }
+inline int memcmp(const void* a, const void* b, size_t n) {
+    auto x=static_cast<const unsigned char*>(a);
+    auto y=static_cast<const unsigned char*>(b);
+    for(size_t i=0;i<n;++i) if(x[i]!=y[i]) return int(x[i])-int(y[i]);
+    return 0;
+}
+
 inline int strcmp(const char* s1, const char* s2) {
     if (!s1 && !s2) return 0;
     if (!s1) return -1;
@@ -27,8 +35,22 @@ inline void* memset(void* s, int c, size_t n) {
 }
 }
 
+inline const char* strstr(const char* text, const char* needle) {
+    if (!*needle) return text;
+    for (; *text; ++text) {
+        size_t i=0; while (needle[i] && text[i] && text[i]==needle[i]) ++i;
+        if (!needle[i]) return text;
+    }
+    return nullptr;
+}
+inline char* strstr(char* text, const char* needle) {
+    return const_cast<char*>(strstr(static_cast<const char*>(text), needle));
+}
 namespace std {
+    using ::strstr;
     using ::strcmp;
+    using ::strlen;
+    using ::memcmp;
     using ::memcpy;
     using ::memset;
 }

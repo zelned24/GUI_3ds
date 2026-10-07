@@ -23,6 +23,9 @@
  * THE SOFTWARE.
  */
 #include <stdlib.h>
+#if defined(__3DS__)
+#include <malloc.h>
+#endif
 #include <stdio.h>
 #include <stdarg.h>
 #include <inttypes.h>
@@ -6438,7 +6441,8 @@ static int find_line_num(JSContext *ctx, JSFunctionBytecode *b,
                          uint32_t pc_value)
 {
     const uint8_t *p_end, *p;
-    int new_line_num, line_num, pc, v, ret;
+    int new_line_num, line_num, pc, ret;
+    int32_t v;
     unsigned int op;
 
     if (!b->has_debug || !b->debug.pc2line_buf) {
@@ -41012,7 +41016,8 @@ static JSValue js_parseInt(JSContext *ctx, JSValueConst this_val,
                            int argc, JSValueConst *argv)
 {
     const char *str, *p;
-    int radix, flags;
+    int flags;
+    int32_t radix;
     JSValue ret;
 
     str = JS_ToCString(ctx, argv[0]);
@@ -43052,7 +43057,7 @@ static double js_math_fround(double a)
 static JSValue js_math_imul(JSContext *ctx, JSValueConst this_val,
                             int argc, JSValueConst *argv)
 {
-    int a, b;
+    int32_t a, b;
 
     if (JS_ToInt32(ctx, &a, argv[0]))
         return JS_EXCEPTION;
@@ -43194,7 +43199,7 @@ static int getTimezoneOffset(int64_t time)
         }
     }
     ti = time;
-#if defined(_WIN32)
+#if defined(_WIN32) || defined(__3DS__)
     {
         struct tm *tm;
         time_t gm_ti, loc_ti;
@@ -48170,7 +48175,7 @@ static __exception int remainingElementsCount_add(JSContext *ctx,
                                                   int addend)
 {
     JSValue val;
-    int remainingElementsCount;
+    int32_t remainingElementsCount;
 
     val = JS_GetPropertyUint32(ctx, resolve_element_env, 0);
     if (JS_IsException(val))
@@ -48201,7 +48206,8 @@ static JSValue js_promise_all_resolve_element(JSContext *ctx,
     JSValueConst resolve = func_data[3];
     JSValueConst resolve_element_env = func_data[4];
     JSValue ret, obj;
-    int is_zero, index;
+    int is_zero;
+    int32_t index;
     
     if (JS_ToInt32(ctx, &index, func_data[1]))
         return JS_EXCEPTION;

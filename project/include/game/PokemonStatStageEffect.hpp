@@ -476,4 +476,34 @@ inline PokemonStatStageEffectResult applyPokemonNegativeStageResetItem(
     return PokemonStatStageEffectResult::Ok;
 }
 
+// FlinchedTag.PRE_MOVE -> FlinchStatStageChangeAbAttr queues a self-source
+// stat phase. Current actor frontier has primary abilities without passives.
+inline PokemonStatStageEffectResult executePokemonFlinchStatReaction(
+    PokemonBattleState& actor, PokemonBattleState& opponent,
+    bool fieldCallbacksResolved, PokemonStatStageEffectEvent& output) {
+    const auto* flinch = pokemonFlinchAbilityProfile(actor.abilityId);
+    if (!fieldCallbacksResolved || !flinch || !flinch->callbacksResolved)
+        return PokemonStatStageEffectResult::UnresolvedPolicy;
+    if (!flinch->reactionStatMask) { output = {}; return PokemonStatStageEffectResult::Ok; }
+    auto nextActor = actor; auto nextOpponent = opponent;
+    PokemonStatStageEffectPolicy policy{};
+    policy.resolved = true;
+    const auto* own = PokerogueContent::findAbilityStatStageProfile(actor.abilityId);
+    if (own) policy.stageMultiplier = own->multiplier;
+    PokemonStatStageEffectEvent event{};
+    auto result = applyResolvedPokemonStatStagePhase(nextActor, flinch->reactionStatMask,
+        flinch->reactionStages, policy, event);
+    if (result != PokemonStatStageEffectResult::Ok) return result;
+    const auto* observer = PokerogueContent::findAbilityStatStageProfile(opponent.abilityId);
+    if (nextOpponent.hp && observer && observer->copiesRaises) {
+        PokemonStatStageEffectPolicy copyPolicy{}; copyPolicy.resolved = true;
+        copyPolicy.stageMultiplier = observer->multiplier;
+        PokemonStatStageEffectEvent copied{};
+        result = applyPokemonCopiedStatStageRaise(nextOpponent, event, false, copyPolicy, copied);
+        if (result != PokemonStatStageEffectResult::Ok) return result;
+    }
+    actor = nextActor; opponent = nextOpponent; output = event;
+    return PokemonStatStageEffectResult::Ok;
+}
+
 } // namespace Pokerogue3DS

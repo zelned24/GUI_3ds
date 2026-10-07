@@ -76,7 +76,7 @@ async function runPipeline() {
     console.log('\n[2/4] Packaging assets into RomFS with real tex3ds...');
     const stagingDir = path.join(rootDir, 'build', 'romfs');
     fs.mkdirSync(stagingDir, { recursive: true });
-    const packager = new AssetPackager({ stagingDir });
+    const packager = new AssetPackager({ stagingDir, allowTestFixtures: true });
     const pkgResult = await packager.packageManifest(exportResult.manifest);
     console.log(`  ✓ RomFS staged: ${pkgResult.stagedFiles.length} assets packaged`);
 

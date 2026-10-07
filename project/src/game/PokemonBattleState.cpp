@@ -5,6 +5,17 @@
 #include <cstring>
 
 namespace Pokerogue3DS {
+bool applyPokemonMoveFlinch(int16_t chance, bool callbacksResolved,
+    bool recipientAlive, bool& flinched, PokerogueRngAdapter& rng, bool immune) {
+    if (!callbacksResolved || chance < -1 || chance > 100) return false;
+    if (!recipientAlive) return true;
+    // getMoveChance already applied chance multipliers and suppression.
+    const bool triggered = chance < 0 || chance == 100 || rng.randSeedInt(100) < chance;
+    // AddBattlerTagAttr rolls first. Pokemon.addTag then applies tag immunity.
+    if (triggered && !immune) flinched = true;
+    return true;
+}
+
 bool canPokemonAddConfusionTag(const PokemonConfusionTagState& tag,
     const PokemonConfusionTagPolicy& policy, bool& output) {
     if (!validPokemonConfusionTag(tag)) return false;
@@ -534,14 +545,20 @@ bool usePokemonStatusEffectMove(PokemonBattleState& user, const PokemonBattleSta
         !user.hp || slot >= user.moveCount || slot >= 4 || (!user.moves[slot].pp && policy.ppCost) ||
         user.moves[slot].pp > user.moves[slot].maxPp) return false;
     const auto* move = PokerogueContent::findMoveById(user.moves[slot].moveId);
-    if (!move || move->category != PokerogueContent::MoveStatus || move->attributeCount != 1 ||
-        !PokerogueContent::moveHasAttribute(*move, "StatusEffectAttr") || !move->target) return false;
+    if (!move || move->category != PokerogueContent::MoveStatus || !pokemonStatusEffectMoveAttributesResolved(*move) || !move->target) return false;
     const bool self = std::strcmp(move->target, "USER") == 0;
     if (!self && (std::strcmp(move->target, "NEAR_OTHER") && std::strcmp(move->target, "NEAR_ENEMY"))) return false;
     if (!self && (!target.hp || &user == &target)) return false;
     auto nextRng = rng;
     PokemonStatusEffectMoveEvent event{};
-    if (!resolvePokemonStatusMoveHit(*move, self, policy.hit, nextRng, event.hit)) return false;
+    auto hitPolicy = policy.hit;
+    if (!self && PokerogueContent::moveHasAttribute(*move, "RespectAttackTypeImmunityAttr")) {
+        double effectiveness = 1.0;
+        if (calculatePokemonTypeEffectiveness(move->id, target, effectiveness) != PokemonTypeEffectivenessResult::Ok)
+            return false;
+        hitPolicy.typeImmune |= effectiveness == 0.0;
+    }
+    if (!resolvePokemonStatusMoveHit(*move, self, hitPolicy, nextRng, event.hit)) return false;
     // Validate the declaration even on a miss; unsupported content is an error.
     bool found = false;
     for (const auto& row : PokerogueContent::kMoveStatusEffects) {
@@ -1158,6 +1175,8 @@ bool changePokemonBattleForm(PokemonBattleState& state, const char* targetFormId
     next.confusion = state.confusion;
     next.sturdy = state.sturdy;
     next.heldItemLostTags = state.heldItemLostTags;
+    next.berryCriticalBoostStages = state.berryCriticalBoostStages;
+    next.hasEatenBerry = state.hasEatenBerry;
     next.turnDamageDealt = state.turnDamageDealt;
     state = next;
     return true;

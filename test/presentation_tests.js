@@ -1,0 +1,47 @@
+import fs from 'node:fs';
+import path from 'node:path';
+import {execFileSync} from 'node:child_process';
+import {fileURLToPath} from 'node:url';
+const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
+export function registerPresentationTests(test) {
+  test('Native frontend review: save failures, pause input, deterministic seed and indexed trainer assets',()=>{
+    const main=fs.readFileSync(path.join(root,'project/src/main.cpp'),'utf8');
+    const trainer=fs.readFileSync(path.join(root,'project/src/runtime/TrainerPresenter.cpp'),'utf8');
+    const converter=fs.readFileSync(path.join(root,'scripts/prepare_native_presentation.py'),'utf8');
+    if(converter.includes('CanonicalFallback')) throw new Error('Generic modifier families must not pretend to be specific item sprites');
+    const intro=fs.readFileSync(path.join(root,'project/src/runtime/IntroCinematicPresenter.cpp'),'utf8');
+    const expect=(value,message)=>{if(!value) throw new Error(message);};
+    expect(!main.includes('osGetTime()'),'New runs must use an explicit seed');
+    expect(!main.includes('1.500'),'No fabricated money display');
+    expect(main.includes('rawPressed &= ~KEY_START'),'Opening pause must consume START');
+    expect(main.includes('rawPressed = 0; // Pause owns this input'),'Resume must not issue a battle action');
+    expect(main.includes('if (titleVisible) continue;'),'Returning to title must stop gameplay commands');
+    const save=main.slice(main.indexOf('const auto saveAndReturnToTitle'),main.indexOf('bool introActive'));
+    expect(save.includes('result != Pokerogue3DS::NativeSaveResult::Ok'),'Save failure must be checked');
+    expect(save.indexOf('saves.load(')<save.indexOf('frontend.setHasSave(true)'),'Save metadata must be read back before success');
+    expect(!trainer.includes('romfs:/presentation/trainers/%s'),'Trainer paths must come from the generated index');
+    expect(intro.includes('screenW, screenH, 1.0f);'),'Crossfade base must stay opaque');
+  });
+
+  test('Native touch layout: moves, targets, party sizes 0..6, all 76800 pixels and overflow',()=>{
+    const compiler=process.platform==='win32' ? 'C:/devkitPro/msys2/usr/bin/g++.exe' : 'g++';
+    const output=path.join(root,'build','dual-screen-layout-test'+(process.platform==='win32'?'.exe':''));
+    fs.mkdirSync(path.dirname(output),{recursive:true});
+    execFileSync(compiler,['-std=c++17','-O2','-I'+path.join(root,'project/include'),path.join(root,'test/native/dual_screen_layout_harness.cpp'),'-o',output],{stdio:'pipe'});
+    execFileSync(output,[],{stdio:'pipe'});
+  });
+  test('Native frontend: title, canonical modes, SD load, history and settings navigation',()=>{
+    const compiler=process.platform==='win32' ? 'C:/devkitPro/msys2/usr/bin/g++.exe' : 'g++';
+    const output=path.join(root,'build','frontend-menu-test'+(process.platform==='win32'?'.exe':''));
+    execFileSync(compiler,['-std=c++17','-O2','-I'+path.join(root,'test/native/host_compat'),'-I'+path.join(root,'project/include'),'-I'+path.join(root,'project/generated/include'),path.join(root,'test/native/frontend_menu_harness.cpp'),'-o',output],{stdio:'pipe'});
+    execFileSync(output,[],{stdio:'pipe'});
+  });
+
+  test('Native icon index: every starter, canonical species/forms, physical page bounds and unique references',()=>{
+    const compiler=process.platform==='win32' ? 'C:/devkitPro/msys2/usr/bin/g++.exe' : 'g++';
+    const output=path.join(root,'build','pokemon-icon-index-test'+(process.platform==='win32'?'.exe':''));
+    execFileSync(compiler,['-std=c++17','-O2','-I'+path.join(root,'project/generated/include'),path.join(root,'test/native/pokemon_icon_index_harness.cpp'),'-o',output],{stdio:'pipe'});
+    execFileSync(output,[],{stdio:'pipe'});
+  });
+
+}

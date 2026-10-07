@@ -107,10 +107,12 @@ inline PokemonTrickRoomCommandResult usePokemonTrickRoomCommand(
 }
 
 inline bool advancePokemonTrickRoomTurnEnd(PokemonTrickRoomState& state,
-    PokemonTrickRoomEvent& output) {
+    PokemonTrickRoomEvent& output, bool upcomingInterlude = false) {
     if (!validPokemonTrickRoomState(state)) return false;
     PokemonTrickRoomEvent event{};
-    if (state.turnsLeft && --state.turnsLeft == 0) {
+    // Pinned TurnEndPhase skips arena.lapseTags during biome interludes.
+    // Validate the field even when its duration must remain unchanged.
+    if (!upcomingInterlude && state.turnsLeft && --state.turnsLeft == 0) {
         state = {};
         event.removed = event.expired = true;
     }

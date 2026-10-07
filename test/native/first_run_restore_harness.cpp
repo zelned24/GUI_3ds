@@ -2,6 +2,7 @@
 #include "game/FirstRunRuntime.hpp"
 #include "content/PokerogueRuntimeContent.hpp"
 #include <cstring>
+#include <cstdio>
 #include "storage/IntegritySha256.hpp"
 #include "storage/NativeStarterCandyProfile.hpp"
 #include "storage/NativeProgressStore.hpp"
@@ -9,6 +10,7 @@
 #include "game/PokemonWeatherPhase.hpp"
 #include "game/PokemonStatStageEffect.hpp"
 #include "game/PokemonHealingEffect.hpp"
+#include "game/PokemonBerryEffect.hpp"
 #include "game/PokerogueClassicWaveSchedule.hpp"
 #include "game/PokerogueBiomeTransition.hpp"
 #include "game/PokerogueEncounterResolver.hpp"
@@ -35,6 +37,13 @@ public:
         std::memcpy(slots[i], in, sizes[i]);
         return interrupt ? Result::IoError : Result::Ok;
     }
+    Result deleteSlot(unsigned i) override {
+        if (i < 2) {
+            sizes[i] = 0;
+            std::memset(slots[i], 0, sizeof(slots[i]));
+        }
+        return Result::Ok;
+    }
     Result readExport(char* out, size_t cap, size_t& read) override {
         read = exportSize;
         if (!read) return Result::NotFound;
@@ -46,6 +55,41 @@ public:
         exportSize = size; std::memcpy(exported, in, size); return Result::Ok;
     }
 };
+
+// Turn a real setup into a complete, between-turn single-battle test checkpoint.
+// This fills required fields from resolved actors, never fabricated catalog data.
+static bool captureActiveTestCheckpoint(const Pokerogue3DS::FirstRunRuntime& game,
+    Pokerogue3DS::NativeRunSave& saved) {
+    using namespace Pokerogue3DS;
+    if (game.captureNativeRunSave(saved) != NativeSaveResult::Ok) return false;
+    if (saved.stage != NativeSaveStage::RunSetup) return true;
+    const auto& field = game.presentation();
+    if (game.doubleBattle() || field.trainerPartyCount || !field.player.actorIdentityResolved ||
+        !field.enemy.actorIdentityResolved) return false;
+    saved.stage = NativeSaveStage::BattleActive;
+    saved.battleTurn = 1;
+    saved.encounterDex = field.enemy.dex;
+    saved.playerHp = field.player.battleState.hp;
+    saved.enemyHp = field.enemy.battleState.hp;
+    saved.playerMoveCount = field.player.battleState.moveCount;
+    saved.enemyMoveCount = field.enemy.battleState.moveCount;
+    for (uint8_t i = 0; i < saved.playerMoveCount; ++i) {
+        saved.playerMoveIds[i] = field.player.battleState.moves[i].moveId;
+        saved.playerPp[i] = field.player.battleState.moves[i].pp;
+    }
+    for (uint8_t i = 0; i < saved.enemyMoveCount; ++i) {
+        saved.enemyMoveIds[i] = field.enemy.battleState.moves[i].moveId;
+        saved.enemyPp[i] = field.enemy.battleState.moves[i].pp;
+    }
+    saved.playerPartyCount = game.playerPartyCount();
+    saved.activePlayerMember = game.activePlayerPartyIndex();
+    for (uint8_t i = 0; i < saved.playerPartyCount; ++i) {
+        const auto& actor = i == saved.activePlayerMember ? field.player : *game.playerPartyMember(i);
+        if (!captureNativePokemonActorSave(actor.battleState, actor.actor, actor.totalExperience,
+                saved.playerParty[i])) return false;
+    }
+    return validateNativeRunSave(saved, PokerogueContent::kContentHash) == NativeSaveResult::Ok;
+}
 
 static bool sceneNodesOwnedBy(const Pokerogue3DS::FirstRunRuntime& game) {
     const auto& scene = game.scene();
@@ -105,8 +149,8 @@ static int checkInitialStarterTeamSetup() {
     char* saveVersion = std::strstr(encodedSetup, "saveVersion=");
     char* runtimeVersion = std::strstr(encodedSetup, "runtimeVersion=");
     if (!selection || !saveVersion || !runtimeVersion) return 653;
-    saveVersion[15] = 'D';
-    runtimeVersion[18] = 'D';
+    std::memcpy(saveVersion + sizeof("saveVersion=") - 1, "000d", 4);
+    std::memcpy(runtimeVersion + sizeof("runtimeVersion=") - 1, "000d", 4);
     const size_t legacyBody = static_cast<size_t>(selection - encodedSetup);
     char legacyHash[65]{};
     IntegritySha256::hashHex(encodedSetup, legacyBody, legacyHash);
@@ -409,7 +453,7 @@ static int checkStatusActionAdmission() {
                 if (!species || (species->ability1 != 5 && species->ability2 != 5)) return 9970;
                 PokemonBattleInit input{};
                 input.speciesDex = species->dex;
-                input.formId = species->firstFormId;
+                input.formId = species->firstFormId[0] ? species->firstFormId : nullptr;
                 input.level = 5;
                 input.pokemonId = context.player.actor.pokemonId;
                 input.abilityId = 5;
@@ -438,20 +482,36 @@ static int checkStatusActionAdmission() {
                 sturdyCheckpoint.playerHp = actor.hp;
                 sturdyCheckpoint.playerMoveIds[0] = 45;
                 sturdyCheckpoint.playerPp[0] = 40;
-                sturdyCheckpoint.enemyMoveCount = 1;
-                sturdyCheckpoint.enemyMoveIds[0] = 82;
-                sturdyCheckpoint.enemyPp[0] = 10;
-                for (uint8_t slot = 1; slot < 4; ++slot) {
-                    sturdyCheckpoint.enemyMoveIds[slot] = 0;
-                    sturdyCheckpoint.enemyPp[slot] = 0;
-                }
+                // Keep the pinned enemy moveset in the checkpoint. Controlled
+                // command inputs are injected into the live test field after restore;
+                // production restore must still reject a forged encounter moveset.
+                const auto injectDragonRage = [](FirstRunRuntime& run) {
+                    auto& enemy = const_cast<PresentationContext&>(run.presentation()).enemy.battleState;
+                    enemy.moveCount = 1;
+                    for (auto& move : enemy.moves) move = {};
+                    enemy.moves[0] = {82, 10, 10};
+                };
                 FirstRunRuntime sturdyRun(seed), replay(seed);
                 NativeRunSave after{}, repeatedAfter{};
-                if (!sturdyRun.restoreNativeRunSave(sturdyCheckpoint) ||
-                    !replay.restoreNativeRunSave(sturdyCheckpoint) || !sturdyRun.battleInputSupported() ||
-                    !replay.battleInputSupported() || !sturdyRun.advanceBattleTurn() || !replay.advanceBattleTurn() ||
-                    sturdyRun.captureNativeRunSave(after) != NativeSaveResult::Ok ||
-                    replay.captureNativeRunSave(repeatedAfter) != NativeSaveResult::Ok ||
+                const bool restoreA = sturdyRun.restoreNativeRunSave(sturdyCheckpoint);
+                const bool restoreB = replay.restoreNativeRunSave(sturdyCheckpoint);
+                if (restoreA) injectDragonRage(sturdyRun);
+                if (restoreB) injectDragonRage(replay);
+                const bool supportsA = restoreA && sturdyRun.battleInputSupported();
+                const bool supportsB = restoreB && replay.battleInputSupported();
+                const bool turnA = supportsA && sturdyRun.advanceBattleTurn();
+                const bool turnB = supportsB && replay.advanceBattleTurn();
+                const auto savedA = sturdyRun.captureNativeRunSave(after);
+                const auto savedB = replay.captureNativeRunSave(repeatedAfter);
+                if (!restoreA || !restoreB || !supportsA || !supportsB || !turnA || !turnB ||
+                    savedA != NativeSaveResult::Ok || savedB != NativeSaveResult::Ok ||
+                    after.playerHp != 1 || after.playerPp[0] != 39 || after.enemyPp[0] != 9)
+                    std::printf("Sturdy integration seed=%u restore=%u/%u support=%u/%u turn=%u/%u save=%u/%u hp=%u pp=%u/%u feedback=%s\n",
+                        static_cast<unsigned>(seed), restoreA, restoreB, supportsA, supportsB, turnA, turnB,
+                        static_cast<unsigned>(savedA), static_cast<unsigned>(savedB), after.playerHp,
+                        after.playerPp[0], after.enemyPp[0], sturdyRun.battleFeedback().c_str());
+                if (!restoreA || !restoreB || !supportsA || !supportsB || !turnA || !turnB ||
+                    savedA != NativeSaveResult::Ok || savedB != NativeSaveResult::Ok ||
                     after.playerHp != 1 || after.playerPp[0] != 39 || after.enemyPp[0] != 9 ||
                     after.playerHp != repeatedAfter.playerHp || after.enemyHp != repeatedAfter.enemyHp ||
                     sturdyRun.presentation().player.battleState.sturdy.present) return 9974;
@@ -473,6 +533,8 @@ static int checkStatusActionAdmission() {
                     decodeNativeRunSave(payload, payloadSize, PokerogueContent::kContentHash, decoded) != NativeSaveResult::Ok ||
                     !taggedReplay.restoreNativeRunSave(decoded) ||
                     !taggedReplay.presentation().player.battleState.sturdy.present) return 10080;
+                injectDragonRage(tagged);
+                injectDragonRage(taggedReplay);
                 if (!tagged.advanceBattleTurn() || !taggedReplay.advanceBattleTurn() ||
                     tagged.presentation().player.battleState.hp != 1 ||
                     taggedReplay.presentation().player.battleState.hp != 1 ||
@@ -493,7 +555,7 @@ static int checkStatusActionAdmission() {
                 if (!species || (species->ability1 != 292 && species->ability2 != 292)) return 10070;
                 PokemonBattleInit input{};
                 input.speciesDex = species->dex;
-                input.formId = species->firstFormId;
+                input.formId = species->firstFormId[0] ? species->firstFormId : nullptr;
                 input.level = 5;
                 input.pokemonId = context.player.actor.pokemonId;
                 input.abilityId = 292;
@@ -522,21 +584,30 @@ static int checkStatusActionAdmission() {
                 sharpnessCheckpoint.playerHp = actor.hp;
                 sharpnessCheckpoint.playerMoveIds[0] = 533;
                 sharpnessCheckpoint.playerPp[0] = 15;
-                sharpnessCheckpoint.enemyMoveCount = 1;
-                sharpnessCheckpoint.enemyMoveIds[0] = 45;
-                sharpnessCheckpoint.enemyPp[0] = 40;
-                for (uint8_t slot = 1; slot < 4; ++slot) {
-                    sharpnessCheckpoint.enemyMoveIds[slot] = 0;
-                    sharpnessCheckpoint.enemyPp[slot] = 0;
-                }
+                const auto restoreSharpnessField = [&](FirstRunRuntime& run) {
+                    if (!run.restoreNativeRunSave(sharpnessCheckpoint)) return false;
+                    auto& enemy = const_cast<PresentationContext&>(run.presentation()).enemy.battleState;
+                    enemy.moveCount = 1;
+                    for (auto& move : enemy.moves) move = {};
+                    enemy.moves[0] = {45, 40, 40}; // Controlled test-only Growl after canonical restore.
+                    return true;
+                };
                 FirstRunRuntime sharpnessRun(seed), replay(seed);
                 NativeRunSave after{}, repeatedAfter{};
-                if (!sharpnessRun.restoreNativeRunSave(sharpnessCheckpoint) ||
-                    !replay.restoreNativeRunSave(sharpnessCheckpoint) || !sharpnessRun.battleInputSupported() ||
-                    !replay.battleInputSupported() || !sharpnessRun.advanceBattleTurn() || !replay.advanceBattleTurn() ||
-                    sharpnessRun.captureNativeRunSave(after) != NativeSaveResult::Ok ||
-                    replay.captureNativeRunSave(repeatedAfter) != NativeSaveResult::Ok ||
-                    after.playerPp[0] != 14 || after.battleTurn != sharpnessCheckpoint.battleTurn + 1 ||
+                const bool restoreA = restoreSharpnessField(sharpnessRun), restoreB = restoreSharpnessField(replay);
+                const bool supportA = restoreA && sharpnessRun.battleInputSupported();
+                const bool supportB = restoreB && replay.battleInputSupported();
+                const bool turnA = supportA && sharpnessRun.advanceBattleTurn();
+                const bool turnB = supportB && replay.advanceBattleTurn();
+                const auto saveA = sharpnessRun.captureNativeRunSave(after), saveB = replay.captureNativeRunSave(repeatedAfter);
+                if (!restoreA || !restoreB || !supportA || !supportB || !turnA || !turnB ||
+                    saveA != NativeSaveResult::Ok || saveB != NativeSaveResult::Ok)
+                    std::printf("Sharpness seed=%u restore=%u/%u support=%u/%u turn=%u/%u save=%u/%u feedback=%s\n",
+                        seed, restoreA, restoreB, supportA, supportB, turnA, turnB,
+                        static_cast<unsigned>(saveA), static_cast<unsigned>(saveB), sharpnessRun.battleFeedback().c_str());
+                if (!restoreA || !restoreB || !supportA || !supportB || !turnA || !turnB ||
+                    saveA != NativeSaveResult::Ok || saveB != NativeSaveResult::Ok ||
+                    after.playerPp[0] != 14 || after.battleTurn != sharpnessCheckpoint.battleTurn + (sharpnessRun.battleFinished() ? 0 : 1) ||
                     after.playerHp != repeatedAfter.playerHp || after.enemyHp != repeatedAfter.enemyHp ||
                     after.playerParty[0].abilityId != 292 || repeatedAfter.playerParty[0].abilityId != 292 ||
                     after.enemyPp[0] != repeatedAfter.enemyPp[0] ||
@@ -705,7 +776,7 @@ static int checkStatusActionAdmission() {
                     stageAfter.playerStatStages[2] != repeatedStageAfter.playerStatStages[2] ||
                     stageAfter.enemyStatStages[4] != repeatedStageAfter.enemyStatStages[4] ||
                     stageAfter.enemyStatStages[1] != repeatedStageAfter.enemyStatStages[1] ||
-                    stageAfter.playerStatStages[0] != repeatedStageAfter.playerStatStages[0]) return 9603;
+                    stageAfter.playerStatStages[0] != repeatedStageAfter.playerStatStages[0]) { std::printf("Stage move=%u seed=%u pp=%u expected=%u feedback=%s\n", id, seed, stageAfter.playerPp[0], stageMove->pp - 1, stageAttack.battleFeedback().c_str()); return 9603; }
                 if (id == 315 && (stageAfter.playerStatus.present ||
                     repeatedStageAfter.playerStatus.present || stageAfter.playerParty[0].status.present ||
                     stageAfter.playerStatus.freezeTurnsRemaining ||
@@ -1104,7 +1175,7 @@ static int checkModifierRewardGenerationAndClaim() {
         const auto& context = game.presentation();
         if (!context.enemy.actorIdentityResolved || context.secondEnemy.dex) continue;
         NativeRunSave won{};
-        game.captureNativeRunSave(won);
+        if (!captureActiveTestCheckpoint(game, won)) return 60;
         won.stage = NativeSaveStage::BattleWon;
         setSingleParticipantFixture(won, game);
         won.enemyHp = 0;
@@ -1130,13 +1201,1143 @@ static int checkModifierRewardGenerationAndClaim() {
             }
             unsupportedRewardGame.selectRewardChoice(1);
         }
-        const auto* choice0 = game.rewardChoice(0);
-        if (!choice0 || !choice0->poolEntry || !choice0->poolEntry->itemId) return 68;
-        if (!game.claimRewardChoice()) return 69;
+        bool claimed = false;
+        for (uint8_t option = 0; option < game.rewardChoiceCount(); ++option) {
+            auto probe = game;
+            if (probe.claimRewardChoice()) {
+                claimed = game.claimRewardChoice();
+                break;
+            }
+            game.selectRewardChoice(1);
+        }
+        if (!claimed) {
+            std::printf("Reward seed=%u choice0=%s choice1=%s choice2=%s feedback=%s\n",
+                seed,
+                game.rewardChoice(0) && game.rewardChoice(0)->poolEntry ? game.rewardChoice(0)->poolEntry->itemId : "null",
+                game.rewardChoice(1) && game.rewardChoice(1)->poolEntry ? game.rewardChoice(1)->poolEntry->itemId : "null",
+                game.rewardChoice(2) && game.rewardChoice(2)->poolEntry ? game.rewardChoice(2)->poolEntry->itemId : "null",
+                game.battleFeedback().c_str());
+            return 69;
+        }
         if (game.run().wave != 2 || game.rewardsPending()) return 70;
         return 0;
     }
     return 71;
+}
+
+static int checkFirstRivalEncounterTraceability() {
+    using namespace Pokerogue3DS;
+    const auto* rival = PokerogueContent::findTrainerTypeByKey("rival");
+    if (!rival) return 11000;
+    const auto* laterRival = PokerogueContent::findTrainerTypeByKey("rival_2");
+    const auto* laterSlot = laterRival ? PokerogueContent::findRivalPartySlot(laterRival->id, 2) : nullptr;
+    if (!laterSlot || laterSlot->resolved) return 11014; // Balanced later callbacks remain explicit.
+    for (uint32_t seed = 1; seed <= 64; ++seed) {
+        FirstRunRuntime game(seed);
+        bool eligible = true;
+        for (uint16_t wave = 1; wave < 8; ++wave) {
+            NativeRunSave defeated{};
+            if (!captureActiveTestCheckpoint(game, defeated)) { eligible = false; break; }
+            defeated.stage = NativeSaveStage::BattleWon;
+            setSingleParticipantFixture(defeated, game);
+            defeated.enemyHp = 0;
+            if (defeated.doubleBattle) defeated.secondEnemy.hp = 0;
+            for (uint8_t member = 0; member < defeated.trainerPartyCount; ++member)
+                defeated.trainerParty[member].hp = 0;
+            if (!game.restoreNativeRunSave(defeated) || !game.advanceBattleTurn() ||
+                !game.skipVictoryReward()) { eligible = false; break; }
+        }
+        if (!eligible || game.run().wave != 8) continue;
+        const auto& field = game.presentation();
+        if (field.trainerTypeId != rival->id || field.trainerPartyCount != 2 ||
+            !field.trainerPartyBattleStatesResolved) return 11001;
+        for (uint8_t member = 0; member < 2; ++member) {
+            const auto* slot = PokerogueContent::findRivalPartySlot(rival->id, member);
+            const auto& actor = field.trainerParty[member];
+            if (!slot || !slot->resolved || !actor.actorIdentityResolved) return 11002;
+            const PokerogueContent::RivalPartyChoice* chosen = nullptr;
+            for (uint16_t choice = 0; choice < slot->choiceCount; ++choice) {
+                const auto& row = PokerogueContent::kRivalPartyChoices[slot->choiceOffset + choice];
+                if (std::strcmp(row.speciesId, actor.speciesId) == 0) chosen = &row;
+            }
+            if (!chosen || (chosen->forcedAbilityIndex >= 0 &&
+                actor.actor.abilityIndex != chosen->forcedAbilityIndex)) return 11003;
+            if (slot->teraPrimary) {
+                const auto* species = PokerogueContent::findSpeciesByDex(actor.dex);
+                if (!species || !actor.actor.initialTeraTypeResolved ||
+                    actor.actor.initialTeraTypeIndex != 0 || std::strcmp(actor.actor.initialTeraType,
+                        resolvePokemonTypeSymbol(species->type1))) return 11004;
+            }
+        }
+        NativeRunSave saved{}, repeated{};
+        FirstRunRuntime restored(seed);
+        if (game.captureNativeRunSave(saved) != NativeSaveResult::Ok ||
+            !restored.restoreNativeRunSave(saved) ||
+            restored.captureNativeRunSave(repeated) != NativeSaveResult::Ok ||
+            repeated.trainerTypeId != rival->id || repeated.trainerPartyCount != 2) return 11005;
+        for (uint8_t member = 0; member < 2; ++member) {
+            const auto& original = field.trainerParty[member];
+            const auto& replay = restored.presentation().trainerParty[member];
+            if (original.dex != replay.dex || original.actor.pokemonId != replay.actor.pokemonId ||
+                original.actor.abilityIndex != replay.actor.abilityIndex ||
+                original.battleState.abilityId != replay.battleState.abilityId ||
+                original.moveCount != replay.moveCount) return 11006;
+            for (uint8_t move = 0; move < original.moveCount; ++move)
+                if (original.moveIds[move] != replay.moveIds[move]) return 11007;
+        }
+        if (!game.battleInputSupported() || !restored.battleInputSupported()) continue;
+        if (!game.advanceBattleTurn() || !restored.advanceBattleTurn()) return 11009;
+        NativeRunSave advanced{}, advancedReplay{};
+        if (game.captureNativeRunSave(advanced) != NativeSaveResult::Ok ||
+            restored.captureNativeRunSave(advancedReplay) != NativeSaveResult::Ok ||
+            advanced.playerHp != advancedReplay.playerHp || advanced.enemyHp != advancedReplay.enemyHp ||
+            advanced.battleTurn != advancedReplay.battleTurn) return 11010;
+        for (uint8_t move = 0; move < advanced.playerMoveCount; ++move)
+            if (advanced.playerPp[move] != advancedReplay.playerPp[move]) return 11011;
+        for (uint8_t move = 0; move < advanced.enemyMoveCount; ++move)
+            if (advanced.enemyPp[move] != advancedReplay.enemyPp[move]) return 11012;
+        const auto a = game.battleRng().state(), b = restored.battleRng().state();
+        if (a.carry != b.carry || a.s0 != b.s0 || a.s1 != b.s1 || a.s2 != b.s2) return 11013;
+        return 0;
+    }
+    return 11008;
+}
+
+static int checkCanonicalBerryEffects() {
+    using namespace Pokerogue3DS;
+    PokemonBattleState actor{};
+    actor.pokemonId = 123;
+    actor.maxHp = 100;
+    actor.hp = 20;
+    actor.moveCount = 2;
+    actor.moves[0].maxPp = 5;
+    actor.moves[0].pp = 3;
+    actor.moves[1].maxPp = 15;
+    actor.moves[1].pp = 0;
+    actor.status.present = true;
+    actor.status.effect = PokemonStatusEffect::Poison;
+    PokemonBerryEffectPolicy policy{};
+    policy.callbacksResolved = true;
+    policy.attackHistoryResolved = true;
+    policy.superEffectiveHitReceived = true;
+    policy.criticalTagResolved = true;
+    PokerogueRngAdapter rng;
+    const uint16_t seed[] = {'b','e','r','r','y'};
+    rng.sow(seed, 5);
+    const auto sameRng = [](const PokerogueRngState& a, const PokerogueRngState& b) {
+        return a.carry == b.carry && a.s0 == b.s0 && a.s1 == b.s1 && a.s2 == b.s2;
+    };
+    {
+    // Primary/passive Berry policies come from inspected class ancestry, not
+    // species/ability IDs hardcoded into the presentation or effect engine.
+    uint16_t ripen = 65535, gluttony = 65535, unnerve = 65535, neutral = 65535;
+    for (const auto& row : PokerogueContent::kBerryAbilityProfiles) {
+        if (!row.resolved) continue;
+        if (row.effectMultiplier == 2 && row.thresholdMultiplier == 1 && !row.preventsUse && !row.healFraction)
+            ripen = row.abilityId;
+        if (row.thresholdMultiplier == 2) gluttony = row.abilityId;
+        if (row.preventsUse) unnerve = row.abilityId;
+        if (!row.abilityId) neutral = row.abilityId;
+    }
+    if (ripen == 65535 || gluttony == 65535 || unnerve == 65535 || neutral == 65535 ||
+        !PokerogueContent::kBerryAbilitySource.sourceHash[0]) return 10601;
+    uint16_t statBerry = 65535, healBerry = 65535;
+    for (const auto& row : PokerogueContent::kBerryEffectProfiles) {
+        if (!std::strcmp(row.effect, "STAT")) statBerry = row.id;
+        if (!std::strcmp(row.effect, "HEAL") && row.doubledEffectCallback) healBerry = row.id;
+    }
+    auto berryPolicy = policy;
+    const uint16_t composed[] = {gluttony, ripen};
+    auto aboveThreshold = actor;
+    aboveThreshold.hp = 40;
+    if (resolvePokemonBerryAbilityEffects(statBerry, aboveThreshold, composed, 2, true, berryPolicy) != PokemonBerryEffectResult::Ready ||
+        berryPolicy.thresholdMultiplier != 2 || berryPolicy.effectMultiplier != 2) return 10602;
+    PokemonBerryEffectPlan boostedBerryPlan{};
+    if (planPokemonBerryEffect(statBerry, aboveThreshold, berryPolicy, rng, boostedBerryPlan) != PokemonBerryEffectResult::Ready ||
+        boostedBerryPlan.stagesRequested != 2) return 10603;
+    if (resolvePokemonBerryAbilityEffects(statBerry, actor, composed, 2, true, berryPolicy) != PokemonBerryEffectResult::Ready ||
+        berryPolicy.thresholdMultiplier != 1 || berryPolicy.effectMultiplier != 2) return 10604;
+    berryPolicy.effectMultiplier = 99;
+    if (resolvePokemonBerryAbilityEffects(healBerry, actor, &neutral, 1, false, berryPolicy) != PokemonBerryEffectResult::UnresolvedPolicy ||
+        berryPolicy.effectMultiplier != 99) return 10605;
+    const uint16_t unknownAbility = 65535;
+    if (resolvePokemonBerryAbilityEffects(healBerry, actor, &unknownAbility, 1, true, berryPolicy) != PokemonBerryEffectResult::UnresolvedPolicy ||
+        berryPolicy.effectMultiplier != 99) return 10606;
+    bool blocksBerry = false;
+    if (resolvePokemonOpponentBerryBlock(&unnerve, 1, true, blocksBerry) != PokemonBerryEffectResult::Ready || !blocksBerry ||
+        resolvePokemonOpponentBerryBlock(&neutral, 1, true, blocksBerry) != PokemonBerryEffectResult::Ready || blocksBerry)
+        return 10607;
+    blocksBerry = true;
+    if (resolvePokemonOpponentBerryBlock(&unknownAbility, 1, true, blocksBerry) != PokemonBerryEffectResult::UnresolvedPolicy || !blocksBerry)
+        return 10608;
+    }
+    size_t count = 0;
+    for (const auto& profile : PokerogueContent::kBerryEffectProfiles) {
+        if (!profile.resolved || !profile.nameKey || !profile.effectKey) return 10301;
+        PokemonBerryEffectPlan plan{};
+        auto expected = rng;
+        int32_t expectedStat = 0;
+        if (!std::strcmp(profile.effect, "RANDOM_STAT"))
+            expectedStat = expected.randSeedInt(5, 1);
+        if (planPokemonBerryEffect(profile.id, actor, policy, rng, plan) != PokemonBerryEffectResult::Ready ||
+            plan.ownerPokemonId != 123 || plan.berryType != profile.id || !sameRng(rng.state(), expected.state())) return 10302;
+        if (!std::strcmp(profile.effect, "HEAL") && plan.healingRequested != 25) return 10303;
+        if (!std::strcmp(profile.effect, "CURE_STATUS") && (!plan.cureStatus || !plan.cureConfusion)) return 10304;
+        if (!std::strcmp(profile.effect, "STAT") && (plan.stat != profile.stat || plan.stagesRequested != 1)) return 10305;
+        if (!std::strcmp(profile.effect, "CRIT_BOOST") && !plan.addCriticalBoost) return 10306;
+        if (!std::strcmp(profile.effect, "RANDOM_STAT") && (plan.stat != expectedStat || plan.stagesRequested != 2)) return 10307;
+        if (!std::strcmp(profile.effect, "RESTORE_PP") && (plan.ppSlot != 1 || plan.ppAfter != 10)) return 10308;
+        // Planning cannot execute queued healing/stat/status phases early.
+        if (actor.hp != 20 || actor.statStages[0] || actor.moves[1].pp || !actor.status.present) return 10309;
+        auto unavailable = policy;
+        unavailable.callbacksResolved = false;
+        plan.ownerPokemonId = 987;
+        const auto before = rng.state();
+        if (planPokemonBerryEffect(profile.id, actor, unavailable, rng, plan) != PokemonBerryEffectResult::UnresolvedPolicy ||
+            plan.ownerPokemonId != 987 || !sameRng(before, rng.state())) return 10310;
+        if (!std::strcmp(profile.predicate, "LOW_HP") || !std::strcmp(profile.predicate, "LOW_HP_STAT") ||
+            !std::strcmp(profile.predicate, "LOW_HP_NO_CRIT")) {
+            auto boundary = actor;
+            boundary.hp = static_cast<uint16_t>(100 * profile.hpThreshold);
+            if (planPokemonBerryEffect(profile.id, boundary, policy, rng, plan) != PokemonBerryEffectResult::NoEffect) return 10311;
+        }
+        if (!std::strcmp(profile.predicate, "LOW_HP_STAT")) {
+            auto capped = actor;
+            capped.statStages[profile.stat - 1] = 6;
+            if (planPokemonBerryEffect(profile.id, capped, policy, rng, plan) != PokemonBerryEffectResult::NoEffect) return 10312;
+            auto enhanced = policy;
+            enhanced.thresholdMultiplier = 2;
+            enhanced.effectMultiplier = 2;
+            auto higherHp = actor;
+            higherHp.hp = 40;
+            if (planPokemonBerryEffect(profile.id, higherHp, enhanced, rng, plan) != PokemonBerryEffectResult::Ready ||
+                plan.stagesRequested != 2) return 10313;
+        }
+        if (!std::strcmp(profile.predicate, "LOW_HP_NO_CRIT")) {
+            auto critical = policy;
+            critical.criticalBoostPresent = true;
+            if (planPokemonBerryEffect(profile.id, actor, critical, rng, plan) != PokemonBerryEffectResult::NoEffect) return 10314;
+            critical.criticalTagResolved = false;
+            if (planPokemonBerryEffect(profile.id, actor, critical, rng, plan) != PokemonBerryEffectResult::UnresolvedPolicy) return 10315;
+        }
+        if (profile.doubledEffectCallback) {
+            auto doubled = policy;
+            doubled.effectMultiplier = 2;
+            if (planPokemonBerryEffect(profile.id, actor, doubled, rng, plan) != PokemonBerryEffectResult::Ready) return 10316;
+            if (!std::strcmp(profile.effect, "HEAL") && plan.healingRequested != 50) return 10317;
+            if ((!std::strcmp(profile.effect, "STAT") || !std::strcmp(profile.effect, "RANDOM_STAT")) &&
+                plan.stagesRequested != 2 * profile.amount) return 10318;
+        }
+        ++count;
+    }
+    if (count != 11 || !PokerogueContent::kBerryEffectSource.sourceHash[0] ||
+        !PokerogueContent::kBerryPhaseSource.sourceHash[0]) return 10319;
+    const uint16_t pouchStacks[] = {1, 2, 3};
+    bool sawPreserved = false, sawConsumed = false, sawShortCircuit = false;
+    for (uint32_t wave = 1; wave <= 100; ++wave) {
+        PokerogueBattleRng battleRng;
+        if (!battleRng.initialize(seed, 5, wave) || !battleRng.beginTurn(1)) return 10327;
+        auto expected = battleRng;
+        bool expectedPreserved = false;
+        unsigned draws = 0;
+        for (uint16_t stacks : pouchStacks) {
+            if (expectedPreserved) break;
+            int32_t roll = 0;
+            if (!expected.randSeedInt(10, roll)) return 10328;
+            expectedPreserved = roll < stacks * 3;
+            ++draws;
+        }
+        bool preserved = !expectedPreserved;
+        if (!resolvePokemonBerryPreservation(pouchStacks, 3, battleRng, preserved) ||
+            preserved != expectedPreserved || !sameRng(battleRng.state(), expected.state())) return 10329;
+        sawPreserved |= preserved;
+        sawConsumed |= !preserved;
+        sawShortCircuit |= draws < 3;
+        // Exercise a single pouch too: three successive pouches have a 97.2%
+        // combined success chance, so this seed sample need not contain loss.
+        PokerogueBattleRng singlePouch;
+        if (!singlePouch.initialize(seed, 5, wave) || !singlePouch.beginTurn(1)) return 10339;
+        auto singleExpected = singlePouch;
+        int32_t singleRoll = 0;
+        if (!singleExpected.randSeedInt(10, singleRoll) ||
+            !resolvePokemonBerryPreservation(pouchStacks, 1, singlePouch, preserved) ||
+            preserved != (singleRoll < 3) || !sameRng(singlePouch.state(), singleExpected.state())) return 10340;
+        sawPreserved |= preserved;
+        sawConsumed |= !preserved;
+        const auto before = battleRng.state();
+        const uint16_t invalid[] = {1,4};
+        preserved = true;
+        if (resolvePokemonBerryPreservation(invalid, 2, battleRng, preserved) || !preserved ||
+            !sameRng(before, battleRng.state())) return 10330;
+    }
+    if (!sawPreserved || !sawConsumed || !sawShortCircuit ||
+        !PokerogueContent::kBerryPreserveSource.sourceHash[0]) return 10331;
+    PokerogueBattleRng uninitialized;
+    bool emptyPreserved = true;
+    if (!resolvePokemonBerryPreservation(nullptr, 0, uninitialized, emptyPreserved) || emptyPreserved) return 10332;
+    if (resolvePokemonBerryPreservation(pouchStacks, 1, uninitialized, emptyPreserved)) return 10333;
+    NativeHeldModifierInstance inventory[2]{};
+    if (initializeHeldBerry(0, actor.pokemonId, 2, true, inventory[0]) != HeldModifierStorageResult::Ok ||
+        initializeHeldBerry(1, actor.pokemonId, 1, true, inventory[1]) != HeldModifierStorageResult::Ok) return 10321;
+    size_t inventoryCount = 2;
+    PokemonBerryConsumedEvent consumed{};
+    if (!consumePokemonHeldBerry(inventory, 2, inventoryCount, 0, actor, true, false, nullptr, 0, true, consumed) ||
+        inventoryCount != 2 || inventory[0].stackCount != 1 || !consumed.eaten || !consumed.harvestEligible) return 10322;
+    if (!consumePokemonHeldBerry(inventory, 2, inventoryCount, 0, actor, true, true, nullptr, 0, true, consumed) ||
+        inventoryCount != 2 || inventory[0].stackCount != 1 || !consumed.eaten || consumed.harvestEligible || consumed.consumed) return 10323;
+    const auto unchanged = inventory[0];
+    consumed.ownerPokemonId = 999;
+    if (consumePokemonHeldBerry(inventory, 2, inventoryCount, 0, actor, false, false, nullptr, 0, true, consumed) ||
+        std::memcmp(&unchanged, &inventory[0], sizeof(unchanged)) || consumed.ownerPokemonId != 999) return 10324;
+    if (!consumePokemonHeldBerry(inventory, 2, inventoryCount, 0, actor, true, false, nullptr, 0, true, consumed) ||
+        inventoryCount != 1 || !consumed.consumed || consumed.stacksAfter != 0) return 10325;
+    uint16_t remainingType = 0;
+    if (!heldBerryType(inventory[0], remainingType) || remainingType != 1) return 10326;
+    // Real canonical Sitrus: no pouch consumes exactly one stack and emits
+    // the deferred heal request. No phase is executed prematurely.
+    if (initializeHeldBerry(0, actor.pokemonId, 2, true, inventory[0]) != HeldModifierStorageResult::Ok) return 10334;
+    inventoryCount = 1;
+    PokerogueBattleRng useBattle;
+    if (!useBattle.initialize(seed, 5, 1) || !useBattle.beginTurn(1)) return 10335;
+    PokemonHeldBerryUseEvent use{};
+    const auto battleBefore = useBattle.state(), globalBefore = rng.state();
+    if (preparePokemonHeldBerryUse(inventory, 2, inventoryCount, 0, actor, policy, true, false,
+            nullptr, 0, nullptr, 0, true, useBattle, rng, use) != PokemonBerryEffectResult::Ready ||
+        inventory[0].stackCount != 1 || use.effect.healingRequested != 25 || actor.hp != 20 ||
+        !use.item.consumed || !sameRng(battleBefore, useBattle.state()) || !sameRng(globalBefore, rng.state())) return 10336;
+    const auto blockedRecord = inventory[0];
+    use.item.ownerPokemonId = 999;
+    if (preparePokemonHeldBerryUse(inventory, 2, inventoryCount, 0, actor, policy, true, true,
+            pouchStacks, 3, nullptr, 0, true, useBattle, rng, use) != PokemonBerryEffectResult::NoEffect ||
+        std::memcmp(&blockedRecord, &inventory[0], sizeof(blockedRecord)) || use.item.ownerPokemonId != 999 ||
+        !sameRng(battleBefore, useBattle.state()) || !sameRng(globalBefore, rng.state())) return 10337;
+    const uint16_t unknownAbility = 65535;
+    if (preparePokemonHeldBerryUse(inventory, 2, inventoryCount, 0, actor, policy, true, false,
+            pouchStacks, 3, &unknownAbility, 1, true, useBattle, rng, use) != PokemonBerryEffectResult::UnresolvedPolicy ||
+        std::memcmp(&blockedRecord, &inventory[0], sizeof(blockedRecord)) || use.item.ownerPokemonId != 999 ||
+        !sameRng(battleBefore, useBattle.state()) || !sameRng(globalBefore, rng.state())) return 10338;
+    PokemonBerryRecoveryPolicy recovery{};
+    recovery.healing.resolved = true;
+    recovery.statusReactionsResolved = true;
+    PokemonBerryRecoveryEvent recovered{};
+    auto healedActor = actor;
+    if (applyPokemonBerryRecovery(healedActor, use.effect, recovery, recovered) != PokemonBerryEffectResult::Ready ||
+        healedActor.hp != 45 || recovered.healing.healed != 25) return 10341;
+    auto blockedHeal = actor;
+    recovery.healing.healBlocked = true;
+    if (applyPokemonBerryRecovery(blockedHeal, use.effect, recovery, recovered) != PokemonBerryEffectResult::Ready ||
+        blockedHeal.hp != actor.hp || !recovered.healing.blocked) return 10342;
+    recovery.healing.healBlocked = false;
+    recovery.healing.healingMultiplier = 1.5;
+    healedActor = actor;
+    if (applyPokemonBerryRecovery(healedActor, use.effect, recovery, recovered) != PokemonBerryEffectResult::Ready ||
+        healedActor.hp != 57) return 10343;
+    PokemonBerryEffectPlan lum{}, leppa{};
+    if (planPokemonBerryEffect(1, actor, policy, rng, lum) != PokemonBerryEffectResult::Ready ||
+        planPokemonBerryEffect(10, actor, policy, rng, leppa) != PokemonBerryEffectResult::Ready) return 10344;
+    auto curedActor = actor;
+    curedActor.confusion.present = true;
+    curedActor.confusion.turns = 2;
+    if (applyPokemonBerryRecovery(curedActor, lum, recovery, recovered) != PokemonBerryEffectResult::Ready ||
+        curedActor.status.present || curedActor.confusion.present || !recovered.status.lapseConfusion) return 10345;
+    auto ppActor = actor;
+    if (applyPokemonBerryRecovery(ppActor, leppa, recovery, recovered) != PokemonBerryEffectResult::Ready ||
+        ppActor.moves[0].pp != 3 || ppActor.moves[1].pp != 10 || recovered.ppSlot != 1) return 10346;
+    recovery.statusReactionsResolved = false;
+    curedActor = actor;
+    recovered.ppAfter = 222;
+    if (applyPokemonBerryRecovery(curedActor, lum, recovery, recovered) != PokemonBerryEffectResult::UnresolvedPolicy ||
+        !curedActor.status.present || recovered.ppAfter != 222) return 10347;
+    if (initializeHeldBerry(10, actor.pokemonId, 2, true, inventory[0]) != HeldModifierStorageResult::Ok) return 10348;
+    inventoryCount = 1;
+    auto immediatePp = actor;
+    if (preparePokemonHeldBerryUse(inventory, 2, inventoryCount, 0, immediatePp, policy, true, false,
+            nullptr, 0, nullptr, 0, true, useBattle, rng, use) != PokemonBerryEffectResult::Ready ||
+        !use.effectExecutedImmediately || immediatePp.moves[1].pp != 10 || inventory[0].stackCount != 1) return 10349;
+    // A second Leppa sees restored PP immediately, and is no longer eligible.
+    if (preparePokemonHeldBerryUse(inventory, 2, inventoryCount, 0, immediatePp, policy, true, false,
+            nullptr, 0, nullptr, 0, true, useBattle, rng, use) != PokemonBerryEffectResult::NoEffect ||
+        inventory[0].stackCount != 1 || immediatePp.moves[1].pp != 10) return 10350;
+    PokemonBerryEffectPlan attackBerry{}, speedBerry{};
+    if (planPokemonBerryEffect(3, actor, policy, rng, attackBerry) != PokemonBerryEffectResult::Ready ||
+        planPokemonBerryEffect(7, actor, policy, rng, speedBerry) != PokemonBerryEffectResult::Ready) return 10351;
+    PokemonBerryStatQueue statQueue{};
+    if (!appendPokemonBerryStatRequest(statQueue, attackBerry) ||
+        !appendPokemonBerryStatRequest(statQueue, speedBerry) ||
+        !appendPokemonBerryStatRequest(statQueue, attackBerry) || statQueue.count != 2 ||
+        statQueue.changes[0].stat != 1 || statQueue.changes[0].stages != 2 ||
+        statQueue.changes[1].stat != 5 || statQueue.changes[1].stages != 1) return 10352;
+    PokemonStatStageEffectPolicy statPolicy{};
+    statPolicy.resolved = true;
+    PokemonBerryStatPhaseEvent statEvent{};
+    auto boosted = actor;
+    boosted.statStages[0] = 5;
+    if (applyPokemonBerryStatQueue(boosted, statQueue, statPolicy, statEvent) != PokemonStatStageEffectResult::Ok ||
+        boosted.statStages[0] != 6 || boosted.statStages[4] != 1 || statEvent.count != 2 ||
+        statEvent.changes[0].requestedStages != 2 || statEvent.changes[0].changes[0] != 1) return 10353;
+    auto contrary = actor;
+    statPolicy.stageMultiplier = -1;
+    if (applyPokemonBerryStatQueue(contrary, statQueue, statPolicy, statEvent) != PokemonStatStageEffectResult::Ok ||
+        contrary.statStages[0] != -2 || contrary.statStages[4] != -1) return 10354;
+    auto invalidQueue = statQueue;
+    invalidQueue.changes[1].stat = 8;
+    boosted = actor;
+    statEvent.count = 99;
+    if (applyPokemonBerryStatQueue(boosted, invalidQueue, statPolicy, statEvent) != PokemonStatStageEffectResult::InvalidDefinition ||
+        boosted.statStages[0] || statEvent.count != 99) return 10355;
+    auto differentOwner = attackBerry;
+    differentOwner.ownerPokemonId++;
+    const auto unchangedQueue = statQueue;
+    if (appendPokemonBerryStatRequest(statQueue, differentOwner) ||
+        std::memcmp(&statQueue, &unchangedQueue, sizeof(statQueue))) return 10356;
+    // Store summon critical stages alongside real actor identity, status and PP.
+    FirstRunRuntime critGame(1);
+    NativeRunSave critCheckpoint{};
+    if (!captureActiveTestCheckpoint(critGame, critCheckpoint)) return 10357;
+    const auto& critPokemon = critGame.presentation().player;
+    auto critActor = critPokemon.battleState;
+    critActor.berryCriticalBoostStages = 2;
+    NativePokemonSave critSave{};
+    if (!captureNativePokemonActorSave(critActor, critPokemon.actor, 0, critSave)) return 10358;
+    char critBytes[1024]{};
+    size_t critLength = 0;
+    NativePokemonSave critDecoded{};
+    if (encodeNativePokemonSave(critSave, critBytes, sizeof(critBytes), critLength) != NativeSaveResult::Ok ||
+        decodeNativePokemonSave(critBytes, critLength, critDecoded) != NativeSaveResult::Ok ||
+        critDecoded.berryCriticalBoostStages != 2) return 10359;
+    PokemonBattleState critRestored{};
+    PokemonActorIdentity critIdentity{};
+    if (!restoreNativePokemonActorSave(critDecoded, critRestored, critIdentity) ||
+        critRestored.berryCriticalBoostStages != 2) return 10360;
+    critSave.berryCriticalBoostStages = 3;
+    if (encodeNativePokemonSave(critSave, critBytes, sizeof(critBytes), critLength) != NativeSaveResult::InvalidRecord) return 10361;
+    critSave.berryCriticalBoostStages = 0;
+    if (encodeNativePokemonSave(critSave, critBytes, sizeof(critBytes), critLength) != NativeSaveResult::Ok ||
+        decodeNativePokemonSave(critBytes, critLength, critDecoded) != NativeSaveResult::Ok ||
+        critDecoded.berryCriticalBoostStages) return 10362;
+    critCheckpoint.playerBerryCriticalBoostStages = 2;
+    critCheckpoint.enemyBerryCriticalBoostStages = 1;
+    if (critCheckpoint.playerPartyCount)
+        critCheckpoint.playerParty[critCheckpoint.activePlayerMember].berryCriticalBoostStages = 2;
+    char critRunBytes[kNativeSaveMaxBytes]{};
+    size_t critRunLength = 0;
+    NativeRunSave critRunDecoded{};
+    if (encodeNativeRunSave(critCheckpoint, critRunBytes, sizeof(critRunBytes), critRunLength) != NativeSaveResult::Ok ||
+        decodeNativeRunSave(critRunBytes, critRunLength, PokerogueContent::kContentHash, critRunDecoded) != NativeSaveResult::Ok ||
+        critRunDecoded.playerBerryCriticalBoostStages != 2 || critRunDecoded.enemyBerryCriticalBoostStages != 1) return 10363;
+    FirstRunRuntime critRestoredGame(2);
+    if (!critRestoredGame.restoreNativeRunSave(critRunDecoded) ||
+        critRestoredGame.presentation().player.battleState.berryCriticalBoostStages != 2 ||
+        critRestoredGame.presentation().enemy.battleState.berryCriticalBoostStages != 1) return 10364;
+    NativeRunSave recapturedCrit{};
+    if (critRestoredGame.captureNativeRunSave(recapturedCrit) != NativeSaveResult::Ok ||
+        recapturedCrit.playerBerryCriticalBoostStages != 2 || recapturedCrit.enemyBerryCriticalBoostStages != 1) return 10365;
+    auto recalledCrit = critRestored;
+    resetPokemonSummonState(recalledCrit);
+    if (recalledCrit.berryCriticalBoostStages) return 10366;
+    if (initializeHeldBerry(8, actor.pokemonId, 2, true, inventory[0]) != HeldModifierStorageResult::Ok) return 10380;
+    inventoryCount = 1;
+    auto lansatActor = actor;
+    if (preparePokemonHeldBerryUse(inventory, 2, inventoryCount, 0, lansatActor, policy, true, false,
+            nullptr, 0, nullptr, 0, true, useBattle, rng, use) != PokemonBerryEffectResult::Ready ||
+        !use.effectExecutedImmediately || lansatActor.berryCriticalBoostStages != 2 ||
+        inventory[0].stackCount != 1 || !PokerogueContent::kBerryCriticalTagSource.sourceHash[0]) return 10381;
+    if (preparePokemonHeldBerryUse(inventory, 2, inventoryCount, 0, lansatActor, policy, true, false,
+            nullptr, 0, nullptr, 0, true, useBattle, rng, use) != PokemonBerryEffectResult::NoEffect ||
+        inventory[0].stackCount != 1) return 10382;
+    resetPokemonSummonState(lansatActor);
+    if (lansatActor.berryCriticalBoostStages) return 10383;
+    if (!actor.hasEatenBerry) return 10390;
+    auto switchedHistory = actor;
+    resetPokemonSummonState(switchedHistory);
+    if (!switchedHistory.hasEatenBerry) return 10391;
+    critActor.berryCriticalBoostStages = 0;
+    critActor.hasEatenBerry = true;
+    if (!captureNativePokemonActorSave(critActor, critPokemon.actor, 0, critSave) ||
+        encodeNativePokemonSave(critSave, critBytes, sizeof(critBytes), critLength) != NativeSaveResult::Ok ||
+        decodeNativePokemonSave(critBytes, critLength, critDecoded) != NativeSaveResult::Ok ||
+        !critDecoded.hasEatenBerry || critDecoded.berryCriticalBoostStages ||
+        !restoreNativePokemonActorSave(critDecoded, critRestored, critIdentity) || !critRestored.hasEatenBerry) return 10392;
+    critActor.berryCriticalBoostStages = 2;
+    if (!captureNativePokemonActorSave(critActor, critPokemon.actor, 0, critSave) ||
+        encodeNativePokemonSave(critSave, critBytes, sizeof(critBytes), critLength) != NativeSaveResult::Ok ||
+        decodeNativePokemonSave(critBytes, critLength, critDecoded) != NativeSaveResult::Ok ||
+        !critDecoded.hasEatenBerry || critDecoded.berryCriticalBoostStages != 2) return 10393;
+    uint16_t consumedHistory[4]{}, turnHistory[4]{}, previousTurn[4]{};
+    PokemonBerryHistoryView history{actor.pokemonId, {consumedHistory,0,4}, {turnHistory,0,4}, {previousTurn,0,4}};
+    PokemonBerryConsumedEvent eaten{};
+    eaten.ownerPokemonId = actor.pokemonId;
+    eaten.eaten = true;
+    eaten.stacksBefore = 2;
+    eaten.stacksAfter = 1;
+    eaten.consumed = eaten.harvestEligible = true;
+    for (uint16_t type : {uint16_t(0),uint16_t(1),uint16_t(0)}) {
+        eaten.berryType = type;
+        if (recordPokemonBerryHistory(history, eaten) != PokemonBerryHistoryResult::Recorded) return 10401;
+    }
+    eaten.berryType = 10;
+    eaten.consumed = eaten.harvestEligible = false;
+    eaten.stacksAfter = 2;
+    if (recordPokemonBerryHistory(history, eaten) != PokemonBerryHistoryResult::Recorded ||
+        history.battleConsumed.count != 3 || history.turnEaten.count != 4 || consumedHistory[2] != 0 || turnHistory[3] != 10)
+        return 10402;
+    if (recordPokemonBerryTurnEnd(history, true, true) != PokemonBerryHistoryResult::Recorded ||
+        history.lastTurnEaten.count != 4 || std::memcmp(turnHistory, previousTurn, sizeof(turnHistory))) return 10403;
+    if (recordPokemonBerryHistory(history, eaten) != PokemonBerryHistoryResult::CapacityExceeded ||
+        history.battleConsumed.count != 3 || history.turnEaten.count != 4) return 10404;
+    resetPokemonBerryTurnHistory(history);
+    if (history.turnEaten.count || history.lastTurnEaten.count != 4 || history.battleConsumed.count != 3) return 10405;
+    if (recordPokemonBerryTurnEnd(history, true, true) != PokemonBerryHistoryResult::Recorded ||
+        history.lastTurnEaten.count) return 10406;
+    if (recordPokemonBerryHistory(history, eaten) != PokemonBerryHistoryResult::Recorded) return 10407;
+    resetPokemonBerrySummonHistory(history);
+    if (history.turnEaten.count || history.lastTurnEaten.count || history.battleConsumed.count != 3 || !actor.hasEatenBerry)
+        return 10408;
+    auto battleReset = actor;
+    resetPokemonBerryArenaTransitionHistory(history, battleReset);
+    if (history.battleConsumed.count || battleReset.hasEatenBerry) return 10409;
+    if (initializeHeldBerry(0, actor.pokemonId, 1, true, inventory[0]) != HeldModifierStorageResult::Ok) return 10410;
+    inventoryCount = 1;
+    auto recordedActor = actor;
+    if (usePokemonHeldBerryAndRecord(inventory, 2, inventoryCount, 0, recordedActor, history, policy, true, false,
+            nullptr, 0, nullptr, 0, true, useBattle, rng, use) != PokemonBerryEffectResult::Ready ||
+        inventoryCount || history.battleConsumed.count != 1 || history.turnEaten.count != 1 ||
+        history.battleConsumed.values[0] != 0 || !recordedActor.hasEatenBerry) return 10411;
+    if (initializeHeldBerry(0, actor.pokemonId, 1, true, inventory[0]) != HeldModifierStorageResult::Ok) return 10412;
+    inventoryCount = 1;
+    auto exhausted = history;
+    exhausted.turnEaten.capacity = exhausted.turnEaten.count;
+    const auto recordBefore = inventory[0];
+    const auto rngBefore = rng.state(), battleRngBefore = useBattle.state();
+    use.item.ownerPokemonId = 999;
+    if (usePokemonHeldBerryAndRecord(inventory, 2, inventoryCount, 0, recordedActor, exhausted, policy, true, false,
+            pouchStacks, 3, nullptr, 0, true, useBattle, rng, use) != PokemonBerryEffectResult::HistoryCapacityExceeded ||
+        inventoryCount != 1 || std::memcmp(&recordBefore, &inventory[0], sizeof(recordBefore)) ||
+        !sameRng(rngBefore, rng.state()) || !sameRng(battleRngBefore, useBattle.state()) ||
+        use.item.ownerPokemonId != 999 || history.battleConsumed.count != 1) return 10413;
+    // Simulate a legacy checkpoint whose scalar flag survives without ordered history.
+    critCheckpoint.berryHistories.resolved = false;
+    critCheckpoint.playerHasEatenBerry = true;
+    critCheckpoint.enemyHasEatenBerry = true;
+    if (critCheckpoint.playerPartyCount)
+        critCheckpoint.playerParty[critCheckpoint.activePlayerMember].hasEatenBerry = true;
+    if (encodeNativeRunSave(critCheckpoint, critRunBytes, sizeof(critRunBytes), critRunLength) != NativeSaveResult::Ok ||
+        decodeNativeRunSave(critRunBytes, critRunLength, PokerogueContent::kContentHash, critRunDecoded) != NativeSaveResult::Ok ||
+        !critRestoredGame.restoreNativeRunSave(critRunDecoded) ||
+        !critRestoredGame.presentation().player.battleState.hasEatenBerry ||
+        !critRestoredGame.presentation().enemy.battleState.hasEatenBerry ||
+        critRestoredGame.captureNativeRunSave(recapturedCrit) != NativeSaveResult::Ok ||
+        !recapturedCrit.playerHasEatenBerry || !recapturedCrit.enemyHasEatenBerry) return 10420;
+    auto inconsistentHistory = critCheckpoint;
+    if (inconsistentHistory.playerPartyCount) {
+        inconsistentHistory.playerParty[inconsistentHistory.activePlayerMember].hasEatenBerry = false;
+        if (validateNativeRunSave(inconsistentHistory, PokerogueContent::kContentHash) != NativeSaveResult::InvalidRecord) return 10421;
+    }
+    char historyBytes[512]{};
+    size_t historyLength = 0;
+    if (encodeNativeBerryHistory(history, historyBytes, sizeof(historyBytes), historyLength) != NativeSaveResult::Ok) return 10440;
+    uint16_t restoredConsumed[4]{}, restoredTurn[4]{}, restoredLast[4]{};
+    PokemonBerryHistoryView restoredHistory{999, {restoredConsumed,0,4}, {restoredTurn,0,4}, {restoredLast,0,4}};
+    if (decodeNativeBerryHistory(historyBytes, historyLength, restoredHistory) != NativeSaveResult::Ok ||
+        restoredHistory.ownerPokemonId != history.ownerPokemonId || restoredHistory.battleConsumed.count != history.battleConsumed.count ||
+        restoredHistory.turnEaten.count != history.turnEaten.count || restoredHistory.lastTurnEaten.count != history.lastTurnEaten.count ||
+        std::memcmp(restoredConsumed, consumedHistory, history.battleConsumed.count * sizeof(uint16_t))) return 10441;
+    char repeatHistory[512]{};
+    size_t repeatLength = 0;
+    if (encodeNativeBerryHistory(restoredHistory, repeatHistory, sizeof(repeatHistory), repeatLength) != NativeSaveResult::Ok ||
+        repeatLength != historyLength || std::memcmp(repeatHistory, historyBytes, historyLength)) return 10442;
+    const auto preservedOwner = restoredHistory.ownerPokemonId;
+    const auto preservedCount = restoredHistory.battleConsumed.count;
+    const auto preservedFirst = restoredConsumed[0];
+    if (decodeNativeBerryHistory(historyBytes, historyLength - 1, restoredHistory) != NativeSaveResult::InvalidFormat ||
+        restoredHistory.ownerPokemonId != preservedOwner || restoredHistory.battleConsumed.count != preservedCount ||
+        restoredConsumed[0] != preservedFirst) return 10443;
+    auto tooSmallHistory = restoredHistory;
+    tooSmallHistory.battleConsumed.capacity = 0;
+    if (decodeNativeBerryHistory(historyBytes, historyLength, tooSmallHistory) != NativeSaveResult::TooLarge ||
+        tooSmallHistory.ownerPokemonId != preservedOwner || restoredConsumed[0] != preservedFirst) return 10444;
+    // Actor-bound restore rejects stale/foreign history before any buffer publication.
+    auto historyActor = actor;
+    historyActor.pokemonId = history.ownerPokemonId;
+    historyActor.hasEatenBerry = true;
+    if (restoreNativePokemonBerryHistory(historyBytes, historyLength, historyActor, restoredHistory) != NativeSaveResult::Ok)
+        return 10445;
+    auto foreignActor = historyActor;
+    foreignActor.pokemonId ^= 1;
+    if (restoreNativePokemonBerryHistory(historyBytes, historyLength, foreignActor, restoredHistory) != NativeSaveResult::InvalidRecord ||
+        restoredHistory.ownerPokemonId != preservedOwner || restoredConsumed[0] != preservedFirst) return 10446;
+    historyActor.hasEatenBerry = false;
+    if (restoreNativePokemonBerryHistory(historyBytes, historyLength, historyActor, restoredHistory) != NativeSaveResult::InvalidRecord ||
+        restoredHistory.battleConsumed.count != preservedCount || restoredConsumed[0] != preservedFirst) return 10447;
+    // Preserved berries can leave the flag true while all lists are empty after recall.
+    PokemonBerryHistoryView emptyHistory{history.ownerPokemonId};
+    char emptyBytes[128]{};
+    size_t emptyLength = 0;
+    historyActor.hasEatenBerry = true;
+    if (encodeNativeBerryHistory(emptyHistory, emptyBytes, sizeof(emptyBytes), emptyLength) != NativeSaveResult::Ok ||
+        restoreNativePokemonBerryHistory(emptyBytes, emptyLength, historyActor, emptyHistory) != NativeSaveResult::Ok)
+        return 10448;
+    // Decode must reject overlapping output ranges and input/output aliasing atomically.
+    uint16_t separate[4]{};
+    PokemonBerryHistoryView populated{history.ownerPokemonId, {consumedHistory,3,4}, {turnHistory,4,4}, {previousTurn,4,4}};
+    if (encodeNativeBerryHistory(populated, repeatHistory, sizeof(repeatHistory), repeatLength) != NativeSaveResult::Ok)
+        return 10449;
+    PokemonBerryHistoryView aliased{history.ownerPokemonId, {separate,0,4}, {separate,0,4}, {restoredLast,0,4}};
+    if (decodeNativeBerryHistory(repeatHistory, repeatLength, aliased) != NativeSaveResult::InvalidRecord ||
+        separate[0] || aliased.battleConsumed.count || aliased.turnEaten.count) return 10450;
+    auto inputAlias = aliased;
+    inputAlias.turnEaten.values = restoredTurn;
+    inputAlias.battleConsumed.values = reinterpret_cast<uint16_t*>(repeatHistory);
+    char sourceBefore[512]{};
+    std::memcpy(sourceBefore, repeatHistory, repeatLength);
+    if (decodeNativeBerryHistory(repeatHistory, repeatLength, inputAlias) != NativeSaveResult::InvalidRecord ||
+        std::memcmp(sourceBefore, repeatHistory, repeatLength)) return 10451;
+    // Ordered histories cross the complete run envelope and live restore/capture.
+    auto withHistories = critCheckpoint;
+    withHistories.berryHistories.resolved = true;
+    const uint8_t playerSlot = withHistories.playerPartyCount ? withHistories.activePlayerMember : 12;
+    const uint32_t playerId = critRestoredGame.presentation().player.battleState.pokemonId;
+    auto storedView = populated;
+    storedView.ownerPokemonId = playerId;
+    if (captureNativeBerryHistory(withHistories.berryHistories, playerSlot, storedView) != NativeSaveResult::Ok ||
+        withHistories.berryHistories.recordCount != 1 || withHistories.berryHistories.valueCount != 11)
+        return 10510;
+    PokemonBerryHistoryView emptyEnemyHistory{critRestoredGame.presentation().enemy.battleState.pokemonId};
+    if (captureNativeBerryHistory(withHistories.berryHistories, 13, emptyEnemyHistory) != NativeSaveResult::Ok) return 10522;
+    auto missingHistory = withHistories;
+    if (retainNativeBerryHistoryActors(missingHistory.berryHistories, 1U << playerSlot) != NativeSaveResult::Ok ||
+        validateNativeRunSave(missingHistory, PokerogueContent::kContentHash) != NativeSaveResult::InvalidRecord) return 10523;
+    auto unknownHistory = withHistories.berryHistories;
+    unknownHistory = {};
+    if (captureNativeBerryHistory(unknownHistory, playerSlot, storedView) != NativeSaveResult::InvalidRecord ||
+        unknownHistory.resolved || unknownHistory.recordCount) return 10524;
+    if (encodeNativeRunSave(withHistories, critRunBytes, sizeof(critRunBytes), critRunLength) != NativeSaveResult::Ok ||
+        decodeNativeRunSave(critRunBytes, critRunLength, PokerogueContent::kContentHash, critRunDecoded) != NativeSaveResult::Ok ||
+        !critRestoredGame.restoreNativeRunSave(critRunDecoded) ||
+        critRestoredGame.captureNativeRunSave(recapturedCrit) != NativeSaveResult::Ok ||
+        recapturedCrit.berryHistories.recordCount != 2 || recapturedCrit.berryHistories.valueCount != 11 ||
+        std::memcmp(withHistories.berryHistories.values, recapturedCrit.berryHistories.values, 11 * sizeof(uint16_t)))
+        return 10511;
+    PokemonBerryHistoryView pooledView{};
+    if (!nativeBerryHistoryView(recapturedCrit.berryHistories, 0, pooledView) ||
+        pooledView.battleConsumed.count != 3 || pooledView.turnEaten.count != 4 || pooledView.lastTurnEaten.count != 4 ||
+        pooledView.ownerPokemonId != playerId) return 10512;
+    auto invalidHistories = withHistories;
+    invalidHistories.berryHistories.records[0].actorSlot = 15;
+    if (validateNativeRunSave(invalidHistories, PokerogueContent::kContentHash) != NativeSaveResult::InvalidRecord) return 10513;
+    invalidHistories = withHistories;
+    invalidHistories.berryHistories.records[0].ownerPokemonId ^= 1;
+    if (playerSlot != 12 && validateNativeRunSave(invalidHistories, PokerogueContent::kContentHash) != NativeSaveResult::InvalidRecord)
+        return 10514;
+    if (critRestoredGame.restoreNativeRunSave(invalidHistories) ||
+        critRestoredGame.presentation().player.battleState.pokemonId != playerId) return 10515;
+    invalidHistories = withHistories;
+    invalidHistories.berryHistories.resolved = false;
+    if (validateNativeRunSave(invalidHistories, PokerogueContent::kContentHash) != NativeSaveResult::InvalidRecord) return 10516;
+    auto storedPool = withHistories.berryHistories;
+    auto foreignView = storedView;
+    foreignView.ownerPokemonId ^= 1;
+    if (captureNativeBerryHistory(storedPool, playerSlot, foreignView) != NativeSaveResult::InvalidRecord ||
+        std::memcmp(&storedPool, &withHistories.berryHistories, sizeof(storedPool))) return 10517;
+    uint16_t manyBerries[kNativeBerryHistoryValues]{};
+    PokemonBerryHistoryView hugeView{playerId, {manyBerries,kNativeBerryHistoryValues,kNativeBerryHistoryValues}};
+    if (captureNativeBerryHistory(storedPool, playerSlot, hugeView) != NativeSaveResult::Ok) return 10518;
+    invalidHistories = withHistories;
+    invalidHistories.berryHistories = storedPool;
+    size_t tooLargeLength = 999;
+    if (encodeNativeRunSave(invalidHistories, critRunBytes, sizeof(critRunBytes), tooLargeLength) != NativeSaveResult::TooLarge ||
+        tooLargeLength) return 10519;
+    auto enemyView = storedView;
+    enemyView.ownerPokemonId = critRestoredGame.presentation().enemy.battleState.pokemonId;
+    if (captureNativeBerryHistory(storedPool, 13, enemyView) != NativeSaveResult::TooLarge || storedPool.recordCount != 2)
+        return 10520;
+    auto recalledHistory = withHistories.berryHistories;
+    if (resetNativeBerrySummonHistory(recalledHistory, playerId) != NativeSaveResult::Ok ||
+        recalledHistory.valueCount != 3 || recalledHistory.records[0].counts[0] != 3 ||
+        recalledHistory.records[0].counts[1] || recalledHistory.records[0].counts[2] ||
+        recalledHistory.records[1].offset != 3 ||
+        std::memcmp(recalledHistory.values, withHistories.berryHistories.values, 3 * sizeof(uint16_t))) return 10525;
+    NativeBerryHistoryStore unknownRecall{};
+    if (resetNativeBerrySummonHistory(unknownRecall, playerId) != NativeSaveResult::Ok || unknownRecall.resolved)
+        return 10526;
+    auto capturedHistory = withHistories.berryHistories;
+    const uint32_t capturedId = capturedHistory.records[1].ownerPokemonId;
+    const uint8_t captureSlot = playerSlot == 5 ? 4 : 5;
+    if (transferNativeBerryHistoryToParty(capturedHistory, capturedId, captureSlot) != NativeSaveResult::Ok ||
+        capturedHistory.records[1].actorSlot != captureSlot || capturedHistory.valueCount != 11 ||
+        removeNativeBerryHistoryOwner(capturedHistory, capturedId) != NativeSaveResult::Ok ||
+        capturedHistory.recordCount != 1 || capturedHistory.valueCount != 11) return 10527;
+    auto retained = withHistories.berryHistories;
+    if (retainNativeBerryHistoryActors(retained, 1U << playerSlot) != NativeSaveResult::Ok || retained.valueCount != 11 ||
+        retainNativeBerryHistoryActors(retained, 0) != NativeSaveResult::Ok || retained.recordCount || retained.valueCount || !retained.resolved)
+        return 10521;
+    {
+        // Lum resets status during BerryModifier.apply; a following Lum sees
+        // the cure immediately and must neither consume nor touch history/RNG.
+        auto lumActor = actor;
+        lumActor.hp = 20;
+        lumActor.status = {};
+        lumActor.status.present = true;
+        lumActor.status.effect = PokemonStatusEffect::Poison;
+        lumActor.confusion = {};
+        NativeHeldModifierInstance lumInventory[2]{};
+        uint16_t lumType = 65535;
+        for (const auto& profile : PokerogueContent::kBerryEffectProfiles)
+            if (!std::strcmp(profile.effect, "CURE_STATUS")) lumType = profile.id;
+        if (initializeHeldBerry(lumType, lumActor.pokemonId, 2, true, lumInventory[0]) != HeldModifierStorageResult::Ok)
+            return 10701;
+        size_t lumCount = 1;
+        const auto beforeLum = lumInventory[0];
+        PokemonHeldBerryUseEvent lumEvent{};
+        lumEvent.item.ownerPokemonId = 999;
+        if (preparePokemonHeldBerryUse(lumInventory, 2, lumCount, 0, lumActor, policy, true, false,
+                nullptr, 0, nullptr, 0, true, useBattle, rng, lumEvent) != PokemonBerryEffectResult::UnresolvedPolicy ||
+            !lumActor.status.present || std::memcmp(&beforeLum, &lumInventory[0], sizeof(beforeLum)) ||
+            lumEvent.item.ownerPokemonId != 999) return 10702;
+        PokemonBerryRecoveryPolicy statusPolicy{};
+        statusPolicy.statusReactionsResolved = true;
+        uint16_t lumConsumed[2]{}, lumTurn[2]{};
+        PokemonBerryHistoryView lumHistory{lumActor.pokemonId, {lumConsumed,0,2}, {lumTurn,0,2}};
+        if (usePokemonHeldBerryAndRecord(lumInventory, 2, lumCount, 0, lumActor, lumHistory, policy, true, false,
+                nullptr, 0, nullptr, 0, true, useBattle, rng, lumEvent, &statusPolicy) != PokemonBerryEffectResult::Ready ||
+            lumActor.status.present || !lumEvent.effectExecutedImmediately || lumInventory[0].stackCount != 1 ||
+            lumHistory.battleConsumed.count != 1 || lumHistory.turnEaten.count != 1) return 10703;
+        const auto lumGlobalState = rng.state(), lumBattleState = useBattle.state();
+        lumEvent.item.ownerPokemonId = 999;
+        if (usePokemonHeldBerryAndRecord(lumInventory, 2, lumCount, 0, lumActor, lumHistory, policy, true, false,
+                nullptr, 0, nullptr, 0, true, useBattle, rng, lumEvent, &statusPolicy) != PokemonBerryEffectResult::NoEffect ||
+            lumInventory[0].stackCount != 1 || lumHistory.battleConsumed.count != 1 || lumHistory.turnEaten.count != 1 ||
+            lumEvent.item.ownerPokemonId != 999 || !sameRng(lumGlobalState, rng.state()) || !sameRng(lumBattleState, useBattle.state()))
+            return 10704;
+    }
+    {
+        auto queuedActor = actor;
+        queuedActor.hp = 20;
+        NativeHeldModifierInstance queuedInventory[2]{};
+        uint16_t healingType = 65535;
+        for (const auto& profile : PokerogueContent::kBerryEffectProfiles)
+            if (!std::strcmp(profile.effect, "HEAL") && !std::strcmp(profile.predicate, "LOW_HP")) healingType = profile.id;
+        if (initializeHeldBerry(healingType, queuedActor.pokemonId, 2, true, queuedInventory[0]) != HeldModifierStorageResult::Ok)
+            return 10710;
+        size_t queuedCount = 1;
+        uint16_t queuedConsumed[2]{}, queuedTurn[2]{};
+        PokemonBerryHistoryView queuedHistory{queuedActor.pokemonId, {queuedConsumed,0,2}, {queuedTurn,0,2}};
+        PokemonBerryPhaseRequests requests{};
+        requests.ownerPokemonId = queuedActor.pokemonId;
+        PokemonHeldBerryUseEvent queuedEvent{};
+        queuedEvent.item.ownerPokemonId = 999;
+        const auto queueRecordBefore = queuedInventory[0];
+        const auto queueGlobalBefore = rng.state(), queueBattleBefore = useBattle.state();
+        if (usePokemonHeldBerryAndRecord(queuedInventory, 2, queuedCount, 0, queuedActor, queuedHistory,
+                policy, true, false, nullptr, 0, nullptr, 0, true, useBattle, rng, queuedEvent, nullptr, &requests) !=
+                PokemonBerryEffectResult::PhaseCapacityExceeded || queuedHistory.battleConsumed.count ||
+            queuedHistory.turnEaten.count || queuedActor.hp != 20 || queuedEvent.item.ownerPokemonId != 999 ||
+            std::memcmp(&queueRecordBefore, &queuedInventory[0], sizeof(queueRecordBefore)) ||
+            !sameRng(queueGlobalBefore, rng.state()) || !sameRng(queueBattleBefore, useBattle.state())) return 10711;
+        PokemonBerryEffectPlan healRequests[2]{};
+        requests.recoveryPlans = healRequests;
+        requests.recoveryCapacity = 2;
+        if (usePokemonHeldBerryAndRecord(queuedInventory, 2, queuedCount, 0, queuedActor, queuedHistory,
+                policy, true, false, nullptr, 0, nullptr, 0, true, useBattle, rng, queuedEvent, nullptr, &requests) !=
+                PokemonBerryEffectResult::Ready || requests.recoveryCount != 1 || queuedActor.hp != 20 ||
+            queuedInventory[0].stackCount != 1 || queuedHistory.battleConsumed.count != 1 ||
+            healRequests[0].healingRequested != 25 || healRequests[0].ownerPokemonId != queuedActor.pokemonId) return 10712;
+        PokemonBerryRecoveryPolicy queuedRecovery{};
+        queuedRecovery.healing.resolved = true;
+        PokemonBerryRecoveryEvent queuedHeal{};
+        if (applyPokemonBerryRecovery(queuedActor, healRequests[0], queuedRecovery, queuedHeal) != PokemonBerryEffectResult::Ready ||
+            queuedActor.hp != 45) return 10713;
+    }
+    {
+        auto scanActor = actor;
+        scanActor.hp = 20;
+        scanActor.status = {};
+        scanActor.status.present = true;
+        scanActor.status.effect = PokemonStatusEffect::Poison;
+        scanActor.confusion = {};
+        uint16_t healType = 65535, lumType = 65535;
+        for (const auto& profile : PokerogueContent::kBerryEffectProfiles) {
+            if (!std::strcmp(profile.effect, "HEAL") && !std::strcmp(profile.predicate, "LOW_HP")) healType = profile.id;
+            if (!std::strcmp(profile.effect, "CURE_STATUS")) lumType = profile.id;
+        }
+        NativeHeldModifierInstance scanInventory[2]{};
+        if (initializeHeldBerry(healType, scanActor.pokemonId, 2, true, scanInventory[0]) != HeldModifierStorageResult::Ok ||
+            initializeHeldBerry(lumType, scanActor.pokemonId, 2, true, scanInventory[1]) != HeldModifierStorageResult::Ok)
+            return 10801;
+        size_t scanCount = 2;
+        uint16_t scanConsumed[4]{}, scanTurn[4]{};
+        PokemonBerryHistoryView scanHistory{scanActor.pokemonId, {scanConsumed,0,4}, {scanTurn,0,4}};
+        PokemonBerryEffectPlan scanHealPlans[4]{};
+        PokemonBerryPhaseRequests scanRequests{scanActor.pokemonId, scanHealPlans, 0, 4};
+        PokemonBerryRecoveryPolicy scanRecovery{};
+        scanRecovery.statusReactionsResolved = true;
+        scanRecovery.healing.resolved = true;
+        PokemonBerryModifierScanEvent scanEvent{};
+        if (scanPokemonHeldBerryModifiersInPlace(scanInventory, 2, scanCount, scanActor, scanHistory, scanRequests,
+                policy, nullptr, 0, true, true, false, nullptr, 0, scanRecovery, useBattle, rng, scanEvent) !=
+                PokemonBerryEffectResult::Ready || scanEvent.used != 2 || scanCount != 2 || scanActor.hp != 20 ||
+            scanActor.status.present || scanRequests.recoveryCount != 1 || scanInventory[0].stackCount != 1 ||
+            scanInventory[1].stackCount != 1 || scanHistory.battleConsumed.count != 2 ||
+            scanConsumed[0] != healType || scanConsumed[1] != lumType) return 10802;
+        PokemonBerryRecoveryEvent recovered{};
+        if (applyPokemonBerryRecovery(scanActor, scanHealPlans[0], scanRecovery, recovered) != PokemonBerryEffectResult::Ready ||
+            scanActor.hp != 45) return 10803;
+        scanRequests.recoveryCount = 0;
+        if (scanPokemonHeldBerryModifiersInPlace(scanInventory, 2, scanCount, scanActor, scanHistory, scanRequests,
+                policy, nullptr, 0, true, true, false, nullptr, 0, scanRecovery, useBattle, rng, scanEvent) !=
+                PokemonBerryEffectResult::Ready || scanEvent.used != 1 || scanCount != 1 || scanActor.hp != 45 ||
+            scanRequests.recoveryCount != 1 || scanHistory.battleConsumed.count != 3 || scanConsumed[2] != healType)
+            return 10804;
+        if (applyPokemonBerryRecovery(scanActor, scanHealPlans[0], scanRecovery, recovered) != PokemonBerryEffectResult::Ready ||
+            scanActor.hp != 70) return 10805;
+        scanRequests.recoveryCount = 0;
+        if (scanPokemonHeldBerryModifiersInPlace(scanInventory, 2, scanCount, scanActor, scanHistory, scanRequests,
+                policy, nullptr, 0, true, false, false, nullptr, 0, scanRecovery, useBattle, rng, scanEvent) !=
+                PokemonBerryEffectResult::NoEffect || scanEvent.used || scanCount != 1 || scanRequests.recoveryCount)
+            return 10806;
+        // The complete modifier scan queues Cheek Pouch once after two uses.
+        uint16_t cheekId = 65535;
+        for (const auto& row : PokerogueContent::kBerryAbilityProfiles)
+            if (row.resolved && row.healFraction == 1.0 / 3) cheekId = row.abilityId;
+        scanActor.hp = 20;
+        scanActor.abilityId = cheekId;
+        scanActor.status.present = true;
+        scanActor.status.effect = PokemonStatusEffect::Poison;
+        if (initializeHeldBerry(healType, scanActor.pokemonId, 2, true, scanInventory[0]) != HeldModifierStorageResult::Ok ||
+            initializeHeldBerry(lumType, scanActor.pokemonId, 2, true, scanInventory[1]) != HeldModifierStorageResult::Ok) return 10911;
+        scanCount = 2;
+        scanHistory.battleConsumed.count = scanHistory.turnEaten.count = 0;
+        PokemonBerryAbilityHealPlan queuedCheek[2]{};
+        scanRequests.abilityHealPlans = queuedCheek;
+        scanRequests.abilityHealCapacity = 2;
+        if (scanPokemonHeldBerryModifiersInPlace(scanInventory, 2, scanCount, scanActor, scanHistory, scanRequests,
+                policy, &cheekId, 1, true, true, false, nullptr, 0, scanRecovery, useBattle, rng, scanEvent) !=
+                PokemonBerryEffectResult::Ready || scanEvent.used != 2 || scanRequests.abilityHealCount != 1 ||
+            scanRequests.recoveryCount != 1 || queuedCheek[0].healingRequested != 33 || scanActor.hp != 20 ||
+            scanActor.status.present) return 10912;
+        if (applyPokemonBerryRecovery(scanActor, scanHealPlans[0], scanRecovery, recovered) != PokemonBerryEffectResult::Ready ||
+            applyPokemonBerryAbilityHealing(scanActor, queuedCheek[0], scanRecovery.healing, recovered.healing) !=
+                PokemonBerryEffectResult::Ready || scanActor.hp != 78) return 10913;
+    }
+    {
+        uint16_t cheekPouchId = 65535, ripenId = 65535;
+        for (const auto& row : PokerogueContent::kBerryAbilityProfiles) {
+            if (row.resolved && row.healFraction == 1.0 / 3) cheekPouchId = row.abilityId;
+            if (row.resolved && row.effectMultiplier == 2) ripenId = row.abilityId;
+        }
+        if (cheekPouchId == 65535 || ripenId == 65535) return 10901;
+        auto cheekActor = actor;
+        cheekActor.hp = 20;
+        PokemonBerryPhaseRequests cheekRequests{};
+        cheekRequests.ownerPokemonId = cheekActor.pokemonId;
+        PokemonBerryAbilityHealPlan cheekPlans[2]{};
+        const uint16_t cheekAbilities[] = {cheekPouchId, ripenId};
+        if (queuePokemonBerryUseAbilityHealing(cheekActor, cheekAbilities, 2, true, true, cheekRequests) !=
+                PokemonBerryEffectResult::PhaseCapacityExceeded || cheekRequests.abilityHealCount || cheekActor.hp != 20)
+            return 10902;
+        cheekRequests.abilityHealPlans = cheekPlans;
+        cheekRequests.abilityHealCapacity = 2;
+        if (queuePokemonBerryUseAbilityHealing(cheekActor, cheekAbilities, 2, true, true, cheekRequests) !=
+                PokemonBerryEffectResult::Ready || cheekRequests.abilityHealCount != 1 || cheekActor.hp != 20 ||
+            cheekPlans[0].healingRequested != 33 || cheekPlans[0].abilityId != cheekPouchId) return 10903;
+        if (queuePokemonBerryUseAbilityHealing(cheekActor, cheekAbilities, 2, true, true, cheekRequests) !=
+                PokemonBerryEffectResult::InvalidState || cheekRequests.abilityHealCount != 1) return 10904;
+        PokemonHealingPolicy cheekHealing{};
+        cheekHealing.resolved = true;
+        cheekHealing.healingMultiplier = 1.5;
+        PokemonHealingEvent cheekEvent{};
+        if (applyPokemonBerryAbilityHealing(cheekActor, cheekPlans[0], cheekHealing, cheekEvent) !=
+                PokemonBerryEffectResult::Ready || cheekActor.hp != 69 || cheekEvent.healed != 49) return 10905;
+        cheekActor.hp = 100;
+        cheekHealing.healBlocked = true;
+        if (applyPokemonBerryAbilityHealing(cheekActor, cheekPlans[0], cheekHealing, cheekEvent) !=
+                PokemonBerryEffectResult::Ready || !cheekEvent.blocked || cheekEvent.failedFullHp || cheekActor.hp != 100)
+            return 10906;
+        PokemonBerryEffectPlan fullBlockedBerry{};
+        for (const auto& row : PokerogueContent::kBerryEffectProfiles)
+            if (!std::strcmp(row.effect, "HEAL")) fullBlockedBerry.berryType = row.id;
+        fullBlockedBerry.ownerPokemonId = cheekActor.pokemonId;
+        fullBlockedBerry.healingRequested = 25;
+        PokemonBerryRecoveryPolicy fullBlockedPolicy{};
+        fullBlockedPolicy.healing = cheekHealing;
+        PokemonBerryRecoveryEvent fullBlockedEvent{};
+        if (applyPokemonBerryRecovery(cheekActor, fullBlockedBerry, fullBlockedPolicy, fullBlockedEvent) !=
+                PokemonBerryEffectResult::Ready || !fullBlockedEvent.healing.blocked || fullBlockedEvent.healing.failedFullHp ||
+            cheekActor.hp != 100) return 10910;
+        cheekActor.hp = 0;
+        if (applyPokemonBerryAbilityHealing(cheekActor, cheekPlans[0], cheekHealing, cheekEvent) !=
+                PokemonBerryEffectResult::Ready || cheekActor.hp || cheekEvent.healed) return 10907;
+        cheekActor.maxHp = 2;
+        cheekActor.hp = 1;
+        cheekRequests.abilityHealCount = 0;
+        if (queuePokemonBerryUseAbilityHealing(cheekActor, &cheekPouchId, 1, true, true, cheekRequests) !=
+                PokemonBerryEffectResult::Ready || cheekPlans[0].healingRequested != 1) return 10908;
+        cheekRequests.abilityHealCount = 0;
+        if (queuePokemonBerryUseAbilityHealing(cheekActor, &cheekPouchId, 1, false, false, cheekRequests) !=
+                PokemonBerryEffectResult::NoEffect || cheekRequests.abilityHealCount) return 10909;
+    }
+    // The pinned Lansat/Starf threshold-holder quirk remains literal .25.
+    for (const auto& profile : PokerogueContent::kBerryEffectProfiles) {
+        if (std::strcmp(profile.effect, "CRIT_BOOST") && std::strcmp(profile.effect, "RANDOM_STAT")) continue;
+        auto higherHp = actor;
+        higherHp.hp = 40;
+        auto enhanced = policy;
+        enhanced.thresholdMultiplier = 2;
+        PokemonBerryEffectPlan untouched{};
+        const auto before = rng.state();
+        if (planPokemonBerryEffect(profile.id, higherHp, enhanced, rng, untouched) != PokemonBerryEffectResult::NoEffect ||
+            !sameRng(before, rng.state())) return 10320;
+    }
+    return 0;
+}
+
+static int checkHeldBerryStorage() {
+    using namespace Pokerogue3DS;
+    constexpr size_t types = sizeof(PokerogueContent::kBerryTypes) / sizeof(PokerogueContent::kBerryTypes[0]);
+    NativeHeldModifierInstance records[4]{}; size_t count = 0;
+    for (size_t i = 0; i < types; ++i) {
+        const auto& type = PokerogueContent::kBerryTypes[i];
+        NativeHeldModifierInstance held{}, decoded{};
+        if (initializeHeldBerry(type.id, 123, 1, true, held) != HeldModifierStorageResult::Ok) return 10270;
+        uint16_t actual = 0xffff; char bytes[1024]{}; size_t size = 0;
+        if (!heldBerryType(held, actual) || actual != type.id ||
+            encodeNativeHeldModifier(held, bytes, sizeof(bytes), size) != NativeSaveResult::Ok ||
+            decodeNativeHeldModifier(bytes, size, decoded) != NativeSaveResult::Ok ||
+            !heldBerryType(decoded, actual) || actual != type.id || decoded.ownerPokemonId != 123 ||
+            decoded.stackCount != 1 || std::strcmp(decoded.rawArguments, held.rawArguments)) return 10271;
+        count = 0; for (auto& row : records) row = {};
+        for (uint16_t stack = 0; stack < type.maxHeldStacks; ++stack)
+            if (addHeldBerry(records, 4, count, held) != HeldModifierStorageResult::Ok) return 10272;
+        if (count != 1 || records[0].stackCount != type.maxHeldStacks ||
+            addHeldBerry(records, 4, count, held) != HeldModifierStorageResult::CapacityExceeded ||
+            records[0].stackCount != type.maxHeldStacks) return 10273;
+        held.ownerPokemonId = 456;
+        if (addHeldBerry(records, 4, count, held) != HeldModifierStorageResult::Ok || count != 2) return 10274;
+        NativeHeldModifierInstance otherVariant{};
+        if (initializeHeldBerry(PokerogueContent::kBerryTypes[(i + 1) % types].id, 123, 1, true, otherVariant) !=
+                HeldModifierStorageResult::Ok || addHeldBerry(records, 4, count, otherVariant) != HeldModifierStorageResult::Ok ||
+            count != 3 || records[0].stackCount != type.maxHeldStacks || records[2].stackCount != 1) return 10277;
+        otherVariant.ownerPokemonId = 789;
+        if (addHeldBerry(records, 3, count, otherVariant) != HeldModifierStorageResult::CapacityExceeded || count != 3) return 10278;
+        held.rawArguments[6] = '2'; actual = 999;
+        if (heldBerryType(held, actual) || actual != 999 ||
+            addHeldBerry(records, 4, count, held) != HeldModifierStorageResult::InvalidState || count != 3) return 10275;
+    }
+    FirstRunRuntime game(1);
+    NativeRunSave saved{}, restored{};
+    if (!captureActiveTestCheckpoint(game, saved)) return 10279;
+    saved.heldModifierCount = 1;
+    if (initializeHeldBerry(PokerogueContent::kBerryTypes[0].id, saved.playerParty[0].pokemonId,
+            1, true, saved.heldModifiers[0]) != HeldModifierStorageResult::Ok) return 10280;
+    char envelope[kNativeSaveMaxBytes]{}; size_t envelopeSize = 0;
+    uint16_t restoredType = 0xffff;
+    if (encodeNativeRunSave(saved, envelope, sizeof(envelope), envelopeSize) != NativeSaveResult::Ok ||
+        decodeNativeRunSave(envelope, envelopeSize, PokerogueContent::kContentHash, restored) != NativeSaveResult::Ok ||
+        restored.heldModifierCount != 1 || !heldBerryType(restored.heldModifiers[0], restoredType) ||
+        restoredType != PokerogueContent::kBerryTypes[0].id ||
+        restored.heldModifiers[0].ownerPokemonId != restored.playerParty[0].pokemonId) return 10281;
+    FirstRunRuntime notYetSupported(2);
+    if (notYetSupported.restoreNativeRunSave(restored) || notYetSupported.run().seed != 2) return 10283;
+    // Codec preserves unknown typed arguments; the current adapter rejects them.
+    saved.heldModifiers[0].rawArguments[6] = '2';
+    if (encodeNativeRunSave(saved, envelope, sizeof(envelope), envelopeSize) != NativeSaveResult::Ok ||
+        decodeNativeRunSave(envelope, envelopeSize, PokerogueContent::kContentHash, restored) != NativeSaveResult::Ok ||
+        std::strcmp(saved.heldModifiers[0].rawArguments, restored.heldModifiers[0].rawArguments) ||
+        heldBerryType(restored.heldModifiers[0], restoredType)) return 10282;
+    if (!*PokerogueContent::kBerryBehaviorSource.sourceHash) return 10276;
+    return 0;
+}
+
+static int checkCanonicalBerryGeneration() {
+    using namespace Pokerogue3DS;
+    const uint16_t seed[] = {'b','e','r','r','y'};
+    PokerogueRngAdapter rng; rng.sow(seed, 5);
+    bool observedSpecial = false, observedFallback = false;
+    constexpr size_t count = sizeof(PokerogueContent::kBerryTypes) / sizeof(PokerogueContent::kBerryTypes[0]);
+    for (unsigned i = 0; i < 128; ++i) {
+        auto expected = rng;
+        const auto roll = expected.randSeedInt(PokerogueContent::kBerryGenerationRollRange);
+        uint16_t expectedId = 0; bool special = false;
+        for (const auto& row : PokerogueContent::kBerryGenerationThresholds)
+            if (roll < row.upperExclusive) { expectedId = row.berryId; special = true; break; }
+        if (!special) expectedId = PokerogueContent::kBerryTypes[expected.randSeedInt(
+            count - PokerogueContent::kBerryGenerationExcludedCount) + PokerogueContent::kBerryGenerationOffset].id;
+        observedSpecial |= special; observedFallback |= !special;
+        uint16_t actual = 0xffff;
+        if (!generateCanonicalBerryType(rng, actual) || actual != expectedId ||
+            rng.randSeedUint32() != expected.randSeedUint32()) return 10260;
+    }
+    if (!observedSpecial || !observedFallback || !*PokerogueContent::kBerryEnumSource.sourceHash ||
+        !*PokerogueContent::kBerryGenerationSource.sourceHash) return 10261;
+    FirstRunRuntime game(1), replay(2);
+    NativeRunSave won{};
+    if (!captureActiveTestCheckpoint(game, won)) return 10262;
+    won.stage = NativeSaveStage::BattleWon; won.enemyHp = 0;
+    setSingleParticipantFixture(won, game);
+    if (!game.restoreNativeRunSave(won) || !replay.restoreNativeRunSave(won) ||
+        !game.advanceBattleTurn() || !replay.advanceBattleTurn() ||
+        !game.advanceBattleTurn() || !replay.advanceBattleTurn()) return 10263;
+    bool berryProduced = false;
+    if (game.rewardChoiceCount() != replay.rewardChoiceCount()) return 10264;
+    for (uint8_t slot = 0; slot < game.rewardChoiceCount(); ++slot) {
+        const auto* choice = game.rewardChoice(slot);
+        const auto* repeated = replay.rewardChoice(slot);
+        if (!choice || !repeated || !choice->poolEntry || !repeated->poolEntry ||
+            std::strcmp(choice->poolEntry->itemId, repeated->poolEntry->itemId) ||
+            choice->berryType != repeated->berryType) return 10265;
+        if (std::strcmp(choice->poolEntry->itemId, "BERRY")) {
+            if (choice->berryType != -1) return 10266;
+            continue;
+        }
+        berryProduced = true; bool validType = false;
+        for (const auto& type : PokerogueContent::kBerryTypes) validType |= type.id == choice->berryType;
+        if (!validType) return 10267;
+    }
+    return berryProduced ? 0 : 10268;
+}
+
+static int checkFlinchTurnLifecycle() {
+    using namespace Pokerogue3DS;
+    PokerogueRngAdapter rng;
+    const uint16_t seed[] = {'f', 'l', 'i', 'n', 'c', 'h'};
+    rng.sow(seed, 6);
+    auto expected = rng; bool tag = false;
+    if (!applyPokemonMoveFlinch(100, true, true, tag, rng) || !tag ||
+        rng.randSeedUint32() != expected.randSeedUint32()) return 10231;
+    tag = false; expected = rng;
+    const bool roll = expected.randSeedInt(100) < 30;
+    if (!applyPokemonMoveFlinch(30, true, true, tag, rng) || tag != roll ||
+        rng.randSeedUint32() != expected.randSeedUint32()) return 10232;
+    tag = false; expected = rng;
+    if (applyPokemonMoveFlinch(30, false, true, tag, rng) || tag ||
+        rng.randSeedUint32() != expected.randSeedUint32()) return 10233;
+    tag = false; expected = rng;
+    expected.randSeedInt(100); // Suppressed zero chance still rolls in AddBattlerTagAttr.apply.
+    if (!applyPokemonMoveFlinch(0, true, true, tag, rng) || tag ||
+        rng.randSeedUint32() != expected.randSeedUint32()) return 10244;
+    tag = false; expected = rng;
+    if (!applyPokemonMoveFlinch(30, true, false, tag, rng) || tag ||
+        rng.randSeedUint32() != expected.randSeedUint32()) return 10245;
+    if (!singleDamageFlinchMove(310) || !neutralPokemonFlinchCallbacks(65) ||
+        neutralPokemonFlinchCallbacks(39) || singleDamageFlinchMove(157)) return 10234;
+    const auto* innerFocus = pokemonFlinchAbilityProfile(39);
+    const auto* steadfast = pokemonFlinchAbilityProfile(80);
+    if (!innerFocus || !innerFocus->callbacksResolved || !innerFocus->blocksFlinch ||
+        !steadfast || !steadfast->callbacksResolved || steadfast->reactionStatMask != 16 || steadfast->reactionStages != 1) return 10246;
+    PokemonBattleState reactionActor{}, reactionObserver{};
+    reactionActor.hp = reactionObserver.hp = 10;
+    reactionActor.abilityId = 80;
+    reactionObserver.abilityId = 65;
+    PokemonStatStageEffectEvent reaction{};
+    expected = rng;
+    if (executePokemonFlinchStatReaction(reactionActor, reactionObserver, true, reaction) != PokemonStatStageEffectResult::Ok ||
+        reactionActor.statStages[4] != 1 || reaction.changedStatMask != 16 ||
+        rng.randSeedUint32() != expected.randSeedUint32()) return 10249;
+    reactionActor.statStages[4] = 6;
+    if (executePokemonFlinchStatReaction(reactionActor, reactionObserver, true, reaction) != PokemonStatStageEffectResult::Ok ||
+        reactionActor.statStages[4] != 6 || reaction.changedStatMask || reaction.requestedStages != 1) return 10250;
+    if (executePokemonFlinchStatReaction(reactionActor, reactionObserver, false, reaction) != PokemonStatStageEffectResult::UnresolvedPolicy ||
+        reactionActor.statStages[4] != 6) return 10251;
+    bool hasCopyObserver = false;
+    for (const auto& profile : PokerogueContent::kAbilityStatStageProfiles) {
+        if (!profile.copiesRaises) continue;
+        reactionObserver.abilityId = profile.abilityId;
+        hasCopyObserver = true; break;
+    }
+    if (!hasCopyObserver || executePokemonFlinchStatReaction(reactionActor, reactionObserver, true, reaction) !=
+            PokemonStatStageEffectResult::Ok || reactionActor.statStages[4] != 6 ||
+        reactionObserver.statStages[4] != 1) return 10252;
+    tag = false; expected = rng;
+    expected.randSeedInt(100);
+    if (!applyPokemonMoveFlinch(30, innerFocus->callbacksResolved, true, tag, rng, innerFocus->blocksFlinch) || tag ||
+        rng.randSeedUint32() != expected.randSeedUint32()) return 10247;
+    tag = false; expected = rng;
+    if (!applyPokemonMoveFlinch(100, innerFocus->callbacksResolved, true, tag, rng, innerFocus->blocksFlinch) || tag ||
+        rng.randSeedUint32() != expected.randSeedUint32()) return 10248;
+    FirstRunRuntime game(1);
+    int16_t effectiveChance = -1;
+    if (!resolvePokemonMoveEffectChance(44, 65, 19, false, effectiveChance) || effectiveChance != 0) return 10242;
+    bool neutralEncounter = false;
+    for (uint32_t sourceSeed = 1; sourceSeed <= 64; ++sourceSeed) {
+        if (!game.restoreSetup(sourceSeed, 1)) return 10243;
+        if (neutralPokemonFlinchCallbacks(game.presentation().enemy.battleState.abilityId) &&
+            resolvePokemonMoveEffectChance(44, game.presentation().player.battleState.abilityId,
+                game.presentation().enemy.battleState.abilityId, false, effectiveChance) && effectiveChance == 30) {
+            neutralEncounter = true; break;
+        }
+    }
+    NativeRunSave checkpoint{};
+    if (!neutralEncounter || !captureActiveTestCheckpoint(game, checkpoint)) return 10235;
+    const auto* move = PokerogueContent::findMoveById(44);
+    checkpoint.playerMoveCount = checkpoint.playerParty[0].moveCount = 1;
+    checkpoint.playerParty[0].maxPpResolved = true;
+    for (uint8_t i = 0; i < 4; ++i) {
+        checkpoint.playerMoveIds[i] = checkpoint.playerParty[0].moveIds[i] = i ? 0 : move->id;
+        checkpoint.playerPp[i] = checkpoint.playerParty[0].pp[i] = i ? 0 : move->pp;
+        checkpoint.playerParty[0].maxPp[i] = i ? 0 : move->pp;
+    }
+    // Keep the canonical low-level target alive so the secondary tag can apply.
+    checkpoint.playerStatStages[0] = checkpoint.playerParty[0].statStages[0] = -6;
+    checkpoint.playerStatStages[4] = checkpoint.playerParty[0].statStages[4] = 6;
+    bool observed = false;
+    for (uint32_t turn = 1; turn <= 128 && !observed; ++turn) {
+        checkpoint.battleTurn = turn;
+        if (!game.restoreNativeRunSave(checkpoint) || !game.battleInputSupported() || !game.advanceBattleTurn()) return 10236;
+        if (game.battleFeedback() != "Pokemon flinched") continue;
+        observed = true;
+        if (game.presentation().player.battleState.moves[0].pp != move->pp - 1 ||
+            game.presentation().player.battleState.hp != checkpoint.playerHp) return 10237;
+        for (uint8_t slot = 0; slot < checkpoint.enemyMoveCount; ++slot)
+            if (game.presentation().enemy.battleState.moves[slot].pp != checkpoint.enemyPp[slot]) return 10238;
+        NativeRunSave after{};
+        FirstRunRuntime restored(2);
+        if (game.captureNativeRunSave(after) != NativeSaveResult::Ok || !restored.restoreNativeRunSave(after) ||
+            !game.advanceBattleTurn() || !restored.advanceBattleTurn()) return 10239;
+        const auto a = game.battleRng().state(), b = restored.battleRng().state();
+        if (a.s0 != b.s0 || a.s1 != b.s1 || a.s2 != b.s2 || a.carry != b.carry ||
+            game.presentation().player.battleState.hp != restored.presentation().player.battleState.hp ||
+            game.presentation().enemy.battleState.hp != restored.presentation().enemy.battleState.hp) return 10240;
+    }
+    return observed ? 0 : 10241;
+}
+
+static int checkPersistentExperienceRewards() {
+    using namespace Pokerogue3DS;
+    NativePersistentModifierInstance records[kNativePersistentModifierCapacity]{};
+    size_t count = 0;
+    const auto& policy = PokerogueContent::kClassicFixedModifierRewardPolicy;
+    ClassicFixedModifierRewards rewards{};
+    if (!planClassicFixedModifierRewards(10, false, rewards) || rewards.count != 2 ||
+        std::strcmp(rewards.itemIds[0], policy.experienceItemId) ||
+        std::strcmp(rewards.itemIds[1], policy.experienceItemId)) return 10200;
+    for (uint8_t i = 0; i < rewards.count; ++i)
+        if (!addPersistentExperienceReward(records, kNativePersistentModifierCapacity, count, rewards.itemIds[i])) return 10201;
+    uint32_t award = 0;
+    if (count != 1 || records[0].stackCount != 2 ||
+        !applyPersistentExperienceBoosters(11, records, count, award) || award != 16) return 10202;
+    if (!addPersistentExperienceReward(records, kNativePersistentModifierCapacity, count, policy.superExperienceItemId) ||
+        !applyPersistentExperienceBoosters(11, records, count, award) || award != 25) return 10203;
+    auto limited = records[0];
+    const auto* profile = expBoosterItemProfile(policy.experienceItemId);
+    if (!profile || profile->boostPercent != 25 || profile->maxStacks != 99) return 10204;
+    records[0].stackCount = profile->maxStacks;
+    if (addPersistentExperienceReward(records, kNativePersistentModifierCapacity, count, policy.experienceItemId) ||
+        records[0].stackCount != profile->maxStacks) return 10205;
+    records[0] = limited;
+    award = 123;
+    if (applyPersistentExperienceBoosters(0xffffffffU, records, count, award) || award != 123) return 10206;
+    records[0].rawArguments[0] = 'x';
+    if (persistentExperienceInventorySupported(records, count)) return 10207;
+    char encoded[1024]{}; size_t size = 0;
+    NativePersistentModifierInstance decoded{};
+    if (encodeNativePersistentModifier(records[0], encoded, sizeof(encoded), size) != NativeSaveResult::Ok ||
+        decodeNativePersistentModifier(encoded, size, decoded) != NativeSaveResult::Ok ||
+        decoded.stackCount != records[0].stackCount || std::strcmp(decoded.rawArguments, "x")) return 10208;
+    records[0].rawArguments[0] = 0;
+    if (!planClassicFixedModifierRewards(50, false, rewards) || rewards.count != 2 ||
+        std::strcmp(rewards.itemIds[1], policy.goldenItemId) ||
+        addPersistentExperienceReward(records, kNativePersistentModifierCapacity, count, policy.goldenItemId)) return 10209;
+    return 0;
 }
 
 static int checkBiomeTransitionProgression() {
@@ -1158,7 +2359,7 @@ static int checkBiomeTransitionProgression() {
         bool eligible = true;
         for (uint16_t wave = 1; wave <= 9; ++wave) {
             NativeRunSave skipSave{};
-            game.captureNativeRunSave(skipSave);
+            if (!captureActiveTestCheckpoint(game, skipSave)) { eligible = false; break; }
             skipSave.stage = NativeSaveStage::BattleWon;
             setSingleParticipantFixture(skipSave, game);
             skipSave.enemyHp = 0;
@@ -1202,7 +2403,7 @@ static int checkBiomeTransitionProgression() {
         setSingleParticipantFixture(wave10Won, game);
         wave10Won.enemyHp = 0;
         if (!game.restoreNativeRunSave(wave10Won) || !game.advanceBattleTurn()) return 81;
-        if (!game.skipVictoryReward()) return 82;
+        if (!game.skipVictoryReward()) { std::printf("Biome transition seed=%u wave=%u biome=%s feedback=%s\n", seed, game.run().wave, game.run().biomeId, game.battleFeedback().c_str()); return 82; }
         if (game.run().wave != 11) return 83;
         if (std::strcmp(game.run().biomeId, "town") == 0) return 84;
         if (!game.presentation().biomeName || !*game.presentation().biomeName) return 85;
@@ -1212,11 +2413,21 @@ static int checkBiomeTransitionProgression() {
         if (captured == NativeSaveResult::UnsupportedStage) continue;
         if (captured != NativeSaveResult::Ok || laterCheckpoint.wave != 11 ||
             !laterCheckpoint.playerPartyCount || std::strcmp(laterCheckpoint.biomeId, game.run().biomeId)) return 10120;
+        if (laterCheckpoint.persistentModifierCount != 1 || laterCheckpoint.persistentModifiers[0].stackCount != 2 ||
+            std::strcmp(persistentModifierDefinition(laterCheckpoint.persistentModifiers[0])->id,
+                PokerogueContent::kClassicFixedModifierRewardPolicy.experienceItemId)) return 10210;
+        char checkpointBytes[kNativeSaveMaxBytes]{}; size_t checkpointSize = 0;
+        NativeRunSave decodedCheckpoint{};
+        if (encodeNativeRunSave(laterCheckpoint, checkpointBytes, sizeof(checkpointBytes), checkpointSize) != NativeSaveResult::Ok ||
+            decodeNativeRunSave(checkpointBytes, checkpointSize, PokerogueContent::kContentHash, decodedCheckpoint) != NativeSaveResult::Ok ||
+            decodedCheckpoint.persistentModifierCount != 1 || decodedCheckpoint.persistentModifiers[0].stackCount != 2) return 10211;
+        laterCheckpoint = decodedCheckpoint;
         FirstRunRuntime laterRestore(seed), laterReplay(seed);
         NativeRunSave recaptured{}, replayCaptured{};
         if (!laterRestore.restoreNativeRunSave(laterCheckpoint) || !laterReplay.restoreNativeRunSave(laterCheckpoint) ||
             laterRestore.captureNativeRunSave(recaptured) != NativeSaveResult::Ok ||
             laterReplay.captureNativeRunSave(replayCaptured) != NativeSaveResult::Ok ||
+            recaptured.persistentModifierCount != 1 || recaptured.persistentModifiers[0].stackCount != 2 ||
             recaptured.wave != 11 || recaptured.encounterDex != laterCheckpoint.encounterDex ||
             std::strcmp(recaptured.biomeId, laterCheckpoint.biomeId) ||
             recaptured.playerHp != laterCheckpoint.playerHp || recaptured.enemyHp != laterCheckpoint.enemyHp ||
@@ -1309,7 +2520,7 @@ static int checkWave200FinalBossAndGameClear() {
     const auto* finalSpecies = PokerogueContent::findSpeciesByDex(890);
     PokemonBattleInit bossInput{};
     bossInput.speciesDex = 890;
-    bossInput.formId = finalSpecies->firstFormId;
+    bossInput.formId = finalSpecies->firstFormId[0] ? finalSpecies->firstFormId : nullptr;
     bossInput.level = 200;
     bossInput.abilityId = finalSpecies->ability1;
     bossInput.gender = PokemonGender::Genderless;
@@ -1828,7 +3039,6 @@ static int checkWave200FinalBossAndGameClear() {
     if (applyPokemonFixedEnemyMovePp(*firstPhase, bossActor) ||
         bossActor.moves[3].maxPp != preservedBoss.moves[3].maxPp) return 338;
 
-
     // Recovery weights include reserves; current active can be completely healthy.
     PokemonBattleState rewardActors[6]{};
     const PokemonBattleState* rewardParty[6]{};
@@ -2076,7 +3286,7 @@ static int checkPokeballCaptureMechanics() {
     // Wild catch test with standard Poké Ball on weakened wild mon:
     FirstRunRuntime wildGame(1);
     NativeRunSave wildSave{};
-    wildGame.captureNativeRunSave(wildSave);
+    if (!captureActiveTestCheckpoint(wildGame, wildSave)) return 150;
     wildSave.wave = 1;
     wildSave.stage = NativeSaveStage::BattleActive;
     wildSave.encounterDex = wildGame.presentation().enemy.dex;
@@ -2119,7 +3329,7 @@ static int checkPlayerPartyManagementAndSwitching() {
 
     // Setup wild capture to grow party to 2:
     NativeRunSave wildSave{};
-    game.captureNativeRunSave(wildSave);
+    if (!captureActiveTestCheckpoint(game, wildSave)) return 167;
     wildSave.wave = 1;
     wildSave.stage = NativeSaveStage::BattleActive;
     wildSave.encounterDex = game.presentation().enemy.dex;
@@ -2349,6 +3559,7 @@ static int checkPlayerPartyManagementAndSwitching() {
                 if (fullPartySave.playerParty[prior].pokemonId == id) { ++id; collision = true; break; }
         }
         fullPartySave.playerParty[member].pokemonId = id;
+        fullPartySave.playerParty[member].ivsDerivedFromId = false; // Preserve explicit IVs for the new test identity.
     }
     fullPartySave.enemyHp = 1;
     fullPartySave.pokeballCounts[static_cast<uint8_t>(PokeballType::MasterBall)] = 1;
@@ -2662,8 +3873,8 @@ static int checkPlayerPartyManagementAndSwitching() {
         restoredPartyGame.presentation().player.dex != caughtDex ||
         restoredPartyGame.presentation().player.totalExperience != activeReserve.experience) return 295;
     auto invalidReserveSave = reserveActiveSave;
-    const auto* reserveSpecies = PokerogueContent::findSpeciesByDex(invalidReserveSave.playerParty[0].speciesDex);
-    if (!reserveSpecies || pokemonTotalExperienceForLevel(reserveSpecies->growthRate,
+    const auto* invalidReserveSpecies = PokerogueContent::findSpeciesByDex(invalidReserveSave.playerParty[0].speciesDex);
+    if (!invalidReserveSpecies || pokemonTotalExperienceForLevel(invalidReserveSpecies->growthRate,
             invalidReserveSave.playerParty[0].level + 1, invalidReserveSave.playerParty[0].experience) !=
             PokemonExperienceResult::Ok) return 296;
     if (validateNativeRunSave(invalidReserveSave, PokerogueContent::kContentHash) !=
@@ -2677,6 +3888,21 @@ static int checkPlayerPartyManagementAndSwitching() {
             game.playerPartyMember(1)->level, expectedReserveExperience) != PokemonExperienceResult::Ok ||
         reserveExperience != expectedReserveExperience) return 221;
 
+    // Capture retained 1 HP. A switch consumes a turn; the enemy can faint
+    // the incoming reserve and the living starter must be sent automatically.
+    auto lowHpSwitchGame = game;
+    if (lowHpSwitchGame.playerPartyMember(1)->battleState.hp != 1 ||
+        !lowHpSwitchGame.switchPlayerPokemon(1) || lowHpSwitchGame.activePlayerPartyIndex() != 0 ||
+        lowHpSwitchGame.playerPartyMember(1)->battleState.hp || lowHpSwitchGame.playerPartyDefeated()) return 10220;
+    // Test held ownership and ordinary switching with healthy canonical actors,
+    // independently of the forced faint/replacement path checked above.
+    NativeRunSave healthySwitchSave{};
+    if (game.captureNativeRunSave(healthySwitchSave) != NativeSaveResult::Ok ||
+        healthySwitchSave.playerPartyCount != 2) return 10221;
+    for (uint8_t member = 0; member < 2; ++member)
+        healthySwitchSave.playerParty[member].hp = game.playerPartyMember(member)->battleState.maxHp;
+    healthySwitchSave.playerHp = healthySwitchSave.playerParty[healthySwitchSave.activePlayerMember].hp;
+    if (!game.restoreNativeRunSave(healthySwitchSave)) return 10222;
     auto healingSwitchGame = game;
     NativeHeldModifierInstance switchHealing[2]{};
     const uint32_t outgoingPid = game.presentation().player.battleState.pokemonId;
@@ -2690,7 +3916,7 @@ static int checkPlayerPartyManagementAndSwitching() {
         healingSwitchGame.heldModifierCount() != 2 ||
         healingSwitchGame.heldModifier(0)->ownerPokemonId != outgoingPid ||
         healingSwitchGame.heldModifier(1)->ownerPokemonId != incomingPid ||
-        healingSwitchGame.presentation().player.battleState.turnDamageDealt) return 440;
+        healingSwitchGame.presentation().player.battleState.turnDamageDealt) { std::printf("Switch feedback=%s finished=%u\n", healingSwitchGame.battleFeedback().c_str(), healingSwitchGame.battleFinished()); return 440; }
     const auto heldRecipientWave = healingSwitchGame.run().wave;
     if (healingSwitchGame.claimHeldRewardChoice(255) ||
         healingSwitchGame.claimHeldRewardChoice(0) || healingSwitchGame.run().wave != heldRecipientWave ||
@@ -2730,8 +3956,16 @@ static int checkPlayerPartyManagementAndSwitching() {
     FirstRunRuntime simultaneousGame(1);
     for (uint32_t turn = 1; turn <= 128 && !testedSimultaneous; ++turn) {
         simultaneous.battleTurn = turn;
-        if (!simultaneousGame.restoreNativeRunSave(simultaneous) ||
-            !simultaneousGame.battleInputSupported()) return 560;
+        if (!simultaneousGame.restoreNativeRunSave(simultaneous)) {
+            std::printf("Simultaneous checkpoint rejected: %s\n", simultaneousGame.battleFeedback().c_str()); return 560;
+        }
+        if (!simultaneousGame.battleInputSupported()) {
+            std::printf("Simultaneous move unsupported: %s player=%u enemy=%u\n", simultaneousGame.battleFeedback().c_str(),
+                simultaneousGame.presentation().player.battleState.abilityId, simultaneousGame.presentation().enemy.battleState.abilityId);
+            for (const auto& slot : simultaneousGame.presentation().enemy.battleState.moves)
+                std::printf("Simultaneous enemy move=%u pp=%u\n", slot.moveId, slot.pp);
+            return 560;
+        }
         if (!simultaneousGame.advanceBattleTurn()) return 561;
         if (simultaneousGame.playerPartyMember(0)->battleState.hp ||
             simultaneousGame.presentation().enemy.battleState.hp) continue; // Accuracy/turn-order outcomes.
@@ -2808,7 +4042,8 @@ static int checkLevelUpMoveLearningAndEvolution() {
     evolutionIdentity.initialTeraTypeResolved = true;
     for (uint8_t i = 0; i < 6; ++i) evolutionIdentity.ivs[i] = bulbaState.ivs[i];
     if (!applySpeciesEvolution(1, "ivysaur", bulbaState, evoRes, &evoFb, &evolutionIdentity)) return 195;
-    if (!evolutionIdentity.formId || std::strcmp(evolutionIdentity.formId, bulbaState.formId) ||
+    if ((evolutionIdentity.formId != bulbaState.formId &&
+            (!evolutionIdentity.formId || !bulbaState.formId || std::strcmp(evolutionIdentity.formId, bulbaState.formId))) ||
         evolutionIdentity.abilityIndex != 0) return 298;
     uint32_t evolvedExperience = 0;
     const auto* evolvedSpecies = PokerogueContent::findSpeciesByDex(2);
@@ -2933,7 +4168,7 @@ static int checkLevelUpMoveLearningAndEvolution() {
     if (!onix || !steelix) return 330;
     PokemonBattleInit onixInput = bulbaInit;
     onixInput.speciesDex = onix->dex;
-    onixInput.formId = onix->firstFormId;
+    onixInput.formId = onix->firstFormId[0] ? onix->firstFormId : nullptr;
     onixInput.abilityId = onix->ability1;
     PokemonBattleState onixState{};
     if (initializePokemonBattleState(onixInput, onixState) != PokemonBattleInitResult::Ok) return 331;
@@ -2947,8 +4182,8 @@ static int checkLevelUpMoveLearningAndEvolution() {
     for (uint8_t i = 0; i < 6; ++i) onixIdentity.ivs[i] = onixState.ivs[i];
     EvolutionResult steelixEvolution{};
     if (!applySpeciesEvolution(onix->dex, steelix->id, onixState, steelixEvolution, nullptr, &onixIdentity) ||
-        !onixIdentity.initialTeraType || std::strcmp(onixIdentity.initialTeraType, onix->type1) ||
-        !std::strcmp(onixIdentity.initialTeraType, steelix->type1)) return 332;
+        !onixIdentity.initialTeraType || std::strcmp(onixIdentity.initialTeraType, resolvePokemonTypeSymbol(onix->type1)) ||
+        !std::strcmp(onixIdentity.initialTeraType, resolvePokemonTypeSymbol(steelix->type1))) return 332;
     uint32_t steelixExp = 0;
     NativePokemonSave steelixSave{};
     PokemonBattleState restoredSteelix{};
@@ -2956,11 +4191,11 @@ static int checkLevelUpMoveLearningAndEvolution() {
     if (pokemonTotalExperienceForLevel(steelix->growthRate, onixState.level, steelixExp) !=
             PokemonExperienceResult::Ok || !captureNativePokemonActorSave(onixState, onixIdentity,
                 steelixExp, steelixSave) || !restoreNativePokemonActorSave(steelixSave, restoredSteelix,
-                restoredSteelixIdentity) || std::strcmp(restoredSteelixIdentity.initialTeraType, onix->type1))
+                restoredSteelixIdentity) || std::strcmp(restoredSteelixIdentity.initialTeraType, resolvePokemonTypeSymbol(onix->type1)))
         return 333;
     std::strcpy(steelixSave.initialTeraType, "INVALID_TYPE");
     if (restoreNativePokemonActorSave(steelixSave, restoredSteelix, restoredSteelixIdentity) ||
-        std::strcmp(restoredSteelixIdentity.initialTeraType, onix->type1)) return 334;
+        std::strcmp(restoredSteelixIdentity.initialTeraType, resolvePokemonTypeSymbol(onix->type1))) return 334;
     // 3. Check learnNewLevelMoves
     // Bulbasaur learns Vine Whip (id 22) or Leech Seed at early levels
     PokemonBattleState learnState = bulbaState;
@@ -2985,7 +4220,7 @@ static int checkBossDamageAbilityCapabilities() {
             ++inspected;
         }
         if (std::strcmp(profile.sourceSymbol, "AbilityId.STURDY") == 0) {
-            if (profile.bossDamageCallbacksResolved) return 262;
+            if (!profile.bossDamageCallbacksResolved) return 262; // Pinned Sturdy endurance and OHKO attributes are implemented.
             ++inspected;
         }
     }
@@ -3023,8 +4258,8 @@ static int checkCanonicalTrainerSpecialtyTypes() {
         if (!trainer.specialtyTypeResolved || !trainer.specialtyType || !*trainer.specialtyType) continue;
         bool canonicalType = false;
         for (const auto& species : PokerogueContent::kSpecies)
-            if ((species.type1 && std::strcmp(species.type1, trainer.specialtyType) == 0) ||
-                (species.type2 && std::strcmp(species.type2, trainer.specialtyType) == 0)) canonicalType = true;
+            if ((Pokerogue3DS::resolvePokemonTypeSymbol(species.type1) && std::strcmp(Pokerogue3DS::resolvePokemonTypeSymbol(species.type1), trainer.specialtyType) == 0) ||
+                (Pokerogue3DS::resolvePokemonTypeSymbol(species.type2) && std::strcmp(Pokerogue3DS::resolvePokemonTypeSymbol(species.type2), trainer.specialtyType) == 0)) canonicalType = true;
         if (!canonicalType) return 250;
     }
     return inspected == 2 ? 0 : 251;
@@ -3034,9 +4269,9 @@ static int checkTrainerBalancedTypes() {
     using namespace Pokerogue3DS;
     const auto* species = PokerogueContent::findSpeciesByDex(1);
     if (!species || !species->type1) return 242;
-    const auto* form = PokerogueContent::findFormById(species->firstFormId);
-    if (!form) return 243;
-    TrainerPartyMemberTypes prior[] = {{form->type1, form->type2, true}};
+    const auto* form = species->firstFormId[0] ? PokerogueContent::findFormById(species->firstFormId) : nullptr;
+    if (species->firstFormId[0] && !form) return 243;
+    TrainerPartyMemberTypes prior[] = {{form ? form->type1 : species->type1, form ? form->type2 : species->type2, true}};
     bool overlap = false;
     if (!trainerBalancedTypeOverlap(*species, prior, 1, overlap) || !overlap) return 244;
     if (!trainerBalancedTypeOverlap(*species, nullptr, 0, overlap) || overlap) return 245;
@@ -3047,11 +4282,11 @@ static int checkTrainerBalancedTypes() {
     unsigned disjoint = 0;
     prior[0].resolved = true;
     for (const auto& other : PokerogueContent::kSpecies) {
-        const bool expected = std::strcmp(other.type1, form->type1) == 0 ||
-            (form->type2 && std::strcmp(form->type2, "NONE") && std::strcmp(other.type1, form->type2) == 0) ||
+        const bool expected = std::strcmp(other.type1, prior[0].type1) == 0 ||
+            (prior[0].type2 && std::strcmp(prior[0].type2, "NONE") && std::strcmp(other.type1, prior[0].type2) == 0) ||
             (other.type2 && std::strcmp(other.type2, "NONE") &&
-                (std::strcmp(other.type2, form->type1) == 0 ||
-                 (form->type2 && std::strcmp(form->type2, "NONE") && std::strcmp(other.type2, form->type2) == 0)));
+                (std::strcmp(other.type2, prior[0].type1) == 0 ||
+                 (prior[0].type2 && std::strcmp(prior[0].type2, "NONE") && std::strcmp(other.type2, prior[0].type2) == 0)));
         if (!trainerBalancedTypeOverlap(other, prior, 1, overlap) || overlap != expected) return 247;
         if (!overlap) ++disjoint;
     }
@@ -3415,7 +4650,11 @@ static int checkDoubleLocalStageAbilities() {
             // Canonical ability IDs in test-only context; no production actor identity changes.
             target.abilityId = abilityIds[caseIndex];
             const uint16_t beforeHp = target.hp;
-            if (!game.doubleBattleSupported() || !game.advanceBattleTurn()) return 10411;
+            if (!game.doubleBattleSupported() || !game.advanceBattleTurn()) {
+                std::printf("Stage ability integration failed: seed=%u ability=%u feedback=%s\n",
+                    static_cast<unsigned>(seed), static_cast<unsigned>(target.abilityId), game.battleFeedback().c_str());
+                return 10411;
+            }
             if (target.statStages[0] != expectedStages[caseIndex] || target.hp != beforeHp ||
                 game.presentation().enemy.battleState.statStages[0] != -1 ||
                 game.presentation().player.battleState.moves[0].pp) return 10412;
@@ -3651,7 +4890,12 @@ static int checkDoublePlainAreaDamage() {
             field.enemy.battleState.hp >= enemyHp || field.secondEnemy.battleState.hp >= secondHp) return 10375;
         NativeRunSave saved{};
         FirstRunRuntime restored(seed);
-        if (game.captureNativeRunSave(saved) != NativeSaveResult::Ok || !restored.restoreNativeRunSave(saved) ||
+        const auto saveResult = game.captureNativeRunSave(saved);
+        const bool restoreResult = saveResult == NativeSaveResult::Ok && restored.restoreNativeRunSave(saved);
+        if (saveResult != NativeSaveResult::Ok || !restoreResult)
+            std::printf("Area checkpoint failed: seed=%u save=%u restore=%u\n", static_cast<unsigned>(seed),
+                static_cast<unsigned>(saveResult), static_cast<unsigned>(restoreResult));
+        if (saveResult != NativeSaveResult::Ok || !restoreResult ||
             restored.presentation().player.battleState.moves[0].moveId != swift->id ||
             restored.presentation().player.battleState.moves[0].pp ||
             restored.presentation().enemy.battleState.hp != field.enemy.battleState.hp ||
@@ -3866,7 +5110,7 @@ static int checkDoublePartialExperienceCheckpoint() {
         if (game.battleFinished() || field.enemy.battleState.hp || !field.secondEnemy.battleState.hp) continue;
         for (unsigned decision = 0; decision < 32 && (game.moveLearningPending() || game.evolutionPending()); ++decision) {
             if (game.moveLearningPending()) { if (!game.resolvePendingLearnMove(-1)) return 10301; }
-            else if (!game.finishPendingEvolution(false)) return 10302;
+            else if (!game.skipVictoryReward()) return 10302;
         }
         NativeRunSave checkpoint{};
         if (game.captureNativeRunSave(checkpoint) != NativeSaveResult::Ok || !checkpoint.doubleBattle ||
@@ -4032,58 +5276,8 @@ static int checkExhaustedPpStruggleReplay() {
     return 10227; // Fail if no real eligible encounter was exercised.
 }
 
-int main() {
-    const int poisonHealDouble = checkDoublePoisonHealTurn();
-    if (poisonHealDouble) return poisonHealDouble;
-    const int speedChangeTurn = checkDynamicDoubleSpeedChangeTurn();
-    if (speedChangeTurn) return speedChangeTurn;
-    const int mirrorProtection = checkDoubleMirrorArmorSourceProtection();
-    if (mirrorProtection) return mirrorProtection;
-    const int dropReactions = checkDoubleSingleTargetDropReactions();
-    if (dropReactions) return dropReactions;
-    const int doubleStageAbilities = checkDoubleLocalStageAbilities();
-    if (doubleStageAbilities) return doubleStageAbilities;
-    const int enemyAreaStats = checkEnemyAreaStatAction();
-    if (enemyAreaStats) return enemyAreaStats;
-    const int enemyArea = checkEnemyAreaAllyDamage();
-    if (enemyArea) return enemyArea;
-    const int areaHits = checkDoubleAreaHitBatchRng();
-    if (areaHits) return areaHits;
-    const int spreadDamage = checkDoublePlainAreaDamage();
-    if (spreadDamage) return spreadDamage;
-    const int areaAction = checkDoubleAreaActionChecksAndLastPp();
-    if (areaAction) return areaAction;
-    const int doubleSleep = checkDoubleSingleTargetSleepCheckpoint();
-    if (doubleSleep) return doubleSleep;
-    const int doubleResidual = checkDoubleStatusResidualCheckpoint();
-    if (doubleResidual) return doubleResidual;
-    const int partialExperience = checkDoublePartialExperienceCheckpoint();
-    if (partialExperience) return partialExperience;
-    const int doubleCheckpoint = checkDoubleCheckpointRoundtrip();
-    if (doubleCheckpoint) return doubleCheckpoint;
-    const int doubleStruggle = checkDoubleExhaustedPpStruggle();
-    if (doubleStruggle) return doubleStruggle;
-    const int struggleReplay = checkExhaustedPpStruggleReplay();
-    if (struggleReplay) return struggleReplay;
-    const int statusAdmissionCheck = checkStatusActionAdmission();
-    if (statusAdmissionCheck) return statusAdmissionCheck;
+static int checkLegacyFirstRunRestore() {
 
-    const int bossCapabilitiesCheck = checkBossDamageAbilityCapabilities();
-    if (bossCapabilitiesCheck) return bossCapabilitiesCheck;
-    const int parentThresholdCheck = checkTrainerParentEvolutionThresholds();
-    if (parentThresholdCheck) return parentThresholdCheck;
-    const int specialtyCheck = checkCanonicalTrainerSpecialtyTypes();
-    if (specialtyCheck) return specialtyCheck;
-    const int balancedTypesCheck = checkTrainerBalancedTypes();
-    if (balancedTypesCheck) return balancedTypesCheck;
-    const int reservedSpeciesCheck = checkReservedTrainerSpecies();
-    if (reservedSpeciesCheck) return reservedSpeciesCheck;
-    const int poolDrawCheck = checkTrainerPoolEvolutionDraws();
-    if (poolDrawCheck) return poolDrawCheck;
-    const int sameSpeciesCheck = checkCanonicalSameSpeciesTrainerMembers();
-    if (sameSpeciesCheck) return sameSpeciesCheck;
-    const int signatureCheck = checkCanonicalTrainerSignatureSlots();
-    if (signatureCheck) return signatureCheck;
     // A high new level must not wrap to negative and hide real low-level moves.
     {
         Pokerogue3DS::PokemonBattleState learner{};
@@ -4159,7 +5353,7 @@ int main() {
         game.captureNativeRunSave(beforeTransition);
         if (game.skipVictoryReward() || game.claimRewardChoice()) return 226;
         game.captureNativeRunSave(afterTransition);
-        uint8_t beforeBytes[kNativeSaveMaxBytes]{}, afterBytes[kNativeSaveMaxBytes]{};
+        char beforeBytes[kNativeSaveMaxBytes]{}, afterBytes[kNativeSaveMaxBytes]{};
         size_t beforeLength = 0, afterLength = 0;
         if (encodeNativeRunSave(beforeTransition, beforeBytes, sizeof(beforeBytes), beforeLength) != NativeSaveResult::Ok ||
             encodeNativeRunSave(afterTransition, afterBytes, sizeof(afterBytes), afterLength) != NativeSaveResult::Ok ||
@@ -4244,14 +5438,15 @@ int main() {
         if (std::strcmp(stableBiome.run().biomeId, loaded.biomeId)) return 10113;
         NativePokemonSave actorSnapshot{};
         const auto& currentActor = game.presentation().player;
-        if (!captureNativePokemonSave(currentActor.battleState, currentActor.totalExperience,
+        if (!captureNativePokemonActorSave(currentActor.battleState, currentActor.actor, currentActor.totalExperience,
                 actorSnapshot)) return 269;
         PokemonBattleState restoredActor{};
         if (!restoreNativePokemonSave(actorSnapshot, restoredActor) ||
             restoredActor.pokemonId != currentActor.battleState.pokemonId ||
             restoredActor.hp != currentActor.battleState.hp ||
             restoredActor.formId == actorSnapshot.formId ||
-            std::strcmp(restoredActor.formId, actorSnapshot.formId)) return 270;
+            (actorSnapshot.formId[0] ? (!restoredActor.formId || std::strcmp(restoredActor.formId, actorSnapshot.formId))
+                : restoredActor.formId != nullptr)) return 270;
         for (uint8_t stat = 0; stat < 6; ++stat)
             if (restoredActor.stats[stat] != currentActor.battleState.stats[stat] ||
                 restoredActor.ivs[stat] != currentActor.battleState.ivs[stat]) return 271;
@@ -4263,12 +5458,12 @@ int main() {
         PokemonLevelIncrementPlan candyPlan{};
         if (!candySpecies || planPokemonLevelIncrement(candySpecies->growthRate,
                 actorSnapshot.level, actorSnapshot.experience, 0, true, actorSnapshot.level, candyPlan) !=
-                PokemonExperienceResult::Ok || candyPlan.progress.experience != actorSnapshot.experience)
+                PokemonExperienceResult::Ok || candyPlan.progress.totalExperience != actorSnapshot.experience)
             return 501;
         auto candyActor = currentActor.battleState;
         if (!recalculatePokemonBattleLevel(candyActor, candyPlan.progress.level)) return 502;
         NativePokemonSave candySnapshot{}, decodedCandy{};
-        if (!captureNativePokemonSave(candyActor, candyPlan.progress.experience, candySnapshot)) return 503;
+        if (!captureNativePokemonActorSave(candyActor, currentActor.actor, candyPlan.progress.totalExperience, candySnapshot)) return 503;
         char candyPayload[1024]{};
         size_t candyPayloadSize = 0;
         if (encodeNativePokemonSave(candySnapshot, candyPayload, sizeof(candyPayload), candyPayloadSize) !=
@@ -4635,11 +5830,11 @@ int main() {
         if (!heldSection) return 386;
         size_t versionTenSize = static_cast<size_t>(heldSection - heldRunPayload);
         std::memcpy(versionTenPayload, heldRunPayload, versionTenSize);
-        char* tenSaveVersion = std::strstr(versionTenPayload, "saveVersion=000d");
-        char* tenRuntimeVersion = std::strstr(versionTenPayload, "runtimeVersion=000d");
+        char* tenSaveVersion = std::strstr(versionTenPayload, "saveVersion=");
+        char* tenRuntimeVersion = std::strstr(versionTenPayload, "runtimeVersion=");
         if (!tenSaveVersion || !tenRuntimeVersion) return 387;
-        tenSaveVersion[std::strlen("saveVersion=") + 3] = 'a';
-        tenRuntimeVersion[std::strlen("runtimeVersion=") + 3] = 'a';
+        std::memcpy(tenSaveVersion + std::strlen("saveVersion="), "000a", 4);
+        std::memcpy(tenRuntimeVersion + std::strlen("runtimeVersion="), "000a", 4);
         char tenHash[65]{};
         IntegritySha256::hashHex(versionTenPayload, versionTenSize, tenHash);
         std::memcpy(versionTenPayload + versionTenSize, "sha256=", 7);
@@ -4707,35 +5902,106 @@ int main() {
         if (roomRestored.trickRoomTurnsLeft != 3 || roomRestored.trickRoomMaxDuration != 5 ||
             roomRestored.trickRoomSourceMoveId != 433 ||
             roomRestored.trickRoomSourcePokemonId != roomCheckpoint.trickRoomSourcePokemonId) return 27;
-        const int fieldCheck = checkResolvedActionFieldLifecycle();
-        if (fieldCheck) return fieldCheck;
-        const int replayCheck = checkTrainerExperienceReplay();
-        if (replayCheck) return replayCheck;
-        const int trainerCheck = checkTrainerInteractiveBattle();
-        if (trainerCheck) return trainerCheck;
-        const int rewardCheck = checkModifierRewardGenerationAndClaim();
-        if (rewardCheck) return rewardCheck;
-        const int biomeCheck = checkBiomeTransitionProgression();
-        if (biomeCheck) return biomeCheck;
-        const int doubleCheck = checkDoubleBattleTargetingAndMechanics();
-        if (doubleCheck) return doubleCheck;
-        const int bossCheck = checkWave200FinalBossAndGameClear();
-        if (bossCheck) return bossCheck;
-        const int captureCheck = checkPokeballCaptureMechanics();
-        if (captureCheck) return captureCheck;
-        const int partyCheck = checkPlayerPartyManagementAndSwitching();
-        if (partyCheck) return partyCheck;
-        const int evoCheck = checkLevelUpMoveLearningAndEvolution();
-        if (evoCheck) return evoCheck;
-        const int initialTeamCheck = checkInitialStarterTeamSetup();
-        if (initialTeamCheck) return initialTeamCheck;
-        const int firstTeamTurn = checkInitialTeamFirstTurnRoundtrip();
-        if (firstTeamTurn) return firstTeamTurn;
-        const int formPreferenceCheck = checkStarterFormPreferencePersistence();
-        if (formPreferenceCheck) return formPreferenceCheck;
-        const int purchaseCheck = checkStarterCostPurchasePersistence();
-        if (purchaseCheck) return purchaseCheck;
-        return checkExtendedWaveAndBiomeSaveValidation();
+
+        return 0;
     }
     return 7; // No supported canonical encounter found: do not silently skip.
+}
+
+static int checkSetupCatalogNavigation() {
+    Pokerogue3DS::FirstRunRuntime game(1);
+    for(const auto& species:PokerogueContent::kSpecies) {
+        const bool selected=game.selectSetupStarter(species.dex);
+        if(selected!=species.starterEligible) return 1;
+        if(selected && game.selectedSetupStarterDex()!=species.dex) return 2;
+    }
+    if(game.selectSetupStarter(0) || game.selectSetupStarter(65535)) return 3;
+    return 0;
+}
+
+static int checkBattleFleeMechanicsAndRestrictions() {
+    using namespace Pokerogue3DS;
+    FirstRunRuntime game(1);
+    if (game.fleeBattle()) return 10301;
+    if (!game.restoreSetup(1, 1)) return 10302;
+    if (!game.startRun()) return 10303;
+    if (!game.runStarted() || game.battleFinished()) return 10304;
+    if (!game.fleeBattle()) return 10305;
+    if (!game.battleFinished() || !game.playerWon() || !game.experienceGranted()) return 10306;
+    if (game.battleFeedback() != "Has huido del combate.") return 10307;
+    return 0;
+}
+
+extern "C" int runFirstRunRestoreChecks() {
+    struct Check { const char* name; int (*run)(); };
+    const Check checks[] = {
+        {"checkSetupCatalogNavigation", checkSetupCatalogNavigation},
+        {"checkBattleFleeMechanicsAndRestrictions", checkBattleFleeMechanicsAndRestrictions},
+        {"checkLegacyFirstRunRestore", checkLegacyFirstRunRestore},
+        {"checkDoublePoisonHealTurn", checkDoublePoisonHealTurn},
+        {"checkDynamicDoubleSpeedChangeTurn", checkDynamicDoubleSpeedChangeTurn},
+        {"checkDoubleMirrorArmorSourceProtection", checkDoubleMirrorArmorSourceProtection},
+        {"checkDoubleSingleTargetDropReactions", checkDoubleSingleTargetDropReactions},
+        {"checkDoubleLocalStageAbilities", checkDoubleLocalStageAbilities},
+        {"checkEnemyAreaStatAction", checkEnemyAreaStatAction},
+        {"checkEnemyAreaAllyDamage", checkEnemyAreaAllyDamage},
+        {"checkDoubleAreaHitBatchRng", checkDoubleAreaHitBatchRng},
+        {"checkDoublePlainAreaDamage", checkDoublePlainAreaDamage},
+        {"checkDoubleAreaActionChecksAndLastPp", checkDoubleAreaActionChecksAndLastPp},
+        {"checkDoubleSingleTargetSleepCheckpoint", checkDoubleSingleTargetSleepCheckpoint},
+        {"checkDoubleStatusResidualCheckpoint", checkDoubleStatusResidualCheckpoint},
+        {"checkDoublePartialExperienceCheckpoint", checkDoublePartialExperienceCheckpoint},
+        {"checkDoubleCheckpointRoundtrip", checkDoubleCheckpointRoundtrip},
+        {"checkDoubleExhaustedPpStruggle", checkDoubleExhaustedPpStruggle},
+        {"checkExhaustedPpStruggleReplay", checkExhaustedPpStruggleReplay},
+        {"checkStatusActionAdmission", checkStatusActionAdmission},
+        {"checkBossDamageAbilityCapabilities", checkBossDamageAbilityCapabilities},
+        {"checkTrainerParentEvolutionThresholds", checkTrainerParentEvolutionThresholds},
+        {"checkCanonicalTrainerSpecialtyTypes", checkCanonicalTrainerSpecialtyTypes},
+        {"checkTrainerBalancedTypes", checkTrainerBalancedTypes},
+        {"checkReservedTrainerSpecies", checkReservedTrainerSpecies},
+        {"checkTrainerPoolEvolutionDraws", checkTrainerPoolEvolutionDraws},
+        {"checkCanonicalSameSpeciesTrainerMembers", checkCanonicalSameSpeciesTrainerMembers},
+        {"checkCanonicalTrainerSignatureSlots", checkCanonicalTrainerSignatureSlots},
+        {"checkResolvedActionFieldLifecycle", checkResolvedActionFieldLifecycle},
+        {"checkTrainerExperienceReplay", checkTrainerExperienceReplay},
+        {"checkTrainerInteractiveBattle", checkTrainerInteractiveBattle},
+        {"checkModifierRewardGenerationAndClaim", checkModifierRewardGenerationAndClaim},
+        {"checkFirstRivalEncounterTraceability", checkFirstRivalEncounterTraceability},
+        {"checkHeldBerryStorage", checkHeldBerryStorage},
+        {"checkCanonicalBerryEffects", checkCanonicalBerryEffects},
+        {"checkCanonicalBerryGeneration", checkCanonicalBerryGeneration},
+        {"checkFlinchTurnLifecycle", checkFlinchTurnLifecycle},
+        {"checkPersistentExperienceRewards", checkPersistentExperienceRewards},
+        {"checkBiomeTransitionProgression", checkBiomeTransitionProgression},
+        {"checkDoubleBattleTargetingAndMechanics", checkDoubleBattleTargetingAndMechanics},
+        {"checkWave200FinalBossAndGameClear", checkWave200FinalBossAndGameClear},
+        {"checkPokeballCaptureMechanics", checkPokeballCaptureMechanics},
+        {"checkPlayerPartyManagementAndSwitching", checkPlayerPartyManagementAndSwitching},
+        {"checkLevelUpMoveLearningAndEvolution", checkLevelUpMoveLearningAndEvolution},
+        {"checkInitialStarterTeamSetup", checkInitialStarterTeamSetup},
+        {"checkInitialTeamFirstTurnRoundtrip", checkInitialTeamFirstTurnRoundtrip},
+        {"checkStarterFormPreferencePersistence", checkStarterFormPreferencePersistence},
+        {"checkStarterCostPurchasePersistence", checkStarterCostPurchasePersistence},
+        {"checkExtendedWaveAndBiomeSaveValidation", checkExtendedWaveAndBiomeSaveValidation},
+    };
+    unsigned failed = 0, total = 0;
+    int firstFailure = 0;
+    for (const auto& check : checks) {
+        std::printf("FirstRunRuntime running %s\n", check.name);
+        std::fflush(stdout);
+        const int result = check.run();
+        ++total;
+        std::printf("FirstRunRuntime case %s: %s (%d)\n", check.name, result ? "FAIL" : "PASS", result);
+        std::fflush(stdout);
+        if (result) { ++failed; if (!firstFailure) firstFailure = result; }
+    }
+    std::printf("FirstRunRuntime cases: %u passed, %u failed, %u total\n", total - failed, failed, total);
+    return firstFailure;
+}
+
+int main() {
+    const int result = runFirstRunRestoreChecks();
+    std::printf("FirstRunRuntime checks: %d\n", result);
+    return result == 0 ? 0 : 1;
 }

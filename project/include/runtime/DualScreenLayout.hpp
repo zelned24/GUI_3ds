@@ -1,0 +1,51 @@
+#pragma once
+namespace Pokerogue3DS {
+struct TouchRect {
+    unsigned x,y,width,height;
+    constexpr bool contains(unsigned px,unsigned py) const {
+        return px>=x && px-x<width && py>=y && py-y<height;
+    }
+};
+inline constexpr TouchRect kMoveButtonRects[] = {
+    {8, 36, 88, 64},
+    {100, 36, 88, 64},
+    {8, 106, 88, 64},
+    {100, 106, 88, 64}
+};
+inline constexpr int moveButtonAt(unsigned x,unsigned y) {
+    for (unsigned i=0;i<4;++i) if (kMoveButtonRects[i].contains(x,y)) return int(i);
+    return -1;
+}
+inline constexpr TouchRect kTargetButtonRects[]={{10,182,146,26},{164,182,146,26}};
+inline constexpr int targetButtonAt(unsigned x,unsigned y) {
+    for (unsigned i=0;i<2;++i) if (kTargetButtonRects[i].contains(x,y)) return int(i);
+    return -1;
+}
+inline constexpr TouchRect kPartyButtonRects[]={
+    {8,38,304,25},{8,65,304,25},{8,92,304,25},
+    {8,119,304,25},{8,146,304,25},{8,173,304,25}
+};
+inline constexpr int partyButtonAt(unsigned x,unsigned y,unsigned count) {
+    if (count>6) return -1;
+    for (unsigned i=0;i<count;++i) if (kPartyButtonRects[i].contains(x,y)) return int(i);
+    return -1;
+}
+
+// 2x2 grid in right command window (x: 180..314, y: 8..232)
+inline constexpr TouchRect kCommandButtonRects[] = {
+    {180, 8, 67, 112},   // 0: Luchar
+    {247, 8, 67, 112},   // 1: Balls
+    {180, 120, 67, 112},  // 2: Pokémon
+    {247, 120, 67, 112}   // 3: Huir
+};
+
+inline constexpr int commandButtonAt(unsigned x, unsigned y) {
+    for (unsigned i = 0; i < 4; ++i) if (kCommandButtonRects[i].contains(x, y)) return int(i);
+    return -1;
+}
+
+// Reward screen action buttons (Bottom screen 320x240)
+inline constexpr TouchRect kRewardClaimButtonRect{16, 170, 136, 54};
+inline constexpr TouchRect kRewardSkipButtonRect{168, 170, 136, 54};
+
+}

@@ -1,6 +1,14 @@
 #pragma once
 
+// Test-only WASM import; production ARM uses the standard math library.
+extern "C" __attribute__((import_module("env"), import_name("pokerogueTestPow")))
+double pokerogueTestPow(double, double);
 namespace std {
+inline bool isfinite(double x) { return __builtin_isfinite(x); }
+inline double ceil(double x) { return __builtin_ceil(x); }
+inline double round(double x) { return __builtin_round(x); }
+inline double pow(double x, double y) { return pokerogueTestPow(x, y); }
+
 inline float round(float x) {
     return (x >= 0.0f) ? (float)(int)(x + 0.5f) : (float)(int)(x - 0.5f);
 }

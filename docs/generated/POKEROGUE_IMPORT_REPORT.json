@@ -21,10 +21,12 @@
     "freshProfileStarters": 27,
     "items": 109,
     "levelBasedDeniedMoves": 133,
-    "locales": 3163,
+    "locales": 3174,
     "modes": 5,
     "modifierPoolEntries": 139,
     "moves": 920,
+    "rivalPartySlots": 26,
+    "rivalPartySpeciesChoices": 636,
     "routes": 66,
     "species": 1084,
     "speciesWithBaseExperience": 1084,
@@ -37,9 +39,15 @@
     "trainersWithSpeciesPools": 34,
     "trainersWithStaticPartyTemplates": 46
   },
-  "contentHash": "400fb84aa16a460c6d3eb6260240e8eae948acb9fab0f5467fd81521b6630e49",
+  "contentHash": "b1b5821edb39a088e641682ae5f5eae9567eef03ffbc2aa3a257c148d0106edf",
   "deterministicReimport": true,
   "provenance": [
+    {
+      "hash": "4d06009d1ee1b435a77ecf13f303ba4baa3b9f65a7529e6291e2cc8cbdc77e35",
+      "repository": "pokerogue",
+      "revision": "8555c08c823b856cbec4eb99ca84ea52a955836d",
+      "sourcePath": "src/ai/rival-team-gen.ts"
+    },
     {
       "hash": "2025107ab97d1fba0d01867912cb46eda52961aa66705d159f1546c8ff5078db",
       "repository": "pokerogue",
@@ -57,6 +65,12 @@
       "repository": "pokerogue",
       "revision": "8555c08c823b856cbec4eb99ca84ea52a955836d",
       "sourcePath": "src/constants/game-constants.ts"
+    },
+    {
+      "hash": "39212f30f9806ac12978dad47987c6869c20eaa38e80f64f839367362a5c3af4",
+      "repository": "pokerogue",
+      "revision": "8555c08c823b856cbec4eb99ca84ea52a955836d",
+      "sourcePath": "src/data/abilities/ab-attrs.ts"
     },
     {
       "hash": "040ccf2ca2e00a2111ef0acf54878ec67c45d98c831e35dda3e0bac52f1ee8e6",
@@ -371,6 +385,18 @@
       "sourcePath": "src/data/balance/starters.ts"
     },
     {
+      "hash": "65383cd4c02a7d56dd5f54a9c94cb11d811977ea5666326e4f9a82d086572320",
+      "repository": "pokerogue",
+      "revision": "8555c08c823b856cbec4eb99ca84ea52a955836d",
+      "sourcePath": "src/data/battler-tags.ts"
+    },
+    {
+      "hash": "42343c7aa85357e38d1b5ef4eee92aafefcc8ce2a5a4a86cbf3e3bd34f958b98",
+      "repository": "pokerogue",
+      "revision": "8555c08c823b856cbec4eb99ca84ea52a955836d",
+      "sourcePath": "src/data/berry.ts"
+    },
+    {
       "hash": "3a914059c951ff5374a728b83107526e8a9559650b765f067b6f5823973fee55",
       "repository": "pokerogue",
       "revision": "8555c08c823b856cbec4eb99ca84ea52a955836d",
@@ -395,6 +421,12 @@
       "sourcePath": "src/data/trainers/fixed-battle-configs.ts"
     },
     {
+      "hash": "87d1881cab323e7fadb89850376e56f5d2560aa1cbe5e74863b1baa733e1a4b4",
+      "repository": "pokerogue",
+      "revision": "8555c08c823b856cbec4eb99ca84ea52a955836d",
+      "sourcePath": "src/data/trainers/rival-party-config.ts"
+    },
+    {
       "hash": "1fc344e9f12e828ad0c05bedc2660425a958881923afcb6b310bf9d019678a2c",
       "repository": "pokerogue",
       "revision": "8555c08c823b856cbec4eb99ca84ea52a955836d",
@@ -411,6 +443,12 @@
       "repository": "pokerogue",
       "revision": "8555c08c823b856cbec4eb99ca84ea52a955836d",
       "sourcePath": "src/enums/ability-id.ts"
+    },
+    {
+      "hash": "455e3d90a444c28335392345b406b3f44cb07ea14f968b972bff0242ceb0a8c4",
+      "repository": "pokerogue",
+      "revision": "8555c08c823b856cbec4eb99ca84ea52a955836d",
+      "sourcePath": "src/enums/berry-type.ts"
     },
     {
       "hash": "b57120b172a7ed05bb6c8fe63457e004da6c47ef57fd3dee198f4ef71c2eb95f",
@@ -473,6 +511,12 @@
       "sourcePath": "src/enums/species-id.ts"
     },
     {
+      "hash": "83dbca79dc414784687d02649423e185858d89afcba3dc5e55fb7eb4c685e559",
+      "repository": "pokerogue",
+      "revision": "8555c08c823b856cbec4eb99ca84ea52a955836d",
+      "sourcePath": "src/enums/stat.ts"
+    },
+    {
       "hash": "1312e8276ba190df8321e17cbe4fed54129559b932b0b151d934ee268f6a808c",
       "repository": "pokerogue",
       "revision": "8555c08c823b856cbec4eb99ca84ea52a955836d",
@@ -521,6 +565,36 @@
       "sourcePath": "src/modifier/modifier-type.ts"
     },
     {
+      "hash": "5e544110ba29adbf5cd8d99f1279686fee5d0bd105d7c64fd8e5d115dd53d1a9",
+      "repository": "pokerogue",
+      "revision": "8555c08c823b856cbec4eb99ca84ea52a955836d",
+      "sourcePath": "src/modifier/modifier.ts"
+    },
+    {
+      "hash": "082a5fb2664dff2fc5300bda8612d7b8153d9e4ffea1c65958c68d250f3f5cc5",
+      "repository": "pokerogue",
+      "revision": "8555c08c823b856cbec4eb99ca84ea52a955836d",
+      "sourcePath": "src/phases/berry-phase.ts"
+    },
+    {
+      "hash": "229be2beb82982f35f993907ee7102f271b997ce4de69fc6755044527897461c",
+      "repository": "pokerogue",
+      "revision": "8555c08c823b856cbec4eb99ca84ea52a955836d",
+      "sourcePath": "src/phases/exp-phase.ts"
+    },
+    {
+      "hash": "9a8dc5f3298ba787642e18fa6fb81621432f1629d82829e9e61bb254a2d94633",
+      "repository": "pokerogue",
+      "revision": "8555c08c823b856cbec4eb99ca84ea52a955836d",
+      "sourcePath": "src/phases/victory-phase.ts"
+    },
+    {
+      "hash": "64c1a70ec0651622e6f31c7c99c6183614db026f69869fc293dbf23aeb94f5b7",
+      "repository": "pokerogue",
+      "revision": "8555c08c823b856cbec4eb99ca84ea52a955836d",
+      "sourcePath": "src/utils/common.ts"
+    },
+    {
       "hash": "9ed9108891548f2903c4e25db1ded74ec9f7c08828e5c38c816fcc0d3d9fa887",
       "repository": "pokerogue-assets",
       "revision": "056a1f408f26a3be4fef243f7462cb43608c7928",
@@ -543,6 +617,12 @@
       "repository": "pokerogue-locales",
       "revision": "23aea1cb0da5a0b15b836f3c243791591cc42303",
       "sourcePath": "en/ability.json"
+    },
+    {
+      "hash": "5fd72c7a028da15116f5dddb304b2ccb6934570f83098bc3af8277c7e76d4ec5",
+      "repository": "pokerogue-locales",
+      "revision": "23aea1cb0da5a0b15b836f3c243791591cc42303",
+      "sourcePath": "en/berry.json"
     },
     {
       "hash": "a54567b94c4a92630273d3c8d07dea192658a9700367d6dbb926ccc807cf2b13",
@@ -813,7 +893,7 @@
     "pokerogue": "8555c08c823b856cbec4eb99ca84ea52a955836d"
   },
   "unknownFields": {
-    "abilityAttributeSemantics": "preserved raw; not interpreted",
+    "abilityAttributeSemantics": "Berry callback ancestry and constant multipliers/fractions normalized; other trigger semantics preserved raw",
     "modifierEffectSemantics": "preserved raw; not interpreted",
     "observedSourceFieldNames": [
       "ABILITY_CHARM",
@@ -1068,7 +1148,7 @@
       "with"
     ],
     "preservedRawRecordCount": 3368,
-    "trainerConfigSemantics": "supported declarative subset normalized; all raw records preserved; callbacks remain NOT_IMPORTED",
+    "trainerConfigSemantics": "supported declarative subset normalized; all raw records preserved; rival pool callbacks normalized; other callbacks remain raw",
     "trainerPartyTemplateSemantics": "unknown constructor behavior retained as raw source; supported declarative fields normalized"
   },
   "warnings": [
