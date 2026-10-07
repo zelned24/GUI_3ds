@@ -613,6 +613,8 @@ Para cada entrega actualizar esta tabla con IDs, commit, alcance conectado, excl
    - [ ] Extender el tratamiento de texto largo a setup, recompensas, decisiones y ajustes; verificar eventos repetidos, navegación conjunta y capturas. Texto progresivo/audio/prompts upstream aún pendientes.
      - [x] Conectar cajas medidas de dos líneas para habilidades en setup y tres líneas para nombres de recompensas. Fuente nativa fija, sin dibujo parcial si excede la caja; casos restantes usan fitted y requieren detalle completo posterior.
      - [x] Usar etiquetas originales es-ES de tipos a 1× en setup, resueltas desde especie/forma canónica.
+     - [x] Conectar cajas de dos líneas a confirmación de starters/evolución y tres líneas a movimientos reemplazables, con cursor alineado al primer renglón. Acotar al panel los mensajes de error de setup/formas.
+     - [x] Dibujar el logo original de título a 2× (300×66) centrado; eliminar la escala anterior de 1,8×. Comparación visual pendiente.
    - [x] Compactar las cuatro sheets A4 conservando glifos/métricas; 2 MiB → 288 KiB.
    - [ ] Perfilar el presupuesto total y validar las fuentes compactadas en Azahar/Old 3DS.
 3. [ ] Evaluar RGBA5551/RGBA4 por clase de asset con comparación de colores/alpha y memoria residente. Pokémon ya usa RGBA4, fuentes A4 y presentación RGBA8; no dar ETC1A4 por visualmente equivalente sin comparación.

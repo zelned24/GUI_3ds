@@ -234,3 +234,10 @@ El avance se publica como trabajo en curso. Classic completo y la fidelidad visu
 2. Setup usa las etiquetas físicas es-ES 32×14 a 1× para tipos de especie/forma, y caja de dos líneas a 10 puntos para habilidad. Rewards ofrece tres líneas a 10 puntos para nombres. Si no caben, conservan fitted: no se considera cerrada la presentación íntegra de textos largos en todos los submenús.
 3. Harness del renderer comprueba límites, ausencia de dibujos tras overflow, posiciones/escala entera y todos los nombres importados de habilidades con sus métricas simuladas. Estas métricas permiten probar el algoritmo; no demuestran el ajuste de cada nombre con los glifos físicos. Comparación visual y medición de los fonts reales siguen pendientes.
 4. Gates ejecutados: npm test 38/38, nueve suites específicas, native-parity 126/126, build ARM/3DSX y diff-check PASS. Logs build/text-box-*; sin nueva validación visual en Azahar ni hardware.
+
+### Confirmaciones y decisiones
+
+1. Confirmar starters y evolución usa caja medida de dos líneas; movimientos reemplazables usan tres líneas a 10 puntos con cursor a la altura del primer renglón. Overflow conserva fitted y no demuestra que todos los nombres se muestren completos.
+2. Feedback de setup y formas ahora tiene un ancho máximo explícito: no se dibuja fuera del panel por ausencia de restricciones. Sigue pendiente exponer detalles completos para los textos abreviados y revisar capturas.
+3. Logo pinned físico 150×33: título cambia de 270px (1,8×) a 300×66 centrado (2×). No se modifica el PNG fuente. Comparación visual todavía pendiente.
+4. Gates: npm test 38/38, nueve suites de presentación, native-parity 126/126, build ARM/3DSX y diff-check PASS. Logs build/decision-layout-*; Azahar no se abrió.

@@ -36,8 +36,11 @@ public:
             for(unsigned i=0;i<4;++i) {
                 const auto& rect=kMoveButtonRects[i];renderer.drawWindow(rect.x,rect.y,rect.width,rect.height);
                 const auto* current=i<actor.moveCount ? PokerogueContent::findMoveById(actor.moves[i].moveId) : nullptr;
-                const float nameSize=renderer.drawTextFitted(current ? moveUiName(current->id) : "--",rect.x+21,rect.y+15,0.38f,rect.width-30,0xffffffff);
-                if(i==game.selectedBattleMove()) m_cursor.drawCursor(renderer,rect.x+7,rect.y+15,nameSize);
+                const char* name=current ? moveUiName(current->id) : "--";
+                float nameSize=0.3125f;
+                if(!renderer.drawTextBox(name,rect.x+21,rect.y+9,nameSize,rect.width-30,3,0xffffffff))
+                    nameSize=renderer.drawTextFitted(name,rect.x+21,rect.y+9,nameSize,rect.width-30,0xffffffff);
+                if(i==game.selectedBattleMove()) m_cursor.drawCursor(renderer,rect.x+7,rect.y+9,nameSize);
             }
             renderer.drawText("A: aprender   B: no aprender",12,204,0.32f,0xffffffff);
             return;
@@ -49,8 +52,10 @@ public:
             const PokerogueContent::Species* target=nullptr;
             if(game.pendingEvolutionSpeciesId()) for(const auto& species:PokerogueContent::kSpecies)
                 if(std::strcmp(species.id,game.pendingEvolutionSpeciesId())==0) {target=&species;break;}
-            renderer.drawTextFitted(game.evolutionPauseConfirmationPending() ? "Pausar evoluciones futuras?" :
-                target ? target->name : "Evolucion",26,91,0.4f,267,0xffffffff);
+            const char* question=game.evolutionPauseConfirmationPending() ? "Pausar evoluciones futuras?" :
+                target ? target->name : "Evolucion";
+            if(!renderer.drawTextBox(question,26,91,0.375f,267,2,0xffffffff))
+                renderer.drawTextFitted(question,26,91,0.375f,267,0xffffffff);
             renderer.drawText("A: confirmar   B: cancelar",26,145,0.35f,0xffffffff);
         } else {
             renderer.drawText(game.playerWon() ? "Victoria" : "Fin de partida",26,55,0.55f,0xffffffff);

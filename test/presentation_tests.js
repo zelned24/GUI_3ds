@@ -21,6 +21,9 @@ export function registerPresentationTests(test) {
     const intro=fs.readFileSync(path.join(root,'project/src/runtime/IntroCinematicPresenter.cpp'),'utf8');
     const expect=(value,message)=>{if(!value) throw new Error(message);};
     const renderer=fs.readFileSync(path.join(root,'project/src/gfx/renderer2d.cpp'),'utf8');
+    const setup=fs.readFileSync(path.join(root,'project/include/runtime/SetupPresenter.hpp'),'utf8');
+    expect(!setup.includes('270.0f/image.subtex->width'),'Title logo must not use the previous fractional 1.8x scale');
+    expect(setup.includes('const unsigned scale=image.subtex->width<=200 ? 2 : 1'),'Title logo uses native integer multiples');
     expect(renderer.includes('float(info->tglp->cellHeight)*pixelMultiple/30.0f'), 'Native font drawing must undo Citro2D normalization');
     expect(!renderer.includes('scale*=fit'), 'Fitted text must not shrink texture pixels fractionally');
     expect(renderer.includes('float(info->lineFeed)*raster.scale'), 'Cursor height follows actual native line spacing');

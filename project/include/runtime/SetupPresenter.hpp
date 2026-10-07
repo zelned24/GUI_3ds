@@ -227,7 +227,12 @@ public:
             }
             if(m_logo) {
                 const auto image=C2D_SpriteSheetGetImage(m_logo,0);
-                if(image.subtex && image.subtex->width) renderer.drawImageDirect(image,65,12,270,image.subtex->height*(270.0f/image.subtex->width));
+                if(image.subtex && image.subtex->width && image.subtex->height) {
+                    const unsigned scale=image.subtex->width<=200 ? 2 : 1;
+                    const float width=image.subtex->width*scale,height=image.subtex->height*scale;
+                    if(width<=400 && height<=120)
+                        renderer.drawImageDirect(image,(400-width)/2,12,width,height);
+                }
             }
             return;
         }
@@ -298,12 +303,14 @@ public:
         }
         for(unsigned i=0;i<context.playerPartyCount && i<6;++i)
             m_icons.draw(renderer,context.playerParty[i].dex,game.setupStarterFormIndex(context.playerParty[i].dex),10+i*50,188);
-        if(feedback) renderer.drawText(feedback,10,216,0.28f,0xff80ffff);
+        if(feedback) renderer.drawTextFitted(feedback,10,216,0.28f,300,0xff80ffff);
         else renderer.drawText("SELECT: Formas    START: Comenzar    B: Volver",10,216,0.28f,0xffffffff);
         renderer.drawText("Tocar: elegir/anadir    L/R: pagina",10,228,0.24f,0xffe0e0e0);
         if(confirmStart) {
             renderer.drawWindow(12,66,296,105);
-            renderer.drawText(runtimeUiText("starter-select-ui-handler:confirmStartTeam"),24,80,0.34f,0xffffffff);
+            const char* confirmation=runtimeUiText("starter-select-ui-handler:confirmStartTeam");
+            if(!renderer.drawTextBox(confirmation,24,78,0.3125f,272,2,0xffffffff))
+                renderer.drawTextFitted(confirmation,24,80,0.3125f,272,0xffffffff);
             renderer.drawRect(45,116,105,32,confirmYes ? 0xff70d8f0 : 0xff463747);
             renderer.drawWindow(47,118,101,28);
             renderer.drawText(runtimeUiText("menu:yes"),72,123,0.45f,0xffffffff);
@@ -322,7 +329,7 @@ public:
                     formUnlocked(game,index) ? 0xffffffff : 0xff909090);
                 if(start+i==selectedForm) m_prompt.drawCursor(renderer,25,43+i*23,0.36f);
             }
-            renderer.drawText(formFeedback ? formFeedback : "A: elegir forma   B: volver",24,182,0.28f,0xffffffff);
+            renderer.drawTextFitted(formFeedback ? formFeedback : "A: elegir forma   B: volver",24,182,0.28f,272,0xffffffff);
         } else if(candyStoreOpen) {
             renderer.drawWindow(12,24,296,186);
             const uint16_t dex=game.selectedSetupStarterDex();
