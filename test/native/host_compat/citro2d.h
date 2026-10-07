@@ -43,6 +43,7 @@ typedef void* C3D_RenderTarget;
 
 typedef struct {
     void* buf;
+    void* font;
     float width;
     float height;
 } C2D_Text;
@@ -52,8 +53,11 @@ typedef void* C2D_TextBuf;
 typedef void* C2D_SpriteSheet;
 typedef void* C2D_Font;
 
+typedef struct {u8 cellHeight;} C2D_GlyphInfo;
 typedef struct {
     float height;
+    u8 lineFeed;
+    const C2D_GlyphInfo* tglp;
 } C2D_FontInfo;
 
 #ifdef __cplusplus

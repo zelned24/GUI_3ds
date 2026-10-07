@@ -1,4 +1,6 @@
 #include "runtime/DualScreenLayout.hpp"
+#include "runtime/NativeTextRaster.hpp"
+#include <cmath>
 #include "runtime/TitleMenuLayout.hpp"
 #include "runtime/StarterGridLayout.hpp"
 #include "gfx/ImageTintPolicy.hpp"
@@ -11,6 +13,19 @@ int main() {
     static_assert(anchoredSpriteScale(2.0f,0.75f)==2.0f,"Explicit double size must not be reduced");
     static_assert(anchoredSpriteScale(1.25f,2.0f)==1.25f,"Explicit adaptation scale is preserved");
     static_assert(anchoredSpriteScale(0.0f,0.75f)==0.75f,"Zero retains automatic layout");
+    for(unsigned n=1;n<=4096;++n) {
+        const float requested=float(n)/4096;
+        const auto raster=nativeTextRaster(requested);
+        assert(raster.index<4 && raster.scale>=1 && raster.scale<=8);
+        const float pixels=float(kNativeFontPoints[raster.index]*raster.scale);
+        assert(raster.authoredSize==pixels/32);
+        for(unsigned i=0;i<4;++i) for(unsigned scale=1;scale<=8;++scale)
+            assert(std::fabs(pixels-requested*32)<=std::fabs(float(kNativeFontPoints[i]*scale)-requested*32));
+        assert(nativeTextRaster(raster.authoredSize).index==raster.index);
+    }
+    assert(nativeTextRaster(0.3f).index==1 && nativeTextRaster(0.3f).scale==1);
+    assert(nativeTextRaster(0.4f).index==2 && nativeTextRaster(0.4f).scale==1);
+    assert(nativeTextRaster(0.5f).index==3 && nativeTextRaster(0.5f).scale==1);
     for(unsigned y=0;y<240;++y) for(unsigned x=0;x<320;++x) {
         const int expected=x>=16 && x<304 && y>=38 && y<182 ? int((y-38)/36*6+(x-16)/48) : -1;
         assert(starterGridAt(x,y)==expected);

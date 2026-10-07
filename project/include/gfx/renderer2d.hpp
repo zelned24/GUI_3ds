@@ -107,6 +107,9 @@ private:
 #if defined(__arm__) || defined(__3DS__) || defined(_3DS)
     C2D_TextBuf m_measureBuf=nullptr;
     C2D_Font m_gameFont = nullptr;
+    C2D_Font m_smallFonts[3]{};
+    C2D_Font nativeFont(unsigned index) const {return index<3 ? m_smallFonts[index] : m_gameFont;}
+    float nativeFontScale(unsigned index,unsigned pixelMultiple) const;
     C2D_SpriteSheet m_window = nullptr;
     C2D_SpriteSheet m_typeLabels = nullptr;
     C2D_SpriteSheet m_hudTypes[6]{};

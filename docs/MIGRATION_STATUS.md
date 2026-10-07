@@ -194,3 +194,12 @@ El avance se publica como trabajo en curso. Classic completo y la fidelidad visu
 4. Comparación visual y cambios de cap/colores durante partida en Azahar/Old 3DS siguen pendientes.
 
 5. Gates: npm test 36/36 (FirstRunRuntime 51/51), native-parity 126/126, ARM ELF/3DSX y git diff --check PASS. Logs build/hud-cap-recheck.log, build/hud-cap-parity.log y build/hud-cap-arm.log. El primer intento detectó un namespace faltante en la nueva prueba; se corrigió sin alterar sus assertions.
+
+## Fuentes nativas sin reducción fraccionaria
+
+1. `prepare_pixel_fonts.py` genera 8/10/12/16 puntos desde la TTF de assets pinned, conserva whitelist y registra hashes, cellHeight, lineFeed y sheets. Cuatro fuentes y reporte resultaron byte a byte idénticos al repetir la conversión.
+2. `NativeTextRaster` selecciona fuentes y múltiplos enteros. El renderer compensa `30/cellHeight` de Citro2D para que el transform final sea 1×/2×/etc.; un argumento API 1.0 no daba 1:1. Referencia: [font.c](https://github.com/devkitPro/citro2d/blob/master/source/font.c), [text.c](https://github.com/devkitPro/citro2d/blob/master/source/text.c).
+3. Dibujo normal/wrapped, abreviación y fitted usan la misma métrica. Fitted baja a rasters nativos disponibles y abrevia al mínimo si no cabe; ya no aplica scale*=fit. Cursores usan lineFeed real en lugar de FINF.height, que permanece 26 en estas conversiones. Paginación de mensajes y comparación visual siguen pendientes.
+4. Harness reproduce la normalización de Citro2D y verifica transform final entero, cuatro tamaños, Unicode, anchos/abreviación, 11 fallos de arranque más métricas inválidas, cleanup y retry. Policy comprueba 4096 tamaños contra todas las alternativas. Verificador físico comprueba alpha binario, hashes y métricas; no prueba legibilidad en consola.
+5. Gates: npm test 36/36 (FirstRunRuntime 51/51), presentación 7/7, parity 126/126, ARM ELF/3DSX y diff-check PASS. Logs build/native-font-npm-test.log, build/native-font-parity.log, build/native-font-arm-final.log y build/native-font-media.log.
+6. Las cuatro sheets A4 suman 2,097,152 bytes y los archivos 2,100,240 bytes. No se declara ahorro de memoria ni mayor FPS; compactación de sheets, perfil completo y comparación conjunta en Azahar/Old 3DS quedan abiertos.

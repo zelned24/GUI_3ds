@@ -94,7 +94,8 @@ C2D_Image C2D_SpriteSheetGetImage(C2D_SpriteSheet sheet, size_t index) {
 void C2D_SpriteSheetFree(C2D_SpriteSheet sheet) { (void)sheet; }
 
 static int s_dummyFont = 43;
-static C2D_FontInfo s_dummyFontInfo = { 16.0f };
+static C2D_GlyphInfo s_dummyGlyphInfo={16};
+static C2D_FontInfo s_dummyFontInfo = { 16.0f,16,&s_dummyGlyphInfo };
 C2D_Font C2D_FontLoad(const char* filename) { (void)filename; return (C2D_Font)&s_dummyFont; }
 void C2D_FontFree(C2D_Font font) { (void)font; }
 void C2D_TextFontParse(C2D_Text* text, C2D_Font font, C2D_TextBuf buf, const char* str) { (void)text; (void)font; (void)buf; (void)str; }

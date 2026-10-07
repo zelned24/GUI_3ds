@@ -184,6 +184,22 @@ def test_hud_types():
     assert len(report["files"])==17
     print("  [OK] Seventeen original HUD sheets including digit/label assets: frame offsets, physical hashes and generated tables")
 
+def test_pixel_fonts():
+    from pixel_font import crisp_font
+    root=Path(ROOT)
+    report=json.loads((root/"build/native-presentation/font-provenance.json").read_text())
+    source=root/"build/native-presentation/source"/report["sourcePath"]
+    assert hashlib.sha256(source.read_bytes()).hexdigest()==report["sourceSHA256"]
+    assert [row["points"] for row in report["files"]]==[8,10,12,16]
+    for row in report["files"]:
+        data=(root/"build/romfs"/row["convertedPath"].removeprefix("romfs:/")).read_bytes()
+        assert len(data)==row["bytes"] and hashlib.sha256(data).hexdigest()==row["convertedSHA256"]
+        assert crisp_font(data)==data
+        glyph=struct.unpack_from("<I",data,36)[0]
+        assert row["rasterCellHeight"]==data[glyph+1] and row["lineFeed"]==data[29]
+        assert row["sheetBytes"]==struct.unpack_from("<I",data,glyph+4)[0]*struct.unpack_from("<H",data,glyph+8)[0]
+    print("  [OK] Four pinned font rasters: metrics, binary alpha, hashes and physical sheets")
+
 if __name__ == "__main__":
     test_items()
     test_trainers()
@@ -191,6 +207,7 @@ if __name__ == "__main__":
     test_windows()
     test_type_labels()
     test_hud_types()
+    test_pixel_fonts()
     print("==================================================")
     print("  ALL PRESENTATION MEDIA VERIFICATION TESTS PASS  ")
     print("==================================================")

@@ -1,6 +1,7 @@
 #include "gfx/renderer2d.hpp"
 #include "gfx/ImageTintPolicy.hpp"
 #include "runtime/Utf8Abbreviation.hpp"
+#include "runtime/NativeTextRaster.hpp"
 #include "screens/SceneAssets.hpp"
 #include "content/WindowTexture.hpp"
 #include "content/TypeLabels.hpp"
@@ -22,6 +23,16 @@ static inline void C2D_DrawImageAtRotatedScaled(
     float scaleX, float scaleY
 ) {
     C2D_DrawImageAtRotated(img, x, y, depth, angle, tint, scaleX, scaleY);
+}
+#endif
+
+#if defined(__arm__) || defined(__3DS__) || defined(_3DS)
+float Renderer2D::nativeFontScale(unsigned index,unsigned pixelMultiple) const {
+    const auto font=nativeFont(index);
+    const auto* info=font ? C2D_FontGetInfo(font) : nullptr;
+    // Citro2D PostLoadFont normalizes all fonts by 30/cellHeight. Undo that
+    // normalization so the final raster transform is a whole pixel multiple.
+    return info && info->tglp ? float(info->tglp->cellHeight)*pixelMultiple/30.0f : 0.0f;
 }
 #endif
 
@@ -76,6 +87,10 @@ bool Renderer2D::init(size_t maxObjects) {
         m_initError="Missing or invalid romfs:/presentation/fonts/emerald.bcfnt";
         fini();return false;
     }
+    const auto* fontInfo=C2D_FontGetInfo(m_gameFont);
+    if(!fontInfo || !fontInfo->tglp || !fontInfo->tglp->cellHeight || !fontInfo->lineFeed) {
+        m_initError="Invalid native font metrics";fini();return false;
+    }
     C2D_FontSetFilter(m_gameFont,GPU_NEAREST,GPU_NEAREST);
     m_window = C2D_SpriteSheetLoad(Pokerogue3DS::kWindowTexturePath);
     if(!m_window) { m_initError="Missing or invalid default window texture"; fini();return false; }
@@ -87,6 +102,16 @@ bool Renderer2D::init(size_t maxObjects) {
     m_windowStyle=Pokerogue3DS::kWindowTextures[0].id;
     m_measureBuf=C2D_TextBufNew(256);
     if(!m_measureBuf) {m_initError="Text measurement buffer allocation failed";fini();return false;}
+    const char* smallPaths[]={"romfs:/presentation/fonts/emerald-8.bcfnt","romfs:/presentation/fonts/emerald-10.bcfnt","romfs:/presentation/fonts/emerald-12.bcfnt"};
+    for(unsigned i=0;i<3;++i) {
+        m_smallFonts[i]=C2D_FontLoad(smallPaths[i]);
+        if(!m_smallFonts[i]) {m_initError=smallPaths[i];fini();return false;}
+        const auto* info=C2D_FontGetInfo(m_smallFonts[i]);
+        if(!info || !info->tglp || !info->tglp->cellHeight || !info->lineFeed) {
+            m_initError="Invalid small native font metrics";fini();return false;
+        }
+        C2D_FontSetFilter(m_smallFonts[i],GPU_NEAREST,GPU_NEAREST);
+    }
 #endif
 
 #if !defined(__wasm__)
@@ -117,6 +142,7 @@ void Renderer2D::fini() {
 #if defined(__arm__) || defined(__3DS__) || defined(_3DS)
     if(m_measureBuf) {C2D_TextBufDelete(m_measureBuf);m_measureBuf=nullptr;}
     if (m_gameFont) { C2D_FontFree(m_gameFont); m_gameFont = nullptr; }
+    for(auto& font:m_smallFonts) {if(font) C2D_FontFree(font);font=nullptr;}
     if (m_window) { C2D_SpriteSheetFree(m_window); m_window = nullptr; }
     if (m_typeLabels) { C2D_SpriteSheetFree(m_typeLabels); m_typeLabels = nullptr; }
     for(auto& sheet:m_hudTypes) {if(sheet) C2D_SpriteSheetFree(sheet);sheet=nullptr;}
@@ -314,37 +340,38 @@ void Renderer2D::drawText(
 #endif
         C2D_TextParse(&c2dText, m_textBuf, text);
         C2D_TextOptimize(&c2dText);
-        C2D_DrawText(&c2dText, C2D_WithColor, std::round(x), std::round(y), 0.5f, 1.0f, 1.0f, finalColor);
+        #if defined(__arm__) || defined(__3DS__) || defined(_3DS)
+        const float nativeScale=nativeFontScale(3,1);
+#else
+        const float nativeScale=1.0f;
+#endif
+        C2D_DrawText(&c2dText,C2D_WithColor,std::round(x),std::round(y),0.5f,nativeScale,nativeScale,finalColor);
     }
 }
 
-void Renderer2D::drawText(const char* text, float x, float y, float size, uint32_t color) {
-    if (!m_initialized || !m_frameActive || !m_currentTarget || !m_textBuf || !text || size <= 0) return;
+void Renderer2D::drawText(const char* text,float x,float y,float size,uint32_t color) {
+    if(!m_initialized || !m_frameActive || !m_currentTarget || !m_textBuf || !text || !std::isfinite(size) || size<=0) return;
     C2D_Text value;
-    // beginFrame clears the shared buffer once, preserving all strings until GPU submission.
-    #if defined(__arm__) || defined(__3DS__) || defined(_3DS)
-        if (m_gameFont) C2D_TextFontParse(&value, m_gameFont, m_textBuf, text);
-        else
-#endif
-        C2D_TextParse(&value, m_textBuf, text);
-    C2D_TextOptimize(&value);
-    float scale=size;
 #if defined(__arm__) || defined(__3DS__) || defined(_3DS)
-    // Existing UI scale was authored against the 32px system font.
-    // Custom-font compensation preserves existing authored UI sizes; line height uses font metrics.
-    if (m_gameFont) scale*=2.0f;
+    const auto raster=Pokerogue3DS::nativeTextRaster(size);
+    C2D_TextFontParse(&value,nativeFont(raster.index),m_textBuf,text);
+    const float scale=nativeFontScale(raster.index,raster.scale);
+#else
+    C2D_TextParse(&value,m_textBuf,text);
+    const float scale=size;
 #endif
-    C2D_DrawText(&value, C2D_WithColor, std::round(x), std::round(y), 0.5f, scale, scale, color);
+    C2D_TextOptimize(&value);
+    C2D_DrawText(&value,C2D_WithColor,std::round(x),std::round(y),0.5f,scale,scale,color);
 }
 
 void Renderer2D::drawTextWrapped(const char* text,float x,float y,float size,float maxWidth,uint32_t color) {
-    if(!m_initialized || !m_frameActive || !m_currentTarget || !m_textBuf || !text || size<=0 || maxWidth<=0) return;
+    if(!m_initialized || !m_frameActive || !m_currentTarget || !m_textBuf || !text || !std::isfinite(size) || size<=0 || !std::isfinite(maxWidth) || maxWidth<=0) return;
 #if defined(__arm__) || defined(__3DS__) || defined(_3DS)
+    const auto raster=Pokerogue3DS::nativeTextRaster(size);
     C2D_Text value;
-    if(m_gameFont) C2D_TextFontParse(&value,m_gameFont,m_textBuf,text);
-    else C2D_TextParse(&value,m_textBuf,text);
+    C2D_TextFontParse(&value,nativeFont(raster.index),m_textBuf,text);
     C2D_TextOptimize(&value);
-    const float scale=size*(m_gameFont ? 2.0f : 1.0f);
+    const float scale=nativeFontScale(raster.index,raster.scale);
     C2D_DrawText(&value,C2D_WithColor | C2D_WordWrap,std::round(x),std::round(y),0.5f,scale,scale,color,maxWidth);
 #else
     drawText(text,x,y,size,color);
@@ -353,29 +380,53 @@ void Renderer2D::drawTextWrapped(const char* text,float x,float y,float size,flo
 
 float Renderer2D::drawTextFitted(const char* text,float x,float y,float size,float maxWidth,uint32_t color,float* drawnWidth) {
     if(drawnWidth) *drawnWidth=0;
-    if(!m_initialized || !m_frameActive || !m_currentTarget || !m_textBuf || !text || size<=0 || maxWidth<=0) return size;
+    if(!m_initialized || !m_frameActive || !m_currentTarget || !m_textBuf || !text || !std::isfinite(size) || size<=0 || !std::isfinite(maxWidth) || maxWidth<=0) return size;
 #if defined(__arm__) || defined(__3DS__) || defined(_3DS)
-    C2D_Text value;
-    if(m_gameFont) C2D_TextFontParse(&value,m_gameFont,m_textBuf,text);
-    else C2D_TextParse(&value,m_textBuf,text);
+    auto raster=Pokerogue3DS::nativeTextRaster(size);
+    const auto measure=[&](const char* candidate) {
+        C2D_TextBufClear(m_measureBuf);
+        C2D_Text parsed;C2D_TextFontParse(&parsed,nativeFont(raster.index),m_measureBuf,candidate);
+        float width=0;const float scale=nativeFontScale(raster.index,raster.scale);
+        C2D_TextGetDimensions(&parsed,scale,scale,&width,nullptr);return width;
+    };
+    char display[256];float width=0;
+    // Keep the largest native raster that fits, including whole multiples of
+    // smaller sources (e.g. 12 points at 2x before dropping a 32-point label).
+    if(measure(text)>maxWidth) {
+        const unsigned preferredPoints=Pokerogue3DS::kNativeFontPoints[raster.index]*raster.scale;
+        auto chosen=Pokerogue3DS::nativeTextRaster(0.25f);
+        unsigned bestPoints=0;
+        for(unsigned i=0;i<4;++i) {
+            raster.index=i;raster.scale=1;
+            const float nativeWidth=measure(text);
+            const unsigned limit=std::min(8u,preferredPoints/Pokerogue3DS::kNativeFontPoints[i]);
+            unsigned multiple=limit;
+            while(multiple && nativeWidth*multiple>maxWidth) --multiple;
+            const unsigned points=Pokerogue3DS::kNativeFontPoints[i]*multiple;
+            if(multiple && points>=bestPoints) {
+                chosen={i,multiple,float(points)/32};bestPoints=points;
+            }
+        }
+        raster=chosen;
+    }
+    if(!Pokerogue3DS::abbreviateUtf8(text,display,sizeof(display),maxWidth,false,measure,width)) return raster.authoredSize;
+    C2D_Text value;C2D_TextFontParse(&value,nativeFont(raster.index),m_textBuf,display);
     C2D_TextOptimize(&value);
-    float scale=size*(m_gameFont ? 2.0f : 1.0f),width=0;
-    C2D_TextGetDimensions(&value,scale,scale,&width,nullptr);
-    const float fit=width>maxWidth ? maxWidth/width : 1.0f;
-    scale*=fit;
-    if(drawnWidth) *drawnWidth=width*fit;
-    C2D_DrawText(&value,C2D_WithColor,std::round(x),std::round(y),0.5f,scale,scale,color);
-    return size*fit;
+    if(drawnWidth) *drawnWidth=width;
+    C2D_DrawText(&value,C2D_WithColor,std::round(x),std::round(y),0.5f,nativeFontScale(raster.index,raster.scale),nativeFontScale(raster.index,raster.scale),color);
+    return raster.authoredSize;
 #else
-    drawText(text,x,y,size,color);
-    return size;
+    drawText(text,x,y,size,color);return size;
 #endif
 }
 
 float Renderer2D::textLineHeight(float size) const {
+    if(!std::isfinite(size) || size<=0) return 0;
 #if defined(__arm__) || defined(__3DS__) || defined(_3DS)
-    const auto* info=m_gameFont ? C2D_FontGetInfo(m_gameFont) : nullptr;
-    return info ? info->height*size*(m_gameFont ? 2.0f : 1.0f) : 0.0f;
+    const auto raster=Pokerogue3DS::nativeTextRaster(size);
+    const auto font=nativeFont(raster.index);
+    const auto* info=font ? C2D_FontGetInfo(font) : nullptr;
+    return info ? float(info->lineFeed)*raster.scale : 0.0f;
 #else
     return 30.0f*size;
 #endif
@@ -522,10 +573,12 @@ bool Renderer2D::abbreviateText(const char* text,float size,float maxWidth,char*
     displayedWidth=0;if(output && capacity) output[0]=0;
 #if defined(__arm__) || defined(__3DS__) || defined(_3DS)
     if(!m_initialized || !m_gameFont || !m_measureBuf || capacity>256 || !std::isfinite(size) || size<=0) return false;
+    const auto raster=Pokerogue3DS::nativeTextRaster(size);
     auto measure=[&](const char* value) {
         C2D_TextBufClear(m_measureBuf);
-        C2D_Text parsed;C2D_TextFontParse(&parsed,m_gameFont,m_measureBuf,value);
-        float width=0;C2D_TextGetDimensions(&parsed,size*2,size*2,&width,nullptr);return width;
+        C2D_Text parsed;C2D_TextFontParse(&parsed,nativeFont(raster.index),m_measureBuf,value);
+        float width=0;const float scale=nativeFontScale(raster.index,raster.scale);
+        C2D_TextGetDimensions(&parsed,scale,scale,&width,nullptr);return width;
     };
     return Pokerogue3DS::abbreviateUtf8(text,output,capacity,maxWidth,stripGender,measure,displayedWidth);
 #else

@@ -1,5 +1,6 @@
 #include "gfx/renderer2d.hpp"
 #include "runtime/Utf8Abbreviation.hpp"
+#include "runtime/NativeTextRaster.hpp"
 #include "content/TypeLabels.hpp"
 #include "content/HudTypeIcons.hpp"
 #include <cassert>
@@ -16,7 +17,8 @@ int hudTokens[17]={3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19};Tex3DS_SubTextur
 int hudLoads=0;bool hudMissing=false;
 int typeToken=2,typeLoads=0,imageDraws=0;bool typeMissing=false;float imageScaleX=0,imageScaleY=0;Tex3DS_SubTexture typeSub{32,280,0,1,1,0};
 int measureToken=20,measureClears=0,mainClears=0,textAllocations=0;char lastParsed[256]{};
-int token=1;C3D_Tex tex{};Tex3DS_SubTexture sub{24,24,0,1,1,0};C2D_FontInfo fontInfo{26};
+int fontTokens[3]={80,100,120};C2D_GlyphInfo glyphInfo[4]={{17},{19},{23},{31}};C2D_FontInfo smallInfo[3]={{26,9,&glyphInfo[0]},{26,12,&glyphInfo[1]},{26,14,&glyphInfo[2]}};
+int token=1;C3D_Tex tex{};Tex3DS_SubTexture sub{24,24,0,1,1,0};C2D_FontInfo fontInfo{26,19,&glyphInfo[3]};
 }
 void C3D_TexSetFilter(C3D_Tex*,GPU_TEXTURE_FILTER_PARAM a,GPU_TEXTURE_FILTER_PARAM b) {assert(a==GPU_NEAREST && b==GPU_NEAREST);}
 extern "C" {
@@ -28,10 +30,14 @@ void C2D_Prepare() {}
 C3D_RenderTarget* C2D_CreateScreenTarget(gfxScreen_t,gfx3dSide_t) {++targets;return fail==3 ? nullptr : reinterpret_cast<C3D_RenderTarget*>(&token);}
 C2D_TextBuf C2D_TextBufNew(size_t size) {++textAllocations;if(size==256) return fail==8 ? nullptr : &measureToken;return fail==4 ? nullptr : &token;}
 void C2D_TextBufDelete(C2D_TextBuf) {++bufferFree;}
-C2D_Font C2D_FontLoad(const char*) {return fail==5 ? nullptr : &token;}
+C2D_Font C2D_FontLoad(const char* path) {
+    const char* names[]={"emerald-8.bcfnt","emerald-10.bcfnt","emerald-12.bcfnt"};
+    for(unsigned i=0;i<3;++i) if(std::strstr(path,names[i])) return fail==int(9+i) ? nullptr : &fontTokens[i];
+    assert(std::strstr(path,"emerald.bcfnt"));return fail==5 ? nullptr : &token;
+}
 void C2D_FontFree(C2D_Font) {++fontFree;}
 void C2D_FontSetFilter(C2D_Font,GPU_TEXTURE_FILTER_PARAM a,GPU_TEXTURE_FILTER_PARAM b) {assert(a==GPU_NEAREST && b==GPU_NEAREST);}
-const C2D_FontInfo* C2D_FontGetInfo(C2D_Font font) {assert(font);return &fontInfo;}
+const C2D_FontInfo* C2D_FontGetInfo(C2D_Font font) {assert(font);for(unsigned i=0;i<3;++i) if(font==&fontTokens[i]) return &smallInfo[i];return &fontInfo;}
 C2D_SpriteSheet C2D_SpriteSheetLoad(const char* path) {for(unsigned i=0;i<17;++i) if(!std::strcmp(path,Pokerogue3DS::kHudIconAtlases[i].path)) {++hudLoads;return hudMissing ? nullptr : &hudTokens[i];}if(std::strcmp(path,Pokerogue3DS::kTypeLabelPath)==0) {++typeLoads;return typeMissing ? nullptr : &typeToken;}return fail==6 ? nullptr : &token;}
 void C2D_SpriteSheetFree(C2D_SpriteSheet) {++sheetFree;}
 C2D_Image C2D_SpriteSheetGetImage(C2D_SpriteSheet sheet,size_t) {for(unsigned i=0;i<17;++i) if(sheet==&hudTokens[i]) return {&tex,&hudSubs[i]};return {&tex,sheet==&typeToken ? &typeSub : (fail==7 ? nullptr : &sub)};}
@@ -43,44 +49,62 @@ void C2D_DrawRectSolid(float,float,float,float,float,u32) {}
 void C2D_DrawImageAtRotated(C2D_Image image,float,float,float,float,const C2D_ImageTint*,float sx,float sy) {++imageDraws;imageWidth=image.subtex->width;imageHeight=image.subtex->height;imageTop=image.subtex->top;imageScaleX=sx;imageScaleY=sy;}
 void C2D_PlainImageTint(C2D_ImageTint*,u32,float) {}
 void C2D_TextParse(C2D_Text*,C2D_TextBuf,const char*) {assert(false && "System font fallback in production path");}
-void C2D_TextFontParse(C2D_Text* text,C2D_Font,C2D_TextBuf buf,const char* value) {
-    text->width=100;
-    if(buf==&measureToken) {text->width=0;for(const char* p=value;*p;) {uint32_t cp;unsigned n=Pokerogue3DS::utf8CodePoint(p,cp);assert(n);text->width+=cp=='W' ? 20 : 10;p+=n;}}
-    else {std::strncpy(lastParsed,value,sizeof(lastParsed)-1);lastParsed[sizeof(lastParsed)-1]=0;}
+void C2D_TextFontParse(C2D_Text* text,C2D_Font font,C2D_TextBuf buf,const char* value) {
+    unsigned points=16;for(unsigned i=0;i<3;++i) if(font==&fontTokens[i]) points=Pokerogue3DS::kNativeFontPoints[i];
+    text->font=font;
+    text->width=0;for(const char* p=value;*p;) {uint32_t cp;unsigned n=Pokerogue3DS::utf8CodePoint(p,cp);assert(n);text->width+=std::round((cp=='W' ? 20 : 10)*float(points)/16);p+=n;}
+    text->width*=30.0f/C2D_FontGetInfo(font)->tglp->cellHeight;
+    if(buf!=&measureToken) {std::strncpy(lastParsed,value,sizeof(lastParsed)-1);lastParsed[sizeof(lastParsed)-1]=0;}
 }
 void C2D_TextOptimize(const C2D_Text*) {}
 void C2D_TextGetDimensions(const C2D_Text* text,float x,float,float* width,float*) {if(width) *width=text->width*x;}
-void C2D_DrawText(const C2D_Text*,u32 flags,float x,float y,float,float scale,float,...) {
-    ++draws;lastFlags=flags;lastX=x;lastY=y;lastScale=scale;
+void C2D_DrawText(const C2D_Text* text,u32 flags,float x,float y,float,float scale,float,...) {
+    ++draws;lastFlags=flags;lastX=x;lastY=y;lastScale=scale*30.0f/C2D_FontGetInfo(text->font)->tglp->cellHeight;
 }
 void C3D_FrameEnd(u8) {}
 }
 namespace Citro2D {const AssetEntry* findSceneAsset(const char*) {return nullptr;}}
 int main() {
-    for(int scenario=1;scenario<=8;++scenario) {
+    fail=0;
+    {Renderer2D invalid;glyphInfo[3].cellHeight=0;
+     assert(!invalid.init() && !invalid.isInitialized());
+     assert(!std::strcmp(invalid.initializationError(),"Invalid native font metrics"));
+     glyphInfo[3].cellHeight=31;assert(invalid.init());invalid.fini();}
+    {Renderer2D invalid;smallInfo[1].lineFeed=0;
+     assert(!invalid.init() && !invalid.isInitialized());
+     assert(!std::strcmp(invalid.initializationError(),"Invalid small native font metrics"));
+     smallInfo[1].lineFeed=12;assert(invalid.init());invalid.fini();}
+    for(int scenario=1;scenario<=11;++scenario) {
         fail=scenario;c3Free=c2Free=fontFree=sheetFree=bufferFree=targets=0;
         Renderer2D renderer;assert(!renderer.init());assert(!renderer.isInitialized());
         assert(renderer.initializationError() && std::strlen(renderer.initializationError()));
         assert(c3Free==(scenario==1 ? 0 : 1));assert(c2Free==(scenario<=2 ? 0 : 1));
-        assert(bufferFree==(scenario<=4 ? 0 : 1));assert(fontFree==(scenario<=5 ? 0 : 1));
+        assert(bufferFree==(scenario<=4 ? 0 : (scenario<=8 ? 1 : 2)));assert(fontFree==(scenario<=5 ? 0 : (scenario<=9 ? 1 : scenario-8)));
         assert(sheetFree==(scenario>=7 ? 1 : 0));
         renderer.fini();assert(c3Free==(scenario==1 ? 0 : 1));
         fail=0;assert(renderer.init());assert(renderer.isInitialized() && !renderer.initializationError());
-        assert(renderer.textLineHeight(0.5f)==26.0f);assert(renderer.windowStyle()==1);
+        assert(renderer.textLineHeight(0.5f)==19.0f);assert(renderer.windowStyle()==1);
         renderer.beginTop();
+        const float requested[]={0.25f,0.30f,0.375f,0.5f,1.0f};
+        for(float size:requested) {
+            renderer.drawText("WÉ",1.4f,2.7f,size,0xffffffff);
+            const auto expected=Pokerogue3DS::nativeTextRaster(size);
+            assert(std::fabs(lastScale-expected.scale)<0.000001f);
+        }
+        renderer.drawText("ABC",1,2,0xffffffff,1.0f);assert(std::fabs(lastScale-1)<0.000001f);
         renderer.drawText("ABC",1.4f,2.7f,0.4f,0xffffffff);
-        assert(lastX==1 && lastY==3 && std::fabs(lastScale-0.8f)<0.0001f);
+        assert(lastX==1 && lastY==3 && std::fabs(lastScale-1)<0.000001f);
         renderer.drawTextWrapped("ABC DEF",1,2,0.4f,40,0xffffffff);
-        assert((lastFlags & C2D_WordWrap)!=0 && std::fabs(lastScale-0.8f)<0.0001f);
+        assert((lastFlags & C2D_WordWrap)!=0 && std::fabs(lastScale-1)<0.000001f);
         float width=0;
-        assert(std::fabs(renderer.drawTextFitted("ABC",1,2,0.4f,40,0xffffffff,&width)-0.2f)<0.0001f);
-        assert(width==40);
-        renderer.drawTextFitted("ABC",1,2,0.4f,200,0xffffffff,&width);assert(width==80);
+        assert(renderer.drawTextFitted("ABC",1,2,0.4f,10,0xffffffff,&width)==0.25f);
+        assert(std::fabs(width-10)<0.000001f && std::fabs(lastScale-1)<0.000001f && !std::strcmp(lastParsed,"A."));
+        renderer.drawTextFitted("ABC",1,2,0.4f,200,0xffffffff,&width);assert(width==24.0f && std::fabs(lastScale-1)<0.000001f);
         const int frameClears=mainClears,allocatedBefore=textAllocations;
         char abbreviated[128];float nameWidth=0;
         assert(renderer.abbreviateText("ABCDE",0.3f,20,abbreviated,sizeof(abbreviated),nameWidth));
         assert(!std::strcmp(abbreviated,"AB.") && nameWidth<=20 && measureClears>1);
-        renderer.drawText(abbreviated,1,2,0.3f,0xffffffff);assert(std::fabs(lastScale-0.6f)<0.0001f && !std::strcmp(lastParsed,"AB."));
+        renderer.drawText(abbreviated,1,2,0.3f,0xffffffff);assert(std::fabs(lastScale-1)<0.000001f && !std::strcmp(lastParsed,"AB."));
         assert(renderer.abbreviateText("Nidoran♀",0.3f,100,abbreviated,sizeof(abbreviated),nameWidth,true));
         assert(!std::strcmp(abbreviated,"Nidoran"));
         assert(renderer.abbreviateText("Évoli",0.3f,20,abbreviated,sizeof(abbreviated),nameWidth));assert(!std::strcmp(abbreviated,"Év."));
@@ -164,9 +188,10 @@ int main() {
         assert(renderer.drawHudGraphic("numbers","0",0,0));
         assert(!renderer.setWindowStyle(2)); // Never free a texture before GPU submission.
         renderer.endFrame();assert(renderer.setWindowStyle(2) && renderer.windowStyle()==2);
+        const int fontsBeforeClose=fontFree;
         const int buffersBeforeClose=bufferFree;
         const int sheetsBeforeClose=sheetFree;
-        renderer.fini();assert(bufferFree==buffersBeforeClose+2);assert(sheetFree==sheetsBeforeClose+19); // Window, localized labels, six type variants and two indicator sheets.
+        renderer.fini();assert(fontFree==fontsBeforeClose+4);assert(bufferFree==buffersBeforeClose+2);assert(sheetFree==sheetsBeforeClose+19); // Window, localized labels, six type variants and two indicator sheets.
         assert(!renderer.isInitialized());assert(renderer.textLineHeight(0.5f)==0);
         assert(renderer.init() && renderer.windowStyle()==1);renderer.fini();
     }
