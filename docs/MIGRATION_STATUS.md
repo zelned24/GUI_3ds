@@ -274,3 +274,7 @@ El avance se publica como trabajo en curso. Classic completo y la fidelidad visu
 3. Pruebas de bounds A4, referencias inválidas/vacías, offsets del renderer y raster fitted pasaron. Preparación repetida produjo iguales hashes de metadatos/header; verificación de assets, native-parity y build ARM/3DSX pasaron. Suite completa 38/38 PASS. Comparación visual de offsets pendiente. Logs build/font-ink-*.
 
 4. Usuario confirmó mejora visual al retirar filtro Azahar: tamaño de Pokémon y sprites aprobados; todavía observa fallos en letras. La corrección de origen de tinta se compiló después de esa confirmación y necesita captura específica.
+
+### Preparación reproducible de preview
+
+1. prepare_azahar_preview.py --portable copia ejecutable/librerías/plugins a build/azahar-pixel-runtime y escribe user/config. Rechaza rutas solapadas con instalación; preserva saves existentes y no copia configuración privada. Nueve pruebas Python y npm test 38/38 PASS. Verificador de presentación compara ahora tinta A4 real con provenance y NativeFontMetrics.hpp. Diff-check PASS. Logs build/portable-preview-*.

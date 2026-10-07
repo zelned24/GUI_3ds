@@ -41,3 +41,10 @@ Checklist de avance por áreas: [implementación pendiente](docs/progress/IMPLEM
 4. Ejecutar el build después de preparar sprites, presentación y bundle QuickJS. El build no descarga esos catálogos automáticamente.
 
 Los binarios y assets convertidos bajo `build/` no se suben a Git; se generan desde las revisiones fijadas.
+
+## Preview sin suavizado en Azahar (Windows)
+
+1. Cerrar la instancia portátil antes de preparar su configuración.
+2. Ejecutar `python scripts/prepare_azahar_preview.py --portable`. Puede indicarse otra instalación con `--azahar "ruta/azahar.exe"`.
+3. Abrir `build/azahar-pixel-runtime/azahar.exe` con el `.3dsx` compilado. Su directorio `user/config` conserva la configuración global separada y usa resolución 1×, nearest, filtros desactivados y Old 3DS. No usar `--user`: la interfaz gráfica instalada lo ignora.
+4. Comprobar en `build/azahar-pixel-runtime/user/log/azahar_log.txt`: TextureFilter=None, TextureSampling=NearestNeighbor, FilterMode=false e IsNew3ds=false. Este perfil no demuestra rendimiento en consola física.

@@ -1,10 +1,11 @@
 import struct
 import sys
 import unittest
+import tempfile
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
 from pixel_font import crisp_font, compact_font, glyph_ink_bounds
-from prepare_azahar_preview import pixel_profile
+from prepare_azahar_preview import pixel_profile, prepare_portable_preview
 
 class PixelFontTests(unittest.TestCase):
     def source(self):
@@ -113,6 +114,28 @@ class PixelFontTests(unittest.TestCase):
         self.assertIn("is_new_3ds=false", result)
         self.assertNotIn("secret", result)
         self.assertEqual(result, pixel_profile(source))
+
+    def test_portable_preview_uses_adjacent_profile_and_preserves_installation(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root=Path(directory);installed=root/'installed';installed.mkdir()
+            exe=installed/'azahar.exe';exe.write_bytes(b'executable')
+            (installed/'Qt6Core.dll').write_bytes(b'library')
+            (installed/'private.ini').write_text('do-not-copy')
+            (installed/'plugins').mkdir();(installed/'plugins/platform.dll').write_bytes(b'plugin')
+            profile=pixel_profile('[Renderer]\ntexture_filter=4\n')
+            target=root/'preview'
+            result=prepare_portable_preview(exe,target,profile)
+            self.assertEqual(result.read_bytes(),exe.read_bytes())
+            self.assertEqual((target/'user/config/qt-config.ini').read_text(),profile)
+            self.assertEqual((target/'plugins/platform.dll').read_bytes(),b'plugin')
+            self.assertFalse((target/'private.ini').exists())
+            (target/'user/sdmc').mkdir();(target/'user/sdmc/save.dat').write_bytes(b'save')
+            prepare_portable_preview(exe,target,profile)
+            self.assertEqual((target/'user/sdmc/save.dat').read_bytes(),b'save')
+            self.assertEqual((installed/'private.ini').read_text(),'do-not-copy')
+            for invalid in (installed,installed/'preview',root):
+                with self.assertRaises(ValueError): prepare_portable_preview(exe,invalid,profile)
+            with self.assertRaises(ValueError): prepare_portable_preview(installed/'absent.exe',target,profile)
 
     def test_invalid_input(self):
         for position, value in [(4, 0), (12, 0), (24, 1), (38, 1), (48, 255)]:

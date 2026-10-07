@@ -617,7 +617,7 @@ Para cada entrega actualizar esta tabla con IDs, commit, alcance conectado, excl
      - [x] Dibujar el logo original de título a 2× (300×66) centrado; eliminar la escala anterior de 1,8×. Comparación visual pendiente.
      - [x] Dibujar iconos de recompensas y Poké Balls a 32×32 (1×); validar canvas/recortes de los 528 frames de objetos y unificar dibujo/táctil de las cinco filas de Poké Balls sin solapamientos.
    - [x] Compactar las cuatro sheets A4 conservando glifos/métricas; 2 MiB → 288 KiB.
-   - [x] Generar márgenes/altura de tinta de mayúsculas desde BCFNT pinned; descontar margen transparente al dibujar texto y centrar cursores con altura visible. Pruebas de offsets, UTF-8 y métricas ejecutadas; capturas pendientes.
+   - [x] Generar márgenes/altura de tinta de mayúsculas desde BCFNT pinned; descontar margen transparente al dibujar texto y centrar cursores con altura visible. Pruebas de offsets, UTF-8 y métricas ejecutadas; el verificador compara A4 físico, provenance y header C++; capturas pendientes.
    - [ ] Perfilar el presupuesto total y validar las fuentes compactadas en Azahar/Old 3DS.
 3. [ ] Evaluar RGBA5551/RGBA4 por clase de asset con comparación de colores/alpha y memoria residente. Pokémon ya usa RGBA4, fuentes A4 y presentación RGBA8; no dar ETC1A4 por visualmente equivalente sin comparación.
 4. [ ] Medir CPU/GPU/memoria en Old 3DS: nearest y scale 1 no prueban un incremento de FPS.

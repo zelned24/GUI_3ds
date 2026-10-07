@@ -185,20 +185,27 @@ def test_hud_types():
     print("  [OK] Seventeen original HUD sheets including digit/label assets: frame offsets, physical hashes and generated tables")
 
 def test_pixel_fonts():
-    from pixel_font import crisp_font
+    from pixel_font import crisp_font, glyph_ink_bounds
     root=Path(ROOT)
     report=json.loads((root/"build/native-presentation/font-provenance.json").read_text())
     source=root/"build/native-presentation/source"/report["sourcePath"]
     assert hashlib.sha256(source.read_bytes()).hexdigest()==report["sourceSHA256"]
     assert [row["points"] for row in report["files"]]==[8,10,12,16]
+    ink_tops=[];ink_heights=[]
     for row in report["files"]:
         data=(root/"build/romfs"/row["convertedPath"].removeprefix("romfs:/")).read_bytes()
         assert len(data)==row["bytes"] and hashlib.sha256(data).hexdigest()==row["convertedSHA256"]
         assert crisp_font(data)==data
+        top,bottom=glyph_ink_bounds(data,ord('C'))
+        assert row["capitalInkTop"]==top and row["capitalInkHeight"]==bottom-top
+        ink_tops.append(top);ink_heights.append(bottom-top)
         glyph=struct.unpack_from("<I",data,36)[0]
         assert row["rasterCellHeight"]==data[glyph+1] and row["lineFeed"]==data[29]
         assert row["sheetBytes"]==struct.unpack_from("<I",data,glyph+4)[0]*struct.unpack_from("<H",data,glyph+8)[0]
-    print("  [OK] Four pinned font rasters: metrics, binary alpha, hashes and physical sheets")
+    header=(root/"project/generated/include/content/NativeFontMetrics.hpp").read_text()
+    assert 'kNativeFontInkTop[]={'+','.join(map(str,ink_tops))+'};' in header
+    assert 'kNativeFontInkHeight[]={'+','.join(map(str,ink_heights))+'};' in header
+    print("  [OK] Four pinned font rasters: native ink/compiled metrics, binary alpha, hashes and physical sheets")
 
 if __name__ == "__main__":
     test_items()
