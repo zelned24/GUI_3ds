@@ -31,7 +31,7 @@ public:
         }
         if (frame) {
             if (!m_sheet || m_page != frame->page) {
-                if (m_sheet) C2D_SpriteSheetFree(m_sheet);
+                if (m_sheet) renderer.retireSpriteSheet(m_sheet);
                 m_page = frame->page;
                 m_sheet = C2D_SpriteSheetLoad(kItemIconPages[m_page]);
                 if (!m_sheet && m_page == 0) {

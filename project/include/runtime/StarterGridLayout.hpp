@@ -1,10 +1,12 @@
 #pragma once
 #include "runtime/DualScreenLayout.hpp"
 #include "content/PokerogueRuntimeContent.hpp"
+#include <cstring>
 namespace Pokerogue3DS {
 inline constexpr unsigned kStarterGridColumns=6,kStarterGridRows=3;
 inline constexpr unsigned kStarterGridPageSize=kStarterGridColumns*kStarterGridRows;
 inline constexpr TouchRect kStarterFilterRect{8,23,304,25};
+inline constexpr TouchRect kStarterGenerationRect{8,23,152,25},kStarterTypeRect{160,23,152,25};
 inline constexpr TouchRect kStarterFooterRects[]={{8,205,83,18},{94,205,125,18},{222,205,90,18}};
 inline int starterFooterAt(unsigned x,unsigned y) {
     for(unsigned i=0;i<3;++i) if(kStarterFooterRects[i].contains(x,y)) return int(i);
@@ -15,11 +17,24 @@ inline int starterGridAt(unsigned x,unsigned y) {
         if(TouchRect{16+(i%6)*48,54+(i/6)*36,48,36}.contains(x,y)) return int(i);
     return -1;
 }
-template<class Unlocked> inline unsigned starterCatalogCount(Unlocked unlocked,unsigned generation=0) {
+inline bool starterMatchesType(const PokerogueContent::Species& row,const char* type) {
+    return !type || (row.type1 && std::strcmp(row.type1,type)==0) || (row.type2 && std::strcmp(row.type2,type)==0);
+}
+template<class Unlocked> inline unsigned starterCatalogCount(Unlocked unlocked,unsigned generation=0,const char* type=nullptr) {
     unsigned count=0;
     for(const auto& row:PokerogueContent::kSpecies)
-        if(row.starterEligible && unlocked(row) && (!generation || row.generation==generation)) ++count;
+        if(row.starterEligible && unlocked(row) && (!generation || row.generation==generation) && starterMatchesType(row,type)) ++count;
     return count;
+}
+template<class Unlocked> inline const char* nextStarterType(const char* current,Unlocked unlocked,unsigned generation=0) {
+    const char* next=nullptr;
+    for(const auto& row:PokerogueContent::kSpecies)
+        if(row.starterEligible && unlocked(row) && (!generation || row.generation==generation)) {
+            const char* types[]={row.type1,row.type2};
+            for(const char* type:types) if(type && *type && std::strcmp(type,"NONE")!=0 && std::strcmp(type,"none")!=0
+                && (!current || std::strcmp(type,current)>0) && (!next || std::strcmp(type,next)<0)) next=type;
+        }
+    return next;
 }
 template<class Unlocked> inline unsigned nextStarterGeneration(unsigned current,int direction,Unlocked unlocked) {
     unsigned next=0;
@@ -30,9 +45,9 @@ template<class Unlocked> inline unsigned nextStarterGeneration(unsigned current,
     }
     return next;
 }
-template<class Unlocked> inline const PokerogueContent::Species* starterCatalogAt(unsigned ordinal,Unlocked unlocked,unsigned generation=0) {
+template<class Unlocked> inline const PokerogueContent::Species* starterCatalogAt(unsigned ordinal,Unlocked unlocked,unsigned generation=0,const char* type=nullptr) {
     for(const auto& row:PokerogueContent::kSpecies)
-        if(row.starterEligible && unlocked(row) && (!generation || row.generation==generation)) {
+        if(row.starterEligible && unlocked(row) && (!generation || row.generation==generation) && starterMatchesType(row,type)) {
             if(!ordinal--) return &row;
         }
     return nullptr;

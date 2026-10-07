@@ -289,7 +289,7 @@ int main() {
                 // Reuse the explicit run seed; gameplay must not depend on the clock.
                 const uint32_t seed = game.run().seed;
                 if(game.restoreSetup(seed, starterDex)) {
-                    setup.generationFilter=0;
+                    setup.generationFilter=0;setup.typeFilter=nullptr;
                     player.load(game.scene());
                     titleVisible=false;
                 } else frontend.feedback("No se pudo iniciar la partida.");
@@ -419,7 +419,8 @@ int main() {
                 else setup.formFeedback="Forma no disponible o guardado fallido.";
             }
         } else if(setupInput) {
-            if(rawPressed & KEY_Y) {changed=setup.cycleGeneration(game);setup.feedback=nullptr;}
+            if(rawPressed & KEY_X) {changed=setup.cycleType(game);setup.feedback=nullptr;}
+            else if(rawPressed & KEY_Y) {changed=setup.cycleGeneration(game);setup.feedback=nullptr;}
             else if(rawPressed & KEY_SELECT) {setup.formsOpen=true;setup.selectedForm=0;setup.formFeedback=nullptr;setup.feedback=nullptr;}
             else if(rawPressed & (KEY_LEFT | KEY_CPAD_LEFT)) {changed=setup.move(game,-1);setup.feedback=nullptr;}
             else if(rawPressed & (KEY_RIGHT | KEY_CPAD_RIGHT)) {changed=setup.move(game,1);setup.feedback=nullptr;}
@@ -429,7 +430,8 @@ int main() {
             else if(rawPressed & KEY_R) {changed=setup.move(game,int(Pokerogue3DS::kStarterGridPageSize));setup.feedback=nullptr;}
             else if(rawPressed & KEY_TOUCH) {
                 touchPosition touch{};hidTouchRead(&touch);
-                if(Pokerogue3DS::kStarterFilterRect.contains(touch.px,touch.py)) {changed=setup.cycleGeneration(game);setup.feedback=nullptr;}
+                if(Pokerogue3DS::kStarterGenerationRect.contains(touch.px,touch.py)) {changed=setup.cycleGeneration(game);setup.feedback=nullptr;}
+                else if(Pokerogue3DS::kStarterTypeRect.contains(touch.px,touch.py)) {changed=setup.cycleType(game);setup.feedback=nullptr;}
                 else if(touch.py>=54 && touch.py<162) {
                     const int cell=Pokerogue3DS::starterGridAt(touch.px,touch.py);
                     if(cell>=0) {
@@ -454,7 +456,7 @@ int main() {
                     for(unsigned slot=0;slot<6;++slot) {
                         if(touch.px>=8+slot*50 && touch.px<8+slot*50+46) {
                             if(slot<game.presentation().playerPartyCount) {
-                                setup.generationFilter=0;
+                                setup.generationFilter=0;setup.typeFilter=nullptr;
                                 changed=game.selectSetupStarter(game.presentation().playerParty[slot].dex);
                                 setup.feedback=nullptr;
                             }
@@ -850,6 +852,9 @@ int main() {
                 game.presentation().biomeName ? game.presentation().biomeName : "Pradera",
                 unsigned(game.run().wave));
             renderer.drawTextFitted(fieldLine, 286.0f, 11.0f, 0.28f, 102.0f, C2D_Color32(255, 255, 255, 255));
+
+            if(game.presentationStage()==Pokerogue3DS::NativeSaveStage::BattleActive)
+                battleMenu.drawTop(renderer,game);
 
             // Battle dialogue banner on top screen only when outside active battle
             if (!game.battleFeedback().empty() && game.presentationStage() != Pokerogue3DS::NativeSaveStage::BattleActive) {

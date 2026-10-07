@@ -18,7 +18,7 @@ public:
         for(auto& candidate:m_slots) if(candidate.page==icon->page && candidate.sheet) {slot=&candidate;break;}
         if(!slot) {
             slot=&m_slots[m_next];m_next=(m_next+1)%2;
-            if(slot->sheet) C2D_SpriteSheetFree(slot->sheet);
+            if(slot->sheet) renderer.retireSpriteSheet(slot->sheet);
             slot->sheet=C2D_SpriteSheetLoad(kPokemonIconPages[icon->page]);slot->page=icon->page;
             if(slot->sheet) {
                 const auto img=C2D_SpriteSheetGetImage(slot->sheet,0);

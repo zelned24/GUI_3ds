@@ -2,6 +2,7 @@
 
 #include <cstdint>
 #include <cstddef>
+#include <vector>
 #include <3ds.h>
 #include <citro2d.h>
 
@@ -26,6 +27,8 @@ public:
     // Frame synchronization
     void beginFrame();
     void endFrame();
+    // Keep queued GPU draws alive until the next synchronized frame.
+    void retireSpriteSheet(C2D_SpriteSheet sheet);
 
     // Screen selection (Top: 400x240, Bottom: 320x240)
     void beginTop();
@@ -103,6 +106,7 @@ public:
     const char* initializationError() const { return m_initError; }
 
 private:
+    std::vector<C2D_SpriteSheet> m_retiredSheets;
     float textRasterY(float y,float size) const;
     C3D_RenderTarget* m_topTarget;
     C3D_RenderTarget* m_bottomTarget;

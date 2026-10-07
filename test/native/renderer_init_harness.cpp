@@ -238,6 +238,17 @@ int main() {
         }
         assert(renderer.setWindowStyle(2) && renderer.windowStyle()==2);
 
+        renderer.beginFrame();
+        const int beforeRetire=sheetFree;
+        renderer.retireSpriteSheet(reinterpret_cast<C2D_SpriteSheet>(&token));
+        renderer.retireSpriteSheet(nullptr);
+        assert(sheetFree==beforeRetire); // Queued draws still own this texture.
+        renderer.endFrame();
+        assert(sheetFree==beforeRetire); // Submission is not GPU completion.
+        renderer.beginFrame();
+        assert(sheetFree==beforeRetire+1); // SYNCDRAW completed prior users.
+        renderer.endFrame();
+
         const int fontsBeforeClose=fontFree;
         const int buffersBeforeClose=bufferFree;
         const int sheetsBeforeClose=sheetFree;

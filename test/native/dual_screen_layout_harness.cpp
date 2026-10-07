@@ -66,6 +66,16 @@ int main() {
     assert(!kDialogueAdvanceRect.contains(168,227) && !kDialogueAdvanceRect.contains(12,228));
     for(unsigned y=0;y<240;++y) for(unsigned x=0;x<320;++x)
         if(kDialogueAdvanceRect.contains(x,y)) assert(commandButtonAt(x,y)<0);
+    for(unsigned y=0;y<240;++y) for(unsigned x=0;x<320;++x) {
+        int expected=-1;
+        for(unsigned i=0;i<4;++i) if(kCommandButtonRects[i].contains(x,y)) {
+            assert(expected==-1);expected=int(i);
+        }
+        assert(commandButtonAt(x,y)==expected);
+    }
+    assert(commandButtonAt(10,10)==0 && commandButtonAt(164,10)==1);
+    assert(commandButtonAt(10,112)==2 && commandButtonAt(164,112)==3);
+    assert(commandButtonAt(159,50)==-1 && commandButtonAt(20,207)==-1);
     static_assert(anchoredSpriteScale(1.0f,2.0f)==1.0f,"Explicit native size must not be doubled");
     static_assert(anchoredSpriteScale(2.0f,0.75f)==2.0f,"Explicit double size must not be reduced");
     static_assert(anchoredSpriteScale(1.25f,2.0f)==1.25f,"Explicit adaptation scale is preserved");
@@ -93,6 +103,7 @@ int main() {
         const int expected=x>=16 && x<304 && y>=54 && y<162 ? int((y-54)/36*6+(x-16)/48) : -1;
         assert(starterGridAt(x,y)==expected);
         unsigned hits=unsigned(expected>=0)+unsigned(kStarterFilterRect.contains(x,y));
+        assert(unsigned(kStarterGenerationRect.contains(x,y))+unsigned(kStarterTypeRect.contains(x,y))==unsigned(kStarterFilterRect.contains(x,y)));
         int footer=-1;
         for(unsigned i=0;i<3;++i) if(kStarterFooterRects[i].contains(x,y)) {++hits;footer=int(i);}
         assert(hits<=1 && starterFooterAt(x,y)==footer);
@@ -112,6 +123,21 @@ int main() {
         assert(nextStarterGeneration(gen,-1,fresh)==last);last=gen;
     }
     assert(nextStarterGeneration(last,1,fresh)==0 && nextStarterGeneration(0,-1,fresh)==last);
+    assert(!nextStarterType(nullptr,none));
+    assert(starterCatalogCount(fresh,0,"UNKNOWN_TYPE")==0 && !starterCatalogAt(0,fresh,0,"UNKNOWN_TYPE"));
+    for(unsigned gen=0;gen<=255;++gen) {
+        const char* type=nullptr;
+        while(const char* next=nextStarterType(type,fresh,gen)) {
+            assert(!type || std::strcmp(next,type)>0);type=next;
+            unsigned n=0;
+            for(const auto& row:PokerogueContent::kSpecies)
+                if(row.starterEligible && row.freshProfileStarter && (!gen || row.generation==gen) && starterMatchesType(row,type)) {
+                    assert(starterCatalogAt(n,fresh,gen,type)->dex==row.dex);++n;
+                }
+            assert(n && starterCatalogCount(fresh,gen,type)==n && !starterCatalogAt(n,fresh,gen,type));
+        }
+    }
+
     for(unsigned gen=1;gen<=255;++gen) {
         unsigned count=0;
         for(const auto& row:PokerogueContent::kSpecies) if(row.starterEligible && row.freshProfileStarter && row.generation==gen) {

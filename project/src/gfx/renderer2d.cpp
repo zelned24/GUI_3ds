@@ -132,6 +132,11 @@ void Renderer2D::fini() {
         endFrame();
     }
 
+    if(!m_retiredSheets.empty()) {
+        beginFrame(); // SYNCDRAW waits for all users of retired textures.
+        endFrame();
+    }
+
     if (m_textBuf) {
         C2D_TextBufDelete(m_textBuf);
         m_textBuf = nullptr;
@@ -165,7 +170,13 @@ void Renderer2D::beginFrame() {
     if (!m_initialized || m_frameActive) return;
     if (m_textBuf) C2D_TextBufClear(m_textBuf);
     C3D_FrameBegin(C3D_FRAME_SYNCDRAW);
+    for(auto sheet:m_retiredSheets) C2D_SpriteSheetFree(sheet);
+    m_retiredSheets.clear();
     m_frameActive = true;
+}
+
+void Renderer2D::retireSpriteSheet(C2D_SpriteSheet sheet) {
+    if(sheet) m_retiredSheets.push_back(sheet);
 }
 
 void Renderer2D::endFrame() {

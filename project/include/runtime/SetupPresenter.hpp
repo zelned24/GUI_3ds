@@ -180,16 +180,17 @@ public:
         return false;
     }
     unsigned generationFilter=0;
+    const char* typeFilter=nullptr;
     unsigned count(const FirstRunRuntime& game) const {
-        return starterCatalogCount([&](const auto& row){return game.starterUnlocked(row);},generationFilter);
+        return starterCatalogCount([&](const auto& row){return game.starterUnlocked(row);},generationFilter,typeFilter);
     }
     const PokerogueContent::Species* at(const FirstRunRuntime& game,unsigned ordinal) const {
-        return starterCatalogAt(ordinal,[&](const auto& row){return game.starterUnlocked(row);},generationFilter);
+        return starterCatalogAt(ordinal,[&](const auto& row){return game.starterUnlocked(row);},generationFilter,typeFilter);
     }
     unsigned selectedOrdinal(const FirstRunRuntime& game) const {
         unsigned ordinal=0;
         for(const auto& row:PokerogueContent::kSpecies)
-            if(row.starterEligible && game.starterUnlocked(row) && (!generationFilter || row.generation==generationFilter)) {
+            if(row.starterEligible && game.starterUnlocked(row) && (!generationFilter || row.generation==generationFilter) && starterMatchesType(row,typeFilter)) {
                 if(row.dex==game.selectedSetupStarterDex()) return ordinal;
                 ++ordinal;
             }
@@ -202,6 +203,12 @@ public:
     }
     bool cycleGeneration(FirstRunRuntime& game,int direction=1) {
         generationFilter=nextStarterGeneration(generationFilter,direction,[&](const auto& row){return game.starterUnlocked(row);});
+        if(!count(game)) typeFilter=nullptr;
+        const auto* first=at(game,0);
+        return first && game.selectSetupStarter(first->dex);
+    }
+    bool cycleType(FirstRunRuntime& game) {
+        typeFilter=nextStarterType(typeFilter,[&](const auto& row){return game.starterUnlocked(row);},generationFilter);
         const auto* first=at(game,0);
         return first && game.selectSetupStarter(first->dex);
     }
@@ -262,16 +269,16 @@ public:
         } else std::snprintf(label,sizeof(label),"Coste no disponible");
         renderer.drawText(label,161,73,0.4f,0xffffffff);
         const char* ability=abilityUiName((form ? form->ability1 : species->ability1));
-        if(!renderer.drawTextBox(ability ? ability : "",161,94,0.3125f,220,2,0xffffffff))
-            renderer.drawTextFitted(ability ? ability : "",161,99,0.3125f,220,0xffffffff);
-        renderer.drawText(game.starterUnlocked(species->dex) ? "Disponible" : runtimeUiText("starter-select-ui-handler:locked"),161,122,0.32f,0xffffffff);
+        if(!renderer.drawTextBox(ability ? ability : "",161,94,0.375f,220,2,0xffffffff))
+            renderer.drawTextFitted(ability ? ability : "",161,99,0.375f,220,0xffffffff);
+        renderer.drawText(game.starterUnlocked(species->dex) ? "Disponible" : runtimeUiText("starter-select-ui-handler:locked"),161,122,0.375f,0xffffffff);
         std::snprintf(label,sizeof(label),"PS %u   ATQ %u   DEF %u",(form ? form->hp : species->hp),(form ? form->atk : species->atk),(form ? form->def : species->def));
-        renderer.drawText(label,161,146,0.33f,0xffffffff);
+        renderer.drawText(label,161,146,0.375f,0xffffffff);
         std::snprintf(label,sizeof(label),"AE %u   DE %u   VEL %u",(form ? form->spatk : species->spatk),(form ? form->spdef : species->spdef),(form ? form->speed : species->speed));
-        renderer.drawText(label,161,168,0.33f,0xffffffff);
+        renderer.drawText(label,161,168,0.375f,0xffffffff);
         const unsigned bst=(form ? form->hp : species->hp)+(form ? form->atk : species->atk)+(form ? form->def : species->def)+(form ? form->spatk : species->spatk)+(form ? form->spdef : species->spdef)+(form ? form->speed : species->speed);
         std::snprintf(label,sizeof(label),"Total base (BST): %u",bst);
-        renderer.drawText(label,161,193,0.3f,0xffffffff);
+        renderer.drawText(label,161,193,0.375f,0xffffffff);
         renderer.drawText(game.presentation().modeName ? game.presentation().modeName : "",16,217,0.4f,0xffffffff);
     }
     void drawBottom(Renderer2D& renderer,const FirstRunRuntime& game) {
@@ -288,11 +295,16 @@ public:
             unsigned(totalCost/4),unsigned(totalCost%4)*25,unsigned(kClassicStarterValueLimit));
         else std::snprintf(label,sizeof(label),"%u / %u   Coste sin resolver",ordinal+1,count(game));
         renderer.drawTextFitted(label,13,5,0.375f,294,0xffffffff);
-        renderer.drawWindow(kStarterFilterRect.x,kStarterFilterRect.y,kStarterFilterRect.width,kStarterFilterRect.height);
+        renderer.drawWindow(kStarterGenerationRect.x,kStarterGenerationRect.y,kStarterGenerationRect.width,kStarterGenerationRect.height);
+        renderer.drawWindow(kStarterTypeRect.x,kStarterTypeRect.y,kStarterTypeRect.width,kStarterTypeRect.height);
         char filter[64];
-        if(generationFilter) std::snprintf(filter,sizeof(filter),"Generación %u   Y: cambiar",generationFilter);
-        else std::snprintf(filter,sizeof(filter),"Todas las generaciones   Y: cambiar");
-        renderer.drawTextFitted(filter,17,29,0.3125f,286,0xffffffff);
+        if(generationFilter) std::snprintf(filter,sizeof(filter),"Y: Generación %u",generationFilter);
+        else std::snprintf(filter,sizeof(filter),"Y: Todas las gen.");
+        renderer.drawTextFitted(filter,17,29,0.3125f,135,0xffffffff);
+        renderer.drawText("X: Tipo",169,29,0.3125f,0xffffffff);
+        if(typeFilter) {
+            if(!renderer.drawTypeLabel(typeFilter,231,27,32,14)) renderer.drawTextFitted(typeFilter,228,29,0.3125f,76,0xffffffff);
+        } else renderer.drawText("Todos",237,29,0.3125f,0xffffffff);
         if(!m_grid) {
             m_grid=C2D_SpriteSheetLoad("romfs:/presentation/ui/starter_container_bg.t3x");
             if(m_grid) {

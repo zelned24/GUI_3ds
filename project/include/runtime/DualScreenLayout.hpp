@@ -42,12 +42,10 @@ inline constexpr int partyButtonAt(unsigned x,unsigned y,unsigned count) {
     return -1;
 }
 
-// 2x2 grid in right command window (x: 180..314, y: 8..232)
+// Full-width command grid; dialogue is displayed on the upper screen.
 inline constexpr TouchRect kCommandButtonRects[] = {
-    {180, 8, 67, 112},   // 0: Luchar
-    {247, 8, 67, 112},   // 1: Balls
-    {180, 120, 67, 112},  // 2: Pokémon
-    {247, 120, 67, 112}   // 3: Huir
+    {10,10,146,94}, {164,10,146,94},
+    {10,112,146,94}, {164,112,146,94}
 };
 
 inline constexpr int commandButtonAt(unsigned x, unsigned y) {

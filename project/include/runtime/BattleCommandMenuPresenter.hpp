@@ -30,7 +30,7 @@ enum class BattleMenuCommand {
 class BattleCommandMenuPresenter {
 public:
     void clear() { m_icons.clear(); m_cursor.clear(); }
-    void reset() { m_page = BattleMenuPage::Root; m_selected = 0; m_feedback = nullptr; m_dialogue.reset();m_advanceDialogue=false; }
+    void reset() { m_page = BattleMenuPage::Root; m_selected = 0; m_dialogue.reset();m_advanceDialogue=false; }
     bool movesOpen() const { return m_page == BattleMenuPage::Moves; }
     PokeballType ballType() const { return static_cast<PokeballType>(kBallMenuDefinitions[m_selected].id); }
 
@@ -54,8 +54,7 @@ public:
         }
 
         if (m_page == BattleMenuPage::Root) {
-            if(m_dialogue.hasNavigation() && ((keys & KEY_SELECT)
-                || ((keys & KEY_TOUCH) && kDialogueAdvanceRect.contains(x,y)))) {
+            if(m_dialogue.hasNavigation() && (keys & KEY_SELECT)) {
                 m_advanceDialogue=true;return BattleMenuCommand::None;
             }
             // 2D D-pad navigation: UP/DOWN toggles row, LEFT/RIGHT toggles column
@@ -109,6 +108,19 @@ public:
         return BattleMenuCommand::ThrowBall;
     }
 
+    void drawTop(Renderer2D& renderer,const FirstRunRuntime& game) {
+        const auto& feedback=game.battleFeedback();
+        if(!feedback.empty() && feedback.rfind("Ola ",0)!=0) {
+            m_dialogue.sync(renderer,feedback);
+        } else {
+            const char* name=game.presentation().player.localizedName;
+            m_dialogue.sync(renderer,std::string("¿Qué debería hacer ")+(name ? name : "Pokémon")+"?");
+        }
+        if(m_advanceDialogue) m_dialogue.advance(renderer);
+        m_advanceDialogue=false;
+        m_dialogue.draw(renderer);
+    }
+
     void draw(Renderer2D& renderer, const FirstRunRuntime& game) {
         if (m_page == BattleMenuPage::Moves) {
             MoveMenuPresenter::draw(renderer, game);
@@ -119,50 +131,16 @@ public:
         renderer.clear(C2D_Color32(36, 28, 44, 255));
 
         if (m_page == BattleMenuPage::Root) {
-            // Left Window: Prompt / Dialogue Box
-            renderer.drawWindow(6, 8, 168, 224);
-
-            // Show prompt unless active feedback has combat action details (ignore wave start text)
-            const std::string& feedback = game.battleFeedback();
-            const bool isWaveIntro = feedback.rfind("Ola ", 0) == 0;
-            if (!feedback.empty() && !isWaveIntro) {
-                m_dialogue.sync(renderer,feedback);
-                if(m_advanceDialogue) m_dialogue.advance(renderer);
-                m_advanceDialogue=false;
-                m_dialogue.drawAt(renderer,18,22,18,212);
-            } else {
-                m_dialogue.reset();
-                m_advanceDialogue=false;
-                char line1[48];
-                char line2[48];
-                std::snprintf(line1, sizeof(line1), "¿Qué debería");
-                std::snprintf(line2, sizeof(line2), "hacer %s?",
-                    game.presentation().player.localizedName ? game.presentation().player.localizedName : "Pokémon");
-
-                // Vertically centered in prompt panel
-                const float y1 = 100.0f;
-                const float y2 = 126.0f;
-
-                // Drop shadows
-                renderer.drawText(line1, 19.0f, y1 + 1.0f, 0.40f, C2D_Color32(0x6b, 0x5a, 0x73, 255));
-                renderer.drawText(line1, 18.0f, y1, 0.40f, C2D_Color32(0xf8, 0xf8, 0xf8, 255));
-
-                renderer.drawText(line2, 19.0f, y2 + 1.0f, 0.40f, C2D_Color32(0x6b, 0x5a, 0x73, 255));
-                renderer.drawText(line2, 18.0f, y2, 0.40f, C2D_Color32(0xf8, 0xf8, 0xf8, 255));
-            }
-
-            // Right Window Container: 2x2 Command Options
-            renderer.drawWindow(180, 8, 134, 224);
-
+            // The upper screen owns dialogue; commands fill the touch screen.
             static const struct {
                 const char* label;
                 float bx; float by; float bw; float bh;
                 float tx; float ty; float tsize;
             } kCmds[] = {
-                {"Luchar",  184.0f,  14.0f, 60.0f, 102.0f, 198.0f,  56.0f, 0.38f},
-                {"Balls",   248.0f,  14.0f, 60.0f, 102.0f, 260.0f,  56.0f, 0.38f},
-                {"Pokémon", 184.0f, 122.0f, 60.0f, 102.0f, 194.0f, 164.0f, 0.33f},
-                {"Huir",    248.0f, 122.0f, 60.0f, 102.0f, 262.0f, 164.0f, 0.38f}
+                {"Luchar",  10.0f,  10.0f, 146.0f, 94.0f, 40.0f,  50.0f, 0.375f},
+                {"Balls",   164.0f,  10.0f, 146.0f, 94.0f, 194.0f,  50.0f, 0.375f},
+                {"Pokémon", 10.0f, 112.0f, 146.0f, 94.0f, 40.0f, 152.0f, 0.375f},
+                {"Huir",    164.0f,112.0f, 146.0f, 94.0f, 194.0f,152.0f, 0.375f}
             };
 
             for (unsigned i = 0; i < 4; ++i) {
@@ -216,10 +194,9 @@ public:
 private:
     BattleMenuPage m_page = BattleMenuPage::Root;
     unsigned m_selected = 0;
-    const char* m_feedback = nullptr;
     ItemIconPresenter m_icons;
     TitleMenuPresenter m_cursor;
-    DialoguePresenter m_dialogue{12,142};
+    DialoguePresenter m_dialogue{2,270};
     bool m_advanceDialogue=false;
 };
 
