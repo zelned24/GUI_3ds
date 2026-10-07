@@ -78,6 +78,7 @@ public:
 
     void drawTextWrapped(const char* text,float x,float y,float size,float maxWidth,uint32_t color);
     float textLineHeight(float size) const;
+    bool abbreviateText(const char* text,float size,float maxWidth,char* output,std::size_t capacity,float& displayedWidth,bool stripGender=false);
     float drawTextFitted(const char* text,float x,float y,float size,float maxWidth,uint32_t color,float* drawnWidth=nullptr);
     bool drawHudGraphic(const char* asset,const char* frame,float x,float y);
     bool drawHudBar(bool experience,bool boss,float fraction,float x,float y);
@@ -104,6 +105,7 @@ private:
     C3D_RenderTarget* m_currentTarget;
     C2D_TextBuf m_textBuf;
 #if defined(__arm__) || defined(__3DS__) || defined(_3DS)
+    C2D_TextBuf m_measureBuf=nullptr;
     C2D_Font m_gameFont = nullptr;
     C2D_SpriteSheet m_window = nullptr;
     C2D_SpriteSheet m_typeLabels = nullptr;

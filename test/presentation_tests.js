@@ -36,7 +36,8 @@ export function registerPresentationTests(test) {
     expect(hud.includes('drawHudGraphic("numbers",digit'), 'HUD numbers must use original digit atlas');
     expect(hud.includes('drawHudGraphic("overlay_exp_label"'), 'EXP label must use original localized artwork');
     expect(!hud.includes('renderer.drawText(level'), 'Level numbers must not use scaled font glyphs');
-    expect(hud.includes('&displayedNameWidth'),'Gender position must use measured fitted glyph width');
+    expect(hud.includes('sizeof(displayName),displayedNameWidth,true)'),'Gender position must use measured fitted glyph width');
+    expect(!hud.includes('drawTextFitted(name,'), 'Long HUD names must keep font scale and use upstream abbreviation');
     expect(!hud.includes('approxNameWidth'),'UTF-8 byte count cannot estimate glyph width');
     const title=fs.readFileSync(path.join(root,'project/include/runtime/TitleMenuPresenter.hpp'),'utf8');
     expect(menus.includes('m_title.drawCursor(renderer,25,y,labelSize)'),'Submenu cursor uses fitted text height');

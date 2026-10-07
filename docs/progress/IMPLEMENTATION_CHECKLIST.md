@@ -598,3 +598,5 @@ Para cada entrega actualizar esta tabla con IDs, commit, alcance conectado, excl
 | GUI-02 / GUI-05 / GUI-14 / AST-05 | Parcial | Paneles y barras nativos | Paneles 1×, barras originales recortadas, columnas acotadas, separación de feedback, override de dimensiones pinned; tests renderer/import | Animación temporal, labels/dígitos originales y comparación visual/Old 3DS |
 
 | GUI-02 / GUI-10 / GUI-14 / AST-05 | Parcial | Dígitos y labels del HUD | Números originales 8×8 y cuatro etiquetas es-ES, scale 1×, source/provenance y tests renderer/import | Nivel capped, nombres largos, animación y comparación visual completa |
+
+| GUI-02 / GUI-10 / GUI-14 | Parcial | Abreviación de nombres con fuente constante | Semántica updateNameText, recorte UTF-8 seguro, medición C2D en buffer independiente; regresiones de casos Unicode y arranque | Métricas de la fuente real, perfil CPU y comparación visual completa |

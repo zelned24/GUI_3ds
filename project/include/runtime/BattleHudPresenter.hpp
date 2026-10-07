@@ -60,8 +60,11 @@ public:
         const float levelX = x + (player ? 89.0f : (actor.bossState.segmentCount ? 126.0f : 80.0f))-levelShift;
         const float nameWidth=levelX-nameX-14.0f;
         float displayedNameWidth=0;
-        renderer.drawTextFitted(name,nameX+1,nameY+1,0.30f,nameWidth,kShadowColor);
-        renderer.drawTextFitted(name,nameX,nameY,0.30f,nameWidth,kTextColor,&displayedNameWidth);
+        char displayName[128];
+        if(renderer.abbreviateText(name,0.30f,nameWidth,displayName,sizeof(displayName),displayedNameWidth,true)) {
+            renderer.drawText(displayName,nameX+1,nameY+1,0.30f,kShadowColor);
+            renderer.drawText(displayName,nameX,nameY,0.30f,kTextColor);
+        }
 
         // Gender icon next to name
         const char* genderSymbol = nullptr;

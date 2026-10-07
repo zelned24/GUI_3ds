@@ -2,6 +2,7 @@
 #include "runtime/PokemonAtlasPresenter.hpp"
 #include "runtime/TypePresentation.hpp"
 #include "runtime/BattleHudGeometry.hpp"
+#include "runtime/Utf8Abbreviation.hpp"
 #include "content/TypeLabels.hpp"
 #include "content/HudTypeIcons.hpp"
 #include "content/PokerogueRuntimeContent.hpp"
@@ -9,6 +10,20 @@
 #include <initializer_list>
 using namespace Pokerogue3DS;
 int main() {
+    char out[128];float width;
+    char tiny[1]={'x'};assert(!abbreviateUtf8("AB",tiny,1,3,false,[](const char*){return 1.0f;},width) && !tiny[0]);
+    const auto measure=[](const char* value) {float w=0;while(*value) {uint32_t cp;unsigned n=utf8CodePoint(value,cp);assert(n);w+=cp=='W' ? 2 : 1;value+=n;}return w;};
+    assert(abbreviateUtf8("",out,sizeof(out),1,false,measure,width) && !*out);
+    assert(abbreviateUtf8("ABCDE",out,sizeof(out),3,false,measure,width) && !std::strcmp(out,"AB."));
+    assert(abbreviateUtf8("Évolí",out,sizeof(out),3,false,measure,width) && !std::strcmp(out,"Év."));
+    assert(abbreviateUtf8("😀ABCD",out,sizeof(out),3,false,measure,width) && !std::strcmp(out,"😀A."));
+    assert(abbreviateUtf8("Nidoran♂",out,sizeof(out),20,true,measure,width) && !std::strcmp(out,"Nidoran"));
+    assert(abbreviateUtf8("AB .CDEF",out,sizeof(out),4,false,measure,width) && !std::strcmp(out,"AB."));
+    assert(abbreviateUtf8("AB　CDEF",out,sizeof(out),3,false,measure,width) && !std::strcmp(out,"AB."));
+    char small[4];assert(abbreviateUtf8("ÉABCDE",small,sizeof(small),3,false,measure,width) && !std::strcmp(small,"É."));
+    for(const char* invalid:{"\xc0\xaf","\xed\xa0\x80","\xf4\x90\x80\x80","\xe2\x99"})
+        assert(!abbreviateUtf8(invalid,out,sizeof(out),3,false,measure,width) && !*out);
+
     assert(bossDividerPixel(100,3,1,86)==28 && bossDividerPixel(100,3,2,86)==57);
     assert(bossDividerPixel(100,2,1,86)==43);
     assert(bossDividerPixel(0,2,1,86)==0 && bossDividerPixel(100,1,1,86)==0);

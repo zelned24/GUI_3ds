@@ -1,5 +1,6 @@
 #include "gfx/renderer2d.hpp"
 #include "gfx/ImageTintPolicy.hpp"
+#include "runtime/Utf8Abbreviation.hpp"
 #include "screens/SceneAssets.hpp"
 #include "content/WindowTexture.hpp"
 #include "content/TypeLabels.hpp"
@@ -84,6 +85,8 @@ bool Renderer2D::init(size_t maxObjects) {
     }
     C3D_TexSetFilter(windowImage.tex,GPU_NEAREST,GPU_NEAREST);
     m_windowStyle=Pokerogue3DS::kWindowTextures[0].id;
+    m_measureBuf=C2D_TextBufNew(256);
+    if(!m_measureBuf) {m_initError="Text measurement buffer allocation failed";fini();return false;}
 #endif
 
 #if !defined(__wasm__)
@@ -112,6 +115,7 @@ void Renderer2D::fini() {
 #endif
 
 #if defined(__arm__) || defined(__3DS__) || defined(_3DS)
+    if(m_measureBuf) {C2D_TextBufDelete(m_measureBuf);m_measureBuf=nullptr;}
     if (m_gameFont) { C2D_FontFree(m_gameFont); m_gameFont = nullptr; }
     if (m_window) { C2D_SpriteSheetFree(m_window); m_window = nullptr; }
     if (m_typeLabels) { C2D_SpriteSheetFree(m_typeLabels); m_typeLabels = nullptr; }
@@ -511,5 +515,20 @@ bool Renderer2D::drawHudGraphic(const char* asset,const char* frame,float x,floa
     return true;
 #else
     (void)asset;(void)frame;(void)x;(void)y;return false;
+#endif
+}
+
+bool Renderer2D::abbreviateText(const char* text,float size,float maxWidth,char* output,std::size_t capacity,float& displayedWidth,bool stripGender) {
+    displayedWidth=0;if(output && capacity) output[0]=0;
+#if defined(__arm__) || defined(__3DS__) || defined(_3DS)
+    if(!m_initialized || !m_gameFont || !m_measureBuf || capacity>256 || !std::isfinite(size) || size<=0) return false;
+    auto measure=[&](const char* value) {
+        C2D_TextBufClear(m_measureBuf);
+        C2D_Text parsed;C2D_TextFontParse(&parsed,m_gameFont,m_measureBuf,value);
+        float width=0;C2D_TextGetDimensions(&parsed,size*2,size*2,&width,nullptr);return width;
+    };
+    return Pokerogue3DS::abbreviateUtf8(text,output,capacity,maxWidth,stripGender,measure,displayedWidth);
+#else
+    (void)text;(void)size;(void)maxWidth;(void)capacity;(void)stripGender;return false;
 #endif
 }
