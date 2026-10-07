@@ -433,6 +433,7 @@
 {"from":"project/src/runtime/PokemonAtlasPresenter.cpp","to":"project/generated/include/content/PokerogueRuntimeContent.hpp","kind":"include"},
 {"from":"project/src/runtime/PokemonAtlasPresenter.cpp","to":"project/include/game/FirstRunRuntime.hpp","kind":"include"},
 {"from":"project/src/runtime/PokemonAtlasPresenter.cpp","to":"project/include/gfx/renderer2d.hpp","kind":"include"},
+{"from":"project/src/runtime/PokemonAtlasPresenter.cpp","to":"project/include/runtime/DualScreenLayout.hpp","kind":"include"},
 {"from":"project/src/runtime/PokemonAtlasPresenter.cpp","to":"project/include/runtime/PokemonAtlasPresenter.hpp","kind":"include"},
 {"from":"project/src/runtime/QuickJSBridge.cpp","to":"project/include/game/FirstRunRuntime.hpp","kind":"include"},
 {"from":"project/src/runtime/QuickJSBridge.cpp","to":"project/include/game/PokemonStarterMoveset.hpp","kind":"include"},

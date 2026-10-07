@@ -17,6 +17,9 @@ export function registerPresentationTests(test) {
     expect(main.includes('game.claimRecoveryRewardChoice(static_cast<uint8_t>(member),static_cast<uint8_t>(selection.selected))'),'PP reward must submit the selected recipient and move');
     expect(main.includes('if(!partyMenu.available(game)) partyMenu.open=false;'),'Unavailable party menu must release focus for reward/decision selectors');
     expect(!main.includes('rewardMenu.togglePartySelectionMode'),'Reward navigation has one native owner');
+    const sprites=fs.readFileSync(path.join(root,'project/src/runtime/PokemonAtlasPresenter.cpp'),'utf8');
+    expect(sprites.includes('anchoredSpriteScale(scale, propScale)'),'Sprite drawing must respect explicit 1x/2x scales');
+    expect(sprites.includes('m_trainerFrontFemale != female'),'Trainer cache identity includes gender variant');
     expect(!main.includes('osGetTime()'),'New runs must use an explicit seed');
     expect(!main.includes('1.500'),'No fabricated money display');
     expect(main.includes('rawPressed &= ~KEY_START'),'Opening pause must consume START');

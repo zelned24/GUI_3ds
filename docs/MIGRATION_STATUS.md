@@ -34,7 +34,7 @@ El avance se publica como trabajo en curso. Classic completo y la fidelidad visu
 4. Compilación directa `make -f Makefile.3ds 3ds`: ELF y 3DSX producidos con devkitARM. No equivale a validación en Old 3DS.
 5. `python scripts/verify_presentation_media.py`: archivos físicos y tablas de presentación PASS; no prueba fidelidad visual ni efectos de objetos.
 6. Regresiones de navegación, geometría, índice de iconos, guards de pausa/guardado y ownership QuickJS PASS. Los guards de main son comprobaciones estáticas, no interacción real en Azahar.
-7. Logs reproducibles de esta revisión: `build/reward-final-npm-test.log`, `build/reward-native-parity.log`, `build/review-native-test.log`, `build/reward-arm-build.log`, `build/review-media.log`. No se versionan binarios ni logs.
+7. Logs reproducibles de esta revisión: `build/sprite-layout-npm-test.log`, `build/sprite-layout-parity.log`, `build/review-native-test.log`, `build/sprite-layout-arm.log`, `build/review-media.log`. No se versionan binarios ni logs.
 
 ## Nitidez de presentación
 
@@ -51,6 +51,12 @@ El avance se publica como trabajo en curso. Classic completo y la fidelidad visu
 4. Huida: `CommandPhase.handleRunCommand` restringe End y entrenadores; un jefe ordinario no prohíbe huir por ser wave múltiplo de diez. `AttemptRunPhase` distingue boss por ambos enemigos y `BattleEndPhase(false)` no otorga victoria, EXP ni recompensa. Regresión verifica el roll seeded, la wave siguiente y el feedback.
 5. Los 18 fallos registrados en la revisión anterior ya no se reproducen. Esto no demuestra cobertura completa: trampas, callbacks de huida, persistencia del contador de intentos y segundo jugador activo siguen pendientes.
 6. TypeSafe instalado para Codex en `.agents/skills/typesafe-ai/` mediante npx. Se aplicó su instrucción de conservar reglas conocidas y ejecución en código; no se añadió un servicio de IA al runtime.
+
+## Escala y caché de sprites
+
+1. `drawAnchored` conserva escalas explícitas positivas, incluidas 1× y 2×. Cero solicita la adaptación automática existente; `main.cpp` utiliza esa ruta sin repetir una clasificación por wave.
+2. La clave de caché de entrenadores incluye tipo y variante femenina; cambiar de variante recarga el asset indexado correspondiente.
+3. Regresiones cubren selección de escala explícita/automática y el guard de identidad de caché. La adaptación automática de tamaños sigue siendo una política de presentación 3DS; no se declara equivalente a todo `Pokemon.getSpriteScale` upstream.
 
 ## Selección de recompensas en ambas pantallas
 

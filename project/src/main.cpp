@@ -756,28 +756,15 @@ int main() {
             pokemonSprites.drawAnchored(renderer, game.presentation().player, true,
                 105.0f, 185.0f, 0.0f, animationTimeMs);
 
-            const auto isLargeOrBoss = [](const Pokerogue3DS::ResolvedPokemon& pokemon, uint16_t wave) {
-                if (pokemon.bossState.segmentCount > 0) return true;
-                if (wave > 0 && (wave % 10 == 0 || wave == PokerogueContent::kClassicFinalWave)) return true;
-                const auto* sp = PokerogueContent::findSpeciesByDex(pokemon.dex);
-                if (sp && (sp->legendary || sp->subLegendary || sp->mythical)) return true;
-                return false;
-            };
-
             if (game.doubleBattle()) {
-                const float enemyScale = isLargeOrBoss(game.presentation().enemy, game.run().wave) ? 1.0f : 1.0f;
-                const float secondScale = isLargeOrBoss(game.presentation().secondEnemy, game.run().wave) ? 1.0f : 1.0f;
                 pokemonSprites.drawAnchored(renderer, game.presentation().enemy, false,
-                    230.0f, 82.0f, enemyScale, animationTimeMs);
+                    230.0f, 82.0f, 0.0f, animationTimeMs);
                 secondEnemySprites.drawAnchored(renderer, game.presentation().secondEnemy, false,
-                    295.0f, 84.0f, secondScale, animationTimeMs);
+                    295.0f, 84.0f, 0.0f, animationTimeMs);
             } else {
                 // Enemy Pokémon anchored directly on stone platform
-                const bool boss = isLargeOrBoss(game.presentation().enemy, game.run().wave);
-                const float enemyScale = boss ? 1.0f : 0.0f;
-                const float anchorY = boss ? 86.0f : 82.0f;
                 pokemonSprites.drawAnchored(renderer, game.presentation().enemy, false,
-                    265.0f, anchorY, enemyScale, animationTimeMs);
+                    265.0f, 82.0f, 0.0f, animationTimeMs);
             }
             }
         }

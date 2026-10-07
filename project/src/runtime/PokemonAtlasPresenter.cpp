@@ -1,6 +1,7 @@
 #include "runtime/PokemonAtlasPresenter.hpp"
 #include "game/FirstRunRuntime.hpp"
 #include "gfx/renderer2d.hpp"
+#include "runtime/DualScreenLayout.hpp"
 #include "content/PokerogueRuntimeContent.hpp"
 #include <cmath>
 #include <cstdio>
@@ -160,10 +161,7 @@ void PokemonAtlasPresenter::drawAnchored(Renderer2D& renderer, const ResolvedPok
     const Renderer2D::AtlasFrame view{frame->x, frame->y, frame->width, frame->height,
         frame->sourceWidth, frame->sourceHeight, frame->trimX, frame->trimY};
     const float propScale = calculateProportionalScale(pokemon, frame->sourceWidth, frame->sourceHeight, back, anchorY);
-    float finalScale = propScale;
-    if (scale > 0.0f && std::fabs(scale - 2.0f) > 0.01f && std::fabs(scale - 1.0f) > 0.01f) {
-        finalScale = scale;
-    }
+    const float finalScale = anchoredSpriteScale(scale, propScale);
     const float width = std::round(frame->sourceWidth * finalScale);
     const float height = std::round(frame->sourceHeight * finalScale);
     const float x = std::round(anchorX - width * 0.5f);
@@ -173,8 +171,9 @@ void PokemonAtlasPresenter::drawAnchored(Renderer2D& renderer, const ResolvedPok
 
 void PokemonAtlasPresenter::drawTrainerAnchored(Renderer2D& renderer, uint16_t trainerTypeId, bool female,
     float anchorX, float anchorY, float scale, uint64_t animationTimeMs) {
-    if (!m_trainerFront.isLoaded() || m_trainerFrontTypeId != trainerTypeId) {
+    if (!m_trainerFront.isLoaded() || m_trainerFrontTypeId != trainerTypeId || m_trainerFrontFemale != female) {
         m_trainerFrontTypeId = trainerTypeId;
+        m_trainerFrontFemale = female;
         m_trainerFront.loadTrainer(trainerTypeId, female);
     }
     if (m_trainerFront.isLoaded()) {

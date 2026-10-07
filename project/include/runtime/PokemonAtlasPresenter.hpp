@@ -55,6 +55,7 @@ private:
     TrainerPresenter m_trainerFront;
     TrainerPresenter m_playerBack;
     uint16_t m_trainerFrontTypeId = 0;
+    bool m_trainerFrontFemale = false;
     bool m_playerBackFemale = false;
     bool m_playerBackLoaded = false;
     static bool atlasKey(const ResolvedPokemon&, std::string& out);

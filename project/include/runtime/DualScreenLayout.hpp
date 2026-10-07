@@ -1,5 +1,10 @@
 #pragma once
 namespace Pokerogue3DS {
+// Zero requests automatic placement; positive values are explicit presentation scale.
+inline constexpr float anchoredSpriteScale(float requested,float automatic) {
+    return requested>0.0f ? requested : automatic;
+}
+
 struct TouchRect {
     unsigned x,y,width,height;
     constexpr bool contains(unsigned px,unsigned py) const {

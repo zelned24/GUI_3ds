@@ -7,6 +7,10 @@
 #include <initializer_list>
 using namespace Pokerogue3DS;
 int main() {
+    static_assert(anchoredSpriteScale(1.0f,2.0f)==1.0f,"Explicit native size must not be doubled");
+    static_assert(anchoredSpriteScale(2.0f,0.75f)==2.0f,"Explicit double size must not be reduced");
+    static_assert(anchoredSpriteScale(1.25f,2.0f)==1.25f,"Explicit adaptation scale is preserved");
+    static_assert(anchoredSpriteScale(0.0f,0.75f)==0.75f,"Zero retains automatic layout");
     for(unsigned y=0;y<240;++y) for(unsigned x=0;x<320;++x) {
         const int expected=x>=16 && x<304 && y>=38 && y<182 ? int((y-38)/36*6+(x-16)/48) : -1;
         assert(starterGridAt(x,y)==expected);
