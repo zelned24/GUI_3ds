@@ -87,7 +87,8 @@ public:
             m_icons.drawItem(renderer, reward->poolEntry->itemId, cx + (cardW - 36.0f) * 0.5f, cardY + 16.0f, 36.0f);
 
             // Item Name
-            renderer.drawTextFitted(name, cx + 6.0f, cardY + 68.0f, 0.35f, cardW - 12.0f, 0xffffffff);
+            if(!renderer.drawTextBox(name,cx+6,cardY+68,0.3125f,cardW-12,3,0xffffffff))
+                renderer.drawTextFitted(name,cx+6,cardY+68,0.3125f,cardW-12,0xffffffff);
 
             // Visual rarity accent band (strictly NO textual "COMMON" or "Común")
             renderer.drawRect(cx + 12.0f, cardY + 104.0f, cardW - 24.0f, 3.0f, rarityColor);

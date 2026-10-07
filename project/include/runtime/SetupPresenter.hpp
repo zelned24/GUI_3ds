@@ -236,8 +236,8 @@ public:
         const auto* form=PokerogueContent::findFormByUpstreamIndex(species->dex,game.setupStarterFormIndex(species->dex));
         renderer.drawWindow(151,12,241,214);
         renderer.drawTextFitted(species->name,161,22,0.6f,220,0xffffffff);
-        renderer.drawText((form ? form->type1 : species->type1),161,51,0.4f,0xffffffff);
-        if((form ? form->type2 : species->type2)) renderer.drawText((form ? form->type2 : species->type2),271,51,0.4f,0xffffffff);
+        renderer.drawTypeLabel((form ? form->type1 : species->type1),161,49,32,14);
+        if((form ? form->type2 : species->type2)) renderer.drawTypeLabel((form ? form->type2 : species->type2),207,49,32,14);
         char label[80];uint16_t quarters=0;
         const uint8_t reduction=game.starterCostReduction(species->dex);
         if(pokemonStarterCostQuarterUnits(species->dex,reduction,quarters)) {
@@ -248,7 +248,8 @@ public:
         } else std::snprintf(label,sizeof(label),"Coste no disponible");
         renderer.drawText(label,161,73,0.4f,0xffffffff);
         const char* ability=abilityUiName((form ? form->ability1 : species->ability1));
-        renderer.drawTextFitted(ability ? ability : "",161,99,0.4f,220,0xffffffff);
+        if(!renderer.drawTextBox(ability ? ability : "",161,94,0.3125f,220,2,0xffffffff))
+            renderer.drawTextFitted(ability ? ability : "",161,99,0.3125f,220,0xffffffff);
         renderer.drawText(game.starterUnlocked(species->dex) ? "Disponible" : runtimeUiText("starter-select-ui-handler:locked"),161,122,0.32f,0xffffffff);
         std::snprintf(label,sizeof(label),"PS %u   ATQ %u   DEF %u",(form ? form->hp : species->hp),(form ? form->atk : species->atk),(form ? form->def : species->def));
         renderer.drawText(label,161,146,0.33f,0xffffffff);

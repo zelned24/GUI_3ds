@@ -2,6 +2,7 @@
 #include "gfx/ImageTintPolicy.hpp"
 #include "runtime/Utf8Abbreviation.hpp"
 #include "runtime/NativeTextRaster.hpp"
+#include "runtime/TextPageLayout.hpp"
 #include "screens/SceneAssets.hpp"
 #include "content/WindowTexture.hpp"
 #include "content/TypeLabels.hpp"
@@ -376,6 +377,19 @@ void Renderer2D::drawTextWrapped(const char* text,float x,float y,float size,flo
 #else
     drawText(text,x,y,size,color);
 #endif
+}
+
+bool Renderer2D::drawTextBox(const char* text,float x,float y,float size,float maxWidth,unsigned maxLines,uint32_t color) {
+    if(!m_initialized || !m_frameActive || !m_currentTarget || !m_textBuf || !std::isfinite(size) || size<=0
+        || !std::isfinite(x) || !std::isfinite(y)) return false;
+    const auto page=Pokerogue3DS::layoutTextPage(text,maxWidth,[&](const char* candidate) {
+        char scratch[256];float width=0;
+        return abbreviateText(candidate,size,65536,scratch,sizeof(scratch),width) ? width : NAN;
+    },maxLines);
+    if(!page.valid || !page.complete) return false;
+    const float spacing=textLineHeight(size);
+    for(unsigned i=0;i<page.lineCount;++i) drawText(page.lines[i],x,y+i*spacing,size,color);
+    return true;
 }
 
 float Renderer2D::drawTextFitted(const char* text,float x,float y,float size,float maxWidth,uint32_t color,float* drawnWidth) {

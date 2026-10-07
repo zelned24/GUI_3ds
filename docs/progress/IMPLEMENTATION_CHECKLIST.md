@@ -611,6 +611,8 @@ Para cada entrega actualizar esta tabla con IDs, commit, alcance conectado, excl
    - [ ] Comprobar legibilidad/composición de todas las pantallas y paginación de mensajes en Azahar/Old 3DS.
    - [x] Paginar el banner de progreso y el panel de combate activo con anchos medidos, fuente nativa y límites de líneas/UTF-8. SELECT navega; en combate también funciona el área táctil del pie, separada de los comandos. Pruebas de layout y renderer ejecutadas.
    - [ ] Extender el tratamiento de texto largo a setup, recompensas, decisiones y ajustes; verificar eventos repetidos, navegación conjunta y capturas. Texto progresivo/audio/prompts upstream aún pendientes.
+     - [x] Conectar cajas medidas de dos líneas para habilidades en setup y tres líneas para nombres de recompensas. Fuente nativa fija, sin dibujo parcial si excede la caja; casos restantes usan fitted y requieren detalle completo posterior.
+     - [x] Usar etiquetas originales es-ES de tipos a 1× en setup, resueltas desde especie/forma canónica.
    - [x] Compactar las cuatro sheets A4 conservando glifos/métricas; 2 MiB → 288 KiB.
    - [ ] Perfilar el presupuesto total y validar las fuentes compactadas en Azahar/Old 3DS.
 3. [ ] Evaluar RGBA5551/RGBA4 por clase de asset con comparación de colores/alpha y memoria residente. Pokémon ya usa RGBA4, fuentes A4 y presentación RGBA8; no dar ETC1A4 por visualmente equivalente sin comparación.

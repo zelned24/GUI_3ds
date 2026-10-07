@@ -227,3 +227,10 @@ El avance se publica como trabajo en curso. Classic completo y la fidelidad visu
 3. El menú devuelve None al solicitar una página; el avance visual no ejecuta ataques/capturas/huida. Rectángulo táctil independiente de los cuatro comandos. Tests host comprueban Unicode, palabras largas, CR/LF, ancho/capacidad, páginas de dos/doce líneas, cambios/reset/caché y transform entero en el renderer.
 4. Sigue pendiente tratar todos los textos de otros submenús, glyphs/locales completos, texto progresivo y prompts/audio de MessageUiHandler upstream. Referencia local pinned: src/ui/handlers/message-ui-handler.ts y battle-message-ui-handler.ts. Layout de Old 3DS explícito; no se declara paridad completa con esos handlers ni validación visual.
 5. Gates: npm test 38/38, nueve suites específicas de presentación, native-parity 126/126, compilación y empaquetado ARM PASS. Logs build/dialogue-*; no se abrió Azahar en esta entrega. GUI-10 y GUI-14 permanecen abiertos.
+
+### Cajas de texto y tipos en setup
+
+1. `Renderer2D::drawTextBox` mide páginas con el raster nativo y dibuja únicamente si todo el contenido cabe. Rechaza ancho/líneas/tamaño/coordenadas inválidos y overflow sin dibujar parcialmente. Usa el mismo buffer de medición independiente y los orígenes enteros del texto normal.
+2. Setup usa las etiquetas físicas es-ES 32×14 a 1× para tipos de especie/forma, y caja de dos líneas a 10 puntos para habilidad. Rewards ofrece tres líneas a 10 puntos para nombres. Si no caben, conservan fitted: no se considera cerrada la presentación íntegra de textos largos en todos los submenús.
+3. Harness del renderer comprueba límites, ausencia de dibujos tras overflow, posiciones/escala entera y todos los nombres importados de habilidades con sus métricas simuladas. Estas métricas permiten probar el algoritmo; no demuestran el ajuste de cada nombre con los glifos físicos. Comparación visual y medición de los fonts reales siguen pendientes.
+4. Gates ejecutados: npm test 38/38, nueve suites específicas, native-parity 126/126, build ARM/3DSX y diff-check PASS. Logs build/text-box-*; sin nueva validación visual en Azahar ni hardware.

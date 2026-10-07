@@ -3,6 +3,7 @@
 #include "runtime/NativeTextRaster.hpp"
 #include "runtime/DialoguePresenter.hpp"
 #include "content/TypeLabels.hpp"
+#include "content/EntityUiNames.hpp"
 #include "content/HudTypeIcons.hpp"
 #include <cassert>
 #include "screens/SceneAssets.hpp"
@@ -97,6 +98,20 @@ int main() {
         assert(lastX==1 && lastY==3 && std::fabs(lastScale-1)<0.000001f);
         renderer.drawTextWrapped("ABC DEF",1,2,0.4f,40,0xffffffff);
         assert((lastFlags & C2D_WordWrap)!=0 && std::fabs(lastScale-1)<0.000001f);
+        const int beforeBox=draws;
+        assert(renderer.drawTextBox("AB CD",1.4f,2.7f,0.375f,18,2,0xffffffff));
+        assert(draws==beforeBox+2 && lastX==1 && lastY==17 && lastScale==1);
+        assert(!renderer.drawTextBox("AB CD EF",1,2,0.375f,18,2,0xffffffff));
+        assert(draws==beforeBox+2);
+        assert(!renderer.drawTextBox("AB",1,2,0.375f,18,13,0xffffffff));
+        assert(!renderer.drawTextBox("AB",NAN,2,0.375f,18,2,0xffffffff));
+        assert(!renderer.drawTextBox("AB",1,2,NAN,18,2,0xffffffff));
+        assert(!renderer.drawTextBox("AB",1,2,0.375f,NAN,2,0xffffffff));
+        assert(!renderer.drawTextBox(nullptr,1,2,0.375f,18,2,0xffffffff));
+        assert(!renderer.drawTextBox("\xc3",1,2,0.375f,18,2,0xffffffff));
+        assert(draws==beforeBox+2);
+        for(const auto& ability:Pokerogue3DS::kAbilityUiNames)
+            assert(renderer.drawTextBox(ability.name,161,94,0.3125f,220,2,0xffffffff));
         Pokerogue3DS::DialoguePresenter dialogue;
         dialogue.sync(renderer,std::string(700,'A'));
         const int cleared=measureClears;

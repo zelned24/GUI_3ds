@@ -77,6 +77,8 @@ public:
     );
 
     void drawTextWrapped(const char* text,float x,float y,float size,float maxWidth,uint32_t color);
+    // Draw only if the complete text fits the bounded native line layout.
+    bool drawTextBox(const char* text,float x,float y,float size,float maxWidth,unsigned maxLines,uint32_t color);
     float textLineHeight(float size) const;
     bool abbreviateText(const char* text,float size,float maxWidth,char* output,std::size_t capacity,float& displayedWidth,bool stripGender=false);
     float drawTextFitted(const char* text,float x,float y,float size,float maxWidth,uint32_t color,float* drawnWidth=nullptr);
