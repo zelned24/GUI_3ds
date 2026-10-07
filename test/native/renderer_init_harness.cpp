@@ -1,4 +1,5 @@
 #include "gfx/renderer2d.hpp"
+#include "content/TypeLabels.hpp"
 #include <cassert>
 #include "screens/SceneAssets.hpp"
 #include <cstring>
@@ -7,6 +8,7 @@
 namespace {
 int fail=0,c3Free=0,c2Free=0,fontFree=0,sheetFree=0,bufferFree=0,targets=0;
 int draws=0;u32 lastFlags=0;float lastX=0,lastY=0,lastScale=0;
+int typeToken=2,typeLoads=0,imageDraws=0;bool typeMissing=false;float imageScaleX=0,imageScaleY=0;Tex3DS_SubTexture typeSub{32,280,0,1,1,0};
 int token=1;C3D_Tex tex{};Tex3DS_SubTexture sub{24,24,0,1,1,0};C2D_FontInfo fontInfo{26};
 }
 void C3D_TexSetFilter(C3D_Tex*,GPU_TEXTURE_FILTER_PARAM a,GPU_TEXTURE_FILTER_PARAM b) {assert(a==GPU_NEAREST && b==GPU_NEAREST);}
@@ -23,15 +25,15 @@ C2D_Font C2D_FontLoad(const char*) {return fail==5 ? nullptr : &token;}
 void C2D_FontFree(C2D_Font) {++fontFree;}
 void C2D_FontSetFilter(C2D_Font,GPU_TEXTURE_FILTER_PARAM a,GPU_TEXTURE_FILTER_PARAM b) {assert(a==GPU_NEAREST && b==GPU_NEAREST);}
 const C2D_FontInfo* C2D_FontGetInfo(C2D_Font font) {assert(font);return &fontInfo;}
-C2D_SpriteSheet C2D_SpriteSheetLoad(const char*) {return fail==6 ? nullptr : &token;}
+C2D_SpriteSheet C2D_SpriteSheetLoad(const char* path) {if(std::strcmp(path,Pokerogue3DS::kTypeLabelPath)==0) {++typeLoads;return typeMissing ? nullptr : &typeToken;}return fail==6 ? nullptr : &token;}
 void C2D_SpriteSheetFree(C2D_SpriteSheet) {++sheetFree;}
-C2D_Image C2D_SpriteSheetGetImage(C2D_SpriteSheet,size_t) {return {&tex,fail==7 ? nullptr : &sub};}
+C2D_Image C2D_SpriteSheetGetImage(C2D_SpriteSheet sheet,size_t) {return {&tex,sheet==&typeToken ? &typeSub : (fail==7 ? nullptr : &sub)};}
 bool C3D_FrameBegin(u8) {return true;}
 void C2D_TextBufClear(C2D_TextBuf) {}
 void C2D_SceneBegin(C3D_RenderTarget*) {}
 void C2D_TargetClear(C3D_RenderTarget*,u32) {}
 void C2D_DrawRectSolid(float,float,float,float,float,u32) {}
-void C2D_DrawImageAtRotated(C2D_Image,float,float,float,float,const C2D_ImageTint*,float,float) {}
+void C2D_DrawImageAtRotated(C2D_Image,float,float,float,float,const C2D_ImageTint*,float sx,float sy) {++imageDraws;imageScaleX=sx;imageScaleY=sy;}
 void C2D_PlainImageTint(C2D_ImageTint*,u32,float) {}
 void C2D_TextParse(C2D_Text*,C2D_TextBuf,const char*) {assert(false && "System font fallback in production path");}
 void C2D_TextFontParse(C2D_Text* text,C2D_Font,C2D_TextBuf,const char*) {text->width=100;}
@@ -63,6 +65,21 @@ int main() {
         assert(std::fabs(renderer.drawTextFitted("ABC",1,2,0.4f,40,0xffffffff,&width)-0.2f)<0.0001f);
         assert(width==40);
         renderer.drawTextFitted("ABC",1,2,0.4f,200,0xffffffff,&width);assert(width==80);
+        const int before=typeLoads;
+        assert(!renderer.drawTypeLabel(nullptr,0,0,32,14));
+        assert(!renderer.drawTypeLabel("NONE",0,0,32,14));
+        assert(!renderer.drawTypeLabel("INVALID",0,0,32,14));
+        assert(!renderer.drawTypeLabel("FIRE",0,0,0,14));assert(typeLoads==before);
+        typeMissing=true;assert(!renderer.drawTypeLabel("FIRE",0,0,32,14));typeMissing=false;
+        assert(renderer.drawTypeLabel("FIRE",0,0,32,14));assert(imageScaleX==1 && imageScaleY==1);
+        const int loaded=typeLoads;
+        for(const auto& row:Pokerogue3DS::kTypeLabelFrames) {
+            assert(renderer.drawTypeLabel(row.key,0,0,94,18));assert(imageScaleX==1 && imageScaleY==1);
+        }
+        assert(typeLoads==loaded);
+        assert(renderer.drawTypeLabel("Water",0,0,16,7));assert(imageScaleX==0.5f && imageScaleY==0.5f);
+        typeSub.width=31;assert(!renderer.drawTypeLabel("FIRE",0,0,32,14));typeSub.width=32;
+        assert(renderer.drawTypeLabel("FIRE",0,0,32,14));
         assert(!renderer.setWindowStyle(2)); // Never free a texture before GPU submission.
         renderer.endFrame();assert(renderer.setWindowStyle(2) && renderer.windowStyle()==2);
         renderer.fini();assert(!renderer.isInitialized());assert(renderer.textLineHeight(0.5f)==0);

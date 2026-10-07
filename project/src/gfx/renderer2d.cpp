@@ -2,6 +2,7 @@
 #include "gfx/ImageTintPolicy.hpp"
 #include "screens/SceneAssets.hpp"
 #include "content/WindowTexture.hpp"
+#include "content/TypeLabels.hpp"
 #if !defined(__wasm__)
 #include "runtime/RuntimeAssetManager.hpp"
 #endif
@@ -111,6 +112,7 @@ void Renderer2D::fini() {
 #if defined(__arm__) || defined(__3DS__) || defined(_3DS)
     if (m_gameFont) { C2D_FontFree(m_gameFont); m_gameFont = nullptr; }
     if (m_window) { C2D_SpriteSheetFree(m_window); m_window = nullptr; }
+    if (m_typeLabels) { C2D_SpriteSheetFree(m_typeLabels); m_typeLabels = nullptr; }
 #endif
     C2D_Fini();
     C3D_Fini();
@@ -405,5 +407,27 @@ bool Renderer2D::drawWindow(float x,float y,float width,float height) {
 #else
     (void)x;(void)y;(void)width;(void)height;
     return false;
+#endif
+}
+
+bool Renderer2D::drawTypeLabel(const char* type,float x,float y,float width,float height) {
+#if defined(__arm__) || defined(__3DS__) || defined(_3DS)
+    const auto* row=Pokerogue3DS::findTypeLabel(type);
+    if(!m_initialized || !m_frameActive || !m_currentTarget || !row || width<=0 || height<=0) return false;
+    if(!m_typeLabels) m_typeLabels=C2D_SpriteSheetLoad(Pokerogue3DS::kTypeLabelPath);
+    if(!m_typeLabels) return false;
+    const auto image=C2D_SpriteSheetGetImage(m_typeLabels,0);
+    if(!image.tex || !image.subtex || image.subtex->width!=Pokerogue3DS::kTypeLabelAtlasWidth || image.subtex->height!=Pokerogue3DS::kTypeLabelAtlasHeight) {
+        C2D_SpriteSheetFree(m_typeLabels);m_typeLabels=nullptr;return false;
+    }
+    C3D_TexSetFilter(image.tex,GPU_NEAREST,GPU_NEAREST);
+    float scale=width/row->frame.sourceWidth;
+    if(height/row->frame.sourceHeight<scale) scale=height/row->frame.sourceHeight;
+    if(scale>1) scale=1;
+    const float w=row->frame.sourceWidth*scale,h=row->frame.sourceHeight*scale;
+    drawAtlasFrame(image,row->frame,std::round(x+(width-w)/2),std::round(y+(height-h)/2),w,h);
+    return true;
+#else
+    (void)type;(void)x;(void)y;(void)width;(void)height;return false;
 #endif
 }

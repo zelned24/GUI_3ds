@@ -1,6 +1,7 @@
 #include "content/PokemonIcons.hpp"
 #include "runtime/PokemonAtlasPresenter.hpp"
 #include "runtime/TypePresentation.hpp"
+#include "content/TypeLabels.hpp"
 #include "content/PokerogueRuntimeContent.hpp"
 #include <cassert>
 #include <initializer_list>
@@ -36,6 +37,15 @@ int main() {
     key="old";assert(!PokemonAtlasPresenter::resolveAtlasKey(65535,nullptr,key) && key.empty());
     key="old";assert(!PokemonAtlasPresenter::resolveAtlasKey(1,"missing_form",key) && key.empty());
 
+    for(const auto& species:PokerogueContent::kSpecies) {
+        assert(canonicalPresentationTypes(species.dex,nullptr,first,second));
+        assert(findTypeLabel(first));if(second) assert(findTypeLabel(second));
+    }
+    for(const auto& form:PokerogueContent::kForms) {
+        assert(findTypeLabel(form.type1));
+        if(form.type2 && *form.type2 && !typeIEquals(form.type2,"NONE")) assert(findTypeLabel(form.type2));
+    }
+    assert(!findTypeLabel("NONE") && !findTypeLabel("missing") && !findTypeLabel(nullptr));
     const unsigned pages=sizeof(kPokemonIconPages)/sizeof(kPokemonIconPages[0]);
     const unsigned count=sizeof(kPokemonIcons)/sizeof(kPokemonIcons[0]);
     assert(pages>0 && count>0);

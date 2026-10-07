@@ -89,23 +89,23 @@ public:
         renderer.drawText(level, levelX + 1.0f, levelY + 1.0f, 0.34f, kLevelShadow);
         renderer.drawText(level, levelX, levelY, 0.34f, kLevelColor);
 
-        // Type badges inside frame slot under name (size 28x10)
+        // Native 32x14 localized labels, kept clear of the HP groove.
         const auto* species = PokerogueContent::findSpeciesByDex(actor.dex);
         const char* type1=nullptr;const char* type2=nullptr;
         if (canonicalPresentationTypes(actor.dex,actor.formId,type1,type2)) {
             if (player) {
                 const float badgeX = x + 18.0f;
                 const float badgeY = y + 25.0f;
-                drawTypeBadge(renderer, type1, badgeX, badgeY, 28.0f, 10.0f, 0.18f);
+                drawTypeBadge(renderer, type1, badgeX, badgeY, 32.0f, 14.0f, 0.18f);
                 if (type2 && *type2 && !typeIEquals(type1, type2)) {
-                    drawTypeBadge(renderer, type2, badgeX + 30.0f, badgeY, 28.0f, 10.0f, 0.18f);
+                    drawTypeBadge(renderer, type2, badgeX + 33.0f, badgeY, 32.0f, 14.0f, 0.18f);
                 }
             } else {
-                const float badgeX = x + 12.0f;
+                const float badgeX = x + 8.0f;
                 const float badgeY = y + 23.0f;
-                drawTypeBadge(renderer, type1, badgeX, badgeY, 28.0f, 10.0f, 0.18f);
+                drawTypeBadge(renderer, type1, badgeX, badgeY, 32.0f, 14.0f, 0.18f);
                 if (type2 && *type2 && !typeIEquals(type1, type2)) {
-                    drawTypeBadge(renderer, type2, badgeX + 30.0f, badgeY, 28.0f, 10.0f, 0.18f);
+                    drawTypeBadge(renderer, type2, badgeX + 33.0f, badgeY, 32.0f, 14.0f, 0.18f);
                 }
             }
         }

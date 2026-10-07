@@ -80,6 +80,7 @@ inline const char* pokemonTypeUiName(const char* type) {
 
 inline void drawTypeBadge(Renderer2D& renderer, const char* type, float x, float y, float w, float h, float textSize = 0.22f) {
     if (!type || !*type) return;
+    if(renderer.drawTypeLabel(type,x,y,w,h)) return;
     const uint32_t col = pokemonTypeColor(type);
     renderer.drawRect(x, y, w, h, col);
     const char* label = pokemonTypeUiName(type);

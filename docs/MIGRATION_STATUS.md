@@ -122,3 +122,13 @@ El avance se publica como trabajo en curso. Classic completo y la fidelidad visu
 3. Actualización desde consola con catálogo cargable y firma; compatibilidad y export/import completos de estados pendientes.
 4. Audio, recursos residentes/VRAM, cargas de atlas y rendimiento en Old 3DS física.
 5. Una revisión visual conjunta en Azahar cuando el conjunto de menús esté listo; no se solicita captura por cada cambio.
+
+## Etiquetas originales de tipos
+
+1. Importadas las 20 etiquetas del atlas `images/types_es-ES.png/json` del pin de assets, usadas por `starter-summary.ts::setupPokemonPermanentInfoContainer` upstream. No se confundieron con `type_bgs`, que contiene solo fondos.
+2. `scripts/type_badges.py` valida tamaño, claves, rotación, bounds y canvas; genera `TypeLabels.hpp`, textura RGBA8 y `build/native-presentation/type-label-provenance.json` con hashes de PNG, JSON y conversión. El pipeline de presentación invoca el mismo importador.
+3. HUD utiliza etiquetas de 32×14 a resolución original; el detalle de movimientos centra la etiqueta sin estirarla. Renderer conserva aspecto, aplica NEAREST, posee una única textura y la libera al cerrar. Si falta o es inválida, devuelve fallo y el presenter conserva su fallback textual anterior; esa degradación no demuestra fidelidad visual.
+4. Harness renderer prueba las 20 etiquetas, case-insensitive, tamaño nativo/reducido, una carga reutilizada, ausencia de archivo, dimensiones inválidas y rechazo de tipos desconocidos. Índice canónico comprueba cobertura de tipos de todas las especies/formas. Verificador físico compara bounds y hashes del atlas con el header generado.
+5. Solo español es-ES en esta adaptación; selección de idioma y comparación visual de todas las pantallas permanecen pendientes. Etiquetas de tipos en el HUD son adaptación 3DS: upstream usa iconos compactos en BattleInfo, por lo que no se declara paridad de esa composición.
+
+6. Gates de esta etapa: `npm test` 35/35, `npm run native-parity` 126/126, build ARM ELF/3DSX y `git diff --check` PASS. Logs: `build/type-label-npm-test.log`, `build/type-label-parity.log`, `build/type-label-arm.log`, `build/type-label-media.log`. Regeneración doble conserva byte a byte header, reporte y textura. No se abrió Azahar ni se validó Old 3DS física.

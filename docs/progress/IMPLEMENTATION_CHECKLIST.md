@@ -588,3 +588,5 @@ Para cada entrega actualizar esta tabla con IDs, commit, alcance conectado, excl
 
 - Capacidad de acción reconoce la declaración exacta de Poison Heal; curación local post-turno en dobles conecta bloqueo de residual y HP sin eliminar status.
 - Regresión de segundo enemigo real con capacidad canónica escrita sin ejecutar; pasivas/supresión, callbacks de curación y campo completo pendientes.
+
+| GUI-01 / GUI-10 / AST-05 | Parcial | Etiquetas originales de tipos | Atlas es-ES pinned, 20 frames, bounds/hashes físicos y harness renderer; coverage de tipos canónicos | Idiomas, iconos compactos upstream del HUD y comparación visual conjunta |

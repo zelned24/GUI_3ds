@@ -666,3 +666,6 @@ intro_header += """
     "keyframes": keyframe_data
 }, sort_keys=True, indent=2) + "\n", encoding="utf-8", newline="\n")
 print(f"Generated intro cinematic sequence with {len(keyframe_data)} keyframes")
+
+from type_badges import prepare as prepare_type_labels
+prepare_type_labels(ROOT)
