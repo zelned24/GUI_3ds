@@ -1,6 +1,7 @@
 #include "gfx/renderer2d.hpp"
 #include "runtime/Utf8Abbreviation.hpp"
 #include "runtime/NativeTextRaster.hpp"
+#include "runtime/DialoguePresenter.hpp"
 #include "content/TypeLabels.hpp"
 #include "content/HudTypeIcons.hpp"
 #include <cassert>
@@ -96,6 +97,19 @@ int main() {
         assert(lastX==1 && lastY==3 && std::fabs(lastScale-1)<0.000001f);
         renderer.drawTextWrapped("ABC DEF",1,2,0.4f,40,0xffffffff);
         assert((lastFlags & C2D_WordWrap)!=0 && std::fabs(lastScale-1)<0.000001f);
+        Pokerogue3DS::DialoguePresenter dialogue;
+        dialogue.sync(renderer,std::string(700,'A'));
+        const int cleared=measureClears;
+        dialogue.sync(renderer,std::string(700,'A'));assert(measureClears==cleared);
+        const int beforeDialogue=draws;
+        dialogue.draw(renderer);assert(draws==beforeDialogue+3 && lastX==310 && lastY==200 && lastScale==1);
+        assert(dialogue.advance(renderer));
+        dialogue.reset();dialogue.draw(renderer);assert(draws==beforeDialogue+3);
+        dialogue.sync(renderer,std::string(700,'A'));assert(dialogue.advance(renderer));
+        dialogue.sync(renderer,"ABC");assert(!dialogue.advance(renderer));
+        const int beforeShort=draws;dialogue.draw(renderer);assert(draws==beforeShort+1);
+        dialogue.sync(renderer,"");assert(!dialogue.advance(renderer));
+        const int beforeEmpty=draws;dialogue.draw(renderer);assert(draws==beforeEmpty);
         float width=0;
         assert(renderer.drawTextFitted("ABC",1,2,0.4f,10,0xffffffff,&width)==0.25f);
         assert(std::fabs(width-10)<0.000001f && std::fabs(lastScale-1)<0.000001f && !std::strcmp(lastParsed,"A."));

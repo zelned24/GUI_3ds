@@ -4,6 +4,12 @@ import {execFileSync} from 'node:child_process';
 import {fileURLToPath} from 'node:url';
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 export function registerPresentationTests(test) {
+  test('Native dialogue: bounded UTF-8 pages preserve long messages and native line widths',()=>{
+    const compiler=process.platform==='win32' ? 'C:/devkitPro/msys2/usr/bin/g++.exe' : 'g++';
+    const output=path.join(root,'build','text-page-layout-test'+(process.platform==='win32'?'.exe':''));
+    execFileSync(compiler,['-std=c++17','-O2','-I'+path.join(root,'project/include'),path.join(root,'test/native/text_page_layout_harness.cpp'),'-o',output],{stdio:'pipe'});
+    execFileSync(output,[],{stdio:'pipe'});
+  });
   test('Native sprite pixels: normalize animation canvases without fractional draw scales',()=>{execFileSync('python',[path.join(root,'test/native_sprite_pixel_tests.py')],{stdio:'pipe'});});
   test('Native type atlases: preserve trim offsets, sort deterministically and reject invalid frames',()=>{execFileSync('python',[path.join(root,'test/type_atlas_tests.py')],{stdio:'pipe'});});
   test('Native pixel font: binary alpha and compact sheets preserve glyphs, metrics and references',()=>{execFileSync('python',[path.join(root,'test/pixel_font_tests.py')],{stdio:'pipe'});});

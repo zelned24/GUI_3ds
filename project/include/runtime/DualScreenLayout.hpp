@@ -15,6 +15,7 @@ struct TouchRect {
         return px>=x && px-x<width && py>=y && py-y<height;
     }
 };
+inline constexpr TouchRect kDialogueAdvanceRect{12,208,156,20};
 inline constexpr TouchRect kMoveButtonRects[] = {
     {8, 36, 88, 64},
     {100, 36, 88, 64},

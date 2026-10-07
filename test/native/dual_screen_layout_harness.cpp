@@ -9,6 +9,10 @@
 #include <initializer_list>
 using namespace Pokerogue3DS;
 int main() {
+    assert(kDialogueAdvanceRect.contains(12,208) && kDialogueAdvanceRect.contains(167,227));
+    assert(!kDialogueAdvanceRect.contains(168,227) && !kDialogueAdvanceRect.contains(12,228));
+    for(unsigned y=0;y<240;++y) for(unsigned x=0;x<320;++x)
+        if(kDialogueAdvanceRect.contains(x,y)) assert(commandButtonAt(x,y)<0);
     static_assert(anchoredSpriteScale(1.0f,2.0f)==1.0f,"Explicit native size must not be doubled");
     static_assert(anchoredSpriteScale(2.0f,0.75f)==2.0f,"Explicit double size must not be reduced");
     static_assert(anchoredSpriteScale(1.25f,2.0f)==1.25f,"Explicit adaptation scale is preserved");

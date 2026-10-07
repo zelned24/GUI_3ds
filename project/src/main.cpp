@@ -17,6 +17,7 @@
 #include "runtime/PartyMenuPresenter.hpp"
 #include "runtime/RewardMenuPresenter.hpp"
 #include "runtime/DecisionMenuPresenter.hpp"
+#include "runtime/DialoguePresenter.hpp"
 #include "game/PokerogueModifierReward.hpp"
 #include "content/IntroCinematicData.hpp"
 #include <3ds.h>
@@ -175,6 +176,7 @@ int main() {
     frontend.setTouchControls(preferences.touchControls);
     bool titleVisible = true;
     bool isPaused = false;
+    Pokerogue3DS::DialoguePresenter dialogue;
     const char* pauseFeedback = nullptr;
     const auto saveAndReturnToTitle = [&]() {
         const auto result = game.saveNativeProgress(progress);
@@ -217,6 +219,8 @@ int main() {
         const uint64_t frameAnimationTimeMs = m_renderTicks * 1000 / 60;
         hidScanInput();
         uint32_t rawPressed = Pokerogue3DS::FrontendMenuPresenter::filterTouchInput(hidKeysDown(),preferences.touchControls);
+        if(titleVisible || game.presentationStage()==Pokerogue3DS::NativeSaveStage::RunSetup
+            || game.presentationStage()==Pokerogue3DS::NativeSaveStage::BattleActive) dialogue.reset();
         if (titleVisible) {
             if (introActive) {
                 if (rawPressed & (KEY_A | KEY_B | KEY_START | KEY_TOUCH)) {
@@ -310,6 +314,10 @@ int main() {
         }
         if (!partyMenu.available(game)) partyMenu.open=false;
         const bool setupInput=game.presentationStage()==Pokerogue3DS::NativeSaveStage::RunSetup;
+        if(!isPaused && !setupInput && game.presentationStage()!=Pokerogue3DS::NativeSaveStage::BattleActive) {
+            dialogue.sync(renderer,game.battleFeedback());
+            if((rawPressed & KEY_SELECT) && dialogue.advance(renderer)) rawPressed &= ~KEY_SELECT;
+        }
         if (!setupInput && (rawPressed & KEY_START)) {
             isPaused = !isPaused;
             pauseSelection = 0;
@@ -838,9 +846,14 @@ int main() {
 
             // Battle dialogue banner on top screen only when outside active battle
             if (!game.battleFeedback().empty() && game.presentationStage() != Pokerogue3DS::NativeSaveStage::BattleActive) {
-                renderer.drawWindow(16.0f, 194.0f, 368.0f, 40.0f);
-                renderer.drawTextFitted(game.battleFeedback().c_str(), 28.0f, 204.0f, 0.38f, 344.0f,
-                    C2D_Color32(255, 255, 255, 255));
+                if(game.presentationStage()==Pokerogue3DS::NativeSaveStage::RunSetup) {
+                    // SELECT belongs to form selection during setup.
+                    renderer.drawWindow(16,194,368,40);
+                    renderer.drawTextFitted(game.battleFeedback().c_str(),28,204,0.38f,344,0xffffffff);
+                } else {
+                    dialogue.sync(renderer,game.battleFeedback());
+                    dialogue.draw(renderer);
+                }
             }
         }
         renderer.beginBottom();

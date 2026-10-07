@@ -3,12 +3,12 @@
 #include "runtime/TitleMenuPresenter.hpp"
 #include "runtime/ItemIconPresenter.hpp"
 #include "runtime/DualScreenLayout.hpp"
+#include "runtime/DialoguePresenter.hpp"
 #include "content/BallMenuContent.hpp"
 #include "content/RuntimeUiText.hpp"
 #include <3ds.h>
 #include <cstdio>
 #include <string>
-#include <vector>
 
 namespace Pokerogue3DS {
 
@@ -30,7 +30,7 @@ enum class BattleMenuCommand {
 class BattleCommandMenuPresenter {
 public:
     void clear() { m_icons.clear(); m_cursor.clear(); }
-    void reset() { m_page = BattleMenuPage::Root; m_selected = 0; m_feedback = nullptr; }
+    void reset() { m_page = BattleMenuPage::Root; m_selected = 0; m_feedback = nullptr; m_dialogue.reset();m_advanceDialogue=false; }
     bool movesOpen() const { return m_page == BattleMenuPage::Moves; }
     PokeballType ballType() const { return static_cast<PokeballType>(kBallMenuDefinitions[m_selected].id); }
 
@@ -54,6 +54,10 @@ public:
         }
 
         if (m_page == BattleMenuPage::Root) {
+            if(m_dialogue.hasNavigation() && ((keys & KEY_SELECT)
+                || ((keys & KEY_TOUCH) && kDialogueAdvanceRect.contains(x,y)))) {
+                m_advanceDialogue=true;return BattleMenuCommand::None;
+            }
             // 2D D-pad navigation: UP/DOWN toggles row, LEFT/RIGHT toggles column
             if (keys & (KEY_DUP | KEY_CPAD_UP | KEY_DDOWN | KEY_CPAD_DOWN)) {
                 m_selected ^= 2;
@@ -122,46 +126,13 @@ public:
             const std::string& feedback = game.battleFeedback();
             const bool isWaveIntro = feedback.rfind("Ola ", 0) == 0;
             if (!feedback.empty() && !isWaveIntro) {
-                std::vector<std::string> lines;
-                std::string currentLine;
-                const char* p = feedback.c_str();
-                while (*p) {
-                    while (*p == ' ') {
-                        if (!currentLine.empty()) currentLine += ' ';
-                        ++p;
-                    }
-                    if (!*p) break;
-                    if (*p == '\n') {
-                        lines.push_back(currentLine);
-                        currentLine.clear();
-                        ++p;
-                        continue;
-                    }
-                    const char* wStart = p;
-                    while (*p && *p != ' ' && *p != '\n') ++p;
-                    std::string word(wStart, p);
-                    if (!currentLine.empty() && (currentLine.length() + word.length() > 20)) {
-                        lines.push_back(currentLine);
-                        currentLine = word;
-                    } else {
-                        currentLine += word;
-                    }
-                }
-                if (!currentLine.empty()) lines.push_back(currentLine);
-                if (lines.size() > 6) lines.resize(6);
-
-                const float lineHeight = 22.0f;
-                const float totalH = lines.size() * lineHeight;
-                float curY = 120.0f - (totalH * 0.5f);
-
-                for (const auto& line : lines) {
-                    renderer.drawTextFitted(line.c_str(), 19.0f, curY + 1.0f, 0.36f, 142.0f,
-                        C2D_Color32(0x50, 0x40, 0x60, 255));
-                    renderer.drawTextFitted(line.c_str(), 18.0f, curY, 0.36f, 142.0f,
-                        C2D_Color32(0xf8, 0xf8, 0xf8, 255));
-                    curY += lineHeight;
-                }
+                m_dialogue.sync(renderer,feedback);
+                if(m_advanceDialogue) m_dialogue.advance(renderer);
+                m_advanceDialogue=false;
+                m_dialogue.drawAt(renderer,18,22,18,212);
             } else {
+                m_dialogue.reset();
+                m_advanceDialogue=false;
                 char line1[48];
                 char line2[48];
                 std::snprintf(line1, sizeof(line1), "¿Qué debería");
@@ -248,6 +219,8 @@ private:
     const char* m_feedback = nullptr;
     ItemIconPresenter m_icons;
     TitleMenuPresenter m_cursor;
+    DialoguePresenter m_dialogue{12,142};
+    bool m_advanceDialogue=false;
 };
 
 }
