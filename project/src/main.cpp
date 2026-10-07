@@ -18,6 +18,7 @@
 #include "runtime/RewardMenuPresenter.hpp"
 #include "runtime/DecisionMenuPresenter.hpp"
 #include "runtime/DialoguePresenter.hpp"
+#include "runtime/PresentationClock.hpp"
 #include "game/PokerogueModifierReward.hpp"
 #include "content/IntroCinematicData.hpp"
 #include <3ds.h>
@@ -197,7 +198,7 @@ int main() {
     };
     bool introActive = true;
     unsigned pauseSelection = 0;
-    uint64_t m_renderTicks = 0;
+    const uint64_t presentationStartTicks=svcGetSystemTick();
 
     const auto isRecoveryReward = [](const char* itemId) -> bool {
         if (!itemId) return false;
@@ -215,8 +216,8 @@ int main() {
     };
 
     while (aptMainLoop()) {
-        ++m_renderTicks;
-        const uint64_t frameAnimationTimeMs = m_renderTicks * 1000 / 60;
+        const uint64_t frameAnimationTimeMs=Pokerogue3DS::presentationMilliseconds(
+            presentationStartTicks,svcGetSystemTick(),SYSCLOCK_ARM11);
         hidScanInput();
         uint32_t rawPressed = Pokerogue3DS::FrontendMenuPresenter::filterTouchInput(hidKeysDown(),preferences.touchControls);
         if(titleVisible || game.presentationStage()==Pokerogue3DS::NativeSaveStage::RunSetup

@@ -248,3 +248,9 @@ El avance se publica como trabajo en curso. Classic completo y la fidelidad visu
 2. Las filas de Poké Balls ahora comparten `ballMenuRectangle` para dibujo/táctil. Antes usaban y=24+28i al dibujar y y=34+27i al tocar. Cinco rectángulos de 32px con separación de 2px caben en el panel sin invadir el footer.
 3. Harness valida canvas/trim de los 528 frames del catálogo y todos los 76800 píxeles de la pantalla táctil contra solapamientos. Nueve suites específicas, parity 126/126, build ARM/3DSX y diff-check PASS; suite completa en ejecución. Logs build/reward-icons-* y build/ball-icons-*; comparación Azahar/Old 3DS pendiente.
 4. Primera ejecución completa: 37 PASS/1 FAIL. Había cargado la invocación antigua del compilador antes de añadir el include del catálogo al harness: faltaba project/generated/include. Se corrigió el argumento; focused actualizado y reejecución completa 38/38 PASS. Resultado final en build/ball-icons-npm-test-final.log; se conserva el log del fallo anterior.
+
+### Reloj de presentación
+
+1. `main.cpp` antes calculaba timestamp=m_renderTicks*1000/60; a 30 FPS entregaba medio segundo de tiempo visual por segundo real. Ahora `svcGetSystemTick` y `SYSCLOCK_ARM11` de libctru convierten ticks transcurridos en milisegundos. Se comparte el timestamp visual existente, sin alimentar RNG, contenido o reglas de batalla.
+2. `PresentationClock` divide antes de multiplicar el total de ticks; rechaza frecuencia cero y retroceso respecto al inicio. Harness compara diez segundos muestreados a 15/30/60 FPS, monotonía y truncamiento de máximo 1ms. Nueve suites específicas, npm test 38/38, native-parity 126/126, build ARM/3DSX y diff-check PASS.
+3. EXP sigue avanzando por frame dentro del HUD; conectar el reloj es una dependencia previa, no un port completo de su tween. Pausa/suspensión, audio y capturas Azahar/Old 3DS aún pendientes. Logs build/presentation-clock-*.

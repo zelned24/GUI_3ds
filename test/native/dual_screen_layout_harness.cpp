@@ -5,12 +5,28 @@
 #include "runtime/StarterGridLayout.hpp"
 #include "content/BallMenuContent.hpp"
 #include "content/ItemIcons.hpp"
+#include "runtime/PresentationClock.hpp"
 #include "gfx/ImageTintPolicy.hpp"
 #include <cassert>
 #include <climits>
 #include <initializer_list>
 using namespace Pokerogue3DS;
 int main() {
+    constexpr uint64_t frequency=268123480;
+    static_assert(presentationMilliseconds(100,100+frequency,frequency)==1000,"Real ticks define visual duration");
+    static_assert(presentationMilliseconds(100,99,frequency)==0,"Clock reset is bounded");
+    static_assert(presentationMilliseconds(0,99,0)==0,"Invalid frequency is bounded");
+    for(unsigned cadence:{15,30,60}) {
+        for(unsigned second=0;second<=10;++second)
+            assert(presentationMilliseconds(100,100+uint64_t(second)*frequency,frequency)==second*1000);
+        uint64_t previous=0;
+        for(unsigned frame=0;frame<=cadence*10;++frame) {
+            const uint64_t actual=presentationMilliseconds(0,frequency*frame/cadence,frequency);
+            const uint64_t ideal=uint64_t(frame)*1000/cadence;
+            assert(actual<=ideal && ideal-actual<=1 && actual>=previous);
+            previous=actual;
+        }
+    }
     for(const auto& frame:kItemIconFrames) {
         assert(frame.sourceWidth==32 && frame.sourceHeight==32);
         assert(frame.trimX+frame.width<=32 && frame.trimY+frame.height<=32);
