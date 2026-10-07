@@ -383,6 +383,7 @@
 {"from":"project/include/runtime/SetupPresenter.hpp","to":"project/include/runtime/TitleMenuPresenter.hpp","kind":"include"},
 {"from":"project/include/runtime/SetupPresenter.hpp","to":"project/include/storage/NativeProgressStore.hpp","kind":"include"},
 {"from":"project/include/runtime/SetupPresenter.hpp","to":"project/include/storage/NativeStarterCandyProfile.hpp","kind":"include"},
+{"from":"project/include/runtime/StarterGridLayout.hpp","to":"project/generated/include/content/PokerogueRuntimeContent.hpp","kind":"include"},
 {"from":"project/include/runtime/StarterGridLayout.hpp","to":"project/include/runtime/DualScreenLayout.hpp","kind":"include"},
 {"from":"project/include/runtime/TextPageLayout.hpp","to":"project/include/runtime/Utf8Abbreviation.hpp","kind":"include"},
 {"from":"project/include/runtime/TitleMenuLayout.hpp","to":"project/include/runtime/DualScreenLayout.hpp","kind":"include"},

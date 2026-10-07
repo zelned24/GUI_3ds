@@ -278,3 +278,10 @@ El avance se publica como trabajo en curso. Classic completo y la fidelidad visu
 ### Preparación reproducible de preview
 
 1. prepare_azahar_preview.py --portable copia ejecutable/librerías/plugins a build/azahar-pixel-runtime y escribe user/config. Rechaza rutas solapadas con instalación; preserva saves existentes y no copia configuración privada. Nueve pruebas Python y npm test 38/38 PASS. Verificador de presentación compara ahora tinta A4 real con provenance y NativeFontMetrics.hpp. Diff-check PASS. Logs build/portable-preview-*.
+
+### Selección de starters y pantalla inferior
+
+1. Fuente inspeccionada: PokéRogue pin 8555c08c823b856cbec4eb99ca84ea52a955836d, src/data/species-data-registry.ts, isStarter/getAllStarters; src/ui/handlers/starter-select-ui-handler.ts, filtros fitsGen/fitsCaught. isStarter usa starterCost: el catálogo conserva esa elegibilidad canónica y combina starterUnlocked, sin inventar una exclusión universal por etapa evolutiva.
+2. Vista muestra solo desbloqueados. Filtro de generación Y/táctil recorre generaciones presentes y vuelve a Todas. Nueva partida y selección desde el equipo retiran el filtro anterior. Otros filtros upstream aún pendientes.
+3. Pantalla inferior: cabecera/coste, selector generación, 18 iconos, seis slots, botones Formas/Jugar/Volver y pie con fuente nativa de 10 px. Grid/footer/filter comparten rectángulos de dibujo y input. Overload starterUnlocked(Species) reutiliza la política evitando búsquedas por dex redundantes; no cambia desbloqueos.
+4. Suite completa 38/38 PASS y nueve suites enfocadas posteriores PASS; casos catálogo vacío, todos los gen IDs uint8, recorrido/cierre del filtro, equivalencia de overload y 76800 píxeles de táctil. Native-parity 126/126, compilación ARM/3DSX y diff-check PASS. Logs build/starter-filter-*. Capturas y presupuesto de rendimiento pendientes; EXP por tramos no implementada en este bloque.

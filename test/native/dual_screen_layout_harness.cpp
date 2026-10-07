@@ -90,8 +90,34 @@ int main() {
     assert(nativeTextRaster(0.4f).index==2 && nativeTextRaster(0.4f).scale==1);
     assert(nativeTextRaster(0.5f).index==3 && nativeTextRaster(0.5f).scale==1);
     for(unsigned y=0;y<240;++y) for(unsigned x=0;x<320;++x) {
-        const int expected=x>=16 && x<304 && y>=38 && y<182 ? int((y-38)/36*6+(x-16)/48) : -1;
+        const int expected=x>=16 && x<304 && y>=54 && y<162 ? int((y-54)/36*6+(x-16)/48) : -1;
         assert(starterGridAt(x,y)==expected);
+        unsigned hits=unsigned(expected>=0)+unsigned(kStarterFilterRect.contains(x,y));
+        int footer=-1;
+        for(unsigned i=0;i<3;++i) if(kStarterFooterRects[i].contains(x,y)) {++hits;footer=int(i);}
+        assert(hits<=1 && starterFooterAt(x,y)==footer);
+    }
+    const auto none=[](const auto&){return false;};
+    const auto fresh=[](const auto& row){return row.freshProfileStarter;};
+    assert(starterCatalogCount(none)==0 && !starterCatalogAt(0,none));
+    assert(nextStarterGeneration(0,1,none)==0 && nextStarterGeneration(0,-1,none)==0);
+    unsigned total=0;
+    for(const auto& row:PokerogueContent::kSpecies) if(row.starterEligible && row.freshProfileStarter) {
+        assert(starterCatalogAt(total,fresh)->dex==row.dex);++total;
+    }
+    assert(starterCatalogCount(fresh)==total && !starterCatalogAt(total,fresh));
+    unsigned last=0;
+    for(unsigned gen=1;gen<=255;++gen) if(starterCatalogCount(fresh,gen)) {
+        assert(nextStarterGeneration(last,1,fresh)==gen);
+        assert(nextStarterGeneration(gen,-1,fresh)==last);last=gen;
+    }
+    assert(nextStarterGeneration(last,1,fresh)==0 && nextStarterGeneration(0,-1,fresh)==last);
+    for(unsigned gen=1;gen<=255;++gen) {
+        unsigned count=0;
+        for(const auto& row:PokerogueContent::kSpecies) if(row.starterEligible && row.freshProfileStarter && row.generation==gen) {
+            assert(starterCatalogAt(count,fresh,gen)->dex==row.dex);++count;
+        }
+        assert(starterCatalogCount(fresh,gen)==count && !starterCatalogAt(count,fresh,gen));
     }
     assert(starterGridAt(UINT_MAX,UINT_MAX)==-1);
     static_assert(titleCursorY(48,25,15)==53, "Cursor is centered on the font height");

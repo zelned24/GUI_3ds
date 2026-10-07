@@ -95,6 +95,7 @@ public:
     bool toggleSetupStarter();
     bool restoreSetup(uint32_t seed, uint16_t starterDex);
     bool starterUnlocked(uint16_t dex) const;
+    bool starterUnlocked(const PokerogueContent::Species& species) const;
     bool restoreStarterTeamSetup(uint32_t seed, const uint16_t* dexes, size_t count);
     bool starterSelectionAllowed(const uint16_t* dexes, size_t count) const;
     uint8_t starterCostReduction(uint16_t dex) const;

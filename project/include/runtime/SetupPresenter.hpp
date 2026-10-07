@@ -179,26 +179,35 @@ public:
         }
         return false;
     }
-    static unsigned count() {unsigned n=0;for(const auto& row:PokerogueContent::kSpecies) if(row.starterEligible) ++n;return n;}
-    static const PokerogueContent::Species* at(unsigned ordinal) {
-        for(const auto& row:PokerogueContent::kSpecies) if(row.starterEligible) {if(!ordinal--) return &row;}
-        return nullptr;
+    unsigned generationFilter=0;
+    unsigned count(const FirstRunRuntime& game) const {
+        return starterCatalogCount([&](const auto& row){return game.starterUnlocked(row);},generationFilter);
     }
-    static unsigned selectedOrdinal(const FirstRunRuntime& game) {
-        unsigned n=0;for(const auto& row:PokerogueContent::kSpecies) if(row.starterEligible) {
-            if(row.dex==game.selectedSetupStarterDex()) return n;
-            ++n;
-        }
+    const PokerogueContent::Species* at(const FirstRunRuntime& game,unsigned ordinal) const {
+        return starterCatalogAt(ordinal,[&](const auto& row){return game.starterUnlocked(row);},generationFilter);
+    }
+    unsigned selectedOrdinal(const FirstRunRuntime& game) const {
+        unsigned ordinal=0;
+        for(const auto& row:PokerogueContent::kSpecies)
+            if(row.starterEligible && game.starterUnlocked(row) && (!generationFilter || row.generation==generationFilter)) {
+                if(row.dex==game.selectedSetupStarterDex()) return ordinal;
+                ++ordinal;
+            }
         return 0;
     }
-    static bool move(FirstRunRuntime& game,int delta) {
-        const int total=int(count());if(!total) return false;
+    bool move(FirstRunRuntime& game,int delta) const {
+        const int total=int(count(game));if(!total) return false;
         const int ordinal=((int(selectedOrdinal(game))+delta)%total+total)%total;
-        const auto* species=at(unsigned(ordinal));return species && game.selectSetupStarter(species->dex);
+        const auto* species=at(game,unsigned(ordinal));return species && game.selectSetupStarter(species->dex);
     }
-    static bool touch(FirstRunRuntime& game,unsigned x,unsigned y) {
+    bool cycleGeneration(FirstRunRuntime& game,int direction=1) {
+        generationFilter=nextStarterGeneration(generationFilter,direction,[&](const auto& row){return game.starterUnlocked(row);});
+        const auto* first=at(game,0);
+        return first && game.selectSetupStarter(first->dex);
+    }
+    bool touch(FirstRunRuntime& game,unsigned x,unsigned y) const {
         const int cell=starterGridAt(x,y);if(cell<0) return false;
-        const auto* species=at(selectedOrdinal(game)/kStarterGridPageSize*kStarterGridPageSize+unsigned(cell));
+        const auto* species=at(game,selectedOrdinal(game)/kStarterGridPageSize*kStarterGridPageSize+unsigned(cell));
         return species && game.selectSetupStarter(species->dex);
     }
     void drawBackground(Renderer2D& renderer) {
@@ -275,10 +284,15 @@ public:
             if(!pokemonStarterCostQuarterUnits(dex,game.starterCostReduction(dex),quarterUnits)) costResolved=false;
             else totalCost+=quarterUnits;
         }
-        if(costResolved) std::snprintf(label,sizeof(label),"%u / %u   Coste: %u.%02u / %u pts",ordinal+1,count(),
+        if(costResolved) std::snprintf(label,sizeof(label),"%u / %u   Coste: %u.%02u / %u pts",ordinal+1,count(game),
             unsigned(totalCost/4),unsigned(totalCost%4)*25,unsigned(kClassicStarterValueLimit));
-        else std::snprintf(label,sizeof(label),"%u / %u   Coste sin resolver",ordinal+1,count());
-        renderer.drawText(label,13,5,0.4f,0xffffffff);
+        else std::snprintf(label,sizeof(label),"%u / %u   Coste sin resolver",ordinal+1,count(game));
+        renderer.drawTextFitted(label,13,5,0.375f,294,0xffffffff);
+        renderer.drawWindow(kStarterFilterRect.x,kStarterFilterRect.y,kStarterFilterRect.width,kStarterFilterRect.height);
+        char filter[64];
+        if(generationFilter) std::snprintf(filter,sizeof(filter),"Generación %u   Y: cambiar",generationFilter);
+        else std::snprintf(filter,sizeof(filter),"Todas las generaciones   Y: cambiar");
+        renderer.drawTextFitted(filter,17,29,0.3125f,286,0xffffffff);
         if(!m_grid) {
             m_grid=C2D_SpriteSheetLoad("romfs:/presentation/ui/starter_container_bg.t3x");
             if(m_grid) {
@@ -286,11 +300,11 @@ public:
                 if(img.tex) C3D_TexSetFilter(img.tex, GPU_NEAREST, GPU_NEAREST);
             }
         }
-        if(m_grid) renderer.drawImageDirect(C2D_SpriteSheetGetImage(m_grid,0),8,29,304,154);
-        else renderer.drawWindow(8,29,304,154);
+        if(m_grid) renderer.drawImageDirect(C2D_SpriteSheetGetImage(m_grid,0),8,51,304,112);
+        else renderer.drawWindow(8,51,304,112);
         for(unsigned i=0;i<kStarterGridPageSize;++i) {
-            const auto* species=at(start+i);if(!species) break;
-            const float x=16+(i%6)*48,y=38+(i/6)*36;
+            const auto* species=at(game,start+i);if(!species) break;
+            const float x=16+(i%6)*48,y=54+(i/6)*36;
             if(start+i==ordinal) renderer.drawRect(x,y,46,34,0xff827660);
             if(!m_icons.draw(renderer,species->dex,game.setupStarterFormIndex(species->dex),x+3,y+2,
                 game.starterUnlocked(species->dex) ? 1.0f : 0.35f))
@@ -298,14 +312,16 @@ public:
         }
         const auto& context=game.presentation();
         for(unsigned slot=0;slot<6;++slot) {
-            renderer.drawRect(8+slot*50,186,46,26,slot<context.playerPartyCount ? 0xff463747 : 0xff2e2630);
-            renderer.drawWindow(9+slot*50,187,44,24);
+            renderer.drawRect(8+slot*50,168,46,34,slot<context.playerPartyCount ? 0xff463747 : 0xff2e2630);
+            renderer.drawWindow(9+slot*50,169,44,32);
         }
         for(unsigned i=0;i<context.playerPartyCount && i<6;++i)
-            m_icons.draw(renderer,context.playerParty[i].dex,game.setupStarterFormIndex(context.playerParty[i].dex),10+i*50,188);
-        if(feedback) renderer.drawTextFitted(feedback,10,216,0.28f,300,0xff80ffff);
-        else renderer.drawText("SELECT: Formas    START: Comenzar    B: Volver",10,216,0.28f,0xffffffff);
-        renderer.drawText("Tocar: elegir/anadir    L/R: pagina",10,228,0.24f,0xffe0e0e0);
+            m_icons.draw(renderer,context.playerParty[i].dex,game.setupStarterFormIndex(context.playerParty[i].dex),10+i*50,169);
+        for(const auto& rect:kStarterFooterRects) renderer.drawWindow(rect.x,rect.y,rect.width,rect.height);
+        renderer.drawText("Formas",18,210,0.3125f,0xffffffff);
+        renderer.drawText("Jugar",130,210,0.3125f,0xffffffff);
+        renderer.drawText("Volver",237,210,0.3125f,0xffffffff);
+        renderer.drawTextFitted(feedback ? feedback : "L/R: página   SELECT: formas",10,227,0.3125f,300,0xff80ffff);
         if(confirmStart) {
             renderer.drawWindow(12,66,296,105);
             const char* confirmation=runtimeUiText("starter-select-ui-handler:confirmStartTeam");

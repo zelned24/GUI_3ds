@@ -241,6 +241,8 @@ Se conserva presentación C++/ScenePlayer y bridge QuickJS opcional. El editor/S
 - [ ] **GUI-02.** Cerrar pantalla superior 400×240: campo, sprites, fondos, HUD y animaciones.
 - [ ] **GUI-03.** Cerrar pantalla inferior 320×240: acciones, movimientos, equipo e inventario.
 - [ ] **GUI-04.** Completar title/new/continue/setup/starters y selección de modos.
+  - [x] Mostrar solo starters canónicos desbloqueados, filtrar por generación con Y/táctil y compartir catálogo entre navegación/dibujo. Cuadrícula de 18 iconos, equipo y botones inferiores con zonas táctiles separadas; comparación visual pendiente.
+  - [ ] Completar filtros adicionales de upstream (tipo/coste/atributos disponibles), decisiones de starters y verificación visual de fuentes.
 - [ ] **GUI-05.** Completar battle, cambio/objetivos, captura y mensajes/feedback de fallo.
 - [ ] **GUI-06.** Completar mapa/bioma, rewards, tienda, party/items y decisiones de aprendizaje/evolución.
 - [ ] **GUI-07.** Completar settings, idioma, audio, exportación y actualización de contenido.

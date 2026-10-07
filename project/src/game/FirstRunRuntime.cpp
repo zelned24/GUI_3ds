@@ -167,8 +167,12 @@ bool FirstRunRuntime::toggleSetupStarter() {
 
 bool FirstRunRuntime::starterUnlocked(uint16_t dex) const {
     const auto* species = PokerogueContent::findSpeciesByDex(dex);
-    return species && species->starterEligible &&
-        (species->freshProfileStarter || (m_starterProfileReady && hasCaughtSpecies(dex)));
+    return species && starterUnlocked(*species);
+}
+
+bool FirstRunRuntime::starterUnlocked(const PokerogueContent::Species& species) const {
+    return species.starterEligible &&
+        (species.freshProfileStarter || (m_starterProfileReady && hasCaughtSpecies(species.dex)));
 }
 
 uint8_t FirstRunRuntime::starterCostReduction(uint16_t dex) const {

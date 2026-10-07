@@ -111,6 +111,8 @@ static int checkInitialStarterTeamSetup() {
             dexes[count++] = species.dex;
     if (count != 2) return 642;
     FirstRunRuntime first(1), repeated(2);
+    for(const auto& species:PokerogueContent::kSpecies)
+        if(first.starterUnlocked(species.dex)!=first.starterUnlocked(species)) return 642;
     if (!first.restoreStarterTeamSetup(1, dexes, 2) || !repeated.restoreStarterTeamSetup(1, dexes, 2) ||
         first.playerPartyCount() != 2 || repeated.playerPartyCount() != 2 || first.runStarted()) return 643;
     for (uint8_t member = 0; member < 2; ++member) {

@@ -289,6 +289,7 @@ int main() {
                 // Reuse the explicit run seed; gameplay must not depend on the clock.
                 const uint32_t seed = game.run().seed;
                 if(game.restoreSetup(seed, starterDex)) {
+                    setup.generationFilter=0;
                     player.load(game.scene());
                     titleVisible=false;
                 } else frontend.feedback("No se pudo iniciar la partida.");
@@ -418,7 +419,8 @@ int main() {
                 else setup.formFeedback="Forma no disponible o guardado fallido.";
             }
         } else if(setupInput) {
-            if(rawPressed & KEY_SELECT) {setup.formsOpen=true;setup.selectedForm=0;setup.formFeedback=nullptr;setup.feedback=nullptr;}
+            if(rawPressed & KEY_Y) {changed=setup.cycleGeneration(game);setup.feedback=nullptr;}
+            else if(rawPressed & KEY_SELECT) {setup.formsOpen=true;setup.selectedForm=0;setup.formFeedback=nullptr;setup.feedback=nullptr;}
             else if(rawPressed & (KEY_LEFT | KEY_CPAD_LEFT)) {changed=setup.move(game,-1);setup.feedback=nullptr;}
             else if(rawPressed & (KEY_RIGHT | KEY_CPAD_RIGHT)) {changed=setup.move(game,1);setup.feedback=nullptr;}
             else if(rawPressed & (KEY_UP | KEY_CPAD_UP)) {changed=setup.move(game,-6);setup.feedback=nullptr;}
@@ -427,10 +429,11 @@ int main() {
             else if(rawPressed & KEY_R) {changed=setup.move(game,int(Pokerogue3DS::kStarterGridPageSize));setup.feedback=nullptr;}
             else if(rawPressed & KEY_TOUCH) {
                 touchPosition touch{};hidTouchRead(&touch);
-                if(touch.py>=29 && touch.py<183) {
+                if(Pokerogue3DS::kStarterFilterRect.contains(touch.px,touch.py)) {changed=setup.cycleGeneration(game);setup.feedback=nullptr;}
+                else if(touch.py>=54 && touch.py<162) {
                     const int cell=Pokerogue3DS::starterGridAt(touch.px,touch.py);
                     if(cell>=0) {
-                        const auto* species=Pokerogue3DS::SetupPresenter::at(Pokerogue3DS::SetupPresenter::selectedOrdinal(game)/Pokerogue3DS::kStarterGridPageSize*Pokerogue3DS::kStarterGridPageSize+unsigned(cell));
+                        const auto* species=setup.at(game,setup.selectedOrdinal(game)/Pokerogue3DS::kStarterGridPageSize*Pokerogue3DS::kStarterGridPageSize+unsigned(cell));
                         if(species) {
                             if(species->dex==game.selectedSetupStarterDex()) {
                                 if(!game.starterUnlocked(species->dex)) {
@@ -447,20 +450,22 @@ int main() {
                             }
                         }
                     }
-                } else if(touch.py>=186 && touch.py<212) {
+                } else if(touch.py>=168 && touch.py<202) {
                     for(unsigned slot=0;slot<6;++slot) {
                         if(touch.px>=8+slot*50 && touch.px<8+slot*50+46) {
                             if(slot<game.presentation().playerPartyCount) {
+                                setup.generationFilter=0;
                                 changed=game.selectSetupStarter(game.presentation().playerParty[slot].dex);
                                 setup.feedback=nullptr;
                             }
                             break;
                         }
                     }
-                } else if(touch.py>=212) {
-                    if(touch.px<90) {
+                } else if(Pokerogue3DS::starterFooterAt(touch.px,touch.py)>=0) {
+                    const int footer=Pokerogue3DS::starterFooterAt(touch.px,touch.py);
+                    if(footer==0) {
                         setup.formsOpen=true;setup.selectedForm=0;setup.formFeedback=nullptr;setup.feedback=nullptr;
-                    } else if(touch.px>=90 && touch.px<=220) {
+                    } else if(footer==1) {
                         setup.confirmStart=true;setup.confirmYes=true;setup.feedback=nullptr;
                     } else {
                         titleVisible=true;setup.feedback=nullptr;
