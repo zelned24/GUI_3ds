@@ -174,6 +174,7 @@ public:
     bool runStarted() const { return m_runStarted; }
     void setStorageFeedback(const char* message);
     const Citro2D::SceneDefinition& scene() const { return m_scene; }
+    uint16_t experienceLevelCap() const;
     const RunState& run() const { return m_run; }
     const PresentationContext& presentation() const { return m_context; }
     PokerogueBattleRng& battleRng() { return m_battleRng; }

@@ -32,10 +32,11 @@ export function registerPresentationTests(test) {
     expect(hud.includes('constexpr float scale = 1.0f'), 'HUD panels must preserve native pixel scale');
     expect(hud.includes('drawHudBar(false,boss,fraction'), 'HP uses the original two-tone bar atlas');
     expect(hud.includes('drawHudBar(true,false,expFraction'), 'EXP uses the original patterned texture');
-    expect(main.includes('true, 258.0f, 146.0f'), 'Player HUD remains above the feedback panel');
+    expect(main.includes('true, 258.0f, 146.0f,false,game.experienceLevelCap()'), 'Player HUD remains above the feedback panel');
     expect(hud.includes('drawHudGraphic("numbers",digit'), 'HUD numbers must use original digit atlas');
     expect(hud.includes('drawHudGraphic("overlay_exp_label"'), 'EXP label must use original localized artwork');
     expect(!hud.includes('renderer.drawText(level'), 'Level numbers must not use scaled font glyphs');
+    expect(hud.includes('hudLevelDigitAtlas(player,actor.level,experienceLevelCap)'), 'Capped level digit color consumes the runtime policy');
     expect(hud.includes('sizeof(displayName),displayedNameWidth,true)'),'Gender position must use measured fitted glyph width');
     expect(!hud.includes('drawTextFitted(name,'), 'Long HUD names must keep font scale and use upstream abbreviation');
     expect(!hud.includes('approxNameWidth'),'UTF-8 byte count cannot estimate glyph width');

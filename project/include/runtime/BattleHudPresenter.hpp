@@ -26,7 +26,7 @@ public:
     BattleHudPresenter(const BattleHudPresenter&) = delete;
     BattleHudPresenter& operator=(const BattleHudPresenter&) = delete;
 
-    void draw(Renderer2D& renderer, const ResolvedPokemon& actor, bool player, float x, float y, bool isCaught = false) {
+    void draw(Renderer2D& renderer, const ResolvedPokemon& actor, bool player, float x, float y, bool isCaught = false,uint16_t experienceLevelCap=0) {
         if (!actor.actorIdentityResolved) return;
         const unsigned index = player ? 0 : (actor.bossState.segmentCount != 0 ? 2 : 1);
         const auto& texture = kBattleHudTextures[index];
@@ -84,9 +84,10 @@ public:
 
         // BattleInfo.setLevelDisplay uses 8x8 digit images, not scaled font glyphs.
         renderer.drawHudGraphic("overlay_lv","overlay_lv",levelX-3,y+(player ? 8.0f : 7.0f));
+        const char* levelAtlas=hudLevelDigitAtlas(player,actor.level,experienceLevelCap);
         for(unsigned i=0;i<levelDigits;++i) {
             const char digit[2]={level[i],0};
-            renderer.drawHudGraphic("numbers",digit,levelX+6+i*8,y+(player ? 7.0f : 6.0f));
+            renderer.drawHudGraphic(levelAtlas,digit,levelX+6+i*8,y+(player ? 7.0f : 6.0f));
         }
 
         // BattleInfo.setTypes uses single/dual compact icons outside the panel.

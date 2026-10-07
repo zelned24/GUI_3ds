@@ -28,7 +28,7 @@ El avance se publica como trabajo en curso. Classic completo y la fidelidad visu
 
 ## Evidencia ejecutada
 
-1. `npm test`: **36 passed, 0 failed**, 36 suites. La suite FirstRunRuntime contiene **50 passing, 0 failing, de 50**. No se desactivaron casos ni se debilitaron assertions.
+1. `npm test`: **36 passed, 0 failed**, 36 suites. La suite FirstRunRuntime contiene **51 passing, 0 failing, de 51**. No se desactivaron casos ni se debilitaron assertions.
 2. `npm run native-parity`: **126/126 PASS**. Compara el contrato C++ con JS; no prueba todo el upstream.
 3. `npm run native-test`: compilación PASS; el ejecutor informa explícitamente que no ejecutó hardware/emulador.
 4. Compilación directa `make -f Makefile.3ds 3ds`: ELF y 3DSX producidos con devkitARM. No equivale a validación en Old 3DS.
@@ -185,3 +185,12 @@ El avance se publica como trabajo en curso. Classic completo y la fidelidad visu
 5. Tests puros verifican abreviación, UTF-8/emoji/acento, género, whitespace, capacidad pequeña y datos inválidos. Harness del renderer verifica anchura medida, tamaño constante, buffer independiente, límites inválidos y octavo fallo de inicialización. No prueban métricas de la fuente real ni legibilidad en Azahar/Old 3DS; esas comparaciones siguen pendientes.
 
 6. Gates de abreviación: `npm test` 36/36, `npm run native-parity` 126/126, build ARM ELF/3DSX y `git diff --check` PASS. Harness confirma que la medición no limpia texto compartido ni asigna buffers por llamada, y libera ambos buffers al cerrar. Logs `build/hud-names-npm-test.log`, `build/hud-names-parity.log`, `build/hud-names-arm.log`; la comparación visual conjunta sigue pendiente.
+
+## Color de nivel limitado por EXP en Classic
+
+1. `FirstRunRuntime.experienceLevelCap()` expone la misma política `classicExperienceLevelCap` que ya utiliza el runtime para EXP y elegibilidad. Classic válido (waves 1–200) resuelve el cap; modos/waves no soportados devuelven 0. No se añadieron overrides ni reglas nuevas de experiencia.
+2. El binding de main pasa ese valor resuelto al HUD del jugador. `hudLevelDigitAtlas` selecciona `numbers_red` cuando player level ≥ cap, según `PlayerBattleInfo.setLevelDisplay`; enemigos y cap sin resolver conservan `numbers`. HP sigue usando los dígitos normales.
+3. Tests de proyección cubren debajo/igual/encima, enemigo y cap 0. Nuevo caso FirstRunRuntime comprueba el valor inicial y la fórmula upstream en las 200 waves Classic, con rechazo fuera de rango. No verifica otros modos ni overrides de desarrollo upstream.
+4. Comparación visual y cambios de cap/colores durante partida en Azahar/Old 3DS siguen pendientes.
+
+5. Gates: npm test 36/36 (FirstRunRuntime 51/51), native-parity 126/126, ARM ELF/3DSX y git diff --check PASS. Logs build/hud-cap-recheck.log, build/hud-cap-parity.log y build/hud-cap-arm.log. El primer intento detectó un namespace faltante en la nueva prueba; se corrigió sin alterar sus assertions.

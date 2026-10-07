@@ -5984,6 +5984,19 @@ static int checkIndependentEncounterReplay() {
     return sawDistinctSpecies && sawDouble ? 0 : 11113;
 }
 
+static int checkPresentationExperienceLevelCap() {
+    using namespace Pokerogue3DS;
+    FirstRunRuntime runtime(1);
+    if(runtime.experienceLevelCap()!=10) return 601;
+    for(unsigned wave=1;wave<=200;++wave) {
+        const double difficulty=std::ceil(double(wave)/10)*10;
+        const double base=(1+difficulty/2+std::pow(difficulty/25,2))*1.2;
+        if(classicExperienceLevelCap(wave)!=std::ceil(base/2)*2+2) return 602;
+    }
+    if(classicExperienceLevelCap(0) || classicExperienceLevelCap(201)) return 603;
+    return 0;
+}
+
 extern "C" int runFirstRunRestoreChecks() {
     struct Check { const char* name; int (*run)(); };
     const Check checks[] = {
@@ -6034,6 +6047,7 @@ extern "C" int runFirstRunRestoreChecks() {
         {"checkLevelUpMoveLearningAndEvolution", checkLevelUpMoveLearningAndEvolution},
         {"checkInitialStarterTeamSetup", checkInitialStarterTeamSetup},
         {"checkInitialTeamFirstTurnRoundtrip", checkInitialTeamFirstTurnRoundtrip},
+        {"checkPresentationExperienceLevelCap", checkPresentationExperienceLevelCap},
         {"checkStarterFormPreferencePersistence", checkStarterFormPreferencePersistence},
         {"checkStarterCostPurchasePersistence", checkStarterCostPurchasePersistence},
         {"checkExtendedWaveAndBiomeSaveValidation", checkExtendedWaveAndBiomeSaveValidation},

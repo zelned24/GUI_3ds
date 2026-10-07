@@ -2,6 +2,9 @@
 #include <cmath>
 #include <cstdint>
 namespace Pokerogue3DS {
+inline const char* hudLevelDigitAtlas(bool player,uint16_t level,uint16_t resolvedCap) {
+    return player && resolvedCap && level>=resolvedCap ? "numbers_red" : "numbers";
+}
 // EnemyBattleInfo.updateBossSegmentDividers, quantized to native pixel columns.
 inline unsigned bossDividerPixel(uint32_t maxHp,unsigned segments,unsigned boundary,unsigned width) {
     if(!maxHp || segments<2 || !boundary || boundary>=segments || !width) return 0;

@@ -68,6 +68,10 @@ const PokerogueContent::Entity* findItemById(const char* id) {
 }
 }
 
+uint16_t FirstRunRuntime::experienceLevelCap() const {
+    return m_run.modeId && std::strcmp(m_run.modeId,"classic")==0 ? classicExperienceLevelCap(m_run.wave) : 0;
+}
+
 FirstRunRuntime::FirstRunRuntime(uint32_t seed) {
     m_run = {seed ? seed : 1u, 1, "classic", PokerogueContent::kStartingBiomeId, 0, 0};
     char seedText[11];

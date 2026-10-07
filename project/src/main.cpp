@@ -826,7 +826,7 @@ int main() {
                     game.hasCaughtSpecies(game.presentation().secondEnemy.dex));
             }
             // Player HUD in bottom-right
-            battleHud.draw(renderer, game.presentation().player, true, 258.0f, 146.0f);
+            battleHud.draw(renderer, game.presentation().player, true, 258.0f, 146.0f,false,game.experienceLevelCap());
 
             // Field / Biome info in top-right
             renderer.drawWindow(280.0f, 6.0f, 114.0f, 32.0f);

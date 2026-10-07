@@ -600,3 +600,12 @@ Para cada entrega actualizar esta tabla con IDs, commit, alcance conectado, excl
 | GUI-02 / GUI-10 / GUI-14 / AST-05 | Parcial | Dígitos y labels del HUD | Números originales 8×8 y cuatro etiquetas es-ES, scale 1×, source/provenance y tests renderer/import | Nivel capped, nombres largos, animación y comparación visual completa |
 
 | GUI-02 / GUI-10 / GUI-14 | Parcial | Abreviación de nombres con fuente constante | Semántica updateNameText, recorte UTF-8 seguro, medición C2D en buffer independiente; regresiones de casos Unicode y arranque | Métricas de la fuente real, perfil CPU y comparación visual completa |
+
+| GUI-02 / GUI-14 | Parcial | Color de nivel capped Classic | Runtime expone política EXP existente; HUD selecciona numbers_red; tests de umbral/enemigo/no resuelto y fórmula en 200 waves | Cambios durante partida y comparación visual/Old 3DS; otros modos |
+
+### Nitidez restante: revisión de escalas y formatos
+
+1. [ ] Eliminar reducción fraccionaria automática de Pokémon por altura y revisar sprites grandes sin recortarlos accidentalmente. Nearest e integer origins ya activos; no constituyen escalas enteras en todos los casos.
+2. [ ] Generar y conectar tamaños de fuente con dibujo 1:1, ajustando composición/wrapping y conservando glifos españoles; fuente actual base 16 con alpha binario todavía usa escalas fraccionarias.
+3. [ ] Evaluar RGBA5551/RGBA4 por clase de asset con comparación de colores/alpha y memoria residente; pipeline de presentación actual usa RGBA8. No dar ETC1A4 por visualmente equivalente sin comparación.
+4. [ ] Medir CPU/GPU/memoria en Old 3DS: nearest y scale 1 no prueban un incremento de FPS.

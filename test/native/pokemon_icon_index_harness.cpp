@@ -10,6 +10,12 @@
 #include <initializer_list>
 using namespace Pokerogue3DS;
 int main() {
+    assert(!std::strcmp(hudLevelDigitAtlas(true,9,10),"numbers"));
+    assert(!std::strcmp(hudLevelDigitAtlas(true,10,10),"numbers_red"));
+    assert(!std::strcmp(hudLevelDigitAtlas(true,11,10),"numbers_red"));
+    assert(!std::strcmp(hudLevelDigitAtlas(false,200,10),"numbers"));
+    assert(!std::strcmp(hudLevelDigitAtlas(true,200,0),"numbers"));
+
     char out[128];float width;
     char tiny[1]={'x'};assert(!abbreviateUtf8("AB",tiny,1,3,false,[](const char*){return 1.0f;},width) && !tiny[0]);
     const auto measure=[](const char* value) {float w=0;while(*value) {uint32_t cp;unsigned n=utf8CodePoint(value,cp);assert(n);w+=cp=='W' ? 2 : 1;value+=n;}return w;};
