@@ -70,6 +70,8 @@ inline constexpr int targetButtonAt(unsigned x,unsigned y) {
     for (unsigned i=0;i<2;++i) if (kTargetButtonRects[i].contains(x,y)) return int(i);
     return -1;
 }
+inline constexpr TouchRect kPartyHeaderRect{8,4,304,18};
+inline constexpr TouchRect kPartyFooterRect{8,220,304,18};
 inline constexpr TouchRect kPartyButtonRects[]={
     {8,24,304,32},{8,56,304,32},{8,88,304,32},
     {8,120,304,32},{8,152,304,32},{8,184,304,32}

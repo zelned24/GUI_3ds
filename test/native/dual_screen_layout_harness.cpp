@@ -405,6 +405,9 @@ int main() {
             assert(partyButtonAt(x,y,count)==expected);
         }
     }
+    assert(kPartyHeaderRect.y+kPartyHeaderRect.height<kPartyButtonRects[0].y);
+    assert(kPartyButtonRects[5].y+kPartyButtonRects[5].height<kPartyFooterRect.y);
+    assert(kPartyFooterRect.y+kPartyFooterRect.height<=240);
     for(const auto& row:kPartyButtonRects) {
         assert(row.height==32 && row.y+row.height<=216);
         assert(row.y+1+30<=row.y+row.height);

@@ -316,3 +316,8 @@ assert(setupPresentation.includes("teamIcons[i].appearance,iconBounds.x,iconBoun
 
 assert(partyPresentation.includes('if(!m_icons.draw(renderer,actor.dex,formIndices[i]'));
 assert(partyPresentation.includes('if(!m_icons.drawAppearance(renderer,appearances[i]'));
+
+const rewardPartyLayout=await fs.readFile(new URL('../project/include/runtime/RewardMenuPresenter.hpp',import.meta.url),'utf8');
+assert(rewardPartyLayout.includes('renderer.drawWindow(kPartyHeaderRect.x'));
+assert(rewardPartyLayout.includes('renderer.drawWindow(kPartyFooterRect.x'));
+assert(rewardPartyLayout.includes('feedback.empty() ? "Elige el Pokémon destinatario" : feedback.c_str()'));

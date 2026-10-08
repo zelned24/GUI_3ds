@@ -132,11 +132,11 @@ public:
         if (assigningParty || m_partySelectMode) {
             // Party selection mode for applying held items, berries, or potions
             m_partyPresenter.draw(renderer, game);
-            renderer.drawWindow(8.0f, 6.0f, 304.0f, 26.0f);
-            renderer.drawTextFitted("Elige el Pokémon destinatario", 18.0f, 11.0f, 0.32f, 284, 0xff70d8f0);
-            renderer.drawWindow(8,204,304,30);
-            renderer.drawTextFitted("A: elegir   B: volver a recompensas",18,207,0.30f,284,0xff80ffff);
-            renderer.drawTextFitted(game.battleFeedback().c_str(),18,225,0.24f,284,0xffffffff);
+            renderer.drawWindow(kPartyHeaderRect.x,kPartyHeaderRect.y,kPartyHeaderRect.width,kPartyHeaderRect.height);
+            const auto& feedback=game.battleFeedback();
+            renderer.drawTextFitted(feedback.empty() ? "Elige el Pokémon destinatario" : feedback.c_str(),18,8,0.3125f,284,0xff70d8f0);
+            renderer.drawWindow(kPartyFooterRect.x,kPartyFooterRect.y,kPartyFooterRect.width,kPartyFooterRect.height);
+            renderer.drawTextFitted("A: elegir   B: volver a recompensas",18,224,0.25f,284,0xff80ffff);
             return;
         }
 
