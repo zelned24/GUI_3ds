@@ -43,7 +43,7 @@ inline EggIncubationResult generalEggSpeciesPool(EggTier tier,uint16_t* output,s
     count=written;return EggIncubationResult::Ok;
 }
 
-enum class EggSpeciesDrawResult : uint8_t {Ok,InvalidInput,InvalidTier,MissingSpecies,InvalidCost,DuplicateSpecies,WeightOverflow,InvalidRoll};
+enum class EggSpeciesDrawResult : uint8_t {Ok,InvalidInput,InvalidTier,MissingSpecies,InvalidCost,DuplicateSpecies,WeightOverflow,InvalidRoll,InvalidMembership};
 // Caller owns the filtered upstream-order pool (unlock pity/variants/exclusions).
 // Validate every record before selection; supplied draw follows randSeedInt(total).
 // No RNG is consumed here and failed calls preserve both outputs.
@@ -56,6 +56,10 @@ inline EggSpeciesDrawResult eggSpeciesPoolWeight(EggTier tier,const uint16_t* po
     for(size_t i=0;i<count;++i) {
         const auto* species=PokerogueContent::findSpeciesByDex(pool[i]);
         if(!species) return EggSpeciesDrawResult::MissingSpecies;
+        bool declaredTier=false;
+        for(const auto& row:kSpeciesEggTiers)
+            if(row.dex==pool[i]) {declaredTier=row.declared && row.tier==tier;break;}
+        if(!declaredTier || excludedFromGeneralEggPool(pool[i])) return EggSpeciesDrawResult::InvalidMembership;
         if(species->starterCost<0) return EggSpeciesDrawResult::InvalidCost;
         for(size_t previous=0;previous<i;++previous)
             if(pool[previous]==pool[i]) return EggSpeciesDrawResult::DuplicateSpecies;

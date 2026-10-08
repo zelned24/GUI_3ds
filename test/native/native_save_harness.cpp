@@ -196,6 +196,13 @@ extern "C" int runNativeSaveChecks() {
         if(useLockedEggSpeciesPool(8,1) || !useLockedEggSpeciesPool(9,1) || useLockedEggSpeciesPool(10,0)) return 1270;
         if(eggUnlockPityAfterSelection(9,false,false)!=0 || eggUnlockPityAfterSelection(9,true,false)!=10 ||
             eggUnlockPityAfterSelection(9,false,true)!=10 || eggUnlockPityAfterSelection(UINT32_MAX,true,true)!=10) return 1271;
+        const uint16_t wrongTierPool[]={1,150},evolvedPool[]={1,2},excludedPool[]={890};
+        uint32_t rejectedPoolWeight=777;
+        if(eggSpeciesPoolWeight(EggTier::COMMON,wrongTierPool,2,rejectedPoolWeight)!=EggSpeciesDrawResult::InvalidMembership || rejectedPoolWeight!=777) return 1272;
+        if(eggSpeciesPoolWeight(EggTier::COMMON,evolvedPool,2,rejectedPoolWeight)!=EggSpeciesDrawResult::InvalidMembership || rejectedPoolWeight!=777) return 1273;
+        EggTier excludedTier{};
+        if(speciesEggTier(890,excludedTier)!=EggIncubationResult::Ok ||
+            eggSpeciesPoolWeight(excludedTier,excludedPool,1,rejectedPoolWeight)!=EggSpeciesDrawResult::InvalidMembership || rejectedPoolWeight!=777) return 1274;
         const uint16_t eggPool[]={1,4};uint32_t poolWeight=999;uint16_t eggSpecies=777;
         if(eggSpeciesPoolWeight(EggTier::COMMON,eggPool,2,poolWeight)!=EggSpeciesDrawResult::Ok || poolWeight!=200) return 1259;
         if(eggSpeciesForWeightedRoll(EggTier::COMMON,eggPool,2,99,eggSpecies)!=EggSpeciesDrawResult::Ok || eggSpecies!=1) return 1260;
