@@ -112,6 +112,11 @@ int main() {
             const auto originalSub=sub;
             sub.left=nan;renderer.drawImageDirect(image,0,0,24,24);
             sub=originalSub;sub.top=inf;renderer.drawImageDirect(image,0,0,24,24);
+            sub=originalSub;sub.left=sub.right;renderer.drawImageDirect(image,0,0,24,24);
+            sub=originalSub;sub.left=sub.right+0.1f;renderer.drawImageDirect(image,0,0,24,24);
+            sub=originalSub;sub.top=sub.bottom;renderer.drawImageDirect(image,0,0,24,24);
+            sub=originalSub;sub.top=sub.bottom-0.1f;renderer.drawImageDirect(image,0,0,24,24);
+
             sub=originalSub;
             const Renderer2D::AtlasFrame frame{0,0,24,24,24,24,0,0};
             sub.left=sub.right;renderer.drawAtlasFrame(image,frame,0,0,24,24);

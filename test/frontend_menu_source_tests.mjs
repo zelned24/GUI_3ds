@@ -357,3 +357,9 @@ assert(setupPresentation.includes('m_prompt.drawCursor(renderer,rect.x+10,rect.y
 assert(!setupPresentation.includes('drawText(runtimeUiText("menu:yes")'));
 assert(setupPresentation.includes('m_prompt.drawCursor(renderer,28,80,costLabelSize)'));
 assert(setupPresentation.includes('m_prompt.drawCursor(renderer,28,130,passiveLabelSize)'));
+
+const directImageGuard=rendererSource.slice(rendererSource.indexOf('void Renderer2D::drawImageDirect('),rendererSource.indexOf('void Renderer2D::drawAtlasFrame('));
+assert(directImageGuard.includes('img.subtex->left>=img.subtex->right'));
+assert(directImageGuard.includes('img.subtex->top<=img.subtex->bottom'));
+assert(directImageGuard.includes('if (flipX) scaleX = -scaleX'));
+assert(directImageGuard.includes('if (flipY) scaleY = -scaleY'));

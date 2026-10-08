@@ -235,7 +235,8 @@ void Renderer2D::drawImageDirect(
         !std::isfinite(opacity) || width<=0 || height<=0 || opacity<=0.001f || !img.tex || !img.subtex
         || !img.subtex->width || !img.subtex->height
         || !std::isfinite(img.subtex->left) || !std::isfinite(img.subtex->right)
-        || !std::isfinite(img.subtex->top) || !std::isfinite(img.subtex->bottom)) return;
+        || !std::isfinite(img.subtex->top) || !std::isfinite(img.subtex->bottom)
+        || img.subtex->left>=img.subtex->right || img.subtex->top<=img.subtex->bottom) return;
     opacity=std::min(opacity,1.0f);
 
     // Force nearest-neighbor sampling on PICA200 GPU to preserve crisp pixel art
