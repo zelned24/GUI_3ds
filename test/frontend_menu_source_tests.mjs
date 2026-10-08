@@ -183,3 +183,7 @@ assert(frontend.includes("settings:default\",\"settings:fast\",\"settings:faster
 const preferencesSource=await fs.readFile(new URL("../project/include/storage/NativePresentationSettings.hpp",import.meta.url),"utf8");
 assert(preferencesSource.includes("version==3 ? unsigned((versionFlags>>17)&3u) : 0u"));
 assert(preferencesSource.includes("values[0].hpBarSpeed!=values[1].hpBarSpeed"));
+
+assert(hudSource.includes("m_expTimeline.update(species->growthRate"));
+assert(!hudSource.includes("diff / 8"));
+assert(hudSource.includes("hudLevelDigitAtlas(player,uint16_t(visibleLevel)"));

@@ -5,6 +5,7 @@
 #include "content/BattleHudTextures.hpp"
 #include "runtime/TypePresentation.hpp"
 #include "runtime/BattleHudGeometry.hpp"
+#include "runtime/ExperienceBarTimeline.hpp"
 #include <algorithm>
 #include <array>
 #include <cstdio>
@@ -27,7 +28,7 @@ public:
     }
     void setHpBarSpeed(unsigned speed) {if(speed<=3) m_hpBarSpeed=speed;}
     void resetHpDisplay() {m_hpDisplays={};}
-    void resetExperienceDisplay() {m_displayedExp=0;m_lastPlayerId=0;m_expInitialized=false;}
+    void resetExperienceDisplay() {m_displayedExp=0;m_lastPlayerId=0;m_expTimeline.clear();}
     uint32_t displayedExperience() const {return m_displayedExp;}
     ~BattleHudPresenter() { clear(); }
     BattleHudPresenter() = default;
@@ -51,6 +52,20 @@ public:
         const float hudH = texture.height * scale;
         renderer.drawImageDirect(C2D_SpriteSheetGetImage(m_sheets[index], 0), x, y, hudW, hudH);
 
+        const auto* species = PokerogueContent::findSpeciesByDex(actor.dex);
+        unsigned visibleLevel=actor.level;
+        if(player && species) {
+            if(m_lastPlayerId!=actor.battleState.pokemonId) {
+                m_expTimeline.clear();m_lastPlayerId=actor.battleState.pokemonId;
+            }
+            if(m_expTimeline.update(species->growthRate,actor.level,actor.totalExperience,
+                animationTimeMs,!animationTimeMs || !actor.battleState.pokemonId)) {
+                m_displayedExp=m_expTimeline.total();visibleLevel=m_expTimeline.level();
+            } else {
+                // Invalid growth/EXP bounds do not produce an invented tween.
+                m_expTimeline.clear();m_displayedExp=actor.totalExperience;
+            }
+        }
         // Authentic PokéRogue BattleInfo text styling: text #f8f8f8, shadow #6b5a73
         constexpr uint32_t kTextColor = C2D_Color32(0xf8, 0xf8, 0xf8, 255);
         constexpr uint32_t kShadowColor = C2D_Color32(0x6b, 0x5a, 0x73, 255);
@@ -62,7 +77,7 @@ public:
         const float nameX = x + nameOffsetX;
         const float nameY = y + (player ? 6.0f : 4.0f);
         char level[6];
-        std::snprintf(level,sizeof(level),"%u",unsigned(actor.level));
+        std::snprintf(level,sizeof(level),"%u",unsigned(visibleLevel));
         const unsigned levelDigits=std::strlen(level);
         const float levelShift=levelDigits>3 ? (levelDigits-3)*8.0f : 0;
         const float levelX = x + (player ? 89.0f : (actor.bossState.segmentCount ? 126.0f : 80.0f))-levelShift;
@@ -92,14 +107,13 @@ public:
 
         // BattleInfo.setLevelDisplay uses 8x8 digit images, not scaled font glyphs.
         renderer.drawHudGraphic("overlay_lv","overlay_lv",levelX-3,y+(player ? 8.0f : 7.0f));
-        const char* levelAtlas=hudLevelDigitAtlas(player,actor.level,experienceLevelCap);
+        const char* levelAtlas=hudLevelDigitAtlas(player,uint16_t(visibleLevel),experienceLevelCap);
         for(unsigned i=0;i<levelDigits;++i) {
             const char digit[2]={level[i],0};
             renderer.drawHudGraphic(levelAtlas,digit,levelX+6+i*8,y+(player ? 7.0f : 6.0f));
         }
 
         // BattleInfo.setTypes uses single/dual compact icons outside the panel.
-        const auto* species = PokerogueContent::findSpeciesByDex(actor.dex);
         const char* type1=nullptr;const char* type2=nullptr;
         if (canonicalPresentationTypes(actor.dex,actor.formId,type1,type2)) {
             const bool dual=type2 && *type2;
@@ -165,41 +179,11 @@ public:
                 renderer.drawHudGraphic("numbers",digit,x+111-(count-1-i)*8,y+27);
             }
 
-            // Smooth EXP bar lerp animation towards actor.totalExperience
-            if (!m_expInitialized || m_lastPlayerId != actor.battleState.pokemonId) {
-                m_displayedExp = actor.totalExperience;
-                m_lastPlayerId = actor.battleState.pokemonId;
-                m_expInitialized = true;
-            } else if (m_displayedExp < actor.totalExperience) {
-                const uint32_t diff = actor.totalExperience - m_displayedExp;
-                const uint32_t step = std::max<uint32_t>(1, diff / 8 + (diff % 8 != 0));
-                m_displayedExp += step;
-            } else if (m_displayedExp > actor.totalExperience) {
-                m_displayedExp = actor.totalExperience;
-            }
-
             // PlayerBattleInfo overlay_exp: origin (130-98, 21+18), 85x2.
             const float expX=x+32.0f,expY=y+39.0f;
             renderer.drawHudGraphic("overlay_exp_label","overlay_exp_label",x+23,y+34);
-            if (species) {
-                uint16_t animLevel = actor.level;
-                uint32_t lvlExp = 0;
-                uint32_t nextExp = 0;
-                pokemonTotalExperienceForLevel(species->growthRate, animLevel, lvlExp);
-                while (animLevel > 1 && m_displayedExp < lvlExp) {
-                    --animLevel;
-                    pokemonTotalExperienceForLevel(species->growthRate, animLevel, lvlExp);
-                }
-                pokemonTotalExperienceForLevel(species->growthRate, animLevel + 1, nextExp);
-                float expFraction = 0.0f;
-                if (nextExp > lvlExp && m_displayedExp >= lvlExp) {
-                    expFraction = float(m_displayedExp - lvlExp) / float(nextExp - lvlExp);
-                    if (expFraction > 1.0f) expFraction = 1.0f;
-                }
-                if (expFraction > 0.0f) {
-                    renderer.drawHudBar(true,false,expFraction,expX,expY);
-                }
-            }
+            if(species && m_expTimeline.level())
+                renderer.drawHudBar(true,false,static_cast<float>(m_expTimeline.fraction()),expX,expY);
         }
     }
 
@@ -211,7 +195,7 @@ private:
     C2D_SpriteSheet m_sheets[3]{};
     uint32_t m_displayedExp = 0;
     uint32_t m_lastPlayerId = 0;
-    bool m_expInitialized = false;
+    ExperienceBarTimeline m_expTimeline;
 };
 
 } // namespace Pokerogue3DS

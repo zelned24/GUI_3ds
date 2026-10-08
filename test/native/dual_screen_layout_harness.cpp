@@ -7,12 +7,37 @@
 #include "content/ItemIcons.hpp"
 #include "runtime/PresentationClock.hpp"
 #include "runtime/BattleHudGeometry.hpp"
+#include "runtime/ExperienceBarTimeline.hpp"
 #include "gfx/ImageTintPolicy.hpp"
 #include <cassert>
 #include <climits>
 #include <initializer_list>
 using namespace Pokerogue3DS;
 int main() {
+    ExperienceBarTimeline expVisual;
+    assert(expVisual.update("MEDIUM_FAST",5,150,1));
+    assert(expVisual.level()==5 && expVisual.total()==150);
+    assert(expVisual.update("MEDIUM_FAST",7,400,10));
+    assert(expVisual.level()==5);
+    assert(expVisual.update("MEDIUM_FAST",7,400,855));
+    assert(expVisual.level()==6 && expVisual.fraction()==1 && expVisual.total()==216);
+    assert(expVisual.update("MEDIUM_FAST",7,400,1112));
+    assert(expVisual.level()==6 && expVisual.fraction()<0.01);
+    assert(expVisual.update("MEDIUM_FAST",7,400,10000));
+    assert(expVisual.level()==7 && expVisual.total()==400);
+    assert(std::fabs(expVisual.fraction()-57.0/169)<1e-12);
+    assert(!expVisual.update("UNKNOWN",7,400,10001));
+    assert(!expVisual.update("MEDIUM_FAST",7,300,10001));
+    assert(expVisual.update("MEDIUM_FAST",5,150,10002,true) && expVisual.level()==5);
+    for(unsigned fps:{15u,30u,60u}) {
+        ExperienceBarTimeline cadence;
+        assert(cadence.update("MEDIUM_FAST",5,150,1));
+        assert(cadence.update("MEDIUM_FAST",7,400,10));
+        for(unsigned frame=0;frame<fps*10;++frame)
+            assert(cadence.update("MEDIUM_FAST",7,400,10+uint64_t(frame)*1000/fps));
+        assert(cadence.total()==400 && cadence.level()==7);
+    }
+
     assert(hpTweenDuration(100,99,0)==250);
     assert(hpTweenDuration(100,0,0)==500);
     assert(hpTweenDuration(65535,0,0)==5000);

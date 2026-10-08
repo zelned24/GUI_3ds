@@ -257,12 +257,24 @@ int main() {
             hud.draw(renderer,actor,true,258,146);
             assert(hud.displayedExperience()==125);
             actor.totalExperience=225;hud.draw(renderer,actor,true,258,146);
-            assert(hud.displayedExperience()==138);
+            assert(hud.displayedExperience()==225); // Timestamp-less calls project instantly.
             actor.battleState.pokemonId=12;actor.totalExperience=1000;
             hud.draw(renderer,actor,true,258,146);assert(hud.displayedExperience()==1000);
             actor.totalExperience=0;hud.draw(renderer,actor,true,258,146);assert(hud.displayedExperience()==0);
-            actor.totalExperience=10;hud.draw(renderer,actor,true,258,146);assert(hud.displayedExperience()==2);
+            actor.totalExperience=10;hud.draw(renderer,actor,true,258,146);assert(hud.displayedExperience()==10);
             hud.resetExperienceDisplay();hud.draw(renderer,actor,true,258,146);assert(hud.displayedExperience()==10);
+            // Real canonical growth thresholds and elapsed time reach the same final EXP.
+            const auto* species=PokerogueContent::findSpeciesByDex(actor.dex);assert(species);
+            uint32_t base5=0,next5=0,base7=0,next7=0;
+            assert(Pokerogue3DS::pokemonTotalExperienceForLevel(species->growthRate,5,base5)==Pokerogue3DS::PokemonExperienceResult::Ok);
+            assert(Pokerogue3DS::pokemonTotalExperienceForLevel(species->growthRate,6,next5)==Pokerogue3DS::PokemonExperienceResult::Ok);
+            assert(Pokerogue3DS::pokemonTotalExperienceForLevel(species->growthRate,7,base7)==Pokerogue3DS::PokemonExperienceResult::Ok);
+            assert(Pokerogue3DS::pokemonTotalExperienceForLevel(species->growthRate,8,next7)==Pokerogue3DS::PokemonExperienceResult::Ok);
+            actor.level=5;actor.totalExperience=base5+(next5-base5)/4;hud.resetExperienceDisplay();
+            hud.draw(renderer,actor,true,258,146,false,0,1);assert(hud.displayedExperience()==actor.totalExperience);
+            actor.level=7;actor.totalExperience=base7+(next7-base7)/3;
+            hud.draw(renderer,actor,true,258,146,false,0,10);assert(hud.displayedExperience()<actor.totalExperience);
+            hud.draw(renderer,actor,true,258,146,false,0,10000);assert(hud.displayedExperience()==actor.totalExperience);
             const int hudFreeBefore=sheetFree;
             hud.clear(&renderer);assert(sheetFree==hudFreeBefore && hud.displayedExperience()==0);
             renderer.endFrame(); // The next SYNCDRAW drains the retired HUD sheet.
