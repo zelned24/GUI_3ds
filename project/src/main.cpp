@@ -433,14 +433,9 @@ int main() {
             if(rawPressed & KEY_B) setup.confirmStart=false;
             if(rawPressed & KEY_TOUCH) {
                 touchPosition touch{};hidTouchRead(&touch);
-                if(touch.py>=116 && touch.py<153) {
-                    if(touch.px<160) {
-                        changed=game.startRun();
-                        setup.confirmStart=false;
-                    } else {
-                        setup.confirmStart=false;
-                    }
-                }
+                const int confirmation=Pokerogue3DS::starterConfirmAt(touch.px,touch.py);
+                if(confirmation==0) {changed=game.startRun();setup.confirmStart=false;}
+                else if(confirmation==1) setup.confirmStart=false;
             }
             if(rawPressed & KEY_A) {
                 if(setup.confirmYes) changed=game.startRun();

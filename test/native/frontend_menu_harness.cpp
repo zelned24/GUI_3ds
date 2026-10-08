@@ -330,6 +330,22 @@ int main() {
         assert(submenu.page()==destination); // Reopens the same destination without moving.
     }
 
+    const auto deleteTouch=[](unsigned x,unsigned y,FrontendCommand expected,bool remainsOpen) {
+        FrontendMenuPresenter menu(true);
+        menu.input(KEY_DDOWN);menu.input(KEY_DDOWN);menu.input(KEY_A);
+        assert(menu.page()==FrontendPage::Load);
+        menu.input(KEY_X);assert(menu.isConfirmingDelete());
+        assert(menu.input(KEY_TOUCH,x,y)==expected);
+        assert(menu.isConfirmingDelete()==remainsOpen);
+    };
+    deleteTouch(32,125,FrontendCommand::DeleteSave,false);
+    deleteTouch(151,154,FrontendCommand::DeleteSave,false);
+    deleteTouch(160,125,FrontendCommand::None,false);
+    deleteTouch(287,154,FrontendCommand::None,false);
+    for(unsigned x:{0u,24u,31u,152u,159u,288u,319u,320u}) deleteTouch(x,134,FrontendCommand::None,true);
+    deleteTouch(32,124,FrontendCommand::None,true);
+    deleteTouch(32,155,FrontendCommand::None,true);
+
     FrontendMenuPresenter toDelete(true);
     toDelete.input(KEY_TOUCH,25,48+2*29);toDelete.input(KEY_A);
     assert(toDelete.page()==FrontendPage::Load);

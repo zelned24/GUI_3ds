@@ -59,6 +59,11 @@ inline constexpr unsigned kStarterGridColumns=6,kStarterGridRows=3;
 inline constexpr unsigned kStarterGridPageSize=kStarterGridColumns*kStarterGridRows;
 inline constexpr TouchRect kStarterFilterRect{8,23,304,25};
 inline constexpr TouchRect kStarterGenerationRect{8,23,152,25},kStarterTypeRect{160,23,152,25};
+inline constexpr TouchRect kStarterConfirmRects[]={{45,116,105,32},{170,116,105,32}};
+inline constexpr int starterConfirmAt(unsigned x,unsigned y) {
+    for(unsigned i=0;i<2;++i) if(kStarterConfirmRects[i].contains(x,y)) return int(i);
+    return -1;
+}
 inline constexpr TouchRect kStarterFooterRects[]={{8,205,83,18},{94,205,125,18},{222,205,90,18}};
 inline int starterFooterAt(unsigned x,unsigned y) {
     for(unsigned i=0;i<3;++i) if(kStarterFooterRects[i].contains(x,y)) return int(i);

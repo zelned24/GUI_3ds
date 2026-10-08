@@ -150,15 +150,10 @@ public:
                     return FrontendCommand::None;
                 }
                 if(keys & KEY_TOUCH) {
-                    if(touchY >= 125 && touchY <= 155) {
-                        if(touchX >= 24 && touchX <= 150) {
-                            m_confirmingDelete = false;
-                            return FrontendCommand::DeleteSave;
-                        } else if(touchX >= 160 && touchX <= 290) {
-                            m_confirmingDelete = false;
-                            return FrontendCommand::None;
-                        }
+                    if(kConfirmationYesRect.contains(touchX,touchY)) {
+                        m_confirmingDelete=false;return FrontendCommand::DeleteSave;
                     }
+                    if(kConfirmationNoRect.contains(touchX,touchY)) m_confirmingDelete=false;
                 }
                 return FrontendCommand::None;
             }
@@ -285,7 +280,10 @@ public:
                 renderer.drawWindow(28,55,264,115);
                 renderer.drawTextFitted("¿Eliminar partida guardada?",44,70,0.40f,232,0xffff6060);
                 renderer.drawTextFitted("Esta acción no se puede deshacer.",34,98,0.32f,252,0xffffffff);
-                renderer.drawTextFitted("A: Sí (eliminar)   B: No (cancelar)",32,134,0.34f,256,0xff80ffff);
+                renderer.drawWindow(kConfirmationYesRect.x,kConfirmationYesRect.y,kConfirmationYesRect.width,kConfirmationYesRect.height);
+                renderer.drawWindow(kConfirmationNoRect.x,kConfirmationNoRect.y,kConfirmationNoRect.width,kConfirmationNoRect.height);
+                renderer.drawTextFitted("A: Sí, eliminar",kConfirmationYesRect.x+8,kConfirmationYesRect.y+6,0.34f,kConfirmationYesRect.width-16,0xffff6060);
+                renderer.drawTextFitted("B: No, cancelar",kConfirmationNoRect.x+8,kConfirmationNoRect.y+6,0.34f,kConfirmationNoRect.width-16,0xffffffff);
             } else {
                 char line[80];std::snprintf(line,sizeof(line),"Partida SD  -  Ola %u / 200",unsigned(saved->wave));
                 renderer.drawTextFitted(line,43,43,0.43f,249,0xffffffff);

@@ -892,3 +892,5 @@ La búsqueda del índice generado usa búsqueda binaria sobre identidades ordena
 - [ ] Slots del equipo en starters: seis iconos compactos 20×15 nativos centrados en sus ventanas, apariencia del actor preparado y estrellas shiny reales; lote máximo seis páginas y limpieza al abandonar setup. Grid del catálogo conserva iconos nativos 40×30. Resolver compartido sin generar RNG ni mutar progreso. Guards de conexión PASS; comparación visual/nativa pendiente.
 
 - [ ] Texto paginado: espacios/tabuladores finales no consumen otra fila ni provocan fallback abreviado al completar el máximo de líneas. Separadores antes de otra palabra y saltos explícitos conservan paginación. Casos de layout y renderer escritos en harness nativo, sin ejecutar; no se afirma corrección visual por lectura del código.
+
+- [ ] Confirmaciones: inicio de starters usa rectángulos compartidos 105×32 y ya no acepta toda la franja horizontal; borrar guardado dibuja dos botones coincidentes con input half-open compartido. Casos nativos de límites/huecos/fuera de pantalla y barrido completo de starters escritos sin ejecutar. Source guards PASS; compilación y visual pendientes.

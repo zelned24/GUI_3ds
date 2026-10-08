@@ -417,11 +417,11 @@ public:
             const char* confirmation=runtimeUiText("starter-select-ui-handler:confirmStartTeam");
             if(!renderer.drawTextBox(confirmation,24,78,0.3125f,272,2,0xffffffff))
                 renderer.drawTextFitted(confirmation,24,80,0.3125f,272,0xffffffff);
-            renderer.drawRect(45,116,105,32,confirmYes ? 0xff70d8f0 : 0xff463747);
-            renderer.drawWindow(47,118,101,28);
+            renderer.drawRect(kStarterConfirmRects[0].x,kStarterConfirmRects[0].y,kStarterConfirmRects[0].width,kStarterConfirmRects[0].height,confirmYes ? 0xff70d8f0 : 0xff463747);
+            renderer.drawWindow(kStarterConfirmRects[0].x+2,kStarterConfirmRects[0].y+2,kStarterConfirmRects[0].width-4,kStarterConfirmRects[0].height-4);
             renderer.drawText(runtimeUiText("menu:yes"),72,123,0.45f,0xffffffff);
-            renderer.drawRect(170,116,105,32,!confirmYes ? 0xff70d8f0 : 0xff463747);
-            renderer.drawWindow(172,118,101,28);
+            renderer.drawRect(kStarterConfirmRects[1].x,kStarterConfirmRects[1].y,kStarterConfirmRects[1].width,kStarterConfirmRects[1].height,!confirmYes ? 0xff70d8f0 : 0xff463747);
+            renderer.drawWindow(kStarterConfirmRects[1].x+2,kStarterConfirmRects[1].y+2,kStarterConfirmRects[1].width-4,kStarterConfirmRects[1].height-4);
             renderer.drawText(runtimeUiText("menu:no"),212,123,0.45f,0xffffffff);
             m_prompt.drawCursor(renderer,confirmYes ? 55 : 195,123,0.45f);
         } else if(formsOpen) {

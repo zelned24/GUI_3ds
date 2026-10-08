@@ -15,6 +15,13 @@
 using namespace Pokerogue3DS;
 int main() {
     for(unsigned y=0;y<240;++y) for(unsigned x=0;x<320;++x) {
+        const int expected=y>=116 && y<148 ? (x>=45 && x<150 ? 0 : x>=170 && x<275 ? 1 : -1) : -1;
+        assert(starterConfirmAt(x,y)==expected);
+    }
+    assert(starterConfirmAt(0,130)==-1 && starterConfirmAt(320,130)==-1);
+    assert(starterConfirmAt(UINT_MAX,UINT_MAX)==-1);
+
+    for(unsigned y=0;y<240;++y) for(unsigned x=0;x<320;++x) {
         int expected=-1;
         for(unsigned cell=0;cell<24;++cell) {
             const unsigned cx=10+(cell%6)*50,cy=43+(cell/6)*36;
