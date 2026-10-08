@@ -69,6 +69,7 @@ private:
         C2D_Image image{};
         uint8_t page = 0xff;
         uint8_t activePageMask = 0;
+        uint8_t failedPageMask = 0; // Reset only when atlas identity changes or invalidate is called.
         uint64_t animationStartMs = 0;
         PokemonAtlasMetadata metadata;
         void clear(Renderer2D* renderer = nullptr);

@@ -58,3 +58,14 @@ const statsLocale=JSON.parse(execFileSync('git',['show',locale.revision+':es-ES/
 for(const key of ['starters','shinyStarters','speciesSeen','speciesCaught'])
   assert(statsLabels.includes('{'+JSON.stringify('game-stats-ui-handler:'+key)+','+JSON.stringify(statsLocale[key])+'}'));
 console.log('PASS profile-statistics locale labels match pinned upstream');
+
+// Static ownership/cache guards only; native texture I/O tests remain deferred.
+const atlasSource=await fs.readFile(new URL('../project/src/runtime/PokemonAtlasPresenter.cpp',import.meta.url),'utf8');
+assert(atlasSource.includes('if(slot.failedPageMask & pageBit) return false;'));
+assert(atlasSource.includes('failedPageMask = 0;'));
+assert(atlasSource.includes('if (!loaded) {slot.failedPageMask |= pageBit;return false;}'));
+const trainerSource=await fs.readFile(new URL('../project/src/runtime/TrainerPresenter.cpp',import.meta.url),'utf8');
+assert(trainerSource.includes('if(std::strcmp(m_failedKey,key)==0) return false;'));
+assert(trainerSource.includes("m_failedKey[0] = '\\0';"));
+assert(trainerSource.includes('std::strlen(key)>=sizeof(m_currentKey)'));
+assert(trainerSource.includes('clear(renderer);\n        std::strcpy(m_failedKey,key);'));

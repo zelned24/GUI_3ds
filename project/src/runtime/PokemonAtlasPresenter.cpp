@@ -23,6 +23,7 @@ void PokemonAtlasPresenter::Slot::clear(Renderer2D* renderer) {
     image = {};
     page = 0xff;
     activePageMask = 0;
+    failedPageMask = 0;
     animationStartMs = 0;
     key.clear();
     metadata.clear();
@@ -96,6 +97,8 @@ bool PokemonAtlasPresenter::selectMetadata(Renderer2D& renderer, Slot& slot, con
 
 bool PokemonAtlasPresenter::selectPage(Slot& slot, const std::string& key, bool back, uint8_t page) {
     if (page >= Slot::kMaxPages) return false;
+    const uint8_t pageBit=static_cast<uint8_t>(1u << page);
+    if(slot.failedPageMask & pageBit) return false;
     if (slot.page == page && slot.sheets[page] != nullptr) return true;
 
     if (slot.sheets[page] != nullptr) {
@@ -113,12 +116,13 @@ bool PokemonAtlasPresenter::selectPage(Slot& slot, const std::string& key, bool 
             "romfs:/sprites/pokemon/%s%s.t3x", facing, key.c_str());
     if (length < 0 || length >= int(sizeof(texturePath))) return false;
     C2D_SpriteSheet loaded = C2D_SpriteSheetLoad(texturePath);
-    if (!loaded) return false;
+    if (!loaded) {slot.failedPageMask |= pageBit;return false;}
     C2D_Image img = C2D_SpriteSheetGetImage(loaded, 0);
     if (!img.tex || !img.subtex
         || img.subtex->width != slot.metadata.width()
         || img.subtex->height != slot.metadata.height()) {
         C2D_SpriteSheetFree(loaded);
+        slot.failedPageMask |= pageBit;
         return false;
     }
     C3D_TexSetFilter(img.tex, GPU_NEAREST, GPU_NEAREST);

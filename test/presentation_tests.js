@@ -184,7 +184,7 @@ export function registerPresentationTests(test) {
     expect(title.includes('drawCursor(renderer,25,y,labelSize)'),'Title cursor uses fitted text height');
     expect(menus.includes('m_page==FrontendPage::SettingsGroup ? 220 : 249'),'Settings reserve room for their value column');
     expect(main.includes('filterTouchInput(hidKeysDown(),preferences.touchControls)'), 'Touch disable must apply before title, menus and gameplay dispatch');
-    expect(menus.includes('drawTextWrapped(runtimeUiText("settings:confirmDisableTouch")'), 'Confirmation keeps readable font scale with word wrapping');
+    expect(menus.includes('drawBoundedDescription(renderer,runtimeUiText("settings:confirmDisableTouch")'), 'Confirmation uses bounded wrapping with native font rasters');
     expect(main.includes('uiSettings.load(preferences,&recoveredPreferences)'), 'Boot restores persisted device preferences');
     expect(main.includes('uiSettings.save(next,preferences.touchControls)'), 'Applied window style must reach the SD journal');
     expect(main.includes('renderer.setWindowStyle(next)'), 'Window setting must reach the renderer through a command');
@@ -222,6 +222,17 @@ export function registerPresentationTests(test) {
     const compiler=process.platform==='win32' ? 'C:/devkitPro/msys2/usr/bin/g++.exe' : 'g++';
     const output=path.join(root,'build','renderer-init-test'+(process.platform==='win32'?'.exe':''));
     execFileSync(compiler,['-std=c++17','-O2','-ffunction-sections','-fdata-sections','-Wl,--gc-sections','-D__wasm__','-D__3DS__','-idirafter',path.join(root,'test/native/host_compat'),'-I'+path.join(root,'project/include'),'-I'+path.join(root,'project/generated/include'),path.join(root,'test/native/renderer_init_harness.cpp'),path.join(root,'project/src/gfx/renderer2d.cpp'),'-o',output],{stdio:'pipe'});
+    execFileSync(output,[],{stdio:'pipe'});
+  });
+
+  test('Native trainer cache: failed loads, identity changes, recovery and texture ownership',()=>{
+    const compiler=process.platform==='win32' ? 'C:/devkitPro/msys2/usr/bin/g++.exe' : 'g++';
+    const output=path.join(root,'build','trainer-presenter-test'+(process.platform==='win32'?'.exe':''));
+    execFileSync(compiler,['-std=c++17','-O2','-idirafter',path.join(root,'test/native/host_compat'),
+      '-I'+path.join(root,'project/include'),'-I'+path.join(root,'project/generated/include'),
+      path.join(root,'test/native/trainer_presenter_harness.cpp'),
+      path.join(root,'project/src/runtime/TrainerPresenter.cpp'),
+      path.join(root,'project/src/runtime/PokemonAtlasMetadata.cpp'),'-o',output],{stdio:'pipe'});
     execFileSync(output,[],{stdio:'pipe'});
   });
 

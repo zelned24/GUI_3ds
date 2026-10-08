@@ -14,18 +14,21 @@ void TrainerPresenter::clear(Renderer2D* renderer) {
     m_metadata.clear();
     m_currentDef = nullptr;
     m_currentKey[0] = '\0';
+    m_failedKey[0] = '\0';
     m_animationStartMs = 0;
 }
 
 bool TrainerPresenter::load(const char* key, Renderer2D* renderer) {
     if (!key || !*key) { clear(renderer); return false; }
+    if(std::strlen(key)>=sizeof(m_currentKey)) {clear(renderer);return false;}
     if (m_sheet && std::strcmp(m_currentKey, key) == 0) return true;
+    if(std::strcmp(m_failedKey,key)==0) return false;
     clear(renderer);
 
     const auto* def = findTrainerSpriteByKey(key);
-    if (!def || !def->texturePath) return false;
+    if (!def || !def->texturePath) {std::strcpy(m_failedKey,key);return false;}
     m_sheet = C2D_SpriteSheetLoad(def->texturePath);
-    if (!m_sheet) return false;
+    if (!m_sheet) {std::strcpy(m_failedKey,key);return false;}
 
     std::strncpy(m_currentKey, key, sizeof(m_currentKey) - 1);
     m_currentKey[sizeof(m_currentKey) - 1] = '\0';
@@ -33,7 +36,8 @@ bool TrainerPresenter::load(const char* key, Renderer2D* renderer) {
 
     // Load .p3a metadata if present
     if (def->metadataPath && !m_metadata.load(def->metadataPath)) {
-        clear();
+        clear(renderer);
+        std::strcpy(m_failedKey,key);
         return false;
     }
 
