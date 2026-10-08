@@ -135,6 +135,9 @@ int main() {
         assert(!renderer.drawTextBox(nullptr,1,2,0.375f,18,2,0xffffffff));
         assert(!renderer.drawTextBox("\xc3",1,2,0.375f,18,2,0xffffffff));
         assert(draws==beforeBox+2);
+        const int beforeTrailingSpaces=draws;
+        assert(renderer.drawTextBox("AB CD   \t",1,2,0.375f,18,2,0xffffffff));
+        assert(draws==beforeTrailingSpaces+2 && lastScale==1);
         for(const auto& ability:Pokerogue3DS::kAbilityUiNames)
             assert(renderer.drawTextBox(ability.name,161,94,0.3125f,220,2,0xffffffff));
         Pokerogue3DS::DialoguePresenter dialogue;

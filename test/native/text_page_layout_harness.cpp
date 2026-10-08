@@ -23,6 +23,13 @@ int main() {
     page=layoutTextPage("a\r\nb\nc",5,measure);
     assert(std::string(page.lines[0])=="a" && std::string(page.lines[1])=="b" && page.consumed==5);
     assert(!page.complete);
+    page=layoutTextPage("hello world   \t",5,measure);
+    assert(page.valid && page.complete && page.lineCount==2 && page.consumed==15);
+    assert(std::string(page.lines[0])=="hello" && std::string(page.lines[1])=="world");
+    page=layoutTextPage("hello world   again",5,measure);
+    assert(page.valid && !page.complete && page.lineCount==2 && page.consumed==11);
+    page=layoutTextPage("hello world\nnext",5,measure);
+    assert(page.valid && !page.complete && page.consumed==12);
     page=layoutTextPage("",5,measure);assert(page.valid && page.complete && !page.lineCount);
     assert(!layoutTextPage("A",0.5f,measure).valid);
     assert(!layoutTextPage(nullptr,5,measure).valid);

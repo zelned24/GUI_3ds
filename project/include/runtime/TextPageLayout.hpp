@@ -43,6 +43,11 @@ template<class Measure> TextPageLayout layoutTextPage(const char* text,float max
             length+=n;position+=n;
         }
     }
+    // Trailing horizontal whitespace needs no extra ink row. Do not consume a
+    // separator before another word: pagination must retain the remaining text.
+    std::size_t tail=position;
+    while(text[tail]==' ' || text[tail]=='\t') ++tail;
+    if(!text[tail]) position=tail;
     page.consumed=position;page.complete=!text[position];return page;
 }
 }
