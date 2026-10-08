@@ -10,6 +10,7 @@ import json
 from pathlib import Path
 import re
 import struct
+import subprocess
 
 from PIL import Image
 
@@ -22,6 +23,38 @@ def sha256(data):
     return hashlib.sha256(data).hexdigest()
 
 
+def resolve_source(root, excluded, report):
+    """Resolve only verified pinned originals or indexed materialized appearances."""
+    upstream = root / "build/upstream/pokerogue-assets"
+    appearance = None
+    match = re.fullmatch(r"(.+?)(-female)?-shiny-v([012])", excluded["key"])
+    if match:
+        base, female, variant = match.groups()
+        directory = root / "build/upstream-assets/appearances" / excluded["facing"] / ("female" if female else "default")
+        basename = f"{base}-shiny-v{variant}"
+        provenance = directory / f"{basename}-provenance.json"
+        appearance = json.loads(provenance.read_text(encoding="utf-8"))
+        if (appearance.get("schemaVersion") != 1 or appearance.get("atlasKey") != base
+                or appearance.get("facing") != excluded["facing"]
+                or appearance.get("female") is not bool(female)
+                or appearance.get("shiny") is not True or appearance.get("variant") != int(variant)
+                or appearance.get("pngSHA256") != excluded["imageSha256"]):
+            raise ValueError("derived appearance identity/hash mismatch")
+        lineage = [row for row in appearance.get("sources", [])
+                   if row.get("repository") == report["repository"]
+                   and row.get("revision") == report["revision"]
+                   and row.get("sourcePath") == excluded["imagePath"]]
+        physical_original = upstream / excluded["imagePath"]
+        original_bytes = (physical_original.read_bytes() if physical_original.is_file() else
+                          subprocess.run(["git", "show", f"{report['revision']}:{excluded['imagePath']}"],
+                                         cwd=upstream, check=True, stdout=subprocess.PIPE,
+                                         stderr=subprocess.PIPE).stdout)
+        if len(lineage) != 1 or sha256(original_bytes) != lineage[0]["sha256"]:
+            raise ValueError("derived appearance pinned image lineage mismatch")
+        return directory / f"{basename}.png", directory / f"{basename}.json", appearance, lineage[0]["sha256"]
+    return upstream / excluded["imagePath"], upstream / excluded["manifestPath"], None, excluded["imageSha256"]
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("atlas_key")
@@ -30,15 +63,14 @@ def main():
     if not re.fullmatch(r"[1-9][0-9]*(?:-[a-z0-9-]+)?", args.atlas_key):
         parser.error("unsafe atlas key")
     report_path = ROOT / "build/upstream-assets/staged-sprite-assets.json"
-    report = json.loads(report_path.read_text())
+    report = json.loads(report_path.read_text(encoding="utf-8"))
     candidates = [entry for entry in report["unsupported"]
                   if entry["key"] == args.atlas_key and entry["facing"] == args.facing
                   and entry["classification"] == "INVALID_UPSTREAM_FRAME_BOUNDS"]
     if len(candidates) != 1:
         raise ValueError("expected exactly one explicit frame-bounds exclusion")
     excluded = candidates[0]
-    source_path = ROOT / "build/upstream/pokerogue-assets" / excluded["imagePath"]
-    manifest_path = ROOT / "build/upstream/pokerogue-assets" / excluded["manifestPath"]
+    source_path, manifest_path, appearance, upstream_image_hash = resolve_source(ROOT, excluded, report)
     source_bytes, manifest_bytes = source_path.read_bytes(), manifest_path.read_bytes()
     if sha256(source_bytes) != excluded["imageSha256"] or sha256(manifest_bytes) != excluded["manifestSha256"]:
         raise ValueError("pinned source hashes changed")
@@ -54,7 +86,7 @@ def main():
             and physical_height <= target_height <= physical_height + 1
             and (target_width, target_height) != (physical_width, physical_height)):
         raise ValueError("manifest is not a one-pixel transparent-padding case")
-    if texture["image"] != f"{args.atlas_key}.png" or target_width > 1024 or target_height > 1024:
+    if texture["image"] != Path(excluded["imagePath"]).name or target_width > 1024 or target_height > 1024:
         raise ValueError("unexpected image reference or 3DS texture size")
     frames = texture["frames"]
     if not frames or len(frames) > 1024:
@@ -106,7 +138,7 @@ def main():
              "manifestPath": excluded["manifestPath"], "manifestSha256": sha256(manifest_bytes),
              "sourcePath": str(padded_path.relative_to(ROOT)).replace("\\", "/"),
              "upstreamImagePath": excluded["imagePath"],
-             "upstreamImageSha256": sha256(source_bytes),
+             "upstreamImageSha256": upstream_image_hash,
              "expectedSha256": f"sha256:{sha256(padded_bytes)}",
              "sourceAdjustment": "TRANSPARENT_PAD_TO_PINNED_MANIFEST_SIZE",
              "width": target_width, "height": target_height,
@@ -115,6 +147,15 @@ def main():
              "metadataSha256": sha256(metadata), "romfsMetadataPath": romfs_metadata,
              "romfsPath": f"romfs/sprites/pokemon/{'back/' if args.facing == 'back' else ''}{args.atlas_key}.t3x",
              "frameCount": len(frames)}
+    if appearance:
+        entry["appearance"] = appearance
+        entry["materializedImageSha256"] = sha256(source_bytes)
+        entry["sourceAdjustment"] = {
+            "kind": "TRANSPARENT_PAD_TO_PINNED_MANIFEST_SIZE",
+            "sourceMode": appearance.get("sourceMode"),
+            "converterSHA256": appearance.get("converterSHA256"),
+            "inputAdjustment": "PINNED_APPEARANCE_MATERIALIZATION",
+        }
     if any(asset["atlasKey"] == args.atlas_key and asset["facing"] == args.facing for asset in report["assets"]):
         raise ValueError("atlas was already staged")
     report["assets"].append(entry)
@@ -125,9 +166,9 @@ def main():
                                "classification": "PINNED_PNG_ONE_PIXEL_SMALLER_THAN_MANIFEST",
                                "physicalWidth": physical_width, "physicalHeight": physical_height,
                                "declaredWidth": target_width, "declaredHeight": target_height,
-                               "upstreamImageSha256": sha256(source_bytes),
+                               "upstreamImageSha256": upstream_image_hash,
                                "derivedImageSha256": sha256(padded_bytes)})
-    report_path.write_text(json.dumps(report, indent=2) + "\n")
+    report_path.write_bytes((json.dumps(report, indent=2) + "\n").encode("utf-8"))
     print(f"Recovered {args.atlas_key}:{args.facing} with transparent padding; {len(frames)} frames; {report_path}")
 
 

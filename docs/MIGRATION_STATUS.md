@@ -401,3 +401,9 @@ La instrucción más reciente del usuario aplaza compilaciones y Azahar hasta nu
 1. CanonicalModels conserva atlasPath/icon/atlas/frame y capacidades shiny/género/variantes como null cuando no se importaron. PokerogueAdapter elimina rutas sintetizadas y frameIndex cero; resolveSprite sin binding físico devuelve estado explícito NOT_YET_SUPPORTED_BY_JS_ASSET_BINDING.
 2. Metadata suministrada explícitamente se conserva, incluido hasShiny:false. Guard JS PASS; diff-check PASS. Reimportación activa para publicar este cambio en el catálogo físico, sin compilar el programa.
 3. Otros consumidores del resolver heredado y su conexión al índice físico siguen pendientes. El catálogo de 7570 apariencias ya terminó su materialización; staging y conversión ampliada pendientes.
+
+### Recuperación de bordes en atlas de apariencias
+
+El adaptador de padding resuelve el PNG materializado para variantes shiny, incluido género femenino, en lugar de sustituirlo por el PNG upstream. Conserva la procedencia de materialización y distingue el hash original, el materializado y el derivado con padding. Los originales ausentes en el checkout parcial se consultan mediante `git show` en la revisión fijada.
+
+Verificación ejecutada: `python test/sprite_padding_source_tests.py` (2 pruebas offline) y resolución del PNG real `269-shiny-v0` de espalda con hashes coincidentes. La recuperación completa durante conversión, compilación C++ y comprobación visual permanecen pendientes. No se compiló ni se abrió Azahar.
