@@ -82,6 +82,8 @@ export class SpeciesDefinition {
     };
     this.growthRate = data.growthRate ?? null;
     this.malePercent = data.malePercent;
+    if(data.genderDiffs != null && typeof data.genderDiffs !== 'boolean') throw new Error('Invalid canonical genderDiffs');
+    this.genderDiffs = data.genderDiffs ?? null; // Unknown is never inferred from gender or assets.
     this.evolutions = Array.isArray(data.evolutions)
       ? data.evolutions.map(evolution => new SpeciesEvolutionDefinition(evolution))
       : [];
@@ -121,13 +123,13 @@ export class SpeciesDefinition {
     this.eggMoves = Array.isArray(data.eggMoves) ? [...data.eggMoves] : [];
     this.forms = Array.isArray(data.forms) ? [...data.forms] : ['BASE'];
     this.sprites = {
-      atlasPath: data.sprites?.atlasPath || `romfs/sprites/pokemon/${this.speciesId}.t3x`,
-      icon: data.sprites?.icon || `romfs/sprites/icons/${this.speciesId}.png`,
-      atlas: data.sprite?.atlas || 'pokemon_front',
-      frame: data.sprite?.frame || `${this.speciesId}`,
-      hasFemale: Boolean(data.sprite?.hasFemale),
-      hasShiny: Boolean(data.sprite?.hasShiny ?? true),
-      hasVariants: Boolean(data.sprite?.hasVariants)
+      atlasPath: data.sprites?.atlasPath ?? data.sprite?.atlasPath ?? null,
+      icon: data.sprites?.icon ?? data.sprite?.icon ?? null,
+      atlas: data.sprites?.atlas ?? data.sprite?.atlas ?? null,
+      frame: data.sprites?.frame ?? data.sprite?.frame ?? null,
+      hasFemale: data.sprites?.hasFemale ?? data.sprite?.hasFemale ?? null,
+      hasShiny: data.sprites?.hasShiny ?? data.sprite?.hasShiny ?? null,
+      hasVariants: data.sprites?.hasVariants ?? data.sprite?.hasVariants ?? null
     };
     this.sprite = this.sprites;
     this.source = new SourceMetadata(data.metadata || data.source);

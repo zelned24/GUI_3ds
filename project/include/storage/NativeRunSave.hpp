@@ -8,8 +8,8 @@
 
 namespace Pokerogue3DS {
 
-inline constexpr uint16_t kNativeSaveVersion = 26;
-inline constexpr uint16_t kNativeSaveRuntimeVersion = 26;
+inline constexpr uint16_t kNativeSaveVersion = 27;
+inline constexpr uint16_t kNativeSaveRuntimeVersion = 27;
 // Bounded text envelope including six trainer members and field/inventory state.
 inline constexpr size_t kNativeSaveMaxBytes = 8192;
 inline constexpr size_t kNativeHeldModifierCapacity = 32;
@@ -22,8 +22,19 @@ enum class NativeSaveStage : uint16_t {
     ExperienceGranted = 5,
 };
 
+// Unknown legacy appearance remains distinct from a resolved normal Pokemon.
+struct NativeAppearanceSave {
+    bool resolved = false;
+    bool shiny = false;
+    uint8_t variant = 0;
+};
+inline bool nativeAppearanceSaveValid(const NativeAppearanceSave& value) {
+    return value.variant <= 2 && (value.resolved || (!value.shiny && !value.variant)) &&
+        (value.shiny || !value.variant);
+}
+
 // Identity, form and IVs are reconstructed from the pinned seed. Mutable
-// per-member state must survive switches and cannot be inferred from that seed.
+// per-member state and explicit appearance must survive switches.
 struct NativeTrainerMemberSave {
     uint16_t speciesDex = 0;
     uint16_t hp = 0;
@@ -36,6 +47,7 @@ struct NativeTrainerMemberSave {
     bool sturdyTag = false; // Run envelope v19.
     uint8_t berryCriticalBoostStages = 0; // Run envelope v24.
     bool hasEatenBerry = false; // Run envelope v25.
+    NativeAppearanceSave appearance{}; // Run envelope v27.
 };
 
 // Explicit actor snapshot: canonical IDs only; computed stats are reconstructed.
@@ -72,6 +84,9 @@ struct NativePokemonSave {
     char initialTeraType[16]{}; // Empty only for legacy actor payloads.
     uint8_t initialTeraTypeIndex = 0;
     bool initialTeraTypeResolved = false;
+    bool appearanceResolved = false;
+    bool shiny = false;
+    uint8_t shinyVariant = 0;
 };
 struct PokemonBattleState;
 struct PokemonActorIdentity;
@@ -133,6 +148,7 @@ struct NativeRunSave {
     PokemonBossState enemyBoss{}; // Run envelope v20; actor form remains reconstructed.
     bool playerHasEatenBerry = false;
     bool enemyHasEatenBerry = false;
+    NativeAppearanceSave enemyAppearance{}; // Run envelope v27.
     uint8_t playerBerryCriticalBoostStages = 0;
     uint8_t enemyBerryCriticalBoostStages = 0;
     bool enemySturdyTag = false; // Player tags remain in explicit actor payloads.

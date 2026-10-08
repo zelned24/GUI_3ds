@@ -29,6 +29,8 @@ try {
 
 const pngSignature = Buffer.from('89504e470d0a1a0a', 'hex');
 const sha256 = bytes => crypto.createHash('sha256').update(bytes).digest('hex');
+// Repeated palettes reference identical pinned sources. Retain hashes, not image buffers.
+const verifiedAppearanceSourceHashes = new Map();
 const locked = new Map(lock.sprites.map(entry => [`${entry.speciesId}:${entry.facing}`, entry]));
 const selected = all
   ? ['front', 'back'].flatMap(facing => [
@@ -36,6 +38,69 @@ const selected = all
       ...POKEROGUE_FORM_ATLAS_KEYS[facing].map(key => ({ key, facing }))
     ])
   : lock.sprites.map(entry => ({ key: String(entry.speciesId), facing: entry.facing }));
+// Normal female atlases are enumerated from the pinned tree, never guessed.
+if(all) {
+  if(!localPinned) throw new Error('Full female atlas enumeration requires the pinned local repository');
+  const paths=execFileSync('git',['ls-tree','-r','--name-only',pinned.revision,
+    'images/pokemon/female','images/pokemon/back/female'],{cwd:localRepo,encoding:'utf8'}).split(/\r?\n/);
+  for(const source of paths.sort()) {
+    const match=/^images\/pokemon\/(back\/)?female\/([1-9][0-9]*(?:-[a-z0-9-]+)?)\.json$/.exec(source);
+    if(match) selected.push({key:match[2]+'-female',facing:match[1]?'back':'front',
+      normalFemaleBase:match[2],manifestPath:source,imagePath:source.replace(/\.json$/,'.png')});
+  }
+}
+// Explicit derived appearances keep their pinned source lineage. They use the
+// same atlas staging/conversion path as base sprites, with distinct runtime IDs.
+if (process.argv.includes('--appearances')) {
+  const appearanceRoot = path.join(destination, 'appearances');
+  const visit = async directory => {
+    let entries;
+    try { entries = await fs.readdir(directory, { withFileTypes: true }); }
+    catch (error) { if (error.code === 'ENOENT') return; throw error; }
+    for (const entry of entries.sort((a,b)=>a.name.localeCompare(b.name,'en'))) {
+      const physical = path.join(directory, entry.name);
+      if (entry.isDirectory()) { await visit(physical); continue; }
+      if (!entry.name.endsWith('-provenance.json')) continue;
+      const appearance = JSON.parse(await fs.readFile(physical, 'utf8'));
+      if (appearance.schemaVersion !== 1 || appearance.runtimeStatus !== 'SOURCE_MATERIALIZED_NOT_YET_T3X'
+          || !/^[1-9][0-9]*(?:-[a-z0-9-]+)?$/.test(appearance.atlasKey)
+          || !['front','back'].includes(appearance.facing) || appearance.shiny !== true
+          || typeof appearance.female !== 'boolean' || ![0,1,2].includes(appearance.variant)
+          || appearance.converterSHA256 !== sha256(await fs.readFile(path.join(root,'scripts/pokemon_variant_palette.py')))
+          || !Array.isArray(appearance.sources) || appearance.sources.length < 6) throw new Error('Invalid derived appearance provenance');
+      for (const source of appearance.sources) {
+        const config = Object.values(POKEROGUE_REPOSITORIES).find(row=>row.url===source.repository);
+        if (!config || config.revision !== source.revision || typeof source.sourcePath !== 'string'
+            || source.sourcePath.startsWith('/') || source.sourcePath.split('/').some(part=>part==='..' || part==='.')
+            || !/^[0-9a-f]{64}$/.test(source.sha256)) throw new Error('Invalid appearance source pin/path');
+        const identity=config.url+'@'+config.revision+':'+source.sourcePath;
+        let actualHash=verifiedAppearanceSourceHashes.get(identity);
+        if(actualHash===undefined) {
+          const raw=execFileSync('git',['show',config.revision+':'+source.sourcePath],
+            {cwd:path.join(root,'build/upstream',config.name),maxBuffer:64*1024*1024});
+          actualHash=sha256(raw);
+          verifiedAppearanceSourceHashes.set(identity,actualHash);
+        }
+        if(actualHash!==source.sha256) throw new Error('Appearance source hash mismatch');
+      }
+      const basename = entry.name.slice(0,-'-provenance.json'.length);
+      const expectedName = appearance.atlasKey+'-shiny-v'+appearance.variant;
+      if (basename!==expectedName) throw new Error('Appearance filename differs from identity');
+      const imagePhysical = path.join(directory,basename+'.png');
+      const manifestPhysical = path.join(directory,basename+'.json');
+      const imageBytes = await fs.readFile(imagePhysical), manifestBytes = await fs.readFile(manifestPhysical);
+      const upstreamManifest = appearance.sources.findLast(row=>row.repository===pinned.url && row.sourcePath.endsWith('.json') && !row.sourcePath.includes('/variant/'))
+        ?? appearance.sources.find(row=>row.repository===pinned.url && /_[1-3]\.json$/.test(row.sourcePath));
+      const upstreamImage = appearance.sources.find(row=>row.repository===pinned.url && row.sourcePath.endsWith('.png'));
+      if (!upstreamManifest || !upstreamImage || sha256(imageBytes)!==appearance.pngSHA256
+          || sha256(manifestBytes)!==upstreamManifest.sha256) throw new Error('Materialized appearance file hash mismatch');
+      selected.push({key:appearance.atlasKey+(appearance.female?'-female':'')+'-shiny-v'+appearance.variant,
+        facing:appearance.facing, appearance, manifestFile:{bytes:manifestBytes,physical:manifestPhysical},
+        imageFile:{bytes:imageBytes,physical:imagePhysical},manifestPath:upstreamManifest.sourcePath,imagePath:upstreamImage.sourcePath});
+    }
+  };
+  await visit(appearanceRoot);
+}
 selected.sort((a, b) => a.key.localeCompare(b.key, 'en', { numeric: true }) || a.facing.localeCompare(b.facing));
 
 async function readPinned(sourcePath) {
@@ -60,21 +125,26 @@ const staged = [];
 const unsupported = [];
 const warnings = [];
 const seen = new Set();
-for (const { key, facing } of selected) {
+for (const { key, facing, appearance: suppliedAppearance, normalFemaleBase, manifestFile: derivedManifest, imageFile: derivedImage, manifestPath: derivedManifestPath, imagePath: derivedImagePath } of selected) {
   const identity = `${key}:${facing}`;
   if (!/^[1-9][0-9]*(?:-[a-z0-9-]+)?$/.test(key) || !['front', 'back'].includes(facing) || seen.has(identity))
     throw new Error(`Invalid or duplicate sprite key ${identity}`);
   seen.add(identity);
   const speciesId = Number(key.split('-')[0]);
   const prefix = facing === 'back' ? 'images/pokemon/back' : 'images/pokemon';
-  const manifestPath = `${prefix}/${key}.json`;
-  const imagePath = `${prefix}/${key}.png`;
-  const manifestFile = await readPinned(manifestPath);
-  const imageFile = await readPinned(imagePath);
+  const manifestPath = derivedManifestPath ?? `${prefix}/${key}.json`;
+  const imagePath = derivedImagePath ?? `${prefix}/${key}.png`;
+  const manifestFile = derivedManifest ?? await readPinned(manifestPath);
+  const imageFile = derivedImage ?? await readPinned(imagePath);
+  const appearance=normalFemaleBase ? {schemaVersion:1,atlasKey:normalFemaleBase,facing,
+    female:true,shiny:false,variant:0,sourceMode:0,upstreamGameRevision:POKEROGUE_REPOSITORIES.pokerogue.revision,
+    converterSHA256:sha256(await fs.readFile(fileURLToPath(import.meta.url))),
+    sources:[{repository:pinned.url,revision:pinned.revision,sourcePath:manifestPath,sha256:sha256(manifestFile.bytes)},
+      {repository:pinned.url,revision:pinned.revision,sourcePath:imagePath,sha256:sha256(imageFile.bytes)}]} : suppliedAppearance;
   const manifestSha256 = sha256(manifestFile.bytes);
   const imageSha256 = sha256(imageFile.bytes);
   const expected = locked.get(`${speciesId}:${facing}`);
-  if (expected && expected.manifestPath === manifestPath) {
+  if (!appearance && expected && expected.manifestPath === manifestPath) {
     if (manifestSha256 !== expected.manifestSha256 || imageSha256 !== expected.imageSha256)
       throw new Error(`Pinned sprite lock hash mismatch: ${identity}`);
   }
@@ -122,7 +192,7 @@ for (const { key, facing } of selected) {
       declaredWidth: texture.size?.w, declaredHeight: texture.size?.h,
       physicalWidth: width, physicalHeight: height });
   }
-  if (expected && expected.manifestPath === manifestPath
+  if (!appearance && expected && expected.manifestPath === manifestPath
       && (expected.width !== width || expected.height !== height))
     throw new Error(`Pinned sprite lock dimensions disagree: ${identity}`);
   const metadata = Buffer.alloc(84 + texture.frames.length * 32);
@@ -186,7 +256,9 @@ for (const { key, facing } of selected) {
     metadataPath: metadataRelative, metadataSha256: sha256(metadata),
     romfsMetadataPath,
     romfsPath: `romfs/sprites/pokemon/${facing === 'back' ? 'back/' : ''}${key}.t3x`,
-    frameCount: texture.frames.length });
+    frameCount: texture.frames.length, ...(appearance ? {appearance,
+      upstreamImageSha256: appearance.sources.find(row=>row.repository===pinned.url && row.sourcePath===imagePath).sha256,
+      sourceAdjustment: {kind:normalFemaleBase?"PINNED_NORMAL_FEMALE_ATLAS":"PINNED_APPEARANCE_MATERIALIZATION",sourceMode:appearance.sourceMode,converterSHA256:appearance.converterSHA256}} : {}) });
 }
 
 await fs.mkdir(destination, { recursive: true });

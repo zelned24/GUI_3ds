@@ -13,6 +13,30 @@
 #include <initializer_list>
 using namespace Pokerogue3DS;
 int main() {
+    static_assert(starterDiscovery(false,0)==StarterDiscovery::Unknown);
+    static_assert(starterDiscovery(false,128)==StarterDiscovery::Seen);
+    static_assert(starterDiscovery(true,0)==StarterDiscovery::Caught);
+    static_assert(starterDiscoveryTint(StarterDiscovery::Unknown)==0xff000000u);
+    static_assert(starterDiscoveryTint(StarterDiscovery::Seen)==0xff808080u);
+    static_assert(starterDiscoveryTint(StarterDiscovery::Caught)==0xffffffffu);
+    static_assert(starterMatchesCaptureFilter(StarterCaptureFilter::All,true));
+    static_assert(starterMatchesCaptureFilter(StarterCaptureFilter::All,false));
+    static_assert(starterMatchesCaptureFilter(StarterCaptureFilter::Caught,true));
+    static_assert(!starterMatchesCaptureFilter(StarterCaptureFilter::Caught,false));
+    static_assert(starterMatchesCaptureFilter(StarterCaptureFilter::Uncaught,false));
+    static_assert(!starterMatchesCaptureFilter(StarterCaptureFilter::Uncaught,true));
+    char gridCost[16];
+    assert(formatStarterGridCost(12,gridCost,sizeof(gridCost)) && !std::strcmp(gridCost,"3"));
+    assert(formatStarterGridCost(1,gridCost,sizeof(gridCost)) && !std::strcmp(gridCost,"0.25"));
+    assert(formatStarterGridCost(6,gridCost,sizeof(gridCost)) && !std::strcmp(gridCost,"1.50"));
+    assert(formatStarterGridCost(7,gridCost,sizeof(gridCost)) && !std::strcmp(gridCost,"1.75"));
+    assert(!formatStarterGridCost(7,gridCost,2) && !formatStarterGridCost(7,nullptr,0));
+    unsigned allEligible=0;
+    for(const auto& species:PokerogueContent::kSpecies) allEligible+=species.starterEligible;
+    const auto all=[](const auto&){return true;};
+    assert(starterCatalogCount(all)==allEligible);
+    for(unsigned i=0;i<allEligible;++i) assert(starterCatalogAt(i,all)->starterEligible);
+    assert(!starterCatalogAt(allEligible,all));
     double duration=0,pause=0;
     assert(expSegmentTiming(50,50,1,0,true,duration,pause));
     assert(std::fabs(duration-1650)<1e-9 && pause==500);

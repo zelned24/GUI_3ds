@@ -2,7 +2,7 @@
 
 ## Cómo medir el avance
 
-- Referencia de código inspeccionado: commit `6ef4610`, rama `codex/pokerogue-3ds-migration`.
+- Referencia actual: rama `codex/pokerogue-3ds-migration`, último commit publicado `7345b78` y cambios locales posteriores sin publicar. Los resultados históricos no verifican estos cambios locales.
 - Objetivo: PokéRogue jugable y fiel al snapshot upstream en Old 3DS, con ambas pantallas, progreso exportable y actualizaciones desde consola.
 - Cada ID es estable para reportar avances: `MOV-07`, `GUI-03`, etc. No equivale a un movimiento/habilidad individual.
 - Una casilla sin marcar puede tener código parcial; el resumen de cada área indica lo existente. Marcarla solo con integración completa y evidencia ejecutada pertinente.
@@ -35,7 +35,9 @@ Estos son criterios de cierre, no cantidades de ataques o habilidades pendientes
 | Validación y entrega final | 10 |
 | **Total** | **128** |
 
-Prioridad inmediata: completar el segundo Pokémon activo del jugador y el campo de cuatro actores (**TUR-05**), checks previos y cola dinámica de acciones (**TUR-01–04**), ampliar habilidades/movimientos (**HAB / MOV**) y cerrar Eternatus con persistencia (**FLU-09 / SAV-03**). Struggle por PP agotados y guardado del campo actual de tres actores ya tienen rutas conectadas; no cubren todos los contextos. Las regresiones de replay y restauración se verifican en la suite FirstRunRuntime; consultar resultados vigentes en MIGRATION_STATUS.md.
+Prioridad de gameplay pendiente: completar el segundo Pokémon activo del jugador y el campo de cuatro actores (**TUR-05**), checks previos y cola dinámica de acciones (**TUR-01–04**), ampliar habilidades/movimientos (**HAB / MOV**) y cerrar Eternatus con persistencia (**FLU-09 / SAV-03**). Struggle por PP agotados y guardado del campo actual de tres actores ya tienen rutas conectadas; no cubren todos los contextos. Las regresiones de replay y restauración se verifican en la suite FirstRunRuntime; consultar resultados vigentes en MIGRATION_STATUS.md.
+
+Prioridad visual actual: integrar el catálogo completo de apariencias físicas; completar sprites femeninos normales y selección de variantes desbloqueadas; comprobar tipografía, recortes, cursor y distribución de todos los submenús. La generación/conversión de assets continúa autorizada. Compilación, tests que compilan y Azahar están aplazados por la última instrucción del usuario.
 
 ## Estado consolidado para seguimiento
 
@@ -242,7 +244,10 @@ Se conserva presentación C++/ScenePlayer y bridge QuickJS opcional. El editor/S
 - [ ] **GUI-03.** Cerrar pantalla inferior 320×240: acciones, movimientos, equipo e inventario.
 - [ ] **GUI-04.** Completar title/new/continue/setup/starters y selección de modos.
   - [x] Filtrar starters canónicos por generación con Y/táctil y compartir catálogo entre navegación/dibujo. Cuadrícula de 18 iconos, equipo y botones inferiores con zonas táctiles separadas.
-  - [ ] Mostrar el catálogo elegible con estados capturado, visto, desconocido y variantes shiny según el progreso; sustituir la vista actual limitada a desbloqueados. Comparación visual pendiente.
+  - [ ] Perfil P3CANDY9 añade apariencia observada/capturada (DexAttr 1/2/16/32/64), lee v1–v8 sin inferir shiny; casos de roundtrip y migración escritos. Actor y registro de observado/capturado conectados con estado appearanceResolved explícito; Codec de actor pokemon=e conserva apariencia resuelta y lee antiguos como desconocidos; casos escritos. Resolver de apariencia predeterminada reproduce `GameData.getSpeciesDefaultDexAttrProps` (shiny capturado y variante más alta; metadata antigua desconocida), con casos escritos. Pendientes integración de todos los snapshots, generación, selección, assets y ejecución. Envelope v27 conserva apariencia del enemigo principal y equipo de entrenador, migra v26 como desconocida y exige snapshot del jugador cuando tiene apariencia resuelta. Captura/restauración y casos de migración conectados; ejecución pendiente. Generación shiny, selección y referencias de assets todavía pendientes.
+  - [ ] Filtro táctil Todos/Capturados/Sin capturar combinado con generación/tipo implementado; pruebas escritas, ejecución y distribución visual pendientes.
+  - [ ] Costes canónicos y reducciones guardadas dibujados en cada celda; casos de fracciones/buffer escritos, ejecución y comparación visual pendientes.
+  - [ ] Mostrar el catálogo elegible con estados capturado, visto, desconocido y variantes shiny según el progreso; El selector ya permite recorrer todos los starters elegibles y proyecta capturado/visto/desconocido desde el perfil existente; Registro de encuentros salvajes y equipos de entrenadores conectado al perfil existente, con validación previa del lote; pruebas de aislamiento y save/restore escritas, ejecución pendiente. Eternamax sincroniza la forma del actor y registra la observación; evolución registra visto y actualiza metadata de captura solo cuando la raíz ya estaba capturada, sin recompensas; pendientes ejecución, otros cambios de forma, estadísticas seenCount y variantes shiny persistentes. Comparación visual pendiente.
   - [x] Filtrar por tipos canónicos disponibles con X/táctil, combinar con generación y resolver etiquetas originales españolas; catálogo vacío/tipo desconocido y combinación de filtros probados.
   - [x] Rasterizar el TTF pinned en monocromo sin eliminar trazos de alfa bajo; conservar avances/baselines y ampliar el bitmap cuando el hinting lo requiere. Tests de mapas, métricas, bounds y conversión repetida.
   - [x] Evitar recargas por frame de páginas de iconos; liberar el conjunto del selector tras sincronización al salir. Prueba host de todas las páginas en dos frames.
@@ -251,6 +256,18 @@ Se conserva presentación C++/ScenePlayer y bridge QuickJS opcional. El editor/S
 - [ ] **GUI-05.** Completar battle, cambio/objetivos, captura y mensajes/feedback de fallo.
 - [ ] **GUI-06.** Completar mapa/bioma, rewards, tienda, party/items y decisiones de aprendizaje/evolución.
 - [ ] **GUI-07.** Completar settings, idioma, audio, exportación y actualización de contenido.
+  - [ ] Submenú global basado en `MenuUiHandler` pinned y captura: nueve opciones localizadas en panel original, cursor compartido y sombreado superior. X o táctil en pie del título lo abren; D-pad/táctil recorren todas las opciones en 320×240 sin desplazamiento (filas de 20 px). Ajustes y retorno anidado conectados; las demás opciones abren destinos informativos que detallan la integración pendiente, sin fabricar datos ni sesiones. Casos C++ escritos, sin ejecutar; compilación y comparación visual pendientes.
+  - [ ] Ajustes: categorías y preferencias realmente aplicadas/persistidas.
+  - [ ] Logros: catálogo, desbloqueos, detalles y progreso persistente.
+  - [ ] Estadísticas: contadores reales del perfil, sin valores ficticios.
+  - [ ] Lista de Huevos: inventario real, tiempos/progreso y detalle.
+  - [ ] Gacha de Huevos: vouchers, selección y resultados deterministas del motor.
+  - [ ] Pokédex: capturado/visto/desconocido, formas y shiny del perfil. Vista C++ conectada al perfil real y todas las especies canónicas; iconos originales 1× con estados, nombre desconocido oculto, páginas L/R/táctil y retorno al submenú. Casos de navegación escritos, sin ejecutar. Filtros de generación y capturado/visto/desconocido añadidos mediante X/Y o táctil; información conocida (tipos y estadísticas base canónicas) en pantalla superior. Filtros restantes, detalles completos, formas, shiny y verificación visual pendientes.
+  - [ ] Gestionar datos: importar/exportar/respaldar perfil y partidas con confirmación y errores claros.
+  - [ ] Comunidad: enlaces/servicios compatibles con 3DS y disponibilidad explícita.
+  - [ ] Cerrar sesión: solo conectado a una sesión real; no simular autenticación.
+  - [ ] Etiquetas `es-ES/menu-ui-handler.json` añadidas al generador y tabla C++ regenerada sin compilar. Preparación de glifos y validación visual pendientes.
+
 - [ ] **GUI-08.** Completar win/lose/summary y recuperación de errores de carga.
 - [ ] **GUI-09.** Completar D-pad/A/B/X/Y/L/R/Start/Select y táctil resistivo con foco coherente.
 - [x] **GUI-13.** Convertir alpha antialias de la fuente A4 a alpha binario, conservar métricas, alinear coordenadas de texto a píxeles y preparar un perfil Azahar Old 3DS sin suavizado; pruebas de conversión/determinismo/corrupción ejecutadas.
@@ -270,12 +287,22 @@ Hay catálogos de atlases/t3x y presenter; el inventario histórico debe cotejar
 
 - [ ] **AST-01.** Auditar todos los PNG/t3x físicos, índices, hashes y provenance, sin reducir a especies de ejemplo.
 - [ ] **AST-02.** Completar front/back, forms, shiny, variantes y resolución dinámica por ID.
+  - [ ] Resolver de starters aplica la apariencia predeterminada desde caughtAppearanceAttr del perfil (shiny capturado/variante superior según helper upstream), sin nuevos sorteos. Registros legacy sin metadata mantienen apariencia desconocida. Guard estático JS PASS; casos C++ normal/epic/legacy y estabilidad PID/Tera escritos, sin ejecutar. Selección manual de apariencia y validación nativa pendientes.
+  - [ ] Materialización completa de apariencias activa: 7570 identidades derivadas del árbol/masterlist pinned, incluyendo formas, género y front/back. Generador integrado antes del staging completo; reporte determinista con SHA del masterlist y generador, ausencias upstream separadas de INVALID_IMPORT/NOT_YET_SUPPORTED_BY_IMPORTER. Cinco tests Python PASS. Resultado final, conversión del catálogo ampliado e índice pendientes.
+  - [ ] Importer/modelo preservan `genderDiffs` desde el constructor de especie upstream como booleano o desconocido; valores declarados no interpretables fallan claramente. Prueba JS con tres especies reales del pin PASS. Reimportación de especies terminada, dos imports con hash idéntico `0f3f4fc91c6b458f14b1b4f85c2d60923d24d1e1bfcd4155af3ddf08eff7d140`; tabla C++ generada, sin compilar. Importer de formas reutiliza el parser booleano y conserva ausencias como desconocidas: casos sobre los 609 fragmentos reales añadidos; 201 no declaran el campo. Parser de exclusiones de getBaseSpriteKey añadido y probado desde enum/fuente pinned, con provenance; Metadata de 1084 especies/609 formas y 10 exclusiones publicada, hash canónico `c797658f2c13c494bd83eeb1b6ea8177e9c25b73d09abe5d1c653b7655dadf2b`; generación C++ repetida byte idéntica SHA `843be89458a9d82e8be128030fb5158f16daff5d57f0a21f6190493851cea12d`. Renderer consulta tablas; compilación y prueba de consumo C++ pendientes.
+  - [ ] Materializador `scripts/pokemon_variant_palette.py` reproduce paletas RGB exactas del shader pinned y resuelve atlas shiny/dedicados desde el masterlist; preserva alpha y SHA de fuentes. Cuatro tests Python PASS con especies reales, front/back y determinismo. Staging `--appearances` conectado al importador existente y preservado por la preparación completa del catálogo, verifica archivos derivados y SHA de cada fuente pinned; tres atlas reales incluidos en el inventario. Conversión física terminada: 2905 atlas, 2921 páginas `.t3x`, incluidos tres atlas shiny reales; inventario SHA `8f42de9f7806a3b5ad9c75913bb3115bd2f31bd4281fc1f94e299ca5c1b7f44e`. Índice C++ generado verificando SHA, identidad, pins y páginas/rutas del runtime; pruebas JS aisladas PASS y regeneración real determinista SHA `3c995e3490d2315c12f714f3005a06b296616a26db5e34cda7c247e3a0585f44`. Renderer conectado al índice mediante apariencia del actor, facing y reglas visuales importadas de género/forma; faltantes emiten diagnóstico sin sustituir shiny/female por normal/male. Guard JS estático PASS; casos nativos del índice escritos, sin ejecutar. Reglas de formas publicadas; imports deterministas y generación C++ byte idéntica comprobados. Faltan catálogo shiny/female completo, selector y verificación C++/GPU.
 - [ ] **AST-03.** Completar páginas de atlas grandes, offsets/origen/recorte y cambios de frame.
+  - [ ] Reemplazo de atlas retira texturas mediante Renderer2D hasta SYNCDRAW, conservando los presenters separados existentes. Invalidación por QuickJS y salida del runtime usa el mismo retiro diferido. Guard estático JS PASS; validación de GPU nativa pendiente.
 - [ ] **AST-04.** Completar animación de idle/ataque/daño/faint/captura/cambio/evolución.
 - [ ] **AST-05.** Completar fondos de bioma, plataformas, trainers y texturas/iconos de interfaz.
+  - [ ] Trainers retiran texturas con el renderer al reemplazarse; una clave sin mapping limpia el sprite anterior. Guard estático JS PASS; regresión nativa y visual pendientes.
 - [ ] **AST-06.** Completar efectos de movimientos/habilidades y referencias a animaciones.
 - [ ] **AST-07.** Completar música, cries, SFX, conversión, streaming y volumen.
 - [ ] **AST-08.** Validar empaquetado/carga/liberación y capturas comparables con web en ambas pantallas.
+  - [x] Retirar del PokemonSpriteResolver heredado seis registros ficticios y sus claims de verificación. Rechaza fixtures, metadata incompleta y `physicalVerified` declarado por el llamador; guard JS PASS.
+  - [ ] Conectar consumidores heredados del resolver al índice físico real. CanonicalModels y PokerogueAdapter ya retiran fallbacks de rutas, frame cero y claims de shiny/género: campos ausentes quedan null, metadata explícita se conserva; guard JS PASS. Reimportación de esta corrección activa; otros consumidores y verificación completa pendientes.
+  - [x] Verificación de archivos de presentación actuales: cuatro fuentes con alpha binario y métricas/hashes físicos, ventanas/tipos/HUD/items/trainers/cinemática. `verify_presentation_media.py` PASS y `pixel_font_tests.py` 12 PASS, sin compilar ni abrir Azahar.
+  - [ ] Comparación visual y prueba de carga/liberación C++ de los últimos cambios, incluida selección de apariencia; no cubiertas por la verificación de archivos.
 
 ## 12. Guardado, continuar y exportación
 
@@ -635,3 +662,35 @@ Para cada entrega actualizar esta tabla con IDs, commit, alcance conectado, excl
    - [x] Retirar GPU_LINEAR de la cinemática inicial y comprobar GPU_NEAREST; escala fraccionaria/crossfade y fidelidad de vídeo siguen pendientes.
 
 | GUI-01 / GUI-10 / GUI-14 | Parcial | Raster nativo de letras | Cuatro fuentes pinned, compensación Citro2D, anchos/cursor reales, determinismo y gates host/ARM | Comparación conjunta, paginación y presupuesto en Old 3DS |
+
+### Catálogo de apariencias: estado observado
+
+- [x] Materializar 7.569 apariencias desde las revisiones fijadas, conservando hashes y procedencia.
+- [x] Identificar el único rechazo del catálogo: Bouffalant (`626`), frente, variante 1; el archivo upstream contiene el color inválido `9e655cx`. No se sustituyó por un color inventado.
+- [x] Reproducir la regla upstream `src/utils/color-utils.ts::rgbHexToRgba`: hex inválido se convierte en negro; primera coincidencia del shader conserva prioridad. Test Python dedicado y caso real de Bouffalant pasan. Regeneración del catálogo pendiente de terminar.
+- [ ] Convertir e integrar las 7.570 apariencias shiny en el catálogo físico `.t3x`; regeneración en curso tras corregir Bouffalant. El índice vigente contiene 210 apariencias femeninas normales; las tres shiny convertidas inicialmente ya no forman parte del inventario normal vigente.
+- [ ] Verificar visualmente todas las rutas de selección de apariencia en Azahar y comprobar recursos en Old 3DS. Compilación y lanzamiento aplazados por instrucción del usuario.
+
+La búsqueda del índice generado usa búsqueda binaria sobre identidades ordenadas; esto no constituye una medición de rendimiento en hardware.
+
+### Sprites femeninos normales
+
+- [x] Convertir y verificar hashes del catálogo normal: 3.112 atlas, 3.129 páginas `.t3x`, 61.629.673 bytes en disco; inventario SHA-256 `4d9f568d6df2c6f89e66d821de9a20b20c9f526d37f058089245e505e919cac7`. Es tamaño de catálogo, no memoria residente.
+
+- [ ] Integración completa: el staging enumera los archivos reales `images/pokemon/female` y `images/pokemon/back/female` en el pin de assets; conserva hashes y el índice distingue normal/shiny. Test JS de identidad exacta pasa. Conversión física terminada: 210 apariencias femeninas normales en el índice vigente; carga y dibujo nativo sin verificar.
+
+### Gestionar datos: exportación desde el menú
+
+- [ ] Verificación completa de exportación: el submenú emite `ExportProgress`; `main.cpp` ejecuta `NativeProgressStore::exportBundle` sobre la pareja guardada de run/perfil y muestra el resultado. No guarda la vista de título como partida. Prueba nativa de navegación añadida, pendiente de ejecución por restricción de compilación. Importación desde este submenú añadida: confirmación con opción No inicial, izquierda/derecha y A/B o botones táctiles visibles, lectura del bundle, validación mediante replay antes del commit y recarga del progreso. Pruebas nativas de cancelar/confirmar escritas pero no ejecutadas; integración visual y almacenamiento completos siguen sin verificar.
+
+### Texto y errores de importación
+
+- [x] Verificar cobertura de glifos especiales en las cuatro fuentes físicas para literales de interfaz y nombres canónicos de especies, formas, movimientos, habilidades e items; `ui_font_coverage_tests.py` pasa. Cursor de texto de respaldo usa un glifo disponible; cursor original mantiene su asset.
+- [x] Corregir cadenas UTF-8 dañadas del presenter del menú y textos de `main.cpp`; guard JS estático pasa. Esto no demuestra dibujo correcto de todos los glifos.
+- [ ] Verificar que una importación rechazada recargue la autoridad del guardado local: ruta de recuperación escrita, ejecución nativa pendiente.
+
+### Indicadores shiny del selector
+
+- [x] Importar y convertir tres frames originales, tints de `getVariantTint` e IDs de `VariantTier` con el parser de enums existente; tres tests Python pasan (hashes upstream/físicos, regeneración idéntica, guard de binding).
+
+- [ ] Verificación visual completa: atlas original de tres indicadores convertido y generado, colores importados de `getVariantTint`; cuadrícula conectada al nivel shiny mayor acreditado por `caughtAppearanceAttr`. No infiere desbloqueos de perfiles legacy sin metadata. Dibujo 1:1 y `GPU_NEAREST`; carga lazy con un intento por sesión. Pendiente de compilación y Azahar.

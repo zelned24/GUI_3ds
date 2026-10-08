@@ -6,6 +6,7 @@
 using namespace Pokerogue3DS;
 // Navigation-only test: no GPU loads or draws are performed.
 void C2D_SpriteSheetFree(C2D_SpriteSheet) {}
+void Renderer2D::retireSpriteSheet(C2D_SpriteSheet) { assert(false && "Navigation test must not retire GPU textures"); }
 class PreferenceDisk final:public NativeSaveStorage {
 public:
     char bytes[2][NativePresentationSettingsStore::kBytes]{};size_t sizes[2]{};
@@ -84,6 +85,17 @@ static void checkPreferences() {
     assert(NativePresentationSettingsStore::decode(nullptr,52,untouched)==NativeSaveResult::InvalidFormat);
 }
 int main() {
+    for(unsigned generation:{0u,1u,9u,999u}) for(unsigned start:{0u,24u,500u,2000u}) {
+        const auto matches=[&](const auto& species) {return !generation || species.generation==generation;};
+        const auto page=catalogSpeciesPage<24>(start,matches);
+        std::array<const PokerogueContent::Species*,24> expected{};
+        unsigned ordinal=0,cell=0;
+        for(const auto& species:PokerogueContent::kSpecies) if(matches(species)) {
+            if(ordinal>=start && cell<expected.size()) expected[cell++]=&species;
+            ++ordinal;
+        }
+        assert(page==expected);
+    }
     checkPreferences();
     assert(findWindowTexture(0)==nullptr);
     assert(findWindowTexture(999)==nullptr);
@@ -111,6 +123,38 @@ int main() {
         const auto rect=rewards.rectangle(i);
         assert(rewards.hitTest(rect.x,rect.y,3)==int(i));
     }
+    FrontendMenuPresenter global(false);
+    assert(global.input(KEY_X)==FrontendCommand::None && global.page()==FrontendPage::GlobalMenu);
+    assert(global.input(KEY_A)==FrontendCommand::None && global.page()==FrontendPage::Settings);
+    global.input(KEY_A);assert(global.page()==FrontendPage::SettingsGroup);
+    global.input(KEY_B);assert(global.page()==FrontendPage::Settings);
+    global.input(KEY_B);assert(global.page()==FrontendPage::GlobalMenu);
+    for(unsigned row=1;row<9;++row) {
+        global.input(KEY_B);global.input(KEY_X);
+        for(unsigned down=0;down<row;++down) global.input(KEY_DDOWN);
+        assert(global.input(KEY_A)==FrontendCommand::None);
+        assert(global.page()==(row==5 ? FrontendPage::Pokedex : FrontendPage::ServiceInfo));
+        if(row==5) {
+            global.input(KEY_R);global.input(KEY_L);global.input(KEY_DRIGHT);global.input(KEY_DDOWN);
+            global.input(KEY_X);global.input(KEY_Y);
+            assert(global.page()==FrontendPage::Pokedex);
+            for(unsigned filter=0;filter<3;++filter) global.input(KEY_Y);
+            assert(global.page()==FrontendPage::Pokedex);
+            global.input(KEY_B);assert(global.page()==FrontendPage::GlobalMenu);
+        } else {
+            // Informational destinations return to their parent without a game command.
+            assert(global.input(KEY_A)==FrontendCommand::None && global.page()==FrontendPage::ServiceInfo);
+            global.input(KEY_B);assert(global.page()==FrontendPage::GlobalMenu);
+        }
+    }
+    global.input(KEY_B);assert(global.page()==FrontendPage::Title);
+    global.input(KEY_TOUCH,50,215);assert(global.page()==FrontendPage::GlobalMenu);
+    global.input(KEY_TOUCH,50,18);assert(global.page()==FrontendPage::Settings);
+    global.input(KEY_B);assert(global.page()==FrontendPage::GlobalMenu);
+    global.input(KEY_TOUCH,50,196);assert(global.page()==FrontendPage::GlobalMenu);
+    assert(global.input(KEY_A)==FrontendCommand::None && global.page()==FrontendPage::ServiceInfo);
+    global.input(KEY_B);assert(global.page()==FrontendPage::GlobalMenu);
+    global.input(KEY_B);assert(global.page()==FrontendPage::Title);
     FrontendMenuPresenter fresh(false);
     assert(fresh.input(KEY_A)==FrontendCommand::None && fresh.page()==FrontendPage::Modes);
     assert(fresh.input(KEY_A)==FrontendCommand::NewClassic);
@@ -160,6 +204,31 @@ int main() {
     assert(saved.page()==FrontendPage::Load && saved.input(KEY_A)==FrontendCommand::Load);
     saved.input(KEY_B);saved.input(KEY_TOUCH,25,48+4*29);saved.input(KEY_A);
     assert(saved.page()==FrontendPage::Settings);
+
+    FrontendMenuPresenter dataMenu(true);
+    dataMenu.input(KEY_X);
+    assert(dataMenu.page()==FrontendPage::GlobalMenu);
+    for(unsigned i=0;i<6;++i) dataMenu.input(KEY_DDOWN);
+    assert(dataMenu.input(KEY_A)==FrontendCommand::None);
+    assert(dataMenu.page()==FrontendPage::ManageData);
+    assert(dataMenu.input(KEY_A)==FrontendCommand::ExportProgress);
+    dataMenu.input(KEY_DDOWN);
+    assert(dataMenu.input(KEY_A)==FrontendCommand::None && dataMenu.isConfirmingImport());
+    assert(dataMenu.input(KEY_B)==FrontendCommand::None && !dataMenu.isConfirmingImport());
+    assert(dataMenu.page()==FrontendPage::ManageData);
+    dataMenu.input(KEY_A);
+    assert(dataMenu.input(KEY_TOUCH,180,130)==FrontendCommand::None && !dataMenu.isConfirmingImport());
+    dataMenu.input(KEY_A);
+    assert(dataMenu.input(KEY_TOUCH,50,130)==FrontendCommand::ImportProgress && !dataMenu.isConfirmingImport());
+
+    dataMenu.input(KEY_A);
+    assert(dataMenu.isConfirmingImport());
+    assert(dataMenu.input(KEY_A)==FrontendCommand::None && !dataMenu.isConfirmingImport()); // Default No.
+    dataMenu.input(KEY_A);
+    dataMenu.input(KEY_DLEFT);
+    assert(dataMenu.input(KEY_A)==FrontendCommand::ImportProgress && !dataMenu.isConfirmingImport());
+    dataMenu.input(KEY_B);
+    assert(dataMenu.page()==FrontendPage::GlobalMenu);
 
     FrontendMenuPresenter toDelete(true);
     toDelete.input(KEY_TOUCH,25,48+2*29);toDelete.input(KEY_A);

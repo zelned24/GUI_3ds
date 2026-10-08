@@ -80,12 +80,12 @@ export class PokerogueAdapter {
         const resolver = new PokemonSpriteResolver();
         const resolved = resolver.resolvePokemonSprite(raw.speciesId);
         return {
-          atlasPath: resolved.exists ? resolved.target3DS.t3xPath : (raw.sprites?.atlasPath || `romfs/sprites/pokemon/${raw.speciesId || 0}.t3x`),
-          icon: resolved.exists ? resolved.assetPaths.image : (raw.sprites?.icon || `images/pokemon/${raw.speciesId || 0}.png`),
-          atlas: 'pokemon_front',
-          frame: `${raw.speciesId || 0}`,
-          hasShiny: true,
-          hasFemale: Boolean(raw.hasFemale)
+          atlasPath: resolved.exists ? resolved.target3DS.t3xPath : (raw.sprites?.atlasPath ?? null),
+          icon: resolved.exists ? resolved.assetPaths.image : (raw.sprites?.icon ?? null),
+          atlas: raw.sprites?.atlas ?? null,
+          frame: raw.sprites?.frame ?? null,
+          hasShiny: raw.sprites?.hasShiny ?? null,
+          hasFemale: raw.sprites?.hasFemale ?? raw.hasFemale ?? null
         };
       })(),
 
@@ -152,22 +152,17 @@ export class PokerogueAdapter {
    * Resolves 3DS texture atlas reference from species ID, form, shiny, and gender.
    */
   resolveSprite(speciesId, form = 'BASE', shiny = false, female = false, facing = 'front') {
-    const formPrefix = form && form !== 'BASE' ? `_${form.toLowerCase()}` : '';
-    const shinyPrefix = shiny ? '_shiny' : '';
-    const femalePrefix = female ? '_f' : '';
-    const key = `${speciesId}${formPrefix}${shinyPrefix}${femalePrefix}_${facing}`;
-
+    const resolved=new PokemonSpriteResolver().resolvePokemonSprite(speciesId);
+    const supported=resolved.exists && form==='BASE' && !shiny && !female && facing==='front';
     return {
-      speciesId,
-      form,
-      shiny,
-      female,
-      facing,
-      spriteKey: key,
-      atlasPath: `romfs/sprites/pokemon/${speciesId}.t3x`,
-      frameIndex: 0,
-      iconPath: `romfs/sprites/icons/${speciesId}.png`,
-      targetFormat: 'citro2d / t3x texture sheet'
+      speciesId, form, shiny, female, facing,
+      exists:supported,
+      classification:supported ? 'AVAILABLE' : 'NOT_YET_SUPPORTED_BY_JS_ASSET_BINDING',
+      spriteKey:null,
+      atlasPath:supported ? resolved.target3DS.t3xPath : null,
+      frameIndex:null,
+      iconPath:null,
+      targetFormat:supported ? resolved.target3DS.format : null
     };
   }
 
@@ -203,8 +198,8 @@ export class PokerogueAdapter {
       },
       forms: species.forms,
       sprites: {
-        atlasPath: species.sprites?.atlasPath || `romfs/sprites/pokemon/${species.speciesId}.t3x`,
-        icon: species.sprites?.icon || `romfs/sprites/icons/${species.speciesId}.png`
+        atlasPath: species.sprites?.atlasPath ?? null,
+        icon: species.sprites?.icon ?? null
       }
     };
   }

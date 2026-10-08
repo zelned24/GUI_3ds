@@ -10,6 +10,7 @@
 #include "game/PokemonFreshProfile.hpp"
 #include "content/RuntimeUiText.hpp"
 #include "content/EntityUiNames.hpp"
+#include "content/StarterVariantIcons.hpp"
 #include "storage/NativeStarterCandyProfile.hpp"
 #include "storage/NativeProgressStore.hpp"
 #include <cstdio>
@@ -24,7 +25,9 @@ public:
         if(m_logo) C2D_SpriteSheetFree(m_logo);
         if(m_background) C2D_SpriteSheetFree(m_background);
         if(m_grid) C2D_SpriteSheetFree(m_grid);
-        m_logo=nullptr;m_background=nullptr;m_grid=nullptr;m_icons.clear();m_prompt.clear();
+        if(m_variantIcons) C2D_SpriteSheetFree(m_variantIcons);
+        m_logo=nullptr;m_background=nullptr;m_grid=nullptr;m_variantIcons=nullptr;m_variantIconsAttempted=false;
+        m_backgroundAttempted=false;m_logoAttempted=false;m_gridAttempted=false;m_icons.clear();m_prompt.clear();
         m_introCinematic.clear();
     }
     void releaseIconPages() {m_icons.clear();}
@@ -38,11 +41,7 @@ public:
     void closeCandyStore() { candyStoreOpen = false; candyFeedback = nullptr; }
 
     static const NativeStarterCandyRecord* candyRecord(const FirstRunRuntime& game, uint16_t dex) {
-        for(size_t i = 0; i < game.starterProfileCount(); ++i) {
-            const auto& row = game.starterProfileRecords()[i];
-            if(row.speciesDex == dex) return &row;
-        }
-        return nullptr;
+        return game.starterProgress(dex);
     }
     static uint16_t candyBalance(const FirstRunRuntime& game, uint16_t dex) {
         const auto* rec = candyRecord(game, dex);
@@ -180,18 +179,36 @@ public:
         }
         return false;
     }
+    StarterCaptureFilter captureFilter=StarterCaptureFilter::All;
+    bool matchesCapture(const FirstRunRuntime& game,const PokerogueContent::Species& species) const {
+        return starterMatchesCaptureFilter(captureFilter,game.starterUnlocked(species));
+    }
+    bool cycleCapture(FirstRunRuntime& game) {
+        const auto previousFilter=captureFilter;
+        const auto previousGeneration=generationFilter;
+        const auto* previousType=typeFilter;
+        captureFilter=captureFilter==StarterCaptureFilter::All ? StarterCaptureFilter::Caught :
+            captureFilter==StarterCaptureFilter::Caught ? StarterCaptureFilter::Uncaught : StarterCaptureFilter::All;
+        if(!count(game)) typeFilter=nullptr;
+        if(!count(game)) generationFilter=0;
+        const auto* first=at(game,0);
+        if(first && game.selectSetupStarter(first->dex)) return true;
+        captureFilter=previousFilter;generationFilter=previousGeneration;typeFilter=previousType;
+        feedback="No hay Pokémon para este filtro.";
+        return false;
+    }
     unsigned generationFilter=0;
     const char* typeFilter=nullptr;
     unsigned count(const FirstRunRuntime& game) const {
-        return starterCatalogCount([&](const auto& row){return game.starterUnlocked(row);},generationFilter,typeFilter);
+        return starterCatalogCount([&](const auto& row){return matchesCapture(game,row);},generationFilter,typeFilter);
     }
     const PokerogueContent::Species* at(const FirstRunRuntime& game,unsigned ordinal) const {
-        return starterCatalogAt(ordinal,[&](const auto& row){return game.starterUnlocked(row);},generationFilter,typeFilter);
+        return starterCatalogAt(ordinal,[&](const auto& row){return matchesCapture(game,row);},generationFilter,typeFilter);
     }
     unsigned selectedOrdinal(const FirstRunRuntime& game) const {
         unsigned ordinal=0;
         for(const auto& row:PokerogueContent::kSpecies)
-            if(row.starterEligible && game.starterUnlocked(row) && (!generationFilter || row.generation==generationFilter) && starterMatchesType(row,typeFilter)) {
+            if(row.starterEligible && matchesCapture(game,row) && (!generationFilter || row.generation==generationFilter) && starterMatchesType(row,typeFilter)) {
                 if(row.dex==game.selectedSetupStarterDex()) return ordinal;
                 ++ordinal;
             }
@@ -203,13 +220,13 @@ public:
         const auto* species=at(game,unsigned(ordinal));return species && game.selectSetupStarter(species->dex);
     }
     bool cycleGeneration(FirstRunRuntime& game,int direction=1) {
-        generationFilter=nextStarterGeneration(generationFilter,direction,[&](const auto& row){return game.starterUnlocked(row);});
+        generationFilter=nextStarterGeneration(generationFilter,direction,[&](const auto& row){return matchesCapture(game,row);});
         if(!count(game)) typeFilter=nullptr;
         const auto* first=at(game,0);
         return first && game.selectSetupStarter(first->dex);
     }
     bool cycleType(FirstRunRuntime& game) {
-        typeFilter=nextStarterType(typeFilter,[&](const auto& row){return game.starterUnlocked(row);},generationFilter);
+        typeFilter=nextStarterType(typeFilter,[&](const auto& row){return matchesCapture(game,row);},generationFilter);
         const auto* first=at(game,0);
         return first && game.selectSetupStarter(first->dex);
     }
@@ -219,7 +236,8 @@ public:
         return species && game.selectSetupStarter(species->dex);
     }
     void drawBackground(Renderer2D& renderer) {
-        if(!m_background) {
+        if(!m_backgroundAttempted) {
+            m_backgroundAttempted=true;
             m_background=C2D_SpriteSheetLoad("romfs:/presentation/ui/starter_select_bg.t3x");
             if(m_background) {
                 const auto img=C2D_SpriteSheetGetImage(m_background,0);
@@ -235,7 +253,8 @@ public:
             if(m_introCinematic.active()) {
                 if(m_introCinematic.draw(renderer, animationTimeMs)) return;
             }
-            if(!m_logo) {
+            if(!m_logoAttempted) {
+            m_logoAttempted=true;
                 m_logo=C2D_SpriteSheetLoad("romfs:/presentation/images/logo.t3x");
                 if(m_logo) {
                     const auto img=C2D_SpriteSheetGetImage(m_logo,0);
@@ -285,17 +304,20 @@ public:
     void drawBottom(Renderer2D& renderer,const FirstRunRuntime& game) {
         renderer.clear(0xff3d303a);
         char label[80];
-        const unsigned ordinal=selectedOrdinal(game),start=ordinal/kStarterGridPageSize*kStarterGridPageSize;
+        const unsigned total=count(game),ordinal=selectedOrdinal(game),start=ordinal/kStarterGridPageSize*kStarterGridPageSize;
+        const unsigned position=total ? ordinal+1 : 0;
         uint16_t totalCost=0;bool costResolved=true;
         for(unsigned i=0;i<game.presentation().playerPartyCount && i<6;++i) {
             uint16_t quarterUnits=0;const auto dex=game.presentation().playerParty[i].dex;
             if(!pokemonStarterCostQuarterUnits(dex,game.starterCostReduction(dex),quarterUnits)) costResolved=false;
             else totalCost+=quarterUnits;
         }
-        if(costResolved) std::snprintf(label,sizeof(label),"%u / %u   Coste: %u.%02u / %u pts",ordinal+1,count(game),
+        if(costResolved) std::snprintf(label,sizeof(label),"%u / %u   Coste: %u.%02u / %u pts",position,total,
             unsigned(totalCost/4),unsigned(totalCost%4)*25,unsigned(kClassicStarterValueLimit));
-        else std::snprintf(label,sizeof(label),"%u / %u   Coste sin resolver",ordinal+1,count(game));
-        renderer.drawTextFitted(label,13,5,0.375f,294,0xffffffff);
+        else std::snprintf(label,sizeof(label),"%u / %u   Coste sin resolver",position,total);
+        renderer.drawTextFitted(label,13,5,0.375f,232,0xffffffff);
+        renderer.drawWindow(kStarterCaptureFilterRect.x,kStarterCaptureFilterRect.y,kStarterCaptureFilterRect.width,kStarterCaptureFilterRect.height);
+        renderer.drawTextFitted(captureFilter==StarterCaptureFilter::All ? "Todos" : captureFilter==StarterCaptureFilter::Caught ? "Capturados" : "Sin capturar",260,8,0.25f,46,0xffffffff);
         renderer.drawWindow(kStarterGenerationRect.x,kStarterGenerationRect.y,kStarterGenerationRect.width,kStarterGenerationRect.height);
         renderer.drawWindow(kStarterTypeRect.x,kStarterTypeRect.y,kStarterTypeRect.width,kStarterTypeRect.height);
         char filter[64];
@@ -306,7 +328,8 @@ public:
         if(typeFilter) {
             if(!renderer.drawTypeLabel(typeFilter,231,27,32,14)) renderer.drawTextFitted(typeFilter,228,29,0.3125f,76,0xffffffff);
         } else renderer.drawText("Todos",237,29,0.3125f,0xffffffff);
-        if(!m_grid) {
+        if(!m_gridAttempted) {
+            m_gridAttempted=true;
             m_grid=C2D_SpriteSheetLoad("romfs:/presentation/ui/starter_container_bg.t3x");
             if(m_grid) {
                 const auto img=C2D_SpriteSheetGetImage(m_grid,0);
@@ -344,9 +367,22 @@ public:
                     renderer.drawRect(cx+(corner%2 ? 4 : 0),cy,2,6,0xff2424e0);
                 }
             }
-            if(!m_icons.draw(renderer,species->dex,game.setupStarterFormIndex(species->dex),x+3,y+2,
-                game.starterUnlocked(species->dex) ? 1.0f : 0.35f))
+            const auto* progress=candyRecord(game,species->dex);
+            const bool unlocked=game.starterUnlocked(*species);
+            // Pinned starter-select-ui-handler: caught normal, seen gray,
+            // unseen black. Catalogue membership never implies observation.
+            const uint32_t tint=starterDiscoveryTint(starterDiscovery(unlocked,progress ? progress->observedFormAttr : 0));
+            if(!m_icons.draw(renderer,species->dex,game.setupStarterFormIndex(species->dex),x+3,y+2,1.0f,1.0f,tint))
                 renderer.drawText("?",x+16,y+8,0.4f,0xffffffff);
+            bool shiny=false;uint8_t variant=0;
+            if(progress && unlocked && nativeStarterDefaultAppearance(*progress,shiny,variant) && shiny)
+                drawVariantIndicator(renderer,variant,x+30,y+18);
+            uint16_t quarters=0;char cost[16];
+            if(pokemonStarterCostQuarterUnits(species->dex,game.starterCostReduction(species->dex),quarters)
+                && formatStarterGridCost(quarters,cost,sizeof(cost))) {
+                renderer.drawText(cost,x+2,y+1,0.25f,0xff302830);
+                renderer.drawText(cost,x+1,y,0.25f,0xffffffff);
+            }
         }
         const auto& context=game.presentation();
         for(unsigned slot=0;slot<6;++slot) {
@@ -433,6 +469,24 @@ public:
         }
     }
 private:
+    void drawVariantIndicator(Renderer2D& renderer,uint8_t variant,float x,float y) {
+        if(variant>2) return;
+        if(!m_variantIconsAttempted) {
+            m_variantIconsAttempted=true;
+            m_variantIcons=C2D_SpriteSheetLoad(kStarterVariantIconPath);
+            if(m_variantIcons) {
+                const auto image=C2D_SpriteSheetGetImage(m_variantIcons,0);
+                if(image.tex) C3D_TexSetFilter(image.tex,GPU_NEAREST,GPU_NEAREST);
+            }
+        }
+        if(!m_variantIcons) return;
+        const auto& frame=kStarterVariantIconFrames[variant];
+        renderer.drawAtlasFrame(C2D_SpriteSheetGetImage(m_variantIcons,0),frame,x,y,
+            frame.width,frame.height,1.0f,kStarterVariantIconTints[variant]);
+    }
+    C2D_SpriteSheet m_variantIcons=nullptr;
+    bool m_variantIconsAttempted=false;
+    bool m_backgroundAttempted=false,m_logoAttempted=false,m_gridAttempted=false;
     C2D_SpriteSheet m_logo=nullptr,m_background=nullptr,m_grid=nullptr;
     PokemonIconPresenter m_icons;
     TitleMenuPresenter m_prompt;

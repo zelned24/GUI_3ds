@@ -14,100 +14,9 @@ export class PokemonSpriteResolver {
     this.repository = repository;
     this.repoConfig = POKEROGUE_REPOSITORIES['pokerogue-assets'];
 
-    // Known verified metadata registry from pokerogue-assets (commit 056a1f408f26a3be4fef243f7462cb43608c7928)
-    this.verifiedRegistry = new Map([
-      [1, {
-        speciesId: 1,
-        name: 'Bulbasaur',
-        jsonPath: 'images/pokemon/1.json',
-        imagePath: 'images/pokemon/1.png',
-        jsonHash: 'sha256:d1a2b3c4e5f67a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b',
-        format: 'TexturePacker JSON + PNG',
-        colorDepth: 'RGBA8888',
-        dimensions: { width: 64, height: 64 },
-        target3DS: {
-          format: 'RGBA4444',
-          t3xPath: 'romfs/sprites/pokemon/1.t3x',
-          tex3dsFlags: '-f rgba4444 -z auto'
-        }
-      }],
-      [6, {
-        speciesId: 6,
-        name: 'Charizard',
-        jsonPath: 'images/pokemon/6.json',
-        imagePath: 'images/pokemon/6.png',
-        jsonHash: 'sha256:e6a5b4c3d2e1f0a9b8c7d6e5f4a3b2c1d0e9f8a7b6c5d4e3f2a1b0c9d8e7f6a5',
-        format: 'TexturePacker JSON + PNG',
-        colorDepth: 'RGBA8888',
-        dimensions: { width: 96, height: 96 },
-        target3DS: {
-          format: 'RGBA4444',
-          t3xPath: 'romfs/sprites/pokemon/6.t3x',
-          tex3dsFlags: '-f rgba4444 -z auto'
-        }
-      }],
-      [25, {
-        speciesId: 25,
-        name: 'Pikachu',
-        jsonPath: 'images/pokemon/25.json',
-        imagePath: 'images/pokemon/25.png',
-        // Real physical SHA-256 of test/fixtures/assets/25.png
-        jsonHash: 'sha256:91e5f6d2f0279062761689b3ff0a2f91e2042377d6c712e8dbc7761b5b2b69ba',
-        format: 'TexturePacker JSON + PNG',
-        colorDepth: 'RGBA8888',
-        dimensions: { width: 315, height: 315 },
-        target3DS: {
-          format: 'RGBA4444',
-          t3xPath: 'romfs/sprites/pokemon/25.t3x',
-          tex3dsFlags: '-f rgba4444 -z auto'
-        }
-      }],
-      [76, {
-        speciesId: 76,
-        name: 'Golem',
-        jsonPath: 'images/pokemon/76.json',
-        imagePath: 'images/pokemon/76.png',
-        jsonHash: 'sha256:f6942ad5bb4560a3ef4d2a604d647032bae928ac7d6e5f4a3b2c1d0e9f8a7b6c',
-        format: 'TexturePacker JSON + PNG',
-        colorDepth: 'RGBA8888',
-        dimensions: { width: 384, height: 384 },
-        target3DS: {
-          format: 'RGBA4444',
-          t3xPath: 'romfs/sprites/pokemon/76.t3x',
-          tex3dsFlags: '-f rgba4444 -z auto'
-        }
-      }],
-      [94, {
-        speciesId: 94,
-        name: 'Gengar',
-        jsonPath: 'images/pokemon/94.json',
-        imagePath: 'images/pokemon/94.png',
-        jsonHash: 'sha256:a94a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a',
-        format: 'TexturePacker JSON + PNG',
-        colorDepth: 'RGBA8888',
-        dimensions: { width: 72, height: 72 },
-        target3DS: {
-          format: 'RGBA4444',
-          t3xPath: 'romfs/sprites/pokemon/94.t3x',
-          tex3dsFlags: '-f rgba4444 -z auto'
-        }
-      }],
-      [448, {
-        speciesId: 448,
-        name: 'Lucario',
-        jsonPath: 'images/pokemon/448.json',
-        imagePath: 'images/pokemon/448.png',
-        jsonHash: 'sha256:b448a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9',
-        format: 'TexturePacker JSON + PNG',
-        colorDepth: 'RGBA8888',
-        dimensions: { width: 72, height: 72 },
-        target3DS: {
-          format: 'RGBA4444',
-          t3xPath: 'romfs/sprites/pokemon/448.t3x',
-          tex3dsFlags: '-f rgba4444 -z auto'
-        }
-      }]
-    ]);
+    // Physical metadata must be supplied by the importer/verifier. No built-in
+    // example can stand in for a production sprite or checksum.
+    this.registry = new Map();
   }
 
   /**
@@ -118,7 +27,7 @@ export class PokemonSpriteResolver {
    */
   resolvePokemonSprite(speciesId) {
     const numId = Number(speciesId);
-    const entry = this.verifiedRegistry.get(numId);
+    const entry = this.registry.get(numId);
 
     if (!entry) {
       return {
@@ -133,7 +42,8 @@ export class PokemonSpriteResolver {
     }
 
     return {
-      exists: true,
+      exists: entry.physicalVerified === true,
+      status: entry.physicalVerified === true ? 'AVAILABLE' : 'UNVERIFIED',
       speciesId: numId,
       name: entry.name,
       sourceRepository: this.repoConfig.url,
@@ -153,14 +63,14 @@ export class PokemonSpriteResolver {
   }
 
   /**
-   * Returns list of all verified species IDs in the asset resolver.
+   * Returns imported species IDs; membership alone does not prove physical availability.
    */
   getIndexedSpeciesIds() {
-    return Array.from(this.verifiedRegistry.keys());
+    return Array.from(this.registry.keys());
   }
 
   /**
-   * Registers a verified custom or local Pokémon sprite entry.
+   * Registers explicit imported metadata as UNVERIFIED until a physical verifier is connected.
    * @param {Object} entry 
    */
   registerPokemonSprite(entry) {
@@ -171,20 +81,19 @@ export class PokemonSpriteResolver {
     if (!Number.isInteger(numId) || numId <= 0) {
       throw new Error(`Invalid pokemon sprite registration: speciesId must be positive integer, got ${entry.speciesId}`);
     }
-    this.verifiedRegistry.set(numId, {
-      speciesId: numId,
-      name: entry.name || `Pokemon_${numId}`,
-      jsonPath: entry.jsonPath || `images/pokemon/${numId}.json`,
-      imagePath: entry.imagePath || `images/pokemon/${numId}.png`,
-      jsonHash: entry.jsonHash || 'verified_local',
-      format: entry.format || 'TexturePacker JSON + PNG',
-      colorDepth: entry.colorDepth || 'RGBA8888',
-      dimensions: entry.dimensions || { width: 96, height: 96 },
-      target3DS: {
-        format: entry.target3DS?.format || 'RGBA4444',
-        t3xPath: entry.target3DS?.t3xPath || `romfs/sprites/pokemon/${numId}.t3x`,
-        tex3dsFlags: entry.target3DS?.tex3dsFlags || '-f rgba4444 -z auto'
-      }
+    if(entry.physicalVerified===true) throw new Error('Caller assertion is not physical verification; connect the asset verifier');
+    if(entry.sourceType==='TEST_FIXTURE') throw new Error('Production sprite resolver rejects TEST_FIXTURE');
+    const safePath=value=>typeof value==='string' && value.length>0 && !value.startsWith('/') && !value.includes('\\') && !value.split('/').some(part=>!part || part==='.' || part==='..');
+    if(!safePath(entry.jsonPath) || !safePath(entry.imagePath) || !safePath(entry.target3DS?.t3xPath) ||
+       !/^sha256:[0-9a-f]{64}$/.test(entry.jsonHash || '') ||
+       !Number.isInteger(entry.dimensions?.width) || entry.dimensions.width<=0 ||
+       !Number.isInteger(entry.dimensions?.height) || entry.dimensions.height<=0 ||
+       typeof entry.format!=='string' || !entry.format || typeof entry.colorDepth!=='string' || !entry.colorDepth ||
+       typeof entry.target3DS?.format!=='string' || !entry.target3DS.format)
+      throw new Error('Sprite registration requires imported paths, SHA-256, format and dimensions');
+    this.registry.set(numId, {
+      ...entry, speciesId:numId, dimensions:{...entry.dimensions}, target3DS:{...entry.target3DS},
+      physicalVerified:false
     });
     return true;
   }

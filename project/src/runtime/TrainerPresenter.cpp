@@ -5,9 +5,10 @@
 
 namespace Pokerogue3DS {
 
-void TrainerPresenter::clear() {
+void TrainerPresenter::clear(Renderer2D* renderer) {
     if (m_sheet) {
-        C2D_SpriteSheetFree(m_sheet);
+        if (renderer) renderer->retireSpriteSheet(m_sheet);
+        else C2D_SpriteSheetFree(m_sheet);
         m_sheet = nullptr;
     }
     m_metadata.clear();
@@ -16,10 +17,10 @@ void TrainerPresenter::clear() {
     m_animationStartMs = 0;
 }
 
-bool TrainerPresenter::load(const char* key) {
-    if (!key || !*key) return false;
+bool TrainerPresenter::load(const char* key, Renderer2D* renderer) {
+    if (!key || !*key) { clear(renderer); return false; }
     if (m_sheet && std::strcmp(m_currentKey, key) == 0) return true;
-    clear();
+    clear(renderer);
 
     const auto* def = findTrainerSpriteByKey(key);
     if (!def || !def->texturePath) return false;
@@ -39,15 +40,17 @@ bool TrainerPresenter::load(const char* key) {
     return true;
 }
 
-bool TrainerPresenter::loadTrainer(uint16_t trainerTypeId, bool female) {
+bool TrainerPresenter::loadTrainer(uint16_t trainerTypeId, bool female, Renderer2D* renderer) {
     const auto* def = findTrainerSprite(trainerTypeId, female);
-    if (def) return load(def->key);
+    if (def) return load(def->key, renderer);
+    clear(renderer); // Missing mapping must not retain the previous trainer.
     return false;
 }
 
-bool TrainerPresenter::loadPlayerBack(bool female) {
+bool TrainerPresenter::loadPlayerBack(bool female, Renderer2D* renderer) {
     const auto* def = findPlayerBackSprite(female);
-    if (def) return load(def->key);
+    if (def) return load(def->key, renderer);
+    clear(renderer);
     return false;
 }
 

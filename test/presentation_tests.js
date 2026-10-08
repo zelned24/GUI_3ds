@@ -1,9 +1,129 @@
 import fs from 'node:fs';
+import {SpeciesDefinition} from '../tools/js/data/CanonicalModels.js';
+import {PokerogueAdapter} from '../tools/js/data/PokerogueAdapter.js';
+import {PokemonSpriteResolver} from '../tools/js/data/PokemonSpriteResolver.js';
 import path from 'node:path';
 import {execFileSync} from 'node:child_process';
 import {fileURLToPath} from 'node:url';
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 export function registerPresentationTests(test) {
+  test('Native Pokedex binding: canonical species and real profile discovery without battle writes',()=>{
+    const frontend=fs.readFileSync(path.join(root,'project/include/runtime/FrontendMenuPresenter.hpp'),'utf8');
+    const main=fs.readFileSync(path.join(root,'project/src/main.cpp'),'utf8');
+    const dex=frontend.slice(frontend.indexOf('bool dexMatches('),frontend.indexOf('unsigned rowY('));
+    for(const token of ['PokerogueContent::kSpecies','starterProfileReady()','starterProgress(species.dex)',
+                       'starterDiscoveryTint(starterDiscovery','"???"'])
+      if(!dex.includes(token)) throw new Error('Missing real Pokedex projection: '+token);
+    if(/recordCaught|recordSeen|claimReward|selectMove/.test(dex)) throw new Error('Pokedex must not write game progress');
+    if(!dex.includes('species.generation!=m_dexGeneration') || !dex.includes('seen && !caught') ||
+       !dex.includes('m_dexCapture==1 ? caught') || !dex.includes('if(!game || !game->starterProfileReady()) return false;'))
+      throw new Error('Discovery filters must use actual profile state and reject unavailable profiles');
+    const upper=frontend.slice(frontend.indexOf('void drawPokedexTop('),frontend.indexOf('void draw(Renderer2D&'));
+    if(!upper.includes('if(!known) return;') || !upper.includes('species->baseTotal'))
+      throw new Error('Upper details must reveal canonical stats only for known species');
+    if(!main.includes('frontend.drawPokedexTop(renderer,game)')) throw new Error('Upper Pokedex details are not connected');
+    if(!main.includes('frontend.draw(renderer,loaded==Pokerogue3DS::NativeSaveResult::Ok ? &restored : nullptr,&game)'))
+      throw new Error('Pokedex must consume the actual game profile');
+  });
+  test('Native global submenu: nine pinned locale entries, touch geometry and upper-screen overlay',()=>{
+    const frontend=fs.readFileSync(path.join(root,'project/include/runtime/FrontendMenuPresenter.hpp'),'utf8');
+    const main=fs.readFileSync(path.join(root,'project/src/main.cpp'),'utf8');
+    const locales=fs.readFileSync(path.join(root,'project/generated/include/content/RuntimeUiText.hpp'),'utf8');
+    const section=frontend.slice(frontend.indexOf('static const char* const* globalMenuKeys()'),frontend.indexOf('unsigned rowCount() const'));
+    const keys=[...section.matchAll(/"(menu-ui-handler:[^"]+)"/g)].map(match=>match[1]);
+    if(keys.length!==9 || new Set(keys).size!==9) throw new Error('Global submenu must preserve nine distinct entries');
+    for(const key of keys) if(!locales.includes('"'+key+'"')) throw new Error('Missing pinned submenu locale: '+key);
+    if(!frontend.includes('TouchRect{24,rowY(i),272,rowHeight()}') || !frontend.includes('FrontendPage::GlobalMenu ? 20 : 29'))
+      throw new Error('Drawing and touch must share submenu row geometry');
+    if(!main.includes('FrontendPage::GlobalMenu) renderer.drawRect(0,0,400,240,0x60000000)'))
+      throw new Error('Global submenu must dim the upper scene');
+  });
+  test('Native submenu pending destinations: explicit status without account or progress writes',()=>{
+    const frontend=fs.readFileSync(path.join(root,'project/include/runtime/FrontendMenuPresenter.hpp'),'utf8');
+    const info=frontend.slice(frontend.indexOf('void drawServiceInfo('),frontend.indexOf('bool dexMatches('));
+    for(const option of [1,2,3,4,6,7,8])
+      if(!info.includes('case '+option+':')) throw new Error('Missing submenu destination '+option);
+    if(!frontend.includes('m_service=m_selected;m_page=FrontendPage::ServiceInfo') ||
+       !frontend.includes('m_page==FrontendPage::ServiceInfo) m_page=FrontendPage::GlobalMenu;'))
+      throw new Error('Pending destinations must open and return to the global submenu');
+    if(/saveNative|recordCaught|recordSeen|commitImported|logOut\(/.test(info))
+      throw new Error('Informational screens cannot mutate profile or fake network actions');
+  });
+  test('Native asset preparation: preserve materialized appearances and defer menu cursor release',()=>{
+    const prepare=fs.readFileSync(path.join(root,'scripts/prepare_pokerogue_sprite_catalog.mjs'),'utf8');
+    const title=fs.readFileSync(path.join(root,'project/include/runtime/TitleMenuPresenter.hpp'),'utf8');
+    const frontend=fs.readFileSync(path.join(root,'project/include/runtime/FrontendMenuPresenter.hpp'),'utf8');
+    if(!prepare.includes("['scripts/stage_pokerogue_sprite_assets.mjs', '--all', '--appearances']"))
+      throw new Error('Full asset preparation must retain verified materialized appearances');
+    const index=fs.readFileSync(path.join(root,'scripts/generate_pokemon_appearance_index.mjs'),'utf8');
+    if(!prepare.includes("['scripts/generate_pokemon_appearance_index.mjs']") ||
+       !index.includes('await checked(asset.metadataPath,asset.metadataSha256)') ||
+       !index.includes('await checked(texture.path,texture.sha256)') ||
+       !index.includes('Duplicate converted appearance'))
+      throw new Error('Appearance index must validate physical files and unique identities');
+    if(!title.includes('renderer->retireSpriteSheet(m_cursor)') || !frontend.includes('m_title.clear(renderer)'))
+      throw new Error('Menu cleanup must defer textures used by queued GPU commands');
+  });
+  test('Native appearance index: deterministic references and corrupt inventory rejection',()=>{execFileSync(process.execPath,[path.join(root,'test/pokemon_appearance_index_tests.mjs')],{stdio:'pipe'});});
+  test('Pinned species gender metadata: preserve visual eligibility without inferring from sex',()=>{execFileSync(process.execPath,[path.join(root,'test/species_gender_metadata_tests.mjs')],{stdio:'pipe'});});
+  test('Native appearance rendering binding: resolved identity uses indexed assets and missing states stay explicit',()=>{
+    const presenter=fs.readFileSync(path.join(root,'project/src/runtime/PokemonAtlasPresenter.cpp'),'utf8');
+    const resolve=presenter.slice(presenter.indexOf('bool PokemonAtlasPresenter::atlasKey('),presenter.indexOf('bool PokemonAtlasPresenter::selectMetadata('));
+    for(const token of ['appearance.appearanceResolved','appearance.shinyVariant<=2',
+      'speciesGenderDifferences(pokemon.dex)','formGenderVisual(form->id)','genderSpriteFormExcluded(spriteForm)',
+      'findPokemonAppearanceAsset(out.c_str(),back,female,appearance.shinyVariant)',
+      'NOT_YET_SUPPORTED_POKEMON_APPEARANCE','out.clear();return false;'])
+      if(!resolve.includes(token)) throw new Error('Missing appearance binding '+token);
+    if((presenter.match(/atlasKey\(pokemon, back, key\)/g)||[]).length!==2)
+      throw new Error('Both sprite drawing paths must resolve facing and appearance');
+  });
+  test('Native starter default appearance binding: actual caught metadata and legacy isolation',()=>{
+    const game=fs.readFileSync(path.join(root,'project/src/game/FirstRunRuntime.cpp'),'utf8');
+    const start=game.indexOf('bool FirstRunRuntime::resolveStarterFromDex(');
+    const binding=game.slice(start,game.indexOf('starterActor.nature = starterNature;',start));
+    if(!binding.includes('dexMetadata && dexMetadata->caughtAppearanceAttr') ||
+       !binding.includes('nativeStarterDefaultAppearance(*dexMetadata,starterActor.shiny,starterActor.shinyVariant)') ||
+       !binding.includes('starterActor.appearanceResolved=true'))
+      throw new Error('Starter default appearance must use owned profile bits and preserve unknown legacy state');
+  });
+  test('Legacy sprite resolver: no invented verified registry, dimensions, hashes or fixture production records',()=>{
+    const resolver=new PokemonSpriteResolver();
+    if(resolver.getIndexedSpeciesIds().length || resolver.resolvePokemonSprite(25).exists)
+      throw new Error('Default resolver must not publish synthetic examples as production assets');
+    for(const entry of [{speciesId:25},{speciesId:25,sourceType:'TEST_FIXTURE'}, {speciesId:25,physicalVerified:true}]) {
+      let rejected=false;try {resolver.registerPokemonSprite(entry);} catch {rejected=true;}
+      if(!rejected) throw new Error('Incomplete/fixture/caller-asserted verification must be rejected');
+    }
+  });
+  test('Canonical sprite references: absence stays unknown instead of guessed paths or shiny capability',()=>{
+    const species=new SpeciesDefinition({id:'test-only',speciesId:25});
+    for(const key of ['atlasPath','icon','atlas','frame','hasFemale','hasShiny','hasVariants'])
+      if(species.sprites[key]!==null) throw new Error('Unknown sprite field was fabricated: '+key);
+    const supplied=new SpeciesDefinition({id:'test-only',sprites:{hasShiny:false,atlasPath:'explicit-imported-path'}});
+    if(supplied.sprites.hasShiny!==false || supplied.sprites.atlasPath!=='explicit-imported-path')
+      throw new Error('Explicit imported metadata must be preserved');
+    const result=new PokerogueAdapter().resolveSprite(25,'BASE',true,false,'back');
+    if(result.exists || result.atlasPath || result.iconPath || result.frameIndex!==null)
+      throw new Error('Adapter must not invent appearance paths or frame indices');
+  });
+  test('Native shiny assets: pinned palettes preserve exact pixels, alpha and deterministic provenance',()=>{execFileSync('python',[path.join(root,'test/pokemon_variant_palette_tests.py')],{stdio:'pipe'});});
+  test('Native sprite texture ownership: retired atlas sheets wait for SYNCDRAW',()=>{
+    const sprites=fs.readFileSync(path.join(root,'project/src/runtime/PokemonAtlasPresenter.cpp'),'utf8');
+    const renderer=fs.readFileSync(path.join(root,'project/src/gfx/renderer2d.cpp'),'utf8');
+    const trainer=fs.readFileSync(path.join(root,'project/src/runtime/TrainerPresenter.cpp'),'utf8');
+    const bridge=fs.readFileSync(path.join(root,'project/src/runtime/QuickJSBridge.cpp'),'utf8');
+    const expect=(value,message)=>{if(!value) throw new Error(message);};
+    expect(sprites.includes('slot.clear(&renderer)') && sprites.includes('renderer->retireSpriteSheet(sheets[i])'),
+      'Atlas replacement must retire sheets instead of freeing queued draw textures');
+    expect(trainer.includes('renderer->retireSpriteSheet(m_sheet)'),
+      'Trainer replacement must retain textures used by queued draws');
+    const loadTrainer=trainer.slice(trainer.indexOf('bool TrainerPresenter::loadTrainer'),trainer.indexOf('bool TrainerPresenter::loadPlayerBack'));
+    expect(loadTrainer.includes('clear(renderer)'), 'Unknown trainer mapping must clear the previous sprite');
+    expect(!bridge.includes('.invalidate();'), 'QuickJS replacement must pass the renderer for deferred retirement');
+    const begin=renderer.slice(renderer.indexOf('void Renderer2D::beginFrame()'),renderer.indexOf('void Renderer2D::retireSpriteSheet'));
+    expect(begin.indexOf('C3D_FrameBegin(C3D_FRAME_SYNCDRAW)')<begin.indexOf('C2D_SpriteSheetFree(sheet)'),
+      'Retired sheets must be freed after GPU synchronization');
+  });
   test('Native dialogue: bounded UTF-8 pages preserve long messages and native line widths',()=>{
     const compiler=process.platform==='win32' ? 'C:/devkitPro/msys2/usr/bin/g++.exe' : 'g++';
     const output=path.join(root,'build','text-page-layout-test'+(process.platform==='win32'?'.exe':''));

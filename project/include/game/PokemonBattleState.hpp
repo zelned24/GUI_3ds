@@ -49,6 +49,9 @@ struct PokemonActorIdentity {
     const char* initialTeraType = nullptr; // Concrete constructor choice survives evolution.
     uint8_t initialTeraTypeIndex = 0;
     bool initialTeraTypeResolved = false;
+    bool appearanceResolved = false; // False for legacy actors; never infer normal from absence.
+    bool shiny = false;
+    uint8_t shinyVariant = 0; // Upstream Variant 0/1/2.
 };
 
 struct PokemonFormSelectionContext {

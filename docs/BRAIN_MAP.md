@@ -56,3 +56,9 @@ El diagrama muestra capas y responsabilidades. Los enlaces concretos `import`/`i
 3. Incluye tooling de escenas conservado para generación/parity; no existe editor web.
 4. Los perfiles de tareas son puntos de entrada, no dependencias de ejecución. No se leen los catálogos grandes para construir el mapa.
 5. Tests y compilación siguen aplazados; un enlace estructural no prueba integración funcional.
+
+## Apariencias y submenús
+
+1. Perfil `pokemonAppearances`: materialización pinned → staging → conversión física → índice generado → `PokemonAtlasPresenter`; incluye pruebas Python/JS y harness nativo.
+2. Perfil `frontendMenus`: navegación → comandos → almacenamiento en `main.cpp` → guard estático y harness nativo.
+3. El mapa ayuda a localizar dependencias; no demuestra integración visual ni ejecución en hardware.

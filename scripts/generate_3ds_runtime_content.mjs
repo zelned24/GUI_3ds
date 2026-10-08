@@ -1786,5 +1786,58 @@ inline constexpr Entity kBerryPhaseSource = ${entityRows([{id: 'BerryPhase.eatBe
 inline constexpr Entity kBerryStatSource = ${entityRows([{id: 'Stat', source: berryEffects.statProvenance}]).trim()};
 `;
 const indexedFormHeader = pricedCandyHeader.slice(0, namespaceEnd) + rivalTables + persistentExpTables + flinchTables + berryTables + berryEffectTables + indexedFormLookup + pricedCandyHeader.slice(namespaceEnd);
-await fs.writeFile(outputPath, indexedFormHeader, 'utf8');
-console.log(JSON.stringify({ output: path.relative(root, outputPath), bytes: Buffer.byteLength(indexedFormHeader), hash: report.contentHash }));
+// Gender differences are imported visual metadata. Keep unknown explicit and
+// preserve the existing Species ABI while the presentation adapter adopts it.
+const genderRows=collections.species.map(item=>{
+  if(item.genderDiffs!=null && typeof item.genderDiffs!=='boolean') throw new Error(`Invalid canonical genderDiffs ${item.id}`);
+  return {dex:item.speciesId,flag:item.genderDiffs==null?-1:item.genderDiffs?1:0};
+}).sort((a,b)=>a.dex-b.dex);
+if(genderRows.some((row,index)=>!Number.isInteger(row.dex) || row.dex<1 || row.dex>65535 ||
+    (index && genderRows[index-1].dex===row.dex))) throw new Error('Invalid species identity in gender visual metadata');
+const genderHeader=`
+namespace PokerogueContent {
+struct SpeciesGenderVisual {uint16_t dex; int8_t genderDiffs;};
+inline constexpr SpeciesGenderVisual kSpeciesGenderVisuals[] = {
+${genderRows.map(row=>`    {${row.dex},${row.flag}},`).join('\n')}
+};
+inline constexpr int8_t speciesGenderDifferences(uint16_t dex) {
+    size_t first=0,last=sizeof(kSpeciesGenderVisuals)/sizeof(kSpeciesGenderVisuals[0]);
+    while(first<last) {const size_t middle=first+(last-first)/2; if(kSpeciesGenderVisuals[middle].dex<dex) first=middle+1; else last=middle;}
+    return first<sizeof(kSpeciesGenderVisuals)/sizeof(kSpeciesGenderVisuals[0]) && kSpeciesGenderVisuals[first].dex==dex ? kSpeciesGenderVisuals[first].genderDiffs : -1;
+}
+}
+`;
+const visualRules=content.extensions?.pokemonGenderSpriteRules;
+if(!visualRules || !Array.isArray(visualRules.excludedFormSpriteKeys) || !visualRules.excludedFormSpriteKeys.length)
+  throw new Error('Missing imported gender sprite rules');
+const formGenderRows=collections.forms.map(item=>{
+  if(!Object.hasOwn(item,'genderDiffs') || (item.genderDiffs!=null && typeof item.genderDiffs!=='boolean'))
+    throw new Error(`Missing or invalid canonical form genderDiffs ${item.id}`);
+  // An absent field remains null in canonical data. In the inspected upstream
+  // constructor it becomes undefined, which is falsy in getBaseSpriteKey.
+  return `    {"${field(item.id)}", ${item.genderDiffs===true}},`;
+});
+const formGenderHeader=`
+#include <cstring>
+namespace PokerogueContent {
+struct FormGenderVisual {const char* formId; bool genderDiffs;};
+inline constexpr FormGenderVisual kFormGenderVisuals[] = {
+${formGenderRows.join('\n')}
+};
+inline constexpr const char* kGenderSpriteExcludedFormKeys[] = {
+${visualRules.excludedFormSpriteKeys.map(key=>`    "${field(key)}",`).join('\n')}
+};
+inline const FormGenderVisual* formGenderVisual(const char* id) {
+    if(!id) return nullptr;
+    for(const auto& row:kFormGenderVisuals) if(!std::strcmp(row.formId,id)) return &row;
+    return nullptr;
+}
+inline bool genderSpriteFormExcluded(const char* key) {
+    if(!key) return false;
+    for(const auto* excluded:kGenderSpriteExcludedFormKeys) if(!std::strcmp(excluded,key)) return true;
+    return false;
+}
+}
+`;
+await fs.writeFile(outputPath, indexedFormHeader+genderHeader+formGenderHeader, 'utf8');
+console.log(JSON.stringify({ output: path.relative(root, outputPath), bytes: Buffer.byteLength(indexedFormHeader+genderHeader+formGenderHeader), hash: report.contentHash }));

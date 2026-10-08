@@ -3,6 +3,7 @@
 #include "gfx/renderer2d.hpp"
 #include "runtime/DualScreenLayout.hpp"
 #include "content/NativeSpritePolicy.hpp"
+#include "content/PokemonAppearanceAssets.hpp"
 #include "content/PokerogueRuntimeContent.hpp"
 #include <cmath>
 #include <cstdio>
@@ -11,10 +12,11 @@
 
 namespace Pokerogue3DS {
 
-void PokemonAtlasPresenter::Slot::clear() {
+void PokemonAtlasPresenter::Slot::clear(Renderer2D* renderer) {
     for (size_t i = 0; i < kMaxPages; ++i) {
         if (sheets[i]) {
-            C2D_SpriteSheetFree(sheets[i]);
+            if (renderer) renderer->retireSpriteSheet(sheets[i]);
+            else C2D_SpriteSheetFree(sheets[i]);
             sheets[i] = nullptr;
         }
     }
@@ -27,22 +29,55 @@ void PokemonAtlasPresenter::Slot::clear() {
 }
 
 PokemonAtlasPresenter::~PokemonAtlasPresenter() { invalidate(); }
-void PokemonAtlasPresenter::invalidate() {
-    m_front.clear();
-    m_back.clear();
-    m_trainerFront.clear();
-    m_playerBack.clear();
+void PokemonAtlasPresenter::invalidate(Renderer2D* renderer) {
+    m_lastUnsupportedAppearance.clear();
+    m_front.clear(renderer);
+    m_back.clear(renderer);
+    m_trainerFront.clear(renderer);
+    m_playerBack.clear(renderer);
     m_trainerFrontTypeId = 0;
     m_playerBackLoaded = false;
 }
 
-bool PokemonAtlasPresenter::atlasKey(const ResolvedPokemon& pokemon, std::string& out) {
-    return resolveAtlasKey(pokemon.dex,pokemon.formId,out);
+bool PokemonAtlasPresenter::atlasKey(const ResolvedPokemon& pokemon, bool back, std::string& out) {
+    if(!resolveAtlasKey(pokemon.dex,pokemon.formId,out)) return false;
+    const auto& appearance=pokemon.actor;
+    if(!appearance.appearanceResolved) {
+        if(!appearance.shiny && appearance.shinyVariant==0) return true; // Legacy identity remains unknown.
+    } else if(appearance.shinyVariant<=2 && (appearance.shiny || appearance.shinyVariant==0)) {
+        const auto* form=pokemon.formId && *pokemon.formId ? PokerogueContent::findFormById(pokemon.formId) : nullptr;
+        int differences=PokerogueContent::speciesGenderDifferences(pokemon.dex);
+        if(form) {
+            const auto* visual=PokerogueContent::formGenderVisual(form->id);
+            differences=visual ? int(visual->genderDiffs) : -1;
+        }
+        const auto hyphen=out.find('-');
+        const char* spriteForm=hyphen==std::string::npos ? "" : out.c_str()+hyphen+1;
+        if(PokerogueContent::genderSpriteFormExcluded(spriteForm)) differences=0;
+        const bool female=appearance.gender==PokemonGender::Female && differences==1;
+        if(differences>=0 && !(differences==1 && appearance.gender==PokemonGender::Unspecified)) {
+            if(!appearance.shiny && !female) return true;
+            if(appearance.shiny || female) {
+                const auto* asset=findPokemonAppearanceAsset(out.c_str(),back,female,appearance.shinyVariant,appearance.shiny);
+                if(asset) {out=asset->atlasKey;return true;}
+            }
+        }
+    }
+    // Never replace a known shiny/female appearance with a normal/male sprite.
+    char diagnostic[160];
+    std::snprintf(diagnostic,sizeof(diagnostic),"%u:%s:%s:%u:%u:%u:%u",unsigned(pokemon.dex),
+        pokemon.formId ? pokemon.formId : "",back ? "back" : "front",
+        unsigned(appearance.gender),unsigned(appearance.appearanceResolved),unsigned(appearance.shiny),unsigned(appearance.shinyVariant));
+    if(m_lastUnsupportedAppearance!=diagnostic) {
+        std::fprintf(stderr,"NOT_YET_SUPPORTED_POKEMON_APPEARANCE: %s\n",diagnostic);
+        m_lastUnsupportedAppearance=diagnostic;
+    }
+    out.clear();return false;
 }
 
-bool PokemonAtlasPresenter::selectMetadata(Slot& slot, const std::string& key, bool back, uint64_t nowMs) {
+bool PokemonAtlasPresenter::selectMetadata(Renderer2D& renderer, Slot& slot, const std::string& key, bool back, uint64_t nowMs) {
     if (slot.key == key) return slot.metadata.frameCount() != 0;
-    slot.clear();
+    slot.clear(&renderer); // Queued draws retain their texture until SYNCDRAW.
     slot.key = key; // Remember missing assets; do not retry filesystem I/O each frame.
     slot.animationStartMs = nowMs;
     char metadataPath[128];
@@ -97,9 +132,9 @@ bool PokemonAtlasPresenter::selectPage(Slot& slot, const std::string& key, bool 
 void PokemonAtlasPresenter::draw(Renderer2D& renderer, const ResolvedPokemon& pokemon,
     bool back, float x, float y, float width, float height, uint64_t animationTimeMs) {
     std::string key;
-    if (!atlasKey(pokemon, key)) return;
+    if (!atlasKey(pokemon, back, key)) return;
     Slot& slot = back ? m_back : m_front;
-    if (!selectMetadata(slot, key, back, animationTimeMs)) return;
+    if (!selectMetadata(renderer, slot, key, back, animationTimeMs)) return;
     const uint64_t elapsedMs = animationTimeMs >= slot.animationStartMs
         ? animationTimeMs - slot.animationStartMs : 0;
     const auto* frame = slot.metadata.animationFrame(elapsedMs);
@@ -140,9 +175,9 @@ float PokemonAtlasPresenter::calculateProportionalScale(const ResolvedPokemon& p
 void PokemonAtlasPresenter::drawAnchored(Renderer2D& renderer, const ResolvedPokemon& pokemon,
     bool back, float anchorX, float anchorY, float scale, uint64_t animationTimeMs) {
     std::string key;
-    if (!atlasKey(pokemon, key)) return;
+    if (!atlasKey(pokemon, back, key)) return;
     Slot& slot = back ? m_back : m_front;
-    if (!selectMetadata(slot, key, back, animationTimeMs)) return;
+    if (!selectMetadata(renderer, slot, key, back, animationTimeMs)) return;
     const uint64_t elapsedMs = animationTimeMs >= slot.animationStartMs
         ? animationTimeMs - slot.animationStartMs : 0;
     const auto* frame = slot.metadata.animationFrame(elapsedMs);
@@ -163,7 +198,7 @@ void PokemonAtlasPresenter::drawTrainerAnchored(Renderer2D& renderer, uint16_t t
     if (!m_trainerFront.isLoaded() || m_trainerFrontTypeId != trainerTypeId || m_trainerFrontFemale != female) {
         m_trainerFrontTypeId = trainerTypeId;
         m_trainerFrontFemale = female;
-        m_trainerFront.loadTrainer(trainerTypeId, female);
+        m_trainerFront.loadTrainer(trainerTypeId, female, &renderer);
     }
     if (m_trainerFront.isLoaded()) {
         m_trainerFront.drawAnchored(renderer, anchorX, anchorY, scale, animationTimeMs);
@@ -174,7 +209,7 @@ void PokemonAtlasPresenter::drawPlayerBackAnchored(Renderer2D& renderer, bool fe
     float anchorX, float anchorY, float scale, uint64_t animationTimeMs) {
     if (!m_playerBackLoaded || m_playerBackFemale != female) {
         m_playerBackFemale = female;
-        m_playerBackLoaded = m_playerBack.loadPlayerBack(female);
+        m_playerBackLoaded = m_playerBack.loadPlayerBack(female, &renderer);
     }
     if (m_playerBack.isLoaded()) {
         m_playerBack.drawAnchored(renderer, anchorX, anchorY, scale, animationTimeMs);

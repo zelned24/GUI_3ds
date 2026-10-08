@@ -127,6 +127,17 @@ public:
     size_t starterProfileCount() const { return m_starterProfileCount; }
     uint32_t caughtSpeciesCount() const;
     bool hasCaughtSpecies(uint16_t dex) const;
+    const NativeStarterCandyRecord* starterProgress(uint16_t dex) const {
+        if(!m_starterProfileReady) return nullptr;
+        size_t first=0,last=m_starterProfileCount;
+        while(first<last) {
+            const size_t middle=first+(last-first)/2;
+            if(m_starterProfileRecords[middle].speciesDex<dex) first=middle+1;
+            else last=middle;
+        }
+        return first<m_starterProfileCount && m_starterProfileRecords[first].speciesDex==dex
+            ? &m_starterProfileRecords[first] : nullptr;
+    }
     const NativeStarterCandyRecord* starterProfileRecords() const { return m_starterProfileRecords.data(); }
     bool capturePartyChoicePending() const { return m_capturePartyChoicePending; }
     uint8_t selectedCapturePartyChoice() const { return m_selectedCapturePartyChoice; }
@@ -205,6 +216,8 @@ public:
 
 private:
     bool restoreSetupInPlace(uint32_t seed, uint16_t starterDex);
+    bool recordEncounterSeen();
+    bool recordSeenPokemon(const ResolvedPokemon& pokemon);
     bool recordCaughtSpecies(uint16_t dex, const ResolvedPokemon* captured = nullptr);
     bool resolveCapturePartyChoiceInPlace(int partyMember);
     bool finishSuccessfulCapture(ResolvedPokemon& target, const uint32_t* releasedParticipant = nullptr);

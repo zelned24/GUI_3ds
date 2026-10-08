@@ -20,7 +20,12 @@ if (!process.env.TEX3DS && process.platform === 'win32') {
 const run = (file, args) => execFileSync(file, args, { cwd: root, stdio: 'inherit', env: { ...process.env, TEX3DS: tex3ds } });
 const report = name => fs.readFile(path.join(root, 'build/upstream-assets', name), 'utf8').then(JSON.parse);
 
-run(process.execPath, ['scripts/stage_pokerogue_sprite_assets.mjs', '--all']);
+// --staged resumes conversion of the existing verified inventory. It does not
+// claim to import appearances that have not yet been staged.
+if(!process.argv.includes('--staged')) {
+  run(python, ['scripts/materialize_pokemon_appearance_catalog.py']);
+  run(process.execPath, ['scripts/stage_pokerogue_sprite_assets.mjs', '--all', '--appearances']);
+}
 let staged = await report('staged-sprite-assets.json');
 for (const entry of [...staged.unsupported]) {
   if (entry.classification !== 'INVALID_UPSTREAM_FRAME_BOUNDS')
@@ -40,3 +45,5 @@ for (const entry of plan.unsupported) {
     entry.facing, '--tex3ds', tex3ds]);
 }
 run(process.execPath, ['scripts/finalize_pokerogue_sprite_conversion.mjs']);
+
+run(process.execPath, ['scripts/generate_pokemon_appearance_index.mjs']);

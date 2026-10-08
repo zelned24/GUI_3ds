@@ -247,7 +247,7 @@ int main() {
             }
             // The menu consumes input before the battle/JS command loop.
             touchPosition titleTouch{};if(rawPressed & KEY_TOUCH) hidTouchRead(&titleTouch);
-            const auto command=frontend.input(rawPressed,titleTouch.px,titleTouch.py);
+            const auto command=frontend.input(rawPressed,titleTouch.px,titleTouch.py,&game);
             if(command==Pokerogue3DS::FrontendCommand::Continue || command==Pokerogue3DS::FrontendCommand::Load) {
                 const auto result=game.loadNativeProgress(saves,profiles,profileStaging,
                     PokerogueContent::kSpeciesCount,offlineFriendship,&restored);
@@ -263,6 +263,40 @@ int main() {
                 } else {
                     frontend.feedback(Pokerogue3DS::nativeSaveResultName(result));
                 }
+            }
+            else if(command==Pokerogue3DS::FrontendCommand::ImportProgress) {
+                std::size_t count=0;
+                auto result=progress.readBundleCandidate(saveStorage,PokerogueContent::kContentHash,
+                    bundleScratch,sizeof(bundleScratch),restored,profileStaging,PokerogueContent::kSpeciesCount,count);
+                if(result==Pokerogue3DS::NativeSaveResult::Ok && !progressReplay().restoreNativeRunSave(
+                    restored,profileStaging,count,&offlineFriendship)) result=Pokerogue3DS::NativeSaveResult::InvalidRecord;
+                if(result==Pokerogue3DS::NativeSaveResult::Ok) result=progress.commitImported(restored,profileStaging,count);
+                if(result==Pokerogue3DS::NativeSaveResult::Ok) {
+                    result=game.loadNativeProgress(saves,profiles,profileStaging,
+                        PokerogueContent::kSpeciesCount,offlineFriendship,&restored);
+                    if(result==Pokerogue3DS::NativeSaveResult::Ok) {
+                        loaded=result;frontend.setHasSave(true);pokemonSprites.invalidate(&renderer);secondEnemySprites.invalidate(&renderer);
+#if defined(POKEROGUE_ENABLE_QUICKJS)
+                        bridge.setJournalGeneration(restored.generation);
+#endif
+                    }
+                }
+                if(result!=Pokerogue3DS::NativeSaveResult::Ok) {
+                    // The shared candidate buffer may contain rejected foreign data.
+                    // Restore the menu's saved-run authority after any import failure.
+                    loaded=saves.load(PokerogueContent::kContentHash,restored);
+                    frontend.setHasSave(loaded==Pokerogue3DS::NativeSaveResult::Ok);
+                    if(loaded!=Pokerogue3DS::NativeSaveResult::Ok) restored={};
+                }
+                frontend.feedback(result==Pokerogue3DS::NativeSaveResult::Ok
+                    ? "Progreso importado. Usa Continuar." : Pokerogue3DS::nativeSaveResultName(result));
+            }
+            else if(command==Pokerogue3DS::FrontendCommand::ExportProgress) {
+                // Export the committed run/profile pair; never save the title/setup preview as a run.
+                const auto result=progress.exportBundle(saveStorage,PokerogueContent::kContentHash,
+                    bundleScratch,sizeof(bundleScratch),profileStaging,PokerogueContent::kSpeciesCount);
+                frontend.feedback(result==Pokerogue3DS::NativeSaveResult::Ok
+                    ? "Exportado: exports/progress.p3progress" : Pokerogue3DS::nativeSaveResultName(result));
             }
             else if(command==Pokerogue3DS::FrontendCommand::NextWindowStyle || command==Pokerogue3DS::FrontendCommand::PreviousWindowStyle) {
                 unsigned next=Pokerogue3DS::kWindowTextures[0].id;
@@ -289,7 +323,7 @@ int main() {
                 // Reuse the explicit run seed; gameplay must not depend on the clock.
                 const uint32_t seed = game.run().seed;
                 if(game.restoreSetup(seed, starterDex)) {
-                    setup.generationFilter=0;setup.typeFilter=nullptr;
+                    setup.generationFilter=0;setup.typeFilter=nullptr;setup.captureFilter=Pokerogue3DS::StarterCaptureFilter::All;
                     player.load(game.scene());
                     titleVisible=false;
                 } else frontend.feedback("No se pudo iniciar la partida.");
@@ -309,8 +343,10 @@ int main() {
             renderer.clear(0xff281f22);
             if (romfsReady) arena.draw(renderer,game.run().biomeId,frameAnimationTimeMs,false);
             setup.drawTop(renderer,game,false,frameAnimationTimeMs);
+            frontend.drawPokedexTop(renderer,game);
+            if(frontend.page()==Pokerogue3DS::FrontendPage::GlobalMenu) renderer.drawRect(0,0,400,240,0x60000000);
             renderer.beginBottom();
-            frontend.draw(renderer,loaded==Pokerogue3DS::NativeSaveResult::Ok ? &restored : nullptr);
+            frontend.draw(renderer,loaded==Pokerogue3DS::NativeSaveResult::Ok ? &restored : nullptr,&game);
             renderer.endFrame();
             gspWaitForVBlank();
             continue;
@@ -430,7 +466,8 @@ int main() {
             else if(rawPressed & KEY_R) {changed=setup.move(game,int(Pokerogue3DS::kStarterGridPageSize));setup.feedback=nullptr;}
             else if(rawPressed & KEY_TOUCH) {
                 touchPosition touch{};hidTouchRead(&touch);
-                if(Pokerogue3DS::kStarterGenerationRect.contains(touch.px,touch.py)) {changed=setup.cycleGeneration(game);setup.feedback=nullptr;}
+                if(Pokerogue3DS::kStarterCaptureFilterRect.contains(touch.px,touch.py)) {setup.feedback=nullptr;changed=setup.cycleCapture(game);}
+                else if(Pokerogue3DS::kStarterGenerationRect.contains(touch.px,touch.py)) {changed=setup.cycleGeneration(game);setup.feedback=nullptr;}
                 else if(Pokerogue3DS::kStarterTypeRect.contains(touch.px,touch.py)) {changed=setup.cycleType(game);setup.feedback=nullptr;}
                 else if(touch.py>=54 && touch.py<162) {
                     const int cell=Pokerogue3DS::starterGridAt(touch.px,touch.py);
@@ -456,7 +493,7 @@ int main() {
                     for(unsigned slot=0;slot<6;++slot) {
                         if(touch.px>=8+slot*50 && touch.px<8+slot*50+46) {
                             if(slot<game.presentation().playerPartyCount) {
-                                setup.generationFilter=0;setup.typeFilter=nullptr;
+                                setup.generationFilter=0;setup.typeFilter=nullptr;setup.captureFilter=Pokerogue3DS::StarterCaptureFilter::All;
                                 changed=game.selectSetupStarter(game.presentation().playerParty[slot].dex);
                                 setup.feedback=nullptr;
                             }
@@ -904,12 +941,12 @@ int main() {
     rewardMenu.clear();
     battleMenu.clear();
     partyMenu.clear();
-    frontend.clear();
+    frontend.clear(&renderer);
     setup.clear();
     battleHud.clear();
     arena.clear();
-    secondEnemySprites.invalidate();
-    pokemonSprites.invalidate();
+    secondEnemySprites.invalidate(&renderer);
+    pokemonSprites.invalidate(&renderer);
 #if defined(POKEROGUE_ENABLE_QUICKJS)
     bridge.fini();
 #endif

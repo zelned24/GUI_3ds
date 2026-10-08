@@ -44,6 +44,15 @@ const tasks = {
   species: ['tools/js/data/PokerogueImporter.js', 'scripts/import_pokerogue_content.mjs', 'scripts/generate_3ds_runtime_content.mjs', 'test/migration_content_tests.js'],
   battle: ['project/include/game/PokemonBattleState.hpp', 'project/src/game/PokemonBattleState.cpp', 'test/battle_tests.js'],
   presentation: ['project/src/main.cpp', 'project/src/runtime/PokemonAtlasPresenter.cpp', 'project/src/gfx/renderer2d.cpp'],
+  nativeFonts: ['scripts/pixel_font.py', 'project/src/gfx/renderer2d.cpp', 'project/include/runtime/NativeTextRaster.hpp', 'test/pixel_font_tests.py', 'test/ui_font_coverage_tests.py'],
+  pokemonAppearances: ['scripts/starter_variant_icons.py', 'test/starter_variant_icon_tests.py', 'scripts/materialize_pokemon_appearance_catalog.py', 'scripts/pokemon_variant_palette.py',
+    'scripts/stage_pokerogue_sprite_assets.mjs', 'scripts/prepare_pokerogue_sprite_catalog.mjs',
+    'scripts/generate_pokemon_appearance_index.mjs', 'project/generated/include/content/PokemonAppearanceAssets.hpp',
+    'project/src/runtime/PokemonAtlasPresenter.cpp', 'test/pokemon_variant_palette_tests.py',
+    'test/pokemon_appearance_index_tests.mjs', 'test/native/pokemon_icon_index_harness.cpp'],
+  frontendMenus: ['project/include/runtime/FrontendMenuPresenter.hpp', 'project/src/main.cpp',
+    'project/include/storage/NativeProgressStore.hpp', 'test/frontend_menu_source_tests.mjs',
+    'test/native/frontend_menu_harness.cpp'],
   save: ['project/src/storage/NativeRunSave.cpp', 'project/src/storage/SdNativeSaveStorage.cpp'],
   update: ['project/src/content/ContentUpdateStore.cpp', 'docs/progress/NATIVE_RUNTIME_CONTENT_PACK_CONTRACT.md']
 };

@@ -17,6 +17,7 @@ using namespace Pokerogue3DS;
 
 // Dummy C2D symbol needed for FrontendMenuPresenter
 void C2D_SpriteSheetFree(C2D_SpriteSheet) {}
+void Renderer2D::retireSpriteSheet(C2D_SpriteSheet) { assert(false && "Navigation test must not retire GPU textures"); }
 
 // ============================================================================
 // Section 1: Mathematical Empirical Simulation of Flee Formula

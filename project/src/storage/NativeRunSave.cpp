@@ -15,7 +15,7 @@
 namespace Pokerogue3DS {
 namespace {
 // Stable envelope marker; saveVersion carries the independently migrated
-// payload schema (currently version 26).
+// payload schema (currently version 27).
 constexpr char kMagic[] = "POKEROGUE-3DS-SAVE 1\n";
 constexpr size_t kDigestLineLength = 72;
 
@@ -410,6 +410,11 @@ bool restoreNativePokemonActorSave(const NativePokemonSave& saved,
     actor.initialTeraType = initialType;
     actor.initialTeraTypeIndex = saved.initialTeraTypeIndex;
     actor.initialTeraTypeResolved = true;
+    if(saved.shinyVariant>2 || (!saved.appearanceResolved && (saved.shiny || saved.shinyVariant)) ||
+        (!saved.shiny && saved.shinyVariant)) return false;
+    actor.appearanceResolved=saved.appearanceResolved;
+    actor.shiny=saved.shiny;
+    actor.shinyVariant=saved.shinyVariant;
     for (uint8_t i = 0; i < 6; ++i) actor.ivs[i] = restored.ivs[i];
     state = restored;
     identity = actor;
@@ -428,6 +433,9 @@ bool captureNativePokemonActorSave(const PokemonBattleState& state,
     saved.abilityIndex = identity.abilityIndex;
     saved.initialTeraTypeIndex = identity.initialTeraTypeIndex;
     saved.initialTeraTypeResolved = identity.initialTeraTypeResolved;
+    saved.appearanceResolved=identity.appearanceResolved;
+    saved.shiny=identity.shiny;
+    saved.shinyVariant=identity.shinyVariant;
     if (identity.initialTeraType && (!resolvePokemonTypeSymbol(identity.initialTeraType) ||
         !copyText(saved.initialTeraType, sizeof(saved.initialTeraType), identity.initialTeraType))) return false;
     PokemonBattleState restored{};
@@ -753,7 +761,7 @@ NativeSaveResult encodeNativePokemonSave(const NativePokemonSave& saved, char* o
     if (!restoreNativePokemonActorSave(saved, state, identity)) return NativeSaveResult::InvalidRecord;
     if (!output) return NativeSaveResult::InvalidFormat;
     Writer writer{output, capacity};
-    writer.text(saved.hasEatenBerry ? "pokemon=d\n" : saved.berryCriticalBoostStages ? "pokemon=c\n" : saved.sturdyTag ? "pokemon=b\n" : saved.confusion.present ? "pokemon=a\n" : saved.status.present ? "pokemon=7\n" : "pokemon=6\n");
+    writer.text(saved.appearanceResolved ? "pokemon=e\n" : saved.hasEatenBerry ? "pokemon=d\n" : saved.berryCriticalBoostStages ? "pokemon=c\n" : saved.sturdyTag ? "pokemon=b\n" : saved.confusion.present ? "pokemon=a\n" : saved.status.present ? "pokemon=7\n" : "pokemon=6\n");
     writer.hex(saved.speciesDex, 4);
     writer.text(saved.formId); writer.character('\n');
     writer.hex(saved.level, 4);
@@ -778,7 +786,7 @@ NativeSaveResult encodeNativePokemonSave(const NativePokemonSave& saved, char* o
     writer.hex(saved.unburdenTag ? 1 : 0, 2);
     writer.hex(state.friendship, 2);
     for (uint8_t slot = 0; slot < 4; ++slot) writer.hex(state.moves[slot].maxPp, 2);
-    const bool extended = saved.sturdyTag || saved.berryCriticalBoostStages || saved.hasEatenBerry;
+    const bool extended = saved.sturdyTag || saved.berryCriticalBoostStages || saved.hasEatenBerry || saved.appearanceResolved;
     if (extended) {
         writeStatus(writer, saved.status);
         writer.hex(saved.confusion.present ? 1 : 0, 1);
@@ -799,8 +807,9 @@ NativeSaveResult encodeNativePokemonSave(const NativePokemonSave& saved, char* o
         writer.hex(saved.status.freezeTurnsRemaining, 8);
     }
     if (extended) writer.hex(saved.sturdyTag ? 1 : 0, 1);
-    if (saved.berryCriticalBoostStages || saved.hasEatenBerry) writer.hex(saved.berryCriticalBoostStages, 1);
-    if (saved.hasEatenBerry) writer.hex(1, 1);
+    if (saved.berryCriticalBoostStages || saved.hasEatenBerry || saved.appearanceResolved) writer.hex(saved.berryCriticalBoostStages, 1);
+    if (saved.hasEatenBerry || saved.appearanceResolved) writer.hex(saved.hasEatenBerry ? 1 : 0, 1);
+    if(saved.appearanceResolved) {writer.hex(saved.shiny ? 1 : 0,1);writer.hex(saved.shinyVariant,1);}
     if (!writer.valid) return NativeSaveResult::TooLarge;
     written = writer.position;
     return NativeSaveResult::Ok;
@@ -812,8 +821,9 @@ NativeSaveResult decodeNativePokemonSave(const char* bytes, size_t length,
     Reader reader{bytes, length};
     NativePokemonSave saved{};
     uint32_t value = 0;
-    if (!reader.literal("pokemon=") || !reader.hex(1, value) || (value < 1 || value > 13))
+    if (!reader.literal("pokemon=") || !reader.hex(1, value) || (value < 1 || value > 14))
         return NativeSaveResult::InvalidFormat;
+    const bool hasAppearance = value >= 14;
     const bool hasEatenBerry = value >= 13;
     const bool hasBerryCriticalBoost = value >= 12;
     const bool hasSurvival = value >= 11;
@@ -920,8 +930,14 @@ NativeSaveResult decodeNativePokemonSave(const char* bytes, size_t length,
         saved.berryCriticalBoostStages = static_cast<uint8_t>(value);
     }
     if (hasEatenBerry) {
-        if (!reader.hex(1, value) || value != 1) return NativeSaveResult::InvalidFormat;
-        saved.hasEatenBerry = true;
+        if (!reader.hex(1, value) || value>1 || (!hasAppearance && value!=1)) return NativeSaveResult::InvalidFormat;
+        saved.hasEatenBerry = value!=0;
+    }
+    if(hasAppearance) {
+        if(!reader.hex(1,value) || value>1) return NativeSaveResult::InvalidFormat;
+        saved.shiny=value!=0;
+        if(!reader.hex(1,value) || value>2 || (!saved.shiny && value)) return NativeSaveResult::InvalidFormat;
+        saved.shinyVariant=static_cast<uint8_t>(value);saved.appearanceResolved=true;
     }
     saved.actorIdentityResolved = saved.initialTeraTypeResolved = true;
     if (reader.position != reader.end) return NativeSaveResult::InvalidFormat;
@@ -999,6 +1015,7 @@ NativeSaveResult validateNativeRunSave(const NativeRunSave& save, const char* ex
             actor.ivsDerivedFromId || actor.pauseEvolutions || actor.maxPpResolved || actor.friendship ||
             actor.friendshipResolved || actor.unburdenTag || actor.berryCriticalBoostStages || actor.hasEatenBerry || actor.actorIdentityResolved || actor.abilityIndex ||
             actor.initialTeraType[0] || actor.initialTeraTypeIndex || actor.initialTeraTypeResolved ||
+            actor.appearanceResolved || actor.shiny || actor.shinyVariant ||
             save.secondEnemyBoss.segmentCount || save.secondEnemyBoss.segmentIndex ||
             save.secondEnemyBoss.classicFinalBossFirstPhase || save.secondEnemyBoss.hasTrainer)
             return NativeSaveResult::InvalidRecord;
@@ -1093,6 +1110,18 @@ NativeSaveResult validateNativeRunSave(const NativeRunSave& save, const char* ex
         !sameStatus(save.playerStatus, save.playerParty[save.activePlayerMember].status)) return NativeSaveResult::InvalidRecord;
     if (save.trainerPartyCount && save.activeTrainerMember < save.trainerPartyCount &&
         !sameStatus(save.enemyStatus, save.trainerParty[save.activeTrainerMember].status)) return NativeSaveResult::InvalidRecord;
+    if (!nativeAppearanceSaveValid(save.enemyAppearance) ||
+        (save.stage == NativeSaveStage::RunSetup && save.enemyAppearance.resolved)) return NativeSaveResult::InvalidRecord;
+    for (uint8_t i = 0; i < 6; ++i) {
+        const auto& appearance = save.trainerParty[i].appearance;
+        if (!nativeAppearanceSaveValid(appearance) ||
+            (i >= save.trainerPartyCount && appearance.resolved)) return NativeSaveResult::InvalidRecord;
+    }
+    if (save.trainerPartyCount && save.activeTrainerMember < save.trainerPartyCount) {
+        const auto& appearance = save.trainerParty[save.activeTrainerMember].appearance;
+        if (appearance.resolved != save.enemyAppearance.resolved || appearance.shiny != save.enemyAppearance.shiny ||
+            appearance.variant != save.enemyAppearance.variant) return NativeSaveResult::InvalidRecord;
+    }
     if (save.saveVersion != kNativeSaveVersion) return NativeSaveResult::UnsupportedVersion;
     if (save.runtimeVersion != kNativeSaveRuntimeVersion) return NativeSaveResult::IncompatibleRuntime;
     const PokemonTrickRoomState room{save.trickRoomTurnsLeft, save.trickRoomMaxDuration,
@@ -1507,6 +1536,14 @@ NativeSaveResult encodeNativeRunSave(const NativeRunSave& save, char* output, si
         }
     }
 
+    writer.text("enemyAppearances=");
+    const auto writeAppearance = [&](const NativeAppearanceSave& appearance) {
+        writer.hex(appearance.resolved ? 1 : 0, 1);
+        writer.hex(appearance.shiny ? 1 : 0, 1);
+        writer.hex(appearance.variant, 1);
+    };
+    writeAppearance(save.enemyAppearance);
+    for (const auto& member : save.trainerParty) writeAppearance(member.appearance);
 
     if (!writer.valid) return NativeSaveResult::TooLarge;
     char hash[65];
@@ -1526,7 +1563,7 @@ NativeSaveResult decodeNativeRunSave(const char* bytes, size_t length, const cha
     auto status = inspectEnvelope(bytes, length, value, payloadStart);
     if (status != NativeSaveResult::Ok) return status;
     if (value.saveVersion > kNativeSaveVersion) return NativeSaveResult::UnsupportedVersion;
-    if (value.saveVersion != 1 && value.saveVersion != 2 && value.saveVersion != 3 && value.saveVersion != 4 && value.saveVersion != 5 && value.saveVersion != 6 && value.saveVersion != 7 && value.saveVersion != 8 && value.saveVersion != 9 && value.saveVersion != 10 && value.saveVersion != 11 && value.saveVersion != 12 && value.saveVersion != 13 && value.saveVersion != 14 && value.saveVersion != 15 && value.saveVersion != 16 && value.saveVersion != 17 && value.saveVersion != 18 && value.saveVersion != 19 && value.saveVersion != 20 && value.saveVersion != 21 && value.saveVersion != 22 && value.saveVersion != 23 && value.saveVersion != 24 && value.saveVersion != 25 &&
+    if (value.saveVersion != 1 && value.saveVersion != 2 && value.saveVersion != 3 && value.saveVersion != 4 && value.saveVersion != 5 && value.saveVersion != 6 && value.saveVersion != 7 && value.saveVersion != 8 && value.saveVersion != 9 && value.saveVersion != 10 && value.saveVersion != 11 && value.saveVersion != 12 && value.saveVersion != 13 && value.saveVersion != 14 && value.saveVersion != 15 && value.saveVersion != 16 && value.saveVersion != 17 && value.saveVersion != 18 && value.saveVersion != 19 && value.saveVersion != 20 && value.saveVersion != 21 && value.saveVersion != 22 && value.saveVersion != 23 && value.saveVersion != 24 && value.saveVersion != 25 && value.saveVersion != 26 &&
         value.saveVersion != kNativeSaveVersion) return NativeSaveResult::UnsupportedVersion;
     const bool legacySetup = value.saveVersion == 1 && value.runtimeVersion == 1;
     const bool legacyBattle = value.saveVersion == 2 && value.runtimeVersion == 2;
@@ -1553,9 +1590,10 @@ NativeSaveResult decodeNativeRunSave(const char* bytes, size_t length, const cha
     const bool legacyPersistent = value.saveVersion == 23 && value.runtimeVersion == 23;
     const bool legacyCriticalTags = value.saveVersion == 24 && value.runtimeVersion == 24;
     const bool legacyBerryFlags = value.saveVersion == 25 && value.runtimeVersion == 25;
+    const bool legacyBerryHistories = value.saveVersion == 26 && value.runtimeVersion == 26;
     const bool currentPayload = value.saveVersion == kNativeSaveVersion &&
         value.runtimeVersion == kNativeSaveRuntimeVersion;
-    if (!currentPayload && !legacySetup && !legacyBattle && !legacyProgress && !legacyTrainer && !legacySwitch && !legacyStages && !legacyWeather && !legacyRoom && !legacyInventory && !legacyParty && !legacyHeld && !legacyProfile && !legacyParticipants && !legacySetupParty && !legacyStatus && !legacyConfusion && !legacyConfusionSource && !legacyConfusionActor && !legacySurvival && !legacyBoss && !legacyGlobalRng && !legacyDoubleField && !legacyPersistent && !legacyCriticalTags && !legacyBerryFlags)
+    if (!currentPayload && !legacySetup && !legacyBattle && !legacyProgress && !legacyTrainer && !legacySwitch && !legacyStages && !legacyWeather && !legacyRoom && !legacyInventory && !legacyParty && !legacyHeld && !legacyProfile && !legacyParticipants && !legacySetupParty && !legacyStatus && !legacyConfusion && !legacyConfusionSource && !legacyConfusionActor && !legacySurvival && !legacyBoss && !legacyGlobalRng && !legacyDoubleField && !legacyPersistent && !legacyCriticalTags && !legacyBerryFlags && !legacyBerryHistories)
         return NativeSaveResult::IncompatibleRuntime;
     if (!isHash(expectedContentHash)) return NativeSaveResult::InvalidFormat;
     if (!equal(value.contentHash, expectedContentHash)) return NativeSaveResult::ContentMismatch;
@@ -1891,10 +1929,25 @@ NativeSaveResult decodeNativeRunSave(const char* bytes, size_t length, const cha
                 }
             }
         }
+        if (value.saveVersion >= 27) {
+            const auto readAppearance = [&](NativeAppearanceSave& appearance) {
+                if (!reader.hex(1, parsed) || parsed > 1) return false;
+                appearance.resolved = parsed != 0;
+                if (!reader.hex(1, parsed) || parsed > 1) return false;
+                appearance.shiny = parsed != 0;
+                if (!reader.hex(1, parsed) || parsed > 2) return false;
+                appearance.variant = static_cast<uint8_t>(parsed);
+                return nativeAppearanceSaveValid(appearance);
+            };
+            if (!reader.literal("enemyAppearances=") || !readAppearance(value.enemyAppearance))
+                return NativeSaveResult::InvalidFormat;
+            for (auto& member : value.trainerParty)
+                if (!readAppearance(member.appearance)) return NativeSaveResult::InvalidFormat;
+        }
         // All version-specific fields, including confusion source metadata, must be
         // consumed before checking for trailing or missing payload bytes.
         if (reader.position != reader.end) return NativeSaveResult::InvalidFormat;
-        if (legacyBattle || legacyProgress || legacyTrainer || legacySwitch || legacyStages || legacyWeather || legacyRoom || legacyInventory || legacyParty || legacyHeld || legacyProfile || legacyParticipants || legacySetupParty || legacyStatus || legacyConfusion || legacyConfusionSource || legacyConfusionActor || legacySurvival || legacyBoss || legacyGlobalRng || legacyDoubleField || legacyPersistent || legacyCriticalTags || legacyBerryFlags) {
+        if (legacyBattle || legacyProgress || legacyTrainer || legacySwitch || legacyStages || legacyWeather || legacyRoom || legacyInventory || legacyParty || legacyHeld || legacyProfile || legacyParticipants || legacySetupParty || legacyStatus || legacyConfusion || legacyConfusionSource || legacyConfusionActor || legacySurvival || legacyBoss || legacyGlobalRng || legacyDoubleField || legacyPersistent || legacyCriticalTags || legacyBerryFlags || legacyBerryHistories) {
             value.saveVersion = kNativeSaveVersion;
             value.runtimeVersion = kNativeSaveRuntimeVersion;
         }

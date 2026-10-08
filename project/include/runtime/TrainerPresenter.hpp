@@ -18,10 +18,10 @@ public:
     TrainerPresenter& operator=(const TrainerPresenter&) = delete;
     ~TrainerPresenter() { clear(); }
 
-    void clear();
-    bool load(const char* key);
-    bool loadTrainer(uint16_t trainerTypeId, bool female = false);
-    bool loadPlayerBack(bool female = false);
+    void clear(Renderer2D* renderer = nullptr);
+    bool load(const char* key, Renderer2D* renderer = nullptr);
+    bool loadTrainer(uint16_t trainerTypeId, bool female = false, Renderer2D* renderer = nullptr);
+    bool loadPlayerBack(bool female = false, Renderer2D* renderer = nullptr);
 
     bool isLoaded() const { return m_sheet != nullptr; }
     const char* currentKey() const { return m_currentKey; }

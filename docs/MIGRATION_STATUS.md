@@ -1,5 +1,15 @@
 # Estado de PokéRogue para Old 3DS XL
 
+## Avance local de presentación y apariencias (sin validación nativa)
+
+- Catálogo normal convertido: 3.112 atlas / 3.129 páginas `.t3x`; 210 identidades femeninas normales indexadas. Los 61.629.673 bytes corresponden al catálogo en disco, no a memoria residente.
+- Catálogo shiny: materialización completa pendiente; el proceso activo conserva fuente pinned y hashes. Bouffalant aplica el fallback negro de `rgbHexToRgba` upstream.
+- Selector: indicadores shiny originales, perfiles vistos/capturados/desconocidos, filtros; títulos/submenús/Pokédex y exportación/importación con confirmación tienen rutas C++ escritas.
+- Fuentes: cobertura de glifos especiales, texto UTF-8 y rasters físicos comprobados. Cache de iconos y paginación reducen recorridos; rendimiento de hardware no medido.
+- Gates permitidos: guards JS de menú e índice de apariencias, metadata de género pinned; tests Python de cobertura de glifos, indicadores y paletas: PASS. `git diff --check`: PASS.
+- Compilación, suite nativa, Azahar y hardware aplazados por instrucción del usuario. No considerar completo Classic, todos los submenús ni la migración.
+
+
 ## Revisión del avance local
 
 El avance se publica como trabajo en curso. Classic completo y la fidelidad visual final no están verificados.
@@ -8,6 +18,24 @@ El avance se publica como trabajo en curso. Classic completo y la fidelidad visu
 2. Assets: `056a1f408f26a3be4fef243f7462cb43608c7928`.
 3. Locales: `23aea1cb0da5a0b15b836f3c243791591cc42303`.
 4. Hash canónico: `b1b5821edb39a088e641682ae5f5eae9567eef03ffbc2aa3a257c148d0106edf`.
+
+## Trabajo actual sin compilación
+
+La instrucción más reciente del usuario aplaza compilaciones y Azahar hasta nueva autorización. Los resultados históricos siguientes no validan estos cambios nuevos.
+
+1. Selector: catálogo elegible con estados capturado/visto/desconocido, filtro de captura y costes importados; registro de observación de encuentros y evolución conectado al perfil. Validación nativa pendiente.
+2. Perfil P3CANDY9 conserva atributos de apariencia observada/capturada y mantiene desconocidos en perfiles antiguos. Actor `pokemon=e` conserva apariencia explícita.
+3. Partida v27 conserva apariencia del enemigo principal y equipo de entrenador; v26 migra sin inventar shiny. El equipo jugador exige snapshot si su apariencia está resuelta. Casos de codec/migración escritos, sin ejecución.
+4. Resolver de apariencia inicial sigue `GameData.getSpeciesDefaultDexAttrProps` del pin: shiny capturado y variante más alta. Falta conectar generación, preferencias de selección y assets shiny completos.
+5. Fuentes: la conversión actual rasteriza el TTF pinned en monocromo a tamaños nativos; reemplaza el antiguo umbral A4 que borraba trazos débiles. Comparación visual final pendiente.
+
+6. Reemplazo e invalidación de atlas Pokémon/trainers retiran texturas hasta SYNCDRAW; un trainer sin mapping limpia el anterior. Guard estático JS PASS, sin validación nativa/GPU.
+
+7. Materializador de variantes usa `_masterlist.json`, PNG/atlas y paletas de la revisión pinned, con provenance del shader y datos; cuatro pruebas Python PASS. Salida marcada `SOURCE_MATERIALIZED_NOT_YET_T3X`; falta staging, conversión e integración de runtime.
+
+8. Submenú global C++ con nueve etiquetas originales pinned, navegación X/táctil/D-pad, panel inferior y overlay superior. Ajustes conectado; servicios restantes aún pendientes y explícitos. Guard estático JS PASS; casos C++ y comparación visual pendientes.
+
+9. Pokédex básica conectada al submenú y perfil real: catálogo canónico, iconos 1×, estados capturado/visto/desconocido y páginas. Guard estático JS PASS; navegación C++ escrita sin ejecución. Filtros de generación y descubrimiento conectados a datos/perfil, información conocida de tipos/estadísticas base en pantalla superior. Filtros restantes, detalles completos, formas/shiny y paridad visual pendientes.
 
 ## Implementación presente
 
@@ -38,7 +66,7 @@ El avance se publica como trabajo en curso. Classic completo y la fidelidad visu
 
 ## Nitidez de presentación
 
-1. Fuente convertida: alpha A4 binario (umbral 8/15), sin alterar métricas ni mapeo de glifos; 3267 bytes de alpha intermedio corregidos en el asset actual.
+1. El método inicial de umbral A4 8/15 borraba trazos de algunos glifos. Fue sustituido por rasterización monocroma desde el TTF pinned, preservando avances y línea base; el ancho de bitmap se amplía cuando el hinting lo requiere.
 2. Posiciones de texto ajustadas a píxeles enteros; se mantiene NEAREST para texturas y fuente.
 3. Azahar local tenía xBRZ activo y modo New 3DS. `scripts/prepare_azahar_preview.py` prepara un perfil aislado Old 3DS, resolución nativa, sin xBRZ y con muestreo nearest/display sin filtro; no modifica la configuración global ni inicia/cierra procesos.
 4. `python test/pixel_font_tests.py`: 3 PASS (alpha/métricas/determinismo, rechazo de corrupción, perfil aislado). Compilación ARM PASS; comprobación visual conjunta pendiente.
@@ -285,3 +313,85 @@ El avance se publica como trabajo en curso. Classic completo y la fidelidad visu
 2. Vista muestra solo desbloqueados. Filtro de generación Y/táctil recorre generaciones presentes y vuelve a Todas. Nueva partida y selección desde el equipo retiran el filtro anterior. Otros filtros upstream aún pendientes.
 3. Pantalla inferior: cabecera/coste, selector generación, 18 iconos, seis slots, botones Formas/Jugar/Volver y pie con fuente nativa de 10 px. Grid/footer/filter comparten rectángulos de dibujo y input. Overload starterUnlocked(Species) reutiliza la política evitando búsquedas por dex redundantes; no cambia desbloqueos.
 4. Suite completa 38/38 PASS y nueve suites enfocadas posteriores PASS; casos catálogo vacío, todos los gen IDs uint8, recorrido/cierre del filtro, equivalencia de overload y 76800 píxeles de táctil. Native-parity 126/126, compilación ARM/3DSX y diff-check PASS. Logs build/starter-filter-*. Capturas y presupuesto de rendimiento pendientes; EXP por tramos no implementada en este bloque.
+
+### Submenú global: destinos explícitos (sin compilación)
+
+1. Las nueve opciones conservan las etiquetas de locales pinned y comparten geometría de cursor/táctil. Ajustes y Pokédex abren sus vistas existentes.
+2. Logros, estadísticas, huevos, gacha, gestión de datos, comunidad y cierre de sesión abren una pantalla que explica la integración pendiente. B regresa al submenú. Estas pantallas no fabrican contadores, huevos ni sesiones y no modifican el progreso.
+3. Casos nativos de navegación añadidos, pendientes de ejecución. Solo guards estáticos JS y revisión de diff autorizados en este bloque; no se compiló ni abrió Azahar.
+
+### Assets de apariencias: preparación e índice (en curso)
+
+1. La preparación completa incluye `--appearances`; evita perder atlas derivados al regenerar el inventario. El staging verifica fuentes pinned y distingue SHA original de la imagen usada para convertir.
+2. `generate_pokemon_appearance_index.mjs` genera referencias C++ solo tras verificar metadatos y cada página física convertida. Rechaza identidades duplicadas o incoherentes. Pendiente ejecutar tras finalizar la conversión activa; no implica catálogo shiny completo ni selección/runtime conectados.
+3. Limpieza del cursor del menú utiliza el retiro diferido del renderer cuando se proporciona. Guard estático PASS; validación GPU pendiente de autorización para compilar y usar Azahar.
+
+4. Índice de apariencias: pruebas JS aisladas PASS para determinismo, revisión pinned, identidad, rutas, SHA, duplicados y catálogo vacío. Se exige formato P3ATLAS1/2, número de páginas referenciadas y rutas idénticas a las construidas por el renderer; se rechazan páginas fuera de su capacidad actual. Estas pruebas no compilan C++ ni prueban la carga GPU. Conversión real aún activa.
+
+5. Pruebas del índice ampliadas: P3ATLAS2 con rutas `-pN`, rechazo de rutas de hoja no paginada, metadatos truncados y página fuera de las cuatro admitidas por PokemonAtlasPresenter. PASS en JS; conexión de shiny al presenter pendiente, incluidas diferencias por género/formas de `PokemonSpecies.getBaseSpriteKey` upstream (no inferirlas de ser hembra).
+
+### Elegibilidad visual por género (importer)
+
+1. Fuente pinned: `src/data/pokemon-species.ts`, `PokemonSpecies.getBaseSpriteKey`, usa genderDiffs y excluye ciertas formas de mega/primal/gigantamax. No basta con que el actor sea hembra.
+2. Importer extrae genderDiffs del constructor de especie; CanonicalModels conserva booleano o null para desconocido. No confundirlo con declaraciones posteriores de formas. Declaraciones no literales fallan claramente.
+3. Test JS con generation-01.ts y SpeciesId del commit pinned: Bulbasaur false, Venusaur/Pikachu true; ausencia desconocida y valores inválidos rechazados. PASS. Catálogo de producción aún no regenerado, hash canónico sin cambio; consumo C++ y overrides por forma pendientes.
+
+### Resultado de conversión de assets (sin build del programa)
+
+1. Proceso de preparación terminó exit 0: 2905 atlas convertidos y 2921 páginas `.t3x`; 55255765 bytes de archivos de textura en total (no memoria simultánea). Inventario SHA-256 `8f42de9f7806a3b5ad9c75913bb3115bd2f31bd4281fc1f94e299ca5c1b7f44e`.
+2. Índice generado con tres apariencias materializadas reales: Bulbasaur front variante 1, back variante 2 e Ivysaur front variante 1. Comprobados hashes de metadatos/páginas físicas. Regeneración byte idéntica: header SHA-256 `3c995e3490d2315c12f714f3005a06b296616a26db5e34cda7c247e3a0585f44`. No sustituye el catálogo shiny completo.
+3. Reimportación canónica activa para publicar genderDiffs y generar tabla C++ separada que conserva el ABI Species existente. Conexión de apariencias a renderer y validación nativa/GPU aún pendientes. No se compiló el programa ni abrió Azahar.
+
+### Metadata visual de formas
+
+1. Importer de PokemonForm conserva genderDiffs como booleano/null mediante el mismo parser validado que especies. El proceso de importación actualmente activo cargó el módulo anterior: publicará especies, pero requiere importación posterior para esta nueva metadata de formas.
+2. Prueba inicial que suponía todas las declaraciones falló. Inspección de los 609 fragmentos upstream demuestra 201 sin campo, incluidos charizard:mega_x/mega_y. Expectativa corregida por evidencia para exigir null al faltar y booleano al declararse; la ausencia se distingue de valor inválido.
+3. Exclusiones visuales de getBaseSpriteKey y consumo C++ por forma siguen pendientes.
+
+### Resultado de reimportación de metadata de especies
+
+1. Importación terminó exit 0; dos ejecuciones pinned produjeron hash idéntico `0f3f4fc91c6b458f14b1b4f85c2d60923d24d1e1bfcd4155af3ddf08eff7d140`. Generada tabla SpeciesGenderVisual separada; catálogo conserva 1084 especies/609 formas. No compilación C++.
+2. Cambios posteriores (metadata de formas y exclusiones visuales) aún no publicados: el siguiente import incorporará pokemon-species.ts como fuente pinned, preservará SHA/símbolo getBaseSpriteKey y resolverá enum keys. Prueba JS del parser de exclusiones PASS. Se detectó en revisión una dependencia de inicialización de metadata y se movió la creación de reglas detrás de ese helper.
+3. El hash canónico cambió al añadir metadata. Compatibilidad de saves/paquetes vinculados al hash anterior requiere revisar la política de actualización; no se declara migración de esos datos verificada.
+
+### Conexión de apariencias al presenter (sin compilar)
+
+1. draw/drawAnchored resuelven facing y apariencia del actor; índices físicos shiny se consultan por identidad exacta. Metadata de género/formas/exclusiones se publica mediante el import activo (62 fuentes pinned), aún pendiente de terminar.
+2. Apariencia legacy sin resolver conserva la ruta existente. Identidad inválida o asset faltante de una apariencia conocida produce diagnóstico NOT_YET_SUPPORTED_POKEMON_APPEARANCE, sin dibujar un normal/male como sustituto. Catálogo femenino normal y shiny completo siguen pendientes.
+3. Guard JS de conexiones PASS; casos de lookup exacto/variantes inválidas añadidos al harness nativo y no ejecutados. Generador preserva ausencia del campo en canonical como null; en runtime reproduce el valor falsy del constructor upstream para formas que omiten genderDiffs. No compilar ni abrir Azahar hasta autorización.
+
+### Materialización completa de apariencias (activa)
+
+1. materialize_pokemon_appearance_catalog.py recorre árbol/masterlist del commit pinned; determina 7570 identidades front/back, formas, femenino y variantes declaradas. No usa un catálogo limitado a las especies de ejemplo.
+2. Reutiliza materialize/apply_palette. Reporte catalog-report.json guarda hashes, materializados, MISSING_IN_PINNED_UPSTREAM, INVALID_IMPORT y NOT_YET_SUPPORTED_BY_IMPORTER por separado; un error git sobre un path existente permanece fatal. Sin timestamp.
+3. Preparación completa ejecuta materialización antes del staging; pruebas de enumeración determinista/formas/género/variantes añadidas. Cinco tests Python PASS. Proceso activo; conversión `.t3x` ampliada e índice/runtime para todo el catálogo pendientes. No compilar programa ni abrir Azahar.
+
+### Reimportación visual completa de metadata (terminada)
+
+1. Import de 62 fuentes terminó exit 0. Dos imports iguales: hash canónico `c797658f2c13c494bd83eeb1b6ea8177e9c25b73d09abe5d1c653b7655dadf2b`. Verificados 1084 registros species.genderDiffs, 609 forms.genderDiffs y 10 exclusiones getBaseSpriteKey con provenance real.
+2. Regeneración en build/determinism/gender-runtime-content.hpp produjo bytes idénticos al header de producción: SHA `843be89458a9d82e8be128030fb5158f16daff5d57f0a21f6190493851cea12d`. No se compiló C++. Pruebas JS de metadata de género y exclusiones PASS; diff-check PASS.
+3. Materialización de 7570 apariencias continúa activa. Las tablas C++ y consulta del presenter están conectadas en código; todavía falta validar ejecución nativa/GPU, completar assets ampliados y selección. Compatibilidad de progreso previo vinculado a hashes antiguos sigue sin verificarse.
+
+### Apariencia predeterminada de starters (sin compilar)
+
+1. resolveStarterFromDex aplica nativeStarterDefaultAppearance cuando el perfil tiene caughtAppearanceAttr; genera appearanceResolved/shiny/variant del actor desde metadata capturada, sin consumir RNG. Legacy sin datos queda desconocido; datos declarados inválidos fallan.
+2. Guard JS PASS. Casos nativos normal, shiny epic y legacy añadidos, comparando PID/Tera para impedir sorteos extra; no ejecutados por prohibición de compilar. Selección manual de variantes y normal/female assets completos pendientes.
+3. Materializador completo continúa en proceso; no se afirma cobertura runtime completa ni validación visual.
+
+### Auditoría de fuentes y medios físicos (sin compilación)
+
+1. Renderer mantiene raster nativo entero, GPU_NEAREST, posiciones redondeadas y origen de tinta; inspección de drawText/drawTextWrapped/drawTextFitted no encontró un escalado fraccionario añadido. No se infiere que todos los layouts sean correctos.
+2. pixel_font_tests.py: 12 PASS. verify_presentation_media.py: PASS, incluyendo cuatro fuentes con alpha binario/métricas/hashes físicos, cinco ventanas, 20 tipos y 17 hojas HUD, items/trainers/cinemática. No compila C++ ni lanza Azahar.
+3. Comparación visual del texto y render en dispositivo pendiente. La materialización de apariencias continúa activa; los checkpoints consultados todavía no registraban faltantes ni unsupported, pero el catálogo aún no terminó.
+
+### Resolver heredado: eliminación de verificación ficticia
+
+1. PokemonSpriteResolver contenía seis ejemplos con hashes/dimensiones inventados, incluido SHA de una fixture, devueltos como exists:true. Retirados; el registro inicial queda vacío.
+2. Registro requiere paths/hashes/dimensiones explícitos; no fabrica defaults. TEST_FIXTURE y physicalVerified:true del llamador fallan claramente; metadata registrada queda UNVERIFIED. Guard JS PASS y diff-check PASS.
+3. No está conectado al índice físico real. Sus consumidores legacy (Adapter, AssetResolver, exportadores) aún contienen fallbacks que deben auditarse; el presenter C++ usa las tablas canónicas/índice separado ya documentados. No se ejecutó la suite completa ni compiló.
+
+### Referencias de sprites desconocidas (corrección de modelo/adapter)
+
+1. CanonicalModels conserva atlasPath/icon/atlas/frame y capacidades shiny/género/variantes como null cuando no se importaron. PokerogueAdapter elimina rutas sintetizadas y frameIndex cero; resolveSprite sin binding físico devuelve estado explícito NOT_YET_SUPPORTED_BY_JS_ASSET_BINDING.
+2. Metadata suministrada explícitamente se conserva, incluido hasShiny:false. Guard JS PASS; diff-check PASS. Reimportación activa para publicar este cambio en el catálogo físico, sin compilar el programa.
+3. Otros consumidores del resolver heredado y su conexión al índice físico siguen pendientes. El catálogo de 7570 apariencias sigue materializándose en otro proceso confirmado activo.

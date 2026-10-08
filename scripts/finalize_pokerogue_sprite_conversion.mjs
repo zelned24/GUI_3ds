@@ -85,7 +85,8 @@ for (const source of staged.assets) {
     manifestPath: source.manifestPath, manifestSha256: source.manifestSha256,
     referencedImage: source.referencedImage ?? null,
     imageReferenceOverridden: source.imageReferenceOverridden === true,
-    frameCount: source.frameCount, metadataPath, metadataSha256, textures });
+    frameCount: source.frameCount, metadataPath, metadataSha256, textures,
+    ...(source.appearance ? {appearance:source.appearance} : {}) });
   ++output.atlasCount;
 }
 if (output.atlasCount !== staged.staged || output.atlasCount !== normal.total)

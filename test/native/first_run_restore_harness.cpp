@@ -3347,6 +3347,29 @@ static int checkPlayerPartyManagementAndSwitching() {
     if (!freshProfileGame.initializeFreshStarterProfile(captureFriendshipPolicy) ||
         !freshProfileGame.starterProfileReady() ||
         freshProfileGame.initializeFreshStarterProfile(captureFriendshipPolicy)) return 613;
+    {
+        // The real profile controls starter appearance, without extra PID/Tera draws.
+        if(!freshProfileGame.starterProfileCount()) return 920;
+        NativeStarterCandyRecord appearanceRecord=freshProfileGame.starterProfileRecords()[0];
+        const uint16_t appearanceDex=appearanceRecord.speciesDex;
+        FirstRunRuntime normalAppearance(1),epicAppearance(1),legacyAppearance(1);
+        if(!normalAppearance.restoreStarterCandyProfile(&appearanceRecord,1,0,captureFriendshipPolicy) ||
+           !normalAppearance.restoreStarterTeamSetup(1,&appearanceDex,1)) return 921;
+        const auto& normal=normalAppearance.presentation().player.actor;
+        if(!normal.appearanceResolved || normal.shiny || normal.shinyVariant) return 922;
+        appearanceRecord.caughtAppearanceAttr=83u; // Owned normal, shiny, default and epic bits.
+        appearanceRecord.observedAppearanceAttr=83u;
+        if(!epicAppearance.restoreStarterCandyProfile(&appearanceRecord,1,0,captureFriendshipPolicy) ||
+           !epicAppearance.restoreStarterTeamSetup(1,&appearanceDex,1)) return 923;
+        const auto& epic=epicAppearance.presentation().player.actor;
+        if(!epic.appearanceResolved || !epic.shiny || epic.shinyVariant!=2 ||
+           epic.pokemonId!=normal.pokemonId || epic.initialTeraTypeIndex!=normal.initialTeraTypeIndex) return 924;
+        appearanceRecord.caughtAppearanceAttr=0;
+        if(!legacyAppearance.restoreStarterCandyProfile(&appearanceRecord,1,0,captureFriendshipPolicy) ||
+           !legacyAppearance.restoreStarterTeamSetup(1,&appearanceDex,1)) return 925;
+        const auto& legacy=legacyAppearance.presentation().player.actor;
+        if(legacy.appearanceResolved || legacy.shiny || legacy.shinyVariant || legacy.pokemonId!=normal.pokemonId) return 926;
+    }
     uint32_t expectedFreshCaught = 0;
     for (const auto& species : PokerogueContent::kSpecies) {
         if (species.freshProfileStarter) {
@@ -3355,6 +3378,14 @@ static int checkPlayerPartyManagementAndSwitching() {
         }
     }
     if (!expectedFreshCaught || freshProfileGame.caughtSpeciesCount() != expectedFreshCaught) return 615;
+    if(freshProfileGame.starterProgress(0) || freshProfileGame.starterProgress(65535)) return 911;
+    for(const auto& definition:PokerogueContent::kSpecies) {
+        const NativeStarterCandyRecord* expected=nullptr;
+        for(size_t i=0;i<freshProfileGame.starterProfileCount();++i)
+            if(freshProfileGame.starterProfileRecords()[i].speciesDex==definition.dex) expected=&freshProfileGame.starterProfileRecords()[i];
+        if(freshProfileGame.starterProgress(definition.dex)!=expected) return 912;
+    }
+
     for (size_t i = 0; i < freshProfileGame.starterProfileCount(); ++i) {
         const auto& entry = freshProfileGame.starterProfileRecords()[i];
         const auto* species = PokerogueContent::findSpeciesByDex(entry.speciesDex);
@@ -3371,6 +3402,39 @@ static int checkPlayerPartyManagementAndSwitching() {
         const uint32_t mergedNatures = merged.natureAttr;
         if (!seedNativeFreshStarterDexMetadata(merged) || merged.dexIvs[0] != 31 ||
             merged.abilityAttr != 5 || merged.natureAttr != mergedNatures) return 675;
+    }
+
+    {
+        FirstRunRuntime observedGame(1);
+        if(!observedGame.initializeFreshStarterProfile(captureFriendshipPolicy)) return 901;
+        const auto caughtBefore=observedGame.caughtSpeciesCount();
+        const auto enemyDex=observedGame.presentation().enemy.dex;
+        if(!observedGame.startRun()) return 902;
+        uint64_t form=0;
+        if(pokemonObservedDexFormAttr(enemyDex,observedGame.presentation().enemy.actor,form)!=PokemonObservedFormResult::Ok) return 903;
+        const NativeStarterCandyRecord* seen=nullptr;
+        for(size_t i=0;i<observedGame.starterProfileCount();++i)
+            if(observedGame.starterProfileRecords()[i].speciesDex==enemyDex) seen=&observedGame.starterProfileRecords()[i];
+        if(!seen || !(seen->observedFormAttr & form) || observedGame.caughtSpeciesCount()!=caughtBefore) return 904;
+        const auto* species=PokerogueContent::findSpeciesByDex(enemyDex);
+        if(!species || (!species->freshProfileStarter && (seen->caught || seen->candyCount || seen->unlockedFormAttr || seen->abilityAttr))) return 905;
+        static ProgressMemoryStorage seenRunDisk,seenProfileDisk;
+        static char seenScratch[2*kStarterCandyProfileMaxBytes]{};
+        static NativeStarterCandyRecord seenStaging[PokerogueContent::kSpeciesCount]{};
+        NativeRunSaveStore seenRuns(seenRunDisk);
+        NativeStarterCandyStore seenProfiles(seenProfileDisk,seenScratch,sizeof(seenScratch));
+        NativeProgressStore seenStore(seenRuns,seenProfiles);
+        if(observedGame.saveNativeProgress(seenStore)!=NativeSaveResult::Ok) return 906;
+        FirstRunRuntime seenReloaded(2);
+        if(seenReloaded.loadNativeProgress(seenRuns,seenProfiles,seenStaging,
+                PokerogueContent::kSpeciesCount,captureFriendshipPolicy)!=NativeSaveResult::Ok) return 907;
+        const NativeStarterCandyRecord* restoredSeen=nullptr;
+        for(size_t i=0;i<seenReloaded.starterProfileCount();++i)
+            if(seenReloaded.starterProfileRecords()[i].speciesDex==enemyDex) restoredSeen=&seenReloaded.starterProfileRecords()[i];
+        if(!restoredSeen || restoredSeen->observedFormAttr!=seen->observedFormAttr ||
+            restoredSeen->caught!=seen->caught || restoredSeen->candyCount!=seen->candyCount ||
+            restoredSeen->unlockedFormAttr!=seen->unlockedFormAttr || seenReloaded.caughtSpeciesCount()!=caughtBefore) return 908;
+
     }
 
     if (freshProfileGame.presentationStage() != NativeSaveStage::RunSetup ||
@@ -4046,6 +4110,11 @@ static int checkLevelUpMoveLearningAndEvolution() {
     evolutionIdentity.initialTeraTypeResolved = true;
     for (uint8_t i = 0; i < 6; ++i) evolutionIdentity.ivs[i] = bulbaState.ivs[i];
     if (!applySpeciesEvolution(1, "ivysaur", bulbaState, evoRes, &evoFb, &evolutionIdentity)) return 195;
+    uint64_t evolvedObservedForm=0;
+    if(pokemonObservedDexFormAttr(evoRes.newDex,evolutionIdentity,evolvedObservedForm)!=PokemonObservedFormResult::Ok || !evolvedObservedForm) return 909;
+    uint64_t mismatchedObservedForm=0;
+    if(evolutionIdentity.formId && pokemonObservedDexFormAttr(1,evolutionIdentity,mismatchedObservedForm)==PokemonObservedFormResult::Ok) return 910;
+
     if ((evolutionIdentity.formId != bulbaState.formId &&
             (!evolutionIdentity.formId || !bulbaState.formId || std::strcmp(evolutionIdentity.formId, bulbaState.formId))) ||
         evolutionIdentity.abilityIndex != 0) return 298;

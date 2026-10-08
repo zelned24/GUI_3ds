@@ -94,6 +94,22 @@ static int checkImplicitBaseFormCodec() {
     size_t length = 0;
     if (encodeNativePokemonSave(saved, bytes, sizeof(bytes), length) != NativeSaveResult::Ok ||
         decodeNativePokemonSave(bytes, length, decoded) != NativeSaveResult::Ok) return 11804;
+    if(decoded.appearanceResolved || decoded.shiny || decoded.shinyVariant) return 11820;
+    auto appearanceSaved=saved;appearanceSaved.appearanceResolved=true;appearanceSaved.shiny=true;
+    for(uint8_t variant=0;variant<3;++variant) {
+        appearanceSaved.shinyVariant=variant;
+        if(encodeNativePokemonSave(appearanceSaved,bytes,sizeof(bytes),length)!=NativeSaveResult::Ok ||
+            decodeNativePokemonSave(bytes,length,decoded)!=NativeSaveResult::Ok ||
+            !decoded.appearanceResolved || !decoded.shiny || decoded.shinyVariant!=variant ||
+            decoded.hasEatenBerry!=saved.hasEatenBerry) return 11821;
+    }
+    appearanceSaved.shiny=false;appearanceSaved.shinyVariant=0;
+    if(encodeNativePokemonSave(appearanceSaved,bytes,sizeof(bytes),length)!=NativeSaveResult::Ok ||
+        decodeNativePokemonSave(bytes,length,decoded)!=NativeSaveResult::Ok ||
+        !decoded.appearanceResolved || decoded.shiny || decoded.shinyVariant) return 11822;
+    if(encodeNativePokemonSave(saved,bytes,sizeof(bytes),length)!=NativeSaveResult::Ok ||
+        decodeNativePokemonSave(bytes,length,decoded)!=NativeSaveResult::Ok) return 11823;
+
     PokemonBattleState restored{};
     PokemonActorIdentity restoredIdentity{};
     if (!restoreNativePokemonActorSave(decoded, restored, restoredIdentity) || restored.formId ||
@@ -127,6 +143,40 @@ extern "C" int runNativeSaveChecks() {
     if (std::strcmp(digest, "248d6a61d20638b8e5c026930c3e6039a33ce45964ff2167f6ecedd419db06c1") != 0) return 11;
     MemoryStorage disk; NativeRunSaveStore store(disk); NativeRunSave original{}, restored{};
     if (makeNativeRunSetupSave(123, 1, original) != NativeSaveResult::Ok) return 2;
+    // v26 has Berry history but no appearance trailer. Migration keeps unknown
+    // appearance instead of manufacturing a normal or shiny encounter.
+    {
+        char current[kNativeSaveMaxBytes]{}, legacy[kNativeSaveMaxBytes]{};
+        size_t currentSize = 0;
+        if (encodeNativeRunSave(original, current, sizeof(current), currentSize) != NativeSaveResult::Ok) return 10510;
+        const auto* suffix = std::strstr(current, "enemyAppearances=");
+        if (!suffix) return 10511;
+        const size_t size = static_cast<size_t>(suffix - current);
+        std::memcpy(legacy, current, size);
+        auto* version = std::strstr(legacy, "saveVersion=001b");
+        auto* runtime = std::strstr(legacy, "runtimeVersion=001b");
+        if (!version || !runtime) return 10512;
+        std::memcpy(version + 12, "001a", 4);
+        std::memcpy(runtime + 15, "001a", 4);
+        char checksum[65]{};
+        IntegritySha256::hashHex(legacy, size, checksum);
+        std::memcpy(legacy + size, "sha256=", 7);
+        std::memcpy(legacy + size + 7, checksum, 64);
+        legacy[size + 71] = '\n';
+        NativeRunSave upgraded{};
+        if (decodeNativeRunSave(legacy, size + 72, PokerogueContent::kContentHash, upgraded) != NativeSaveResult::Ok ||
+            upgraded.saveVersion != kNativeSaveVersion || upgraded.runtimeVersion != kNativeSaveRuntimeVersion ||
+            upgraded.enemyAppearance.resolved || upgraded.enemyAppearance.shiny || upgraded.enemyAppearance.variant)
+            return 10513;
+        for (const auto& member : upgraded.trainerParty)
+            if (member.appearance.resolved || member.appearance.shiny || member.appearance.variant) return 10514;
+        NativeRunSave invalid = original;
+        invalid.enemyAppearance = {true, false, 0};
+        if (validateNativeRunSave(invalid, PokerogueContent::kContentHash) != NativeSaveResult::InvalidRecord) return 10515;
+        if (!nativeAppearanceSaveValid({true, true, 2}) ||
+            nativeAppearanceSaveValid({false, true, 0}) || nativeAppearanceSaveValid({true, false, 1}) ||
+            nativeAppearanceSaveValid({true, true, 3})) return 10516;
+    }
     // Exact v24 contains CRIT_BOOST, but no berry-eaten trailer.
     {
         char current[kNativeSaveMaxBytes]{}, legacy[kNativeSaveMaxBytes]{};
@@ -136,8 +186,8 @@ extern "C" int runNativeSaveChecks() {
         if (!suffix) return 10431;
         const size_t size = static_cast<size_t>(suffix - current);
         std::memcpy(legacy, current, size);
-        auto* version = std::strstr(legacy, "saveVersion=001a");
-        auto* runtime = std::strstr(legacy, "runtimeVersion=001a");
+        auto* version = std::strstr(legacy, "saveVersion=001b");
+        auto* runtime = std::strstr(legacy, "runtimeVersion=001b");
         if (!version || !runtime) return 10432;
         std::memcpy(version + 12, "0018", 4);
         std::memcpy(runtime + 15, "0018", 4);
@@ -161,8 +211,8 @@ extern "C" int runNativeSaveChecks() {
         if (!suffix) return 10502;
         const size_t size = static_cast<size_t>(suffix - current);
         std::memcpy(legacy, current, size);
-        auto* version = std::strstr(legacy, "saveVersion=001a");
-        auto* runtime = std::strstr(legacy, "runtimeVersion=001a");
+        auto* version = std::strstr(legacy, "saveVersion=001b");
+        auto* runtime = std::strstr(legacy, "runtimeVersion=001b");
         if (!version || !runtime) return 10503;
         std::memcpy(version + 12, "0019", 4);
         std::memcpy(runtime + 15, "0019", 4);
@@ -187,8 +237,8 @@ extern "C" int runNativeSaveChecks() {
         if (!suffix) return 10371;
         const size_t size = static_cast<size_t>(suffix - current);
         std::memcpy(legacy, current, size);
-        auto* version = std::strstr(legacy, "saveVersion=001a");
-        auto* runtime = std::strstr(legacy, "runtimeVersion=001a");
+        auto* version = std::strstr(legacy, "saveVersion=001b");
+        auto* runtime = std::strstr(legacy, "runtimeVersion=001b");
         if (!version || !runtime) return 10372;
         std::memcpy(version + 12, "0017", 4);
         std::memcpy(runtime + 15, "0017", 4);
@@ -280,6 +330,24 @@ extern "C" int runNativeSaveChecks() {
         restored.trainerParty[1].statStages[5] != -2 || restored.enemySwitchCounter != 2 || restored.trainerPartyCount != 2 || restored.trainerParty[1].hp != 9 ||
         restored.trainerParty[1].pp[0] != 17 || restored.activeTrainerMember != 0) return 13;
     {
+        auto appearanceSave = trainerSave;
+        appearanceSave.enemyAppearance = {true, true, 2};
+        appearanceSave.trainerParty[0].appearance = appearanceSave.enemyAppearance;
+        appearanceSave.trainerParty[1].appearance = {true, false, 0};
+        NativeRunSave decodedAppearance{};
+        if (encodeNativeRunSave(appearanceSave, partyBytes, sizeof(partyBytes), partySize) != NativeSaveResult::Ok ||
+            decodeNativeRunSave(partyBytes, partySize, PokerogueContent::kContentHash, decodedAppearance) != NativeSaveResult::Ok ||
+            !decodedAppearance.enemyAppearance.resolved || !decodedAppearance.enemyAppearance.shiny ||
+            decodedAppearance.enemyAppearance.variant != 2 || !decodedAppearance.trainerParty[1].appearance.resolved ||
+            decodedAppearance.trainerParty[1].appearance.shiny || decodedAppearance.trainerParty[1].appearance.variant)
+            return 10517;
+        appearanceSave.trainerParty[0].appearance.variant = 1;
+        if (validateNativeRunSave(appearanceSave, PokerogueContent::kContentHash) != NativeSaveResult::InvalidRecord) return 10518;
+        appearanceSave = trainerSave;
+        appearanceSave.trainerParty[5].appearance = {true, false, 0};
+        if (validateNativeRunSave(appearanceSave, PokerogueContent::kContentHash) != NativeSaveResult::InvalidRecord) return 10519;
+    }
+    {
         auto bossSave = trainerSave;
         bossSave.wave = 10;
         bossSave.trainerTypeId = 0;
@@ -338,8 +406,8 @@ extern "C" int runNativeSaveChecks() {
         const size_t payloadSize = static_cast<size_t>(suffix - randomBytes);
         char legacy[kNativeSaveMaxBytes]{};
         std::memcpy(legacy, randomBytes, payloadSize);
-        char* version = std::strstr(legacy, "saveVersion=001a");
-        char* runtime = std::strstr(legacy, "runtimeVersion=001a");
+        char* version = std::strstr(legacy, "saveVersion=001b");
+        char* runtime = std::strstr(legacy, "runtimeVersion=001b");
         if (!version || !runtime) return 10266;
         std::memcpy(version + 12, "0014", 4);
         std::memcpy(runtime + 15, "0014", 4);
@@ -357,8 +425,8 @@ extern "C" int runNativeSaveChecks() {
         const size_t v21Size = static_cast<size_t>(suffix - randomBytes);
         std::memset(legacy, 0, sizeof(legacy));
         std::memcpy(legacy, randomBytes, v21Size);
-        version = std::strstr(legacy, "saveVersion=001a");
-        runtime = std::strstr(legacy, "runtimeVersion=001a");
+        version = std::strstr(legacy, "saveVersion=001b");
+        runtime = std::strstr(legacy, "runtimeVersion=001b");
         if (!version || !runtime) return 10291;
         std::memcpy(version + 12, "0015", 4);
         std::memcpy(runtime + 15, "0015", 4);
@@ -458,8 +526,8 @@ extern "C" int runNativeSaveChecks() {
         if (!suffix) return 10093;
         const size_t payloadSize = static_cast<size_t>(suffix - partyBytes);
         std::memcpy(legacy, partyBytes, payloadSize);
-        char* version = std::strstr(legacy, "saveVersion=001a");
-        char* runtime = std::strstr(legacy, "runtimeVersion=001a");
+        char* version = std::strstr(legacy, "saveVersion=001b");
+        char* runtime = std::strstr(legacy, "runtimeVersion=001b");
         if (!version || !runtime) return 10094;
         std::memcpy(version + 12, "0012", 4);
         std::memcpy(runtime + 15, "0012", 4);
@@ -476,8 +544,8 @@ extern "C" int runNativeSaveChecks() {
         const size_t v19Size = static_cast<size_t>(bossSuffix - partyBytes);
         std::memset(legacy, 0, sizeof(legacy));
         std::memcpy(legacy, partyBytes, v19Size);
-        version = std::strstr(legacy, "saveVersion=001a");
-        runtime = std::strstr(legacy, "runtimeVersion=001a");
+        version = std::strstr(legacy, "saveVersion=001b");
+        runtime = std::strstr(legacy, "runtimeVersion=001b");
         if (!version || !runtime) return 10135;
         std::memcpy(version + 12, "0013", 4);
         std::memcpy(runtime + 15, "0013", 4);
@@ -498,9 +566,9 @@ extern "C" int runNativeSaveChecks() {
         const size_t legacyPayload = static_cast<size_t>(sourceStart - partyBytes);
         std::memcpy(legacyBytes, partyBytes, legacyPayload);
         for (size_t n = 0; n < legacyPayload; ++n) {
-            if (n + 16 <= legacyPayload && std::memcmp(legacyBytes + n, "saveVersion=001a", 16) == 0)
+            if (n + 16 <= legacyPayload && std::memcmp(legacyBytes + n, "saveVersion=001b", 16) == 0)
                 std::memcpy(legacyBytes + n + 12, "0010", 4);
-            if (n + 19 <= legacyPayload && std::memcmp(legacyBytes + n, "runtimeVersion=001a", 19) == 0)
+            if (n + 19 <= legacyPayload && std::memcmp(legacyBytes + n, "runtimeVersion=001b", 19) == 0)
                 std::memcpy(legacyBytes + n + 15, "0010", 4);
         }
         IntegritySha256::hashHex(legacyBytes, legacyPayload, digest);
@@ -518,9 +586,9 @@ extern "C" int runNativeSaveChecks() {
         const size_t v17Payload = static_cast<size_t>(actorStart - partyBytes);
         std::memcpy(legacyBytes, partyBytes, v17Payload);
         for (size_t n = 0; n < v17Payload; ++n) {
-            if (n + 16 <= v17Payload && std::memcmp(legacyBytes + n, "saveVersion=001a", 16) == 0)
+            if (n + 16 <= v17Payload && std::memcmp(legacyBytes + n, "saveVersion=001b", 16) == 0)
                 std::memcpy(legacyBytes + n + 12, "0011", 4);
-            if (n + 19 <= v17Payload && std::memcmp(legacyBytes + n, "runtimeVersion=001a", 19) == 0)
+            if (n + 19 <= v17Payload && std::memcmp(legacyBytes + n, "runtimeVersion=001b", 19) == 0)
                 std::memcpy(legacyBytes + n + 15, "0011", 4);
         }
         IntegritySha256::hashHex(legacyBytes, v17Payload, digest);
@@ -1096,7 +1164,7 @@ extern "C" int runNativeSaveChecks() {
         poor.candyCount || poor.costReduction || poor.friendship != 42 || !poor.caught) return 120;
     if (encodeNativeStarterCandyProfile(&purchased, 1, 1, PokerogueContent::kContentHash,
             PokerogueContent::kMaxStarterCandyCount, caughtEncoded, sizeof(caughtEncoded), caughtWritten) !=
-            NativeSaveResult::Ok || std::memcmp(caughtEncoded, "P3CANDY8", 8) ||
+            NativeSaveResult::Ok || std::memcmp(caughtEncoded, "P3CANDY9", 8) ||
         decodeNativeStarterCandyProfile(caughtEncoded, caughtWritten, PokerogueContent::kContentHash,
             PokerogueContent::kMaxStarterCandyCount, caughtDecoded, 1, caughtCount, caughtGeneration) !=
             NativeSaveResult::Ok || caughtDecoded[0].costReduction != 2 || !caughtDecoded[0].caught ||
@@ -1104,6 +1172,65 @@ extern "C" int runNativeSaveChecks() {
     if (caughtDecoded[0].natureAttr != purchased.natureAttr || caughtDecoded[0].abilityAttr != 5 ||
         caughtDecoded[0].genderAttr != 12 || caughtDecoded[0].observedFormAttr != 128) return 125;
     for (uint8_t i = 0; i < 6; ++i) if (caughtDecoded[0].dexIvs[i] != savedIvs[i]) return 126;
+    PokemonActorIdentity appearanceActor{};uint8_t appearanceBits=255;
+    if(!nativePokemonAppearanceAttr(appearanceActor,appearanceBits) || appearanceBits) return 706;
+    appearanceActor.shiny = true;
+    if (nativePokemonAppearanceAttr(appearanceActor, appearanceBits)) return 717;
+    appearanceActor.shiny = false; appearanceActor.shinyVariant = 1;
+    if (nativePokemonAppearanceAttr(appearanceActor, appearanceBits)) return 718;
+    appearanceActor.shinyVariant = 0;
+    appearanceActor.appearanceResolved=true;
+    if(!nativePokemonAppearanceAttr(appearanceActor,appearanceBits) || appearanceBits!=17) return 707;
+    appearanceActor.shiny=true;
+    for(uint8_t variant=0;variant<3;++variant) {
+        appearanceActor.shinyVariant=variant;
+        if(!nativePokemonAppearanceAttr(appearanceActor,appearanceBits) || appearanceBits!=(2u | (16u<<variant))) return 708;
+    }
+    appearanceActor.shiny=false;
+    if(nativePokemonAppearanceAttr(appearanceActor,appearanceBits)) return 709;
+    purchased.observedAppearanceAttr=0x73;
+    purchased.caughtAppearanceAttr=0x32; // Shiny rare variant, source DexAttr bits.
+    if(encodeNativeStarterCandyProfile(&purchased,1,1,PokerogueContent::kContentHash,
+        PokerogueContent::kMaxStarterCandyCount,caughtEncoded,sizeof(caughtEncoded),caughtWritten)!=NativeSaveResult::Ok ||
+        decodeNativeStarterCandyProfile(caughtEncoded,caughtWritten,PokerogueContent::kContentHash,
+        PokerogueContent::kMaxStarterCandyCount,caughtDecoded,1,caughtCount,caughtGeneration)!=NativeSaveResult::Ok ||
+        caughtDecoded[0].observedAppearanceAttr!=0x73 || caughtDecoded[0].caughtAppearanceAttr!=0x32) return 701;
+    char v8Bytes[256]{};
+    std::memcpy(v8Bytes,caughtEncoded,119);std::memcpy(v8Bytes,"P3CANDY8",8);
+    const size_t v8Size=kStarterCandyProfileOverhead+39;
+    IntegritySha256::hashHex(v8Bytes,v8Size-64,digest);std::memcpy(v8Bytes+v8Size-64,digest,64);
+    if(decodeNativeStarterCandyProfile(v8Bytes,v8Size,PokerogueContent::kContentHash,
+        PokerogueContent::kMaxStarterCandyCount,caughtDecoded,1,caughtCount,caughtGeneration)!=NativeSaveResult::Ok ||
+        caughtDecoded[0].observedAppearanceAttr || caughtDecoded[0].caughtAppearanceAttr ||
+        !caughtDecoded[0].caught) return 702; // Old caught metadata does not invent appearance.
+    bool defaultShiny = false;
+    uint8_t defaultVariant = 0;
+    auto appearancePreference = purchased;
+    appearancePreference.caughtAppearanceAttr = 0x73;
+    if (!nativeStarterDefaultAppearance(appearancePreference, defaultShiny, defaultVariant) ||
+        !defaultShiny || defaultVariant != 2) return 710;
+    if (!nativeStarterDefaultAppearance(appearancePreference, defaultShiny, defaultVariant, false) ||
+        defaultShiny || defaultVariant) return 711;
+    appearancePreference.caughtAppearanceAttr = 0x22;
+    if (!nativeStarterDefaultAppearance(appearancePreference, defaultShiny, defaultVariant, false) ||
+        !defaultShiny || defaultVariant != 1) return 712;
+    appearancePreference.caughtAppearanceAttr = 17;
+    if (!nativeStarterDefaultAppearance(appearancePreference, defaultShiny, defaultVariant) ||
+        defaultShiny || defaultVariant) return 713;
+    defaultShiny = true; defaultVariant = 2;
+    appearancePreference.caughtAppearanceAttr = 0;
+    if (nativeStarterDefaultAppearance(appearancePreference, defaultShiny, defaultVariant) ||
+        !defaultShiny || defaultVariant != 2) return 714;
+    appearancePreference.caughtAppearanceAttr = 0x21;
+    if (nativeStarterDefaultAppearance(appearancePreference, defaultShiny, defaultVariant)) return 715;
+    appearancePreference.caughtAppearanceAttr = 17; appearancePreference.caught = false;
+    if (nativeStarterDefaultAppearance(appearancePreference, defaultShiny, defaultVariant)) return 716;
+    auto invalidAppearance=purchased;invalidAppearance.caughtAppearanceAttr=0x30;
+    if(StarterCandyProfileCodec::valid(invalidAppearance,0,PokerogueContent::kMaxStarterCandyCount)) return 703;
+    invalidAppearance=purchased;invalidAppearance.observedAppearanceAttr=0x21;
+    if(StarterCandyProfileCodec::valid(invalidAppearance,0,PokerogueContent::kMaxStarterCandyCount)) return 704;
+    invalidAppearance=purchased;invalidAppearance.caught=false;
+    if(StarterCandyProfileCodec::valid(invalidAppearance,0,PokerogueContent::kMaxStarterCandyCount)) return 705;
     char v3Bytes[256]{};
     std::memcpy(v3Bytes, caughtEncoded, 89);
     std::memcpy(v3Bytes, "P3CANDY3", 8);

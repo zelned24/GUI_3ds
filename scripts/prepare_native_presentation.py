@@ -91,7 +91,7 @@ def flatten_ui(prefix,value):
     if isinstance(value,str): ui_strings[prefix]=value;characters.update(value)
     elif isinstance(value,dict):
         for key,nested in value.items(): flatten_ui(prefix+":"+key,nested)
-for namespace in ["menu","settings","game-mode","starter-select-ui-handler","command-ui-handler","pokeball","ability","move"]:
+for namespace in ["menu","menu-ui-handler","settings","game-mode","starter-select-ui-handler","command-ui-handler","pokeball","ability","move"]:
     source_path="es-ES/"+namespace+".json"
     raw=subprocess.check_output(["git","-C",str(ROOT / "build/upstream/pokerogue-locales"),"show",ui_locale_revision+":"+source_path])
     namespace_data=json.loads(raw)
@@ -670,3 +670,6 @@ prepare_type_labels(ROOT)
 
 from hud_type_icons import prepare as prepare_hud_types
 prepare_hud_types(ROOT)
+
+from starter_variant_icons import prepare as prepare_starter_variants
+prepare_starter_variants(ROOT)

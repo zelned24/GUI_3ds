@@ -39,7 +39,7 @@
     "trainersWithSpeciesPools": 34,
     "trainersWithStaticPartyTemplates": 46
   },
-  "contentHash": "b1b5821edb39a088e641682ae5f5eae9567eef03ffbc2aa3a257c148d0106edf",
+  "contentHash": "c797658f2c13c494bd83eeb1b6ea8177e9c25b73d09abe5d1c653b7655dadf2b",
   "deterministicReimport": true,
   "provenance": [
     {
@@ -407,6 +407,12 @@
       "repository": "pokerogue",
       "revision": "8555c08c823b856cbec4eb99ca84ea52a955836d",
       "sourcePath": "src/data/moves/move.ts"
+    },
+    {
+      "hash": "31b6cf0a8df80e3fb50d2cf2826a56afa8beafea1b32b2c14555e745d61276eb",
+      "repository": "pokerogue",
+      "revision": "8555c08c823b856cbec4eb99ca84ea52a955836d",
+      "sourcePath": "src/data/pokemon-species.ts"
     },
     {
       "hash": "05a0f36171b70f953948ee47c33d1edf81e71cd5ca33cc5ed0c19358f58c97e1",

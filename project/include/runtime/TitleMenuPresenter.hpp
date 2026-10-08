@@ -10,7 +10,13 @@ public:
     TitleMenuPresenter(const TitleMenuPresenter&)=delete;
     TitleMenuPresenter& operator=(const TitleMenuPresenter&)=delete;
     ~TitleMenuPresenter() {clear();}
-    void clear() {if(m_cursor) C2D_SpriteSheetFree(m_cursor);m_cursor=nullptr;}
+    void clear(Renderer2D* renderer=nullptr) {
+        if(m_cursor) {
+            if(renderer) renderer->retireSpriteSheet(m_cursor);
+            else C2D_SpriteSheetFree(m_cursor);
+        }
+        m_cursor=nullptr;m_cursorAttempted=false;
+    }
     void draw(Renderer2D& renderer,const TitleMenuSelection& menu,const char* feedback) {
         ensureCursor();
         renderer.clear(0xff3a303d);
@@ -20,7 +26,7 @@ public:
             const float labelSize=renderer.drawTextFitted(kTitleMenuLabels[i+(menu.hasContinue ? 0 : 1)],43,y,0.48f,249,0xffffffff);
             if(i==menu.selected) drawCursor(renderer,25,y,labelSize);
         }
-        renderer.drawTextFitted(feedback ? feedback : "D-Pad: mover   A: elegir",16,212,0.3f,288,0xffffffff);
+        renderer.drawTextFitted(feedback ? feedback : "X: menú   A: elegir   D-Pad: mover",16,212,0.3f,288,0xffffffff);
     }
     void drawCursor(Renderer2D& renderer,float x,float y,float textSize) {
         ensureCursor();
@@ -31,11 +37,12 @@ public:
                 return;
             }
         }
-        renderer.drawText("▶", x, y, textSize, 0xffffffff);
+        renderer.drawText(">", x, y, textSize, 0xffffffff);
     }
 private:
     void ensureCursor() {
-        if(!m_cursor) {
+        if(!m_cursorAttempted) {
+            m_cursorAttempted=true;
             m_cursor=C2D_SpriteSheetLoad("romfs:/presentation/ui/cursor.t3x");
             if(m_cursor) {
                 const auto image=C2D_SpriteSheetGetImage(m_cursor,0);
@@ -44,5 +51,6 @@ private:
         }
     }
     C2D_SpriteSheet m_cursor=nullptr;
+    bool m_cursorAttempted=false;
 };
 }

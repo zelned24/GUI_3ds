@@ -52,7 +52,7 @@ public:
         }
         return true;
     }
-    void invalidate(); // Retry after an installed content pack becomes active.
+    void invalidate(Renderer2D* renderer = nullptr); // Retry after an installed content pack becomes active.
 
     // Integer combat scale: 2x only when the entire animation fits; oversized canvases are adapted by the asset pipeline.
     static float calculateProportionalScale(uint32_t sourceWidth, uint32_t sourceHeight,
@@ -71,8 +71,9 @@ private:
         uint8_t activePageMask = 0;
         uint64_t animationStartMs = 0;
         PokemonAtlasMetadata metadata;
-        void clear();
+        void clear(Renderer2D* renderer = nullptr);
     };
+    std::string m_lastUnsupportedAppearance;
     Slot m_front;
     Slot m_back;
     TrainerPresenter m_trainerFront;
@@ -81,8 +82,8 @@ private:
     bool m_trainerFrontFemale = false;
     bool m_playerBackFemale = false;
     bool m_playerBackLoaded = false;
-    static bool atlasKey(const ResolvedPokemon&, std::string& out);
-    static bool selectMetadata(Slot&, const std::string& key, bool back, uint64_t nowMs);
+    bool atlasKey(const ResolvedPokemon&, bool back, std::string& out);
+    static bool selectMetadata(Renderer2D&, Slot&, const std::string& key, bool back, uint64_t nowMs);
     static bool selectPage(Slot&, const std::string& key, bool back, uint8_t page);
 };
 

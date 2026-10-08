@@ -9,6 +9,32 @@ import { GameModeDefinition } from '../game/GameMode.js';
 import { BiomeDefinition, RouteDefinition } from '../game/ProgressionContent.js';
 import { POKEROGUE_BASE_ATLAS_IDS, POKEROGUE_BASE_ATLAS_REVISION, POKEROGUE_FORM_ATLAS_KEYS } from './PokerogueBaseAtlasIndex.js';
 
+export function parseUpstreamGenderDifferences(literal, context) {
+  if(literal == null) return null;
+  if(typeof literal !== 'string') throw new Error(`Invalid import: genderDiffs source for ${context}`);
+  const declared=/\bgenderDiffs\s*:/.test(literal);
+  const match=literal.match(/\bgenderDiffs\s*:\s*(true|false)\s*[,}]/);
+  if(declared && !match) throw new Error(`Invalid import: unsupported genderDiffs for ${context}`);
+  return match ? match[1]==='true' : null;
+}
+
+export function parseGenderSpriteExclusions(source, formSymbols) {
+  const method=source.indexOf('getBaseSpriteKey(female: boolean');
+  const condition=source.indexOf('const showGenderDiffs',method);
+  const end=source.indexOf('let spriteKey',condition);
+  if(method<0 || condition<method || end<condition) throw new Error('Missing upstream gender sprite condition');
+  const region=source.slice(condition,end);
+  const open=region.indexOf('['),literal=extractBalancedLiteral(region,open);
+  if(!literal || !region.includes('.includes(formSpriteKey as SpeciesFormKey)')) throw new Error('Unsupported upstream gender sprite exclusions');
+  const symbols=[...literal.matchAll(/SpeciesFormKey\.([A-Z0-9_]+)/g)].map(match=>match[1]);
+  if(!symbols.length || literal.replace(/SpeciesFormKey\.[A-Z0-9_]+|[\s,\[\]]/g,'')) throw new Error('Unsupported gender sprite exclusion expression');
+  return symbols.map(symbol=>{
+    const key=formSymbols.get(symbol);
+    if(typeof key!=='string') throw new Error(`Unresolved gender sprite form ${symbol}`);
+    return key;
+  });
+}
+
 function extractBalancedLiteral(source, openingIndex) {
   const opening = source[openingIndex];
   const closing = opening === '[' ? ']' : opening === '{' ? '}' : opening === '(' ? ')' : null;
@@ -1082,7 +1108,7 @@ export class PokerogueImporter {
     this.productionCanonicalImport = true;
 
     const fixedPaths = [
-      'src/enums/species-id.ts', 'src/enums/species-form-key.ts', 'src/enums/move-id.ts', 'src/enums/ability-id.ts', 'src/enums/trainer-type.ts',
+      'src/data/pokemon-species.ts', 'src/enums/species-id.ts', 'src/enums/species-form-key.ts', 'src/enums/move-id.ts', 'src/enums/ability-id.ts', 'src/enums/trainer-type.ts',
       'src/enums/pokemon-type.ts', 'src/enums/berry-type.ts', 'src/enums/stat.ts', 'src/data/berry.ts', 'src/data/battler-tags.ts', 'src/phases/berry-phase.ts', 'src/enums/game-modes.ts', 'src/game-mode.ts',
       'src/constants.ts', 'src/data/exp.ts', 'src/enums/fixed-boss-waves.ts', 'src/data/trainers/fixed-battle-configs.ts',
       'src/data/moves/move.ts', 'src/data/abilities/init-abilities.ts', 'src/data/abilities/ab-attrs.ts', 'src/utils/common.ts',
@@ -1114,6 +1140,7 @@ export class PokerogueImporter {
       .map(match => [match[1], match[2]]));
     const sourceHash = item => PokerogueManifest.computeHash(item.content);
     const sourceRows = loaded.map(item => ({ repository: item.repo, revision: repos[item.repo].revision, sourcePath: item.path, hash: sourceHash(item) })).sort((a, b) => `${a.repository}:${a.sourcePath}`.localeCompare(`${b.repository}:${b.sourcePath}`));
+    const genderSpriteSource=byPath.get('pokerogue:src/data/pokemon-species.ts');
     const experienceSource = byPath.get('pokerogue:src/data/exp.ts');
     const experienceGrowthRates = parseExperienceGrowthRates(experienceSource.content);
     const fixedBossWaveSource = byPath.get('pokerogue:src/enums/fixed-boss-waves.ts');
@@ -1361,6 +1388,7 @@ export class PokerogueImporter {
                 const value = declared[1].trim();
                 return value === 'true' ? true : value === 'false' ? false : null;
               };
+              const genderDiffs = parseUpstreamGenderDifferences(rawForm, `${record.id} form ${formIndex}`);
               const isUnobtainable = formBoolean('isUnobtainable', false);
               const isStarterSelectable = formBoolean('isStarterSelectable',
                 typeof upstreamFormKey === 'string' ? !upstreamFormKey : null);
@@ -1369,6 +1397,7 @@ export class PokerogueImporter {
                 speciesId: record.id,
                 formKey,
                 formSpriteKey: formSpriteKey ?? null,
+                genderDiffs,
                 spriteAtlasKey,
                 name: formName,
                 types: [...rawForm.matchAll(/type[12]\s*:\s*PokemonType\.([A-Z]+)/g)].map(match => match[1]),
@@ -1647,6 +1676,9 @@ export class PokerogueImporter {
       throw new Error('Unsupported pinned Classic fixed reward policy');
     const metadata = (source, sourceSymbol) => ({ repository: game.url, revision: game.revision,
       sourcePath: source.path, sourceSymbol, sourceHash: sourceHash(source) });
+    const pokemonGenderSpriteRules={excludedFormSpriteKeys:parseGenderSpriteExclusions(genderSpriteSource.content,formSpriteKeyEnum),
+      provenance:metadata(genderSpriteSource,'PokemonSpecies.getBaseSpriteKey'),
+      coverage:'GENDER_DIFFERENCES_AND_FORM_EXCLUSIONS; timed event sprite replacements not yet imported'};
     const persistentExperienceRules = {
       lowThresholdPercent: Number(limits[2]) * 100, highThresholdPercent: Number(limits[1]) * 100,
       lowMaxStacks: Number(limits[3]), middleMaxStacks: Number(limits[4]), highMaxStacks: Number(limits[5]),
@@ -1702,7 +1734,7 @@ export class PokerogueImporter {
     berryGeneration.criticalTag.provenance = metadata(berryTagSource, 'CritBoostTag.onAdd/lapse/loadTag');
 
 
-    const canonicalContent = new CanonicalContent({ schemaVersion: '1.0.0', contentVersion: '1.0.0', sourceSnapshot: snapshot, provenance, collections: { gameModes, species, forms, moves, abilities, items, trainers, trainerPartyTemplates, locales: localeEntries, assetReferences: [...canonicalAssetBySpecies.values()] }, extensions: { berryGeneration, pokemonFriendshipRules, starterCandyRules, persistentExperienceRules, classicFixedModifierRewards, importer: 'PokerogueImporter.importCanonicalContent', unknownFieldPolicy: 'preserve-in-upstreamRawRecord', unsupportedBehavior: 'NOT_IMPORTED', modifierPools: { entries: modifierPools, dynamicWeights: modifierPools.filter(entry => entry.weight === null).length }, trainerMoveSupercedence: { pairs: supercededMovePairs, provenance: { repository: game.url, revision: game.revision, sourcePath: 'src/data/balance/moves/superceded-moves.ts', sourceSymbol: 'SUPERCEDED_MOVES', sourceHash: sourceHash(supercededMoveFile) } }, freshProfile: { defaultStarterSpecies: defaultStarterSymbols, provenance: { repository: game.url, revision: game.revision, sourcePath: 'src/constants.ts', sourceSymbol: 'defaultStarterSpecies', sourceHash: sourceHash(byPath.get('pokerogue:src/constants.ts')) } }, pokemonExperience: { growthRates: experienceGrowthRates, provenance: { repository: game.url, revision: game.revision, sourcePath: 'src/data/exp.ts', sourceSymbol: 'GrowthRate/expLevels/getLevelTotalExp', sourceHash: sourceHash(experienceSource) } }, classicFixedBossWaves: { entries: classicFixedBossWaves, provenance: { repository: game.url, revision: game.revision, sourcePath: 'src/enums/fixed-boss-waves.ts', sourceSymbol: 'ClassicFixedBossWaves', sourceHash: sourceHash(fixedBossWaveSource) }, finalWave: { wave: classicModeDefinition.rules.maxWave, provenance: { repository: game.url, revision: game.revision, sourcePath: classicModeDefinition.provenance.sourcePath, sourceSymbol: 'GameMode.isWaveFinal:classic', sourceHash: classicModeDefinition.provenance.sourceHash } } }, classicFixedBattleWaves: { entries: classicFixedBattleWaves, provenance: { repository: game.url, revision: game.revision, sourcePath: 'src/data/trainers/fixed-battle-configs.ts', sourceSymbol: 'classicFixedBattles', sourceHash: sourceHash(fixedBattleSource) } }, trainerPartyTemplateCatalog: { provenance: { repository: game.url, revision: game.revision, sourcePath: 'src/data/trainers/trainer-party-template.ts', sourceSymbol: 'trainerPartyTemplates', sourceHash: sourceHash(byPath.get('pokerogue:src/data/trainers/trainer-party-template.ts')) }, partyStrengthSource: { sourcePath: 'src/enums/party-member-strength.ts', sourceHash: sourceHash(byPath.get('pokerogue:src/enums/party-member-strength.ts')) }, evolutionThresholdSource: { sourcePath: 'src/enums/evo-level-threshold-kind.ts', sourceHash: sourceHash(byPath.get('pokerogue:src/enums/evo-level-threshold-kind.ts')) }, trainerPoolTierSource: { sourcePath: 'src/enums/trainer-pool-tier.ts', sourceHash: sourceHash(byPath.get('pokerogue:src/enums/trainer-pool-tier.ts')) } }, skippedMoveRecords: parsedMoves.filter(move => enumCatalogs.move.getId(move.id.toUpperCase()) === undefined).map(move => ({ sourceSymbol: move.id, raw: move.extensions?.upstreamRawRecord || null })) } });
+    const canonicalContent = new CanonicalContent({ schemaVersion: '1.0.0', contentVersion: '1.0.0', sourceSnapshot: snapshot, provenance, collections: { gameModes, species, forms, moves, abilities, items, trainers, trainerPartyTemplates, locales: localeEntries, assetReferences: [...canonicalAssetBySpecies.values()] }, extensions: { pokemonGenderSpriteRules, berryGeneration, pokemonFriendshipRules, starterCandyRules, persistentExperienceRules, classicFixedModifierRewards, importer: 'PokerogueImporter.importCanonicalContent', unknownFieldPolicy: 'preserve-in-upstreamRawRecord', unsupportedBehavior: 'NOT_IMPORTED', modifierPools: { entries: modifierPools, dynamicWeights: modifierPools.filter(entry => entry.weight === null).length }, trainerMoveSupercedence: { pairs: supercededMovePairs, provenance: { repository: game.url, revision: game.revision, sourcePath: 'src/data/balance/moves/superceded-moves.ts', sourceSymbol: 'SUPERCEDED_MOVES', sourceHash: sourceHash(supercededMoveFile) } }, freshProfile: { defaultStarterSpecies: defaultStarterSymbols, provenance: { repository: game.url, revision: game.revision, sourcePath: 'src/constants.ts', sourceSymbol: 'defaultStarterSpecies', sourceHash: sourceHash(byPath.get('pokerogue:src/constants.ts')) } }, pokemonExperience: { growthRates: experienceGrowthRates, provenance: { repository: game.url, revision: game.revision, sourcePath: 'src/data/exp.ts', sourceSymbol: 'GrowthRate/expLevels/getLevelTotalExp', sourceHash: sourceHash(experienceSource) } }, classicFixedBossWaves: { entries: classicFixedBossWaves, provenance: { repository: game.url, revision: game.revision, sourcePath: 'src/enums/fixed-boss-waves.ts', sourceSymbol: 'ClassicFixedBossWaves', sourceHash: sourceHash(fixedBossWaveSource) }, finalWave: { wave: classicModeDefinition.rules.maxWave, provenance: { repository: game.url, revision: game.revision, sourcePath: classicModeDefinition.provenance.sourcePath, sourceSymbol: 'GameMode.isWaveFinal:classic', sourceHash: classicModeDefinition.provenance.sourceHash } } }, classicFixedBattleWaves: { entries: classicFixedBattleWaves, provenance: { repository: game.url, revision: game.revision, sourcePath: 'src/data/trainers/fixed-battle-configs.ts', sourceSymbol: 'classicFixedBattles', sourceHash: sourceHash(fixedBattleSource) } }, trainerPartyTemplateCatalog: { provenance: { repository: game.url, revision: game.revision, sourcePath: 'src/data/trainers/trainer-party-template.ts', sourceSymbol: 'trainerPartyTemplates', sourceHash: sourceHash(byPath.get('pokerogue:src/data/trainers/trainer-party-template.ts')) }, partyStrengthSource: { sourcePath: 'src/enums/party-member-strength.ts', sourceHash: sourceHash(byPath.get('pokerogue:src/enums/party-member-strength.ts')) }, evolutionThresholdSource: { sourcePath: 'src/enums/evo-level-threshold-kind.ts', sourceHash: sourceHash(byPath.get('pokerogue:src/enums/evo-level-threshold-kind.ts')) }, trainerPoolTierSource: { sourcePath: 'src/enums/trainer-pool-tier.ts', sourceHash: sourceHash(byPath.get('pokerogue:src/enums/trainer-pool-tier.ts')) } }, skippedMoveRecords: parsedMoves.filter(move => enumCatalogs.move.getId(move.id.toUpperCase()) === undefined).map(move => ({ sourceSymbol: move.id, raw: move.extensions?.upstreamRawRecord || null })) } });
     canonicalContent.extensions.trainerMoveBlocklists = {
       singles: forbiddenSinglesMoveIds,
       levelBased: levelBasedDenylistMoveIds,
@@ -2132,6 +2164,13 @@ export class PokerogueImporter {
       const numIdMatch = block.match(/(?:speciesId|\bid)\s*:\s*(?:SpeciesId\.)?(\d+|[A-Za-z0-9_]+)/i);
       const nameMatch = block.match(/(?:speciesName)\s*:\s*['"`]([^'"`]+)['"`]/i);
       const genMatch = block.match(/generation\s*:\s*(\d+)/i);
+      // Read the species constructor alone: form overrides may declare different
+      // genderDiffs later in the enclosing generation record.
+      const constructor = /\bspecies\s*:\s*new\s+PokemonSpecies\s*\(/.exec(block);
+      const speciesLiteral = constructor
+        ? extractBalancedLiteral(block, block.indexOf('{', constructor.index + constructor[0].length))
+        : null;
+      const genderDiffs = parseUpstreamGenderDifferences(speciesLiteral, speciesKey);
       const malePercentDeclared = /\bmalePercent\s*:/i.test(block);
       const malePercentMatch = block.match(/\bmalePercent\s*:\s*(null|\d+(?:\.\d+)?)/i);
       if (malePercentDeclared && !malePercentMatch) throw new Error(`Invalid import: unsupported malePercent value for ${speciesKey}`);
@@ -2363,6 +2402,7 @@ export class PokerogueImporter {
         rarity: { legendary: rarityField('legendary'), subLegendary: rarityField('subLegendary'), mythical: rarityField('mythical') },
         growthRate: growthRateMatch?.[1] ?? null,
         ...(malePercentMatch ? { malePercent } : {}),
+        genderDiffs,
         evolutions,
         abilities: {
           primary: ab1Match && ab1Match[1].toUpperCase() !== 'NONE' ? toTitle(ab1Match[1]) : 'None',

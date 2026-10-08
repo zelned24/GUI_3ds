@@ -543,7 +543,7 @@ bool QuickJSBridge::processPendingAction() {
             for (unsigned i = 0; i < 8 && !seed; ++i) seed = next.randSeedUint32();
             if (seed) ok = m_game->restoreSetup(seed, species->dex);
         }
-        if (ok) { m_restartStarter = 0; m_presenterPlayer.invalidate(); m_presenterEnemy.invalidate(); m_presenterSecondEnemy.invalidate(); }
+        if (ok) { m_restartStarter = 0; m_presenterPlayer.invalidate(m_renderer); m_presenterEnemy.invalidate(m_renderer); m_presenterSecondEnemy.invalidate(m_renderer); }
         std::snprintf(m_actionFeedback, sizeof(m_actionFeedback), "%s", ok ? "New run ready" : "Restart failed: invalid starter/RNG");
     } else if (action == 202 || action == 203) {
         if (!m_game->runStarted()) m_game->browseSetupStarter(action == 202 ? -1 : 1);
@@ -612,7 +612,7 @@ bool QuickJSBridge::processPendingAction() {
                         m_profileCapacity, *m_friendshipPolicy, &save);
                 if (status == NativeSaveResult::Ok) {
                     m_restartStarter = 0;
-                    m_presenterPlayer.invalidate(); m_presenterEnemy.invalidate(); m_presenterSecondEnemy.invalidate();
+                    m_presenterPlayer.invalidate(m_renderer); m_presenterEnemy.invalidate(m_renderer); m_presenterSecondEnemy.invalidate(m_renderer);
                 }
             }
             // Export saves first: refresh journal metadata even if the export failed.
@@ -708,9 +708,9 @@ void QuickJSBridge::fini() {
     m_restartStarter = 0;
     m_journalGeneration = 0;
     m_actionFeedback[0] = 0;
-    m_presenterPlayer.invalidate();
-    m_presenterEnemy.invalidate();
-    m_presenterSecondEnemy.invalidate();
+    m_presenterPlayer.invalidate(m_renderer);
+    m_presenterEnemy.invalidate(m_renderer);
+    m_presenterSecondEnemy.invalidate(m_renderer);
     m_player = m_enemy = nullptr;
     m_animationTimeMs = 0;
     if (m_context) {

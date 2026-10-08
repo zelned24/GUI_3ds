@@ -2,7 +2,43 @@
 #include "runtime/DualScreenLayout.hpp"
 #include "content/PokerogueRuntimeContent.hpp"
 #include <cstring>
+#include <cstdio>
+#include <array>
 namespace Pokerogue3DS {
+// A bounded display page over canonical species; count remains data-driven.
+template<std::size_t PageSize,class Matches>
+inline std::array<const PokerogueContent::Species*,PageSize> catalogSpeciesPage(unsigned start,Matches matches) {
+    static_assert(PageSize>0,"Display pages require at least one cell");
+    std::array<const PokerogueContent::Species*,PageSize> page{};
+    unsigned ordinal=0;std::size_t count=0;
+    for(const auto& species:PokerogueContent::kSpecies) {
+        if(!matches(species)) continue;
+        if(ordinal++<start) continue;
+        page[count++]=&species;
+        if(count==page.size()) break;
+    }
+    return page;
+}
+// Pinned starter-select-ui-handler icon state, independent of catalogue filters.
+enum class StarterDiscovery {Unknown,Seen,Caught};
+inline constexpr StarterDiscovery starterDiscovery(bool caught,uint64_t observedForms) {
+    return caught ? StarterDiscovery::Caught : observedForms ? StarterDiscovery::Seen : StarterDiscovery::Unknown;
+}
+inline constexpr uint32_t starterDiscoveryTint(StarterDiscovery state) {
+    return state==StarterDiscovery::Caught ? 0xffffffffu : state==StarterDiscovery::Seen ? 0xff808080u : 0xff000000u;
+}
+inline bool formatStarterGridCost(uint16_t quarterUnits,char* output,std::size_t capacity) {
+    if(!output || !capacity) return false;
+    const unsigned remainder=quarterUnits%4;
+    const int length=remainder ? std::snprintf(output,capacity,"%u.%02u",quarterUnits/4,remainder*25)
+        : std::snprintf(output,capacity,"%u",quarterUnits/4);
+    return length>=0 && std::size_t(length)<capacity;
+}
+enum class StarterCaptureFilter {All,Caught,Uncaught};
+inline constexpr bool starterMatchesCaptureFilter(StarterCaptureFilter filter,bool caught) {
+    return filter==StarterCaptureFilter::All || (filter==StarterCaptureFilter::Caught ? caught : !caught);
+}
+inline constexpr TouchRect kStarterCaptureFilterRect{254,2,58,18};
 inline constexpr unsigned kStarterGridColumns=6,kStarterGridRows=3;
 inline constexpr unsigned kStarterGridPageSize=kStarterGridColumns*kStarterGridRows;
 inline constexpr TouchRect kStarterFilterRect{8,23,304,25};

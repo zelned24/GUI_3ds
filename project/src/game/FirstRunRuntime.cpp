@@ -176,10 +176,8 @@ bool FirstRunRuntime::starterUnlocked(const PokerogueContent::Species& species) 
 }
 
 uint8_t FirstRunRuntime::starterCostReduction(uint16_t dex) const {
-    if (!m_starterProfileReady) return 0;
-    for (size_t i = 0; i < m_starterProfileCount; ++i)
-        if (m_starterProfileRecords[i].speciesDex == dex) return m_starterProfileRecords[i].costReduction;
-    return 0;
+    const auto* progress=starterProgress(dex);
+    return progress ? progress->costReduction : 0;
 }
 
 bool FirstRunRuntime::starterSelectionAllowed(const uint16_t* dexes, size_t count) const {
@@ -469,6 +467,8 @@ NativeSaveResult FirstRunRuntime::captureNativeRunSave(NativeRunSave& output) co
         value.playerHp = m_context.player.battleState.hp;
         value.playerHasEatenBerry = m_context.player.battleState.hasEatenBerry;
         value.enemyHasEatenBerry = m_context.enemy.battleState.hasEatenBerry;
+        value.enemyAppearance = {m_context.enemy.actor.appearanceResolved,
+            m_context.enemy.actor.shiny, m_context.enemy.actor.shinyVariant};
         value.playerBerryCriticalBoostStages = m_context.player.battleState.berryCriticalBoostStages;
         value.enemyBerryCriticalBoostStages = m_context.enemy.battleState.berryCriticalBoostStages;
         for (uint8_t stat = 0; stat < 7; ++stat) {
@@ -537,6 +537,7 @@ NativeSaveResult FirstRunRuntime::captureNativeRunSave(NativeRunSave& output) co
                 saved.sturdyTag = actor.battleState.sturdy.present;
                 saved.berryCriticalBoostStages = actor.battleState.berryCriticalBoostStages;
                 saved.hasEatenBerry = actor.battleState.hasEatenBerry;
+                saved.appearance = {actor.actor.appearanceResolved, actor.actor.shiny, actor.actor.shinyVariant};
                 saved.moveCount = actor.battleState.moveCount;
                 for (uint8_t slot = 0; slot < saved.moveCount && slot < 4; ++slot) {
                     saved.moveIds[slot] = actor.battleState.moves[slot].moveId;
@@ -557,13 +558,16 @@ NativeSaveResult FirstRunRuntime::captureNativeRunSave(NativeRunSave& output) co
         const auto* definition = PokerogueContent::findMoveById(move.moveId);
         if (definition && move.maxPp != definition->pp) hasModifiedMaxPp = true;
     }
+    bool hasKnownAppearance = m_context.player.actor.appearanceResolved;
+    for (uint8_t member = 0; member < m_context.playerPartyCount; ++member)
+        hasKnownAppearance |= m_context.playerParty[member].actor.appearanceResolved;
     bool hasSummonTags = m_context.player.battleState.heldItemLostTags.unburden ||
         m_context.player.battleState.sturdy.present;
     for (uint8_t member = 0; member < m_context.playerPartyCount; ++member)
         hasSummonTags |= m_context.playerParty[member].battleState.heldItemLostTags.unburden ||
             m_context.playerParty[member].battleState.sturdy.present;
     if (value.stage != NativeSaveStage::RunSetup &&
-        (m_doubleBattle || (m_battleFinished && !m_playerWon) || m_run.wave > 9 || (m_trainerBattle && m_run.wave != 5) || m_context.playerPartyCount > 1 || m_playerHistoryRequiresSnapshot || m_heldModifierCount || m_persistentModifierCount || value.playerStatus.present || value.playerConfusion.present || hasSummonTags || hasChangedFriendship || hasModifiedMaxPp)) {
+        (m_doubleBattle || (m_battleFinished && !m_playerWon) || m_run.wave > 9 || (m_trainerBattle && m_run.wave != 5) || m_context.playerPartyCount > 1 || m_playerHistoryRequiresSnapshot || m_heldModifierCount || m_persistentModifierCount || value.playerStatus.present || value.playerConfusion.present || hasSummonTags || hasChangedFriendship || hasModifiedMaxPp || hasKnownAppearance)) {
         if (m_context.playerPartyCount > 6 ||
             m_context.activePlayerPartyIndex >= m_context.playerPartyCount) { output = {}; return NativeSaveResult::InvalidRecord; }
         value.playerPartyCount = m_context.playerPartyCount;
@@ -623,6 +627,10 @@ bool FirstRunRuntime::initializeFreshStarterProfile(const PokemonFriendshipPolic
         const auto* species = PokerogueContent::findSpeciesByDex(candidate.m_starterProfileRecords[i].speciesDex);
         if (species && species->freshProfileStarter &&
             !seedNativeFreshStarterDexMetadata(candidate.m_starterProfileRecords[i])) return false;
+        if(species && species->freshProfileStarter) {
+            candidate.m_starterProfileRecords[i].observedAppearanceAttr=17u;
+            candidate.m_starterProfileRecords[i].caughtAppearanceAttr=17u;
+        }
     }
     *this = candidate;
     buildScene(); // Rebind nodes and text after publishing the heap candidate.
@@ -635,14 +643,64 @@ uint32_t FirstRunRuntime::caughtSpeciesCount() const {
     return count;
 }
 
+
+
 bool FirstRunRuntime::hasCaughtSpecies(uint16_t dex) const {
-    for (size_t i = 0; i < m_starterProfileCount; ++i)
-        if (m_starterProfileRecords[i].speciesDex == dex) return m_starterProfileRecords[i].caught;
-    return false;
+    const auto* progress=starterProgress(dex);
+    return progress && progress->caught;
+}
+
+bool FirstRunRuntime::recordEncounterSeen() {
+    const unsigned trainerCapacity=sizeof(m_context.trainerParty)/sizeof(m_context.trainerParty[0]);
+    if(m_context.trainerPartyCount>trainerCapacity) return false;
+    const unsigned count=m_context.trainerPartyCount ? m_context.trainerPartyCount : m_doubleBattle ? 2 : 1;
+    size_t missing=0;
+    // Validate the whole encounter before publishing any observation.
+    for(unsigned i=0;i<count;++i) {
+        const auto& actor=m_context.trainerPartyCount ? m_context.trainerParty[i] : i ? m_context.secondEnemy : m_context.enemy;
+        uint64_t form=0;uint8_t appearance=0;
+        if(!nativePokemonAppearanceAttr(actor.actor,appearance)) return false;
+        if(!actor.actorIdentityResolved || pokemonObservedDexFormAttr(actor.dex,actor.actor,form)!=PokemonObservedFormResult::Ok) return false;
+        bool present=false;
+        for(size_t j=0;j<m_starterProfileCount;++j) present|=m_starterProfileRecords[j].speciesDex==actor.dex;
+        for(unsigned j=0;j<i;++j) {
+            const auto& previous=m_context.trainerPartyCount ? m_context.trainerParty[j] : m_context.enemy;
+            present|=previous.dex==actor.dex;
+        }
+        missing+=!present;
+    }
+    if(m_starterProfileReady && missing>m_starterProfileRecords.size()-m_starterProfileCount) return false;
+    for(unsigned i=0;i<count;++i) {
+        const auto& actor=m_context.trainerPartyCount ? m_context.trainerParty[i] : i ? m_context.secondEnemy : m_context.enemy;
+        if(!recordSeenPokemon(actor)) return false;
+    }
+    return true;
+}
+
+// Pinned EncounterPhase -> GameData.setPokemonSeen: observation does not
+// unlock starters, award candy or recurse through prevolutions.
+bool FirstRunRuntime::recordSeenPokemon(const ResolvedPokemon& pokemon) {
+    uint64_t observed=0;uint8_t appearance=0;
+    if(!nativePokemonAppearanceAttr(pokemon.actor,appearance)) return false;
+    if(!pokemon.actorIdentityResolved || pokemonObservedDexFormAttr(pokemon.dex,pokemon.actor,observed)!=PokemonObservedFormResult::Ok)
+        return false;
+    if(!m_starterProfileReady) return true; // Explicit diagnostics without durable profile.
+    size_t index=0;
+    while(index<m_starterProfileCount && m_starterProfileRecords[index].speciesDex<pokemon.dex) ++index;
+    if(index==m_starterProfileCount || m_starterProfileRecords[index].speciesDex!=pokemon.dex) {
+        if(m_starterProfileCount==m_starterProfileRecords.size()) return false;
+        for(size_t i=m_starterProfileCount;i>index;--i) m_starterProfileRecords[i]=m_starterProfileRecords[i-1];
+        m_starterProfileRecords[index]={pokemon.dex,0,0,false};
+        ++m_starterProfileCount;
+    }
+    m_starterProfileRecords[index].observedFormAttr |= observed;
+    m_starterProfileRecords[index].observedAppearanceAttr |= appearance;
+    return true;
 }
 
 bool FirstRunRuntime::recordCaughtSpecies(uint16_t dex, const ResolvedPokemon* captured) {
-    uint64_t observedForm = 0;
+    uint64_t observedForm = 0;uint8_t appearance=0;
+    if(captured && !nativePokemonAppearanceAttr(captured->actor,appearance)) return false;
     if (captured && pokemonObservedDexFormAttr(captured->dex, captured->actor, observedForm) !=
             PokemonObservedFormResult::Ok) return false;
     if (captured) {
@@ -689,6 +747,8 @@ bool FirstRunRuntime::recordCaughtSpecies(uint16_t dex, const ResolvedPokemon* c
             if (pokemonCaptureFormUnlocks(captured->dex, captured->actor, dex, unlocked) !=
                     PokemonCaptureFormUnlockResult::Ok) return false;
             entry.unlockedFormAttr |= unlocked;
+            entry.caughtAppearanceAttr |= appearance;
+            if(dex==captured->dex) entry.observedAppearanceAttr |= appearance;
 
             if (species->freshProfileStarter && !seedNativeFreshStarterDexMetadata(entry)) return false;
             entry.natureAttr |= 1u << (static_cast<uint8_t>(captured->battleState.nature) + 1);
@@ -966,6 +1026,12 @@ bool FirstRunRuntime::restoreNativeRunSaveInPlace(const NativeRunSave& save) {
         expected.hp = save.secondEnemy.hp;
         expected.berryCriticalBoostStages = save.secondEnemy.berryCriticalBoostStages;
         expected.hasEatenBerry = save.secondEnemy.hasEatenBerry;
+        if (second.actor.appearanceResolved &&
+            (!save.secondEnemy.appearanceResolved || second.actor.shiny != save.secondEnemy.shiny ||
+             second.actor.shinyVariant != save.secondEnemy.shinyVariant)) return false;
+        expected.appearanceResolved = save.secondEnemy.appearanceResolved;
+        expected.shiny = save.secondEnemy.shiny;
+        expected.shinyVariant = save.secondEnemy.shinyVariant;
         expected.status = save.secondEnemy.status;
         expected.confusion = save.secondEnemy.confusion;
         expected.sturdyTag = save.secondEnemy.sturdyTag;
@@ -992,6 +1058,12 @@ bool FirstRunRuntime::restoreNativeRunSaveInPlace(const NativeRunSave& save) {
     m_context.player.battleState.hp = save.playerHp;
     m_context.player.battleState.hasEatenBerry = save.playerHasEatenBerry;
     m_context.enemy.battleState.hasEatenBerry = save.enemyHasEatenBerry;
+    if (m_context.enemy.actor.appearanceResolved &&
+        (!save.enemyAppearance.resolved || m_context.enemy.actor.shiny != save.enemyAppearance.shiny ||
+         m_context.enemy.actor.shinyVariant != save.enemyAppearance.variant)) return false;
+    m_context.enemy.actor.appearanceResolved = save.enemyAppearance.resolved;
+    m_context.enemy.actor.shiny = save.enemyAppearance.shiny;
+    m_context.enemy.actor.shinyVariant = save.enemyAppearance.variant;
     m_context.player.battleState.berryCriticalBoostStages = save.playerBerryCriticalBoostStages;
     m_context.enemy.battleState.berryCriticalBoostStages = save.enemyBerryCriticalBoostStages;
     for (uint8_t stat = 0; stat < 7; ++stat) {
@@ -1019,6 +1091,12 @@ bool FirstRunRuntime::restoreNativeRunSaveInPlace(const NativeRunSave& save) {
             actor.battleState.sturdy.present = saved.sturdyTag;
             actor.battleState.berryCriticalBoostStages = saved.berryCriticalBoostStages;
             actor.battleState.hasEatenBerry = saved.hasEatenBerry;
+            if (actor.actor.appearanceResolved &&
+                (!saved.appearance.resolved || actor.actor.shiny != saved.appearance.shiny ||
+                 actor.actor.shinyVariant != saved.appearance.variant)) return false;
+            actor.actor.appearanceResolved = saved.appearance.resolved;
+            actor.actor.shiny = saved.appearance.shiny;
+            actor.actor.shinyVariant = saved.appearance.variant;
             for (uint8_t stat = 0; stat < 7; ++stat) actor.battleState.statStages[stat] = saved.statStages[stat];
             for (uint8_t slot = 0; slot < saved.moveCount; ++slot)
                 actor.battleState.moves[slot].pp = saved.pp[slot];
@@ -2084,6 +2162,11 @@ bool FirstRunRuntime::finishPendingEvolution(bool accepted) {
     if (!learnPokemonEvolutionMoves(next.battleState, pending)) return false;
     next.moveCount = next.battleState.moveCount;
     for (uint8_t slot = 0; slot < next.moveCount; ++slot) next.moveIds[slot] = next.battleState.moves[slot].moveId;
+    // Pinned Pokemon.evolve -> setPokemonSeen(false), setPokemonCaught(false).
+    // Metadata-only catch updates are allowed only for an already caught root.
+    const auto* root=pokemonRootSpecies(next.dex);
+    if(!root || !recordSeenPokemon(next)) return false;
+    if(hasCaughtSpecies(root->dex) && !recordCaughtSpecies(next.dex,&next)) return false;
     m_pendingLevelMoves = pending;
     const uint8_t member = m_progressionPartyIndex < m_context.playerPartyCount
         ? m_progressionPartyIndex : m_context.activePlayerPartyIndex;
@@ -2461,6 +2544,7 @@ bool FirstRunRuntime::advanceBattleTurn() {
 bool FirstRunRuntime::startRun() {
     if (m_runStarted) return false;
     if (!m_context.playerPartyCount || !m_encounterResolved) return false;
+    if(!recordEncounterSeen()) {m_battleFeedback="Encounter observation could not be recorded";return false;}
     m_runStarted = true;
     m_checkpointAvailable = true;
     m_escapeAttempts = 0;
@@ -3401,7 +3485,9 @@ bool FirstRunRuntime::executeActiveBattleMove(uint8_t userIndex, uint8_t targetI
                 if (targetIndex == 1) {
                     m_context.enemy.battleState = opponent;
                     m_context.enemy.formId = opponent.formId;
+                    m_context.enemy.actor.formId = opponent.formId;
                     m_context.enemy.bossState = *targetBossState;
+                    if(!recordSeenPokemon(m_context.enemy)) return false;
                 }
                 m_battleFeedback = "Eternatus se transformo en Eternamax Eternatus!";
             }
@@ -4478,6 +4564,12 @@ bool FirstRunRuntime::resolveStarterFromDex(uint16_t dex, PokerogueRngAdapter& r
             if (!(dexMetadata->genderAttr & 8u)) return false;
             starterActor.gender = PokemonGender::Female;
         }
+        // GameData's caught DexAttr supplies the default appearance. This does
+        // not consume RNG; legacy records with no appearance remain unknown.
+        if(dexMetadata && dexMetadata->caughtAppearanceAttr) {
+            if(!nativeStarterDefaultAppearance(*dexMetadata,starterActor.shiny,starterActor.shinyVariant)) return false;
+            starterActor.appearanceResolved=true;
+        }
         starterActor.nature = starterNature;
         starterActor.formId = starterFormId;
         for (uint8_t& iv : starterActor.ivs) iv = starter.freshProfileStarter ? 15 : 0;
@@ -5094,6 +5186,10 @@ void FirstRunRuntime::resolve(bool carryPlayer, const char* checkpointBiomeId) {
                             m_context.activeTrainerPartyIndex = 0;
                             m_context.enemy = m_context.trainerParty[0];
                             m_run.encounterDex = m_context.enemy.dex;
+                            if(m_runStarted && !recordEncounterSeen()) {
+                                m_battleFeedback="Trainer observation could not be recorded";
+                                return;
+                            }
                             m_globalRng = waveRng;
                             m_encounterResolved = true;
                             m_checkpointAvailable = true;
@@ -5332,6 +5428,10 @@ void FirstRunRuntime::resolve(bool carryPlayer, const char* checkpointBiomeId) {
         } else {
             m_arenaWeather = {};
         }
+    }
+    if(m_runStarted && !recordEncounterSeen()) {
+        m_battleFeedback="Encounter observation could not be recorded";
+        return;
     }
     m_globalRng = waveRng;
     m_encounterResolved = true;
