@@ -253,7 +253,7 @@ public:
     }
     void draw(Renderer2D& renderer,const NativeRunSave* saved,const FirstRunRuntime* game=nullptr) {
         if(m_page!=FrontendPage::Pokedex) {
-            m_dexIcons.clear(); // Caller began a synchronized frame.
+            m_dexIcons.clear(&renderer); // Caller began a synchronized frame.
             if(m_dexVariants) C2D_SpriteSheetFree(m_dexVariants);
             m_dexVariants=nullptr;m_dexVariantsAttempted=false;
         }
@@ -431,6 +431,18 @@ private:
             char header[128];std::snprintf(header,sizeof(header),"#%u  %s",unsigned(selected.dex),known ? selected.name : "???");
             renderer.drawTextFitted(header,12,8,0.4f,296,0xffffffff);
 
+            const AppearanceIconIdentity* icons[24]{};
+            unsigned visible=0;
+            for(;visible<page.size() && page[visible];++visible) {
+                const auto& species=*page[visible];
+                const auto* record=game->starterProgress(species.dex);
+                bool shiny=false;uint8_t variant=0;PokemonGender gender=PokemonGender::Male;
+                const bool caughtAppearance=record && record->caught && nativeStarterDefaultAppearance(*record,shiny,variant);
+                if(record && record->caught && record->genderAttr) nativeStarterDefaultGender(*record,gender);
+                icons[visible]=findAppearanceIconIdentity(species.dex,0,caughtAppearance && gender==PokemonGender::Female,
+                    caughtAppearance && shiny,caughtAppearance ? variant : 0);
+            }
+            m_dexIcons.prepareAppearances(renderer,icons,visible);
             for(unsigned cell=0;cell<page.size() && page[cell];++cell) {
                 const auto& species=*page[cell];
                 const auto* record=game->starterProgress(species.dex);
@@ -438,7 +450,7 @@ private:
                 const float x=bounds.x,y=bounds.y;
                 if(start+cell==m_dexSelected) renderer.drawWindow(x,y,bounds.width,bounds.height);
                 const uint32_t tint=starterDiscoveryTint(starterDiscovery(record && record->caught,record ? record->observedFormAttr : 0));
-                if(!m_dexIcons.draw(renderer,species.dex,0,x+4,y+2,1.0f,1.0f,tint)) renderer.drawText("?",x+18,y+8,0.4f,0xffffffff);
+                if(!m_dexIcons.drawAppearance(renderer,icons[cell],x+4,y+2,1.0f,1,tint)) renderer.drawText("?",x+18,y+8,0.4f,0xffffffff);
                 if(record) drawDexVariants(renderer,nativeCaughtShinyVariants(*record),x+1,y+20);
             }
             char position[32];std::snprintf(position,sizeof(position),"%u / %u",m_dexSelected+1,total);
@@ -499,7 +511,7 @@ private:
         static const char* audio[]={"settings:masterVolume","settings:bgmVolume","settings:fieldVolume","settings:seVolume","settings:uiVolume"};
         return group==0 ? general[row] : group==1 ? display[row] : group==2 ? audio[row] : "settings:touchControls";
     }
-    PokemonIconPresenter m_dexIcons;
+    PokemonIconPresenter m_dexIcons{true,24,true};
     C2D_SpriteSheet m_dexVariants=nullptr;
     bool m_dexVariantsAttempted=false;
     unsigned m_hpBarSpeed=0,m_expGainsSpeed=0;

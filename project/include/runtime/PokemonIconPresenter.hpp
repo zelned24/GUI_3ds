@@ -60,7 +60,7 @@ inline void resolvePokemonDiscoveryIcon(ResolvedPokemonIcon& icon) {
 // Current snapshot: eight 512x512 RGBA8 pages, up to 8 MiB of texture RAM.
 class PokemonIconPresenter {
 public:
-    explicit PokemonIconPresenter(bool compact=false,unsigned appearanceCapacity=6,bool nativeTiles=false):m_compact(compact),m_nativeTiles(nativeTiles),m_appearanceCapacity(compact && appearanceCapacity==18 ? 18 : 6) {}
+    explicit PokemonIconPresenter(bool compact=false,unsigned appearanceCapacity=6,bool nativeTiles=false):m_compact(compact),m_nativeTiles(nativeTiles),m_appearanceCapacity(compact && (appearanceCapacity==18 || (nativeTiles && appearanceCapacity==24)) ? appearanceCapacity : 6) {}
     PokemonIconPresenter(const PokemonIconPresenter&)=delete;
     PokemonIconPresenter& operator=(const PokemonIconPresenter&)=delete;
     ~PokemonIconPresenter() {clear();}
@@ -89,7 +89,7 @@ public:
     bool prepareAppearances(Renderer2D& renderer,const AppearanceIconIdentity* const* identities,unsigned count) {
         m_appearancesReady=false;
         if(count>m_appearanceCapacity || (count && !identities)) return false;
-        uint16_t pages[18]{};unsigned pageCount=0;
+        uint16_t pages[24]{};unsigned pageCount=0;
         for(unsigned i=0;i<count;++i) {
             if(!identities[i]) continue; // Legacy appearance remains explicitly unknown.
             const auto* frame=appearanceIconPhysicalFrame(identities[i]);
@@ -176,7 +176,7 @@ private:
     }
     bool m_appearancesReady=false;
     unsigned m_appearanceCapacity=6;
-    Slot m_appearanceSlots[18]{};
+    Slot m_appearanceSlots[24]{};
     Slot m_slots[sizeof(kPokemonIconPages)/sizeof(kPokemonIconPages[0])]{};
 };
 }

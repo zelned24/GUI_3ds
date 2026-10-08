@@ -408,4 +408,17 @@ int main() {
         resolvePokemonDiscoveryIcon(invalid);assert(!invalid.appearance);
     }
 
+    {
+        PokemonIconPresenter dex(true,24,true);
+        const AppearanceIconIdentity* entries[25]{};
+        for(unsigned i=0;i<25;++i) entries[i]=findAppearanceIconIdentity(1,0,false,false,0);
+        const unsigned before=iconLoads;
+        assert(!dex.prepareAppearances(renderer,entries,25) && iconLoads==before);
+        assert(dex.prepareAppearances(renderer,entries,24) && iconLoads==before+1);
+        for(unsigned i=0;i<24;++i) assert(dex.drawAppearance(renderer,entries[i],0,0));
+        assert(dex.prepareAppearances(renderer,nullptr,0));
+        assert(!dex.drawAppearance(renderer,entries[0],0,0));
+        dex.clear(&renderer);
+    }
+
 }
