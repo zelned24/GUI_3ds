@@ -77,17 +77,18 @@ public:
             candyFeedback = nullptr;
             return true;
         }
-        if(rawPressed & (0x0040 /* KEY_UP */ | 0x00010000 /* KEY_CPAD_UP */)) {
+        if(rawPressed & (0x0040 /* KEY_UP */ | 0x40000000u /* KEY_CPAD_UP, libctru BIT(30) */)) {
             candyStoreSelection = (candyStoreSelection == 0) ? 1 : 0;
             candyFeedback = nullptr;
             return true;
         }
-        if(rawPressed & (0x0080 /* KEY_DOWN */ | 0x00020000 /* KEY_CPAD_DOWN */)) {
+        if(rawPressed & (0x0080 /* KEY_DOWN */ | 0x80000000u /* KEY_CPAD_DOWN, libctru BIT(31) */)) {
             candyStoreSelection = (candyStoreSelection == 0) ? 1 : 0;
             candyFeedback = nullptr;
             return true;
         }
         if(rawPressed & 0x0001 /* KEY_A */) {
+            if(!store) {candyFeedback="Guardado no disponible.";return true;}
             const uint16_t dex = game.selectedSetupStarterDex();
             const auto* rec = candyRecord(game, dex);
             if(!rec) {
@@ -113,15 +114,6 @@ public:
                     }
                     candyFeedback = "Error al guardar compra.";
                     return true;
-                } else {
-                    auto mutRecord = *rec;
-                    const auto pres = applyNativeStarterCostReduction(mutRecord);
-                    if(pres == StarterCostPurchaseResult::Applied) {
-                        candyFeedback = "Coste reducido con exito!";
-                        return true;
-                    }
-                    candyFeedback = "No se pudo aplicar la reduccion.";
-                    return true;
                 }
             } else {
                 if(rec->passiveUnlocked) {
@@ -140,15 +132,6 @@ public:
                         return true;
                     }
                     candyFeedback = "Error al guardar compra.";
-                    return true;
-                } else {
-                    auto mutRecord = *rec;
-                    const auto pres = applyNativeStarterPassiveUnlock(mutRecord, req);
-                    if(pres == StarterPassivePurchaseResult::Applied) {
-                        candyFeedback = "Pasiva desbloqueada con exito!";
-                        return true;
-                    }
-                    candyFeedback = "No se pudo desbloquear la pasiva.";
                     return true;
                 }
             }
@@ -427,10 +410,12 @@ public:
                 if(start+i==selectedForm) m_prompt.drawCursor(renderer,25,y,labelSize);
             }
             renderer.drawWindow(kStarterFormBackRect.x,kStarterFormBackRect.y,kStarterFormBackRect.width,kStarterFormBackRect.height);
-            renderer.drawTextFitted("Volver",43,189,0.3125f,249,0xffffffff);
+            renderer.drawTextFitted("Volver",180,189,0.3125f,108,0xffffffff);
+            renderer.drawWindow(kStarterFormCandyRect.x,kStarterFormCandyRect.y,kStarterFormCandyRect.width,kStarterFormCandyRect.height);
+            renderer.drawTextFitted("Caramelos",40,189,0.3125f,108,0xffffffff);
             renderer.drawTextFitted(formFeedback ? formFeedback : "L/R: página   A: elegir   B: volver",24,214,0.25f,272,0xffffffff);
         } else if(candyStoreOpen) {
-            renderer.drawWindow(12,24,296,186);
+            renderer.drawWindow(12,20,296,210);
             const uint16_t dex=game.selectedSetupStarterDex();
             const auto* species=PokerogueContent::findSpeciesByDex(dex);
             const auto* rec=candyRecord(game,dex);
@@ -473,8 +458,9 @@ public:
             }
             renderer.drawTextFitted(cbuf,46,148,0.28f,246,0xffe0e0e0);
 
-            if(candyFeedback) renderer.drawTextFitted(candyFeedback,24,176,0.28f,272,0xff80ffff);
-            else renderer.drawTextFitted("A: Comprar   B: Volver   Arriba/Abajo: Elegir",24,176,0.28f,272,0xffffffff);
+            renderer.drawWindow(kStarterCandyBackRect.x,kStarterCandyBackRect.y,kStarterCandyBackRect.width,kStarterCandyBackRect.height);
+            renderer.drawTextFitted("Volver",43,189,0.3125f,249,0xffffffff);
+            renderer.drawTextFitted(candyFeedback ? candyFeedback : "A: comprar   B: volver   Arriba/Abajo: elegir",24,214,0.25f,272,0xffffffff);
         }
     }
 private:

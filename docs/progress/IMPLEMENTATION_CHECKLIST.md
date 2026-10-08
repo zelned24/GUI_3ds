@@ -748,3 +748,5 @@ La búsqueda del índice generado usa búsqueda binaria sobre identidades ordena
 - [ ] Modal de formas y caramelos: el panel de formas cubre los botones anteriores, comparte límites táctiles/dibujo y tiene regreso explícito. Nombres y textos largos usan ancho acotado y el cursor sigue el tamaño realmente dibujado. Guard JS PASS; prueba nativa exhaustiva de coordenadas escrita sin ejecutar. Validación visual pendiente.
 
 - [ ] Foco/paginación de formas: abre en la preferencia real, muestra posición/total y permite L/R por páginas, sin IDs adicionales ni cambios al perfil al navegar. Resolver de desbloqueo reutiliza búsqueda por ID del perfil. Guard JS PASS; casos nativos de navegación reversible/vacío escritos y sin ejecutar; interacción visual pendiente.
+
+- [ ] Tienda de caramelos conectada: botón táctil desde Formas y X abren el modal; D-pad/Circle Pad y táctil eligen opciones, volver regresa a Formas. Compras pasan por gameplay y transacción `NativeProgressStore`; sin almacenamiento no hay éxito simulado ni cambios sobre copias descartadas. Entrada del modal aislada del bridge. Guard JS PASS; geometría nativa escrita, interacción/SD sin verificar.

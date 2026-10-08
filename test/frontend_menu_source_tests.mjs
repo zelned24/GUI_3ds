@@ -104,3 +104,13 @@ assert(!main.includes('setup.formsOpen=true;setup.selectedForm=0'));
 assert(setup.includes('if(formIndexAt(game,ordinal)==current)'));
 assert(main.includes('moveStarterFormCursor(setup.selectedForm,count,-int(Pokerogue3DS::kStarterFormPageSize))'));
 assert(main.includes('moveStarterFormCursor(setup.selectedForm,count,int(Pokerogue3DS::kStarterFormPageSize))'));
+
+assert(main.includes('if(setupInput && setup.candyStoreOpen)'));
+assert(main.includes('setup.handleCandyStoreInput(KEY_A,game,&progress)'));
+assert(main.includes('kStarterFormCandyRect.contains(touch.px,touch.py)'));
+assert(main.includes('isPaused || partyInput || setupModalInput'));
+assert(setup.includes('if(!store) {candyFeedback="Guardado no disponible.";return true;}'));
+assert(!setup.includes('auto mutRecord = *rec'));
+assert(!setup.includes('applyNativeStarterCostReduction(mutRecord)'));
+assert(setup.includes('0x40000000u /* KEY_CPAD_UP'));
+assert(setup.includes('0x80000000u /* KEY_CPAD_DOWN'));

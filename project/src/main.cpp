@@ -403,11 +403,25 @@ int main() {
         const bool partyInput=!isPaused && (partyMenu.open || ((rawPressed & KEY_SELECT) && partyMenu.available(game)));
         const bool battleMenuInput=!isPaused && !partyInput && Pokerogue3DS::MoveMenuPresenter::visible(game) && !game.capturePartyChoicePending();
         const bool rewardInput=!isPaused && game.rewardsPending() && !game.moveLearningPending() && !game.evolutionPending();
-        const uint32_t pressed=(isPaused || partyInput) ? 0 : (setupInput || battleMenuInput) ? rawPressed & (KEY_X | KEY_Y)
+        const bool setupModalInput=setupInput && (setup.formsOpen || setup.candyStoreOpen || setup.confirmStart);
+        const uint32_t pressed=(isPaused || partyInput || setupModalInput) ? 0 : (setupInput || battleMenuInput) ? rawPressed & (KEY_X | KEY_Y)
             : rewardInput ? rawPressed & (KEY_X | KEY_Y | KEY_L | KEY_R) : rawPressed;
         bool changed = false;
         if (!isPaused) {
-        if(setupInput && setup.confirmStart) {
+        if(setupInput && setup.candyStoreOpen) {
+            if(rawPressed & KEY_TOUCH) {
+                touchPosition touch{};hidTouchRead(&touch);
+                if(Pokerogue3DS::kStarterCandyBackRect.contains(touch.px,touch.py))
+                    setup.handleCandyStoreInput(KEY_B,game,&progress);
+                else for(unsigned option=0;option<2;++option)
+                    if(Pokerogue3DS::kStarterCandyOptionRects[option].contains(touch.px,touch.py)) {
+                        if(setup.candyStoreSelection==option) setup.handleCandyStoreInput(KEY_A,game,&progress);
+                        else {setup.candyStoreSelection=option;setup.candyFeedback=nullptr;}
+                        break;
+                    }
+            } else setup.handleCandyStoreInput(rawPressed,game,&progress);
+            if(!setup.candyStoreOpen) setup.openForms(game);
+        } else if(setupInput && setup.confirmStart) {
             if(rawPressed & (KEY_LEFT | KEY_RIGHT | KEY_CPAD_LEFT | KEY_CPAD_RIGHT)) setup.confirmYes=!setup.confirmYes;
             if(rawPressed & KEY_B) setup.confirmStart=false;
             if(rawPressed & KEY_TOUCH) {
@@ -426,6 +440,10 @@ int main() {
                 setup.confirmStart=false;
             }
         } else if(setupInput && setup.formsOpen) {
+            if(rawPressed & KEY_X) {
+                setup.formsOpen=false;setup.candyStoreOpen=true;setup.candyStoreSelection=0;setup.candyFeedback=nullptr;
+                rawPressed=0;
+            }
             const unsigned count=setup.formCount(game);
             if(count && (rawPressed & (KEY_UP | KEY_CPAD_UP))) setup.selectedForm=Pokerogue3DS::moveStarterFormCursor(setup.selectedForm,count,-1);
             if(count && (rawPressed & (KEY_DOWN | KEY_CPAD_DOWN))) setup.selectedForm=Pokerogue3DS::moveStarterFormCursor(setup.selectedForm,count,1);
@@ -446,6 +464,8 @@ int main() {
                             setup.selectedForm=row;
                         }
                     }
+                } else if(Pokerogue3DS::kStarterFormCandyRect.contains(touch.px,touch.py)) {
+                    setup.formsOpen=false;setup.candyStoreOpen=true;setup.candyStoreSelection=0;setup.candyFeedback=nullptr;
                 } else if(Pokerogue3DS::kStarterFormBackRect.contains(touch.px,touch.py)) {
                     setup.formsOpen=false;
                 }
