@@ -8,6 +8,25 @@ export function registerQuickJsStorageTests(register) {
   const source = readFileSync(new URL('../scripts/bundle_quickjs.mjs', import.meta.url), 'utf8');
   const match = source.match(/const entry = `([\s\S]*?)`;/);
   assert.ok(match, 'diagnostic entry template exists');
+  register('QuickJS production: commands run without duplicate diagnostic rendering', () => {
+    const commands = [], draws = [];
+    const context = { JSON, Math, _3ds_diagnosticRenderingEnabled: false };
+    for (const name of new Set(match[1].match(/_3ds_[A-Za-z]+/g))) {
+      if (name !== '_3ds_diagnosticRenderingEnabled') context[name] = () => undefined;
+    }
+    context._3ds_getBattleState = () => JSON.stringify({ runStarted: true, finished: false, selectedMove: 0 });
+    context._3ds_getPresentationInfo = () => ({});
+    context._3ds_submitAction = value => commands.push(value);
+    for (const name of ['_3ds_beginTop', '_3ds_beginBottom', '_3ds_clear', '_3ds_drawText', '_3ds_drawPokemon'])
+      context[name] = () => draws.push(name);
+    vm.createContext(context); vm.runInContext(match[1], context);
+    context._3ds_tick({ A: true });
+    assert.deepEqual(commands, [0]);
+    assert.deepEqual(draws, [], 'native screens must have one renderer');
+    context._3ds_tick({});
+    assert.deepEqual(commands, [0]);
+    assert.deepEqual(draws, []);
+  });
   for (const [key, binding] of [['X', '_3ds_importNative'], ['Y', '_3ds_exportNative'],
     ['L', '_3ds_saveNative'], ['R', '_3ds_loadNative']]) {
     register(`QuickJS storage: ${key} queues only ${binding}`, () => {

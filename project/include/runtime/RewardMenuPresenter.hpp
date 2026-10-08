@@ -144,8 +144,8 @@ public:
             return;
         }
 
-        renderer.drawWindow(16,12,288,32);
-        renderer.drawTextFitted("Recompensas de combate",28,18,0.40f,264,0xffffffff);
+        // Reward information is displayed on the upper screen. The lower
+        // screen contains selection targets and the two confirmation actions.
         for(unsigned i=0;i<game.rewardChoiceCount() && i<3;++i) {
             const auto& bounds=kRewardChoiceRects[i];
             renderer.drawWindow(bounds.x,bounds.y,bounds.width,bounds.height);
@@ -153,9 +153,6 @@ public:
             const float labelSize=renderer.drawTextFitted(label,bounds.x+38,bounds.y+9,0.40f,bounds.width-44,0xffffffff);
             if(i==game.selectedRewardChoice()) m_cursor.drawCursor(renderer,bounds.x+20,bounds.y+9,labelSize);
         }
-        renderer.drawTextFitted("D-Pad o táctil: elegir recompensa",20,108,0.34f,280,0xffd0c0d8);
-        renderer.drawTextFitted("A: seleccionar   B: omitir",20,135,0.34f,280,0xff80ffff);
-
         // Draw and touch use the same action geometry. Fit to complete native
         // font rasters; the label cannot bleed into the neighboring button.
         const auto& claim=kRewardClaimButtonRect;
@@ -164,7 +161,7 @@ public:
         const auto& skip=kRewardSkipButtonRect;
         renderer.drawWindow(skip.x,skip.y,skip.width,skip.height);
         renderer.drawTextFitted("B: Omitir",skip.x+12,skip.y+18,0.42f,skip.width-24,0xfff08080);
-        renderer.drawTextFitted(game.battleFeedback().c_str(),16,226,0.24f,288,0xffffffff);
+
     }
 
     // Backwards compatibility draw helpers

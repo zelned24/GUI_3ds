@@ -884,7 +884,13 @@ int main() {
         if(game.presentationStage()!=Pokerogue3DS::NativeSaveStage::RunSetup) setup.releaseIconPages(renderer);
 #if defined(POKEROGUE_ENABLE_QUICKJS)
         if (!isPaused && bridgeReady && bridge.healthy()) {
+#if defined(POKEROGUE_QUICKJS_DIAGNOSTIC_RENDER)
             bridge.tick(pressed);
+#else
+            // The diagnostic host has no async jobs or timed gameplay. Native
+            // presenters animate continuously; JS only receives command pulses.
+            if (pressed) bridge.tick(pressed);
+#endif
 #if defined(POKEROGUE_QUICKJS_DIAGNOSTIC_RENDER)
             renderer.endFrame();
             gspWaitForVBlank();

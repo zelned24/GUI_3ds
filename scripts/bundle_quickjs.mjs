@@ -113,6 +113,9 @@ globalThis._3ds_tick = function(input) {
   } else if (input.up) _3ds_submitAction(-1);
   else if (input.down) _3ds_submitAction(100);
   else if (input.B && state.finished && state.playerWon && state.experienceGranted) _3ds_skipReward();
+  // Native presenters own production screens. Never draw a second HUD beneath
+  // them: that duplicates sprites/text and consumes the shared glyph buffer.
+  if (globalThis._3ds_diagnosticRenderingEnabled === false) return;
   const combatLog = _3ds_getCombatLog();
   if (presentation.classicClearPending) {
     _3ds_beginTop(); _3ds_clear(0xFF2D1B4E);

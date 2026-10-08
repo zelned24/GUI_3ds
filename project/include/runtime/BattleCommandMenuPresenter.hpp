@@ -181,7 +181,8 @@ public:
 
             // Footer bar
             renderer.drawWindow(12, 202, 296, 32);
-            renderer.drawText("A: Lanzar    B: Volver", 24, 210, 0.30f, C2D_Color32(255, 255, 255, 255));
+            renderer.drawTextFitted("A: Lanzar",24,210,0.375f,128,0xffffffff);
+            renderer.drawTextFitted("B: Volver",172,210,0.375f,120,0xffffffff);
         }
     }
 

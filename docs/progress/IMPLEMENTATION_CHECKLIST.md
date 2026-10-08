@@ -1098,3 +1098,15 @@ La búsqueda del índice generado usa búsqueda binaria sobre identidades ordena
 - [ ] Conectar incubación, gacha y eclosión a las fases reales y a sus submenús.
 
 La compilación ARM solicitada terminó correctamente; no prueba ejecución de huevos ni fidelidad visual en Azahar.
+
+### Observaciones del preview en Azahar
+
+- [ ] Verificar rendimiento tras eliminar el segundo dibujado del HUD diagnóstico QuickJS y evitar ticks JS sin comandos; corrección implementada, FPS pendientes de medir.
+- [ ] Verificar letras pequeñas y separación de etiquetas A/B; el cuadro de diálogo ya es legible según las capturas.
+- [ ] Comprobar A/B y táctil en cada menú, diferenciando comandos rechazados por reglas pendientes de fallos de navegación.
+- [ ] Conectar reproducción real de audio; no hay backend de audio en producción.
+- [ ] Alinear la plataforma del jugador y cubrir por completo el fondo superior.
+- [ ] Resolver iconos de objetos y nombres de recompensas parametrizadas, sin sustituirlos por imágenes inventadas.
+- [ ] Verificar recompensas con información solo arriba y controles abajo; eliminados el encabezado, las instrucciones duplicadas y el log de la pantalla inferior.
+- [ ] Completar la respuesta del enemigo tras captura fallida: la captura muestra `Enemy response could not resolve`.
+- [ ] Comprobar variedad de encuentros con semillas nuevas y restauración; una partida determinista restaurada debe conservar su encuentro.

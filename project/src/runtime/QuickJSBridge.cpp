@@ -91,6 +91,13 @@ bool QuickJSBridge::init(Renderer2D& renderer) {
         if (JS_IsException(function)) { ok = false; break; }
         if (JS_SetPropertyStr(m_context, global, binding.name, function) < 0) { ok = false; break; }
     }
+#if defined(POKEROGUE_QUICKJS_DIAGNOSTIC_RENDER)
+    const bool diagnosticRendering = true;
+#else
+    const bool diagnosticRendering = false;
+#endif
+    if (JS_SetPropertyStr(m_context, global, "_3ds_diagnosticRenderingEnabled",
+            JS_NewBool(m_context, diagnosticRendering)) < 0) ok = false;
     JS_FreeValue(m_context, global);
     if (!ok) { captureException(); fini(); return false; }
     // No host time/unseeded RNG exposed to gameplay. The bundle supplies its pinned seeded RNG.
