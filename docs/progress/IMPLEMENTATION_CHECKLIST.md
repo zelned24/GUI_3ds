@@ -811,3 +811,6 @@ La búsqueda del índice generado usa búsqueda binaria sobre identidades ordena
 - [ ] Comparación visual y ejecución GPU de los nuevos atlas pendiente; ritmo 12 FPS conservado, sin compilación ni Azahar. El remuestreo offline 1.25× conserva pixels de origen no uniformes.
 
 - [x] Reproducibilidad de arena: segunda conversión de fondos y capas compara 158 hashes de reportes, cabeceras, texturas y metadata; todos idénticos (`test/arena_conversion_determinism_tests.py`). Guards de raster 1:1 y selección de recursos PASS. Esto no valida salida Citro2D.
+
+- [x] Fuentes físicas: las cuatro hojas BCFNT A4 contienen exclusivamente alpha 0/15; cobertura ASCII/UI/catálogos y hashes de cada archivo PASS. Fuente TTF pinned y métricas publicadas en `docs/generated/NATIVE_FONT_REPORT.json`; pipeline conserva el reporte versionado.
+- [ ] Legibilidad y alineación visual de fuentes siguen pendientes: alpha binario y cobertura no prueban apariencia en pantalla ni alineación de todos los submenús. Sin compilación ni Azahar.

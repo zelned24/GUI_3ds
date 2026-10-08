@@ -1,0 +1,63 @@
+{
+  "alphaPolicy": "FreeType monochrome outlines at 96 DPI; native CFNT metrics",
+  "files": [
+    {
+      "bytes": 33540,
+      "capitalInkHeight": 6,
+      "capitalInkTop": 8,
+      "convertedPath": "romfs:/presentation/fonts/emerald-8.bcfnt",
+      "convertedSHA256": "97aeb64e40136a124b256dd195e6b2721a58e03ec42abc2910592a119e14d790",
+      "lineFeed": 9,
+      "points": 8,
+      "rasterCellHeight": 17,
+      "sheetBytes": 32768,
+      "uncompactedBytes": 525060
+    },
+    {
+      "bytes": 66308,
+      "capitalInkHeight": 7,
+      "capitalInkTop": 9,
+      "convertedPath": "romfs:/presentation/fonts/emerald-10.bcfnt",
+      "convertedSHA256": "fd124fef5718369ae1c6d6e3a2f1308fc89c5089577dbe1e77c5d4c918c525b5",
+      "lineFeed": 12,
+      "points": 10,
+      "rasterCellHeight": 19,
+      "sheetBytes": 65536,
+      "uncompactedBytes": 525060
+    },
+    {
+      "bytes": 66308,
+      "capitalInkHeight": 9,
+      "capitalInkTop": 12,
+      "convertedPath": "romfs:/presentation/fonts/emerald-12.bcfnt",
+      "convertedSHA256": "f1f69a408b8568933e93ebd859dde8dc6737a6000d9d60c97f4905a4bc1810b6",
+      "lineFeed": 14,
+      "points": 12,
+      "rasterCellHeight": 23,
+      "sheetBytes": 65536,
+      "uncompactedBytes": 525060
+    },
+    {
+      "bytes": 131844,
+      "capitalInkHeight": 12,
+      "capitalInkTop": 16,
+      "convertedPath": "romfs:/presentation/fonts/emerald.bcfnt",
+      "convertedSHA256": "7e3ad093f557be2e034532129a37f1ac8820441791631d5668f61ea0a3eea345",
+      "lineFeed": 19,
+      "points": 16,
+      "rasterCellHeight": 31,
+      "sheetBytes": 131072,
+      "uncompactedBytes": 525060
+    }
+  ],
+  "rasterizer": {
+    "freetype": "2.13.3",
+    "pillow": "11.3.0"
+  },
+  "repository": "https://github.com/pagefaultgames/pokerogue-assets",
+  "revision": "056a1f408f26a3be4fef243f7462cb43608c7928",
+  "schemaVersion": 1,
+  "sourcePath": "fonts/pokemon-emerald-pro.ttf",
+  "sourceSHA256": "169c2420caa25b57ed9b5136b19a85858cbcf26b1e9b5b0fc7962e152f7401b9",
+  "whitelistSHA256": "2d31f17ca3fa23e183f220f16eca609fe3680f592b1e5c46626c52545a425248"
+}

@@ -1,10 +1,27 @@
 """Static native-font coverage; does not compile or launch the game."""
-import json,re,sys,unittest
+import hashlib,json,re,struct,subprocess,sys,unittest
 from pathlib import Path
 ROOT=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT/'scripts'))
 from pixel_font import glyph_ink_bounds
 class UiFontCoverage(unittest.TestCase):
+    def test_native_font_provenance_and_binary_alpha(self):
+        report=json.loads((ROOT/'docs/generated/NATIVE_FONT_REPORT.json').read_text(encoding='utf-8'))
+        self.assertEqual(report,json.loads((ROOT/'build/native-presentation/font-provenance.json').read_text(encoding='utf-8')))
+        pinned=subprocess.check_output(['git','-C',str(ROOT/'build/upstream/pokerogue-assets'),'show',report['revision']+':'+report['sourcePath']])
+        self.assertEqual(hashlib.sha256(pinned).hexdigest(),report['sourceSHA256'])
+        for row in report['files']:
+            data=(ROOT/'build/romfs'/row['convertedPath'].removeprefix('romfs:/')).read_bytes()
+            self.assertEqual(hashlib.sha256(data).hexdigest(),row['convertedSHA256'])
+            tglp=struct.unpack_from('<I',data,36)[0]
+            sheet_size,sheets,texture_format=struct.unpack_from('<IHH',data,tglp+4)
+            offset=struct.unpack_from('<I',data,tglp+20)[0]
+            self.assertEqual(texture_format,11) # GPU_A4
+            alpha=data[offset:offset+sheet_size*sheets]
+            self.assertEqual(len(alpha),row['sheetBytes'])
+            self.assertTrue(alpha)
+            self.assertTrue(all(byte in (0,15,240,255) for byte in alpha))
+
     def test_ui_literals_have_ink_in_every_native_font(self):
         files=[ROOT/'project/generated/include/content/RuntimeUiText.hpp',ROOT/'project/src/main.cpp']
         for directory in ['project/include/runtime','project/src/runtime']:
