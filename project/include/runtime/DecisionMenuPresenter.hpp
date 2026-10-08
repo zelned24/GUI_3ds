@@ -16,13 +16,22 @@ public:
         if(game.capturePartyChoicePending()) {
             renderer.drawTextFitted(game.pendingCapturedPokemon().localizedName,12,6,0.5f,294,0xffffffff);
             const auto& context=game.presentation();
+            ResolvedPokemonIcon icons[6]{};const AppearanceIconIdentity* appearances[6]{};
             for(unsigned i=0;i<context.playerPartyCount && i<6;++i) {
-                const auto& actor=context.playerParty[i];const auto& bounds=kPartyButtonRects[i];
+                const auto& actor=i==context.activePlayerPartyIndex ? context.player : context.playerParty[i];
+                const bool known=actor.actorIdentityResolved && actor.actor.appearanceResolved && actor.actor.gender!=PokemonGender::Unspecified;
+                icons[i]=resolvePokemonIcon(actor.dex,actor.formId,known,actor.actor.gender==PokemonGender::Female,actor.actor.shiny,actor.actor.shinyVariant);
+                appearances[i]=icons[i].appearance;
+            }
+            m_icons.prepareAppearances(renderer,appearances,std::min(unsigned(context.playerPartyCount),6u));
+            for(unsigned i=0;i<context.playerPartyCount && i<6;++i) {
+                const auto& actor=i==context.activePlayerPartyIndex ? context.player : context.playerParty[i];const auto& bounds=kPartyButtonRects[i];
                 const float y=bounds.y;
                 renderer.drawWindow(bounds.x,y,bounds.width,bounds.height);
-                const auto* form=PokerogueContent::findFormById(actor.formId);
-                const unsigned formIndex=form ? form->upstreamFormIndex : 0;
-                m_icons.draw(renderer,actor.dex,formIndex,34,y+5,1,1);
+                bool drawn=false;
+                if(icons[i].appearance) drawn=m_icons.drawAppearance(renderer,icons[i].appearance,34,y+5);
+                else if(icons[i].normalIconAllowed) drawn=m_icons.draw(renderer,actor.dex,icons[i].formIndex,34,y+5,1,1);
+                if(!drawn) renderer.drawTextFitted("?",34,y+5,0.3125f,20,0xffffffff);
                 const float nameSize=renderer.drawTextFitted(actor.localizedName,61,y+3,0.36f,168,0xffffffff);
                 char hp[32];std::snprintf(hp,sizeof(hp),"%u/%u",actor.battleState.hp,actor.battleState.maxHp);
                 renderer.drawTextFitted(hp,237,y+3,0.32f,67,0xffffffff);

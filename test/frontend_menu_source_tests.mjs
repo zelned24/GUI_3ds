@@ -274,4 +274,7 @@ assert(frontend.includes("renderer->retireSpriteSheet(m_dexVariants)"));
 
 assert(partyPresentation.includes("m_icons.prepareAppearances(renderer,appearances,std::min(count,6u))"));
 assert(partyPresentation.includes("m_icons.drawAppearance(renderer,appearances[i]"));
-assert(partyPresentation.includes("!std::strcmp(form.speciesId,owner->id)"));
+assert(partyPresentation.includes("resolvePokemonIcon(actor.dex,actor.formId"));
+
+assert(decisions.includes("resolvePokemonIcon(actor.dex,actor.formId"));
+assert(decisions.includes("m_icons.drawAppearance(renderer,icons[i].appearance,34,y+5)"));

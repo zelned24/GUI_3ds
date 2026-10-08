@@ -3,6 +3,7 @@
 #include "content/PokemonIcons.hpp"
 #include "content/CompactPokemonIcons.hpp"
 #include "content/AppearanceIconIdentities.hpp"
+#include "content/PokerogueRuntimeContent.hpp"
 #include <cmath>
 #include <algorithm>
 namespace Pokerogue3DS {
@@ -26,6 +27,24 @@ inline const PokemonIconDefinition* findPokemonIcon(uint16_t dex,uint16_t formIn
     if(first==kPokemonIconCount) return nullptr;
     const auto& row=kPokemonIcons[first];
     return row.dex==dex && row.formIndex==formIndex ? &row : nullptr;
+}
+struct ResolvedPokemonIcon {
+    const AppearanceIconIdentity* appearance=nullptr;
+    uint16_t formIndex=0;
+    bool normalIconAllowed=false;
+};
+// Resolves imported form ownership before looking up a baseline appearance.
+inline ResolvedPokemonIcon resolvePokemonIcon(uint16_t dex,const char* formId,bool appearanceKnown,bool female,bool shiny,uint8_t variant) {
+    ResolvedPokemonIcon result;
+    const auto* owner=PokerogueContent::findSpeciesByDex(dex);if(!owner) return result;
+    if(formId && *formId) {
+        const auto* form=PokerogueContent::findFormById(formId);
+        if(!form || std::strcmp(form->speciesId,owner->id)) return result;
+        result.formIndex=form->upstreamFormIndex;
+    }
+    result.normalIconAllowed=!appearanceKnown;
+    if(appearanceKnown) result.appearance=findAppearanceIconIdentity(dex,result.formIndex,female,shiny,variant);
+    return result;
 }
 // Lazy residency for indexed pages avoids synchronous reloads while browsing.
 // Current snapshot: eight 512x512 RGBA8 pages, up to 8 MiB of texture RAM.

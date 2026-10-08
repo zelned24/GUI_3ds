@@ -51,14 +51,9 @@ public:
         bool normalIconAllowed[6]{};
         for(unsigned i=0;i<count && i<6;++i) {
             const auto& actor=(i==context.activePlayerPartyIndex) ? context.player : context.playerParty[i];
-            bool formResolved=!actor.formId || !*actor.formId;
-            const auto* owner=PokerogueContent::findSpeciesByDex(actor.dex);
-            if(!formResolved && owner) for(const auto& form:PokerogueContent::kForms)
-                if(!std::strcmp(form.speciesId,owner->id) && !std::strcmp(form.id,actor.formId)) {formIndices[i]=form.upstreamFormIndex;formResolved=true;break;}
             const bool appearanceKnown=actor.actorIdentityResolved && actor.actor.appearanceResolved && actor.actor.gender!=PokemonGender::Unspecified;
-            normalIconAllowed[i]=formResolved && !appearanceKnown;
-            if(formResolved && appearanceKnown)
-                appearances[i]=findAppearanceIconIdentity(actor.dex,formIndices[i],actor.actor.gender==PokemonGender::Female,actor.actor.shiny,actor.actor.shinyVariant);
+            const auto icon=resolvePokemonIcon(actor.dex,actor.formId,appearanceKnown,actor.actor.gender==PokemonGender::Female,actor.actor.shiny,actor.actor.shinyVariant);
+            appearances[i]=icon.appearance;formIndices[i]=icon.formIndex;normalIconAllowed[i]=icon.normalIconAllowed;
         }
         m_icons.prepareAppearances(renderer,appearances,std::min(count,6u));
 

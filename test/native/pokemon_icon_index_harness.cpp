@@ -47,6 +47,11 @@ int main() {
         assert(appearanceIconPhysicalFrame(&identity));
     }
     assert(!findAppearanceIconIdentity(0,0,false,false,0));
+    assert(!resolvePokemonIcon(0,nullptr,false,false,false,0).normalIconAllowed);
+    assert(!resolvePokemonIcon(1,"missing-form",false,false,false,0).normalIconAllowed);
+    const auto invalidVariantIcon=resolvePokemonIcon(1,nullptr,true,false,false,1);
+    assert(!invalidVariantIcon.appearance && !invalidVariantIcon.normalIconAllowed);
+
     assert(!findAppearanceIconIdentity(1,65535,false,false,0));
     assert(!findAppearanceIconIdentity(1,0,false,false,1));
     assert(!findAppearanceIconIdentity(1,0,false,true,3));
@@ -192,6 +197,14 @@ int main() {
         for(const auto& species:PokerogueContent::kSpecies)
             if(!std::strcmp(species.id,form.speciesId)) owner=species.dex;
         assert(owner);
+        const auto knownIcon=resolvePokemonIcon(owner,form.id,true,false,true,0);
+        assert(knownIcon.formIndex==form.upstreamFormIndex && !knownIcon.normalIconAllowed);
+        assert(knownIcon.appearance==findAppearanceIconIdentity(owner,form.upstreamFormIndex,false,true,0));
+        const auto legacyIcon=resolvePokemonIcon(owner,form.id,false,false,false,0);
+        assert(legacyIcon.formIndex==form.upstreamFormIndex && legacyIcon.normalIconAllowed && !legacyIcon.appearance);
+        const auto wrongOwnerIcon=resolvePokemonIcon(owner==1 ? 4 : 1,form.id,true,false,false,0);
+        assert(!wrongOwnerIcon.appearance && !wrongOwnerIcon.normalIconAllowed);
+
         assert(PokemonAtlasPresenter::resolveAtlasKey(owner,form.id,key));
         assert(key==form.atlasKey);
         assert(canonicalPresentationTypes(owner,form.id,first,second));
