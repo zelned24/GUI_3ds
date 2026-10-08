@@ -107,6 +107,15 @@ int main() {
             renderer.drawImageDirect(image,0,0,0,24);
             renderer.drawImageDirect(image,0,0,24,-1);
             renderer.drawImageDirect(image,std::numeric_limits<float>::max(),0,std::numeric_limits<float>::max(),24);
+            const auto originalSub=sub;
+            sub.left=nan;renderer.drawImageDirect(image,0,0,24,24);
+            sub=originalSub;sub.top=inf;renderer.drawImageDirect(image,0,0,24,24);
+            sub=originalSub;
+            const Renderer2D::AtlasFrame frame{0,0,24,24,24,24,0,0};
+            sub.left=sub.right;renderer.drawAtlasFrame(image,frame,0,0,24,24);
+            sub=originalSub;sub.top=sub.bottom;renderer.drawAtlasFrame(image,frame,0,0,24,24);
+            sub=originalSub;sub.bottom=nan;renderer.drawAtlasFrame(image,frame,0,0,24,24);
+            sub=originalSub;
             assert(imageDraws==before);
             renderer.drawImageDirect(image,0,0,24,24,0,2);
             assert(imageDraws==before+1 && imageScaleX==1 && imageScaleY==1);

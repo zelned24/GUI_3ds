@@ -233,7 +233,9 @@ void Renderer2D::drawImageDirect(
     if (!m_currentTarget || !std::isfinite(x) || !std::isfinite(y) ||
         !std::isfinite(width) || !std::isfinite(height) || !std::isfinite(rotation) ||
         !std::isfinite(opacity) || width<=0 || height<=0 || opacity<=0.001f || !img.tex || !img.subtex
-        || !img.subtex->width || !img.subtex->height) return;
+        || !img.subtex->width || !img.subtex->height
+        || !std::isfinite(img.subtex->left) || !std::isfinite(img.subtex->right)
+        || !std::isfinite(img.subtex->top) || !std::isfinite(img.subtex->bottom)) return;
     opacity=std::min(opacity,1.0f);
 
     // Force nearest-neighbor sampling on PICA200 GPU to preserve crisp pixel art
@@ -280,7 +282,9 @@ void Renderer2D::drawAtlasFrame(C2D_Image atlas, const AtlasFrame& frame,
         || frame.y + frame.height > atlas.subtex->height
         || frame.trimX + frame.width > frame.sourceWidth + 1
         || frame.trimY + frame.height > frame.sourceHeight + 1
-        || atlas.subtex->top < atlas.subtex->bottom) return;
+        || !std::isfinite(atlas.subtex->left) || !std::isfinite(atlas.subtex->right)
+        || !std::isfinite(atlas.subtex->top) || !std::isfinite(atlas.subtex->bottom)
+        || atlas.subtex->left>=atlas.subtex->right || atlas.subtex->top<=atlas.subtex->bottom) return;
 
     const auto& base = *atlas.subtex;
     const float du = base.right - base.left;

@@ -986,3 +986,5 @@ La búsqueda del índice generado usa búsqueda binaria sobre identidades ordena
 
 - [x] Índice físico de tiles: prueba Python compara orden exacto de 5.054 sourcePath/SHA-256 con AppearanceIcons, revisión/inventario y orden de paths C++; PASS. Prueba correspondencia de metadata/píxeles, no carga/dibujo C++.
 - [x] Brain map actualizado con subgrafo nativeIconTiles: pipeline, índices, consumidores, geometría y pruebas; 265 archivos/577 dependencias. Estado actualizado distingue implementación y validación nativa pendiente.
+
+- [ ] UV inválidas: renderer directo rechaza UV NaN/infinito; atlas rechaza también regiones degeneradas/rotadas. Loader de apariencias aplica validación antes de registrar textura disponible y recuerda el fallo hasta clear. Casos directos/atlas añadidos al harness sin ejecutar; guards estáticos PASS. Sin prueba GPU ni compilación.

@@ -115,7 +115,9 @@ public:
                     const auto image=C2D_SpriteSheetGetImage(selected->sheet,0);
                     const unsigned expected=m_nativeTiles ? 64 : m_compact ? 256 : 512;
                     if(!image.tex || !image.subtex || image.subtex->width!=expected || image.subtex->height!=(m_nativeTiles ? 32 : expected) ||
-                        image.subtex->top<image.subtex->bottom) {
+                        !std::isfinite(image.subtex->left) || !std::isfinite(image.subtex->right)
+                        || !std::isfinite(image.subtex->top) || !std::isfinite(image.subtex->bottom)
+                        || image.subtex->left>=image.subtex->right || image.subtex->top<=image.subtex->bottom) {
                         renderer.retireSpriteSheet(selected->sheet);selected->sheet=nullptr;
                     } else C3D_TexSetFilter(image.tex,GPU_NEAREST,GPU_NEAREST);
                 }
