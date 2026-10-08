@@ -461,3 +461,9 @@ assert(frontend.includes("eggListRowRectangle(unsigned(row)).contains(touchX,tou
 assert(frontend.includes("kEggListConfirmRect.contains(touchX,touchY)"));
 assert(frontend.includes("renderer.drawWindow(kEggListConfirmRect.x"));
 assert(frontend.includes("renderer.drawWindow(kEggListBackRect.x"));
+
+assert(hudSource.includes("if (!m_loadAttempted[index])"));
+assert(hudSource.indexOf("m_loadAttempted[index]=true;")<hudSource.indexOf("C2D_SpriteSheetLoad(texture.path)"));
+assert(hudSource.includes("m_loadAttempted={};"));
+assert(hudSource.includes("img.subtex->width!=texture.width"));
+assert(hudSource.includes("img.subtex->height!=texture.height"));

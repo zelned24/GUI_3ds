@@ -8,6 +8,7 @@
 #include "runtime/ExperienceBarTimeline.hpp"
 #include <algorithm>
 #include <array>
+#include <cmath>
 #include <cstdio>
 #include <cstring>
 
@@ -23,6 +24,7 @@ public:
             }
             sheet = nullptr;
         }
+        m_loadAttempted={};
         resetExperienceDisplay();
         resetHpDisplay();
     }
@@ -37,14 +39,18 @@ public:
     BattleHudPresenter& operator=(const BattleHudPresenter&) = delete;
 
     void draw(Renderer2D& renderer, const ResolvedPokemon& actor, bool player, float x, float y, bool isCaught = false,uint16_t experienceLevelCap=0,uint64_t animationTimeMs=0) {
-        if (!actor.actorIdentityResolved) return;
+        if (!actor.actorIdentityResolved || !std::isfinite(x) || !std::isfinite(y)) return;
         const unsigned index = player ? 0 : (actor.bossState.segmentCount != 0 ? 2 : 1);
         const auto& texture = kBattleHudTextures[index];
-        if (!m_sheets[index]) {
+        if (!m_loadAttempted[index]) {
+            m_loadAttempted[index]=true;
             m_sheets[index] = C2D_SpriteSheetLoad(texture.path);
             if (m_sheets[index]) {
                 const auto img = C2D_SpriteSheetGetImage(m_sheets[index], 0);
-                if (img.tex) C3D_TexSetFilter(img.tex, GPU_NEAREST, GPU_NEAREST);
+                if (!img.tex || !img.subtex || img.subtex->width!=texture.width || img.subtex->height!=texture.height) {
+                    renderer.retireSpriteSheet(m_sheets[index]);
+                    m_sheets[index]=nullptr;
+                } else C3D_TexSetFilter(img.tex, GPU_NEAREST, GPU_NEAREST);
             }
         }
         if (!m_sheets[index]) return;
@@ -194,6 +200,7 @@ private:
     std::array<HpDisplay,4> m_hpDisplays{};
     unsigned m_hpBarSpeed=0,m_expGainsSpeed=0;
     C2D_SpriteSheet m_sheets[3]{};
+    std::array<bool,3> m_loadAttempted{};
     uint32_t m_displayedExp = 0;
     uint32_t m_lastPlayerId = 0;
     ExperienceBarTimeline m_expTimeline;
