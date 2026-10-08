@@ -227,7 +227,7 @@ assert(main.includes("partyMenu.clear(&renderer)"));
 
 const decisions=await fs.readFile(new URL('../project/include/runtime/DecisionMenuPresenter.hpp',import.meta.url),'utf8');
 assert(decisions.includes('bounds=kPartyButtonRects[i]'));
-assert(decisions.includes('drawTextFitted(hp,237,y+3,0.32f,67'));
+assert(decisions.includes('drawTextFitted(hp,237,y+4,0.3125f,67'));
 assert(decisions.includes('PokemonIconPresenter m_icons{true,6,true}'));
 assert(!decisions.includes('34,y+5,1,0.5f'));
 
@@ -330,3 +330,6 @@ assert(anchoredBody.indexOf('!std::isfinite(scale) || scale<0')<anchoredBody.ind
 
 assert(rewardPartyLayout.includes("renderer.drawTextBox(name,44,bounds.y+5,nameSize,180,nameLines"));
 assert(rewardPartyLayout.includes("m_cursor.drawCursor(renderer,27,bounds.y+5,nameSize)"));
+
+assert(decisions.includes("renderer.drawTextBox(actor.localizedName,70,y+4,nameSize,159,nameLines"));
+assert(decisions.includes("m_cursor.drawCursor(renderer,10,y+4,nameSize)"));

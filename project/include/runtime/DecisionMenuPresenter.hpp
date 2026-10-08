@@ -33,10 +33,13 @@ public:
                 if(icons[i].appearance) drawn=m_icons.drawAppearance(renderer,icons[i].appearance,24,y+1);
                 else if(icons[i].normalIconAllowed) drawn=m_icons.draw(renderer,actor.dex,icons[i].formIndex,34,y+5,1,1);
                 if(!drawn) renderer.drawTextFitted("?",34,y+5,0.3125f,20,0xffffffff);
-                const float nameSize=renderer.drawTextFitted(actor.localizedName,70,y+3,0.3125f,159,0xffffffff);
+                float nameSize=0.3125f;
+                const unsigned nameLines=textLinesWithinHeight(bounds.height-8,renderer.textInkHeight(nameSize),renderer.textLineHeight(nameSize),2);
+                if(!nameLines || !renderer.drawTextBox(actor.localizedName,70,y+4,nameSize,159,nameLines,0xffffffff))
+                    nameSize=renderer.drawTextFitted(actor.localizedName,70,y+4,nameSize,159,0xffffffff);
                 char hp[32];std::snprintf(hp,sizeof(hp),"%u/%u",actor.battleState.hp,actor.battleState.maxHp);
-                renderer.drawTextFitted(hp,237,y+3,0.32f,67,0xffffffff);
-                if(i==game.selectedCapturePartyChoice()) m_cursor.drawCursor(renderer,17,y+3,nameSize);
+                renderer.drawTextFitted(hp,237,y+4,0.3125f,67,0xffffffff);
+                if(i==game.selectedCapturePartyChoice()) m_cursor.drawCursor(renderer,10,y+4,nameSize);
             }
             renderer.drawTextFitted("A: sustituir   B: no incorporar",12,224,0.25f,296,0xffffffff);
             return;

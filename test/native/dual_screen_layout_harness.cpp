@@ -416,6 +416,8 @@ int main() {
     for(const auto& row:kPartyButtonRects) {
         assert(row.height==32 && row.y+row.height<=216);
         assert(row.y+1+30<=row.y+row.height);
+        assert(textLinesWithinHeight(row.height-8,8,12,2)==2);
+        assert(24+40<=70 && 70+159<237 && 237+67<=row.x+row.width);
     }
     assert(partyButtonAt(UINT_MAX,UINT_MAX,6)==-1);
     assert(partyButtonAt(8,38,7)==-1);
