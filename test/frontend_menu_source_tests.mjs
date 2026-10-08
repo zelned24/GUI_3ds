@@ -218,8 +218,8 @@ assert(!partyPresentation.includes('hpX + 68'));
 assert(partyPresentation.includes("PokemonIconPresenter m_icons{true,6,true}"));
 assert(!partyPresentation.includes("y + 2, 1.0f, 0.5f"));
 
-assert(partyPresentation.includes("gender ? 54 : 68"));
-assert(partyPresentation.includes("bounds.x+60+nameWidth+3"));
+assert(partyPresentation.includes("y + 3, 0.3125f, 112"));
+assert(partyPresentation.includes("bounds.x+110,y+17,0.25f"));
 
 assert(partyPresentation.includes("actor.actorIdentityResolved && actor.actor.appearanceResolved && actor.actor.shiny"));
 assert(partyPresentation.includes("kStarterVariantIconFrames[variant]"));
@@ -333,3 +333,5 @@ assert(rewardPartyLayout.includes("m_cursor.drawCursor(renderer,27,bounds.y+5,na
 
 assert(decisions.includes("renderer.drawTextBox(actor.localizedName,70,y+4,nameSize,159,nameLines"));
 assert(decisions.includes("m_cursor.drawCursor(renderer,10,y+4,nameSize)"));
+
+assert(partyPresentation.includes("bounds.x + 60, y + 17, 0.25f, 42"));

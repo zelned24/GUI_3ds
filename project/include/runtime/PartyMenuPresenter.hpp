@@ -89,10 +89,9 @@ public:
             const char* name = actor.localizedName ? actor.localizedName : "Pokémon";
             const char* gender=actor.battleState.gender==PokemonGender::Male ? "♂" :
                 actor.battleState.gender==PokemonGender::Female ? "♀" : nullptr;
-            float nameWidth=0;
-            const float nameSize=renderer.drawTextFitted(name, bounds.x + 60, y + 3, 0.3125f, gender ? 54 : 68,
-                isSel ? C2D_Color32(255, 255, 255, 255) : C2D_Color32(220, 215, 230, 255),&nameWidth);
-            if(gender) renderer.drawText(gender,bounds.x+60+nameWidth+3,y+3,nameSize,
+            const float nameSize=renderer.drawTextFitted(name, bounds.x + 60, y + 3, 0.3125f, 112,
+                isSel ? C2D_Color32(255, 255, 255, 255) : C2D_Color32(220, 215, 230, 255));
+            if(gender) renderer.drawText(gender,bounds.x+110,y+17,0.25f,
                 actor.battleState.gender==PokemonGender::Male ? C2D_Color32(110,180,255,255) : C2D_Color32(255,140,220,255));
 
             if(isSel) m_cursor.drawCursor(renderer,bounds.x+3,y+3,nameSize);
@@ -100,7 +99,7 @@ public:
             // Level ("N. %u")
             char lvl[16];
             std::snprintf(lvl, sizeof(lvl), "N.%u", unsigned(actor.level));
-            renderer.drawTextFitted(lvl, bounds.x + 132, y + 4, 0.28f, 42, C2D_Color32(255, 225, 90, 255));
+            renderer.drawTextFitted(lvl, bounds.x + 60, y + 17, 0.25f, 42, C2D_Color32(255, 225, 90, 255));
 
             // Active or status indicator
             if (actor.battleState.hp == 0) {
