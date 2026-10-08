@@ -30,7 +30,7 @@ inline const PokemonIconDefinition* findPokemonIcon(uint16_t dex,uint16_t formIn
 }
 struct ResolvedPokemonIcon {
     const AppearanceIconIdentity* appearance=nullptr;
-    uint16_t formIndex=0;
+    uint16_t dex=0,formIndex=0;
     bool normalIconAllowed=false;
 };
 // Resolves imported form ownership before looking up a baseline appearance.
@@ -42,6 +42,7 @@ inline ResolvedPokemonIcon resolvePokemonIcon(uint16_t dex,const char* formId,bo
         if(!form || std::strcmp(form->speciesId,owner->id)) return result;
         result.formIndex=form->upstreamFormIndex;
     }
+    result.dex=dex;
     result.normalIconAllowed=!appearanceKnown;
     if(appearanceKnown) result.appearance=findAppearanceIconIdentity(dex,result.formIndex,female,shiny,variant);
     return result;
@@ -58,6 +59,21 @@ public:
         for(auto& slot:m_slots) clearSlot(slot,renderer);
         for(auto& slot:m_appearanceSlots) clearSlot(slot,renderer);
         m_appearancesReady=false;
+    }
+    // Retire baseline pages outside the visible catalogue batch before draws.
+    // Loading stays lazy in draw(); failed pages remain remembered while visible.
+    bool retainNormalPages(Renderer2D& renderer,const ResolvedPokemonIcon* icons,unsigned count) {
+        if(count>18 || (count && !icons)) return false;
+        bool wanted[sizeof(kPokemonIconPages)/sizeof(kPokemonIconPages[0])]{};
+        for(unsigned i=0;i<count;++i) {
+            if(!icons[i].normalIconAllowed) continue;
+            const auto* icon=findPokemonIcon(icons[i].dex,icons[i].formIndex);
+            if(!icon || icon->page>=sizeof(wanted)/sizeof(wanted[0])) return false;
+            wanted[icon->page]=true;
+        }
+        for(unsigned i=0;i<sizeof(wanted)/sizeof(wanted[0]);++i)
+            if(!wanted[i]) clearSlot(m_slots[i],&renderer);
+        return true;
     }
     // Call once per visible team, after beginFrame and before submitting its draws.
     // Keeps pages needed by this batch; no eviction occurs while its icons are drawn.

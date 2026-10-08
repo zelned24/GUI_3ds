@@ -124,6 +124,11 @@ int main() {
         assert(presenter.draw(renderer,1,0,0,0));
         assert(presenter.draw(renderer,1,0,0,0));
         assert(iconLoads==2 && iconDraws==2 && iconFilters==1);
+        const auto normal=resolvePokemonIcon(1,nullptr,false,false,false,0);
+        assert(presenter.retainNormalPages(renderer,&normal,1));
+        assert(presenter.draw(renderer,1,0,0,0) && iconLoads==2);
+        assert(!presenter.retainNormalPages(renderer,nullptr,1));
+        assert(!presenter.retainNormalPages(renderer,&normal,19));
         assert(!presenter.draw(renderer,0,0,0,0) && iconLoads==2);
         presenter.clear(&renderer);
         assert(iconRetired==1 && iconFrees==0);

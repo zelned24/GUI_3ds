@@ -358,6 +358,7 @@ int main() {
                 }
             }
             renderer.beginFrame();
+            setup.releaseIconPages(renderer);
             partyMenu.clear(&renderer);
             decisionMenu.releaseIcons(renderer);
             rewardMenu.releasePartyIcons(renderer);

@@ -388,6 +388,7 @@ public:
                 visual.actor.gender==PokemonGender::Female,visual.actor.shiny,visual.actor.shinyVariant);
             gridAppearances[visibleCount]=gridIcons[visibleCount].appearance;
         }
+        m_icons.retainNormalPages(renderer,gridIcons,visibleCount);
         m_icons.prepareAppearances(renderer,gridAppearances,visibleCount);
         for(unsigned i=0;i<kStarterGridPageSize;++i) {
             const auto* species=at(game,start+i);if(!species) break;
