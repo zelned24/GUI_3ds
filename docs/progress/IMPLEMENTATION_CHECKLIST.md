@@ -906,3 +906,5 @@ La búsqueda del índice generado usa búsqueda binaria sobre identidades ordena
 - [ ] Compatibilidad de preferencias EXP: regresiones escritas para conflicto exclusivo de EXP sin sobrescritura, recuperación tras escritura interrumpida/corrupta, migración v3→v4 conservando HP/táctil y todos los bits reservados de v1–v4 con checksum válido. Verifican salida intacta ante rechazo; ejecución nativa pendiente por indicación de no compilar.
 
 - [ ] Lista de movimientos: nombres localizados usan hasta dos líneas de raster nativo antes del fallback acotado; PP debajo sin invadir el nombre. Barra de PP cuantizada a columnas enteras, clamp y producto de 64 bits. Casos de límites escritos sin ejecución nativa; revisión visual y compilación pendientes.
+
+- [ ] Entrenadores: carga rechaza hojas sin textura/región o dimensiones nulas, retira recursos mediante renderer y evita reintentos por frame hasta clear/cambio de identidad. Dibujo directo alinea posiciones a píxeles enteros; encuentro conserva escala 1×. Casos nativos de tres fallos físicos escritos sin ejecutar; revisión visual pendiente.

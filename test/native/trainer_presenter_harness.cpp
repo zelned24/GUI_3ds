@@ -5,11 +5,11 @@
 using namespace Pokerogue3DS;
 // Host doubles exercise load ownership/cache, not the PICA200 GPU.
 static unsigned loads=0,frees=0,retired=0;
-static bool failLoad=true;
+static bool failLoad=true,missingTexture=false,missingRegion=false;
 static C3D_Tex texture{};
 static Tex3DS_SubTexture subtexture{60,155,0,0,1,1};
 C2D_SpriteSheet C2D_SpriteSheetLoad(const char*) {++loads;return failLoad ? nullptr : &texture;}
-C2D_Image C2D_SpriteSheetGetImage(C2D_SpriteSheet,size_t) {return {&texture,&subtexture};}
+C2D_Image C2D_SpriteSheetGetImage(C2D_SpriteSheet,size_t) {return {missingTexture ? nullptr : &texture,missingRegion ? nullptr : &subtexture};}
 void C2D_SpriteSheetFree(C2D_SpriteSheet sheet) {assert(sheet==&texture);++frees;}
 void C3D_TexSetFilter(C3D_Tex*,GPU_TEXTURE_FILTER_PARAM mag,GPU_TEXTURE_FILTER_PARAM min) {
     assert(mag==GPU_NEAREST && min==GPU_NEAREST);
@@ -48,19 +48,31 @@ int main() {
     trainer.clear(&renderer);
     assert(trainer.load("marley",&renderer) && loads==6);
     trainer.clear();assert(frees==1);
+    // A successful sheet handle is insufficient: malformed images must fail and retire.
+    for(unsigned failure=0;failure<3;++failure) {
+        const unsigned beforeLoads=loads,beforeRetired=retired;
+        missingTexture=failure==0;missingRegion=failure==1;
+        subtexture.width=failure==2 ? 0 : 60;
+        assert(!trainer.load("marley",&renderer) && !trainer.isLoaded());
+        assert(loads==beforeLoads+1 && retired==beforeRetired+1);
+        assert(!trainer.load("marley",&renderer) && loads==beforeLoads+1);
+        trainer.clear(&renderer);
+    }
+    missingTexture=false;missingRegion=false;subtexture.width=60;
+    const unsigned arenaBaseline=loads;
     {
         ArenaPresenter arena;
-        assert(arena.drawTrainerBattleIntro(renderer,65535,false,"marley") && loads==7);
-        assert(arena.drawTrainerBattleIntro(renderer,65535,false,"marley") && loads==7);
-        assert(arena.drawTrainerBattleIntro(renderer,65535,true,"marley") && loads==8);
-        assert(arena.drawTrainerBattleIntro(renderer,65535,true,"mira") && loads==9);
+        assert(arena.drawTrainerBattleIntro(renderer,65535,false,"marley") && loads==arenaBaseline+1);
+        assert(arena.drawTrainerBattleIntro(renderer,65535,false,"marley") && loads==arenaBaseline+1);
+        assert(arena.drawTrainerBattleIntro(renderer,65535,true,"marley") && loads==arenaBaseline+2);
+        assert(arena.drawTrainerBattleIntro(renderer,65535,true,"mira") && loads==arenaBaseline+3);
         failLoad=true;
-        assert(!arena.drawTrainerBattleIntro(renderer,65535,true,"riley") && loads==10);
-        assert(!arena.drawTrainerBattleIntro(renderer,65535,true,"riley") && loads==10);
+        assert(!arena.drawTrainerBattleIntro(renderer,65535,true,"riley") && loads==arenaBaseline+4);
+        assert(!arena.drawTrainerBattleIntro(renderer,65535,true,"riley") && loads==arenaBaseline+4);
         failLoad=false;
-        assert(!arena.drawTrainerBattleIntro(renderer,65535,true,"riley") && loads==10);
+        assert(!arena.drawTrainerBattleIntro(renderer,65535,true,"riley") && loads==arenaBaseline+4);
         arena.clear(&renderer);
-        assert(arena.drawTrainerBattleIntro(renderer,65535,true,"riley") && loads==11);
+        assert(arena.drawTrainerBattleIntro(renderer,65535,true,"riley") && loads==arenaBaseline+5);
     }
 
 }

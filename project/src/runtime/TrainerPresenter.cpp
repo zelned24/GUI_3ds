@@ -30,6 +30,12 @@ bool TrainerPresenter::load(const char* key, Renderer2D* renderer) {
     if (!def || !def->texturePath) {std::strcpy(m_failedKey,key);return false;}
     m_sheet = C2D_SpriteSheetLoad(def->texturePath);
     if (!m_sheet) {std::strcpy(m_failedKey,key);return false;}
+    const auto image=C2D_SpriteSheetGetImage(m_sheet,0);
+    if(!image.tex || !image.subtex || !image.subtex->width || !image.subtex->height) {
+        clear(renderer);
+        std::strcpy(m_failedKey,key);
+        return false;
+    }
 
     std::strncpy(m_currentKey, key, sizeof(m_currentKey) - 1);
     m_currentKey[sizeof(m_currentKey) - 1] = '\0';
@@ -63,7 +69,7 @@ void TrainerPresenter::draw(Renderer2D& renderer, float x, float y, float width,
     if (!m_sheet || !std::isfinite(x) || !std::isfinite(y) ||
         !std::isfinite(width) || !std::isfinite(height) || width<=0 || height<=0) return;
     C2D_Image img = C2D_SpriteSheetGetImage(m_sheet, 0);
-    if (!img.tex) return;
+    if (!img.tex || !img.subtex || !img.subtex->width || !img.subtex->height) return;
     C3D_TexSetFilter(img.tex, GPU_NEAREST, GPU_NEAREST);
 
     if (m_metadata.frameCount() > 0) {
@@ -78,19 +84,19 @@ void TrainerPresenter::draw(Renderer2D& renderer, float x, float y, float width,
                 frame->x, frame->y, frame->width, frame->height,
                 frame->sourceWidth, frame->sourceHeight, frame->trimX, frame->trimY
             };
-            renderer.drawAtlasFrame(img, rect, x, y, width, height);
+            renderer.drawAtlasFrame(img, rect, std::round(x), std::round(y), width, height);
             return;
         }
     }
 
-    renderer.drawImageDirect(img, x, y, width, height);
+    renderer.drawImageDirect(img, std::round(x), std::round(y), width, height);
 }
 
 void TrainerPresenter::drawAnchored(Renderer2D& renderer, float anchorX, float anchorY, float scale, uint64_t animationTimeMs) {
     if (!m_sheet || !std::isfinite(anchorX) || !std::isfinite(anchorY) ||
         !std::isfinite(scale) || scale<=0) return;
     C2D_Image img = C2D_SpriteSheetGetImage(m_sheet, 0);
-    if (!img.tex) return;
+    if (!img.tex || !img.subtex || !img.subtex->width || !img.subtex->height) return;
     C3D_TexSetFilter(img.tex, GPU_NEAREST, GPU_NEAREST);
 
     if (m_metadata.frameCount() > 0) {
