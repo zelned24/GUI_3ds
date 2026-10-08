@@ -30,6 +30,15 @@ struct EggGachaThresholds {uint16_t common,rare,epic,legendaryOffset;};
 inline constexpr EggGachaThresholds kEggGachaThresholds={52,8,1,1};
 struct EggPityThresholds {uint32_t rare,epic,legendary;};
 inline constexpr EggPityThresholds kEggPityThresholds={9,59,412};
+struct EggVoucherOffer {uint8_t cursor;VoucherType voucher;uint16_t consumed,pulls;};
+inline constexpr EggVoucherOffer kEggVoucherOffers[]={
+    {0,VoucherType::REGULAR,1,1},
+    {1,VoucherType::REGULAR,10,10},
+    {2,VoucherType::PLUS,1,5},
+    {3,VoucherType::PREMIUM,1,10},
+    {4,VoucherType::GOLDEN,1,25},
+};
+inline constexpr uint32_t kEggGachaInventoryLimit=99;
 struct EggIncubationPolicy { EggTier tier; uint16_t waves; };
 inline constexpr EggIncubationPolicy kEggIncubationPolicies[]={
     {EggTier::COMMON,10},

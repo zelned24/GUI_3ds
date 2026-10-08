@@ -167,6 +167,26 @@ extern "C" int runNativeSaveChecks() {
         const auto unchanged=pityPlan;
         if(planEggTierPity(EggTier::COMMON,EggSourceType::GACHA_MOVE,pity,pityPlan)!=EggPityResult::CounterOverflow ||
             pityPlan.tier!=unchanged.tier || pityPlan.pity.rare!=unchanged.pity.rare) return 1228;
+        uint32_t vouchers[4]={50,50,50,50};EggVoucherPlan voucherPlan{};
+        for(const auto& offer:kEggVoucherOffers) {
+            if(planEggVoucherPull(offer.cursor,0,vouchers,voucherPlan)!=EggVoucherResult::Ok ||
+                voucherPlan.voucher!=offer.voucher || voucherPlan.remaining!=50-offer.consumed ||
+                voucherPlan.pulls!=offer.pulls) return 1229;
+            const auto before=voucherPlan;
+            if(planEggVoucherPull(offer.cursor,kEggGachaInventoryLimit,vouchers,voucherPlan)!=EggVoucherResult::InventoryFull ||
+                voucherPlan.remaining!=before.remaining || voucherPlan.pulls!=before.pulls) return 1230;
+            if(planEggVoucherPull(offer.cursor,kEggGachaInventoryLimit-offer.pulls,vouchers,voucherPlan)!=EggVoucherResult::Ok)
+                return 1231;
+        }
+        uint32_t emptyVouchers[4]{};
+        if(planEggVoucherPull(0,0,emptyVouchers,voucherPlan)!=EggVoucherResult::InsufficientVouchers ||
+            planEggVoucherPull(0,kEggGachaInventoryLimit,emptyVouchers,voucherPlan)!=EggVoucherResult::InventoryFull)
+            return 1232;
+        if(planEggVoucherPull(0,UINT32_MAX,emptyVouchers,voucherPlan,true)!=EggVoucherResult::Ok ||
+            voucherPlan.remaining || voucherPlan.pulls!=1) return 1233;
+        if(planEggVoucherPull(5,0,vouchers,voucherPlan)!=EggVoucherResult::Cancelled ||
+            planEggVoucherPull(6,0,vouchers,voucherPlan)!=EggVoucherResult::InvalidOption || vouchers[0]!=50)
+            return 1234;
         EggTier invalidOutput=EggTier::EPIC;
         if(eggTierForRoll(256,EggSourceType::GACHA_MOVE,invalidOutput)!=EggIncubationResult::InvalidInput ||
             invalidOutput!=EggTier::EPIC || eggTierForRoll(0,static_cast<EggSourceType>(255),invalidOutput)

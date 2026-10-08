@@ -43,4 +43,25 @@ inline EggPityResult planEggTierPity(EggTier rolled,EggSourceType source,
     }
     output=candidate;return EggPityResult::Ok;
 }
+struct EggVoucherPlan {VoucherType voucher=VoucherType::REGULAR;uint32_t remaining=0;uint16_t pulls=0;};
+enum class EggVoucherResult : uint8_t {Ok,Cancelled,InvalidOption,InventoryFull,InsufficientVouchers};
+// Imported menu choice -> validated command plan. Caller publishes voucher use
+// only together with the generated eggs and pity ledger in a durable transaction.
+inline EggVoucherResult planEggVoucherPull(unsigned cursor,uint32_t inventoryCount,
+    const uint32_t (&voucherCounts)[4],EggVoucherPlan& output,bool freePullOverride=false) {
+    constexpr size_t offers=sizeof(kEggVoucherOffers)/sizeof(kEggVoucherOffers[0]);
+    if(cursor==offers) return EggVoucherResult::Cancelled;
+    if(cursor>offers) return EggVoucherResult::InvalidOption;
+    const auto& offer=kEggVoucherOffers[cursor];
+    const unsigned index=static_cast<unsigned>(offer.voucher);
+    if(index>=4) return EggVoucherResult::InvalidOption;
+    if(!freePullOverride) {
+        if(inventoryCount>kEggGachaInventoryLimit || offer.pulls>kEggGachaInventoryLimit-inventoryCount)
+            return EggVoucherResult::InventoryFull;
+        if(voucherCounts[index]<offer.consumed) return EggVoucherResult::InsufficientVouchers;
+    }
+    output={offer.voucher,freePullOverride ? voucherCounts[index] : voucherCounts[index]-offer.consumed,offer.pulls};
+    return EggVoucherResult::Ok;
+}
+
 }

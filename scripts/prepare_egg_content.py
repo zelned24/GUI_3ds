@@ -8,7 +8,7 @@ from prepare_nature_ui import GAME_REV, ROOT
 
 REPOSITORY = 'https://github.com/pagefaultgames/pokerogue'
 def prepare(root=ROOT):
-    paths=['src/enums/egg-type.ts','src/enums/egg-source-types.ts','src/enums/voucher-type.ts','src/data/balance/rates.ts','src/data/egg.ts','src/phases/egg-lapse-phase.ts','src/system/egg-data.ts','src/enums/variant-tier.ts','src/enums/species-id.ts','src/data/species-data-registry.ts']
+    paths=['src/enums/egg-type.ts','src/enums/egg-source-types.ts','src/enums/voucher-type.ts','src/data/balance/rates.ts','src/data/egg.ts','src/phases/egg-lapse-phase.ts','src/system/egg-data.ts','src/enums/variant-tier.ts','src/enums/species-id.ts','src/data/species-data-registry.ts','src/ui/handlers/egg-gacha-ui-handler.ts']
     raw={p:subprocess.check_output(['git','-C',str(root/'build/upstream/pokerogue'),'show',GAME_REV+':'+p]) for p in paths}
     enums={}
     for path,symbol in zip(paths[:3]+[paths[7],paths[8]],['EggTier','EggSourceType','VoucherType','VariantTier','SpeciesId']):
@@ -44,6 +44,23 @@ def prepare(root=ROOT):
         if len(matches)!=1 or not 0<int(matches[0])<=4294967295:
             raise ValueError('Unsupported egg pity threshold: '+name)
         pity_constants[name]=int(matches[0])
+    gacha_source=raw['src/ui/handlers/egg-gacha-ui-handler.ts'].decode('utf-8')
+    offer_switch=re.search(r'private static cursorToVoucher\b[\s\S]*?switch \(cursor\)\s*\{(.*?)\n\s*\}\n\s*\}',gacha_source,re.S)
+    if not offer_switch: raise ValueError('Unsupported voucher selector')
+    offer_pattern=r'case\s+(\d+):\s*return\s*\[VoucherType\.([A-Z_]+),\s*(\d+),\s*(\d+)\];'
+    offers=[{'cursor':int(m[0]),'voucher':m[1],'consumed':int(m[2]),'pulls':int(m[3])} for m in re.findall(offer_pattern,offer_switch[1])]
+    if re.sub(offer_pattern,'',offer_switch[1]).strip() or not offers or [r['cursor'] for r in offers]!=list(range(len(offers))):
+        raise ValueError('Unsupported voucher options')
+    if len(offers)>255 or any(not 0<r['consumed']<=65535 or not 0<r['pulls']<=65535 for r in offers):
+        raise ValueError('Voucher options exceed runtime representation')
+    limit=re.findall(r'globalScene\.gameData\.eggs\.length \+ pulls > (\d+)',gacha_source)
+    if len(limit)!=1: raise ValueError('Unsupported egg inventory pull limit')
+    inventory_limit=int(limit[0])
+    if not 0<inventory_limit<=4294967295: raise ValueError('Invalid inventory limit')
+    if enums['VoucherType']!=[{'id':i,'symbol':name} for i,name in enumerate(['REGULAR','PLUS','PREMIUM','GOLDEN'])]:
+        raise ValueError('Voucher ledger schema requires explicit adaptation')
+    if any(r['voucher'] not in {'REGULAR','PLUS','PREMIUM','GOLDEN'} for r in offers):
+        raise ValueError('Unknown voucher offer type')
     expected=['COMMON','RARE','EPIC','LEGENDARY']
     if [r['symbol'] for r in enums['EggTier']]!=expected: raise ValueError('Egg tier mapping requires review')
     header='// Generated from pinned egg enums and balance rates.\n#pragma once\n#include <cstdint>\nnamespace Pokerogue3DS {\n'
@@ -51,6 +68,7 @@ def prepare(root=ROOT):
         header+='enum class '+symbol+' : uint8_t {\n'+''.join('    '+r['symbol']+' = '+str(r['id'])+',\n' for r in rows)+'};\n'
     header+='struct EggGachaThresholds {uint16_t common,rare,epic,legendaryOffset;};\ninline constexpr EggGachaThresholds kEggGachaThresholds={'+','.join(str(value) for value in gacha_constants.values())+'};\n'
     header+='struct EggPityThresholds {uint32_t rare,epic,legendary;};\ninline constexpr EggPityThresholds kEggPityThresholds={'+','.join(str(value) for value in pity_constants.values())+'};\n'
+    header+='struct EggVoucherOffer {uint8_t cursor;VoucherType voucher;uint16_t consumed,pulls;};\ninline constexpr EggVoucherOffer kEggVoucherOffers[]={\n'+''.join('    {'+str(r['cursor'])+',VoucherType::'+r['voucher']+','+str(r['consumed'])+','+str(r['pulls'])+'},\n' for r in offers)+'};\ninline constexpr uint32_t kEggGachaInventoryLimit='+str(inventory_limit)+';\n'
     header+='struct EggIncubationPolicy { EggTier tier; uint16_t waves; };\ninline constexpr EggIncubationPolicy kEggIncubationPolicies[]={\n'
     header+=''.join('    {EggTier::'+r['symbol']+','+str(constants['HATCH_WAVES_'+r['symbol']+'_EGG'])+'},\n' for r in enums['EggTier'])+'};\n'
     header+='inline constexpr uint16_t kSpecialEggIncubationSpecies[]={'+','.join(str(r['id']) for r in special_species)+'};\n'
@@ -73,7 +91,7 @@ def prepare(root=ROOT):
     header=header[:-2]+'struct SpeciesEggTier {uint16_t dex; EggTier tier; bool declared;};\ninline constexpr SpeciesEggTier kSpeciesEggTiers[]={\n'
     header+=''.join('    {'+str(r['dex'])+',EggTier::'+r['tier']+','+('true' if r['declared'] else 'false')+'},\n' for r in species_tiers)+'};\n}\n'
     target=root/'project/generated/include/content/EggContentPolicy.hpp';target.parent.mkdir(parents=True,exist_ok=True);target.write_bytes(header.encode('utf-8'))
-    report={'schemaVersion':1,'sources':[{'repository':REPOSITORY,'revision':GAME_REV,'sourcePath':p,'sourceSymbol':{'src/enums/egg-type.ts':'EggTier','src/enums/egg-source-types.ts':'EggSourceType','src/enums/voucher-type.ts':'VoucherType','src/data/balance/rates.ts':'HATCH_WAVES_*_EGG/GACHA_*_THRESHOLD/GACHA_LEGENDARY_UP_THRESHOLD_OFFSET/EGG_PITY_*_THRESHOLD','src/data/egg.ts':'Egg.getEggTierDefaultHatchWaves/rollEggTier/checkForPityTierOverrides','src/phases/egg-lapse-phase.ts':'EggLapsePhase.start','src/system/egg-data.ts':'EggData','src/enums/variant-tier.ts':'VariantTier','src/enums/species-id.ts':'SpeciesId','src/data/species-data-registry.ts':'SpeciesDataRegistry.getEggTier/getSpeciesForEggTier'}[p],'schemaVersion':1,'hash':hashlib.sha256(raw[p]).hexdigest()} for p in paths],'enums':enums,'incubationConstants':constants,'gachaThresholds':gacha_constants,'pityThresholds':pity_constants,'specialIncubationSpecies':special_species,'canonicalInput':{'sourcePath':'project/data/pokerogue/canonical-content.json','hash':hashlib.sha256(canonical_raw).hexdigest()},'speciesTiers':species_tiers,'scope':'IDENTIFIERS_SPECIES_TIERS_AND_INCUBATION_CONSTANTS','runtimeIntegration':'PENDING_INVENTORY_GACHA_HATCHING','generatedSHA256':hashlib.sha256(target.read_bytes()).hexdigest()}
+    report={'schemaVersion':1,'sources':[{'repository':REPOSITORY,'revision':GAME_REV,'sourcePath':p,'sourceSymbol':{'src/enums/egg-type.ts':'EggTier','src/enums/egg-source-types.ts':'EggSourceType','src/enums/voucher-type.ts':'VoucherType','src/data/balance/rates.ts':'HATCH_WAVES_*_EGG/GACHA_*_THRESHOLD/GACHA_LEGENDARY_UP_THRESHOLD_OFFSET/EGG_PITY_*_THRESHOLD','src/data/egg.ts':'Egg.getEggTierDefaultHatchWaves/rollEggTier/checkForPityTierOverrides','src/phases/egg-lapse-phase.ts':'EggLapsePhase.start','src/system/egg-data.ts':'EggData','src/enums/variant-tier.ts':'VariantTier','src/enums/species-id.ts':'SpeciesId','src/data/species-data-registry.ts':'SpeciesDataRegistry.getEggTier/getSpeciesForEggTier','src/ui/handlers/egg-gacha-ui-handler.ts':'EggGachaUiHandler.cursorToVoucher/handleVoucherSelectAction'}[p],'schemaVersion':1,'hash':hashlib.sha256(raw[p]).hexdigest()} for p in paths],'enums':enums,'incubationConstants':constants,'gachaThresholds':gacha_constants,'pityThresholds':pity_constants,'voucherOffers':offers,'gachaInventoryLimit':inventory_limit,'specialIncubationSpecies':special_species,'canonicalInput':{'sourcePath':'project/data/pokerogue/canonical-content.json','hash':hashlib.sha256(canonical_raw).hexdigest()},'speciesTiers':species_tiers,'scope':'IDENTIFIERS_SPECIES_TIERS_AND_INCUBATION_CONSTANTS','runtimeIntegration':'PENDING_INVENTORY_GACHA_HATCHING','generatedSHA256':hashlib.sha256(target.read_bytes()).hexdigest()}
     destination=root/'docs/generated/EGG_CONTENT_IMPORT_REPORT.json';destination.parent.mkdir(parents=True,exist_ok=True);destination.write_bytes((json.dumps(report,ensure_ascii=False,sort_keys=True,indent=2)+'\n').encode('utf-8'))
     return report
 if __name__=='__main__':

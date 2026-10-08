@@ -77,13 +77,14 @@
       }
     ]
   },
+  "gachaInventoryLimit": 99,
   "gachaThresholds": {
     "GACHA_DEFAULT_COMMON_EGG_THRESHOLD": 52,
     "GACHA_DEFAULT_EPIC_EGG_THRESHOLD": 1,
     "GACHA_DEFAULT_RARE_EGG_THRESHOLD": 8,
     "GACHA_LEGENDARY_UP_THRESHOLD_OFFSET": 1
   },
-  "generatedSHA256": "3c9793f7f86054cff131a4ae06c58840031eb912e1097396019dbeeb08fee891",
+  "generatedSHA256": "a73e768c1eaac4528b2371887b246e5b676668724b47e7cb3f1c423f1b78d360",
   "incubationConstants": {
     "HATCH_WAVES_COMMON_EGG": 10,
     "HATCH_WAVES_EPIC_EGG": 50,
@@ -179,6 +180,14 @@
       "schemaVersion": 1,
       "sourcePath": "src/data/species-data-registry.ts",
       "sourceSymbol": "SpeciesDataRegistry.getEggTier/getSpeciesForEggTier"
+    },
+    {
+      "hash": "806c4ef087d874ac1c2630bca6f95a38d39ed6131dc12ad7a4cea5516c44f6c1",
+      "repository": "https://github.com/pagefaultgames/pokerogue",
+      "revision": "8555c08c823b856cbec4eb99ca84ea52a955836d",
+      "schemaVersion": 1,
+      "sourcePath": "src/ui/handlers/egg-gacha-ui-handler.ts",
+      "sourceSymbol": "EggGachaUiHandler.cursorToVoucher/handleVoucherSelectAction"
     }
   ],
   "specialIncubationSpecies": [
@@ -5611,6 +5620,38 @@
       "declared": true,
       "dex": 8901,
       "tier": "EPIC"
+    }
+  ],
+  "voucherOffers": [
+    {
+      "consumed": 1,
+      "cursor": 0,
+      "pulls": 1,
+      "voucher": "REGULAR"
+    },
+    {
+      "consumed": 10,
+      "cursor": 1,
+      "pulls": 10,
+      "voucher": "REGULAR"
+    },
+    {
+      "consumed": 1,
+      "cursor": 2,
+      "pulls": 5,
+      "voucher": "PLUS"
+    },
+    {
+      "consumed": 1,
+      "cursor": 3,
+      "pulls": 10,
+      "voucher": "PREMIUM"
+    },
+    {
+      "consumed": 1,
+      "cursor": 4,
+      "pulls": 25,
+      "voucher": "GOLDEN"
     }
   ]
 }
