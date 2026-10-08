@@ -21,6 +21,7 @@ public:
                 const auto& actor=i==context.activePlayerPartyIndex ? context.player : context.playerParty[i];
                 const bool known=actor.actorIdentityResolved && actor.actor.appearanceResolved && actor.actor.gender!=PokemonGender::Unspecified;
                 icons[i]=resolvePokemonIcon(actor.dex,actor.formId,known,actor.actor.gender==PokemonGender::Female,actor.actor.shiny,actor.actor.shinyVariant);
+                resolvePokemonDiscoveryIcon(icons[i]);
                 appearances[i]=icons[i].appearance;
             }
             m_icons.prepareAppearances(renderer,appearances,std::min(unsigned(context.playerPartyCount),6u));
@@ -29,15 +30,15 @@ public:
                 const float y=bounds.y;
                 renderer.drawWindow(bounds.x,y,bounds.width,bounds.height);
                 bool drawn=false;
-                if(icons[i].appearance) drawn=m_icons.drawAppearance(renderer,icons[i].appearance,34,y+5);
+                if(icons[i].appearance) drawn=m_icons.drawAppearance(renderer,icons[i].appearance,24,y+1);
                 else if(icons[i].normalIconAllowed) drawn=m_icons.draw(renderer,actor.dex,icons[i].formIndex,34,y+5,1,1);
                 if(!drawn) renderer.drawTextFitted("?",34,y+5,0.3125f,20,0xffffffff);
-                const float nameSize=renderer.drawTextFitted(actor.localizedName,61,y+3,0.36f,168,0xffffffff);
+                const float nameSize=renderer.drawTextFitted(actor.localizedName,70,y+3,0.3125f,159,0xffffffff);
                 char hp[32];std::snprintf(hp,sizeof(hp),"%u/%u",actor.battleState.hp,actor.battleState.maxHp);
                 renderer.drawTextFitted(hp,237,y+3,0.32f,67,0xffffffff);
                 if(i==game.selectedCapturePartyChoice()) m_cursor.drawCursor(renderer,17,y+3,nameSize);
             }
-            renderer.drawTextFitted("A: sustituir   B: no incorporar",12,213,0.32f,296,0xffffffff);
+            renderer.drawTextFitted("A: sustituir   B: no incorporar",12,224,0.25f,296,0xffffffff);
             return;
         }
         if(game.moveLearningPending()) {
@@ -78,6 +79,6 @@ public:
         renderer.drawTextFitted(game.battleFeedback().c_str(),12,213,0.3f,296,0xffffffff);
     }
 private:
-    TitleMenuPresenter m_cursor;PokemonIconPresenter m_icons{true};
+    TitleMenuPresenter m_cursor;PokemonIconPresenter m_icons{true,6,true};
 };
 }

@@ -215,11 +215,11 @@ assert(partyPresentation.includes('std::floor(84*frac)'));
 assert(partyPresentation.includes('std::min(actor.battleState.hp,actor.battleState.maxHp)'));
 assert(!partyPresentation.includes('hpX + 68'));
 
-assert(partyPresentation.includes("PokemonIconPresenter m_icons{true}"));
+assert(partyPresentation.includes("PokemonIconPresenter m_icons{true,6,true}"));
 assert(!partyPresentation.includes("y + 2, 1.0f, 0.5f"));
 
-assert(partyPresentation.includes("gender ? 74 : 88"));
-assert(partyPresentation.includes("bounds.x+40+nameWidth+3"));
+assert(partyPresentation.includes("gender ? 54 : 68"));
+assert(partyPresentation.includes("bounds.x+60+nameWidth+3"));
 
 assert(partyPresentation.includes("actor.actorIdentityResolved && actor.actor.appearanceResolved && actor.actor.shiny"));
 assert(partyPresentation.includes("kStarterVariantIconFrames[variant]"));
@@ -228,7 +228,7 @@ assert(main.includes("partyMenu.clear(&renderer)"));
 const decisions=await fs.readFile(new URL('../project/include/runtime/DecisionMenuPresenter.hpp',import.meta.url),'utf8');
 assert(decisions.includes('bounds=kPartyButtonRects[i]'));
 assert(decisions.includes('drawTextFitted(hp,237,y+3,0.32f,67'));
-assert(decisions.includes('PokemonIconPresenter m_icons{true}'));
+assert(decisions.includes('PokemonIconPresenter m_icons{true,6,true}'));
 assert(!decisions.includes('34,y+5,1,0.5f'));
 
 assert(decisions.includes("textLinesWithinHeight(rect.height-18,renderer.textInkHeight(nameSize),renderer.textLineHeight(nameSize),3)"));
@@ -277,7 +277,7 @@ assert(partyPresentation.includes("m_icons.drawAppearance(renderer,appearances[i
 assert(partyPresentation.includes("resolvePokemonIcon(actor.dex,actor.formId"));
 
 assert(decisions.includes("resolvePokemonIcon(actor.dex,actor.formId"));
-assert(decisions.includes("m_icons.drawAppearance(renderer,icons[i].appearance,34,y+5)"));
+assert(decisions.includes("m_icons.drawAppearance(renderer,icons[i].appearance,24,y+1)"));
 
 const iconPresentation=await fs.readFile(new URL("../project/include/runtime/PokemonIconPresenter.hpp",import.meta.url),"utf8");
 assert(iconPresentation.includes("image.subtex->width!=expected || image.subtex->height!=(m_nativeTiles ? 32 : expected)"));

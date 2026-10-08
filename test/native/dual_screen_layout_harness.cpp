@@ -398,12 +398,16 @@ int main() {
         assert(targetButtonAt(x,y)==(y>=210 && y<234 ? column : -1));
         for (unsigned count=0;count<=6;++count) {
             int expected=-1;
-            if (x>=8 && x<312 && y>=38) {
-                const unsigned row=(y-38)/27;
-                if (row<count && (y-38)%27<25) expected=int(row);
+            if (x>=8 && x<312 && y>=24) {
+                const unsigned row=(y-24)/32;
+                if (row<count && (y-24)%32<32) expected=int(row);
             }
             assert(partyButtonAt(x,y,count)==expected);
         }
+    }
+    for(const auto& row:kPartyButtonRects) {
+        assert(row.height==32 && row.y+row.height<=216);
+        assert(row.y+1+30<=row.y+row.height);
     }
     assert(partyButtonAt(UINT_MAX,UINT_MAX,6)==-1);
     assert(partyButtonAt(8,38,7)==-1);

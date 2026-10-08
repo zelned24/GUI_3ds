@@ -52,7 +52,8 @@ public:
         for(unsigned i=0;i<count && i<6;++i) {
             const auto& actor=(i==context.activePlayerPartyIndex) ? context.player : context.playerParty[i];
             const bool appearanceKnown=actor.actorIdentityResolved && actor.actor.appearanceResolved && actor.actor.gender!=PokemonGender::Unspecified;
-            const auto icon=resolvePokemonIcon(actor.dex,actor.formId,appearanceKnown,actor.actor.gender==PokemonGender::Female,actor.actor.shiny,actor.actor.shinyVariant);
+            auto icon=resolvePokemonIcon(actor.dex,actor.formId,appearanceKnown,actor.actor.gender==PokemonGender::Female,actor.actor.shiny,actor.actor.shinyVariant);
+            resolvePokemonDiscoveryIcon(icon);
             appearances[i]=icon.appearance;formIndices[i]=icon.formIndex;normalIconAllowed[i]=icon.normalIconAllowed;
         }
         m_icons.prepareAppearances(renderer,appearances,std::min(count,6u));
@@ -72,13 +73,13 @@ public:
             }
 
             if(appearances[i]) {
-                if(!m_icons.drawAppearance(renderer,appearances[i],bounds.x+14,y+2))
-                    renderer.drawTextFitted("?",bounds.x+14,y+2,0.3125f,20,0xffffffff);
+                if(!m_icons.drawAppearance(renderer,appearances[i],bounds.x+14,y+1))
+                    renderer.drawTextFitted("?",bounds.x+14,y+1,0.3125f,20,0xffffffff);
             } else if(normalIconAllowed[i]) {
-                if(!m_icons.draw(renderer,actor.dex,formIndices[i],bounds.x+14,y+2,1.0f,1.0f))
-                    renderer.drawTextFitted("?",bounds.x+14,y+2,0.3125f,20,0xffffffff);
+                if(!m_icons.draw(renderer,actor.dex,formIndices[i],bounds.x+14,y+1,1.0f,1.0f))
+                    renderer.drawTextFitted("?",bounds.x+14,y+1,0.3125f,20,0xffffffff);
             } else {
-                renderer.drawTextFitted("?",bounds.x+14,y+2,0.3125f,20,0xffffffff);
+                renderer.drawTextFitted("?",bounds.x+14,y+1,0.3125f,20,0xffffffff);
             }
 
             if(actor.actorIdentityResolved && actor.actor.appearanceResolved && actor.actor.shiny && actor.actor.shinyVariant<=2)
@@ -89,9 +90,9 @@ public:
             const char* gender=actor.battleState.gender==PokemonGender::Male ? "♂" :
                 actor.battleState.gender==PokemonGender::Female ? "♀" : nullptr;
             float nameWidth=0;
-            const float nameSize=renderer.drawTextFitted(name, bounds.x + 40, y + 3, 0.32f, gender ? 74 : 88,
+            const float nameSize=renderer.drawTextFitted(name, bounds.x + 60, y + 3, 0.3125f, gender ? 54 : 68,
                 isSel ? C2D_Color32(255, 255, 255, 255) : C2D_Color32(220, 215, 230, 255),&nameWidth);
-            if(gender) renderer.drawText(gender,bounds.x+40+nameWidth+3,y+3,nameSize,
+            if(gender) renderer.drawText(gender,bounds.x+60+nameWidth+3,y+3,nameSize,
                 actor.battleState.gender==PokemonGender::Male ? C2D_Color32(110,180,255,255) : C2D_Color32(255,140,220,255));
 
             if(isSel) m_cursor.drawCursor(renderer,bounds.x+3,y+3,nameSize);
@@ -140,9 +141,9 @@ public:
         }
 
         // Bottom footer window
-        renderer.drawWindow(8, 204, 304, 30);
-        renderer.drawTextFitted("Elige a un Pokémon.", 18, 210, 0.30f, 160, C2D_Color32(245, 245, 245, 255));
-        renderer.drawTextFitted("A: Cambiar   B: Salir", 188, 210, 0.30f, 112, C2D_Color32(140, 210, 255, 255));
+        renderer.drawWindow(8, 220, 304, 18);
+        renderer.drawTextFitted("Elige a un Pokémon.", 18, 224, 0.25f, 160, C2D_Color32(245, 245, 245, 255));
+        renderer.drawTextFitted("A: Cambiar   B: Salir", 188, 224, 0.25f, 112, C2D_Color32(140, 210, 255, 255));
     }
 
 private:
@@ -161,7 +162,7 @@ private:
     }
     C2D_SpriteSheet m_variantSheet=nullptr;
     bool m_variantAttempted=false;
-    PokemonIconPresenter m_icons{true};
+    PokemonIconPresenter m_icons{true,6,true};
     TitleMenuPresenter m_cursor;
 };
 

@@ -71,8 +71,8 @@ inline constexpr int targetButtonAt(unsigned x,unsigned y) {
     return -1;
 }
 inline constexpr TouchRect kPartyButtonRects[]={
-    {8,38,304,25},{8,65,304,25},{8,92,304,25},
-    {8,119,304,25},{8,146,304,25},{8,173,304,25}
+    {8,24,304,32},{8,56,304,32},{8,88,304,32},
+    {8,120,304,32},{8,152,304,32},{8,184,304,32}
 };
 inline constexpr int partyButtonAt(unsigned x,unsigned y,unsigned count) {
     if (count>6) return -1;
