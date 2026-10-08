@@ -19,6 +19,46 @@ inline EggIncubationResult eggSpeciesWeight(EggTier tier,double starterCost,uint
     output=static_cast<uint32_t>(weight);return EggIncubationResult::Ok;
 }
 
+enum class EggSpeciesDrawResult : uint8_t {Ok,InvalidInput,InvalidTier,MissingSpecies,InvalidCost,DuplicateSpecies,WeightOverflow,InvalidRoll};
+// Caller owns the filtered upstream-order pool (unlock pity/variants/exclusions).
+// Validate every record before selection; supplied draw follows randSeedInt(total).
+// No RNG is consumed here and failed calls preserve both outputs.
+inline EggSpeciesDrawResult eggSpeciesPoolWeight(EggTier tier,const uint16_t* pool,size_t count,uint32_t& total) {
+    if(static_cast<unsigned>(tier)>=sizeof(kEggSpeciesCostBounds)/sizeof(kEggSpeciesCostBounds[0]))
+        return EggSpeciesDrawResult::InvalidTier;
+    if(!pool || !count || count>sizeof(PokerogueContent::kSpecies)/sizeof(PokerogueContent::kSpecies[0]))
+        return EggSpeciesDrawResult::InvalidInput;
+    uint32_t sum=0;
+    for(size_t i=0;i<count;++i) {
+        const auto* species=PokerogueContent::findSpeciesByDex(pool[i]);
+        if(!species) return EggSpeciesDrawResult::MissingSpecies;
+        if(species->starterCost<0) return EggSpeciesDrawResult::InvalidCost;
+        for(size_t previous=0;previous<i;++previous)
+            if(pool[previous]==pool[i]) return EggSpeciesDrawResult::DuplicateSpecies;
+        uint32_t weight=0;
+        if(eggSpeciesWeight(tier,species->starterCost,weight)!=EggIncubationResult::Ok)
+            return EggSpeciesDrawResult::InvalidCost;
+        if(sum>UINT32_MAX-weight) return EggSpeciesDrawResult::WeightOverflow;
+        sum+=weight;
+    }
+    total=sum;return EggSpeciesDrawResult::Ok;
+}
+inline EggSpeciesDrawResult eggSpeciesForWeightedRoll(EggTier tier,const uint16_t* pool,size_t count,
+    uint32_t roll,uint16_t& output) {
+    uint32_t total=0;
+    const auto result=eggSpeciesPoolWeight(tier,pool,count,total);
+    if(result!=EggSpeciesDrawResult::Ok) return result;
+    if(roll>=total) return EggSpeciesDrawResult::InvalidRoll;
+    uint32_t cumulative=0;
+    for(size_t i=0;i<count;++i) {
+        uint32_t weight=0;
+        eggSpeciesWeight(tier,PokerogueContent::findSpeciesByDex(pool[i])->starterCost,weight);
+        cumulative+=weight;
+        if(roll<cumulative) {output=pool[i];return EggSpeciesDrawResult::Ok;}
+    }
+    return EggSpeciesDrawResult::InvalidRoll;
+}
+
 // Egg.rollEggTier decision only. The supplied draw must be from the caller's
 // resolved gacha RNG (upstream randInt, not battle randSeedInt). No draw is made
 // here; guarantees/pity and voucher transactions are separate pending policies.

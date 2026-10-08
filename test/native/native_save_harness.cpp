@@ -183,6 +183,16 @@ extern "C" int runNativeSaveChecks() {
         if(eggSpeciesWeight(static_cast<EggTier>(255),1,speciesWeight)!=EggIncubationResult::InvalidTier || speciesWeight!=777) return 1256;
         if(eggSpeciesWeight(EggTier::COMMON,NAN,speciesWeight)!=EggIncubationResult::InvalidInput || speciesWeight!=777) return 1257;
         if(eggSpeciesWeight(EggTier::COMMON,INFINITY,speciesWeight)!=EggIncubationResult::InvalidInput || speciesWeight!=777) return 1258;
+        const uint16_t eggPool[]={1,4};uint32_t poolWeight=999;uint16_t eggSpecies=777;
+        if(eggSpeciesPoolWeight(EggTier::COMMON,eggPool,2,poolWeight)!=EggSpeciesDrawResult::Ok || poolWeight!=200) return 1259;
+        if(eggSpeciesForWeightedRoll(EggTier::COMMON,eggPool,2,99,eggSpecies)!=EggSpeciesDrawResult::Ok || eggSpecies!=1) return 1260;
+        if(eggSpeciesForWeightedRoll(EggTier::COMMON,eggPool,2,100,eggSpecies)!=EggSpeciesDrawResult::Ok || eggSpecies!=4) return 1261;
+        eggSpecies=777;
+        if(eggSpeciesForWeightedRoll(EggTier::COMMON,eggPool,2,200,eggSpecies)!=EggSpeciesDrawResult::InvalidRoll || eggSpecies!=777) return 1262;
+        const uint16_t invalidEggPool[]={1,65535},duplicateEggPool[]={1,1};poolWeight=999;
+        if(eggSpeciesPoolWeight(EggTier::COMMON,invalidEggPool,2,poolWeight)!=EggSpeciesDrawResult::MissingSpecies || poolWeight!=999) return 1263;
+        if(eggSpeciesPoolWeight(EggTier::COMMON,duplicateEggPool,2,poolWeight)!=EggSpeciesDrawResult::DuplicateSpecies || poolWeight!=999) return 1264;
+        if(eggSpeciesForWeightedRoll(EggTier::COMMON,invalidEggPool,2,0,eggSpecies)!=EggSpeciesDrawResult::MissingSpecies || eggSpecies!=777) return 1265;
         uint32_t vouchers[4]={50,50,50,50};EggVoucherPlan voucherPlan{};
         for(const auto& offer:kEggVoucherOffers) {
             if(planEggVoucherPull(offer.cursor,0,vouchers,voucherPlan)!=EggVoucherResult::Ok ||
