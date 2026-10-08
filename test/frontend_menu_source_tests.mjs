@@ -217,3 +217,6 @@ assert(!partyPresentation.includes('hpX + 68'));
 
 assert(partyPresentation.includes("PokemonIconPresenter m_icons{true}"));
 assert(!partyPresentation.includes("y + 2, 1.0f, 0.5f"));
+
+assert(partyPresentation.includes("gender ? 74 : 88"));
+assert(partyPresentation.includes("bounds.x+40+nameWidth+3"));

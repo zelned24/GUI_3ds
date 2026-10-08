@@ -836,3 +836,5 @@ La búsqueda del índice generado usa búsqueda binaria sobre identidades ordena
 - [ ] Equipo consume páginas compactas a 1:1; native rendering pendiente. Ocho texturas 256×256 RGBA8 estiman 2 MiB frente a 8 MiB de páginas originales; es un catálogo de recursos, no memoria real medida. Otros consumidores conservan tamaño original.
 
 - [ ] Ruta nativa de iconos compactos: harness renderer cubre ocho páginas compactas, geometría reducida, escala 1×, caché sin recarga por frame, IDs ausentes y retirement hasta fence GPU. Pruebas escritas y registradas en harness existente, sin ejecutar por instrucción de no compilar.
+
+- [ ] Equipo: género real del battleState presentado junto al nombre, reservando ancho y usando tamaño raster del nombre; no inventa símbolo para género desconocido/genderless. Guards PASS; validación visual y variantes shiny en esta lista pendientes.

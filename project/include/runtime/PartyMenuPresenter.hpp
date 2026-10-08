@@ -61,8 +61,13 @@ public:
 
             // Name + Gender
             const char* name = actor.localizedName ? actor.localizedName : "Pokémon";
-            const float nameSize=renderer.drawTextFitted(name, bounds.x + 40, y + 3, 0.32f, 88,
-                isSel ? C2D_Color32(255, 255, 255, 255) : C2D_Color32(220, 215, 230, 255));
+            const char* gender=actor.battleState.gender==PokemonGender::Male ? "♂" :
+                actor.battleState.gender==PokemonGender::Female ? "♀" : nullptr;
+            float nameWidth=0;
+            const float nameSize=renderer.drawTextFitted(name, bounds.x + 40, y + 3, 0.32f, gender ? 74 : 88,
+                isSel ? C2D_Color32(255, 255, 255, 255) : C2D_Color32(220, 215, 230, 255),&nameWidth);
+            if(gender) renderer.drawText(gender,bounds.x+40+nameWidth+3,y+3,nameSize,
+                actor.battleState.gender==PokemonGender::Male ? C2D_Color32(110,180,255,255) : C2D_Color32(255,140,220,255));
 
             if(isSel) m_cursor.drawCursor(renderer,bounds.x+3,y+3,nameSize);
 
