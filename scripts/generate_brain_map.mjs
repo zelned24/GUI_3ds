@@ -73,6 +73,10 @@ const tasks = {
   frontendMenus: ['project/include/runtime/FrontendMenuPresenter.hpp', 'project/src/main.cpp',
     'project/include/storage/NativeProgressStore.hpp', 'test/frontend_menu_source_tests.mjs',
     'test/native/frontend_menu_harness.cpp'],
+  eggInventory: ['scripts/prepare_egg_content.py', 'project/generated/include/content/EggContentPolicy.hpp',
+    'project/include/game/EggIncubation.hpp', 'project/include/storage/NativeEggInventory.hpp',
+    'test/egg_content_generation_tests.py', 'test/native/egg_incubation_harness.cpp',
+    'test/native/egg_inventory_harness.cpp', 'test/native/native_save_harness.cpp', 'test/battle_tests.js'],
   save: ['project/src/storage/NativeRunSave.cpp', 'project/src/storage/SdNativeSaveStorage.cpp'],
   update: ['project/src/content/ContentUpdateStore.cpp', 'docs/progress/NATIVE_RUNTIME_CONTENT_PACK_CONTRACT.md']
 };

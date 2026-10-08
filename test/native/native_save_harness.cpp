@@ -4,6 +4,7 @@
 #include "storage/NativeStarterCandyStore.hpp"
 #include "storage/NativeProgressStore.hpp"
 #include "storage/NativeProgressBundle.hpp"
+#include "storage/NativeEggInventory.hpp"
 #include "storage/IntegritySha256.hpp"
 #include "content/PokerogueRuntimeContent.hpp"
 #include <cstring>
@@ -129,6 +130,44 @@ static int checkImplicitBaseFormCodec() {
 }
 
 extern "C" int runNativeSaveChecks() {
+    // Egg component coverage belongs to the existing save gate. This component
+    // has not yet been connected to the durable profile/run journals.
+    {
+        EggIncubationRecord eggs[2]{};eggs[0].id=3;eggs[1].id=8;
+        eggs[0].hatchWaves=-2147483647-1;eggs[0].timestamp=UINT64_MAX;
+        eggs[0].variantTier=VariantTier::EPIC;eggs[0].isShiny=true;
+        eggs[0].eggMoveIndex=3;eggs[0].overrideHiddenAbility=true;
+        char encoded[60]{},repeated[60]{};size_t size=0,repeatSize=0;
+        if(encodeNativeEggInventory(eggs,2,encoded,sizeof(encoded),size)!=NativeSaveResult::Ok || size!=60 ||
+            encodeNativeEggInventory(eggs,2,repeated,sizeof(repeated),repeatSize)!=NativeSaveResult::Ok ||
+            repeatSize!=size || std::memcmp(encoded,repeated,size)) return 1201;
+        EggIncubationRecord decoded[2]{};size_t count=99;
+        if(decodeNativeEggInventory(encoded,size,decoded,2,count)!=NativeSaveResult::Ok || count!=2 ||
+            decoded[0].id!=3 || decoded[1].id!=8 || decoded[0].hatchWaves!=eggs[0].hatchWaves ||
+            decoded[0].timestamp!=UINT64_MAX || decoded[0].variantTier!=VariantTier::EPIC ||
+            !decoded[0].isShiny || decoded[0].eggMoveIndex!=3 || !decoded[0].overrideHiddenAbility) return 1202;
+        decoded[0].id=55;count=99;
+        if(decodeNativeEggInventory(encoded,size,decoded,1,count)!=NativeSaveResult::TooLarge ||
+            decoded[0].id!=55 || count!=99) return 1203;
+        encoded[35]=1;
+        if(decodeNativeEggInventory(encoded,size,decoded,2,count)!=NativeSaveResult::InvalidRecord ||
+            decoded[0].id!=55 || count!=99) return 1204;
+        encoded[35]=0;encoded[33]=4;
+        if(inspectNativeEggInventory(encoded,size,count)!=NativeSaveResult::InvalidRecord) return 1205;
+        eggs[0].hatchWaves=2;eggs[1].hatchWaves=1;
+        uint32_t ready[2]={99,99};count=99;
+        if(lapseEggIncubation(eggs,2,ready,0,count)!=EggIncubationResult::OutputTooSmall ||
+            eggs[0].hatchWaves!=2 || eggs[1].hatchWaves!=1 || count!=99 || ready[0]!=99) return 1206;
+        if(lapseEggIncubation(eggs,2,ready,2,count)!=EggIncubationResult::Ok ||
+            count!=1 || ready[0]!=8 || eggs[0].hatchWaves!=1 || eggs[1].hatchWaves!=0 ||
+            eggs[0].timestamp!=UINT64_MAX || !eggs[0].isShiny) return 1207;
+        eggs[1].id=3;size=99;
+        if(encodeNativeEggInventory(eggs,2,encoded,sizeof(encoded),size)!=NativeSaveResult::InvalidRecord || size!=99)
+            return 1208;
+        if(encodeNativeEggInventory(nullptr,0,encoded,sizeof(encoded),size)!=NativeSaveResult::Ok || size!=12 ||
+            decodeNativeEggInventory(encoded,size,nullptr,0,count)!=NativeSaveResult::Ok || count) return 1209;
+    }
+
     const int implicitBaseForm = checkImplicitBaseFormCodec();
     if (implicitBaseForm) return implicitBaseForm;
     char digest[65];
