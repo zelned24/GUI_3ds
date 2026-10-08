@@ -247,7 +247,8 @@ public:
         renderer.clear(0xff303030);
         if(m_background) renderer.drawImageDirect(C2D_SpriteSheetGetImage(m_background,0),0,0,400,225);
     }
-    void skipIntro() { m_introCinematic.skip(); }
+    void skipIntro(Renderer2D& renderer) { m_introCinematic.skip(&renderer); }
+    bool introFinished() const { return m_introCinematic.isFinished(); }
     void drawTop(Renderer2D& renderer,const FirstRunRuntime& game,bool showMode=true,uint64_t animationTimeMs=0) {
         if(!showMode) {
             if(m_introCinematic.active()) {

@@ -146,3 +146,11 @@ assert(trainerSource.includes("m_metadata.animationFrame(elapsedMs,24,128)"));
 assert(!trainerSource.includes("if (m_animationStartMs == 0)"));
 assert(trainerSource.includes("m_animationStarted = false"));
 assert(trainerSource.includes("if (!m_animationStarted)"));
+
+assert(main.includes("setup.skipIntro(renderer)"));
+assert(main.includes("introActive = !setup.introFinished()"));
+assert(!main.includes("frameAnimationTimeMs >= (Pokerogue3DS::kIntroTotalDurationMs + 300)"));
+assert(introPresenter.includes("if(renderer) renderer->retireSpriteSheet(m_sheet)"));
+
+const introBranch=main.slice(main.indexOf("if (introActive) {\n                renderer.beginFrame()"),main.indexOf("// The menu consumes input"));
+assert(introBranch.includes("setup.drawTop") && !introBranch.includes("arena.draw"));

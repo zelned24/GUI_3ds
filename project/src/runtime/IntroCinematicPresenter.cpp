@@ -4,15 +4,17 @@
 
 namespace Pokerogue3DS {
 
-void IntroCinematicPresenter::clear() {
+void IntroCinematicPresenter::clear(Renderer2D* renderer) {
     if (m_sheet) {
-        C2D_SpriteSheetFree(m_sheet);
+        if(renderer) renderer->retireSpriteSheet(m_sheet);
+        else C2D_SpriteSheetFree(m_sheet);
         m_sheet = nullptr;
     }
     m_active = false;
     m_finished = true;
     m_startMs = 0;
     m_frameCounter = 0;
+    m_page = 0xffff;
 }
 
 void IntroCinematicPresenter::start() {
@@ -22,13 +24,8 @@ void IntroCinematicPresenter::start() {
     m_frameCounter = 0;
 }
 
-void IntroCinematicPresenter::skip() {
-    m_active = false;
-    m_finished = true;
-    if (m_sheet) {
-        C2D_SpriteSheetFree(m_sheet);
-        m_sheet = nullptr;
-    }
+void IntroCinematicPresenter::skip(Renderer2D* renderer) {
+    clear(renderer);
 }
 
 bool IntroCinematicPresenter::draw(Renderer2D& renderer, uint64_t currentTimestampMs) {

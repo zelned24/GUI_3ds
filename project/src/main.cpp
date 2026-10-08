@@ -226,19 +226,18 @@ int main() {
         if (titleVisible) {
             if (introActive) {
                 if (rawPressed & (KEY_A | KEY_B | KEY_START | KEY_TOUCH)) {
-                    setup.skipIntro();
+                    setup.skipIntro(renderer);
                     introActive = false;
                     rawPressed = 0; // Skipping the intro must not activate the title selection.
-                } else if (frameAnimationTimeMs >= (Pokerogue3DS::kIntroTotalDurationMs + 300)) {
-                    introActive = false;
                 }
             }
             if (introActive) {
                 renderer.beginFrame();
                 renderer.beginTop();
                 renderer.clear(0xff000000);
-                if (romfsReady) arena.draw(renderer,game.run().biomeId,frameAnimationTimeMs,false);
+                // The cinematic owns the top screen; do not load a hidden arena behind it.
                 setup.drawTop(renderer,game,false,frameAnimationTimeMs);
+                introActive = !setup.introFinished();
                 renderer.beginBottom();
                 renderer.clear(0xff000000);
                 renderer.endFrame();

@@ -15,10 +15,10 @@ public:
     ~IntroCinematicPresenter() { clear(); }
 
     void start();
-    void skip();
+    void skip(Renderer2D* renderer = nullptr);
     bool active() const { return m_active && !m_finished; }
     bool isFinished() const { return m_finished; }
-    void clear();
+    void clear(Renderer2D* renderer = nullptr);
 
     // Advances and draws the cinematic sequence onto the current top screen.
     // Returns true while the cinematic is active, false once finished.

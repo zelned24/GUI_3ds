@@ -37,5 +37,7 @@ int main() {
     intro.start();failLoad=true;
     assert(!intro.draw(renderer,1) && intro.isFinished());
     failLoad=false;intro.start();assert(intro.draw(renderer,1));
-    intro.skip();assert(intro.isFinished() && frees==1);
+    intro.skip(&renderer);assert(intro.isFinished() && frees==0 && retired==kIntroPageCount+1);
+    intro.start();assert(intro.draw(renderer,1));
+    intro.clear(&renderer);assert(intro.isFinished() && retired==kIntroPageCount+2);
 }

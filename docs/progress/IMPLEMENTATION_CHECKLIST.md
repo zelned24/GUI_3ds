@@ -774,3 +774,7 @@ La búsqueda del índice generado usa búsqueda binaria sobre identidades ordena
 
 - [x] Intro: 101/101 frames pinned empaquetados en seis páginas; pixels nearest y tiempos completos verificados por frame; raster 200×100 con ampliación entera 2×. Reporte reproducible `docs/generated/INTRO_PRESENTATION_REPORT.json`.
 - [ ] Reproducción de intro paginada C++: una página activa, cambio con retirement GPU y último frame completo implementados; pruebas nativas, latencia de I/O, memoria y comparación visual pendientes por prohibición de compilación/Azahar. Estimación: 2 MiB de textura activa y 4 MiB de texturas durante cambio, sin afirmar pico real del proceso.
+
+- [ ] Finalización de intro conectada a `isFinished()` del reproductor en lugar del reloj global. Saltar usa retirement GPU, también cubierto en harness nativo escrito; guards de conexión PASS, ejecución nativa pendiente.
+
+- [x] Ruta de intro: retirada la carga/dibujado de arena oculta detrás de la cinemática. Guard de conexión PASS; sin medición de ahorro real.
