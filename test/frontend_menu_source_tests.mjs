@@ -549,3 +549,8 @@ assert(navigation.indexOf('kFrontendConfirmRect.contains(touchX,touchY)')<naviga
 assert(navigation.indexOf('kFrontendBackRect.contains(touchX,touchY)')<navigation.indexOf('if(m_confirmingTouchDisable)'));
 assert(frontend.includes('if(keys & (KEY_UP | KEY_CPAD_UP)) m_eggSelected'));
 assert(frontend.includes('else if(keys & (KEY_DOWN | KEY_CPAD_DOWN)) m_eggSelected'));
+
+assert(commandPresentation.includes('selected!=m_selected'));
+assert(commandPresentation.includes('const char* takeNavigationSound()'));
+assert(main.includes('battleMenu.takeNavigationSound()'));
+assert(!main.includes('wasMovesOpen!=battleMenu.movesOpen()'));

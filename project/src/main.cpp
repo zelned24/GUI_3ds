@@ -611,10 +611,8 @@ int main() {
         }
         if(battleMenuInput) {
             touchPosition touch{};if(rawPressed & KEY_TOUCH) hidTouchRead(&touch);
-            const bool wasMovesOpen=battleMenu.movesOpen();
             const auto command=battleMenu.input(rawPressed,game.doubleBattle(),touch.px,touch.py);
-            if(command!=Pokerogue3DS::BattleMenuCommand::None || wasMovesOpen!=battleMenu.movesOpen())
-                uiAudio.play("select");
+            if(const char* sound=battleMenu.takeNavigationSound()) uiAudio.play(sound);
             switch(command) {
             case Pokerogue3DS::BattleMenuCommand::MovePrevious:changed=game.selectBattleMove(-1);break;
             case Pokerogue3DS::BattleMenuCommand::MoveNext:changed=game.selectBattleMove(1);break;

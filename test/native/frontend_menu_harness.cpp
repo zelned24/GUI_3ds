@@ -210,6 +210,21 @@ static void checkPreferences() {
     assert(NativePresentationSettingsStore::decode(nullptr,52,untouched)==NativeSaveResult::InvalidFormat);
 }
 int main() {
+    BattleCommandMenuPresenter audioControls;
+    assert(audioControls.input(0,false)==BattleMenuCommand::None && !audioControls.takeNavigationSound());
+    audioControls.input(KEY_DRIGHT,false);
+    assert(!std::strcmp(audioControls.takeNavigationSound(),"select"));
+    assert(!audioControls.takeNavigationSound());
+    audioControls.input(KEY_A,false); // Open Balls, rather than Moves.
+    assert(!std::strcmp(audioControls.takeNavigationSound(),"select"));
+    audioControls.input(KEY_DOWN,false);
+    assert(!std::strcmp(audioControls.takeNavigationSound(),"select"));
+    audioControls.input(KEY_TOUCH,false,319,239);
+    assert(!audioControls.takeNavigationSound());
+    audioControls.input(KEY_B,false);
+    assert(!std::strcmp(audioControls.takeNavigationSound(),"select"));
+    audioControls.input(KEY_B,false); // Already at root: no navigation occurred.
+    assert(!audioControls.takeNavigationSound());
     BattleCommandMenuPresenter combatControls;
     assert(combatControls.input(KEY_A,true)==BattleMenuCommand::None && combatControls.movesOpen());
     assert(combatControls.input(KEY_DRIGHT,true)==BattleMenuCommand::MoveColToggle);

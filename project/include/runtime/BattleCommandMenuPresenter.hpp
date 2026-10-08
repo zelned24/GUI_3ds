@@ -34,11 +34,25 @@ public:
         m_cursor.clear(renderer);
         MoveMenuPresenter::clear(renderer);
     }
-    void reset() { m_page = BattleMenuPage::Root; m_selected = 0; m_dialogue.reset();m_advanceDialogue=false; }
+    void reset() { m_page = BattleMenuPage::Root; m_selected = 0; m_dialogue.reset();m_advanceDialogue=false;m_navigationSound=nullptr; }
     bool movesOpen() const { return m_page == BattleMenuPage::Moves; }
     PokeballType ballType() const { return static_cast<PokeballType>(kBallMenuDefinitions[m_selected].id); }
 
+    const char* takeNavigationSound() {
+        const char* sound=m_navigationSound;m_navigationSound=nullptr;return sound;
+    }
     BattleMenuCommand input(uint32_t keys, bool doubleBattle, unsigned x = 0, unsigned y = 0) {
+        m_navigationSound=nullptr;
+        const auto page=m_page;
+        const unsigned selected=m_selected;
+        const bool advance=m_advanceDialogue;
+        const auto command=inputNavigation(keys,doubleBattle,x,y);
+        if(command!=BattleMenuCommand::None || page!=m_page || selected!=m_selected || advance!=m_advanceDialogue)
+            m_navigationSound="select";
+        return command;
+    }
+private:
+    BattleMenuCommand inputNavigation(uint32_t keys, bool doubleBattle, unsigned x, unsigned y) {
         if ((keys & KEY_B) || ((keys & KEY_TOUCH) && ((m_page==BattleMenuPage::Moves && moveBackRectangle(doubleBattle).contains(x,y)) || (m_page==BattleMenuPage::Balls && kBallBackRect.contains(x,y))))) {
             reset();
             return BattleMenuCommand::None;
@@ -113,6 +127,7 @@ public:
         return BattleMenuCommand::ThrowBall;
     }
 
+public:
     void drawTop(Renderer2D& renderer,const FirstRunRuntime& game) {
         const auto& feedback=game.battleFeedback();
         if(!feedback.empty() && feedback.rfind("Ola ",0)!=0) {
@@ -192,6 +207,7 @@ private:
     TitleMenuPresenter m_cursor;
     DialoguePresenter m_dialogue{2,270};
     bool m_advanceDialogue=false;
+    const char* m_navigationSound=nullptr;
 };
 
 }
