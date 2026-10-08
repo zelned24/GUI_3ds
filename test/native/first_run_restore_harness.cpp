@@ -3514,6 +3514,17 @@ static int checkPlayerPartyManagementAndSwitching() {
         for(const auto* runtime : {&normalAppearance,&epicAppearance,&legacyAppearance}) {
             ResolvedPokemon visual{};
             if(!runtime->setupStarterVisual(visual)) return 951;
+            const uint16_t cursor=runtime->selectedSetupStarterDex();
+            ResolvedPokemon catalogueVisual{};
+            if(!runtime->setupStarterVisual(appearanceDex,catalogueVisual)
+                || runtime->selectedSetupStarterDex()!=cursor
+                || catalogueVisual.dex!=visual.dex || catalogueVisual.formId!=visual.formId
+                || catalogueVisual.actor.gender!=visual.actor.gender
+                || catalogueVisual.actor.shiny!=visual.actor.shiny
+                || catalogueVisual.actor.shinyVariant!=visual.actor.shinyVariant
+                || catalogueVisual.actor.appearanceResolved!=visual.actor.appearanceResolved) return 953;
+            catalogueVisual.dex=999;
+            if(runtime->setupStarterVisual(0,catalogueVisual) || catalogueVisual.dex) return 954;
             const auto& actor=runtime->presentation().player.actor;
             if(visual.dex!=appearanceDex || visual.actor.gender!=actor.gender ||
                visual.actor.appearanceResolved!=actor.appearanceResolved ||

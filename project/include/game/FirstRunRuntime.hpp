@@ -176,8 +176,13 @@ public:
     // Uses the same caught DexAttr defaults as actor preparation; no RNG or
     // invented shiny/gender unlocks are introduced by the presenter.
     bool setupStarterVisual(ResolvedPokemon& output) const {
+        return setupStarterVisual(selectedSetupStarterDex(),output);
+    }
+    // Catalogue consumers resolve any starter without moving the cursor or
+    // rebuilding the team. Appearance semantics remain owned by the runtime.
+    bool setupStarterVisual(uint16_t dex,ResolvedPokemon& output) const {
         output={};
-        const auto* species=PokerogueContent::findSpeciesByDex(selectedSetupStarterDex());
+        const auto* species=PokerogueContent::findSpeciesByDex(dex);
         if(!species || !species->starterEligible) return false;
         ResolvedPokemon candidate{};candidate.dex=species->dex;
         const auto* form=PokerogueContent::findFormByUpstreamIndex(species->dex,setupStarterFormIndex(species->dex));
