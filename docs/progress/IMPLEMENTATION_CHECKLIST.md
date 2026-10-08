@@ -988,3 +988,5 @@ La búsqueda del índice generado usa búsqueda binaria sobre identidades ordena
 - [x] Brain map actualizado con subgrafo nativeIconTiles: pipeline, índices, consumidores, geometría y pruebas; 265 archivos/577 dependencias. Estado actualizado distingue implementación y validación nativa pendiente.
 
 - [ ] UV inválidas: renderer directo rechaza UV NaN/infinito; atlas rechaza también regiones degeneradas/rotadas. Loader de apariencias aplica validación antes de registrar textura disponible y recuerda el fallo hasta clear. Casos directos/atlas añadidos al harness sin ejecutar; guards estáticos PASS. Sin prueba GPU ni compilación.
+
+- [ ] Nombre de modo en el selector: limitado a 124 píxeles en la columna izquierda (x=16..140), separado del panel de detalles que empieza en x=151; usa ajuste de fuente nativa. Guard de fuente añadido; validación C++/Azahar pendiente por indicación del usuario.

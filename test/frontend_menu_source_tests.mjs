@@ -335,3 +335,7 @@ assert(decisions.includes("renderer.drawTextBox(actor.localizedName,70,y+4,nameS
 assert(decisions.includes("m_cursor.drawCursor(renderer,10,y+4,nameSize)"));
 
 assert(partyPresentation.includes("bounds.x + 60, y + 17, 0.25f, 42"));
+
+// Mode metadata must stay in the left column, clear of the detail panel at x=151.
+assert(setupPresentation.includes('renderer.drawTextFitted(game.presentation().modeName ? game.presentation().modeName : "",16,217,0.375f,124,0xffffffff)'));
+assert(!setupPresentation.includes('renderer.drawText(game.presentation().modeName'));

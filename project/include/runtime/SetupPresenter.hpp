@@ -319,7 +319,7 @@ public:
         const unsigned bst=(form ? form->hp : species->hp)+(form ? form->atk : species->atk)+(form ? form->def : species->def)+(form ? form->spatk : species->spatk)+(form ? form->spdef : species->spdef)+(form ? form->speed : species->speed);
         std::snprintf(label,sizeof(label),"Total base (BST): %u",bst);
         renderer.drawTextFitted(label,161,211,0.3125f,220,0xffffffff);
-        renderer.drawText(game.presentation().modeName ? game.presentation().modeName : "",16,217,0.4f,0xffffffff);
+        renderer.drawTextFitted(game.presentation().modeName ? game.presentation().modeName : "",16,217,0.375f,124,0xffffffff);
     }
     void drawBottom(Renderer2D& renderer,const FirstRunRuntime& game) {
         renderer.clear(0xff3d303a);
