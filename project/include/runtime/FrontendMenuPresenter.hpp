@@ -3,6 +3,7 @@
 #include "content/FrontendModes.hpp"
 #include "content/RuntimeUiText.hpp"
 #include "content/EggUiText.hpp"
+#include "runtime/EggTexturePresenter.hpp"
 #include "storage/NativeRunSave.hpp"
 #include "game/FirstRunRuntime.hpp"
 #include "runtime/PokemonIconPresenter.hpp"
@@ -23,7 +24,7 @@ class FrontendMenuPresenter {
 public:
     explicit FrontendMenuPresenter(bool hasSave):m_titleSelection{hasSave,0} {}
     ~FrontendMenuPresenter() { clear(); }
-    void clear(Renderer2D* renderer=nullptr) {m_title.clear(renderer);m_dexIcons.clear(renderer);
+    void clear(Renderer2D* renderer=nullptr) {m_eggTextures.clear(renderer);m_title.clear(renderer);m_dexIcons.clear(renderer);
         if(m_dexVariants) {if(renderer) renderer->retireSpriteSheet(m_dexVariants);else C2D_SpriteSheetFree(m_dexVariants);}
         m_dexVariants=nullptr;m_dexVariantsAttempted=false; m_confirmingDelete=false;m_confirmingImport=false;}
     void setExpGainsSpeed(unsigned speed) {if(speed<=3) m_expGainsSpeed=speed;}
@@ -273,6 +274,7 @@ public:
         renderer.drawTextFitted(text,24,186,0.4f,352,0xffffffff);
     }
     void draw(Renderer2D& renderer,const NativeRunSave* saved,const FirstRunRuntime* game=nullptr) {
+        if(m_page!=FrontendPage::ServiceInfo || m_service!=3) m_eggTextures.clear(&renderer);
         if(m_page!=FrontendPage::Pokedex) {
             m_dexIcons.clear(&renderer); // Caller began a synchronized frame.
             if(m_dexVariants) C2D_SpriteSheetFree(m_dexVariants);
@@ -385,7 +387,7 @@ private:
     inline static constexpr TouchRect kConfirmationNoRect{160,125,128,30};
     // These destinations expose missing integrations without inventing profile data
     // or pretending that network/account actions succeeded.
-    void drawServiceInfo(Renderer2D& renderer,const FirstRunRuntime* game) const {
+    void drawServiceInfo(Renderer2D& renderer,const FirstRunRuntime* game) {
         renderer.clear(0xff3a303d);
         renderer.drawTextFitted(runtimeUiText(globalMenuKeys()[m_service]),12,8,0.45f,296,0xffffffff);
         renderer.drawWindow(16,33,288,171);
@@ -401,8 +403,11 @@ private:
                     const auto* egg=game->eggAt(selected);
                     if(egg) {
                         char label[64];std::snprintf(label,sizeof(label),"%s %u / %u",eggUiText("egg"),unsigned(selected+1),unsigned(count));
-                        renderer.drawTextFitted(label,28,46,0.375f,264,0xffffffff);
-                        renderer.drawTextFitted(eggTierText(*egg),28,70,0.375f,264,0xff80ffff);
+                        char textureKey[24];eggTextureKey(*egg,textureKey,sizeof(textureKey),true);
+                        if(!m_eggTextures.draw(renderer,"egg",textureKey,28,45))
+                            renderer.drawTextFitted("?",28,46,0.375f,28,0xffffffff);
+                        renderer.drawTextFitted(label,68,46,0.375f,224,0xffffffff);
+                        renderer.drawTextFitted(eggTierText(*egg),68,70,0.375f,224,0xff80ffff);
                         drawBoundedDescription(renderer,eggUiText(eggHatchMessageKey(egg->hatchWaves)),28,100,264,90);
                     }
                 } else {
@@ -413,7 +418,10 @@ private:
                         char label[96];std::snprintf(label,sizeof(label),"%s %u: %s",eggUiText("egg"),unsigned(first+row+1),eggTierText(*egg));
                         const float y=42+row*30;
                         renderer.drawTextFitted(first+row==selected ? ">" : "",24,y,0.375f,12,0xffffffff);
-                        renderer.drawTextFitted(label,40,y,0.375f,248,0xffffffff);
+                        char textureKey[24];eggTextureKey(*egg,textureKey,sizeof(textureKey),false);
+                        if(!m_eggTextures.draw(renderer,"egg_icons",textureKey,32,y-10))
+                            renderer.drawTextFitted("?",46,y,0.375f,20,0xffffffff);
+                        renderer.drawTextFitted(label,76,y,0.375f,212,0xffffffff);
                     }
                 }
             }
@@ -452,11 +460,17 @@ private:
         drawBoundedDescription(renderer,description,28,54,264,140);
         renderer.drawTextFitted("B: volver al menú",12,214,0.3125f,296,0xffffffff);
     }
-    static const char* eggTierText(const EggIncubationRecord& egg) {
+    static bool specialEggTexture(const EggIncubationRecord& egg) {
         for(const auto dex:kSpecialEggIncubationSpecies)
-            if(egg.speciesDex==dex) return eggUiText("manaphyTier");
-        if(!egg.speciesDex && egg.tier==EggTier::COMMON && egg.id%kEggSpecialIdDivisor==0)
-            return eggUiText("manaphyTier");
+            if(egg.speciesDex==dex) return true;
+        return !egg.speciesDex && egg.tier==EggTier::COMMON && egg.id%kEggSpecialIdDivisor==0;
+    }
+    static void eggTextureKey(const EggIncubationRecord& egg,char* output,size_t capacity,bool detail) {
+        if(specialEggTexture(egg)) std::snprintf(output,capacity,"%smanaphy",detail ? "egg_" : "");
+        else std::snprintf(output,capacity,"%s%u",detail ? "egg_" : "",unsigned(egg.tier));
+    }
+    static const char* eggTierText(const EggIncubationRecord& egg) {
+        if(specialEggTexture(egg)) return eggUiText("manaphyTier");
         static const char* keys[]={"defaultTier","greatTier","ultraTier","masterTier"};
         const unsigned tier=static_cast<unsigned>(egg.tier);
         return tier<4 ? eggUiText(keys[tier]) : "?";
@@ -599,6 +613,7 @@ private:
     TitleMenuPresenter m_title;
     TitleMenuSelection m_titleSelection;
     FrontendPage m_page=FrontendPage::Title;
+    EggTexturePresenter m_eggTextures;
     size_t m_eggSelected=0;
     bool m_eggDetails=false;
     unsigned m_selected=0,m_group=0,m_service=0,m_globalSelection=0;

@@ -97,6 +97,8 @@ from prepare_egg_content import prepare as prepare_egg_content
 egg_report=prepare_egg_content(ROOT)
 from prepare_egg_ui import prepare as prepare_egg_ui
 egg_ui_report=prepare_egg_ui(ROOT)
+from prepare_egg_textures import prepare as prepare_egg_textures
+prepare_egg_textures(ROOT)
 collect_text(json.loads(subprocess.check_output(["git","-C",str(ROOT / "build/upstream/pokerogue-locales"),"show",ui_locale_revision+":es-ES/egg.json"])))
 for row in nature_report["rows"]: characters.update(row["name"])
 codepoints=sorted(ord(ch) for ch in characters if ord(ch)>=32)

@@ -1,0 +1,347 @@
+{
+  "files": [
+    {
+      "atlas": "egg_icons",
+      "convertedSHA256": "a523b479d66ab218b95b174171791bd8e3e23b430016548430a7feac1294e40d",
+      "frame": {
+        "filename": "0",
+        "frame": {
+          "h": 14,
+          "w": 13,
+          "x": 0,
+          "y": 0
+        },
+        "rotated": false,
+        "sourceSize": {
+          "h": 30,
+          "w": 40
+        },
+        "spriteSourceSize": {
+          "h": 14,
+          "w": 13,
+          "x": 14,
+          "y": 14
+        },
+        "trimmed": true
+      },
+      "height": 30,
+      "key": "0",
+      "manifestPath": "images/egg/egg_icons.json",
+      "manifestSHA256": "26a4ba17ce296a547c524f043598084694235e521d1cd733da28fd611b6b043b",
+      "runtimePath": "romfs:/presentation/eggs/egg_icons-0.t3x",
+      "sourcePath": "images/egg/egg_icons.png",
+      "sourceSHA256": "4a1cd8592877ba8b11c022a9d56b5ff848776ef33cb61e4a1a70587ac817b92d",
+      "stagedSHA256": "eca49f75d83a8d304a2ba636210bd4fdc5f85eb160bb4c2f5a71a302e68a373c",
+      "width": 40
+    },
+    {
+      "atlas": "egg_icons",
+      "convertedSHA256": "c00abb2166296a51d680f7cd5af04f8963d83fdcbd84a6a41c20d3c0f7a392e3",
+      "frame": {
+        "filename": "1",
+        "frame": {
+          "h": 14,
+          "w": 13,
+          "x": 13,
+          "y": 0
+        },
+        "rotated": false,
+        "sourceSize": {
+          "h": 30,
+          "w": 40
+        },
+        "spriteSourceSize": {
+          "h": 14,
+          "w": 13,
+          "x": 14,
+          "y": 14
+        },
+        "trimmed": true
+      },
+      "height": 30,
+      "key": "1",
+      "manifestPath": "images/egg/egg_icons.json",
+      "manifestSHA256": "26a4ba17ce296a547c524f043598084694235e521d1cd733da28fd611b6b043b",
+      "runtimePath": "romfs:/presentation/eggs/egg_icons-1.t3x",
+      "sourcePath": "images/egg/egg_icons.png",
+      "sourceSHA256": "4a1cd8592877ba8b11c022a9d56b5ff848776ef33cb61e4a1a70587ac817b92d",
+      "stagedSHA256": "ff62817b4eddc58c2a3b2643751f4dc42ff17c9f6a66783d20e79158d56efbec",
+      "width": 40
+    },
+    {
+      "atlas": "egg_icons",
+      "convertedSHA256": "978a5c8497dd2d62585ef7542c57c1f5f4b4db90537f22a44a952a22de480d09",
+      "frame": {
+        "filename": "2",
+        "frame": {
+          "h": 14,
+          "w": 13,
+          "x": 26,
+          "y": 0
+        },
+        "rotated": false,
+        "sourceSize": {
+          "h": 30,
+          "w": 40
+        },
+        "spriteSourceSize": {
+          "h": 14,
+          "w": 13,
+          "x": 14,
+          "y": 14
+        },
+        "trimmed": true
+      },
+      "height": 30,
+      "key": "2",
+      "manifestPath": "images/egg/egg_icons.json",
+      "manifestSHA256": "26a4ba17ce296a547c524f043598084694235e521d1cd733da28fd611b6b043b",
+      "runtimePath": "romfs:/presentation/eggs/egg_icons-2.t3x",
+      "sourcePath": "images/egg/egg_icons.png",
+      "sourceSHA256": "4a1cd8592877ba8b11c022a9d56b5ff848776ef33cb61e4a1a70587ac817b92d",
+      "stagedSHA256": "c685a46dc0deebaca44dc3cd76144acb82851046b1617d43fb839ff1c35eb75e",
+      "width": 40
+    },
+    {
+      "atlas": "egg_icons",
+      "convertedSHA256": "b064e2daaa6f8c7ec0e044d8a202e661c5f7e3d6245bd99aeabe15339733e12d",
+      "frame": {
+        "filename": "3",
+        "frame": {
+          "h": 14,
+          "w": 13,
+          "x": 39,
+          "y": 0
+        },
+        "rotated": false,
+        "sourceSize": {
+          "h": 30,
+          "w": 40
+        },
+        "spriteSourceSize": {
+          "h": 14,
+          "w": 13,
+          "x": 14,
+          "y": 14
+        },
+        "trimmed": true
+      },
+      "height": 30,
+      "key": "3",
+      "manifestPath": "images/egg/egg_icons.json",
+      "manifestSHA256": "26a4ba17ce296a547c524f043598084694235e521d1cd733da28fd611b6b043b",
+      "runtimePath": "romfs:/presentation/eggs/egg_icons-3.t3x",
+      "sourcePath": "images/egg/egg_icons.png",
+      "sourceSHA256": "4a1cd8592877ba8b11c022a9d56b5ff848776ef33cb61e4a1a70587ac817b92d",
+      "stagedSHA256": "5443193ed1de6b7ce16e58525ddda98a3c67ceb18a851d719698f83a7bc670d8",
+      "width": 40
+    },
+    {
+      "atlas": "egg_icons",
+      "convertedSHA256": "b2214b6e9b73c27953340b0e3797532568c475c3a2d2b527555a7f95f983a227",
+      "frame": {
+        "filename": "manaphy",
+        "frame": {
+          "h": 15,
+          "w": 12,
+          "x": 52,
+          "y": 0
+        },
+        "rotated": false,
+        "sourceSize": {
+          "h": 30,
+          "w": 40
+        },
+        "spriteSourceSize": {
+          "h": 15,
+          "w": 12,
+          "x": 14,
+          "y": 13
+        },
+        "trimmed": true
+      },
+      "height": 30,
+      "key": "manaphy",
+      "manifestPath": "images/egg/egg_icons.json",
+      "manifestSHA256": "26a4ba17ce296a547c524f043598084694235e521d1cd733da28fd611b6b043b",
+      "runtimePath": "romfs:/presentation/eggs/egg_icons-manaphy.t3x",
+      "sourcePath": "images/egg/egg_icons.png",
+      "sourceSHA256": "4a1cd8592877ba8b11c022a9d56b5ff848776ef33cb61e4a1a70587ac817b92d",
+      "stagedSHA256": "19b57809a3c3ad70e42e8c913c87eae223051270f3b0e2b02ddbab9fd5694607",
+      "width": 40
+    },
+    {
+      "atlas": "egg",
+      "convertedSHA256": "8b6da167430649475f055332a2d0a9e7cacaba59f52a238552b144f69e8c4b97",
+      "frame": {
+        "filename": "egg_0",
+        "frame": {
+          "h": 30,
+          "w": 28,
+          "x": 0,
+          "y": 0
+        },
+        "rotated": false,
+        "sourceSize": {
+          "h": 30,
+          "w": 28
+        },
+        "spriteSourceSize": {
+          "h": 30,
+          "w": 28,
+          "x": 0,
+          "y": 0
+        },
+        "trimmed": false
+      },
+      "height": 30,
+      "key": "egg_0",
+      "manifestPath": "images/egg/egg.json",
+      "manifestSHA256": "8c242f7e2df7345b44b178283db212b8a2aadf0048bfeb8716d94b3f1e75b002",
+      "runtimePath": "romfs:/presentation/eggs/egg-egg_0.t3x",
+      "sourcePath": "images/egg/egg.png",
+      "sourceSHA256": "ffc0b9efa2dbde7cf2ac60130ff11733e28058dd1019d75f5ad402442d1acc91",
+      "stagedSHA256": "9756cb6f626e9f91c4f0d18eb38247d883160974cd58cc1e605b0a819eb3f8f5",
+      "width": 28
+    },
+    {
+      "atlas": "egg",
+      "convertedSHA256": "d46ce9b8421e47f5069e1e4b350417afc2ea5eef3e2abf5da48b8495860cf7cb",
+      "frame": {
+        "filename": "egg_1",
+        "frame": {
+          "h": 30,
+          "w": 28,
+          "x": 28,
+          "y": 0
+        },
+        "rotated": false,
+        "sourceSize": {
+          "h": 30,
+          "w": 28
+        },
+        "spriteSourceSize": {
+          "h": 30,
+          "w": 28,
+          "x": 0,
+          "y": 0
+        },
+        "trimmed": false
+      },
+      "height": 30,
+      "key": "egg_1",
+      "manifestPath": "images/egg/egg.json",
+      "manifestSHA256": "8c242f7e2df7345b44b178283db212b8a2aadf0048bfeb8716d94b3f1e75b002",
+      "runtimePath": "romfs:/presentation/eggs/egg-egg_1.t3x",
+      "sourcePath": "images/egg/egg.png",
+      "sourceSHA256": "ffc0b9efa2dbde7cf2ac60130ff11733e28058dd1019d75f5ad402442d1acc91",
+      "stagedSHA256": "ed8d28bc0e77b67f66445b0e7518e1e4ed0168095a20c181caf00877b81bed04",
+      "width": 28
+    },
+    {
+      "atlas": "egg",
+      "convertedSHA256": "6a8e840bdb7493af3c9dd560cb6bb71dd46923443cefe6d00cb9cf8192386ffa",
+      "frame": {
+        "filename": "egg_2",
+        "frame": {
+          "h": 30,
+          "w": 28,
+          "x": 56,
+          "y": 0
+        },
+        "rotated": false,
+        "sourceSize": {
+          "h": 30,
+          "w": 28
+        },
+        "spriteSourceSize": {
+          "h": 30,
+          "w": 28,
+          "x": 0,
+          "y": 0
+        },
+        "trimmed": false
+      },
+      "height": 30,
+      "key": "egg_2",
+      "manifestPath": "images/egg/egg.json",
+      "manifestSHA256": "8c242f7e2df7345b44b178283db212b8a2aadf0048bfeb8716d94b3f1e75b002",
+      "runtimePath": "romfs:/presentation/eggs/egg-egg_2.t3x",
+      "sourcePath": "images/egg/egg.png",
+      "sourceSHA256": "ffc0b9efa2dbde7cf2ac60130ff11733e28058dd1019d75f5ad402442d1acc91",
+      "stagedSHA256": "adb01990289027c294ea438b3766c9b9991ea8d117386c60375a067682356cf3",
+      "width": 28
+    },
+    {
+      "atlas": "egg",
+      "convertedSHA256": "b7eef1dd3fd66ae854cca21a954663cf53c5f55e166d547ad7ae4c5f13941ee4",
+      "frame": {
+        "filename": "egg_3",
+        "frame": {
+          "h": 30,
+          "w": 28,
+          "x": 84,
+          "y": 0
+        },
+        "rotated": false,
+        "sourceSize": {
+          "h": 30,
+          "w": 28
+        },
+        "spriteSourceSize": {
+          "h": 30,
+          "w": 28,
+          "x": 0,
+          "y": 0
+        },
+        "trimmed": false
+      },
+      "height": 30,
+      "key": "egg_3",
+      "manifestPath": "images/egg/egg.json",
+      "manifestSHA256": "8c242f7e2df7345b44b178283db212b8a2aadf0048bfeb8716d94b3f1e75b002",
+      "runtimePath": "romfs:/presentation/eggs/egg-egg_3.t3x",
+      "sourcePath": "images/egg/egg.png",
+      "sourceSHA256": "ffc0b9efa2dbde7cf2ac60130ff11733e28058dd1019d75f5ad402442d1acc91",
+      "stagedSHA256": "39459e6c82cf10d3320e6a3f994ebd6543960f85cd8d1cdef00657f0d7bc57b4",
+      "width": 28
+    },
+    {
+      "atlas": "egg",
+      "convertedSHA256": "11a9b1c29cecb83d9a2fd6569cbf4cfd731cef758ce2bd9b75d11f77fd38c5d8",
+      "frame": {
+        "filename": "egg_manaphy",
+        "frame": {
+          "h": 31,
+          "w": 26,
+          "x": 112,
+          "y": 0
+        },
+        "rotated": false,
+        "sourceSize": {
+          "h": 31,
+          "w": 26
+        },
+        "spriteSourceSize": {
+          "h": 31,
+          "w": 26,
+          "x": 0,
+          "y": 0
+        },
+        "trimmed": false
+      },
+      "height": 31,
+      "key": "egg_manaphy",
+      "manifestPath": "images/egg/egg.json",
+      "manifestSHA256": "8c242f7e2df7345b44b178283db212b8a2aadf0048bfeb8716d94b3f1e75b002",
+      "runtimePath": "romfs:/presentation/eggs/egg-egg_manaphy.t3x",
+      "sourcePath": "images/egg/egg.png",
+      "sourceSHA256": "ffc0b9efa2dbde7cf2ac60130ff11733e28058dd1019d75f5ad402442d1acc91",
+      "stagedSHA256": "83379218960c9558a286573407976e5ffb07cf107653f52f582bc7254f805469",
+      "width": 26
+    }
+  ],
+  "repository": "https://github.com/pagefaultgames/pokerogue-assets",
+  "revision": "056a1f408f26a3be4fef243f7462cb43608c7928",
+  "schemaVersion": 1
+}
