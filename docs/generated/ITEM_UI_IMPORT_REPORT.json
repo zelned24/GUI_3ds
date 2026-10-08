@@ -1,0 +1,631 @@
+{
+  "rows": [
+    {
+      "itemId": "RARE_CANDY",
+      "key": "modifierType:ModifierType.RARE_CANDY.name",
+      "name": "Carameloraro",
+      "sourceSymbol": "modifierTypeInitObj.RARE_CANDY"
+    },
+    {
+      "itemId": "RARER_CANDY",
+      "key": "modifierType:ModifierType.RARER_CANDY.name",
+      "name": "Caramelorarísimo",
+      "sourceSymbol": "modifierTypeInitObj.RARER_CANDY"
+    },
+    {
+      "itemId": "EVOLUTION_TRACKER_GIMMIGHOUL",
+      "key": "modifierType:ModifierType.EVOLUTION_TRACKER_GIMMIGHOUL.name",
+      "name": "Tesoros",
+      "sourceSymbol": "modifierTypeInitObj.EVOLUTION_TRACKER_GIMMIGHOUL"
+    },
+    {
+      "itemId": "MEGA_BRACELET",
+      "key": "modifierType:ModifierType.MEGA_BRACELET.name",
+      "name": "Megapulsera",
+      "sourceSymbol": "modifierTypeInitObj.MEGA_BRACELET"
+    },
+    {
+      "itemId": "DYNAMAX_BAND",
+      "key": "modifierType:ModifierType.DYNAMAX_BAND.name",
+      "name": "Maximuñequera",
+      "sourceSymbol": "modifierTypeInitObj.DYNAMAX_BAND"
+    },
+    {
+      "itemId": "TERA_ORB",
+      "key": "modifierType:ModifierType.TERA_ORB.name",
+      "name": "Orbe Teracristal",
+      "sourceSymbol": "modifierTypeInitObj.TERA_ORB"
+    },
+    {
+      "itemId": "MAP",
+      "key": "modifierType:ModifierType.MAP.name",
+      "name": "Mapa",
+      "sourceSymbol": "modifierTypeInitObj.MAP"
+    },
+    {
+      "itemId": "POTION",
+      "key": "modifierType:ModifierType.POTION.name",
+      "name": "Poción",
+      "sourceSymbol": "modifierTypeInitObj.POTION"
+    },
+    {
+      "itemId": "SUPER_POTION",
+      "key": "modifierType:ModifierType.SUPER_POTION.name",
+      "name": "Superpoción",
+      "sourceSymbol": "modifierTypeInitObj.SUPER_POTION"
+    },
+    {
+      "itemId": "HYPER_POTION",
+      "key": "modifierType:ModifierType.HYPER_POTION.name",
+      "name": "Hiperpoción",
+      "sourceSymbol": "modifierTypeInitObj.HYPER_POTION"
+    },
+    {
+      "itemId": "MAX_POTION",
+      "key": "modifierType:ModifierType.MAX_POTION.name",
+      "name": "Poción Máxima",
+      "sourceSymbol": "modifierTypeInitObj.MAX_POTION"
+    },
+    {
+      "itemId": "FULL_RESTORE",
+      "key": "modifierType:ModifierType.FULL_RESTORE.name",
+      "name": "Restaurar Todo",
+      "sourceSymbol": "modifierTypeInitObj.FULL_RESTORE"
+    },
+    {
+      "itemId": "REVIVE",
+      "key": "modifierType:ModifierType.REVIVE.name",
+      "name": "Revivir",
+      "sourceSymbol": "modifierTypeInitObj.REVIVE"
+    },
+    {
+      "itemId": "MAX_REVIVE",
+      "key": "modifierType:ModifierType.MAX_REVIVE.name",
+      "name": "Revivir Máximo",
+      "sourceSymbol": "modifierTypeInitObj.MAX_REVIVE"
+    },
+    {
+      "itemId": "FULL_HEAL",
+      "key": "modifierType:ModifierType.FULL_HEAL.name",
+      "name": "Cura Total",
+      "sourceSymbol": "modifierTypeInitObj.FULL_HEAL"
+    },
+    {
+      "itemId": "SACRED_ASH",
+      "key": "modifierType:ModifierType.SACRED_ASH.name",
+      "name": "Ceniza Sagrada",
+      "sourceSymbol": "modifierTypeInitObj.SACRED_ASH"
+    },
+    {
+      "itemId": "REVIVER_SEED",
+      "key": "modifierType:ModifierType.REVIVER_SEED.name",
+      "name": "Semilla Revivir",
+      "sourceSymbol": "modifierTypeInitObj.REVIVER_SEED"
+    },
+    {
+      "itemId": "WHITE_HERB",
+      "key": "modifierType:ModifierType.WHITE_HERB.name",
+      "name": "Hierba Blanca",
+      "sourceSymbol": "modifierTypeInitObj.WHITE_HERB"
+    },
+    {
+      "itemId": "ETHER",
+      "key": "modifierType:ModifierType.ETHER.name",
+      "name": "Éter",
+      "sourceSymbol": "modifierTypeInitObj.ETHER"
+    },
+    {
+      "itemId": "MAX_ETHER",
+      "key": "modifierType:ModifierType.MAX_ETHER.name",
+      "name": "Éter Máximo",
+      "sourceSymbol": "modifierTypeInitObj.MAX_ETHER"
+    },
+    {
+      "itemId": "ELIXIR",
+      "key": "modifierType:ModifierType.ELIXIR.name",
+      "name": "Elixir",
+      "sourceSymbol": "modifierTypeInitObj.ELIXIR"
+    },
+    {
+      "itemId": "MAX_ELIXIR",
+      "key": "modifierType:ModifierType.MAX_ELIXIR.name",
+      "name": "Elixir Máximo",
+      "sourceSymbol": "modifierTypeInitObj.MAX_ELIXIR"
+    },
+    {
+      "itemId": "PP_UP",
+      "key": "modifierType:ModifierType.PP_UP.name",
+      "name": "Más PP",
+      "sourceSymbol": "modifierTypeInitObj.PP_UP"
+    },
+    {
+      "itemId": "PP_MAX",
+      "key": "modifierType:ModifierType.PP_MAX.name",
+      "name": "PP Máximos",
+      "sourceSymbol": "modifierTypeInitObj.PP_MAX"
+    },
+    {
+      "itemId": "LURE",
+      "key": "modifierType:ModifierType.LURE.name",
+      "name": "Colonia",
+      "sourceSymbol": "modifierTypeInitObj.LURE"
+    },
+    {
+      "itemId": "SUPER_LURE",
+      "key": "modifierType:ModifierType.SUPER_LURE.name",
+      "name": "Supercolonia",
+      "sourceSymbol": "modifierTypeInitObj.SUPER_LURE"
+    },
+    {
+      "itemId": "MAX_LURE",
+      "key": "modifierType:ModifierType.MAX_LURE.name",
+      "name": "Colonia Máxima",
+      "sourceSymbol": "modifierTypeInitObj.MAX_LURE"
+    },
+    {
+      "itemId": "DIRE_HIT",
+      "key": "modifierType:ModifierType.DIRE_HIT.name",
+      "name": "Crítico X",
+      "sourceSymbol": "modifierTypeInitObj.DIRE_HIT"
+    },
+    {
+      "itemId": "MYSTICAL_ROCK",
+      "key": "modifierType:ModifierType.MYSTICAL_ROCK.name",
+      "name": "Roca Mística",
+      "sourceSymbol": "modifierTypeInitObj.MYSTICAL_ROCK"
+    },
+    {
+      "itemId": "MEMORY_MUSHROOM",
+      "key": "modifierType:ModifierType.MEMORY_MUSHROOM.name",
+      "name": "Seta Recuerdo",
+      "sourceSymbol": "modifierTypeInitObj.MEMORY_MUSHROOM"
+    },
+    {
+      "itemId": "EXP_SHARE",
+      "key": "modifierType:ModifierType.EXP_SHARE.name",
+      "name": "Repartir Experiencia",
+      "sourceSymbol": "modifierTypeInitObj.EXP_SHARE"
+    },
+    {
+      "itemId": "EXP_BALANCE",
+      "key": "modifierType:ModifierType.EXP_BALANCE.name",
+      "name": "Equilibrador Experiencia",
+      "sourceSymbol": "modifierTypeInitObj.EXP_BALANCE"
+    },
+    {
+      "itemId": "OVAL_CHARM",
+      "key": "modifierType:ModifierType.OVAL_CHARM.name",
+      "name": "Amuleto Oval",
+      "sourceSymbol": "modifierTypeInitObj.OVAL_CHARM"
+    },
+    {
+      "itemId": "EXP_CHARM",
+      "key": "modifierType:ModifierType.EXP_CHARM.name",
+      "name": "Amuleto Experiencia",
+      "sourceSymbol": "modifierTypeInitObj.EXP_CHARM"
+    },
+    {
+      "itemId": "SUPER_EXP_CHARM",
+      "key": "modifierType:ModifierType.SUPER_EXP_CHARM.name",
+      "name": "Superamuleto Experiencia",
+      "sourceSymbol": "modifierTypeInitObj.SUPER_EXP_CHARM"
+    },
+    {
+      "itemId": "GOLDEN_EXP_CHARM",
+      "key": "modifierType:ModifierType.GOLDEN_EXP_CHARM.name",
+      "name": "Amuleto Experiencia Dorado",
+      "sourceSymbol": "modifierTypeInitObj.GOLDEN_EXP_CHARM"
+    },
+    {
+      "itemId": "LUCKY_EGG",
+      "key": "modifierType:ModifierType.LUCKY_EGG.name",
+      "name": "Huevo Suerte",
+      "sourceSymbol": "modifierTypeInitObj.LUCKY_EGG"
+    },
+    {
+      "itemId": "GOLDEN_EGG",
+      "key": "modifierType:ModifierType.GOLDEN_EGG.name",
+      "name": "Huevo Dorado",
+      "sourceSymbol": "modifierTypeInitObj.GOLDEN_EGG"
+    },
+    {
+      "itemId": "SOOTHE_BELL",
+      "key": "modifierType:ModifierType.SOOTHE_BELL.name",
+      "name": "Cascabel Alivio",
+      "sourceSymbol": "modifierTypeInitObj.SOOTHE_BELL"
+    },
+    {
+      "itemId": "SCOPE_LENS",
+      "key": "modifierType:ModifierType.SCOPE_LENS.name",
+      "name": "Periscopio",
+      "sourceSymbol": "modifierTypeInitObj.SCOPE_LENS"
+    },
+    {
+      "itemId": "LEEK",
+      "key": "modifierType:ModifierType.LEEK.name",
+      "name": "Puerro",
+      "sourceSymbol": "modifierTypeInitObj.LEEK"
+    },
+    {
+      "itemId": "EVIOLITE",
+      "key": "modifierType:ModifierType.EVIOLITE.name",
+      "name": "Mineral Evolutivo",
+      "sourceSymbol": "modifierTypeInitObj.EVIOLITE"
+    },
+    {
+      "itemId": "SOUL_DEW",
+      "key": "modifierType:ModifierType.SOUL_DEW.name",
+      "name": "Rocío Bondad",
+      "sourceSymbol": "modifierTypeInitObj.SOUL_DEW"
+    },
+    {
+      "itemId": "NUGGET",
+      "key": "modifierType:ModifierType.NUGGET.name",
+      "name": "Pepita de Oro",
+      "sourceSymbol": "modifierTypeInitObj.NUGGET"
+    },
+    {
+      "itemId": "BIG_NUGGET",
+      "key": "modifierType:ModifierType.BIG_NUGGET.name",
+      "name": "Maxipepita de Oro",
+      "sourceSymbol": "modifierTypeInitObj.BIG_NUGGET"
+    },
+    {
+      "itemId": "RELIC_GOLD",
+      "key": "modifierType:ModifierType.RELIC_GOLD.name",
+      "name": "Real Oro",
+      "sourceSymbol": "modifierTypeInitObj.RELIC_GOLD"
+    },
+    {
+      "itemId": "AMULET_COIN",
+      "key": "modifierType:ModifierType.AMULET_COIN.name",
+      "name": "Moneda Amuleto",
+      "sourceSymbol": "modifierTypeInitObj.AMULET_COIN"
+    },
+    {
+      "itemId": "GOLDEN_PUNCH",
+      "key": "modifierType:ModifierType.GOLDEN_PUNCH.name",
+      "name": "Puño Dorado",
+      "sourceSymbol": "modifierTypeInitObj.GOLDEN_PUNCH"
+    },
+    {
+      "itemId": "COIN_CASE",
+      "key": "modifierType:ModifierType.COIN_CASE.name",
+      "name": "Monedero",
+      "sourceSymbol": "modifierTypeInitObj.COIN_CASE"
+    },
+    {
+      "itemId": "LOCK_CAPSULE",
+      "key": "modifierType:ModifierType.LOCK_CAPSULE.name",
+      "name": "Cápsula Candado",
+      "sourceSymbol": "modifierTypeInitObj.LOCK_CAPSULE"
+    },
+    {
+      "itemId": "GRIP_CLAW",
+      "key": "modifierType:ModifierType.GRIP_CLAW.name",
+      "name": "Garra Garfio",
+      "sourceSymbol": "modifierTypeInitObj.GRIP_CLAW"
+    },
+    {
+      "itemId": "WIDE_LENS",
+      "key": "modifierType:ModifierType.WIDE_LENS.name",
+      "name": "Lupa",
+      "sourceSymbol": "modifierTypeInitObj.WIDE_LENS"
+    },
+    {
+      "itemId": "MULTI_LENS",
+      "key": "modifierType:ModifierType.MULTI_LENS.name",
+      "name": "Multilupa",
+      "sourceSymbol": "modifierTypeInitObj.MULTI_LENS"
+    },
+    {
+      "itemId": "HEALING_CHARM",
+      "key": "modifierType:ModifierType.HEALING_CHARM.name",
+      "name": "Amuleto Curación",
+      "sourceSymbol": "modifierTypeInitObj.HEALING_CHARM"
+    },
+    {
+      "itemId": "CANDY_JAR",
+      "key": "modifierType:ModifierType.CANDY_JAR.name",
+      "name": "Tarro de Caramelos",
+      "sourceSymbol": "modifierTypeInitObj.CANDY_JAR"
+    },
+    {
+      "itemId": "BERRY_POUCH",
+      "key": "modifierType:ModifierType.BERRY_POUCH.name",
+      "name": "Saco Bayas",
+      "sourceSymbol": "modifierTypeInitObj.BERRY_POUCH"
+    },
+    {
+      "itemId": "FOCUS_BAND",
+      "key": "modifierType:ModifierType.FOCUS_BAND.name",
+      "name": "Cinta Aguante",
+      "sourceSymbol": "modifierTypeInitObj.FOCUS_BAND"
+    },
+    {
+      "itemId": "QUICK_CLAW",
+      "key": "modifierType:ModifierType.QUICK_CLAW.name",
+      "name": "Garra Rápida",
+      "sourceSymbol": "modifierTypeInitObj.QUICK_CLAW"
+    },
+    {
+      "itemId": "KINGS_ROCK",
+      "key": "modifierType:ModifierType.KINGS_ROCK.name",
+      "name": "Roca del Rey",
+      "sourceSymbol": "modifierTypeInitObj.KINGS_ROCK"
+    },
+    {
+      "itemId": "LEFTOVERS",
+      "key": "modifierType:ModifierType.LEFTOVERS.name",
+      "name": "Restos",
+      "sourceSymbol": "modifierTypeInitObj.LEFTOVERS"
+    },
+    {
+      "itemId": "SHELL_BELL",
+      "key": "modifierType:ModifierType.SHELL_BELL.name",
+      "name": "Cascabel Concha",
+      "sourceSymbol": "modifierTypeInitObj.SHELL_BELL"
+    },
+    {
+      "itemId": "TOXIC_ORB",
+      "key": "modifierType:ModifierType.TOXIC_ORB.name",
+      "name": "Toxiesfera",
+      "sourceSymbol": "modifierTypeInitObj.TOXIC_ORB"
+    },
+    {
+      "itemId": "FLAME_ORB",
+      "key": "modifierType:ModifierType.FLAME_ORB.name",
+      "name": "Llamasfera",
+      "sourceSymbol": "modifierTypeInitObj.FLAME_ORB"
+    },
+    {
+      "itemId": "BATON",
+      "key": "modifierType:ModifierType.BATON.name",
+      "name": "Testigo",
+      "sourceSymbol": "modifierTypeInitObj.BATON"
+    },
+    {
+      "itemId": "SHINY_CHARM",
+      "key": "modifierType:ModifierType.SHINY_CHARM.name",
+      "name": "Amuleto Iris",
+      "sourceSymbol": "modifierTypeInitObj.SHINY_CHARM"
+    },
+    {
+      "itemId": "ABILITY_CHARM",
+      "key": "modifierType:ModifierType.ABILITY_CHARM.name",
+      "name": "Amuleto Habilidad",
+      "sourceSymbol": "modifierTypeInitObj.ABILITY_CHARM"
+    },
+    {
+      "itemId": "CATCHING_CHARM",
+      "key": "modifierType:ModifierType.CATCHING_CHARM.name",
+      "name": "Amuleto Captura",
+      "sourceSymbol": "modifierTypeInitObj.CATCHING_CHARM"
+    },
+    {
+      "itemId": "IV_SCANNER",
+      "key": "modifierType:ModifierType.IV_SCANNER.name",
+      "name": "Escáner IV",
+      "sourceSymbol": "modifierTypeInitObj.IV_SCANNER"
+    },
+    {
+      "itemId": "DNA_SPLICERS",
+      "key": "modifierType:ModifierType.DNA_SPLICERS.name",
+      "name": "Punta ADN",
+      "sourceSymbol": "modifierTypeInitObj.DNA_SPLICERS"
+    },
+    {
+      "itemId": "MINI_BLACK_HOLE",
+      "key": "modifierType:ModifierType.MINI_BLACK_HOLE.name",
+      "name": "Mini Agujero Negro",
+      "sourceSymbol": "modifierTypeInitObj.MINI_BLACK_HOLE"
+    },
+    {
+      "itemId": "GOLDEN_POKEBALL",
+      "key": "modifierType:ModifierType.GOLDEN_POKEBALL.name",
+      "name": "Poké Ball Dorada",
+      "sourceSymbol": "modifierTypeInitObj.GOLDEN_POKEBALL"
+    },
+    {
+      "itemId": "ENEMY_DAMAGE_BOOSTER",
+      "key": "modifierType:ModifierType.ENEMY_DAMAGE_BOOSTER.name",
+      "name": "Ficha de Daño",
+      "sourceSymbol": "modifierTypeInitObj.ENEMY_DAMAGE_BOOSTER"
+    },
+    {
+      "itemId": "ENEMY_DAMAGE_REDUCTION",
+      "key": "modifierType:ModifierType.ENEMY_DAMAGE_REDUCTION.name",
+      "name": "Ficha de Protección",
+      "sourceSymbol": "modifierTypeInitObj.ENEMY_DAMAGE_REDUCTION"
+    },
+    {
+      "itemId": "ENEMY_HEAL",
+      "key": "modifierType:ModifierType.ENEMY_HEAL.name",
+      "name": "Ficha de Curación",
+      "sourceSymbol": "modifierTypeInitObj.ENEMY_HEAL"
+    },
+    {
+      "itemId": "ENEMY_ATTACK_POISON_CHANCE",
+      "key": "modifierType:ModifierType.ENEMY_ATTACK_POISON_CHANCE.name",
+      "name": "Ficha Veneno",
+      "sourceSymbol": "modifierTypeInitObj.ENEMY_ATTACK_POISON_CHANCE"
+    },
+    {
+      "itemId": "ENEMY_ATTACK_PARALYZE_CHANCE",
+      "key": "modifierType:ModifierType.ENEMY_ATTACK_PARALYZE_CHANCE.name",
+      "name": "Ficha Parálisis",
+      "sourceSymbol": "modifierTypeInitObj.ENEMY_ATTACK_PARALYZE_CHANCE"
+    },
+    {
+      "itemId": "ENEMY_ATTACK_BURN_CHANCE",
+      "key": "modifierType:ModifierType.ENEMY_ATTACK_BURN_CHANCE.name",
+      "name": "Ficha Quemadura",
+      "sourceSymbol": "modifierTypeInitObj.ENEMY_ATTACK_BURN_CHANCE"
+    },
+    {
+      "itemId": "ENEMY_STATUS_EFFECT_HEAL_CHANCE",
+      "key": "modifierType:ModifierType.ENEMY_STATUS_EFFECT_HEAL_CHANCE.name",
+      "name": "Ficha Cura Total",
+      "sourceSymbol": "modifierTypeInitObj.ENEMY_STATUS_EFFECT_HEAL_CHANCE"
+    },
+    {
+      "itemId": "ENEMY_ENDURE_CHANCE",
+      "key": "modifierType:ModifierType.ENEMY_ENDURE_CHANCE.name",
+      "name": "Ficha Aguante",
+      "sourceSymbol": "modifierTypeInitObj.ENEMY_ENDURE_CHANCE"
+    },
+    {
+      "itemId": "ENEMY_FUSED_CHANCE",
+      "key": "modifierType:ModifierType.ENEMY_FUSED_CHANCE.name",
+      "name": "Ficha fusión",
+      "sourceSymbol": "modifierTypeInitObj.ENEMY_FUSED_CHANCE"
+    },
+    {
+      "itemId": "MYSTERY_ENCOUNTER_OLD_GATEAU",
+      "key": "modifierType:ModifierType.MYSTERY_ENCOUNTER_OLD_GATEAU.name",
+      "name": "Barrita Plus",
+      "sourceSymbol": "modifierTypeInitObj.MYSTERY_ENCOUNTER_OLD_GATEAU"
+    },
+    {
+      "itemId": "MYSTERY_ENCOUNTER_MACHO_BRACE",
+      "key": "modifierType:ModifierType.MYSTERY_ENCOUNTER_MACHO_BRACE.name",
+      "name": "Brazal Firme",
+      "sourceSymbol": "modifierTypeInitObj.MYSTERY_ENCOUNTER_MACHO_BRACE"
+    },
+    {
+      "itemId": "MYSTERY_ENCOUNTER_GOLDEN_BUG_NET",
+      "key": "modifierType:ModifierType.MYSTERY_ENCOUNTER_GOLDEN_BUG_NET.name",
+      "name": "Cazamariposas Dorado",
+      "sourceSymbol": "modifierTypeInitObj.MYSTERY_ENCOUNTER_GOLDEN_BUG_NET"
+    }
+  ],
+  "schemaVersion": 1,
+  "sources": [
+    {
+      "repository": "https://github.com/pagefaultgames/pokerogue",
+      "revision": "8555c08c823b856cbec4eb99ca84ea52a955836d",
+      "sourcePath": "src/modifier/modifier-type.ts",
+      "sourceSHA256": "9b1f2983b28f56cab24c649b7a0c871466e16b264a7f0e333594e0806d80af1e"
+    },
+    {
+      "repository": "https://github.com/pagefaultgames/pokerogue-locales",
+      "revision": "23aea1cb0da5a0b15b836f3c243791591cc42303",
+      "sourcePath": "es-ES/modifier-type.json",
+      "sourceSHA256": "5e92f73e7b6ec5df1ab3911ea4c9c706d25f52ff613522a0eae575586f6b43f8"
+    }
+  ],
+  "unsupported": [
+    {
+      "itemId": "POKEBALL",
+      "reason": "PARAMETERIZED_OR_NON_LITERAL_NAME"
+    },
+    {
+      "itemId": "GREAT_BALL",
+      "reason": "PARAMETERIZED_OR_NON_LITERAL_NAME"
+    },
+    {
+      "itemId": "ULTRA_BALL",
+      "reason": "PARAMETERIZED_OR_NON_LITERAL_NAME"
+    },
+    {
+      "itemId": "ROGUE_BALL",
+      "reason": "PARAMETERIZED_OR_NON_LITERAL_NAME"
+    },
+    {
+      "itemId": "MASTER_BALL",
+      "reason": "PARAMETERIZED_OR_NON_LITERAL_NAME"
+    },
+    {
+      "itemId": "EVOLUTION_ITEM",
+      "reason": "PARAMETERIZED_OR_NON_LITERAL_NAME"
+    },
+    {
+      "itemId": "RARE_EVOLUTION_ITEM",
+      "reason": "PARAMETERIZED_OR_NON_LITERAL_NAME"
+    },
+    {
+      "itemId": "FORM_CHANGE_ITEM",
+      "reason": "PARAMETERIZED_OR_NON_LITERAL_NAME"
+    },
+    {
+      "itemId": "RARE_FORM_CHANGE_ITEM",
+      "reason": "PARAMETERIZED_OR_NON_LITERAL_NAME"
+    },
+    {
+      "itemId": "SUPER_REPEL",
+      "reason": "PARAMETERIZED_OR_NON_LITERAL_NAME"
+    },
+    {
+      "itemId": "MAX_REPEL",
+      "reason": "PARAMETERIZED_OR_NON_LITERAL_NAME"
+    },
+    {
+      "itemId": "SPECIES_STAT_BOOSTER",
+      "reason": "PARAMETERIZED_OR_NON_LITERAL_NAME"
+    },
+    {
+      "itemId": "RARE_SPECIES_STAT_BOOSTER",
+      "reason": "PARAMETERIZED_OR_NON_LITERAL_NAME"
+    },
+    {
+      "itemId": "TEMP_STAT_STAGE_BOOSTER",
+      "reason": "PARAMETERIZED_OR_NON_LITERAL_NAME"
+    },
+    {
+      "itemId": "BASE_STAT_BOOSTER",
+      "reason": "PARAMETERIZED_OR_NON_LITERAL_NAME"
+    },
+    {
+      "itemId": "ATTACK_TYPE_BOOSTER",
+      "reason": "PARAMETERIZED_OR_NON_LITERAL_NAME"
+    },
+    {
+      "itemId": "MINT",
+      "reason": "PARAMETERIZED_OR_NON_LITERAL_NAME"
+    },
+    {
+      "itemId": "TERA_SHARD",
+      "reason": "PARAMETERIZED_OR_NON_LITERAL_NAME"
+    },
+    {
+      "itemId": "BERRY",
+      "reason": "PARAMETERIZED_OR_NON_LITERAL_NAME"
+    },
+    {
+      "itemId": "TM_COMMON",
+      "reason": "PARAMETERIZED_OR_NON_LITERAL_NAME"
+    },
+    {
+      "itemId": "TM_GREAT",
+      "reason": "PARAMETERIZED_OR_NON_LITERAL_NAME"
+    },
+    {
+      "itemId": "TM_ULTRA",
+      "reason": "PARAMETERIZED_OR_NON_LITERAL_NAME"
+    },
+    {
+      "itemId": "VOUCHER",
+      "reason": "PARAMETERIZED_OR_NON_LITERAL_NAME"
+    },
+    {
+      "itemId": "VOUCHER_PLUS",
+      "reason": "PARAMETERIZED_OR_NON_LITERAL_NAME"
+    },
+    {
+      "itemId": "VOUCHER_PREMIUM",
+      "reason": "PARAMETERIZED_OR_NON_LITERAL_NAME"
+    },
+    {
+      "itemId": "SILVER_POKEBALL",
+      "reason": "PARAMETERIZED_OR_NON_LITERAL_NAME"
+    },
+    {
+      "itemId": "MYSTERY_ENCOUNTER_SHUCKLE_JUICE",
+      "reason": "PARAMETERIZED_OR_NON_LITERAL_NAME"
+    },
+    {
+      "itemId": "MYSTERY_ENCOUNTER_BLACK_SLUDGE",
+      "reason": "PARAMETERIZED_OR_NON_LITERAL_NAME"
+    }
+  ]
+}

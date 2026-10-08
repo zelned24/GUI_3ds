@@ -95,6 +95,9 @@ from prepare_nature_ui import prepare as prepare_nature_ui
 nature_report=prepare_nature_ui(ROOT)
 from prepare_egg_content import prepare as prepare_egg_content
 egg_report=prepare_egg_content(ROOT)
+from prepare_item_ui import prepare as prepare_item_ui
+item_ui_report=prepare_item_ui(ROOT)
+for row in item_ui_report["rows"]: characters.update(row["name"])
 from prepare_egg_ui import prepare as prepare_egg_ui
 egg_ui_report=prepare_egg_ui(ROOT)
 from prepare_egg_textures import prepare as prepare_egg_textures

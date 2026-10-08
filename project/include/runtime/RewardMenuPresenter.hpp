@@ -1,4 +1,5 @@
 #pragma once
+#include "content/ItemUiNames.hpp"
 #include "gfx/renderer2d.hpp"
 #include "game/FirstRunRuntime.hpp"
 #include "runtime/DualScreenLayout.hpp"
@@ -59,6 +60,7 @@ public:
                 if (std::strcmp(item.id, name) == 0) { name = item.name; break; }
             }
 
+            if(const char* localized=itemUiName(reward->poolEntry->itemId)) name=localized;
             const float cx = startX + i * spacing;
             const bool isSelected = (i == game.selectedRewardChoice());
 
