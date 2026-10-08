@@ -44,6 +44,23 @@ inline EggIncubationResult speciesEggTier(uint16_t dex,EggTier& tier) {
         return EggIncubationResult::MissingSpecies;
     tier=kSpeciesEggTiers[first].tier;return EggIncubationResult::Ok;
 }
+// SpeciesDataRegistry.getSpeciesForEggTier excludes COMMON fallbacks. Catalog
+// eligibility only: rollSpecies applies further weights and source-specific filters.
+inline EggIncubationResult speciesForEggTier(EggTier tier,uint16_t* output,size_t capacity,size_t& count) {
+    if(static_cast<unsigned>(tier)>=sizeof(kEggIncubationPolicies)/sizeof(kEggIncubationPolicies[0]))
+        return EggIncubationResult::InvalidTier;
+    size_t required=0;
+    for(const auto& row:kSpeciesEggTiers) if(row.declared && row.tier==tier) ++required;
+    if(required>capacity) return EggIncubationResult::OutputTooSmall;
+    if(required && !output) return EggIncubationResult::InvalidInput;
+    if(capacity>SIZE_MAX/sizeof(*output)) return EggIncubationResult::InvalidInput;
+    const uintptr_t first=reinterpret_cast<uintptr_t>(output),counter=reinterpret_cast<uintptr_t>(&count);
+    if(required && (first<=counter ? counter-first<required*sizeof(*output) : first-counter<sizeof(count)))
+        return EggIncubationResult::InvalidInput;
+    size_t written=0;
+    for(const auto& row:kSpeciesEggTiers) if(row.declared && row.tier==tier) output[written++]=row.dex;
+    count=written;return EggIncubationResult::Ok;
+}
 // Egg.getEggTierDefaultHatchWaves. Tier resolution for an explicitly selected
 // species is a separate upstream registry rule; caller supplies the resolved tier.
 inline EggIncubationResult defaultEggIncubationWaves(uint16_t speciesDex,EggTier tier,uint16_t& waves) {

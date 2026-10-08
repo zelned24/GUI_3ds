@@ -1,5 +1,7 @@
 import importlib.util
 import hashlib
+import json
+import re
 import subprocess
 import unittest
 from pathlib import Path
@@ -22,6 +24,12 @@ class EggContentTests(unittest.TestCase):
         self.assertEqual(tiers[150],'LEGENDARY')
         self.assertEqual(tiers[1],'COMMON')
         self.assertEqual(len(set(tiers.values())),4)
+        self.assertTrue(next(row for row in report['speciesTiers'] if row['dex']==1)['declared'])
+        self.assertFalse(next(row for row in report['speciesTiers'] if row['dex']==2)['declared'])
+        by_dex={s['nationalDexId']:s for s in json.loads(canonical)['collections']['species']}
+        for row in report['speciesTiers']:
+            declaration=re.search(r'\beggTier\s*:',by_dex[row['dex']]['extensions']['upstreamRawRecord']['value'])
+            self.assertEqual(row['declared'],bool(declaration))
         header=ROOT/'project/generated/include/content/EggContentPolicy.hpp'
         self.assertEqual(hashlib.sha256(header.read_bytes()).hexdigest(),report['generatedSHA256'])
     def test_determinism(self):

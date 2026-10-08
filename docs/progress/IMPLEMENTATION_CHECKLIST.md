@@ -1008,3 +1008,5 @@ La búsqueda del índice generado usa búsqueda binaria sobre identidades ordena
 
 - [x] Canonical egg-tier import corrected: all 1084 species checked against their preserved pinned upstream declarations. Counts: COMMON 830, RARE 130, EPIC 98, LEGENDARY 26; omitted eggTier uses upstream COMMON fallback. Regression failed on the old Mankey record and passes on the corrected catalogue. Two full imports produced hash 1c5aca75dab6630c32a847b96cc4fbc3f26cf9433ee628ccfa599c181ea5e220.
 - [ ] C++ speciesEggTier binary lookup now consumes a generated canonical species-tier index; full-index native checks written, not executed. Existing saves tied to the previous content hash require explicit content/save migration; no automatic compatibility claim.
+
+- [ ] Egg-tier candidate catalog preserves declared-vs-fallback state. speciesForEggTier matches the pinned registry by excluding species without a declared eggTier, even when their lookup fallback is COMMON. Full declared-field comparison passes in Python; native tier lists/order and failed-capacity checks written, unexecuted. This is the candidate catalog, not weighted rollSpecies or completed gacha.

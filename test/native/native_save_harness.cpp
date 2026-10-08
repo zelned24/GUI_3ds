@@ -139,6 +139,20 @@ extern "C" int runNativeSaveChecks() {
         resolvedTier=EggTier::LEGENDARY;
         if(speciesEggTier(65535,resolvedTier)!=EggIncubationResult::MissingSpecies || resolvedTier!=EggTier::LEGENDARY)
             return 1215;
+        uint16_t candidates[sizeof(kSpeciesEggTiers)/sizeof(kSpeciesEggTiers[0])]{};
+        for(const auto& policy:kEggIncubationPolicies) {
+            size_t candidateCount=999,expected=0;
+            if(speciesForEggTier(policy.tier,candidates,sizeof(candidates)/sizeof(candidates[0]),candidateCount)
+                !=EggIncubationResult::Ok) return 1216;
+            for(const auto& row:kSpeciesEggTiers) if(row.declared && row.tier==policy.tier) {
+                if(expected>=candidateCount || candidates[expected]!=row.dex) return 1217;
+                ++expected;
+            }
+            if(expected!=candidateCount || !candidateCount) return 1218;
+            const auto before=candidates[0];candidateCount=999;
+            if(speciesForEggTier(policy.tier,candidates,0,candidateCount)!=EggIncubationResult::OutputTooSmall ||
+                candidates[0]!=before || candidateCount!=999) return 1219;
+        }
         uint16_t waves=999;
         for(const auto& policy:kEggIncubationPolicies) {
             if(defaultEggIncubationWaves(1,policy.tier,waves)!=EggIncubationResult::Ok || waves!=policy.waves)

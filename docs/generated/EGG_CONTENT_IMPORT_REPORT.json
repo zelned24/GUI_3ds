@@ -77,7 +77,7 @@
       }
     ]
   },
-  "generatedSHA256": "845348f0c5f563198f9dfa03d3f5450b8dd9074f5dced3ca4dcc69551a009a3f",
+  "generatedSHA256": "f25b1b6e1f1b66bd347d25cbd2c88d336b4d56a91a6e8c68bd532acab260a4de",
   "incubationConstants": {
     "HATCH_WAVES_COMMON_EGG": 10,
     "HATCH_WAVES_EPIC_EGG": 50,
@@ -167,7 +167,7 @@
       "revision": "8555c08c823b856cbec4eb99ca84ea52a955836d",
       "schemaVersion": 1,
       "sourcePath": "src/data/species-data-registry.ts",
-      "sourceSymbol": "SpeciesDataRegistry.getEggTier"
+      "sourceSymbol": "SpeciesDataRegistry.getEggTier/getSpeciesForEggTier"
     }
   ],
   "specialIncubationSpecies": [
@@ -182,4338 +182,5422 @@
   ],
   "speciesTiers": [
     {
+      "declared": true,
       "dex": 1,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 2,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 3,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 4,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 5,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 6,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 7,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 8,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 9,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 10,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 11,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 12,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 13,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 14,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 15,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 16,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 17,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 18,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 19,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 20,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 21,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 22,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 23,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 24,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 25,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 26,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 27,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 28,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 29,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 30,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 31,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 32,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 33,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 34,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 35,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 36,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 37,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 38,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 39,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 40,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 41,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 42,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 43,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 44,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 45,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 46,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 47,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 48,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 49,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 50,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 51,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 52,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 53,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 54,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 55,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 56,
       "tier": "RARE"
     },
     {
+      "declared": false,
       "dex": 57,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 58,
       "tier": "RARE"
     },
     {
+      "declared": false,
       "dex": 59,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 60,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 61,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 62,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 63,
       "tier": "RARE"
     },
     {
+      "declared": false,
       "dex": 64,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 65,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 66,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 67,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 68,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 69,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 70,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 71,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 72,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 73,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 74,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 75,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 76,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 77,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 78,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 79,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 80,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 81,
       "tier": "RARE"
     },
     {
+      "declared": false,
       "dex": 82,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 83,
       "tier": "RARE"
     },
     {
+      "declared": true,
       "dex": 84,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 85,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 86,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 87,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 88,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 89,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 90,
       "tier": "RARE"
     },
     {
+      "declared": false,
       "dex": 91,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 92,
       "tier": "RARE"
     },
     {
+      "declared": false,
       "dex": 93,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 94,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 95,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 96,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 97,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 98,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 99,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 100,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 101,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 102,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 103,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 104,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 105,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 106,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 107,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 108,
       "tier": "RARE"
     },
     {
+      "declared": true,
       "dex": 109,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 110,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 111,
       "tier": "RARE"
     },
     {
+      "declared": false,
       "dex": 112,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 113,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 114,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 115,
       "tier": "RARE"
     },
     {
+      "declared": true,
       "dex": 116,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 117,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 118,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 119,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 120,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 121,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 122,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 123,
       "tier": "RARE"
     },
     {
+      "declared": false,
       "dex": 124,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 125,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 126,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 127,
       "tier": "RARE"
     },
     {
+      "declared": true,
       "dex": 128,
       "tier": "RARE"
     },
     {
+      "declared": true,
       "dex": 129,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 130,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 131,
       "tier": "RARE"
     },
     {
+      "declared": true,
       "dex": 132,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 133,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 134,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 135,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 136,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 137,
       "tier": "RARE"
     },
     {
+      "declared": true,
       "dex": 138,
       "tier": "RARE"
     },
     {
+      "declared": false,
       "dex": 139,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 140,
       "tier": "RARE"
     },
     {
+      "declared": false,
       "dex": 141,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 142,
       "tier": "RARE"
     },
     {
+      "declared": false,
       "dex": 143,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 144,
       "tier": "EPIC"
     },
     {
+      "declared": true,
       "dex": 145,
       "tier": "EPIC"
     },
     {
+      "declared": true,
       "dex": 146,
       "tier": "EPIC"
     },
     {
+      "declared": true,
       "dex": 147,
       "tier": "RARE"
     },
     {
+      "declared": false,
       "dex": 148,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 149,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 150,
       "tier": "LEGENDARY"
     },
     {
+      "declared": true,
       "dex": 151,
       "tier": "EPIC"
     },
     {
+      "declared": true,
       "dex": 152,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 153,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 154,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 155,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 156,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 157,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 158,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 159,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 160,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 161,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 162,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 163,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 164,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 165,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 166,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 167,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 168,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 169,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 170,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 171,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 172,
       "tier": "RARE"
     },
     {
+      "declared": true,
       "dex": 173,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 174,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 175,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 176,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 177,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 178,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 179,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 180,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 181,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 182,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 183,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 184,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 185,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 186,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 187,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 188,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 189,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 190,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 191,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 192,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 193,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 194,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 195,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 196,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 197,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 198,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 199,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 200,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 201,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 202,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 203,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 204,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 205,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 206,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 207,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 208,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 209,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 210,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 211,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 212,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 213,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 214,
       "tier": "RARE"
     },
     {
+      "declared": true,
       "dex": 215,
       "tier": "RARE"
     },
     {
+      "declared": true,
       "dex": 216,
       "tier": "RARE"
     },
     {
+      "declared": false,
       "dex": 217,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 218,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 219,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 220,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 221,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 222,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 223,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 224,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 225,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 226,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 227,
       "tier": "RARE"
     },
     {
+      "declared": true,
       "dex": 228,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 229,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 230,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 231,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 232,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 233,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 234,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 235,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 236,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 237,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 238,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 239,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 240,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 241,
       "tier": "RARE"
     },
     {
+      "declared": false,
       "dex": 242,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 243,
       "tier": "EPIC"
     },
     {
+      "declared": true,
       "dex": 244,
       "tier": "EPIC"
     },
     {
+      "declared": true,
       "dex": 245,
       "tier": "EPIC"
     },
     {
+      "declared": true,
       "dex": 246,
       "tier": "RARE"
     },
     {
+      "declared": false,
       "dex": 247,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 248,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 249,
       "tier": "LEGENDARY"
     },
     {
+      "declared": true,
       "dex": 250,
       "tier": "LEGENDARY"
     },
     {
+      "declared": true,
       "dex": 251,
       "tier": "EPIC"
     },
     {
+      "declared": true,
       "dex": 252,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 253,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 254,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 255,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 256,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 257,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 258,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 259,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 260,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 261,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 262,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 263,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 264,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 265,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 266,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 267,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 268,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 269,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 270,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 271,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 272,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 273,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 274,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 275,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 276,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 277,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 278,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 279,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 280,
       "tier": "RARE"
     },
     {
+      "declared": false,
       "dex": 281,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 282,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 283,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 284,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 285,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 286,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 287,
       "tier": "RARE"
     },
     {
+      "declared": false,
       "dex": 288,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 289,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 290,
       "tier": "RARE"
     },
     {
+      "declared": false,
       "dex": 291,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 292,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 293,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 294,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 295,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 296,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 297,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 298,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 299,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 300,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 301,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 302,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 303,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 304,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 305,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 306,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 307,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 308,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 309,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 310,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 311,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 312,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 313,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 314,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 315,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 316,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 317,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 318,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 319,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 320,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 321,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 322,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 323,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 324,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 325,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 326,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 327,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 328,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 329,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 330,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 331,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 332,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 333,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 334,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 335,
       "tier": "RARE"
     },
     {
+      "declared": true,
       "dex": 336,
       "tier": "RARE"
     },
     {
+      "declared": true,
       "dex": 337,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 338,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 339,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 340,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 341,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 342,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 343,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 344,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 345,
       "tier": "RARE"
     },
     {
+      "declared": false,
       "dex": 346,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 347,
       "tier": "RARE"
     },
     {
+      "declared": false,
       "dex": 348,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 349,
       "tier": "RARE"
     },
     {
+      "declared": false,
       "dex": 350,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 351,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 352,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 353,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 354,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 355,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 356,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 357,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 358,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 359,
       "tier": "RARE"
     },
     {
+      "declared": true,
       "dex": 360,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 361,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 362,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 363,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 364,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 365,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 366,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 367,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 368,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 369,
       "tier": "RARE"
     },
     {
+      "declared": true,
       "dex": 370,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 371,
       "tier": "RARE"
     },
     {
+      "declared": false,
       "dex": 372,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 373,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 374,
       "tier": "RARE"
     },
     {
+      "declared": false,
       "dex": 375,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 376,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 377,
       "tier": "EPIC"
     },
     {
+      "declared": true,
       "dex": 378,
       "tier": "EPIC"
     },
     {
+      "declared": true,
       "dex": 379,
       "tier": "EPIC"
     },
     {
+      "declared": true,
       "dex": 380,
       "tier": "EPIC"
     },
     {
+      "declared": true,
       "dex": 381,
       "tier": "EPIC"
     },
     {
+      "declared": true,
       "dex": 382,
       "tier": "LEGENDARY"
     },
     {
+      "declared": true,
       "dex": 383,
       "tier": "LEGENDARY"
     },
     {
+      "declared": true,
       "dex": 384,
       "tier": "LEGENDARY"
     },
     {
+      "declared": true,
       "dex": 385,
       "tier": "EPIC"
     },
     {
+      "declared": true,
       "dex": 386,
       "tier": "EPIC"
     },
     {
+      "declared": true,
       "dex": 387,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 388,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 389,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 390,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 391,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 392,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 393,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 394,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 395,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 396,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 397,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 398,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 399,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 400,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 401,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 402,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 403,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 404,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 405,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 406,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 407,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 408,
       "tier": "RARE"
     },
     {
+      "declared": false,
       "dex": 409,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 410,
       "tier": "RARE"
     },
     {
+      "declared": false,
       "dex": 411,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 412,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 413,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 414,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 415,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 416,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 417,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 418,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 419,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 420,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 421,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 422,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 423,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 424,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 425,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 426,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 427,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 428,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 429,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 430,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 431,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 432,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 433,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 434,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 435,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 436,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 437,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 438,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 439,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 440,
       "tier": "RARE"
     },
     {
+      "declared": true,
       "dex": 441,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 442,
       "tier": "RARE"
     },
     {
+      "declared": true,
       "dex": 443,
       "tier": "RARE"
     },
     {
+      "declared": false,
       "dex": 444,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 445,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 446,
       "tier": "RARE"
     },
     {
+      "declared": true,
       "dex": 447,
       "tier": "RARE"
     },
     {
+      "declared": false,
       "dex": 448,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 449,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 450,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 451,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 452,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 453,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 454,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 455,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 456,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 457,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 458,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 459,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 460,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 461,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 462,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 463,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 464,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 465,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 466,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 467,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 468,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 469,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 470,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 471,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 472,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 473,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 474,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 475,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 476,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 477,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 478,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 479,
       "tier": "RARE"
     },
     {
+      "declared": true,
       "dex": 480,
       "tier": "EPIC"
     },
     {
+      "declared": true,
       "dex": 481,
       "tier": "EPIC"
     },
     {
+      "declared": true,
       "dex": 482,
       "tier": "EPIC"
     },
     {
+      "declared": true,
       "dex": 483,
       "tier": "LEGENDARY"
     },
     {
+      "declared": true,
       "dex": 484,
       "tier": "LEGENDARY"
     },
     {
+      "declared": true,
       "dex": 485,
       "tier": "EPIC"
     },
     {
+      "declared": true,
       "dex": 486,
       "tier": "LEGENDARY"
     },
     {
+      "declared": true,
       "dex": 487,
       "tier": "LEGENDARY"
     },
     {
+      "declared": true,
       "dex": 488,
       "tier": "EPIC"
     },
     {
+      "declared": true,
       "dex": 489,
       "tier": "EPIC"
     },
     {
+      "declared": true,
       "dex": 490,
       "tier": "EPIC"
     },
     {
+      "declared": true,
       "dex": 491,
       "tier": "EPIC"
     },
     {
+      "declared": true,
       "dex": 492,
       "tier": "EPIC"
     },
     {
+      "declared": true,
       "dex": 493,
       "tier": "LEGENDARY"
     },
     {
+      "declared": true,
       "dex": 494,
       "tier": "EPIC"
     },
     {
+      "declared": true,
       "dex": 495,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 496,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 497,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 498,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 499,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 500,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 501,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 502,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 503,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 504,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 505,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 506,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 507,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 508,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 509,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 510,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 511,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 512,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 513,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 514,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 515,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 516,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 517,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 518,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 519,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 520,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 521,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 522,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 523,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 524,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 525,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 526,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 527,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 528,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 529,
       "tier": "RARE"
     },
     {
+      "declared": false,
       "dex": 530,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 531,
       "tier": "RARE"
     },
     {
+      "declared": true,
       "dex": 532,
       "tier": "RARE"
     },
     {
+      "declared": false,
       "dex": 533,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 534,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 535,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 536,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 537,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 538,
       "tier": "RARE"
     },
     {
+      "declared": true,
       "dex": 539,
       "tier": "RARE"
     },
     {
+      "declared": true,
       "dex": 540,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 541,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 542,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 543,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 544,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 545,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 546,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 547,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 548,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 549,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 550,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 551,
       "tier": "RARE"
     },
     {
+      "declared": false,
       "dex": 552,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 553,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 554,
       "tier": "RARE"
     },
     {
+      "declared": false,
       "dex": 555,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 556,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 557,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 558,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 559,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 560,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 561,
       "tier": "RARE"
     },
     {
+      "declared": true,
       "dex": 562,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 563,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 564,
       "tier": "RARE"
     },
     {
+      "declared": false,
       "dex": 565,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 566,
       "tier": "RARE"
     },
     {
+      "declared": false,
       "dex": 567,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 568,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 569,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 570,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 571,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 572,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 573,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 574,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 575,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 576,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 577,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 578,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 579,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 580,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 581,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 582,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 583,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 584,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 585,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 586,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 587,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 588,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 589,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 590,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 591,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 592,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 593,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 594,
       "tier": "RARE"
     },
     {
+      "declared": true,
       "dex": 595,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 596,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 597,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 598,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 599,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 600,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 601,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 602,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 603,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 604,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 605,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 606,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 607,
       "tier": "RARE"
     },
     {
+      "declared": false,
       "dex": 608,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 609,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 610,
       "tier": "RARE"
     },
     {
+      "declared": false,
       "dex": 611,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 612,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 613,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 614,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 615,
       "tier": "RARE"
     },
     {
+      "declared": true,
       "dex": 616,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 617,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 618,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 619,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 620,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 621,
       "tier": "RARE"
     },
     {
+      "declared": true,
       "dex": 622,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 623,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 624,
       "tier": "RARE"
     },
     {
+      "declared": false,
       "dex": 625,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 626,
       "tier": "RARE"
     },
     {
+      "declared": true,
       "dex": 627,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 628,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 629,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 630,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 631,
       "tier": "RARE"
     },
     {
+      "declared": true,
       "dex": 632,
       "tier": "RARE"
     },
     {
+      "declared": true,
       "dex": 633,
       "tier": "RARE"
     },
     {
+      "declared": false,
       "dex": 634,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 635,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 636,
       "tier": "RARE"
     },
     {
+      "declared": false,
       "dex": 637,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 638,
       "tier": "EPIC"
     },
     {
+      "declared": true,
       "dex": 639,
       "tier": "EPIC"
     },
     {
+      "declared": true,
       "dex": 640,
       "tier": "EPIC"
     },
     {
+      "declared": true,
       "dex": 641,
       "tier": "EPIC"
     },
     {
+      "declared": true,
       "dex": 642,
       "tier": "EPIC"
     },
     {
+      "declared": true,
       "dex": 643,
       "tier": "LEGENDARY"
     },
     {
+      "declared": true,
       "dex": 644,
       "tier": "LEGENDARY"
     },
     {
+      "declared": true,
       "dex": 645,
       "tier": "EPIC"
     },
     {
+      "declared": true,
       "dex": 646,
       "tier": "LEGENDARY"
     },
     {
+      "declared": true,
       "dex": 647,
       "tier": "EPIC"
     },
     {
+      "declared": true,
       "dex": 648,
       "tier": "EPIC"
     },
     {
+      "declared": true,
       "dex": 649,
       "tier": "EPIC"
     },
     {
+      "declared": true,
       "dex": 650,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 651,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 652,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 653,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 654,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 655,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 656,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 657,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 658,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 659,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 660,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 661,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 662,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 663,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 664,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 665,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 666,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 667,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 668,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 669,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 670,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 671,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 672,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 673,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 674,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 675,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 676,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 677,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 678,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 679,
       "tier": "RARE"
     },
     {
+      "declared": false,
       "dex": 680,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 681,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 682,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 683,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 684,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 685,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 686,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 687,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 688,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 689,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 690,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 691,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 692,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 693,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 694,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 695,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 696,
       "tier": "RARE"
     },
     {
+      "declared": false,
       "dex": 697,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 698,
       "tier": "RARE"
     },
     {
+      "declared": false,
       "dex": 699,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 700,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 701,
       "tier": "RARE"
     },
     {
+      "declared": true,
       "dex": 702,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 703,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 704,
       "tier": "RARE"
     },
     {
+      "declared": false,
       "dex": 705,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 706,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 707,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 708,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 709,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 710,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 711,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 712,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 713,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 714,
       "tier": "RARE"
     },
     {
+      "declared": false,
       "dex": 715,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 716,
       "tier": "LEGENDARY"
     },
     {
+      "declared": true,
       "dex": 717,
       "tier": "LEGENDARY"
     },
     {
+      "declared": true,
       "dex": 718,
       "tier": "LEGENDARY"
     },
     {
+      "declared": true,
       "dex": 719,
       "tier": "EPIC"
     },
     {
+      "declared": true,
       "dex": 720,
       "tier": "EPIC"
     },
     {
+      "declared": true,
       "dex": 721,
       "tier": "EPIC"
     },
     {
+      "declared": true,
       "dex": 722,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 723,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 724,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 725,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 726,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 727,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 728,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 729,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 730,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 731,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 732,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 733,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 734,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 735,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 736,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 737,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 738,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 739,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 740,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 741,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 742,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 743,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 744,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 745,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 746,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 747,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 748,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 749,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 750,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 751,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 752,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 753,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 754,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 755,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 756,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 757,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 758,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 759,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 760,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 761,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 762,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 763,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 764,
       "tier": "RARE"
     },
     {
+      "declared": true,
       "dex": 765,
       "tier": "RARE"
     },
     {
+      "declared": true,
       "dex": 766,
       "tier": "RARE"
     },
     {
+      "declared": true,
       "dex": 767,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 768,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 769,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 770,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 771,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 772,
       "tier": "EPIC"
     },
     {
+      "declared": false,
       "dex": 773,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 774,
       "tier": "RARE"
     },
     {
+      "declared": true,
       "dex": 775,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 776,
       "tier": "RARE"
     },
     {
+      "declared": true,
       "dex": 777,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 778,
       "tier": "RARE"
     },
     {
+      "declared": true,
       "dex": 779,
       "tier": "RARE"
     },
     {
+      "declared": true,
       "dex": 780,
       "tier": "RARE"
     },
     {
+      "declared": true,
       "dex": 781,
       "tier": "RARE"
     },
     {
+      "declared": true,
       "dex": 782,
       "tier": "RARE"
     },
     {
+      "declared": false,
       "dex": 783,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 784,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 785,
       "tier": "EPIC"
     },
     {
+      "declared": true,
       "dex": 786,
       "tier": "EPIC"
     },
     {
+      "declared": true,
       "dex": 787,
       "tier": "EPIC"
     },
     {
+      "declared": true,
       "dex": 788,
       "tier": "EPIC"
     },
     {
+      "declared": true,
       "dex": 789,
       "tier": "LEGENDARY"
     },
     {
+      "declared": false,
       "dex": 790,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 791,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 792,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 793,
       "tier": "EPIC"
     },
     {
+      "declared": true,
       "dex": 794,
       "tier": "EPIC"
     },
     {
+      "declared": true,
       "dex": 795,
       "tier": "EPIC"
     },
     {
+      "declared": true,
       "dex": 796,
       "tier": "EPIC"
     },
     {
+      "declared": true,
       "dex": 797,
       "tier": "EPIC"
     },
     {
+      "declared": true,
       "dex": 798,
       "tier": "EPIC"
     },
     {
+      "declared": true,
       "dex": 799,
       "tier": "EPIC"
     },
     {
+      "declared": true,
       "dex": 800,
       "tier": "LEGENDARY"
     },
     {
+      "declared": true,
       "dex": 801,
       "tier": "EPIC"
     },
     {
+      "declared": true,
       "dex": 802,
       "tier": "EPIC"
     },
     {
+      "declared": true,
       "dex": 803,
       "tier": "EPIC"
     },
     {
+      "declared": false,
       "dex": 804,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 805,
       "tier": "EPIC"
     },
     {
+      "declared": true,
       "dex": 806,
       "tier": "EPIC"
     },
     {
+      "declared": true,
       "dex": 807,
       "tier": "EPIC"
     },
     {
+      "declared": true,
       "dex": 808,
       "tier": "EPIC"
     },
     {
+      "declared": false,
       "dex": 809,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 810,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 811,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 812,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 813,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 814,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 815,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 816,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 817,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 818,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 819,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 820,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 821,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 822,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 823,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 824,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 825,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 826,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 827,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 828,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 829,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 830,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 831,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 832,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 833,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 834,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 835,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 836,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 837,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 838,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 839,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 840,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 841,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 842,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 843,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 844,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 845,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 846,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 847,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 848,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 849,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 850,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 851,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 852,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 853,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 854,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 855,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 856,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 857,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 858,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 859,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 860,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 861,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 862,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 863,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 864,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 865,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 866,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 867,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 868,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 869,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 870,
       "tier": "RARE"
     },
     {
+      "declared": true,
       "dex": 871,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 872,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 873,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 874,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 875,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 876,
       "tier": "RARE"
     },
     {
+      "declared": true,
       "dex": 877,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 878,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 879,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 880,
       "tier": "RARE"
     },
     {
+      "declared": true,
       "dex": 881,
       "tier": "RARE"
     },
     {
+      "declared": true,
       "dex": 882,
       "tier": "RARE"
     },
     {
+      "declared": true,
       "dex": 883,
       "tier": "RARE"
     },
     {
+      "declared": true,
       "dex": 884,
       "tier": "RARE"
     },
     {
+      "declared": true,
       "dex": 885,
       "tier": "RARE"
     },
     {
+      "declared": false,
       "dex": 886,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 887,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 888,
       "tier": "LEGENDARY"
     },
     {
+      "declared": true,
       "dex": 889,
       "tier": "LEGENDARY"
     },
     {
+      "declared": true,
       "dex": 890,
       "tier": "LEGENDARY"
     },
     {
+      "declared": true,
       "dex": 891,
       "tier": "EPIC"
     },
     {
+      "declared": false,
       "dex": 892,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 893,
       "tier": "EPIC"
     },
     {
+      "declared": true,
       "dex": 894,
       "tier": "EPIC"
     },
     {
+      "declared": true,
       "dex": 895,
       "tier": "EPIC"
     },
     {
+      "declared": true,
       "dex": 896,
       "tier": "EPIC"
     },
     {
+      "declared": true,
       "dex": 897,
       "tier": "EPIC"
     },
     {
+      "declared": true,
       "dex": 898,
       "tier": "LEGENDARY"
     },
     {
+      "declared": false,
       "dex": 899,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 900,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 901,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 902,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 903,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 904,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 905,
       "tier": "EPIC"
     },
     {
+      "declared": true,
       "dex": 906,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 907,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 908,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 909,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 910,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 911,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 912,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 913,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 914,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 915,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 916,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 917,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 918,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 919,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 920,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 921,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 922,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 923,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 924,
       "tier": "RARE"
     },
     {
+      "declared": false,
       "dex": 925,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 926,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 927,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 928,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 929,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 930,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 931,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 932,
       "tier": "RARE"
     },
     {
+      "declared": false,
       "dex": 933,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 934,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 935,
       "tier": "RARE"
     },
     {
+      "declared": false,
       "dex": 936,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 937,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 938,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 939,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 940,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 941,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 942,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 943,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 944,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 945,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 946,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 947,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 948,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 949,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 950,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 951,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 952,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 953,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 954,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 955,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 956,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 957,
       "tier": "RARE"
     },
     {
+      "declared": false,
       "dex": 958,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 959,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 960,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 961,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 962,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 963,
       "tier": "RARE"
     },
     {
+      "declared": false,
       "dex": 964,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 965,
       "tier": "RARE"
     },
     {
+      "declared": false,
       "dex": 966,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 967,
       "tier": "RARE"
     },
     {
+      "declared": true,
       "dex": 968,
       "tier": "RARE"
     },
     {
+      "declared": true,
       "dex": 969,
       "tier": "RARE"
     },
     {
+      "declared": false,
       "dex": 970,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 971,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 972,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 973,
       "tier": "RARE"
     },
     {
+      "declared": true,
       "dex": 974,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 975,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 976,
       "tier": "RARE"
     },
     {
+      "declared": true,
       "dex": 977,
       "tier": "RARE"
     },
     {
+      "declared": true,
       "dex": 978,
       "tier": "RARE"
     },
     {
+      "declared": false,
       "dex": 979,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 980,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 981,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 982,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 983,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 984,
       "tier": "EPIC"
     },
     {
+      "declared": true,
       "dex": 985,
       "tier": "EPIC"
     },
     {
+      "declared": true,
       "dex": 986,
       "tier": "EPIC"
     },
     {
+      "declared": true,
       "dex": 987,
       "tier": "EPIC"
     },
     {
+      "declared": true,
       "dex": 988,
       "tier": "EPIC"
     },
     {
+      "declared": true,
       "dex": 989,
       "tier": "EPIC"
     },
     {
+      "declared": true,
       "dex": 990,
       "tier": "EPIC"
     },
     {
+      "declared": true,
       "dex": 991,
       "tier": "EPIC"
     },
     {
+      "declared": true,
       "dex": 992,
       "tier": "EPIC"
     },
     {
+      "declared": true,
       "dex": 993,
       "tier": "EPIC"
     },
     {
+      "declared": true,
       "dex": 994,
       "tier": "EPIC"
     },
     {
+      "declared": true,
       "dex": 995,
       "tier": "EPIC"
     },
     {
+      "declared": true,
       "dex": 996,
       "tier": "RARE"
     },
     {
+      "declared": false,
       "dex": 997,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 998,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 999,
       "tier": "RARE"
     },
     {
+      "declared": false,
       "dex": 1000,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 1001,
       "tier": "EPIC"
     },
     {
+      "declared": true,
       "dex": 1002,
       "tier": "EPIC"
     },
     {
+      "declared": true,
       "dex": 1003,
       "tier": "EPIC"
     },
     {
+      "declared": true,
       "dex": 1004,
       "tier": "EPIC"
     },
     {
+      "declared": true,
       "dex": 1005,
       "tier": "EPIC"
     },
     {
+      "declared": true,
       "dex": 1006,
       "tier": "EPIC"
     },
     {
+      "declared": true,
       "dex": 1007,
       "tier": "LEGENDARY"
     },
     {
+      "declared": true,
       "dex": 1008,
       "tier": "LEGENDARY"
     },
     {
+      "declared": true,
       "dex": 1009,
       "tier": "EPIC"
     },
     {
+      "declared": true,
       "dex": 1010,
       "tier": "EPIC"
     },
     {
+      "declared": false,
       "dex": 1011,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 1012,
       "tier": "RARE"
     },
     {
+      "declared": false,
       "dex": 1013,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 1014,
       "tier": "EPIC"
     },
     {
+      "declared": true,
       "dex": 1015,
       "tier": "EPIC"
     },
     {
+      "declared": true,
       "dex": 1016,
       "tier": "EPIC"
     },
     {
+      "declared": true,
       "dex": 1017,
       "tier": "EPIC"
     },
     {
+      "declared": false,
       "dex": 1018,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 1019,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 1020,
       "tier": "EPIC"
     },
     {
+      "declared": true,
       "dex": 1021,
       "tier": "EPIC"
     },
     {
+      "declared": true,
       "dex": 1022,
       "tier": "EPIC"
     },
     {
+      "declared": true,
       "dex": 1023,
       "tier": "EPIC"
     },
     {
+      "declared": true,
       "dex": 1024,
       "tier": "LEGENDARY"
     },
     {
+      "declared": true,
       "dex": 1025,
       "tier": "EPIC"
     },
     {
+      "declared": true,
       "dex": 2019,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 2020,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 2026,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 2027,
       "tier": "RARE"
     },
     {
+      "declared": false,
       "dex": 2028,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 2037,
       "tier": "RARE"
     },
     {
+      "declared": false,
       "dex": 2038,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 2050,
       "tier": "RARE"
     },
     {
+      "declared": false,
       "dex": 2051,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 2052,
       "tier": "RARE"
     },
     {
+      "declared": false,
       "dex": 2053,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 2074,
       "tier": "RARE"
     },
     {
+      "declared": false,
       "dex": 2075,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 2076,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 2088,
       "tier": "RARE"
     },
     {
+      "declared": false,
       "dex": 2089,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 2103,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 2105,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 2658,
       "tier": "EPIC"
     },
     {
+      "declared": true,
       "dex": 2670,
       "tier": "EPIC"
     },
     {
+      "declared": true,
       "dex": 4052,
       "tier": "RARE"
     },
     {
+      "declared": true,
       "dex": 4077,
       "tier": "RARE"
     },
     {
+      "declared": false,
       "dex": 4078,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 4079,
       "tier": "RARE"
     },
     {
+      "declared": false,
       "dex": 4080,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 4083,
       "tier": "RARE"
     },
     {
+      "declared": false,
       "dex": 4110,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 4122,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 4144,
       "tier": "EPIC"
     },
     {
+      "declared": true,
       "dex": 4145,
       "tier": "EPIC"
     },
     {
+      "declared": true,
       "dex": 4146,
       "tier": "EPIC"
     },
     {
+      "declared": false,
       "dex": 4199,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 4222,
       "tier": "RARE"
     },
     {
+      "declared": true,
       "dex": 4263,
       "tier": "RARE"
     },
     {
+      "declared": false,
       "dex": 4264,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 4554,
       "tier": "RARE"
     },
     {
+      "declared": false,
       "dex": 4555,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 4562,
       "tier": "RARE"
     },
     {
+      "declared": true,
       "dex": 4618,
       "tier": "RARE"
     },
     {
+      "declared": true,
       "dex": 6058,
       "tier": "RARE"
     },
     {
+      "declared": false,
       "dex": 6059,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 6100,
       "tier": "RARE"
     },
     {
+      "declared": false,
       "dex": 6101,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 6157,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 6211,
       "tier": "RARE"
     },
     {
+      "declared": true,
       "dex": 6215,
       "tier": "RARE"
     },
     {
+      "declared": false,
       "dex": 6503,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 6549,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 6550,
       "tier": "RARE"
     },
     {
+      "declared": true,
       "dex": 6570,
       "tier": "RARE"
     },
     {
+      "declared": false,
       "dex": 6571,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 6628,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 6705,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 6706,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 6713,
       "tier": "COMMON"
     },
     {
+      "declared": false,
       "dex": 6724,
       "tier": "COMMON"
     },
     {
+      "declared": true,
       "dex": 8128,
       "tier": "RARE"
     },
     {
+      "declared": true,
       "dex": 8194,
       "tier": "RARE"
     },
     {
+      "declared": true,
       "dex": 8901,
       "tier": "EPIC"
     }
