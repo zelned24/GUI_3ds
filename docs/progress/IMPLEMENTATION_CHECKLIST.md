@@ -789,3 +789,5 @@ La búsqueda del índice generado usa búsqueda binaria sobre identidades ordena
 - [ ] Etiquetas de tipos: raster original siempre 1:1, rechaza ventanas menores de su tamaño nativo y coordenadas/tamaños no finitos antes de cargar textura. Todos los consumidores actuales reservan al menos 32×14; casos de half-scale y límites reescritos para el nuevo contrato explícito, sin ejecutar. Guard de fuente PASS; apariencia nativa pendiente.
 
 - [x] Cobertura física de fuentes ampliada: ASCII imprimible completo y caracteres no ASCII de UI/catálogos tienen tinta en las cuatro fuentes `.bcfnt`; test de assets PASS. No prueba legibilidad, posiciones ni salida GPU.
+
+- [ ] Ajuste de velocidad PS conectado: cuatro valores pinned, navegación A/táctil/izquierda/derecha, valor localizado y consumidor HUD. Preferencias v3 almacenan velocidad en dos bits del envelope con SHA-256 y journal; v1/v2 preservan marco/táctil y migran a DEFAULT. Cambiar marco/táctil conserva velocidad. Cases de roundtrip, flags, versión futura y conflicto por velocidad escritos sin ejecutar. Guard de conexión PASS; persistencia SD, ejecución C++ y validación visual pendientes.

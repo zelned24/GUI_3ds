@@ -175,6 +175,8 @@ int main() {
     } else if(preferenceResult!=Pokerogue3DS::NativeSaveResult::NotFound)
         frontend.feedback(Pokerogue3DS::nativeSaveResultName(preferenceResult));
     frontend.setTouchControls(preferences.touchControls);
+    frontend.setHpBarSpeed(preferences.hpBarSpeed);
+    battleHud.setHpBarSpeed(preferences.hpBarSpeed);
     bool titleVisible = true;
     bool isPaused = false;
     Pokerogue3DS::DialoguePresenter dialogue;
@@ -305,15 +307,24 @@ int main() {
                             (command==Pokerogue3DS::FrontendCommand::PreviousWindowStyle ? -1 : 1))%Pokerogue3DS::kWindowTextureCount].id;
                 if(!renderer.setWindowStyle(next)) frontend.feedback("No se pudo cargar el marco.");
                 else {
-                    const auto saved=uiSettings.save(next,preferences.touchControls);
+                    const auto saved=uiSettings.save(next,preferences.touchControls,preferences.hpBarSpeed);
                     frontend.feedback(saved==Pokerogue3DS::NativeSaveResult::Ok ? nullptr :
                         "Marco aplicado; no se pudieron guardar los ajustes SD.");
                 }
             }
+            else if(command==Pokerogue3DS::FrontendCommand::NextHpBarSpeed || command==Pokerogue3DS::FrontendCommand::PreviousHpBarSpeed) {
+                preferences.hpBarSpeed=(preferences.hpBarSpeed+
+                    (command==Pokerogue3DS::FrontendCommand::PreviousHpBarSpeed ? 3u : 1u))%4u;
+                frontend.setHpBarSpeed(preferences.hpBarSpeed);
+                battleHud.setHpBarSpeed(preferences.hpBarSpeed);
+                const auto saved=uiSettings.save(renderer.windowStyle(),preferences.touchControls,preferences.hpBarSpeed);
+                frontend.feedback(saved==Pokerogue3DS::NativeSaveResult::Ok ? nullptr :
+                    "Velocidad aplicada; no se pudieron guardar los ajustes SD.");
+            }
             else if(command==Pokerogue3DS::FrontendCommand::ToggleTouchControls) {
                 preferences.touchControls=!preferences.touchControls;
                 frontend.setTouchControls(preferences.touchControls);
-                const auto saved=uiSettings.save(renderer.windowStyle(),preferences.touchControls);
+                const auto saved=uiSettings.save(renderer.windowStyle(),preferences.touchControls,preferences.hpBarSpeed);
                 frontend.feedback(saved==Pokerogue3DS::NativeSaveResult::Ok ? nullptr :
                     "Control aplicado; no se pudieron guardar los ajustes SD.");
             }

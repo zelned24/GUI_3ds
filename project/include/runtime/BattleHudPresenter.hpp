@@ -25,6 +25,7 @@ public:
         resetExperienceDisplay();
         resetHpDisplay();
     }
+    void setHpBarSpeed(unsigned speed) {if(speed<=3) m_hpBarSpeed=speed;}
     void resetHpDisplay() {m_hpDisplays={};}
     void resetExperienceDisplay() {m_displayedExp=0;m_lastPlayerId=0;m_expInitialized=false;}
     uint32_t displayedExperience() const {return m_displayedExp;}
@@ -120,9 +121,9 @@ public:
         }
         display->lastSeen=animationTimeMs;
         // Timestamp-less callers and unresolved identities use an instant projection.
-        // DEFAULT hpBarSpeed (0); settings persistence/phase waiting remain separate work.
+        // Persisted upstream HpBarSpeed; phase waiting remains separate work.
         const float fraction=static_cast<float>(display->tween.update(actor.battleState.hp,
-            actor.battleState.maxHp,animationTimeMs,0,!animationTimeMs || !identity));
+            actor.battleState.maxHp,animationTimeMs,m_hpBarSpeed,!animationTimeMs || !identity));
         const bool boss=!player && actor.bossState.segmentCount;
         const float hpX=x+(player || boss ? 69.0f : 59.0f);
         const float hpY=y+(boss ? 18.0f : 20.0f);
@@ -206,6 +207,7 @@ private:
     struct HpDisplay {uint32_t identity=0;uint64_t lastSeen=0;bool bound=false,player=false;HpRatioTween tween;};
     // Four concurrent field actors; catalogue size does not affect this cache.
     std::array<HpDisplay,4> m_hpDisplays{};
+    unsigned m_hpBarSpeed=0;
     C2D_SpriteSheet m_sheets[3]{};
     uint32_t m_displayedExp = 0;
     uint32_t m_lastPlayerId = 0;

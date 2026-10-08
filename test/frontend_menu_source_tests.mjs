@@ -175,3 +175,11 @@ assert(main.includes("renderer.beginFrame();\n    renderer.endFrame();\n    play
 const typeLabelDraw=rendererSource.slice(rendererSource.indexOf("bool Renderer2D::drawTypeLabel("),rendererSource.indexOf("bool Renderer2D::drawHudTypeIcon("));
 assert(typeLabelDraw.includes("width<row->frame.sourceWidth || height<row->frame.sourceHeight"));
 assert(!typeLabelDraw.includes("float scale="));
+
+assert(main.includes("uiSettings.save(next,preferences.touchControls,preferences.hpBarSpeed)"));
+assert(main.includes("battleHud.setHpBarSpeed(preferences.hpBarSpeed)"));
+assert(frontend.includes("m_group==1 && m_selected==2"));
+assert(frontend.includes("settings:default\",\"settings:fast\",\"settings:faster\",\"settings:skip"));
+const preferencesSource=await fs.readFile(new URL("../project/include/storage/NativePresentationSettings.hpp",import.meta.url),"utf8");
+assert(preferencesSource.includes("version==3 ? unsigned((versionFlags>>17)&3u) : 0u"));
+assert(preferencesSource.includes("values[0].hpBarSpeed!=values[1].hpBarSpeed"));

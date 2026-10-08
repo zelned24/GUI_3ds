@@ -15,12 +15,13 @@
 #include <initializer_list>
 namespace Pokerogue3DS {
 enum class FrontendPage {Title,Modes,Load,History,Settings,SettingsGroup,GlobalMenu,Pokedex,ServiceInfo,ManageData};
-enum class FrontendCommand {None,Continue,NewClassic,Load,DeleteSave,NextWindowStyle,PreviousWindowStyle,ToggleTouchControls,ExportProgress,ImportProgress};
+enum class FrontendCommand {None,Continue,NewClassic,Load,DeleteSave,NextWindowStyle,PreviousWindowStyle,ToggleTouchControls,ExportProgress,ImportProgress,NextHpBarSpeed,PreviousHpBarSpeed};
 // Owns navigation and presentation only. Returned commands are handled by main.
 class FrontendMenuPresenter {
 public:
     explicit FrontendMenuPresenter(bool hasSave):m_titleSelection{hasSave,0} {}
     void clear(Renderer2D* renderer=nullptr) {m_title.clear(renderer);m_dexIcons.clear(renderer); m_confirmingDelete=false;m_confirmingImport=false;}
+    void setHpBarSpeed(unsigned speed) {if(speed<=3) m_hpBarSpeed=speed;}
     void setTouchControls(bool enabled) { m_touchControls=enabled; }
     bool confirmingTouchDisable() const { return m_confirmingTouchDisable; }
     static uint32_t filterTouchInput(uint32_t keys,bool enabled) {return enabled ? keys : keys & ~KEY_TOUCH;}
@@ -164,6 +165,10 @@ public:
             if(keys & (KEY_DLEFT | KEY_CPAD_LEFT)) return FrontendCommand::PreviousWindowStyle;
             if(keys & (KEY_DRIGHT | KEY_CPAD_RIGHT)) return FrontendCommand::NextWindowStyle;
         }
+        if(m_page==FrontendPage::SettingsGroup && m_group==1 && m_selected==2) {
+            if(keys & (KEY_DLEFT | KEY_CPAD_LEFT)) return FrontendCommand::PreviousHpBarSpeed;
+            if(keys & (KEY_DRIGHT | KEY_CPAD_RIGHT)) return FrontendCommand::NextHpBarSpeed;
+        }
         const unsigned total=rowCount();
         bool activatedByTouch = false;
         if(total) {
@@ -197,6 +202,7 @@ public:
         case FrontendPage::Settings:m_group=m_selected;m_page=FrontendPage::SettingsGroup;m_selected=0;break;
         case FrontendPage::SettingsGroup:
             if(m_group==1 && m_selected==1) return FrontendCommand::NextWindowStyle;
+            if(m_group==1 && m_selected==2) return FrontendCommand::NextHpBarSpeed;
             if(m_group==3 && m_selected==0) {
                 if(m_touchControls) m_confirmingTouchDisable=true;
                 else return FrontendCommand::ToggleTouchControls;
@@ -285,14 +291,18 @@ public:
                     m_page==FrontendPage::ManageData ? (i==0 ? "Exportar progreso a SD" : "Importar progreso de SD") :
                     m_page==FrontendPage::Modes ? kFrontendModes[i].label :
                     m_page==FrontendPage::Settings ? runtimeUiText(groupKeys()[i]) : runtimeUiText(settingKey(m_group,i));
-                const float labelSize=renderer.drawTextFitted(label,43,y,0.4f,m_page==FrontendPage::SettingsGroup ? 220 : 249,0xffffffff);
+                const float labelSize=renderer.drawTextFitted(label,43,y,0.4f,m_page==FrontendPage::SettingsGroup ? 180 : 249,0xffffffff);
                 if(i==m_selected) m_title.drawCursor(renderer,25,y,labelSize);
                 if(m_page==FrontendPage::SettingsGroup) {
                     char value[16];
                     if(m_group==1 && i==1) std::snprintf(value,sizeof(value),"%u",renderer.windowStyle());
+                    else if(m_group==1 && i==2) {
+                        static const char* keys[]={"settings:default","settings:fast","settings:faster","settings:skip"};
+                        std::snprintf(value,sizeof(value),"%s",runtimeUiText(keys[m_hpBarSpeed]));
+                    }
                     else if(m_group==3 && i==0) std::snprintf(value,sizeof(value),"%s",runtimeUiText(m_touchControls ? "settings:on" : "settings:off"));
                     else std::snprintf(value,sizeof(value),"--");
-                    renderer.drawTextFitted(value,275,y,0.4f,17,0xffffffff);
+                    renderer.drawTextFitted(value,238,y,0.3125f,54,0xffffffff);
                 }
             }
         }
@@ -440,6 +450,7 @@ private:
         return group==0 ? general[row] : group==1 ? display[row] : group==2 ? audio[row] : "settings:touchControls";
     }
     PokemonIconPresenter m_dexIcons;
+    unsigned m_hpBarSpeed=0;
     unsigned m_dexSelected=0,m_dexGeneration=0,m_dexCapture=0;
     bool m_confirmingImport=false,m_importYes=false;
     TitleMenuPresenter m_title;

@@ -23,6 +23,7 @@ struct HpRatioTween {
         return static_cast<unsigned>(std::ceil(std::fmin(1.0,std::fmax(0.0,sample(now)))*maxHp));
     }
     double update(unsigned hp,unsigned maximum,uint64_t now,unsigned speed=0,bool instant=false) {
+        if(speed>=3) instant=true;
         hp=hp>maximum ? maximum : hp;
         const double ratio=maximum ? double(hp)/maximum : 0;
         if(!initialized) {
