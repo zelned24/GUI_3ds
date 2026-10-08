@@ -37,7 +37,7 @@ Estos son criterios de cierre, no cantidades de ataques o habilidades pendientes
 
 Prioridad de gameplay pendiente: completar el segundo Pokémon activo del jugador y el campo de cuatro actores (**TUR-05**), checks previos y cola dinámica de acciones (**TUR-01–04**), ampliar habilidades/movimientos (**HAB / MOV**) y cerrar Eternatus con persistencia (**FLU-09 / SAV-03**). Struggle por PP agotados y guardado del campo actual de tres actores ya tienen rutas conectadas; no cubren todos los contextos. Las regresiones de replay y restauración se verifican en la suite FirstRunRuntime; consultar resultados vigentes en MIGRATION_STATUS.md.
 
-Prioridad visual actual: validar en runtime el catálogo completo convertido y su selección de apariencias desbloqueadas; comprobar tipografía, recortes, cursor y distribución de todos los submenús. Quedan adaptación de escalas fraccionales de fondos/intro y validación de la composición del entrenador a escala nativa y reproducción completa de la intro. La generación/conversión de assets continúa autorizada. Compilación, tests que compilan y Azahar están aplazados por la última instrucción del usuario.
+Prioridad visual actual: validar en runtime el catálogo completo convertido y su selección de apariencias desbloqueadas; comprobar tipografía, recortes, cursor y distribución de todos los submenús. Quedan adaptación de escalas fraccionales de fondos y validación de la composición del entrenador; intro completa paginada implementada sin validación nativa. La generación/conversión de assets continúa autorizada. Compilación, tests que compilan y Azahar están aplazados por la última instrucción del usuario.
 
 ## Estado consolidado para seguimiento
 
@@ -771,3 +771,6 @@ La búsqueda del índice generado usa búsqueda binaria sobre identidades ordena
 - [ ] Parser C++ y reproducción visual de entrenadores: reloj 24 FPS y límite 0001–0128 implementados; pruebas nativas escritas sin ejecutar.
 
 - [ ] Reloj de entrenador: inicio en timestamp cero conserva su origen con flag explícito; clear reinicia el flag. Código corregido y guards PASS; comportamiento C++ pendiente de ejecución. Harness de entrenador actualizado para la nueva ruta de texto ajustado.
+
+- [x] Intro: 101/101 frames pinned empaquetados en seis páginas; pixels nearest y tiempos completos verificados por frame; raster 200×100 con ampliación entera 2×. Reporte reproducible `docs/generated/INTRO_PRESENTATION_REPORT.json`.
+- [ ] Reproducción de intro paginada C++: una página activa, cambio con retirement GPU y último frame completo implementados; pruebas nativas, latencia de I/O, memoria y comparación visual pendientes por prohibición de compilación/Azahar. Estimación: 2 MiB de textura activa y 4 MiB de texturas durante cambio, sin afirmar pico real del proceso.

@@ -91,7 +91,11 @@ const introPresenter=await fs.readFile(new URL('../project/src/runtime/IntroCine
 const mediaPipeline=await fs.readFile(new URL('../scripts/prepare_native_presentation.py',import.meta.url),'utf8');
 assert(introPresenter.includes('Hold the sampled source frame'));
 assert(!introPresenter.includes('frameB'));
-assert(mediaPipeline.includes('interpolation=cv2.INTER_NEAREST'));
+assert(mediaPipeline.includes('prepare_intro(ROOT)'));
+const introPipeline=await fs.readFile(new URL('../scripts/prepare_intro_cinematic.py',import.meta.url),'utf8');
+assert(introPipeline.includes('interpolation=cv2.INTER_NEAREST'));
+assert(introPresenter.includes('kIntroCinematicPaths[keyframe.page]'));
+assert(introPresenter.includes('renderer.retireSpriteSheet(m_sheet)'));
 
 assert(main.includes('starterFormRowAt(touch.px,touch.py)'));
 assert(main.includes('kStarterFormBackRect.contains(touch.px,touch.py)'));

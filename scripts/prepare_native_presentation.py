@@ -7,8 +7,6 @@ import zipfile
 import re
 from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor
-import cv2
-import numpy as np
 ROOT = Path(__file__).resolve().parents[1]
 REPOSITORY = "https://github.com/pagefaultgames/pokerogue-assets"
 REVISION = "056a1f408f26a3be4fef243f7462cb43608c7928"
@@ -590,104 +588,8 @@ print(f"Converted {len(trainer_rows)} trainer sprites and {len(trainer_mappings)
 # ==============================================================================
 # INTRO CINEMATIC PACKAGING (images/intro_dark.mp4)
 # ==============================================================================
-intro_mp4 = output / "images/intro_dark.mp4"
-intro_cinematics_dir = ROOT / "build/romfs/presentation/cinematics"
-intro_cinematics_dir.mkdir(parents=True, exist_ok=True)
-
-cap = cv2.VideoCapture(str(intro_mp4))
-if not cap.isOpened():
-    raise ValueError("Unable to decode pinned intro video")
-source_fps = cap.get(cv2.CAP_PROP_FPS)
-if source_fps <= 0:
-    raise ValueError("Pinned intro video has no valid frame rate")
-video_frames = []
-while True:
-    ret, f = cap.read()
-    if not ret: break
-    video_frames.append(f)
-cap.release()
-
-if len(video_frames) < 16:
-    raise ValueError("Pinned intro video has fewer than 16 decoded frames")
-intro_duration_ms = round((len(video_frames) - 1) * 1000 / source_fps)
-if not 0 < intro_duration_ms <= 65535:
-    raise ValueError("Intro duration exceeds the runtime time field")
-keyframe_indices = np.linspace(0, len(video_frames) - 1, 16, dtype=int)
-sheet_w = 1024
-sheet_h = 512
-cell_w = 256
-cell_h = 128
-intro_sheet = Image.new("RGBA", (sheet_w, sheet_h), (0, 0, 0, 255))
-keyframe_data = []
-
-for i, idx in enumerate(keyframe_indices):
-    f = video_frames[idx]
-    h, w, _ = f.shape
-    crop_w = 480
-    crop_h = 240
-    start_x = (w - crop_w) // 2
-    start_y = (h - crop_h) // 2
-    if w < crop_w or h < crop_h:
-        raise ValueError("Pinned intro video is smaller than its configured crop")
-    cropped = f[start_y:start_y+crop_h, start_x:start_x+crop_w]
-    resized = cv2.resize(cropped, (cell_w, cell_h), interpolation=cv2.INTER_NEAREST)
-    rgb = cv2.cvtColor(resized, cv2.COLOR_BGR2RGB)
-    cell_img = Image.fromarray(rgb)
-    col = i % 4
-    row = i // 4
-    x = col * cell_w
-    y = row * cell_h
-    intro_sheet.paste(cell_img, (x, y))
-    time_ms = round(int(idx) * 1000 / source_fps)
-    keyframe_data.append({"timeMs": time_ms, "x": x, "y": y, "width": cell_w, "height": cell_h})
-
-intro_sheet_path = output.parent / "intro_sheet.png"
-intro_sheet.save(intro_sheet_path)
-intro_target = intro_cinematics_dir / "intro_sequence.t3x"
-subprocess.run(["C:/devkitPro/tools/bin/tex3ds.exe", "-f", "rgba8", "-o", str(intro_target), str(intro_sheet_path)],
-               check=True, stdout=subprocess.DEVNULL)
-ui_intro_target = ROOT / "build/romfs/presentation/ui/intro_sheet.t3x"
-ui_intro_target.parent.mkdir(parents=True, exist_ok=True)
-ui_intro_target.write_bytes(intro_target.read_bytes())
-
-intro_header = """// Generated intro cinematic sequence definitions from images/intro_dark.mp4.
-#pragma once
-#include <cstdint>
-
-namespace Pokerogue3DS {
-
-struct IntroKeyframe {
-    uint16_t timeMs;
-    uint16_t x, y, width, height;
-};
-
-inline constexpr char kIntroCinematicPath[] = "romfs:/presentation/cinematics/intro_sequence.t3x";
-inline constexpr uint16_t kIntroTotalDurationMs = 1680;
-inline constexpr uint16_t kIntroKeyframeCount = 16;
-inline constexpr IntroKeyframe kIntroKeyframes[16] = {
-"""
-intro_header = intro_header.replace("kIntroTotalDurationMs = 1680", f"kIntroTotalDurationMs = {intro_duration_ms}")
-intro_header += "\n".join(
-    f'    {{{kd["timeMs"]}, {kd["x"]}, {kd["y"]}, {kd["width"]}, {kd["height"]}}},'
-    for kd in keyframe_data
-)
-intro_header += """
-};
-
-} // namespace Pokerogue3DS
-"""
-
-(ROOT / "project/generated/include/content/IntroCinematicData.hpp").write_text(intro_header, encoding="utf-8", newline="\n")
-(output.parent / "intro-provenance.json").write_text(json.dumps({
-    "repository": REPOSITORY, "revision": REVISION, "sourcePath": "images/intro_dark.mp4",
-    "sourceSHA256": hashlib.sha256(intro_mp4.read_bytes()).hexdigest(),
-    "runtimePath": "romfs:/presentation/cinematics/intro_sequence.t3x",
-    "convertedSHA256": hashlib.sha256(intro_target.read_bytes()).hexdigest(),
-    "sourceFrameRate": source_fps, "sourceFrameCount": len(video_frames),
-    "durationMs": intro_duration_ms, "adaptation": "16 sampled source frames with nearest spatial sampling and timestamp-held playback",
-    "keyframes": keyframe_data
-}, sort_keys=True, indent=2) + "\n", encoding="utf-8", newline="\n")
-print(f"Generated intro cinematic sequence with {len(keyframe_data)} keyframes")
+from prepare_intro_cinematic import prepare as prepare_intro
+prepare_intro(ROOT)
 
 from type_badges import prepare as prepare_type_labels
 prepare_type_labels(ROOT)

@@ -26,6 +26,7 @@ public:
 
 private:
     C2D_SpriteSheet m_sheet = nullptr;
+    uint16_t m_page = 0xffff;
     bool m_active = true;
     bool m_finished = false;
     uint64_t m_startMs = 0;

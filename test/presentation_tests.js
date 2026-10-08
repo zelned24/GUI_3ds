@@ -236,6 +236,16 @@ export function registerPresentationTests(test) {
     execFileSync(output,[],{stdio:'pipe'});
   });
 
+  test('Native complete intro: all source timestamps, page ownership, final hold and load failure',()=>{
+    const compiler=process.platform==='win32' ? 'C:/devkitPro/msys2/usr/bin/g++.exe' : 'g++';
+    const output=path.join(root,'build','intro-cinematic-test'+(process.platform==='win32'?'.exe':''));
+    execFileSync(compiler,['-std=c++17','-O2','-idirafter',path.join(root,'test/native/host_compat'),
+      '-I'+path.join(root,'project/include'),'-I'+path.join(root,'project/generated/include'),
+      path.join(root,'test/native/intro_cinematic_harness.cpp'),
+      path.join(root,'project/src/runtime/IntroCinematicPresenter.cpp'),'-o',output],{stdio:'pipe'});
+    execFileSync(output,[],{stdio:'pipe'});
+  });
+
   test('Native icon index: every starter, canonical species/forms, physical page bounds and unique references',()=>{
     const compiler=process.platform==='win32' ? 'C:/devkitPro/msys2/usr/bin/g++.exe' : 'g++';
     const output=path.join(root,'build','pokemon-icon-index-test'+(process.platform==='win32'?'.exe':''));

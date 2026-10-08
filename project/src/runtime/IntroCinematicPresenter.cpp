@@ -34,24 +34,6 @@ void IntroCinematicPresenter::skip() {
 bool IntroCinematicPresenter::draw(Renderer2D& renderer, uint64_t currentTimestampMs) {
     if (m_finished || !m_active) return false;
 
-    if (!m_sheet) {
-        m_sheet = C2D_SpriteSheetLoad(kIntroCinematicPath);
-        if (!m_sheet) {
-            m_finished = true;
-            m_active = false;
-            return false;
-        }
-    }
-
-    C2D_Image img = C2D_SpriteSheetGetImage(m_sheet, 0);
-    if (!img.tex) {
-        m_finished = true;
-        m_active = false;
-        return false;
-    }
-
-    C3D_TexSetFilter(img.tex, GPU_NEAREST, GPU_NEAREST);
-
     // Compute elapsed playback time
     uint64_t elapsedMs = 0;
     if (currentTimestampMs > 0) {
@@ -68,57 +50,48 @@ bool IntroCinematicPresenter::draw(Renderer2D& renderer, uint64_t currentTimesta
     if (elapsedMs >= totalPlaybackMs) {
         m_finished = true;
         m_active = false;
-        C2D_SpriteSheetFree(m_sheet);
+        if(m_sheet) renderer.retireSpriteSheet(m_sheet);
         m_sheet = nullptr;
         return false;
     }
 
-    // Video aspect ratio: 256:128 (2:1). Centered on top screen 400x240:
-    // 400x200 positioned at x=0, y=20.
+    // Integer 2x enlargement of the offline 200x100 nearest raster.
     constexpr float screenW = 400.0f;
     constexpr float screenH = 200.0f;
     constexpr float screenX = 0.0f;
     constexpr float screenY = 20.0f;
-
-    // Fill background letterbox bars with black
     renderer.clear(0xff000000);
 
-    if (elapsedMs >= kIntroTotalDurationMs) {
-        // Fade out transition to title screen
-        float fadeOutT = float(elapsedMs - kIntroTotalDurationMs) / float(kFadeOutDurationMs);
-        if (fadeOutT > 1.0f) fadeOutT = 1.0f;
-        float opacity = 1.0f - fadeOutT;
-
-        const auto& lastKf = kIntroKeyframes[kIntroKeyframeCount - 1];
-        Renderer2D::AtlasFrame frame{
-            lastKf.x, lastKf.y, lastKf.width, lastKf.height,
-            lastKf.width, lastKf.height, 0, 0
-        };
-        renderer.drawAtlasFrame(img, frame, screenX, screenY, screenW, screenH, opacity);
-        return true;
+    size_t current = 0;
+    for (size_t i=1;i<kIntroKeyframeCount;++i) {
+        if (elapsedMs<kIntroKeyframes[i].timeMs) break;
+        current=i;
     }
-
-    // Locate current keyframe segment
-    size_t curIdx = 0;
-    for (size_t i = 0; i < kIntroKeyframeCount - 1; ++i) {
-        if (elapsedMs >= kIntroKeyframes[i].timeMs && elapsedMs < kIntroKeyframes[i + 1].timeMs) {
-            curIdx = i;
-            break;
-        }
-        if (i == kIntroKeyframeCount - 2) {
-            curIdx = i;
-        }
+    const auto& keyframe=kIntroKeyframes[current];
+    if (keyframe.page>=kIntroPageCount) {
+        if(m_sheet) renderer.retireSpriteSheet(m_sheet);
+        m_sheet=nullptr;m_finished=true;m_active=false;return false;
     }
-
-    const auto& keyframe = kIntroKeyframes[curIdx];
-    Renderer2D::AtlasFrame frame{
-        keyframe.x, keyframe.y, keyframe.width, keyframe.height,
-        keyframe.width, keyframe.height, 0, 0
-    };
+    if (!m_sheet || m_page!=keyframe.page) {
+        // Retire after the GPU frame; a previously submitted draw may own it.
+        if (m_sheet) renderer.retireSpriteSheet(m_sheet);
+        m_sheet=C2D_SpriteSheetLoad(kIntroCinematicPaths[keyframe.page]);
+        m_page=keyframe.page;
+        if (!m_sheet) {m_finished=true;m_active=false;return false;}
+    }
+    C2D_Image image=C2D_SpriteSheetGetImage(m_sheet,0);
+    if (!image.tex) {
+        renderer.retireSpriteSheet(m_sheet);m_sheet=nullptr;
+        m_finished=true;m_active=false;return false;
+    }
+    C3D_TexSetFilter(image.tex,GPU_NEAREST,GPU_NEAREST);
+    const Renderer2D::AtlasFrame frame{keyframe.x,keyframe.y,keyframe.width,keyframe.height,
+        keyframe.width,keyframe.height,0,0};
+    float opacity=1.0f;
+    if (elapsedMs>=kIntroTotalDurationMs)
+        opacity=1.0f-float(elapsedMs-kIntroTotalDurationMs)/float(kFadeOutDurationMs);
     // Hold the sampled source frame until its successor's source timestamp.
-    // Blending unrelated frames invented ghosted pixels absent from the video.
-    renderer.drawAtlasFrame(img, frame, screenX, screenY, screenW, screenH, 1.0f);
-
+    renderer.drawAtlasFrame(image,frame,screenX,screenY,screenW,screenH,opacity);
     return true;
 }
 

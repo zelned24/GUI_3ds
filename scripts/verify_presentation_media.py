@@ -138,33 +138,15 @@ def test_trainers():
     print("  [OK] ALL trainer tests PASSED!\n")
 
 def test_intro_cinematic():
-    print("--- [3/3] Testing Intro Cinematic ---")
-    intro_t3x = os.path.join(ROMFS, "presentation", "cinematics", "intro_sequence.t3x")
-    assert os.path.isfile(intro_t3x), f"Missing {intro_t3x}"
-    size_intro = os.path.getsize(intro_t3x)
-    assert size_intro > 50000, f"Intro texture too small: {size_intro} bytes"
-    print(f"  [OK] Intro cinematic texture verified: {intro_t3x} ({size_intro:,} bytes)")
-
-    intro_header = os.path.join(ROOT, "project", "generated", "include", "content", "IntroCinematicData.hpp")
-    assert os.path.isfile(intro_header), f"Missing {intro_header}"
-    with open(intro_header, "r", encoding="utf-8") as f:
-        intro_content = f.read()
-    assert "kIntroKeyframes" in intro_content
-    assert "kIntroTotalDurationMs" in intro_content
-    assert "kIntroKeyframeCount" in intro_content
-    print("  [OK] IntroCinematicData.hpp verified")
-    # Verify actual source pixels, not just a nonempty texture/header.
     import cv2
     import numpy as np
     from PIL import Image
     root=Path(ROOT)
-    provenance=json.loads((root/"build/native-presentation/intro-provenance.json").read_text(encoding="utf-8"))
-    assert provenance["repository"]=="https://github.com/pagefaultgames/pokerogue-assets"
-    assert provenance["revision"]=="056a1f408f26a3be4fef243f7462cb43608c7928"
-    assert provenance["sourcePath"]=="images/intro_dark.mp4"
-    source=root/"build/native-presentation/source"/provenance["sourcePath"]
-    assert hashlib.sha256(source.read_bytes()).hexdigest()==provenance["sourceSHA256"]
-    assert hashlib.sha256(Path(intro_t3x).read_bytes()).hexdigest()==provenance["convertedSHA256"]
+    report=json.loads((root/"build/native-presentation/intro-provenance.json").read_text(encoding="utf-8"))
+    assert report==json.loads((root/"docs/generated/INTRO_PRESENTATION_REPORT.json").read_text(encoding="utf-8"))
+    assert report["schemaVersion"]==2 and report["revision"]=="056a1f408f26a3be4fef243f7462cb43608c7928"
+    source=root/"build/native-presentation/source"/report["sourcePath"]
+    assert hashlib.sha256(source.read_bytes()).hexdigest()==report["sourceSHA256"]
     capture=cv2.VideoCapture(str(source));assert capture.isOpened()
     fps=capture.get(cv2.CAP_PROP_FPS);frames=[]
     try:
@@ -172,25 +154,35 @@ def test_intro_cinematic():
             ok,frame=capture.read()
             if not ok: break
             frames.append(frame)
-    finally:
-        capture.release()
-    assert len(frames)==provenance["sourceFrameCount"] and fps==provenance["sourceFrameRate"]
-    assert provenance["durationMs"]==round((len(frames)-1)*1000/fps)
-    indices=np.linspace(0,len(frames)-1,16,dtype=int)
-    assert len(provenance["keyframes"])==len(indices)
-    with Image.open(root/"build/native-presentation/intro_sheet.png") as source_sheet:
-        sheet=source_sheet.convert("RGB")
-    for index,record in zip(indices,provenance["keyframes"]):
+    finally: capture.release()
+    assert len(frames)==report["sourceFrameCount"]==len(report["keyframes"])
+    assert fps==report["sourceFrameRate"]
+    assert report["durationMs"]==round(len(frames)*1000/fps)
+    sheets=[]
+    for page in report["pages"]:
+        png=root/page["stagedPath"]
+        texture=root/"build/romfs"/page["runtimePath"].removeprefix("romfs:/")
+        assert hashlib.sha256(png.read_bytes()).hexdigest()==page["stagedSHA256"]
+        assert hashlib.sha256(texture.read_bytes()).hexdigest()==page["convertedSHA256"]
+        with Image.open(png) as image:
+            assert image.size==(1024,512)
+            sheets.append(image.convert("RGB"))
+    header=(root/"project/generated/include/content/IntroCinematicData.hpp").read_text(encoding="utf-8")
+    assert f"kIntroKeyframeCount = {len(frames)}" in header
+    assert f"kIntroPageCount = {len(sheets)}" in header
+    for index,record in enumerate(report["keyframes"]):
+        assert record["sourceFrame"]==index and record["page"]<len(sheets)
         frame=frames[index];height,width,_=frame.shape
         left,top=(width-480)//2,(height-240)//2
-        assert width>=480 and height>=240
-        expected=cv2.cvtColor(cv2.resize(frame[top:top+240,left:left+480],
-            (record["width"],record["height"]),interpolation=cv2.INTER_NEAREST),cv2.COLOR_BGR2RGB)
-        actual=np.asarray(sheet.crop((record["x"],record["y"],record["x"]+record["width"],record["y"]+record["height"])))
-        assert np.array_equal(actual,expected), "Intro pixels differ from nearest sampled source"
-        assert record["timeMs"]==round(int(index)*1000/fps)
-    print("  [OK] Sixteen source frames: exact nearest pixels, timestamps and pinned/converted hashes")
-    print("  [OK] ALL intro cinematic tests PASSED!\n")
+        assert width>=480 and height>=240 and (record["width"],record["height"])==(200,100)
+        expected=cv2.cvtColor(cv2.resize(frame[top:top+240,left:left+480],(200,100),
+            interpolation=cv2.INTER_NEAREST),cv2.COLOR_BGR2RGB)
+        actual=np.asarray(sheets[record["page"]].crop((record["x"],record["y"],record["x"]+200,record["y"]+100)))
+        assert np.array_equal(actual,expected), f"Intro source pixels differ at frame {index}"
+        assert record["timeMs"]==round(index*1000/fps)
+        assert "{%d,%d,%d,%d,%d,%d}"%(record["timeMs"],record["x"],record["y"],200,100,record["page"]) in header
+    print(f"  [OK] All {len(frames)} intro frames in {len(sheets)} pages: exact nearest pixels, timestamps and physical hashes")
+
 
 def test_windows():
     root=Path(ROOT)
