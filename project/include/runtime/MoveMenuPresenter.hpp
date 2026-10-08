@@ -68,14 +68,21 @@ public:
                     : isSel ? C2D_Color32(255, 255, 255, 255) : C2D_Color32(215, 210, 225, 255);
                 const uint32_t shadowColor = C2D_Color32(0x50, 0x40, 0x60, 255);
 
-                renderer.drawTextFitted(moveName, mx + 1.0f, my + 1.0f, 0.36f, nameWidth, shadowColor);
-                const float nameSize=renderer.drawTextFitted(moveName,mx,my,0.36f,nameWidth,textColor);
+                // Two native raster lines preserve long localized names without squeezing glyphs.
+                float nameSize=0.3125f;
+                const unsigned nameLines=textLinesWithinHeight(30,renderer.textInkHeight(nameSize),renderer.textLineHeight(nameSize),2);
+                if(nameLines && renderer.drawTextBox(moveName,mx+1,my+1,nameSize,nameWidth,nameLines,shadowColor))
+                    renderer.drawTextBox(moveName,mx,my,nameSize,nameWidth,nameLines,textColor);
+                else {
+                    renderer.drawTextFitted(moveName,mx+1,my+1,nameSize,nameWidth,shadowColor);
+                    nameSize=renderer.drawTextFitted(moveName,mx,my,nameSize,nameWidth,textColor);
+                }
                 if(isSel) cursor().drawCursor(renderer,mx-12,my,nameSize);
 
                 char ppText[16];
                 std::snprintf(ppText, sizeof(ppText), "PP %u/%u", unsigned(curPp), unsigned(maxPp));
                 const uint32_t ppColor = outOfPp ? C2D_Color32(230, 60, 60, 255) : C2D_Color32(165, 160, 180, 255);
-                renderer.drawTextFitted(ppText, mx, my + 24.0f, 0.26f, nameWidth, ppColor);
+                renderer.drawTextFitted(ppText, mx, my + 36.0f, 0.26f, nameWidth, ppColor);
             }
         }
 
@@ -135,7 +142,7 @@ public:
                 if (ppRatio > 0.0f) {
                     const uint32_t barCol = ppRatio > 0.5f ? C2D_Color32(60, 220, 100, 255)
                         : ppRatio > 0.2f ? C2D_Color32(245, 180, 20, 255) : C2D_Color32(235, 60, 60, 255);
-                    renderer.drawRect(208, game.doubleBattle() ? 198 : 202, 94 * ppRatio, 3, barCol);
+                    renderer.drawRect(208, game.doubleBattle() ? 198 : 202, movePpBarPixels(curPp,maxPp,94), 3, barCol);
                 }
             }
         }

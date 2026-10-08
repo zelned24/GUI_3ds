@@ -14,6 +14,15 @@
 #include <initializer_list>
 using namespace Pokerogue3DS;
 int main() {
+    assert(movePpBarPixels(0,10,94)==0);
+    assert(movePpBarPixels(1,3,94)==31);
+    assert(movePpBarPixels(2,3,94)==62);
+    assert(movePpBarPixels(3,3,94)==94);
+    assert(movePpBarPixels(4,3,94)==94);
+    assert(movePpBarPixels(1,0,94)==0);
+    assert(movePpBarPixels(1,3,0)==0);
+    assert(movePpBarPixels(UINT_MAX-1,UINT_MAX,UINT_MAX)==UINT_MAX-1);
+
     for(unsigned y=0;y<240;++y) for(unsigned x=0;x<320;++x) {
         const int expected=y>=116 && y<148 ? (x>=45 && x<150 ? 0 : x>=170 && x<275 ? 1 : -1) : -1;
         assert(starterConfirmAt(x,y)==expected);

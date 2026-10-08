@@ -47,6 +47,11 @@ inline constexpr int pokedexCellAt(unsigned x,unsigned y) {
 }
 inline constexpr TouchRect kDialogueAdvanceRect{12,208,156,20};
 inline constexpr TouchRect ballMenuRectangle(unsigned index) {return {16,24+index*34,288,32};}
+// Floor to complete columns; zero PP stays empty and over-cap values clamp.
+inline constexpr unsigned movePpBarPixels(unsigned current,unsigned maximum,unsigned width) {
+    return !maximum || !width ? 0 : current>=maximum ? width :
+        static_cast<unsigned>((static_cast<unsigned long long>(current)*width)/maximum);
+}
 inline constexpr TouchRect kMoveButtonRects[] = {
     {8, 36, 88, 64},
     {100, 36, 88, 64},
