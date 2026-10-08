@@ -2,6 +2,7 @@
 #include "runtime/TitleMenuPresenter.hpp"
 #include "content/FrontendModes.hpp"
 #include "content/RuntimeUiText.hpp"
+#include "content/EggUiText.hpp"
 #include "storage/NativeRunSave.hpp"
 #include "game/FirstRunRuntime.hpp"
 #include "runtime/PokemonIconPresenter.hpp"
@@ -73,6 +74,10 @@ public:
             }
             return FrontendCommand::None;
         }
+        if(m_page==FrontendPage::ServiceInfo && m_service==3 && m_eggDetails
+            && ((keys & KEY_B) || ((keys & KEY_TOUCH) && TouchRect{12,205,296,35}.contains(touchX,touchY)))) {
+            m_eggDetails=false;return FrontendCommand::None;
+        }
         if((keys & KEY_B) || ((keys & KEY_TOUCH) && TouchRect{12,205,296,35}.contains(touchX,touchY) && m_page != FrontendPage::Title)) {
             if(m_confirmingDelete) {
                 m_confirmingDelete = false;
@@ -83,6 +88,22 @@ public:
             else m_page=FrontendPage::Title;
             m_selected=m_page==FrontendPage::GlobalMenu ? m_globalSelection : 0;
             m_feedback=nullptr;return FrontendCommand::None;
+        }
+        if(m_page==FrontendPage::ServiceInfo && m_service==3) {
+            const size_t count=game ? game->eggInventoryCount() : 0;
+            if(!count) return FrontendCommand::None;
+            if(m_eggSelected>=count) m_eggSelected=0;
+            if(keys & KEY_UP) m_eggSelected=(m_eggSelected+count-1)%count;
+            else if(keys & KEY_DOWN) m_eggSelected=(m_eggSelected+1)%count;
+            if(!m_eggDetails && (keys & KEY_TOUCH)) {
+                const size_t first=(m_eggSelected/5)*5;
+                for(size_t row=0;row<5 && first+row<count;++row)
+                    if(TouchRect{20,38u+unsigned(row)*30u,280,28}.contains(touchX,touchY)) {
+                        m_eggSelected=first+row;m_eggDetails=true;break;
+                    }
+            }
+            if(keys & KEY_A) m_eggDetails=true;
+            return FrontendCommand::None;
         }
         if(m_page==FrontendPage::Pokedex) {
             if((keys & KEY_X) || ((keys & KEY_TOUCH) && kPokedexFilterRects[0].contains(touchX,touchY))) {
@@ -203,7 +224,7 @@ public:
                 m_settingsFromGlobal=true;m_page=FrontendPage::Settings;m_selected=0;m_feedback=nullptr;
             } else if(m_selected==5) {m_page=FrontendPage::Pokedex;m_feedback=nullptr;}
             else if(m_selected==6) {m_page=FrontendPage::ManageData;m_selected=0;m_feedback=nullptr;}
-            else {m_service=m_selected;m_page=FrontendPage::ServiceInfo;m_feedback=nullptr;}
+            else {m_service=m_selected;m_page=FrontendPage::ServiceInfo;m_feedback=nullptr;m_eggSelected=0;m_eggDetails=false;}
             break;
         case FrontendPage::ManageData:
             if(m_selected==0) return FrontendCommand::ExportProgress;
@@ -368,6 +389,37 @@ private:
         renderer.clear(0xff3a303d);
         renderer.drawTextFitted(runtimeUiText(globalMenuKeys()[m_service]),12,8,0.45f,296,0xffffffff);
         renderer.drawWindow(16,33,288,171);
+        if(m_service==3) {
+            if(!game || !game->eggInventoryReady()) {
+                drawBoundedDescription(renderer,"Inventario no disponible para este perfil.",28,54,264,140);
+            } else if(!game->eggInventoryCount()) {
+                drawBoundedDescription(renderer,"No tienes huevos.",28,54,264,140);
+            } else {
+                const size_t count=game->eggInventoryCount();
+                const size_t selected=m_eggSelected<count ? m_eggSelected : 0;
+                if(m_eggDetails) {
+                    const auto* egg=game->eggAt(selected);
+                    if(egg) {
+                        char label[64];std::snprintf(label,sizeof(label),"%s %u / %u",eggUiText("egg"),unsigned(selected+1),unsigned(count));
+                        renderer.drawTextFitted(label,28,46,0.375f,264,0xffffffff);
+                        renderer.drawTextFitted(eggTierText(*egg),28,70,0.375f,264,0xff80ffff);
+                        drawBoundedDescription(renderer,eggUiText(eggHatchMessageKey(egg->hatchWaves)),28,100,264,90);
+                    }
+                } else {
+                    const size_t first=(selected/5)*5;
+                    for(size_t row=0;row<5 && first+row<count;++row) {
+                        const auto* egg=game->eggAt(first+row);
+                        if(!egg) continue;
+                        char label[96];std::snprintf(label,sizeof(label),"%s %u: %s",eggUiText("egg"),unsigned(first+row+1),eggTierText(*egg));
+                        const float y=42+row*30;
+                        renderer.drawTextFitted(first+row==selected ? ">" : "",24,y,0.375f,12,0xffffffff);
+                        renderer.drawTextFitted(label,40,y,0.375f,248,0xffffffff);
+                    }
+                }
+            }
+            renderer.drawTextFitted(m_eggDetails ? "B: Lista" : "A: Detalles   B: Volver",12,214,0.375f,296,0xffffffff);
+            return;
+        }
         if(m_service==2) {
             FirstRunRuntime::ProfileCatalogStats stats;
             if(!game || !game->profileCatalogStats(stats)) {
@@ -399,6 +451,15 @@ private:
         }
         drawBoundedDescription(renderer,description,28,54,264,140);
         renderer.drawTextFitted("B: volver al menú",12,214,0.3125f,296,0xffffffff);
+    }
+    static const char* eggTierText(const EggIncubationRecord& egg) {
+        for(const auto dex:kSpecialEggIncubationSpecies)
+            if(egg.speciesDex==dex) return eggUiText("manaphyTier");
+        if(!egg.speciesDex && egg.tier==EggTier::COMMON && egg.id%kEggSpecialIdDivisor==0)
+            return eggUiText("manaphyTier");
+        static const char* keys[]={"defaultTier","greatTier","ultraTier","masterTier"};
+        const unsigned tier=static_cast<unsigned>(egg.tier);
+        return tier<4 ? eggUiText(keys[tier]) : "?";
     }
     bool dexMatches(const PokerogueContent::Species& species,const FirstRunRuntime* game) const {
         if(m_dexGeneration && species.generation!=m_dexGeneration) return false;
@@ -538,6 +599,8 @@ private:
     TitleMenuPresenter m_title;
     TitleMenuSelection m_titleSelection;
     FrontendPage m_page=FrontendPage::Title;
+    size_t m_eggSelected=0;
+    bool m_eggDetails=false;
     unsigned m_selected=0,m_group=0,m_service=0,m_globalSelection=0;
     bool m_confirmingDelete=false,m_touchControls=true,m_confirmingTouchDisable=false,m_settingsFromGlobal=false;
     const char* m_feedback=nullptr;

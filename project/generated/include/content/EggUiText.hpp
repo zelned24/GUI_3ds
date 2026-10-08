@@ -3,6 +3,7 @@
 #include <cstdint>
 #include <cstring>
 namespace Pokerogue3DS {
+inline constexpr uint32_t kEggSpecialIdDivisor=204;
 struct EggUiTextEntry {const char* key;const char* text;};
 inline constexpr EggUiTextEntry kEggUiTexts[]={
     {"all","Todo"},

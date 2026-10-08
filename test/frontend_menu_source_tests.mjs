@@ -451,3 +451,8 @@ assert(combatInput.includes('moveConfirmRectangle(doubleBattle).contains(x,y)'))
 assert(progressRuntime.includes('if (m_battleFeedback.empty()) m_battleFeedback = "Enemy response could not resolve";'));
 assert(progressRuntime.includes('if (m_battleFeedback.empty()) m_battleFeedback = "Enemy move selection unsupported";'));
 assert(progressRuntime.includes('"Enemy move execution unsupported: "'));
+
+assert(frontend.includes("game->eggAt(selected)"));
+assert(frontend.includes("m_eggDetails=false;return FrontendCommand::None;"));
+assert(frontend.includes("eggHatchMessageKey(egg->hatchWaves)"));
+assert(frontend.includes("first+row<count"));

@@ -23,6 +23,9 @@ def prepare(root=ROOT):
     if fallback not in text: raise ValueError("Missing fallback egg locale")
     if not all(isinstance(value, str) for value in text.values()): raise ValueError("Unsupported egg locale")
     header = '// Generated pinned egg presentation.\n#pragma once\n#include <cstdint>\n#include <cstring>\nnamespace Pokerogue3DS {\n'
+    marker=re.search(r'this\._id % (\d+)',source.split('public isManaphyEgg(): boolean {',1)[1].split('public getKey',1)[0])
+    if not marker: raise ValueError('Unsupported special egg marker')
+    header += 'inline constexpr uint32_t kEggSpecialIdDivisor='+marker.group(1)+';\n'
     header += 'struct EggUiTextEntry {const char* key;const char* text;};\ninline constexpr EggUiTextEntry kEggUiTexts[]={\n'
     header += '\n'.join('    {'+json.dumps(key)+','+json.dumps(value,ensure_ascii=False)+'},' for key,value in sorted(text.items()))
     header += '\n};\ninline const char* eggUiText(const char* key) {for(const auto& row:kEggUiTexts) if(key && !std::strcmp(row.key,key)) return row.text;return key;}\n'
