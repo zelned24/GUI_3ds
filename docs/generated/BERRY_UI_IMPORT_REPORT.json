@@ -1,0 +1,121 @@
+{
+  "assetRepository": "https://github.com/pagefaultgames/pokerogue-assets",
+  "assetRevision": "056a1f408f26a3be4fef243f7462cb43608c7928",
+  "rows": [
+    {
+      "assetPath": "images/items/sitrus_berry.png",
+      "assetSHA256": "41b94b0b1e37b672a4e1d2665e5a4b359911096ef42577891f614e6d57e1983c",
+      "iconKey": "sitrus_berry",
+      "localeKey": "berry:sitrus.name",
+      "name": "Baya Zidra",
+      "symbol": "SITRUS"
+    },
+    {
+      "assetPath": "images/items/lum_berry.png",
+      "assetSHA256": "d3b896f428ec137edb58b00d901f0abf8b837673e31f237aff790b917b7d7948",
+      "iconKey": "lum_berry",
+      "localeKey": "berry:lum.name",
+      "name": "Baya Ziuela",
+      "symbol": "LUM"
+    },
+    {
+      "assetPath": "images/items/enigma_berry.png",
+      "assetSHA256": "3368e24066d1dcd4aee9468969402da01f6da3947e8bb37fc6cfcb7aff059c8d",
+      "iconKey": "enigma_berry",
+      "localeKey": "berry:enigma.name",
+      "name": "Baya Enigma",
+      "symbol": "ENIGMA"
+    },
+    {
+      "assetPath": "images/items/liechi_berry.png",
+      "assetSHA256": "f0be44de456f2a511f107d7efd55becde44d5f4a5f9ba02f9732fd93b2fa785c",
+      "iconKey": "liechi_berry",
+      "localeKey": "berry:liechi.name",
+      "name": "Baya Lichi",
+      "symbol": "LIECHI"
+    },
+    {
+      "assetPath": "images/items/ganlon_berry.png",
+      "assetSHA256": "0609e1dd63b113154a5ca8f495914996094c4a3777094626787b9b76cc521276",
+      "iconKey": "ganlon_berry",
+      "localeKey": "berry:ganlon.name",
+      "name": "Baya Gonlan",
+      "symbol": "GANLON"
+    },
+    {
+      "assetPath": "images/items/petaya_berry.png",
+      "assetSHA256": "f39166b0940f00ae4536bdc2887a120fd7ec7d3c28bcde0aa0171f4b9f8c3345",
+      "iconKey": "petaya_berry",
+      "localeKey": "berry:petaya.name",
+      "name": "Baya Yapati",
+      "symbol": "PETAYA"
+    },
+    {
+      "assetPath": "images/items/apicot_berry.png",
+      "assetSHA256": "0bd8b00c02ee3de5ff78f43d2550f6c43441088149a0cac772f937d941e1d370",
+      "iconKey": "apicot_berry",
+      "localeKey": "berry:apicot.name",
+      "name": "Baya Aricoc",
+      "symbol": "APICOT"
+    },
+    {
+      "assetPath": "images/items/salac_berry.png",
+      "assetSHA256": "ee00eabf15ac752c7e7cd0dd9def98ee78550721ca299a6eb1e20ec767e666e4",
+      "iconKey": "salac_berry",
+      "localeKey": "berry:salac.name",
+      "name": "Baya Aslac",
+      "symbol": "SALAC"
+    },
+    {
+      "assetPath": "images/items/lansat_berry.png",
+      "assetSHA256": "9038f61f3d717f6d177890ecb1b92db6437da0f160f91dcb730eb5229ecc8e70",
+      "iconKey": "lansat_berry",
+      "localeKey": "berry:lansat.name",
+      "name": "Baya Zonlan",
+      "symbol": "LANSAT"
+    },
+    {
+      "assetPath": "images/items/starf_berry.png",
+      "assetSHA256": "d48c5da70d5114d91e21c38d0fe70b049e6dd2cbe5d6899e923be551545760cf",
+      "iconKey": "starf_berry",
+      "localeKey": "berry:starf.name",
+      "name": "Baya Arabol",
+      "symbol": "STARF"
+    },
+    {
+      "assetPath": "images/items/leppa_berry.png",
+      "assetSHA256": "44cddeac0cdaf4001ecbe6836fab6e0f3f40911aafa8254b176f401d76f5f5a9",
+      "iconKey": "leppa_berry",
+      "localeKey": "berry:leppa.name",
+      "name": "Baya Zanama",
+      "symbol": "LEPPA"
+    }
+  ],
+  "schemaVersion": 1,
+  "sources": [
+    {
+      "repository": "https://github.com/pagefaultgames/pokerogue",
+      "revision": "8555c08c823b856cbec4eb99ca84ea52a955836d",
+      "sourcePath": "src/enums/berry-type.ts",
+      "sourceSHA256": "6e2fbf18e32607944576e1e6a4a4224028595294fcc4e5903e0715a011081c52"
+    },
+    {
+      "repository": "https://github.com/pagefaultgames/pokerogue",
+      "revision": "8555c08c823b856cbec4eb99ca84ea52a955836d",
+      "sourcePath": "src/data/berry.ts",
+      "sourceSHA256": "7b2f6ff957f771f9cf301fd2ba622a6aa8a0de854ca124257d5cbded3c025bc3"
+    },
+    {
+      "repository": "https://github.com/pagefaultgames/pokerogue",
+      "revision": "8555c08c823b856cbec4eb99ca84ea52a955836d",
+      "sourcePath": "src/modifier/modifier-type.ts",
+      "sourceSHA256": "9b1f2983b28f56cab24c649b7a0c871466e16b264a7f0e333594e0806d80af1e"
+    },
+    {
+      "repository": "https://github.com/pagefaultgames/pokerogue-locales",
+      "revision": "23aea1cb0da5a0b15b836f3c243791591cc42303",
+      "sourcePath": "es-ES/berry.json",
+      "sourceSHA256": "c33c88aea2cf8b665136b7f92231174971979c43d2830d9b4aff2a5e47d062e1"
+    }
+  ]
+}

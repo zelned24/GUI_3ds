@@ -1,5 +1,6 @@
 #pragma once
 #include "content/ItemUiNames.hpp"
+#include "content/BerryUiText.hpp"
 #include "gfx/renderer2d.hpp"
 #include "game/FirstRunRuntime.hpp"
 #include "runtime/DualScreenLayout.hpp"
@@ -61,6 +62,12 @@ public:
             }
 
             if(const char* localized=itemUiName(reward->poolEntry->itemId)) name=localized;
+            const BerryUiEntry* berry=nullptr;
+            if(reward->berryType>=0 && !std::strcmp(reward->poolEntry->itemId,"BERRY")) {
+                for(const auto& type:PokerogueContent::kBerryTypes)
+                    if(type.id==static_cast<unsigned>(reward->berryType)) {berry=berryUiEntry(type.symbol);break;}
+                if(berry) name=berry->name;
+            }
             const float cx = startX + i * spacing;
             const bool isSelected = (i == game.selectedRewardChoice());
 
@@ -90,7 +97,11 @@ public:
 
             // Item Icon centered in upper card
             // Original item canvases are 32x32; avoid the previous 1.125x enlargement.
-            m_icons.drawItem(renderer,reward->poolEntry->itemId,cx+(cardW-32)*0.5f,cardY+16,32);
+            const float iconX=cx+(cardW-32)*0.5f;
+            const bool iconDrawn=berry
+                ? m_icons.draw(renderer,berry->iconKey,iconX,cardY+16,32)
+                : m_icons.drawItem(renderer,reward->poolEntry->itemId,iconX,cardY+16,32);
+            if(!iconDrawn) renderer.drawTextFitted("?",iconX+10,cardY+24,0.375f,20,0xffffffff);
 
             // Item Name
             if(!renderer.drawTextBox(name,cx+6,cardY+68,0.3125f,cardW-12,3,0xffffffff))

@@ -98,6 +98,7 @@ egg_report=prepare_egg_content(ROOT)
 from prepare_item_ui import prepare as prepare_item_ui
 item_ui_report=prepare_item_ui(ROOT)
 for row in item_ui_report["rows"]: characters.update(row["name"])
+collect_text(json.loads(subprocess.check_output(["git","-C",str(ROOT / "build/upstream/pokerogue-locales"),"show",ui_locale_revision+":es-ES/berry.json"])))
 from prepare_egg_ui import prepare as prepare_egg_ui
 egg_ui_report=prepare_egg_ui(ROOT)
 from prepare_egg_textures import prepare as prepare_egg_textures
@@ -272,6 +273,8 @@ item_header+="\n};\ninline constexpr const char* kItemIconPages[]= {\n"+"\n".joi
 print(f"Imported {len(item_frames)} original item icon frames")
 from prepare_item_icon_index import prepare as prepare_item_icon_index
 prepare_item_icon_index(ROOT)
+from prepare_berry_ui import prepare as prepare_berry_ui
+prepare_berry_ui(ROOT)
 from prepare_ui_audio import prepare as prepare_ui_audio
 prepare_ui_audio(ROOT)
 
