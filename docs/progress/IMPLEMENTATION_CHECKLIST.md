@@ -2,7 +2,7 @@
 
 ## Cómo medir el avance
 
-- Referencia actual: rama `codex/pokerogue-3ds-migration`, último commit publicado confirmado `4f6ff72`; conversión física ampliada terminada: 10682 atlas y 10746 páginas `.t3x`. Validación nativa y visual pendiente. Los resultados históricos no verifican estos cambios locales.
+- Referencia actual: rama `codex/pokerogue-3ds-migration`, último commit publicado confirmado `5dc84ac`; conversión física ampliada terminada: 10682 atlas y 10746 páginas `.t3x`. Validación nativa y visual pendiente. Los resultados históricos no verifican estos cambios locales.
 - Objetivo: PokéRogue jugable y fiel al snapshot upstream en Old 3DS, con ambas pantallas, progreso exportable y actualizaciones desde consola.
 - Cada ID es estable para reportar avances: `MOV-07`, `GUI-03`, etc. No equivale a un movimiento/habilidad individual.
 - Una casilla sin marcar puede tener código parcial; el resumen de cada área indica lo existente. Marcarla solo con integración completa y evidencia ejecutada pertinente.
@@ -864,3 +864,5 @@ La búsqueda del índice generado usa búsqueda binaria sobre identidades ordena
 - [ ] Objetos/balls: posición de atlas redondeada a píxeles físicos; conserva canvas original de 32px en consumidores actuales. Valida coordenadas/tamaño/opacity antes de I/O e índice de página; cierre de recompensas y combate retira texturas mediante renderer. Guards sin compilación; prueba nativa/visual pendiente.
 
 - [ ] Pruebas nativas de objetos: casos escritos para coordenadas/tamaño/opacity inválidos sin I/O, error de carga y reintento, caché, trim upstream intacto, destino redondeado, alpha limitado y limpieza idempotente con retirement. Integrados en harness existente; sin compilar ni ejecutar por indicación del usuario.
+
+- [ ] Pokédex: filtros, celdas y navegación de páginas comparten geometría táctil/presentación; etiquetas L/R limitadas a sus botones. Barrido nativo completo 320×240 escrito para celdas sin solapes y entradas fuera de pantalla, pendiente de ejecución. Guards de conexión PASS; sin compilación ni Azahar.

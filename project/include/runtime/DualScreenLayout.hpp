@@ -24,6 +24,17 @@ struct TouchRect {
         return px>=x && px-x<width && py>=y && py-y<height;
     }
 };
+// Pokédex uses native 40x30 icons in a 6x4 grid; draw and touch share bounds.
+inline constexpr unsigned kPokedexPageSize=24;
+inline constexpr TouchRect kPokedexFilterRects[]={{10,24,146,14},{164,24,146,14}};
+inline constexpr TouchRect kPokedexPageRects[]={{10,188,96,16},{214,188,96,16}};
+inline constexpr TouchRect pokedexCellRectangle(unsigned index) {
+    return index<kPokedexPageSize ? TouchRect{10+(index%6)*50,43+(index/6)*36,48,34} : TouchRect{};
+}
+inline constexpr int pokedexCellAt(unsigned x,unsigned y) {
+    for(unsigned i=0;i<kPokedexPageSize;++i) if(pokedexCellRectangle(i).contains(x,y)) return int(i);
+    return -1;
+}
 inline constexpr TouchRect kDialogueAdvanceRect{12,208,156,20};
 inline constexpr TouchRect ballMenuRectangle(unsigned index) {return {16,24+index*34,288,32};}
 inline constexpr TouchRect kMoveButtonRects[] = {

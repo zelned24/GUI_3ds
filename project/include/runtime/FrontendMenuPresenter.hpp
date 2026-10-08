@@ -80,13 +80,13 @@ public:
             m_feedback=nullptr;return FrontendCommand::None;
         }
         if(m_page==FrontendPage::Pokedex) {
-            if((keys & KEY_X) || ((keys & KEY_TOUCH) && TouchRect{10,24,146,14}.contains(touchX,touchY))) {
+            if((keys & KEY_X) || ((keys & KEY_TOUCH) && kPokedexFilterRects[0].contains(touchX,touchY))) {
                 unsigned next=0;
                 for(const auto& species:PokerogueContent::kSpecies)
                     if(species.generation>m_dexGeneration && (!next || species.generation<next)) next=species.generation;
                 m_dexGeneration=next;m_dexSelected=0;
             }
-            if((keys & KEY_Y) || ((keys & KEY_TOUCH) && TouchRect{164,24,146,14}.contains(touchX,touchY))) {
+            if((keys & KEY_Y) || ((keys & KEY_TOUCH) && kPokedexFilterRects[1].contains(touchX,touchY))) {
                 m_dexCapture=(m_dexCapture+1)%4;m_dexSelected=0;
             }
             const unsigned total=dexCount(game);
@@ -96,13 +96,16 @@ public:
             if(keys & (KEY_DRIGHT | KEY_CPAD_RIGHT)) m_dexSelected=(m_dexSelected+1)%total;
             if(keys & (KEY_DUP | KEY_CPAD_UP)) m_dexSelected=m_dexSelected>=6 ? m_dexSelected-6 : 0;
             if(keys & (KEY_DDOWN | KEY_CPAD_DOWN)) m_dexSelected=std::min(m_dexSelected+6,total-1);
-            const bool previous=(keys & KEY_L) || ((keys & KEY_TOUCH) && TouchRect{10,188,96,16}.contains(touchX,touchY));
-            const bool next=(keys & KEY_R) || ((keys & KEY_TOUCH) && TouchRect{214,188,96,16}.contains(touchX,touchY));
+            const bool previous=(keys & KEY_L) || ((keys & KEY_TOUCH) && kPokedexPageRects[0].contains(touchX,touchY));
+            const bool next=(keys & KEY_R) || ((keys & KEY_TOUCH) && kPokedexPageRects[1].contains(touchX,touchY));
             if(previous) m_dexSelected=m_dexSelected>=24 ? m_dexSelected-24 : 0;
             if(next) m_dexSelected=std::min(m_dexSelected+24,total-1);
-            if(keys & KEY_TOUCH) for(unsigned cell=0;cell<24;++cell) {
-                const unsigned ordinal=(m_dexSelected/24)*24+cell;
-                if(ordinal<total && TouchRect{10+(cell%6)*50,43+(cell/6)*36,48,34}.contains(touchX,touchY)) {m_dexSelected=ordinal;break;}
+            if(keys & KEY_TOUCH) {
+                const int cell=pokedexCellAt(touchX,touchY);
+                if(cell>=0) {
+                    const unsigned ordinal=(m_dexSelected/kPokedexPageSize)*kPokedexPageSize+unsigned(cell);
+                    if(ordinal<total) m_dexSelected=ordinal;
+                }
             }
             return FrontendCommand::None;
         }
@@ -385,10 +388,10 @@ private:
         char text[48];
         if(m_dexGeneration) std::snprintf(text,sizeof(text),"X: Gen. %u",m_dexGeneration);
         else std::snprintf(text,sizeof(text),"X: Todas las gen.");
-        renderer.drawTextFitted(text,12,24,0.3125f,142,0xffffffff);
+        renderer.drawTextFitted(text,kPokedexFilterRects[0].x+2,kPokedexFilterRects[0].y,0.3125f,kPokedexFilterRects[0].width-4,0xffffffff);
         const char* labels[]={"Todos","Capturados","Vistos","Desconocidos"};
         std::snprintf(text,sizeof(text),"Y: %s",labels[m_dexCapture]);
-        renderer.drawTextFitted(text,166,24,0.3125f,142,0xffffffff);
+        renderer.drawTextFitted(text,kPokedexFilterRects[1].x+2,kPokedexFilterRects[1].y,0.3125f,kPokedexFilterRects[1].width-4,0xffffffff);
     }
     void drawPokedex(Renderer2D& renderer,const FirstRunRuntime* game) {
         renderer.clear(0xff3a303d);
@@ -413,16 +416,17 @@ private:
             for(unsigned cell=0;cell<page.size() && page[cell];++cell) {
                 const auto& species=*page[cell];
                 const auto* record=game->starterProgress(species.dex);
-                const float x=10+(cell%6)*50,y=43+(cell/6)*36;
-                if(start+cell==m_dexSelected) renderer.drawWindow(x,y,48,34);
+                const auto bounds=pokedexCellRectangle(cell);
+                const float x=bounds.x,y=bounds.y;
+                if(start+cell==m_dexSelected) renderer.drawWindow(x,y,bounds.width,bounds.height);
                 const uint32_t tint=starterDiscoveryTint(starterDiscovery(record && record->caught,record ? record->observedFormAttr : 0));
                 if(!m_dexIcons.draw(renderer,species.dex,0,x+4,y+2,1.0f,1.0f,tint)) renderer.drawText("?",x+18,y+8,0.4f,0xffffffff);
             }
             char position[32];std::snprintf(position,sizeof(position),"%u / %u",m_dexSelected+1,total);
             renderer.drawTextFitted(position,110,190,0.3125f,100,0xffffffff);
         }
-        renderer.drawText("L: anterior",12,190,0.3125f,0xffffffff);
-        renderer.drawText("R: siguiente",216,190,0.3125f,0xffffffff);
+        renderer.drawTextFitted("L: anterior",kPokedexPageRects[0].x+2,kPokedexPageRects[0].y+2,0.3125f,kPokedexPageRects[0].width-4,0xffffffff);
+        renderer.drawTextFitted("R: siguiente",kPokedexPageRects[1].x+2,kPokedexPageRects[1].y+2,0.3125f,kPokedexPageRects[1].width-4,0xffffffff);
         renderer.drawTextFitted("X: generación  Y: captura  B: volver",12,214,0.3125f,296,0xffffffff);
     }
     unsigned rowY(unsigned index) const {return (m_page==FrontendPage::GlobalMenu ? 17 : 43)+index*rowHeight();}

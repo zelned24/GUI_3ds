@@ -15,6 +15,19 @@
 using namespace Pokerogue3DS;
 int main() {
     for(unsigned y=0;y<240;++y) for(unsigned x=0;x<320;++x) {
+        int expected=-1;
+        for(unsigned cell=0;cell<24;++cell) {
+            const unsigned cx=10+(cell%6)*50,cy=43+(cell/6)*36;
+            if(x>=cx && x<cx+48 && y>=cy && y<cy+34) {assert(expected==-1);expected=int(cell);}
+        }
+        assert(pokedexCellAt(x,y)==expected);
+    }
+    assert(pokedexCellAt(320,240)==-1 && pokedexCellAt(UINT_MAX,UINT_MAX)==-1);
+    assert(!pokedexCellRectangle(24).contains(0,0));
+    for(const auto& button:kPokedexFilterRects) assert(button.x+button.width<=320 && button.y+button.height<=43);
+    for(const auto& button:kPokedexPageRects) assert(button.x+button.width<=320 && button.y>=185 && button.y+button.height<=205);
+
+    for(unsigned y=0;y<240;++y) for(unsigned x=0;x<320;++x) {
         const int row=x>=24 && x<296 && y>=42 && y<150 ? int((y-42)/36) : -1;
         assert(pauseButtonAt(x,y)==row);
     }

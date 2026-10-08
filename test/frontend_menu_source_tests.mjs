@@ -265,3 +265,6 @@ assert(itemPresentation.includes('frame->page >= sizeof(kItemIconPages)/sizeof(k
 assert(itemPresentation.includes('renderer->retireSpriteSheet(m_sheet)'));
 assert(rewardPresentation.includes('m_icons.clear(renderer)'));
 assert(main.includes('rewardMenu.clear(&renderer)'));
+
+assert(frontend.includes("pokedexCellAt(touchX,touchY)"));
+assert(frontend.includes("const auto bounds=pokedexCellRectangle(cell)"));
