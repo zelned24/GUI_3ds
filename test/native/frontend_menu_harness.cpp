@@ -210,6 +210,11 @@ static void checkPreferences() {
     assert(NativePresentationSettingsStore::decode(nullptr,52,untouched)==NativeSaveResult::InvalidFormat);
 }
 int main() {
+    assert(BattleCommandMenuPresenter::actionPrompt("Bulbasaur")=="¿Qué debería hacer\nBulbasaur?");
+    assert(BattleCommandMenuPresenter::actionPrompt("Flabébé")=="¿Qué debería hacer\nFlabébé?");
+    assert(BattleCommandMenuPresenter::actionPrompt(nullptr)=="¿Qué debería hacer\nPokémon?");
+    assert(BattleCommandMenuPresenter::actionPrompt("")==BattleCommandMenuPresenter::actionPrompt(nullptr));
+    assert(BattleCommandMenuPresenter::actionPrompt("{{pokemonName}}") == "¿Qué debería hacer\n{{pokemonName}}?");
     BattleCommandMenuPresenter audioControls;
     assert(audioControls.input(0,false)==BattleMenuCommand::None && !audioControls.takeNavigationSound());
     audioControls.input(KEY_DRIGHT,false);

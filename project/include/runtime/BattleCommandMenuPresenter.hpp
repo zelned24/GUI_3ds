@@ -128,13 +128,22 @@ private:
     }
 
 public:
+    static std::string actionPrompt(const char* pokemonName) {
+        std::string text=runtimeUiText("command-ui-handler:actionMessage");
+        constexpr const char* token="{{pokemonName}}";
+        const auto position=text.find(token);
+        if(position!=std::string::npos)
+            text.replace(position,std::strlen(token),pokemonName && *pokemonName
+                ? pokemonName : runtimeUiText("command-ui-handler:pokemon"));
+        return text;
+    }
     void drawTop(Renderer2D& renderer,const FirstRunRuntime& game) {
         const auto& feedback=game.battleFeedback();
         if(!feedback.empty() && feedback.rfind("Ola ",0)!=0) {
             m_dialogue.sync(renderer,feedback);
         } else {
             const char* name=game.presentation().player.localizedName;
-            m_dialogue.sync(renderer,std::string("¿Qué debería hacer ")+(name ? name : "Pokémon")+"?");
+            m_dialogue.sync(renderer,actionPrompt(name));
         }
         if(m_advanceDialogue) m_dialogue.advance(renderer);
         m_advanceDialogue=false;

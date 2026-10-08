@@ -567,3 +567,7 @@ assert(atlasMetadata.includes('const uint64_t count=static_cast<uint64_t>(end-m_
 
 assert(icons.includes('img.subtex->left>=img.subtex->right || img.subtex->top<=img.subtex->bottom'));
 assert(!icons.includes('img.subtex->top<img.subtex->bottom)'));
+
+assert(commandPresentation.includes('runtimeUiText("command-ui-handler:actionMessage")'));
+assert(commandPresentation.includes('m_dialogue.sync(renderer,actionPrompt(name))'));
+assert(!commandPresentation.includes('std::string("¿Qué debería hacer ")'));

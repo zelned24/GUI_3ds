@@ -2,7 +2,7 @@
 
 ## Cómo medir el avance
 
-- Referencia actual: rama `codex/pokerogue-3ds-migration`, último commit de implementación publicado confirmado `379eaa7`; conversión física ampliada terminada: 10682 atlas y 10746 páginas `.t3x`. Validación nativa y visual pendiente. Los resultados históricos no verifican estos cambios locales.
+- Referencia actual: rama `codex/pokerogue-3ds-migration`, último commit de implementación publicado confirmado `e21e08a`; conversión física ampliada terminada: 10682 atlas y 10746 páginas `.t3x`. Validación nativa y visual pendiente. Los resultados históricos no verifican estos cambios locales.
 - Objetivo: PokéRogue jugable y fiel al snapshot upstream en Old 3DS, con ambas pantallas, progreso exportable y actualizaciones desde consola.
 - Cada ID es estable para reportar avances: `MOV-07`, `GUI-03`, etc. No equivale a un movimiento/habilidad individual.
 - Una casilla sin marcar puede tener código parcial; el resumen de cada área indica lo existente. Marcarla solo con integración completa y evidencia ejecutada pertinente.
@@ -1182,3 +1182,8 @@ La compilación ARM solicitada terminó correctamente; no prueba ejecución de h
 - Implementado sin ejecución nativa: el presenter rechaza UV horizontales/verticales vacías o invertidas, como ya exige Renderer2D. Retira la textura inválida y devuelve false en lugar de indicar que se dibujó; el caller puede mostrar su alternativa explícita. No reintenta cargar hasta invalidar el cache.
 - Harness C++ ampliado con cuatro degeneraciones/inversiones, ausencia de dibujo, retiro y recuperación tras clear; ejecución aplazada.
 - Evidencia actual: 25 comprobaciones de presentación JS/Python PASS, 8 gates nativos omitidos por la prohibición de compilar; guards frontend PASS y git diff --check PASS. Esto no demuestra dibujo PICA200 ni cierre del checklist.
+
+### Plantilla localizada del diálogo de acciones
+
+- Implementado sin ejecución nativa: BattleCommandMenuPresenter resuelve actionMessage de los locales pinned y sustituye pokemonName una vez, manteniendo el salto de línea oficial. El fallback de nombre vacío usa la etiqueta Pokémon importada. No interpreta tokens contenidos en el nombre de la especie.
+- Guards de conexión PASS; harness C++ ampliado con acentos, nombre vacío/null y sustitución no recursiva. La paginación sigue en DialoguePresenter; validación visual pendiente. GUI-10 continúa abierta por otras strings/locales.
