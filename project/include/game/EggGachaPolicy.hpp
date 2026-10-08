@@ -1,6 +1,8 @@
 #pragma once
 #include "game/EggIncubation.hpp"
 #include <cmath>
+#include <cstring>
+#include <cstdio>
 namespace Pokerogue3DS {
 // Egg.rollSpecies weight only: JS numbers map to double, clamp before the
 // upstream arithmetic, then floor. Caller supplies canonical base starter cost.
@@ -96,6 +98,17 @@ inline bool useLockedEggSpeciesPool(uint32_t unlockPity,size_t lockedCount) {
 inline uint32_t eggUnlockPityAfterSelection(uint32_t previous,bool caught,bool alreadyInEggs) {
     if(!caught && !alreadyInEggs) return 0;
     return previous>=kEggUnlockPityCap ? kEggUnlockPityCap : previous+1;
+}
+
+// PokemonSpecies.hasVariants: presence of species-form key OR base species
+// key in the pinned masterlist. Presence matters, not converted texture status.
+inline bool eggSpeciesHasVariants(uint16_t dex,const char* formKey=nullptr) {
+    char base[8];std::snprintf(base,sizeof(base),"%u",unsigned(dex));
+    for(const char* key:kEggVariantSpeciesKeys) if(!std::strcmp(key,base)) return true;
+    if(!formKey || !*formKey || std::strlen(formKey)>63) return false;
+    char specific[80];std::snprintf(specific,sizeof(specific),"%s-%s",base,formKey);
+    for(const char* key:kEggVariantSpeciesKeys) if(!std::strcmp(key,specific)) return true;
+    return false;
 }
 
 // Egg.rollEggTier decision only. The supplied draw must be from the caller's
