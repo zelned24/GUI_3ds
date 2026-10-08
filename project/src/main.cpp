@@ -19,6 +19,7 @@
 #include "runtime/DecisionMenuPresenter.hpp"
 #include "runtime/DialoguePresenter.hpp"
 #include "runtime/PresentationClock.hpp"
+#include "runtime/NativeUiAudio.hpp"
 #include "game/PokerogueModifierReward.hpp"
 #include "content/IntroCinematicData.hpp"
 #include <3ds.h>
@@ -61,6 +62,10 @@ int main() {
         gfxExit();
         return 1;
     }
+
+    Pokerogue3DS::NativeUiAudio uiAudio;
+    if(romfsReady && !uiAudio.init())
+        std::fprintf(stderr,"Native UI audio: %s (%ld)\n",uiAudio.initializationError() ? uiAudio.initializationError() : "Unavailable",static_cast<long>(uiAudio.initializationResult()));
 
     // Double-buffered pure black clear immediately on boot so uninitialized VRAM is never shown
     for (int b = 0; b < 2; ++b) {
@@ -258,6 +263,7 @@ int main() {
             // The menu consumes input before the battle/JS command loop.
             touchPosition titleTouch{};if(rawPressed & KEY_TOUCH) hidTouchRead(&titleTouch);
             const auto command=frontend.input(rawPressed,titleTouch.px,titleTouch.py,&game);
+            if(command!=Pokerogue3DS::FrontendCommand::None) uiAudio.play("select");
             if(command==Pokerogue3DS::FrontendCommand::Continue || command==Pokerogue3DS::FrontendCommand::Load) {
                 const auto result=game.loadNativeProgress(saves,profiles,profileStaging,
                     PokerogueContent::kSpeciesCount,offlineFriendship,&restored);
@@ -386,6 +392,7 @@ int main() {
         }
         if (!setupInput && (rawPressed & KEY_START)) {
             isPaused = !isPaused;
+            if(isPaused) uiAudio.play("menu_open");
             pauseSelection = 0;
             pauseFeedback = nullptr;
             rawPressed &= ~KEY_START; // Do not immediately close the pause we just opened.
@@ -584,7 +591,10 @@ int main() {
         }
         if(battleMenuInput) {
             touchPosition touch{};if(rawPressed & KEY_TOUCH) hidTouchRead(&touch);
+            const bool wasMovesOpen=battleMenu.movesOpen();
             const auto command=battleMenu.input(rawPressed,game.doubleBattle(),touch.px,touch.py);
+            if(command!=Pokerogue3DS::BattleMenuCommand::None || wasMovesOpen!=battleMenu.movesOpen())
+                uiAudio.play("select");
             switch(command) {
             case Pokerogue3DS::BattleMenuCommand::MovePrevious:changed=game.selectBattleMove(-1);break;
             case Pokerogue3DS::BattleMenuCommand::MoveNext:changed=game.selectBattleMove(1);break;
@@ -1019,6 +1029,7 @@ int main() {
 #if defined(POKEROGUE_ENABLE_QUICKJS)
     bridge.fini();
 #endif
+    uiAudio.fini();
     renderer.fini();
     if (romfsReady) romfsExit();
     gfxExit();

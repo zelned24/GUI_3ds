@@ -264,6 +264,8 @@ item_header+="\n};\ninline constexpr const char* kItemIconPages[]= {\n"+"\n".joi
 print(f"Imported {len(item_frames)} original item icon frames")
 from prepare_item_icon_index import prepare as prepare_item_icon_index
 prepare_item_icon_index(ROOT)
+from prepare_ui_audio import prepare as prepare_ui_audio
+prepare_ui_audio(ROOT)
 
 # Reuse the existing upstream enum parser for native ball IDs.
 import re
