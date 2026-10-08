@@ -1164,7 +1164,7 @@ extern "C" int runNativeSaveChecks() {
         poor.candyCount || poor.costReduction || poor.friendship != 42 || !poor.caught) return 120;
     if (encodeNativeStarterCandyProfile(&purchased, 1, 1, PokerogueContent::kContentHash,
             PokerogueContent::kMaxStarterCandyCount, caughtEncoded, sizeof(caughtEncoded), caughtWritten) !=
-            NativeSaveResult::Ok || std::memcmp(caughtEncoded, "P3CANDY9", 8) ||
+            NativeSaveResult::Ok || std::memcmp(caughtEncoded, "P3CANDYA", 8) ||
         decodeNativeStarterCandyProfile(caughtEncoded, caughtWritten, PokerogueContent::kContentHash,
             PokerogueContent::kMaxStarterCandyCount, caughtDecoded, 1, caughtCount, caughtGeneration) !=
             NativeSaveResult::Ok || caughtDecoded[0].costReduction != 2 || !caughtDecoded[0].caught ||
@@ -1195,6 +1195,28 @@ extern "C" int runNativeSaveChecks() {
         decodeNativeStarterCandyProfile(caughtEncoded,caughtWritten,PokerogueContent::kContentHash,
         PokerogueContent::kMaxStarterCandyCount,caughtDecoded,1,caughtCount,caughtGeneration)!=NativeSaveResult::Ok ||
         caughtDecoded[0].observedAppearanceAttr!=0x73 || caughtDecoded[0].caughtAppearanceAttr!=0x32) return 701;
+    // New preference persists; v9 reads without fabricating a selected slot.
+    purchased.preferredAbilityIndex=2;
+    if(encodeNativeStarterCandyProfile(&purchased,1,1,PokerogueContent::kContentHash,
+        PokerogueContent::kMaxStarterCandyCount,caughtEncoded,sizeof(caughtEncoded),caughtWritten)!=NativeSaveResult::Ok ||
+        decodeNativeStarterCandyProfile(caughtEncoded,caughtWritten,PokerogueContent::kContentHash,
+        PokerogueContent::kMaxStarterCandyCount,caughtDecoded,1,caughtCount,caughtGeneration)!=NativeSaveResult::Ok ||
+        caughtDecoded[0].preferredAbilityIndex!=2) return 719;
+    char v9Bytes[256]{};
+    std::memcpy(v9Bytes,caughtEncoded,121);std::memcpy(v9Bytes,"P3CANDY9",8);
+    const size_t v9Size=kStarterCandyProfileOverhead+41;
+    IntegritySha256::hashHex(v9Bytes,v9Size-64,digest);std::memcpy(v9Bytes+v9Size-64,digest,64);
+    if(decodeNativeStarterCandyProfile(v9Bytes,v9Size,PokerogueContent::kContentHash,
+        PokerogueContent::kMaxStarterCandyCount,caughtDecoded,1,caughtCount,caughtGeneration)!=NativeSaveResult::Ok ||
+        caughtDecoded[0].preferredAbilityIndex!=255 || caughtDecoded[0].caughtAppearanceAttr!=0x32) return 720;
+    auto invalidPreference=purchased;invalidPreference.preferredAbilityIndex=3;
+    if(StarterCandyProfileCodec::valid(invalidPreference,0,PokerogueContent::kMaxStarterCandyCount)) return 721;
+    invalidPreference.preferredAbilityIndex=1; // Bulbasaur's duplicate slot is not unlocked.
+    if(StarterCandyProfileCodec::valid(invalidPreference,0,PokerogueContent::kMaxStarterCandyCount)) return 722;
+    invalidPreference=purchased;invalidPreference.caught=false;invalidPreference.caughtAppearanceAttr=0;
+    invalidPreference.passiveUnlocked=false;invalidPreference.preferredFormIndex=65535;
+    if(StarterCandyProfileCodec::valid(invalidPreference,0,PokerogueContent::kMaxStarterCandyCount)) return 723;
+    purchased.preferredAbilityIndex=255;
     char v8Bytes[256]{};
     std::memcpy(v8Bytes,caughtEncoded,119);std::memcpy(v8Bytes,"P3CANDY8",8);
     const size_t v8Size=kStarterCandyProfileOverhead+39;

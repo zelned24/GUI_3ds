@@ -26,6 +26,7 @@ struct NativeStarterCandyRecord {
     uint16_t preferredFormIndex = 65535; // No explicit preference; upstream default index zero.
     uint8_t observedAppearanceAttr = 0; // Upstream NON_SHINY/SHINY and variant bits; zero unknown.
     uint8_t caughtAppearanceAttr = 0; // Legacy profiles retain unknown, never inferred from caught.
+    uint8_t preferredAbilityIndex = 255; // No explicit selection; preserve source default.
 };
 
 // Pokemon.getDexAttr appearance component. Unknown actors leave output zero.
@@ -284,7 +285,7 @@ inline NativeFriendshipApplyResult applyNativePokemonFriendship(
 }
 
 inline constexpr size_t kStarterCandyProfileOverhead = 144;
-inline constexpr size_t kStarterCandyProfileRecordBytes = 41;
+inline constexpr size_t kStarterCandyProfileRecordBytes = 42;
 inline constexpr size_t kStarterCandyProfileMaxBytes = kStarterCandyProfileOverhead +
     PokerogueContent::kSpeciesCount * kStarterCandyProfileRecordBytes;
 
@@ -310,11 +311,13 @@ inline uint32_t get(const char* input, size_t bytes) {
     return value;
 }
 inline uint8_t version(const char* input) {
-    if (std::memcmp(input, "P3CANDY", 7) || input[7] < '1' || input[7] > '9') return 0;
-    return static_cast<uint8_t>(input[7] - '0');
+    if(std::memcmp(input,"P3CANDY",7)) return 0;
+    if(input[7]=='A') return 10; // Version ten retains the eight-byte magic width.
+    if(input[7]<'1' || input[7]>'9') return 0;
+    return static_cast<uint8_t>(input[7]-'0');
 }
 inline size_t recordBytes(uint8_t v) {
-    return v == 1 ? 8 : v == 2 || v == 3 ? 9 : v == 4 ? 19 : v == 5 ? 21 : v == 6 ? 29 : v == 7 ? 37 : v == 8 ? 39 : v == 9 ? 41 : 0;
+    return v == 1 ? 8 : v == 2 || v == 3 ? 9 : v == 4 ? 19 : v == 5 ? 21 : v == 6 ? 29 : v == 7 ? 37 : v == 8 ? 39 : v == 9 ? 41 : v == 10 ? 42 : 0;
 }
 inline void put64(uint64_t value, char* output) {
     for (uint8_t i = 0; i < 8; ++i) output[i] = static_cast<char>(value >> (i * 8));
@@ -338,6 +341,7 @@ inline NativeStarterCandyRecord record(const char* input, uint8_t v) {
     if (v >= 7) value.unlockedFormAttr = get64(input + 29);
     if(v>=9) {value.observedAppearanceAttr=static_cast<uint8_t>(input[39]);value.caughtAppearanceAttr=static_cast<uint8_t>(input[40]);}
     if (v >= 8) value.preferredFormIndex = static_cast<uint16_t>(get(input + 37, 2));
+    if(v>=10) value.preferredAbilityIndex=static_cast<uint8_t>(input[41]);
     return value;
 }
 inline bool valid(const NativeStarterCandyRecord& value, uint16_t previous, uint16_t candyLimit) {
@@ -364,6 +368,9 @@ inline bool valid(const NativeStarterCandyRecord& value, uint16_t previous, uint
     if (value.preferredFormIndex != 65535 && (!value.caught || !species || !species->starterEligible ||
         pokemonValidateStarterForm(value.speciesDex, value.preferredFormIndex, value.unlockedFormAttr) !=
             PokemonStarterFormResult::Ok)) return false;
+    uint16_t preferredAbility=0;
+    if(value.preferredAbilityIndex!=255 && (!value.caught || !species || !species->starterEligible ||
+        !nativeStarterSelectedAbility(value,value.preferredAbilityIndex,preferredAbility))) return false;
     const auto* root = pokemonRootSpecies(value.speciesDex);
     return species && root && value.speciesDex > previous && value.candyCount <= candyLimit && value.costReduction <= 2 &&
         (!value.costReduction || (species->starterEligible && species->starterCost >= 1)) &&
@@ -389,7 +396,7 @@ inline NativeSaveResult encodeNativeStarterCandyProfile(const NativeStarterCandy
         if (!StarterCandyProfileCodec::valid(records[i], previous, candyLimit)) return NativeSaveResult::InvalidRecord;
         previous = records[i].speciesDex;
     }
-    std::memcpy(output, "P3CANDY9", 8);
+    std::memcpy(output, "P3CANDYA", 8);
     std::memcpy(output + 8, contentHash, 64);
     StarterCandyProfileCodec::put(generation, output + 72, 4);
     StarterCandyProfileCodec::put(static_cast<uint32_t>(count), output + 76, 4);
@@ -408,6 +415,7 @@ inline NativeSaveResult encodeNativeStarterCandyProfile(const NativeStarterCandy
         StarterCandyProfileCodec::put(records[i].preferredFormIndex, target + 37, 2);
         target[39]=static_cast<char>(records[i].observedAppearanceAttr);
         target[40]=static_cast<char>(records[i].caughtAppearanceAttr);
+        target[41]=static_cast<char>(records[i].preferredAbilityIndex);
     }
     char digest[65]{};
     IntegritySha256::hashHex(output, size - 64, digest);
