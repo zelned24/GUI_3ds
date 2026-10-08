@@ -124,7 +124,13 @@ public:
             slot->sheet=C2D_SpriteSheetLoad(m_compact ? kCompactPokemonIconPages[icon->page] : kPokemonIconPages[icon->page]);slot->page=icon->page;
             if(slot->sheet) {
                 const auto img=C2D_SpriteSheetGetImage(slot->sheet,0);
-                if(img.tex) C3D_TexSetFilter(img.tex, GPU_NEAREST, GPU_NEAREST);
+                const unsigned expected=m_compact ? 256 : 512;
+                if(!img.tex || !img.subtex || img.subtex->width!=expected || img.subtex->height!=expected
+                    || !std::isfinite(img.subtex->left) || !std::isfinite(img.subtex->right)
+                    || !std::isfinite(img.subtex->top) || !std::isfinite(img.subtex->bottom)
+                    || img.subtex->top<img.subtex->bottom) {
+                    renderer.retireSpriteSheet(slot->sheet);slot->sheet=nullptr;
+                } else C3D_TexSetFilter(img.tex,GPU_NEAREST,GPU_NEAREST);
             }
         }
         if(!slot->sheet) return false;

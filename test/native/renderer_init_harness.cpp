@@ -304,6 +304,25 @@ int main() {
         renderer.endFrame();
 
         {
+            const auto& row=Pokerogue3DS::kPokemonIcons[0];
+            Pokerogue3DS::PokemonIconPresenter malformed;
+            const auto original=iconSub;
+            for(unsigned scenario=0;scenario<3;++scenario) {
+                malformed.clear(&renderer);
+                iconSub=original;
+                if(scenario==0) iconSub.width=511;
+                if(scenario==1) {iconSub.top=0;iconSub.bottom=1;}
+                if(scenario==2) iconSub.left=std::numeric_limits<float>::quiet_NaN();
+                const int before=iconLoads,drawBefore=imageDraws;
+                assert(!malformed.draw(renderer,row.dex,row.formIndex,0,0));
+                assert(!malformed.draw(renderer,row.dex,row.formIndex,0,0));
+                assert(iconLoads==before+1 && imageDraws==drawBefore);
+            }
+            iconSub=original;malformed.clear(&renderer);
+            assert(malformed.draw(renderer,row.dex,row.formIndex,0,0));
+            malformed.clear(&renderer);
+        }
+        {
             Pokerogue3DS::PokemonIconPresenter icons;
             const int before=iconLoads,freeBefore=sheetFree;
             for(unsigned frame=0;frame<2;++frame) {
