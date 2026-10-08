@@ -207,3 +207,10 @@ assert(movePresentation.includes("const float nameWidth=bounds.width-28"));
 assert(!movePresentation.includes("kMovePos"));
 
 assert(main.includes("moveBackRectangle(game.doubleBattle()).contains(touch.px,touch.py)"));
+
+const partyPresentation=await fs.readFile(new URL('../project/include/runtime/PartyMenuPresenter.hpp',import.meta.url),'utf8');
+assert(partyPresentation.includes('y+3,nameSize'));
+assert(partyPresentation.includes('hpX + 16, y + 3, 0.24f, 70'));
+assert(partyPresentation.includes('std::floor(84*frac)'));
+assert(partyPresentation.includes('std::min(actor.battleState.hp,actor.battleState.maxHp)'));
+assert(!partyPresentation.includes('hpX + 68'));

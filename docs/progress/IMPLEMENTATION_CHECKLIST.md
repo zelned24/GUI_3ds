@@ -829,3 +829,5 @@ La búsqueda del índice generado usa búsqueda binaria sobre identidades ordena
 - [ ] Movimientos táctiles: Struggle por PP agotados se activa tocando el primer rectángulo mediante el mismo comando de turno de A; otros slots permanecen inactivos. Nombres/PP derivan posición y ancho del rectángulo compartido con hit-test, evitando texto fuera de su botón. Guards de conexión PASS; comportamiento nativo y comparación visual pendientes.
 
 - [ ] Volver táctil en movimientos: región compartida con etiqueta B, acotada a x=100..187; funciona también en combate doble y no consume toques sobre PP/detalles. Instrucciones A/B separadas, botones de objetivo no se solapan. Barrido de geometría escrito sin ejecutar; guards PASS, ejecución/visual pendientes.
+
+- [ ] Equipo: columnas separadas para nombre/nivel/estado/PS; números PS y pie limitados al ancho de pantalla, cursor usa el tamaño real del nombre. Barra PS limita hp a maxHp y ancho a píxeles enteros, color amarillo hasta 25% como HUD upstream. Guards de conexión PASS; prueba nativa y apariencia pendientes. Iconos de esta lista siguen a 0.5×, adaptación pendiente.
