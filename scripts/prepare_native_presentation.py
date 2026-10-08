@@ -193,6 +193,8 @@ from prepare_compact_icons import prepare as prepare_compact_icons
 prepare_compact_icons(ROOT)
 from prepare_appearance_icons import prepare as prepare_appearance_icons
 prepare_appearance_icons(ROOT)
+from prepare_appearance_icon_tiles import prepare as prepare_appearance_icon_tiles
+prepare_appearance_icon_tiles(ROOT)
 from resolve_appearance_icon_identities import resolve as resolve_appearance_icon_identities
 resolve_appearance_icon_identities(ROOT)
 print(f"Packed {len(icon_records)} real icons in {len(icon_pages)} pages; {len(icon_missing)} missing references")
