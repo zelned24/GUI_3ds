@@ -1,0 +1,56 @@
+{
+  "conclusion": "Horizontal anchor differs from scaled upstream constructor. Source player base is intentionally cropped; moving or stretching the base without checking sprite canvas and visual composition would be an unverified adaptation.",
+  "observations": {
+    "arenaBaseOrigin": {
+      "symbol": "ArenaBase.constructor",
+      "x": 0,
+      "y": 0
+    },
+    "expectedScaledConstructorAnchor": {
+      "x": 132.5,
+      "y": 185
+    },
+    "nativeFieldRasterScale": 1.25,
+    "nativePlayerAnchor": {
+      "x": 105,
+      "y": 185
+    },
+    "nativePlayerBaseHeight": 165,
+    "nativeStaticLayerDrawOrigin": {
+      "x": 0,
+      "y": 0
+    },
+    "playerPokemonConstructor": {
+      "symbol": "PlayerPokemon.constructor",
+      "x": 106,
+      "y": 148
+    }
+  },
+  "pending": [
+    "Compare player sprite source canvas/trim and visible feet against platform pixels",
+    "Choose explicit integer 3DS anchor preserving requested sprite size",
+    "Validate composition in Azahar when compilation is authorized"
+  ],
+  "repository": "https://github.com/pagefaultgames/pokerogue",
+  "revision": "8555c08c823b856cbec4eb99ca84ea52a955836d",
+  "runtimeValidation": "NOT_EXECUTED",
+  "schemaVersion": 1,
+  "sources": [
+    {
+      "sha256": "b1ca86d55cac2d98507460a648b371d87e216798688574cc8964f0d394ee48a4",
+      "sourcePath": "src/field/arena-base.ts"
+    },
+    {
+      "sha256": "d9bb7dcab23ff475dce6444906951160b596c2ead7f5ab73b9037c82c36cc748",
+      "sourcePath": "src/field/pokemon.ts"
+    },
+    {
+      "sha256": "8337c8897f6e3847d71c5be715688ed08644009a3d3d63b262eeb8cc637104e5",
+      "sourcePath": "src/battle-scene.ts"
+    },
+    {
+      "sha256": "1d3c71733f5801bbcbf130b24d25e809782dcd02371676e149eb82c91c267d08",
+      "sourcePath": "src/phases/encounter-phase.ts"
+    }
+  ]
+}
