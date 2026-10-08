@@ -413,3 +413,9 @@ Verificación ejecutada: `python test/sprite_padding_source_tests.py` (2 pruebas
 ### HUD de PS: implementación local pendiente de ejecución
 
 La presentación usa el reloj transcurrido para el tween `Sine.easeOut` upstream, con duración de 250–5000 ms dependiente del delta de PS. Cuatro slots visuales separados por identidad/lado evitan compartir la animación entre enemigos; los números del jugador usan el valor visible. El default de velocidad corresponde al pin; velocidad del HUD conectada al submenú y al envelope de preferencias v3 (v1/v2 conservados); ejecución del guardado SD, espera de fases y fidelidad visual siguen pendientes. Tests C++ escritos, sin compilar por instrucción vigente. El estado de combate permanece como entrada de solo lectura.
+
+## Estado actual de arena y EXP (sin compilación)
+
+1. `ExperienceBarTimeline` sustituye la interpolación por frame con tramos de nivel, curvas canónicas, easing/pausa upstream y reloj real. Actualizaciones durante pausa o llenado conservan el tramo en curso. Casos C++ escritos sin ejecutar; audio, velocidad EXP y espera de fases pendientes. Las notas previas de EXP por frame son históricas.
+2. 39 fondos de batalla y sus 39 recortes de título, 72 bases estáticas y 32 frames de dos bases animadas preparados offline con nearest. Runtime dibuja raster 1:1; metadata de frames adaptados mantiene fuente y recortes originales en provenance. Comparación física por píxel y hashes PASS; esto no elimina la replicación no uniforme de los pixels originales al adaptar 1.25×.
+3. Ejecución GPU, composición visual, uso real de memoria y latencia permanecen sin verificar. Compilación, tests que compilan y Azahar siguen aplazados por instrucción del usuario. Las conversiones de assets no son builds del programa.

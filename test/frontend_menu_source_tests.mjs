@@ -75,6 +75,12 @@ assert(setup.includes('abilityUiName(game.setupStarterAbilityId(species->dex))')
 assert(!setup.includes('abilityUiName((form ? form->ability1 : species->ability1))'));
 
 const arena=await fs.readFile(new URL('../project/include/runtime/ArenaPresenter.hpp',import.meta.url),'utf8');
+assert(arena.includes('m_definition || m_drawBases!=drawBases'));
+assert(arena.includes('drawBases ? definition->path : definition->titlePath'));
+assert(arena.includes('frame->sourceWidth,frame->sourceHeight'));
+assert(arena.includes('layer->width,layer->height'));
+assert(!arena.includes('*scale'));
+assert(arena.includes('presentationAnimationFrame(animationTimeMs,12,count)'));
 assert(arena.includes('m_trainerCurrentFemale != female || m_trainerCurrentName != name'));
 assert(arena.includes('m_trainerAttempted=false;m_trainerCurrentFemale=false;m_trainerCurrentName.clear()'));
 assert(arena.includes('m_trainer.loadTrainer(trainerTypeId, female,&renderer)'));

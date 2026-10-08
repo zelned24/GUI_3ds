@@ -2,7 +2,7 @@
 
 ## Cómo medir el avance
 
-- Referencia actual: rama `codex/pokerogue-3ds-migration`, último commit publicado confirmado `26c933b`; conversión física ampliada terminada: 10682 atlas y 10746 páginas `.t3x`. Validación nativa y visual pendiente. Los resultados históricos no verifican estos cambios locales.
+- Referencia actual: rama `codex/pokerogue-3ds-migration`, último commit publicado confirmado `4f6ff72`; conversión física ampliada terminada: 10682 atlas y 10746 páginas `.t3x`. Validación nativa y visual pendiente. Los resultados históricos no verifican estos cambios locales.
 - Objetivo: PokéRogue jugable y fiel al snapshot upstream en Old 3DS, con ambas pantallas, progreso exportable y actualizaciones desde consola.
 - Cada ID es estable para reportar avances: `MOV-07`, `GUI-03`, etc. No equivale a un movimiento/habilidad individual.
 - Una casilla sin marcar puede tener código parcial; el resumen de cada área indica lo existente. Marcarla solo con integración completa y evidencia ejecutada pertinente.
@@ -37,7 +37,7 @@ Estos son criterios de cierre, no cantidades de ataques o habilidades pendientes
 
 Prioridad de gameplay pendiente: completar el segundo Pokémon activo del jugador y el campo de cuatro actores (**TUR-05**), checks previos y cola dinámica de acciones (**TUR-01–04**), ampliar habilidades/movimientos (**HAB / MOV**) y cerrar Eternatus con persistencia (**FLU-09 / SAV-03**). Struggle por PP agotados y guardado del campo actual de tres actores ya tienen rutas conectadas; no cubren todos los contextos. Las regresiones de replay y restauración se verifican en la suite FirstRunRuntime; consultar resultados vigentes en MIGRATION_STATUS.md.
 
-Prioridad visual actual: validar en runtime el catálogo completo convertido y su selección de apariencias desbloqueadas; comprobar tipografía, recortes, cursor y distribución de todos los submenús. Quedan adaptación de escalas fraccionales de fondos y validación de la composición del entrenador; intro completa paginada implementada sin validación nativa. La generación/conversión de assets continúa autorizada. Compilación, tests que compilan y Azahar están aplazados por la última instrucción del usuario.
+Prioridad visual actual: validar en runtime el catálogo completo convertido y su selección de apariencias desbloqueadas; comprobar tipografía, recortes, cursor y distribución de todos los submenús. Fondos de batalla/título y bases estáticas/animadas preparados offline con nearest y dibujados 1:1; quedan validación GPU de esos rasters y composición del entrenador; intro completa paginada implementada sin validación nativa. La generación/conversión de assets continúa autorizada. Compilación, tests que compilan y Azahar están aplazados por la última instrucción del usuario.
 
 ## Estado consolidado para seguimiento
 
@@ -809,3 +809,5 @@ La búsqueda del índice generado usa búsqueda binaria sobre identidades ordena
 
 - [x] Capas animadas de arena: 32/32 frames originales de `end_a` y `end_b` reconstruidos, adaptados nearest, recortados y reempaquetados; metadata P3ATLAS1 regenerada y provenance de frames originales conservada. Comparación pixel a pixel por frame y metadata binaria PASS. Todos los fondos y bases de arena ahora se dibujan a raster 1:1.
 - [ ] Comparación visual y ejecución GPU de los nuevos atlas pendiente; ritmo 12 FPS conservado, sin compilación ni Azahar. El remuestreo offline 1.25× conserva pixels de origen no uniformes.
+
+- [x] Reproducibilidad de arena: segunda conversión de fondos y capas compara 158 hashes de reportes, cabeceras, texturas y metadata; todos idénticos (`test/arena_conversion_determinism_tests.py`). Guards de raster 1:1 y selección de recursos PASS. Esto no valida salida Citro2D.
