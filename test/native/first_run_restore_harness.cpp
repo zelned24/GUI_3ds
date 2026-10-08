@@ -6258,9 +6258,45 @@ static int checkPresentationExperienceLevelCap() {
     return 0;
 }
 
+static int checkOwnedEggProgressRestore() {
+    using namespace Pokerogue3DS;
+    NativeRunSave saved{};
+    if (makeNativeRunSetupSave(123, 1, saved) != NativeSaveResult::Ok) return 11201;
+    saved.eggProgressGeneration = 17;
+    NativeEggProgressState state{};
+    state.generation = 17;
+    state.unlockPityResolved = true;
+    state.vouchers[0] = 3;
+    state.unlockPity[0] = 2;
+    EggIncubationRecord egg{};
+    egg.id = 101;
+    egg.speciesDex = 1;
+    egg.hatchWaves = 10;
+    FirstRunRuntime runtime(123);
+    if (!runtime.restoreNativeRunSave(saved, nullptr, 0, nullptr, &egg, 1, &state)
+        || !runtime.eggInventoryReady() || runtime.eggInventoryCount() != 1
+        || !runtime.eggAt(0) || runtime.eggAt(1)
+        || runtime.eggProgressState().vouchers[0] != 3) return 11202;
+    egg.hatchWaves = 1;
+    state.vouchers[0] = 99;
+    if (runtime.eggAt(0)->hatchWaves != 10
+        || runtime.eggProgressState().vouchers[0] != 3) return 11203;
+    NativeRunSave captured{};
+    if (runtime.captureNativeRunSave(captured) != NativeSaveResult::Ok || captured.eggProgressGeneration != 17) return 11204;
+    if (runtime.restoreNativeRunSave(saved)) return 11205;
+    state.generation = 18;
+    if (runtime.restoreNativeRunSave(saved, nullptr, 0, nullptr, &egg, 1, &state)) return 11206;
+    state.generation = 17;
+    EggIncubationRecord duplicate[] = {egg, egg};
+    if (runtime.restoreNativeRunSave(saved, nullptr, 0, nullptr, duplicate, 2, &state)
+        || runtime.eggInventoryCount() != 1 || runtime.eggAt(0)->hatchWaves != 10) return 11207;
+    return 0;
+}
+
 extern "C" int runFirstRunRestoreChecks() {
     struct Check { const char* name; int (*run)(); };
     const Check checks[] = {
+        {"checkOwnedEggProgressRestore", checkOwnedEggProgressRestore},
         {"checkIndependentEncounterReplay", checkIndependentEncounterReplay},
         {"checkSetupCatalogNavigation", checkSetupCatalogNavigation},
         {"checkBattleFleeMechanicsAndRestrictions", checkBattleFleeMechanicsAndRestrictions},

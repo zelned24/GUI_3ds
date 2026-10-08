@@ -15,9 +15,17 @@ assert(frontend.includes('kConfirmationYesRect.contains'));
 assert(frontend.includes('renderer.drawWindow(kConfirmationYesRect.x'));
 assert(frontend.includes('kConfirmationNoRect.contains'));
 assert(frontend.includes('renderer.drawWindow(kConfirmationNoRect.x'));
-assert(main.includes('progress.readBundleCandidate'));
-assert(main.includes('progressReplay().restoreNativeRunSave'));
-assert(main.includes('progress.commitImported'));
+const progressRuntime=await fs.readFile(new URL('../project/src/game/FirstRunRuntime.cpp',import.meta.url),'utf8');
+const bridgeSource=await fs.readFile(new URL('../project/src/runtime/QuickJSBridge.cpp',import.meta.url),'utf8');
+assert.equal(main.split('progressReplay().validateAndImportNativeProgress').length-1,2);
+assert(bridgeSource.includes('m_progressReplay->validateAndImportNativeProgress'));
+assert(progressRuntime.includes('store.readBundleCandidate(storage,PokerogueContent::kContentHash'));
+assert(progressRuntime.includes('restoreNativeRunSave(candidate,profileStaging,profileCount,&policy'));
+assert(progressRuntime.includes('store.commitImported(candidate,profileStaging,profileCount,eggs.get(),eggCount,state)'));
+assert(main.includes('NativeProgressStore progress(saves, profiles, eggProgress)'));
+assert(progressRuntime.includes('eggStore->load(PokerogueContent::kContentHash, view, saved.eggProgressGeneration)'));
+assert(progressRuntime.includes('decodeNativeEggInventory(view.inventoryBytes, view.inventorySize'));
+
 assert(main.includes('loaded=saves.load(PokerogueContent::kContentHash,restored)'));
 console.log('PASS frontend source guards: UTF-8 and import/export wiring; native execution pending');
 

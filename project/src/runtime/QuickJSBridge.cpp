@@ -599,14 +599,8 @@ bool QuickJSBridge::processPendingAction() {
                     status = m_progress->exportBundle(*m_bundleStorage, PokerogueContent::kContentHash,
                         m_bundleWorkspace, m_bundleCapacity, m_profileStaging, m_profileCapacity);
             } else if (m_saves && m_profiles && m_friendshipPolicy && m_progressReplay && m_progressReplay != m_game) {
-                size_t count = 0;
-                status = m_progress->readBundleCandidate(*m_bundleStorage, PokerogueContent::kContentHash,
-                    m_bundleWorkspace, m_bundleCapacity, save, m_profileStaging, m_profileCapacity, count);
-                if (status == NativeSaveResult::Ok && !m_progressReplay->restoreNativeRunSave(
-                        save, m_profileStaging, count, m_friendshipPolicy))
-                    status = NativeSaveResult::InvalidRecord;
-                if (status == NativeSaveResult::Ok)
-                    status = m_progress->commitImported(save, m_profileStaging, count);
+                status = m_progressReplay->validateAndImportNativeProgress(*m_progress,*m_bundleStorage,
+                    m_bundleWorkspace,m_bundleCapacity,save,m_profileStaging,m_profileCapacity,*m_friendshipPolicy);
                 if (status == NativeSaveResult::Ok)
                     status = m_game->loadNativeProgress(*m_saves, *m_profiles, m_profileStaging,
                         m_profileCapacity, *m_friendshipPolicy, &save);

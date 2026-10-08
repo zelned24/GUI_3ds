@@ -10,6 +10,7 @@
 #include "game/PokerogueModifierReward.hpp"
 #include "storage/NativeRunSave.hpp"
 #include "storage/NativeStarterCandyProfile.hpp"
+#include "storage/NativeEggProgress.hpp"
 #include <cstdint>
 #include <array>
 #include <string>
@@ -136,10 +137,23 @@ public:
     }
     NativeSaveResult captureNativeRunSave(NativeRunSave& output) const;
     bool restoreNativeRunSave(const NativeRunSave& save, const NativeStarterCandyRecord* records = nullptr,
-        size_t count = 0, const PokemonFriendshipPolicy* policy = nullptr);
+        size_t count = 0, const PokemonFriendshipPolicy* policy = nullptr,
+        const EggIncubationRecord* eggs = nullptr,size_t eggCount = 0,const NativeEggProgressState* eggProgress = nullptr);
     NativeSaveResult loadNativeProgress(NativeRunSaveStore& runs, NativeStarterCandyStore& profiles,
         NativeStarterCandyRecord* staging, size_t capacity, const PokemonFriendshipPolicy& policy,
         NativeRunSave* loadedRun = nullptr);
+    NativeSaveResult loadNativeProgress(NativeProgressStore& store,NativeStarterCandyRecord* staging,size_t capacity,
+        EggIncubationRecord* eggStaging,size_t eggCapacity,const PokemonFriendshipPolicy& policy,NativeRunSave* loadedRun=nullptr);
+    // Called on the isolated replay runtime; reload the live runtime after success.
+    NativeSaveResult validateAndImportNativeProgress(NativeProgressStore& store,
+        NativeProgressBundleStorage& storage, char* workspace, size_t workspaceSize,
+        NativeRunSave& candidate, NativeStarterCandyRecord* profileStaging,
+        size_t profileCapacity, const PokemonFriendshipPolicy& policy);
+    bool initializeFreshEggProgress();
+    bool eggInventoryReady() const {return m_eggProgressReady;}
+    size_t eggInventoryCount() const {return m_eggProgressReady ? m_eggCount : 0;}
+    const EggIncubationRecord* eggAt(size_t index) const {return m_eggProgressReady && index<m_eggCount ? &m_eggs[index] : nullptr;}
+    const NativeEggProgressState& eggProgressState() const {return m_eggProgress;}
     bool initializeFreshStarterProfile(const PokemonFriendshipPolicy& policy);
     bool restoreStarterCandyProfile(const NativeStarterCandyRecord* records, size_t count,
         uint32_t generation, const PokemonFriendshipPolicy& policy);
@@ -329,6 +343,7 @@ private:
     bool resolveStarterFromDex(uint16_t dex, PokerogueRngAdapter& rng, ResolvedPokemon& output);
     void resolve(bool carryPlayer = false, const char* checkpointBiomeId = nullptr);
     bool restoreNativeRunSaveInPlace(const NativeRunSave& save);
+    bool restoreEggProgressInPlace(const NativeEggProgressState& state,const EggIncubationRecord* eggs,size_t count);
     bool grantVictoryExperience(bool pokemonDefeated = true, uint8_t enemyMask = 0);
     void advanceProgressionQueue();
     ResolvedPokemon& progressionPokemonMutable();
@@ -407,6 +422,10 @@ private:
     uint16_t m_setupCursorDex = 0;
     uint32_t m_starterProfileGeneration = 0;
     bool m_starterProfileReady = false;
+    NativeEggProgressState m_eggProgress{};
+    bool m_eggProgressReady=false;
+    size_t m_eggCount=0;
+    std::array<EggIncubationRecord,kEggGachaInventoryLimit> m_eggs{};
     size_t m_starterProfileCount = 0;
     std::array<NativeStarterCandyRecord, PokerogueContent::kSpeciesCount> m_starterProfileRecords{};
     PokemonFriendshipPolicy m_starterFriendshipPolicy{};

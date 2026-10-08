@@ -1090,3 +1090,11 @@ La búsqueda del índice generado usa búsqueda binaria sobre identidades ordena
 - [ ] Export coordinado completo: exportBundle elige P3PROG02 si la partida referencia huevos, lee esa generación exacta, conserva bytes validados y verifica el archivo escrito por comparación/readback/inspección. Workspace acotado y separado de journals; ruta de import antigua rechaza triple explícitamente. Gate nativo de journal real simulado a bundle con vouchers/pity escrito, sin ejecutar. Import triple, SD/UI/runtime pendientes.
 
 - [ ] Import completo en coordinador: overload de readBundleCandidate prepara run/perfil/huevos en staging y publica después de checksum/referencias/capacidades; commitImported rebasa ambos IDs a journals locales conservando metadata y caller intacto en fallo. Ledger legacy sin unlockPity conocido requiere migración explícita, no ceros inventados. Gate nativo de corrupción sin publicación, rebase a journals nuevos y lectura completa escrito, sin ejecutar. Replay runtime, UI/SD y verificación nativa pendientes.
+
+### Inventario de huevos en el runtime
+
+- [ ] Verificar restauración con inventario propio, referencia de generación y contadores de vouchers/pity; implementación añadida y prueba `checkOwnedEggProgressRestore` pendiente de ejecución.
+- [ ] Verificar en ejecución el journal de huevos conectado en `main.cpp`, la carga común de menús/QuickJS y la importación conjunta con replay aislado; conexión implementada, pruebas nativas pendientes.
+- [ ] Conectar incubación, gacha y eclosión a las fases reales y a sus submenús.
+
+La compilación ARM solicitada terminó correctamente; no prueba ejecución de huevos ni fidelidad visual en Azahar.

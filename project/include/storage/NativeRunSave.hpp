@@ -281,6 +281,7 @@ public:
     // Borrowed profile journal; host binds before SD/QuickJS operations.
     void bindStarterProfiles(NativeStarterCandyStore& profiles) { m_profiles = &profiles; }
     void bindEggProgress(NativeEggProgressStore& eggs) { m_eggs = &eggs; }
+    NativeEggProgressStore* eggProgressStore() const { return m_eggs; }
     NativeSaveResult load(const char* contentHash, NativeRunSave& output);
     NativeSaveResult save(const NativeRunSave& value);
     NativeSaveResult deleteSave();

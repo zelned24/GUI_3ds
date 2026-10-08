@@ -501,6 +501,7 @@ NativeSaveResult FirstRunRuntime::captureNativeRunSave(NativeRunSave& output) co
     value.persistentModifierCount = static_cast<uint16_t>(m_persistentModifierCount);
     for (size_t i = 0; i < m_persistentModifierCount; ++i) value.persistentModifiers[i] = m_persistentModifiers[i];
     value.starterProfileGeneration = m_starterProfileGeneration;
+    value.eggProgressGeneration=m_eggProgressReady ? m_eggProgress.generation : 0;
     if (!m_runStarted && m_context.playerPartyCount > 1) {
         if (m_context.playerPartyCount > 6) { output = {}; return NativeSaveResult::InvalidRecord; }
         value.setupStarterCount = m_context.playerPartyCount;
@@ -832,9 +833,14 @@ NativeSaveResult FirstRunRuntime::saveNativeProgress(NativeProgressStore& store)
     auto& snapshot = *snapshotStorage;
     const auto captured = captureNativeRunSave(snapshot);
     if (captured != NativeSaveResult::Ok) return captured;
-    const auto status = store.commit(snapshot, m_starterProfileRecords.data(), m_starterProfileCount);
+    if(m_eggProgressReady && !m_eggProgress.unlockPityResolved) return NativeSaveResult::UnsupportedVersion;
+    const auto status=m_eggProgressReady
+        ? store.commit(snapshot,m_starterProfileRecords.data(),m_starterProfileCount,m_eggs.data(),m_eggCount,
+            m_eggProgress.vouchers,m_eggProgress.pity,m_eggProgress.unlockPity)
+        : store.commit(snapshot,m_starterProfileRecords.data(),m_starterProfileCount);
     if (status != NativeSaveResult::Ok) return status;
     m_starterProfileGeneration = snapshot.starterProfileGeneration;
+    if(m_eggProgressReady) m_eggProgress.generation=snapshot.eggProgressGeneration;
     return NativeSaveResult::Ok;
 }
 
@@ -857,13 +863,90 @@ NativeSaveResult FirstRunRuntime::loadNativeProgress(NativeRunSaveStore& runs,
         status = NativeSaveResult::Ok;
     }
     if (status != NativeSaveResult::Ok) return status;
-    if (!restoreNativeRunSave(saved, staging, count, &policy)) return NativeSaveResult::InvalidRecord;
+    NativeEggProgressState eggState{};
+    std::unique_ptr<EggIncubationRecord[]> eggs;
+    size_t eggCount = 0;
+    if (saved.eggProgressGeneration) {
+        auto* eggStore = runs.eggProgressStore();
+        if (!eggStore) return NativeSaveResult::InvalidRecord;
+        NativeEggProgressView view{};
+        status = eggStore->load(PokerogueContent::kContentHash, view, saved.eggProgressGeneration);
+        if (status != NativeSaveResult::Ok) return status;
+        if (view.eggCount > kEggGachaInventoryLimit) return NativeSaveResult::TooLarge;
+        eggState = static_cast<const NativeEggProgressState&>(view);
+        if (view.eggCount) {
+            eggs.reset(new (std::nothrow) EggIncubationRecord[view.eggCount]{});
+            if (!eggs) return NativeSaveResult::MemoryUnavailable;
+            status = decodeNativeEggInventory(view.inventoryBytes, view.inventorySize,
+                eggs.get(), view.eggCount, eggCount);
+            if (status != NativeSaveResult::Ok) return status;
+        }
+    }
+    if (!restoreNativeRunSave(saved, staging, count, &policy, eggs.get(), eggCount,
+            saved.eggProgressGeneration ? &eggState : nullptr)) return NativeSaveResult::InvalidRecord;
     if (loadedRun) *loadedRun = saved;
     return NativeSaveResult::Ok;
 }
 
+bool FirstRunRuntime::restoreEggProgressInPlace(const NativeEggProgressState& state,const EggIncubationRecord* eggs,size_t count) {
+    if(count>m_eggs.size() || (count && !eggs)) return false;
+    for(const auto counter:state.unlockPity)
+        if(counter>kEggUnlockPityCap || (!state.unlockPityResolved && counter)) return false;
+    if(!state.generation && !state.unlockPityResolved) {
+        if(count || state.pity.common || state.pity.rare || state.pity.epic || state.pity.legendary) return false;
+        for(const auto vouchers:state.vouchers) if(vouchers) return false;
+    }
+    for(size_t i=0;i<count;++i) {
+        if(validateEggIncubationRecord(eggs[i])!=EggIncubationResult::Ok) return false;
+        for(size_t j=0;j<i;++j) if(eggs[i].id==eggs[j].id) return false;
+    }
+    for(size_t i=0;i<count;++i) m_eggs[i]=eggs[i];
+    for(size_t i=count;i<m_eggs.size();++i) m_eggs[i]={};
+    m_eggCount=count;m_eggProgress=state;
+    m_eggProgressReady=state.generation || state.unlockPityResolved;
+    return true;
+}
+NativeSaveResult FirstRunRuntime::validateAndImportNativeProgress(NativeProgressStore& store,
+    NativeProgressBundleStorage& storage,char* workspace,size_t workspaceSize,
+    NativeRunSave& candidate,NativeStarterCandyRecord* profileStaging,
+    size_t profileCapacity,const PokemonFriendshipPolicy& policy) {
+    std::unique_ptr<EggIncubationRecord[]> eggs(new(std::nothrow) EggIncubationRecord[kEggGachaInventoryLimit]{});
+    if(!eggs) return NativeSaveResult::MemoryUnavailable;
+    NativeEggProgressState state{};
+    size_t profileCount=0,eggCount=0;
+    auto result=store.readBundleCandidate(storage,PokerogueContent::kContentHash,
+        workspace,workspaceSize,candidate,profileStaging,profileCapacity,profileCount,
+        eggs.get(),kEggGachaInventoryLimit,eggCount,state);
+    if(result!=NativeSaveResult::Ok) return result;
+    if(!restoreNativeRunSave(candidate,profileStaging,profileCount,&policy,
+        eggs.get(),eggCount,&state)) return NativeSaveResult::InvalidRecord;
+    return candidate.eggProgressGeneration
+        ? store.commitImported(candidate,profileStaging,profileCount,eggs.get(),eggCount,state)
+        : store.commitImported(candidate,profileStaging,profileCount);
+}
+
+bool FirstRunRuntime::initializeFreshEggProgress() {
+    if(m_eggProgressReady || !m_starterProfileReady || m_starterProfileGeneration || m_runStarted) return false;
+    NativeEggProgressState fresh{};fresh.unlockPityResolved=true;
+    return restoreEggProgressInPlace(fresh,nullptr,0);
+}
+NativeSaveResult FirstRunRuntime::loadNativeProgress(NativeProgressStore& store,NativeStarterCandyRecord* staging,size_t capacity,
+    EggIncubationRecord* eggStaging,size_t eggCapacity,const PokemonFriendshipPolicy& policy,NativeRunSave* loadedRun) {
+    std::unique_ptr<NativeRunSave> saved(new(std::nothrow) NativeRunSave{});
+    if(!saved) return NativeSaveResult::MemoryUnavailable;
+    size_t count=0,eggCount=0;NativeEggProgressState state{};
+    const auto status=store.load(PokerogueContent::kContentHash,*saved,staging,capacity,count,eggStaging,eggCapacity,eggCount,state);
+    if(status!=NativeSaveResult::Ok) return status;
+    if(!restoreNativeRunSave(*saved,staging,count,&policy,eggStaging,eggCount,&state)) return NativeSaveResult::InvalidRecord;
+    if(loadedRun) *loadedRun=*saved;
+    return NativeSaveResult::Ok;
+}
+
 bool FirstRunRuntime::restoreNativeRunSave(const NativeRunSave& save,
-    const NativeStarterCandyRecord* records, size_t count, const PokemonFriendshipPolicy* policy) {
+    const NativeStarterCandyRecord* records, size_t count, const PokemonFriendshipPolicy* policy,
+    const EggIncubationRecord* eggs,size_t eggCount,const NativeEggProgressState* eggProgress) {
+    if((save.eggProgressGeneration && !eggProgress) || (eggCount && !eggProgress)
+        || (eggProgress && eggProgress->generation!=save.eggProgressGeneration)) return false;
     if (validateNativeRunSave(save, PokerogueContent::kContentHash) != NativeSaveResult::Ok)
         return false;
     // The codec preserves Berry arguments, but battle consumption is not yet
@@ -910,6 +993,7 @@ bool FirstRunRuntime::restoreNativeRunSave(const NativeRunSave& save,
         const size_t starterCount = save.setupStarterCount ? save.setupStarterCount : 1;
         if (!candidate.restoreStarterTeamSetup(save.seed, dexes, starterCount)) return false;
     }
+    if(eggProgress && !candidate.restoreEggProgressInPlace(*eggProgress,eggs,eggCount)) return false;
     *this = candidate;
     // Scene nodes and text pointers belong to their runtime instance. Rebuild
     // after committing so none point at the temporary candidate's storage.

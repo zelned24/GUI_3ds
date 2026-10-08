@@ -109,7 +109,13 @@ int main() {
     Pokerogue3DS::SdNativeStarterCandyStorage profileStorage;
     Pokerogue3DS::NativeStarterCandyStore profiles(profileStorage, profileScratch, sizeof(profileScratch));
     saves.bindStarterProfiles(profiles);
-    Pokerogue3DS::NativeProgressStore progress(saves, profiles);
+    // Egg journal scratch also stays outside the small ARM11 thread stack.
+    static constexpr size_t eggSlotCapacity = 8192;
+    static char eggScratch[2 * eggSlotCapacity]{};
+    Pokerogue3DS::SdNativeEggProgressStorage eggStorage;
+    Pokerogue3DS::NativeEggProgressStore eggProgress(eggStorage, eggScratch,
+        sizeof(eggScratch), eggSlotCapacity);
+    Pokerogue3DS::NativeProgressStore progress(saves, profiles, eggProgress);
     static char bundleScratch[2 * Pokerogue3DS::kNativeProgressBundleMaxBytes]{};
     static Pokerogue3DS::NativeStarterCandyRecord profileStaging[PokerogueContent::kSpeciesCount]{};
     Pokerogue3DS::PokemonFriendshipPolicy offlineFriendship{};
@@ -135,6 +141,7 @@ int main() {
             PokerogueContent::kSpeciesCount, count, generation);
         if (profileLoaded == Pokerogue3DS::NativeSaveResult::NotFound) {
             profileLoaded = game.initializeFreshStarterProfile(offlineFriendship)
+                && game.initializeFreshEggProgress()
                 ? Pokerogue3DS::NativeSaveResult::Ok : Pokerogue3DS::NativeSaveResult::InvalidRecord;
         } else if (profileLoaded == Pokerogue3DS::NativeSaveResult::Ok &&
             !game.restoreStarterCandyProfile(profileStaging, count, 0, offlineFriendship)) {
@@ -268,12 +275,9 @@ int main() {
                 }
             }
             else if(command==Pokerogue3DS::FrontendCommand::ImportProgress) {
-                std::size_t count=0;
-                auto result=progress.readBundleCandidate(saveStorage,PokerogueContent::kContentHash,
-                    bundleScratch,sizeof(bundleScratch),restored,profileStaging,PokerogueContent::kSpeciesCount,count);
-                if(result==Pokerogue3DS::NativeSaveResult::Ok && !progressReplay().restoreNativeRunSave(
-                    restored,profileStaging,count,&offlineFriendship)) result=Pokerogue3DS::NativeSaveResult::InvalidRecord;
-                if(result==Pokerogue3DS::NativeSaveResult::Ok) result=progress.commitImported(restored,profileStaging,count);
+                auto result=progressReplay().validateAndImportNativeProgress(progress,saveStorage,
+                    bundleScratch,sizeof(bundleScratch),restored,profileStaging,
+                    PokerogueContent::kSpeciesCount,offlineFriendship);
                 if(result==Pokerogue3DS::NativeSaveResult::Ok) {
                     result=game.loadNativeProgress(saves,profiles,profileStaging,
                         PokerogueContent::kSpeciesCount,offlineFriendship,&restored);
@@ -746,15 +750,9 @@ int main() {
                         bundleScratch, sizeof(bundleScratch), profileStaging, PokerogueContent::kSpeciesCount);
             } else {
                 if (pressed & KEY_R) {
-                    size_t count = 0;
-                    result = progress.readBundleCandidate(saveStorage, PokerogueContent::kContentHash,
-                        bundleScratch, sizeof(bundleScratch), restored, profileStaging,
-                        PokerogueContent::kSpeciesCount, count);
-                    if (result == NativeSaveResult::Ok && !progressReplay().restoreNativeRunSave(
-                            restored, profileStaging, count, &offlineFriendship))
-                        result = NativeSaveResult::InvalidRecord;
-                    if (result == NativeSaveResult::Ok)
-                        result = progress.commitImported(restored, profileStaging, count);
+                    result = progressReplay().validateAndImportNativeProgress(progress,saveStorage,
+                        bundleScratch,sizeof(bundleScratch),restored,profileStaging,
+                        PokerogueContent::kSpeciesCount,offlineFriendship);
                 }
                 if (result == NativeSaveResult::Ok) result = game.loadNativeProgress(saves, profiles,
                     profileStaging, PokerogueContent::kSpeciesCount, offlineFriendship, &restored);
