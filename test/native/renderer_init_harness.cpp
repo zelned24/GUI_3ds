@@ -316,6 +316,17 @@ int main() {
         {
             Pokerogue3DS::PokemonIconPresenter compact(true);
             const int loadsBefore=compactIconLoads,normalBefore=iconLoads,freeBefore=sheetFree;
+            renderer.beginFrame();renderer.beginBottom();
+            const auto& first=Pokerogue3DS::kPokemonIcons[0];
+            assert(!compact.draw(renderer,first.dex,first.formIndex,NAN,0));
+            assert(!compact.draw(renderer,first.dex,first.formIndex,0,INFINITY));
+            assert(!compact.draw(renderer,first.dex,first.formIndex,0,0,NAN));
+            assert(!compact.draw(renderer,first.dex,first.formIndex,0,0,0));
+            assert(!compact.draw(renderer,first.dex,first.formIndex,0,0,1,NAN));
+            assert(!compact.draw(renderer,first.dex,first.formIndex,0,0,1,0));
+            assert(!compact.draw(renderer,first.dex,first.formIndex,0,0,1,-1));
+            assert(compactIconLoads==loadsBefore);
+            renderer.endFrame();
             for(unsigned frame=0;frame<2;++frame) {
                 renderer.beginFrame();renderer.beginBottom();
                 for(unsigned page=0;page<iconPageCount;++page) {

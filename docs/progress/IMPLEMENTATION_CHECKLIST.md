@@ -846,3 +846,5 @@ La búsqueda del índice generado usa búsqueda binaria sobre identidades ordena
 - [ ] Aprendizaje de movimientos: máximo de líneas calculado con ink height y line feed reales dentro del botón, evitando tercera línea fuera de la región. Fallback fitted cuando no cabe; casos de límites/no finitos escritos sin ejecutar, guards PASS. Comparación visual pendiente.
 
 - [ ] Recompensas sobre movimientos: nombres localizados mediante ID canónico (antes nombre upstream sin locale), cursor usa raster real tras ajuste de ancho. Cabecera/destinatario/instrucciones limitados a su región. Guards PASS; prueba nativa y visual pendientes.
+
+- [ ] Iconos: coordenadas/opacity/escala no finitas y escalas no positivas rechazadas antes de cargar texturas; opacity limitada a 1. Casos nativos escritos para ausencia de I/O en entradas inválidas, sin ejecutar.

@@ -2,6 +2,8 @@
 #include "gfx/renderer2d.hpp"
 #include "content/PokemonIcons.hpp"
 #include "content/CompactPokemonIcons.hpp"
+#include <cmath>
+#include <algorithm>
 namespace Pokerogue3DS {
 inline constexpr std::size_t kPokemonIconCount=sizeof(kPokemonIcons)/sizeof(kPokemonIcons[0]);
 inline constexpr bool pokemonIconIndexOrdered() {
@@ -34,6 +36,9 @@ public:
     ~PokemonIconPresenter() {clear();}
     void clear(Renderer2D* renderer=nullptr) {for(auto& slot:m_slots) {if(slot.sheet) {if(renderer) renderer->retireSpriteSheet(slot.sheet);else C2D_SpriteSheetFree(slot.sheet);}slot.sheet=nullptr;slot.page=0xffff;}}
     bool draw(Renderer2D& renderer,uint16_t dex,uint16_t formIndex,float x,float y,float opacity=1.0f,float scale=1.0f,uint32_t tint=0xffffffff) {
+        if(!std::isfinite(x) || !std::isfinite(y) || !std::isfinite(opacity) || opacity<=0 ||
+            !std::isfinite(scale) || scale<=0) return false;
+        opacity=std::min(opacity,1.0f);
         const auto* icon=findPokemonIcon(dex,formIndex);
         if(!icon || icon->page>=sizeof(kPokemonIconPages)/sizeof(kPokemonIconPages[0])) return false;
         if(m_compact && ((icon->x|icon->y|icon->width|icon->height)&1)) return false;
