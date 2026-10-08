@@ -5,11 +5,11 @@ ROOT=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT/'scripts'))
 from pixel_font import glyph_ink_bounds
 class UiFontCoverage(unittest.TestCase):
-    def test_non_ascii_ui_literals_have_ink_in_every_native_font(self):
+    def test_ui_literals_have_ink_in_every_native_font(self):
         files=[ROOT/'project/generated/include/content/RuntimeUiText.hpp',ROOT/'project/src/main.cpp']
         for directory in ['project/include/runtime','project/src/runtime']:
             files.extend(p for p in (ROOT/directory).rglob('*') if p.suffix in ['.hpp','.cpp'])
-        chars={'>'}
+        chars={chr(i) for i in range(33,127)}
         for p in files:
             for literal in re.findall(r'"([^"\n]*)"',p.read_text(encoding='utf-8')):
                 chars.update(c for c in literal if ord(c)>127 and not c.isspace())

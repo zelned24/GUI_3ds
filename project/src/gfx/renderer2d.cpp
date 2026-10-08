@@ -525,7 +525,9 @@ bool Renderer2D::drawWindow(float x,float y,float width,float height) {
 bool Renderer2D::drawTypeLabel(const char* type,float x,float y,float width,float height) {
 #if defined(__arm__) || defined(__3DS__) || defined(_3DS)
     const auto* row=Pokerogue3DS::findTypeLabel(type);
-    if(!m_initialized || !m_frameActive || !m_currentTarget || !row || width<=0 || height<=0) return false;
+    if(!m_initialized || !m_frameActive || !m_currentTarget || !row ||
+        !std::isfinite(x) || !std::isfinite(y) || !std::isfinite(width) || !std::isfinite(height) ||
+        width<row->frame.sourceWidth || height<row->frame.sourceHeight) return false;
     if(!m_typeLabels) m_typeLabels=C2D_SpriteSheetLoad(Pokerogue3DS::kTypeLabelPath);
     if(!m_typeLabels) return false;
     const auto image=C2D_SpriteSheetGetImage(m_typeLabels,0);
@@ -533,10 +535,9 @@ bool Renderer2D::drawTypeLabel(const char* type,float x,float y,float width,floa
         C2D_SpriteSheetFree(m_typeLabels);m_typeLabels=nullptr;return false;
     }
     C3D_TexSetFilter(image.tex,GPU_NEAREST,GPU_NEAREST);
-    float scale=width/row->frame.sourceWidth;
-    if(height/row->frame.sourceHeight<scale) scale=height/row->frame.sourceHeight;
-    if(scale>1) scale=1;
-    const float w=row->frame.sourceWidth*scale,h=row->frame.sourceHeight*scale;
+    // Type labels contain authored pixel glyphs: preserve every source texel.
+    // A smaller caller must choose native text instead of shrinking this raster.
+    const float w=row->frame.sourceWidth,h=row->frame.sourceHeight;
     drawAtlasFrame(image,row->frame,std::round(x+(width-w)/2),std::round(y+(height-h)/2),w,h);
     return true;
 #else

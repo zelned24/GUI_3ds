@@ -178,7 +178,14 @@ int main() {
             assert(renderer.drawTypeLabel(row.key,0,0,94,18));assert(imageScaleX==1 && imageScaleY==1);
         }
         assert(typeLoads==loaded);
-        assert(renderer.drawTypeLabel("Water",0,0,16,7));assert(imageScaleX==0.5f && imageScaleY==0.5f);
+        const int typeDrawsBefore=imageDraws,typeLoadsBefore=typeLoads;
+        assert(!renderer.drawTypeLabel("Water",0,0,16,7));
+        assert(!renderer.drawTypeLabel("Water",0,0,31,14));
+        assert(!renderer.drawTypeLabel("Water",0,0,32,13));
+        assert(!renderer.drawTypeLabel("Water",NAN,0,32,14));
+        assert(!renderer.drawTypeLabel("Water",0,INFINITY,32,14));
+        assert(!renderer.drawTypeLabel("Water",0,0,INFINITY,14));
+        assert(imageDraws==typeDrawsBefore && typeLoads==typeLoadsBefore);
         typeSub.width=31;assert(!renderer.drawTypeLabel("FIRE",0,0,32,14));typeSub.width=32;
         assert(renderer.drawTypeLabel("FIRE",0,0,32,14));
         assert(!renderer.drawHudTypeIcon("NONE",true,0,false,0,0));

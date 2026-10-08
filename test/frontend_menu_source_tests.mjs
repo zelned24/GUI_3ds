@@ -171,3 +171,7 @@ assert(setup.includes("m_introCinematic.clear(renderer)"));
 assert(hudSource.includes("renderer->retireSpriteSheet(sheet)"));
 
 assert(main.includes("renderer.beginFrame();\n    renderer.endFrame();\n    player.exit()"));
+
+const typeLabelDraw=rendererSource.slice(rendererSource.indexOf("bool Renderer2D::drawTypeLabel("),rendererSource.indexOf("bool Renderer2D::drawHudTypeIcon("));
+assert(typeLabelDraw.includes("width<row->frame.sourceWidth || height<row->frame.sourceHeight"));
+assert(!typeLabelDraw.includes("float scale="));

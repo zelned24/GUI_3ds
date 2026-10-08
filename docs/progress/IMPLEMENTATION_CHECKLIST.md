@@ -785,3 +785,7 @@ La búsqueda del índice generado usa búsqueda binaria sobre identidades ordena
 - [ ] HUD PS: tween visual conectado al reloj y a la identidad/lado de cada actor; duración `clamp(abs(lastHp-hp)*5,250,5000)`, `Sine.easeOut`, números `ceil(ratio*maxHp)` y barra recortada a píxeles enteros. Fuente pinned: `src/ui/battle-info/battle-info.ts::updatePokemonHp`, `player-battle-info.ts::onHpTweenUpdate`, `src/system/settings/default-settings.ts` (DEFAULT). Casos de daño/curación/interrupción y cadencias 15/30/60 escritos, sin ejecutar. Faltan espera de fases, ajustes persistentes de velocidad y comparación visual; no modifica los PS de gameplay.
 
 - [ ] Selector/HUD: limpieza explícita e iconos liberados mediante retirement GPU, drenado por SYNCDRAW antes de finalizar renderer. Guard de main/presenters PASS; caso de ownership del HUD escrito, sin ejecutar.
+
+- [ ] Etiquetas de tipos: raster original siempre 1:1, rechaza ventanas menores de su tamaño nativo y coordenadas/tamaños no finitos antes de cargar textura. Todos los consumidores actuales reservan al menos 32×14; casos de half-scale y límites reescritos para el nuevo contrato explícito, sin ejecutar. Guard de fuente PASS; apariencia nativa pendiente.
+
+- [x] Cobertura física de fuentes ampliada: ASCII imprimible completo y caracteres no ASCII de UI/catálogos tienen tinta en las cuatro fuentes `.bcfnt`; test de assets PASS. No prueba legibilidad, posiciones ni salida GPU.
