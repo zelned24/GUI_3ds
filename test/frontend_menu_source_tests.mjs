@@ -380,3 +380,11 @@ assert(windowDraw.includes('image.subtex->left>=image.subtex->right'));
 
 const utf8Abbreviation=await fs.readFile(new URL('../project/include/runtime/Utf8Abbreviation.hpp',import.meta.url),'utf8');
 assert.equal(utf8Abbreviation.split('uint32_t cp=0;if(!utf8CodePoint(out+start,cp) || !jsTrailingSpace(cp)) break;').length-1,2);
+
+assert(rewardPresentation.includes('const auto& claim=kRewardClaimButtonRect'));
+assert(rewardPresentation.includes('const auto& skip=kRewardSkipButtonRect'));
+assert(rewardPresentation.includes('claim.width-24'));
+assert(rewardPresentation.includes('skip.width-24'));
+assert(rewardPresentation.includes('cx+10,cardY+142,labelSize'));
+assert(rewardPresentation.includes('bounds.x+20,bounds.y+9,labelSize'));
+assert(!rewardPresentation.includes('renderer.drawText('));

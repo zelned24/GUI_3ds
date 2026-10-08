@@ -42,7 +42,7 @@ public:
 
         // Title header
         renderer.drawWindow(12.0f, 6.0f, 376.0f, 32.0f);
-        renderer.drawText("Elige una Recompensa", 24.0f, 12.0f, 0.46f, 0xffffffff);
+        renderer.drawTextFitted("Elige una Recompensa", 24.0f, 12.0f, 0.46f, 352.0f, 0xffffffff);
 
         const unsigned count = game.rewardChoiceCount();
         const float cardW = 118.0f;
@@ -99,8 +99,8 @@ public:
 
             // Selected indicator
             if (isSelected) {
-                m_cursor.drawCursor(renderer, cx + 10.0f, cardY + 142.0f, 0.30f);
-                renderer.drawText("ELEGIR", cx + 24.0f, cardY + 142.0f, 0.30f, 0xff70d8f0);
+                const float labelSize=renderer.drawTextFitted("ELEGIR",cx+24,cardY+142,0.30f,cardW-30,0xff70d8f0);
+                m_cursor.drawCursor(renderer,cx+10,cardY+142,labelSize);
             }
         }
     }
@@ -111,7 +111,7 @@ public:
 
         if(m_moveSelectMode) {
             renderer.drawWindow(16,6,288,30);
-            renderer.drawText("Elige el movimiento",28,11,0.38f,0xffffffff);
+            renderer.drawTextFitted("Elige el movimiento",28,11,0.38f,264,0xffffffff);
             const auto& field=game.presentation();
             if(m_partyPresenter.selected>=field.playerPartyCount) return;
             const auto& actor=m_partyPresenter.selected==field.activePlayerPartyIndex ? field.player : field.playerParty[m_partyPresenter.selected];
@@ -150,20 +150,20 @@ public:
             const auto& bounds=kRewardChoiceRects[i];
             renderer.drawWindow(bounds.x,bounds.y,bounds.width,bounds.height);
             char label[24];std::snprintf(label,sizeof(label),"%u",i+1);
-            renderer.drawText(label,bounds.x+38,bounds.y+9,0.40f,0xffffffff);
-            if(i==game.selectedRewardChoice()) m_cursor.drawCursor(renderer,bounds.x+20,bounds.y+9,0.40f);
+            const float labelSize=renderer.drawTextFitted(label,bounds.x+38,bounds.y+9,0.40f,bounds.width-44,0xffffffff);
+            if(i==game.selectedRewardChoice()) m_cursor.drawCursor(renderer,bounds.x+20,bounds.y+9,labelSize);
         }
         renderer.drawTextFitted("D-Pad o táctil: elegir recompensa",20,108,0.34f,280,0xffd0c0d8);
         renderer.drawTextFitted("A: seleccionar   B: omitir",20,135,0.34f,280,0xff80ffff);
 
-        // Clean action buttons on Bottom Screen
-        // Left: A: Elegir (TouchRect{16, 170, 136, 54})
-        renderer.drawWindow(16.0f, 170.0f, 136.0f, 54.0f);
-        renderer.drawText("A: Elegir", 44.0f, 188.0f, 0.42f, 0xff70d8f0);
-
-        // Right: B: Omitir (TouchRect{168, 170, 136, 54})
-        renderer.drawWindow(168.0f, 170.0f, 136.0f, 54.0f);
-        renderer.drawText("B: Omitir", 198.0f, 188.0f, 0.42f, 0xfff08080);
+        // Draw and touch use the same action geometry. Fit to complete native
+        // font rasters; the label cannot bleed into the neighboring button.
+        const auto& claim=kRewardClaimButtonRect;
+        renderer.drawWindow(claim.x,claim.y,claim.width,claim.height);
+        renderer.drawTextFitted("A: Elegir",claim.x+12,claim.y+18,0.42f,claim.width-24,0xff70d8f0);
+        const auto& skip=kRewardSkipButtonRect;
+        renderer.drawWindow(skip.x,skip.y,skip.width,skip.height);
+        renderer.drawTextFitted("B: Omitir",skip.x+12,skip.y+18,0.42f,skip.width-24,0xfff08080);
         renderer.drawTextFitted(game.battleFeedback().c_str(),16,226,0.24f,288,0xffffffff);
     }
 
