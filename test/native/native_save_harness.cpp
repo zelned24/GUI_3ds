@@ -502,6 +502,18 @@ extern "C" int runNativeSaveChecks() {
         profileDisk.failBeforeWrite=false;
         if(all.commit(snapshot,&record,1,&egg,1,vouchers,pity,unlock)!=NativeSaveResult::Ok
             || !snapshot.starterProfileGeneration || snapshot.eggProgressGeneration!=2) return 1311;
+        NativeStarterCandyRecord loadedProfile{};EggIncubationRecord loadedEgg{};NativeEggProgressState loadedState{};
+        size_t loadedProfiles=999,loadedEggs=999;
+        if(all.load(PokerogueContent::kContentHash,restored,&loadedProfile,1,loadedProfiles,&loadedEgg,1,loadedEggs,loadedState)
+            !=NativeSaveResult::Ok || loadedProfiles!=1 || loadedEggs!=1 || loadedProfile.speciesDex!=1
+            || loadedEgg.speciesDex!=4 || !loadedState.unlockPityResolved || loadedState.unlockPity[1]!=9
+            || loadedState.generation!=snapshot.eggProgressGeneration) return 1317;
+        loadedProfiles=999;loadedEggs=999;loadedProfile.speciesDex=777;loadedState.generation=777;
+        if(all.load(PokerogueContent::kContentHash,restored,&loadedProfile,1,loadedProfiles,nullptr,0,loadedEggs,loadedState)
+            !=NativeSaveResult::TooLarge || loadedProfiles!=999 || loadedEggs!=999
+            || loadedProfile.speciesDex!=777 || loadedState.generation!=777) return 1318;
+        if(all.load(PokerogueContent::kContentHash,restored,&loadedProfile,1,loadedProfiles)
+            !=NativeSaveResult::UnsupportedVersion || loadedProfiles!=999) return 1319;
         const uint32_t committedProfile=snapshot.starterProfileGeneration,committedEgg=snapshot.eggProgressGeneration;
         vouchers[0]=2;runDisk.interrupt=true;
         if(all.commit(snapshot,&record,1,&egg,1,vouchers,pity,unlock)!=NativeSaveResult::IoError

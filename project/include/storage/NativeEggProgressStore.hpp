@@ -8,6 +8,9 @@ class NativeEggProgressStore {
 public:
     NativeEggProgressStore(NativeSaveStorage& storage,char* scratch,size_t capacity,size_t slotCapacity)
         :m_storage(storage),m_scratch(scratch),m_capacity(capacity),m_slotCapacity(slotCapacity) {}
+    bool overlapsWorkspace(const void* bytes,size_t size) const {
+        return StarterCandyProfileCodec::overlaps(m_scratch,m_capacity,bytes,size);
+    }
     NativeSaveResult load(const char* hash,NativeEggProgressView& output,uint32_t generation=0) {
         if(m_scratch && StarterCandyProfileCodec::overlaps(m_scratch,m_capacity,&output,sizeof(output)))
             return NativeSaveResult::InvalidRecord;

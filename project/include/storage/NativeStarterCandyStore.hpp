@@ -9,6 +9,9 @@ public:
     NativeStarterCandyStore(NativeSaveStorage& storage, char* scratch, size_t capacity)
         : m_storage(storage), m_scratch(scratch), m_capacity(capacity) {}
 
+    bool overlapsWorkspace(const void* bytes,size_t size) const {
+        return StarterCandyProfileCodec::overlaps(m_scratch,m_capacity,bytes,size);
+    }
     NativeSaveResult load(const char* hash, uint16_t limit, NativeStarterCandyRecord* records,
         size_t capacity, size_t& count, uint32_t& generation) {
         if (records && capacity && m_scratch && StarterCandyProfileCodec::overlaps(records,

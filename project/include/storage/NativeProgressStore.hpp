@@ -28,6 +28,7 @@ public:
         auto status = m_runs.load(hash, candidate);
         if (status != NativeSaveResult::Ok) return status;
         if (!candidate.starterProfileGeneration) return NativeSaveResult::InvalidRecord;
+        if(candidate.eggProgressGeneration) return NativeSaveResult::UnsupportedVersion;
         size_t candidateCount = 0;
         uint32_t generation = 0;
         status = m_profiles.loadGeneration(hash, candidate.starterProfileGeneration,
@@ -35,6 +36,57 @@ public:
         if (status != NativeSaveResult::Ok) return status;
         run = candidate;
         count = candidateCount;
+        return NativeSaveResult::Ok;
+    }
+
+    // Publish a complete owned snapshot only after all referenced generations
+    // decode. Staging is bounded by the canonical catalogue and actual inventory.
+    // Generation zero preserves legacy absence; it is not a confirmed empty save.
+    NativeSaveResult load(const char* hash,NativeRunSave& run,
+        NativeStarterCandyRecord* records,size_t capacity,size_t& count,
+        EggIncubationRecord* eggs,size_t eggCapacity,size_t& eggCount,NativeEggProgressState& eggState) {
+        if(capacity>PokerogueContent::kSpeciesCount || eggCapacity>SIZE_MAX/sizeof(*eggs)
+            || (capacity && !records) || (eggCapacity && !eggs)) return NativeSaveResult::InvalidRecord;
+        const void* ranges[]={&run,records,&count,eggs,&eggCount,&eggState};
+        const size_t sizes[]={sizeof(run),capacity*sizeof(*records),sizeof(count),
+            eggCapacity*sizeof(*eggs),sizeof(eggCount),sizeof(eggState)};
+        for(unsigned i=0;i<6;++i) {
+            if(m_profiles.overlapsWorkspace(ranges[i],sizes[i])
+                || (m_eggs && m_eggs->overlapsWorkspace(ranges[i],sizes[i]))) return NativeSaveResult::InvalidRecord;
+            if(StarterCandyProfileCodec::overlaps(hash,65,ranges[i],sizes[i])) return NativeSaveResult::InvalidRecord;
+            for(unsigned j=0;j<i;++j)
+                if(StarterCandyProfileCodec::overlaps(ranges[i],sizes[i],ranges[j],sizes[j])) return NativeSaveResult::InvalidRecord;
+        }
+        std::unique_ptr<NativeRunSave> candidateStorage(new(std::nothrow) NativeRunSave{});
+        if(!candidateStorage) return NativeSaveResult::MemoryUnavailable;
+        auto& candidate=*candidateStorage;auto status=m_runs.load(hash,candidate);
+        if(status!=NativeSaveResult::Ok) return status;
+        if(!candidate.starterProfileGeneration) return NativeSaveResult::InvalidRecord;
+        NativeEggProgressView view{};
+        if(candidate.eggProgressGeneration) {
+            if(!m_eggs) return NativeSaveResult::InvalidRecord;
+            status=m_eggs->load(hash,view,candidate.eggProgressGeneration);
+            if(status!=NativeSaveResult::Ok) return status;
+        }
+        if(view.eggCount>eggCapacity) return NativeSaveResult::TooLarge;
+        std::unique_ptr<EggIncubationRecord[]> eggStage;
+        size_t stagedEggCount=0;
+        if(view.eggCount) {
+            eggStage.reset(new(std::nothrow) EggIncubationRecord[view.eggCount]{});
+            if(!eggStage) return NativeSaveResult::MemoryUnavailable;
+            status=decodeNativeEggInventory(view.inventoryBytes,view.inventorySize,eggStage.get(),view.eggCount,stagedEggCount);
+            if(status!=NativeSaveResult::Ok) return status;
+        }
+        const NativeEggProgressState stagedEggState=static_cast<const NativeEggProgressState&>(view);
+        std::unique_ptr<NativeStarterCandyRecord[]> profileStage(new(std::nothrow) NativeStarterCandyRecord[capacity ? capacity : 1]{});
+        if(!profileStage) return NativeSaveResult::MemoryUnavailable;
+        size_t stagedCount=0;uint32_t generation=0;
+        status=m_profiles.loadGeneration(hash,candidate.starterProfileGeneration,profileStage.get(),capacity,stagedCount,generation);
+        if(status!=NativeSaveResult::Ok) return status;
+        if(generation!=candidate.starterProfileGeneration) return NativeSaveResult::InvalidRecord;
+        if(stagedCount) std::memcpy(records,profileStage.get(),stagedCount*sizeof(*records));
+        if(stagedEggCount) std::memcpy(eggs,eggStage.get(),stagedEggCount*sizeof(*eggs));
+        run=candidate;eggState=stagedEggState;count=stagedCount;eggCount=stagedEggCount;
         return NativeSaveResult::Ok;
     }
 

@@ -2,12 +2,15 @@
 #include "storage/NativeEggInventory.hpp"
 #include "game/EggGachaPolicy.hpp"
 namespace Pokerogue3DS {
-struct NativeEggProgressView {
+struct NativeEggProgressState {
     uint32_t generation=0;
     uint32_t vouchers[4]{};
     EggPityState pity{};
     uint32_t unlockPity[4]{};
     bool unlockPityResolved=false;
+};
+// Borrowed wire view; the owned state above survives subsequent journal I/O.
+struct NativeEggProgressView : NativeEggProgressState {
     size_t headerBytes=112;
     const char* inventoryBytes=nullptr;
     size_t inventorySize=0,eggCount=0;
