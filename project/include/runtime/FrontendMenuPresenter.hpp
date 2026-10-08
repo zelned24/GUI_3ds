@@ -391,7 +391,7 @@ private:
         const char* description=nullptr;
         switch(m_service) {
         case 1:description="Logros pendientes: falta conectar las condiciones y recompensas al perfil persistente.";break;
-        case 3:description="Lista de huevos pendiente: falta el inventario persistente, la incubación y la eclosión.";break;
+        case 3:description="Inventario de huevos persistente conectado. Lista visual, incubación y eclosión pendientes.";break;
         case 4:description="Gacha pendiente: falta conectar vales, máquinas, probabilidades y resultados al perfil.";break;
         case 7:description="Comunidad requiere enlaces externos. Este runtime todavía no dispone de un servicio conectado para abrirlos.";break;
         case 8:description="No hay una sesión web conectada que cerrar. El progreso local de la consola se conserva.";break;

@@ -1110,3 +1110,5 @@ La compilación ARM solicitada terminó correctamente; no prueba ejecución de h
 - [ ] Verificar recompensas con información solo arriba y controles abajo; eliminados el encabezado, las instrucciones duplicadas y el log de la pantalla inferior.
 - [ ] Completar la respuesta del enemigo tras captura fallida: captura/cambio conservan ahora el diagnóstico específico de selección o ejecución en vez de reemplazarlo por `Enemy response could not resolve`. Corrección de la regla causante y prueba nativa siguen pendientes; no se declara resuelto el combate.
 - [ ] Comprobar variedad de encuentros con semillas nuevas y restauración; una partida determinista restaurada debe conservar su encuentro.
+
+- [ ] Presentación de huevos: textos es-ES y umbrales de mensajes 5/15/50 importados de revisiones pinned, con hashes y generación repetida verificados. Corregido aviso obsoleto que afirmaba ausencia del inventario persistente. Lista visual, incubación, eclosión y ejecución nativa siguen pendientes.

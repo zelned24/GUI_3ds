@@ -1,0 +1,32 @@
+{
+  "generatedSHA256": "47ef546d554053b32f6670ba5deb54fed0922c70091e095bb61ed60677628f58",
+  "schemaVersion": 1,
+  "sources": [
+    {
+      "repository": "https://github.com/pagefaultgames/pokerogue",
+      "revision": "8555c08c823b856cbec4eb99ca84ea52a955836d",
+      "sourcePath": "src/data/egg.ts",
+      "sourceSHA256": "681ff197da300ce319e02bdc4f29e4f505acda387a7810c2b413f87742aeea8e"
+    },
+    {
+      "repository": "https://github.com/pagefaultgames/pokerogue-locales",
+      "revision": "23aea1cb0da5a0b15b836f3c243791591cc42303",
+      "sourcePath": "es-ES/egg.json",
+      "sourceSHA256": "0a60ee1c1bffc8ef4e3c5e39a26db89c7b9cf4ada98440bfb31e11e2b8278d6f"
+    }
+  ],
+  "thresholds": [
+    [
+      "5",
+      "hatchWavesMessageSoon"
+    ],
+    [
+      "15",
+      "hatchWavesMessageClose"
+    ],
+    [
+      "50",
+      "hatchWavesMessageNotClose"
+    ]
+  ]
+}
