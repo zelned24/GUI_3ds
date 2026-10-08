@@ -7,6 +7,12 @@ import {execFileSync} from 'node:child_process';
 import {fileURLToPath} from 'node:url';
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 export function registerPresentationTests(test) {
+  for(const script of ['item_icon_index_tests.py','ui_audio_assets_tests.py','egg_ui_import_tests.py',
+      'egg_texture_assets_tests.py','item_ui_import_tests.py','berry_ui_import_tests.py'])
+    test('Pinned presentation pipeline: '+script,()=>{
+      execFileSync('python',[path.join(root,'test',script)],{stdio:'pipe'});
+    });
+
   test('Native Pokedex binding: canonical species and real profile discovery without battle writes',()=>{
     const frontend=fs.readFileSync(path.join(root,'project/include/runtime/FrontendMenuPresenter.hpp'),'utf8');
     const main=fs.readFileSync(path.join(root,'project/src/main.cpp'),'utf8');
@@ -33,19 +39,21 @@ export function registerPresentationTests(test) {
     const keys=[...section.matchAll(/"(menu-ui-handler:[^"]+)"/g)].map(match=>match[1]);
     if(keys.length!==9 || new Set(keys).size!==9) throw new Error('Global submenu must preserve nine distinct entries');
     for(const key of keys) if(!locales.includes('"'+key+'"')) throw new Error('Missing pinned submenu locale: '+key);
-    if(!frontend.includes('TouchRect{24,rowY(i),272,rowHeight()}') || !frontend.includes('FrontendPage::GlobalMenu ? 20 : 29'))
+    if(!(frontend.includes('globalMenuRowRectangle(index)') && frontend.includes('rowRectangle(i).contains(touchX,touchY)') && frontend.includes('const float y=rowY(i)')) || !frontend.includes('FrontendPage::GlobalMenu ? 20 : 29'))
       throw new Error('Drawing and touch must share submenu row geometry');
-    if(!main.includes('FrontendPage::GlobalMenu) renderer.drawRect(0,0,400,240,0x60000000)'))
+    if(!main.includes('frontend.overlaysTitle()) renderer.drawRect(0,0,400,240,0x60000000)'))
       throw new Error('Global submenu must dim the upper scene');
   });
   test('Native submenu pending destinations: explicit status without account or progress writes',()=>{
     const frontend=fs.readFileSync(path.join(root,'project/include/runtime/FrontendMenuPresenter.hpp'),'utf8');
     const info=frontend.slice(frontend.indexOf('void drawServiceInfo('),frontend.indexOf('bool dexMatches('));
-    for(const option of [1,2,3,4,6,7,8])
+    for(const option of [1,3,4,7,8])
       if(!info.includes('case '+option+':')) throw new Error('Missing submenu destination '+option);
     if(!frontend.includes('m_service=m_selected;m_page=FrontendPage::ServiceInfo') ||
-       !frontend.includes('m_page==FrontendPage::ServiceInfo) m_page=FrontendPage::GlobalMenu;'))
+       !frontend.includes('m_page==FrontendPage::ServiceInfo || m_page==FrontendPage::ManageData) m_page=FrontendPage::GlobalMenu;'))
       throw new Error('Pending destinations must open and return to the global submenu');
+    for(const expected of ['if(m_service==2)', 'if(m_service==3)', 'game->eggAt(selected)', 'eggHatchMessageKey(egg->hatchWaves)'])
+      if(!info.includes(expected)) throw new Error('Missing read-only submenu binding: '+expected);
     if(/saveNative|recordCaught|recordSeen|commitImported|logOut\(/.test(info))
       throw new Error('Informational screens cannot mutate profile or fake network actions');
   });
@@ -71,7 +79,7 @@ export function registerPresentationTests(test) {
     const resolve=presenter.slice(presenter.indexOf('bool PokemonAtlasPresenter::atlasKey('),presenter.indexOf('bool PokemonAtlasPresenter::selectMetadata('));
     for(const token of ['appearance.appearanceResolved','appearance.shinyVariant<=2',
       'speciesGenderDifferences(pokemon.dex)','formGenderVisual(form->id)','genderSpriteFormExcluded(spriteForm)',
-      'findPokemonAppearanceAsset(out.c_str(),back,female,appearance.shinyVariant)',
+      'findPokemonAppearanceAsset(out.c_str(),back,female,appearance.shinyVariant,appearance.shiny)',
       'NOT_YET_SUPPORTED_POKEMON_APPEARANCE','out.clear();return false;'])
       if(!resolve.includes(token)) throw new Error('Missing appearance binding '+token);
     if((presenter.match(/atlasKey\(pokemon, back, key\)/g)||[]).length!==2)
@@ -140,11 +148,11 @@ export function registerPresentationTests(test) {
     if(converter.includes('CanonicalFallback')) throw new Error('Generic modifier families must not pretend to be specific item sprites');
     const intro=fs.readFileSync(path.join(root,'project/src/runtime/IntroCinematicPresenter.cpp'),'utf8');
     const expect=(value,message)=>{if(!value) throw new Error(message);};
-    expect(intro.includes('C3D_TexSetFilter(img.tex, GPU_NEAREST, GPU_NEAREST)') && !intro.includes('GPU_LINEAR'),'Intro must use nearest texture filtering');
+    expect(intro.includes('C3D_TexSetFilter(image.tex,GPU_NEAREST,GPU_NEAREST)') && !intro.includes('GPU_LINEAR'),'Intro must use nearest texture filtering');
     const renderer=fs.readFileSync(path.join(root,'project/src/gfx/renderer2d.cpp'),'utf8');
     const setup=fs.readFileSync(path.join(root,'project/include/runtime/SetupPresenter.hpp'),'utf8');
     const rewards=fs.readFileSync(path.join(root,'project/include/runtime/RewardMenuPresenter.hpp'),'utf8');
-    expect(rewards.includes('cx+(cardW-32)*0.5f,cardY+16,32'),'Reward item icons retain their original 32 pixel canvases');
+    expect(rewards.includes('const float iconX=cx+(cardW-32)*0.5f') && rewards.includes('iconX,cardY+16,32)'),'Reward item icons retain their original 32 pixel canvases');
     expect(!setup.includes('270.0f/image.subtex->width'),'Title logo must not use the previous fractional 1.8x scale');
     expect(setup.includes('const unsigned scale=image.subtex->width<=200 ? 2 : 1'),'Title logo uses native integer multiples');
     expect(renderer.includes('float(info->tglp->cellHeight)*pixelMultiple/30.0f'), 'Native font drawing must undo Citro2D normalization');
