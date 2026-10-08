@@ -1323,6 +1323,40 @@ extern "C" int runNativeSaveChecks() {
     if (StarterCandyProfileCodec::valid(invalidDexRecord, 0, PokerogueContent::kMaxStarterCandyCount)) return 128;
     PokemonNature defaultNature = PokemonNature::Unspecified;
     if (!nativeStarterDefaultNature(purchased, defaultNature) || defaultNature != PokemonNature::Hardy) return 134;
+    // Every source enum index resolves only its own unlocked bit.
+    for(unsigned firstNature=0;firstNature<25;++firstNature) {
+        auto natureRecord=purchased;natureRecord.natureAttr=1u<<(firstNature+1);
+        for(unsigned requested=0;requested<=25;++requested) {
+            PokemonNature selected=PokemonNature::Unspecified;
+            if(nativeStarterSelectedNature(natureRecord,requested,selected)!=(requested==firstNature)) return 738;
+            if(requested!=firstNature && selected!=PokemonNature::Unspecified) return 739;
+        }
+        PokemonNature alternate=PokemonNature::Unspecified;
+        if(nativeStarterNextNature(natureRecord,static_cast<PokemonNature>(firstNature),1,alternate) ||
+            alternate!=PokemonNature::Unspecified) return 740;
+        for(unsigned secondNature=0;secondNature<25;++secondNature) {
+            if(secondNature==firstNature) continue;
+            natureRecord.natureAttr=(1u<<(firstNature+1)) | (1u<<(secondNature+1));
+            for(int direction:{-1,1}) {
+                alternate=PokemonNature::Unspecified;
+                if(!nativeStarterNextNature(natureRecord,static_cast<PokemonNature>(firstNature),direction,alternate) ||
+                    static_cast<unsigned>(alternate)!=secondNature) return 741;
+            }
+        }
+    }
+    auto allNatures=purchased;allNatures.natureAttr=0x03fffffeu;
+    for(unsigned currentNature=0;currentNature<25;++currentNature) {
+        PokemonNature alternate=PokemonNature::Unspecified;
+        if(!nativeStarterNextNature(allNatures,static_cast<PokemonNature>(currentNature),1,alternate) ||
+            static_cast<unsigned>(alternate)!=(currentNature+1)%25) return 742;
+        if(!nativeStarterNextNature(allNatures,static_cast<PokemonNature>(currentNature),-1,alternate) ||
+            static_cast<unsigned>(alternate)!=(currentNature+24)%25) return 743;
+    }
+    PokemonNature rejectedNature=PokemonNature::Unspecified;
+    allNatures.natureAttr|=1u;
+    if(nativeStarterSelectedNature(allNatures,0,rejectedNature) || rejectedNature!=PokemonNature::Unspecified) return 744;
+    if(nativeStarterNextNature(purchased,PokemonNature::Unspecified,1,rejectedNature) ||
+        nativeStarterNextNature(purchased,PokemonNature::Hardy,0,rejectedNature) || rejectedNature!=PokemonNature::Unspecified) return 745;
     auto missingNature = purchased;
     missingNature.natureAttr = 0;
     if (nativeStarterDefaultNature(missingNature, defaultNature) || defaultNature != PokemonNature::Hardy) return 135;

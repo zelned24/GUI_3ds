@@ -91,6 +91,23 @@ inline bool nativeStarterDefaultNature(const NativeStarterCandyRecord& record, P
     return false;
 }
 
+// GameData.getNaturesForAttr / StarterSelectUiHandler.CYCLE_NATURE,
+// pinned 8555c08c823b856cbec4eb99ca84ea52a955836d: enum order, bit n+1.
+inline bool nativeStarterSelectedNature(const NativeStarterCandyRecord& record,uint8_t index,PokemonNature& output) {
+    if(index>=25 || !record.natureAttr || (record.natureAttr & ~0x03fffffeu) ||
+        !(record.natureAttr & (1u<<(index+1)))) return false;
+    output=static_cast<PokemonNature>(index);return true;
+}
+inline bool nativeStarterNextNature(const NativeStarterCandyRecord& record,PokemonNature current,int direction,PokemonNature& output) {
+    const uint8_t start=static_cast<uint8_t>(current);PokemonNature validated=PokemonNature::Unspecified;
+    if(!direction || !nativeStarterSelectedNature(record,start,validated)) return false;
+    for(unsigned step=1;step<25;++step) {
+        const uint8_t next=static_cast<uint8_t>((start+(direction>0 ? step : 25-step))%25);
+        if(nativeStarterSelectedNature(record,next,validated)) {output=validated;return true;}
+    }
+    return false; // One unlocked nature has no alternate; no mutation or save.
+}
+
 // Pinned StarterSelectUiHandler preference validation and canCycle.ability:
 // duplicate normal slots collapse unless only legacy slot 1 was unlocked.
 inline uint8_t nativeStarterAbilityChoiceMask(const NativeStarterCandyRecord& record) {
