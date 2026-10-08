@@ -5,6 +5,7 @@
 #include <cstdio>
 #include "runtime/PokemonAtlasMetadata.hpp"
 #include "runtime/TrainerPresenter.hpp"
+#include "runtime/PresentationClock.hpp"
 #include <cstring>
 #include <string>
 namespace Pokerogue3DS {
@@ -79,7 +80,7 @@ public:
             if (layer->metadataPath) {
                 const auto count=m_layerMetadata[i].frameCount();
                 if (!count) continue; // Invalid metadata is never a static fallback.
-                const auto* frame=m_layerMetadata[i].frame((animationTimeMs*12/1000)%count);
+                const auto* frame=m_layerMetadata[i].frame(presentationAnimationFrame(animationTimeMs,12,count));
                 if (!frame) continue;
                 Renderer2D::AtlasFrame rectangle{frame->x,frame->y,frame->width,frame->height,
                     frame->sourceWidth,frame->sourceHeight,frame->trimX,frame->trimY};

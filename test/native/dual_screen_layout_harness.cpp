@@ -14,6 +14,13 @@
 #include <initializer_list>
 using namespace Pokerogue3DS;
 int main() {
+    assert(presentationAnimationFrame(0,12,3)==0);
+    assert(presentationAnimationFrame(83,12,3)==0);
+    assert(presentationAnimationFrame(84,12,3)==1);
+    assert(presentationAnimationFrame(250,12,3)==0);
+    assert(presentationAnimationFrame(UINT64_MAX,12,3)==1);
+    assert(presentationAnimationFrame(UINT64_MAX,0,3)==0);
+    assert(presentationAnimationFrame(UINT64_MAX,12,0)==0);
     ExperienceBarTimeline expVisual;
     assert(expVisual.update("MEDIUM_FAST",5,150,1));
     assert(expVisual.level()==5 && expVisual.total()==150);
