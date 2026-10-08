@@ -250,4 +250,42 @@ int main() {
     }
     bool therian=false;for(const auto& icon:kPokemonIcons) if(icon.dex==642 && icon.formIndex==1) therian=true;
     assert(therian);
+    // Visible-team batch owns at most six distinct physical pages; draws do no I/O.
+    {
+        PokemonIconPresenter icons(true);
+        const AppearanceIconIdentity* batch[7]{};unsigned found=0;
+        for(const auto& identity:kAppearanceIconIdentities) {
+            const auto* frame=appearanceIconPhysicalFrame(&identity);if(!frame) continue;bool unique=true;
+            for(unsigned i=0;i<found;++i) if(appearanceIconPhysicalFrame(batch[i])->page==frame->page) unique=false;
+            if(unique) batch[found++]=&identity;
+            if(found==7) break;
+        }
+        assert(found==7);
+        const unsigned loads=iconLoads,retired=iconRetired;
+        assert(!icons.drawAppearance(renderer,batch[0],0,0));
+        assert(!icons.prepareAppearances(renderer,batch,7) && iconLoads==loads);
+        assert(icons.prepareAppearances(renderer,batch,6) && iconLoads==loads+6);
+        for(unsigned i=0;i<6;++i) {
+            assert(icons.drawAppearance(renderer,batch[i],10.25f,11.75f));
+            assert(lastIconWidth==20 && lastIconHeight==15 && lastIconX==10 && lastIconY==12);
+        }
+        assert(iconLoads==loads+6);
+        assert(icons.prepareAppearances(renderer,batch,6) && iconLoads==loads+6);
+        batch[0]=batch[6];
+        assert(icons.prepareAppearances(renderer,batch,6));
+        assert(iconLoads==loads+7 && iconRetired==retired+1);
+        icons.clear(&renderer);assert(iconRetired==retired+7);
+        failIconLoad=true;
+        assert(!icons.prepareAppearances(renderer,batch,1));
+        assert(!icons.drawAppearance(renderer,batch[0],0,0));
+        const unsigned failedLoads=iconLoads;
+        failIconLoad=false;
+        assert(!icons.prepareAppearances(renderer,batch,1) && iconLoads==failedLoads);
+        icons.clear(&renderer);
+        assert(icons.prepareAppearances(renderer,batch,1) && iconLoads==failedLoads+1);
+        assert(!icons.drawAppearance(renderer,batch[0],std::numeric_limits<float>::quiet_NaN(),0));
+        assert(icons.prepareAppearances(renderer,nullptr,0));
+        assert(!icons.drawAppearance(renderer,batch[0],0,0));
+    }
+
 }

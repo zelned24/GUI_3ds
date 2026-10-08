@@ -46,6 +46,22 @@ public:
 
         const auto& context = game.presentation();
         const unsigned count = context.playerPartyCount ? context.playerPartyCount : 1;
+        const AppearanceIconIdentity* appearances[6]{};
+        uint16_t formIndices[6]{};
+        bool normalIconAllowed[6]{};
+        for(unsigned i=0;i<count && i<6;++i) {
+            const auto& actor=(i==context.activePlayerPartyIndex) ? context.player : context.playerParty[i];
+            bool formResolved=!actor.formId || !*actor.formId;
+            const auto* owner=PokerogueContent::findSpeciesByDex(actor.dex);
+            if(!formResolved && owner) for(const auto& form:PokerogueContent::kForms)
+                if(!std::strcmp(form.speciesId,owner->id) && !std::strcmp(form.id,actor.formId)) {formIndices[i]=form.upstreamFormIndex;formResolved=true;break;}
+            const bool appearanceKnown=actor.actorIdentityResolved && actor.actor.appearanceResolved && actor.actor.gender!=PokemonGender::Unspecified;
+            normalIconAllowed[i]=formResolved && !appearanceKnown;
+            if(formResolved && appearanceKnown)
+                appearances[i]=findAppearanceIconIdentity(actor.dex,formIndices[i],actor.actor.gender==PokemonGender::Female,actor.actor.shiny,actor.actor.shinyVariant);
+        }
+        m_icons.prepareAppearances(renderer,appearances,std::min(count,6u));
+
 
         for (unsigned i = 0; i < count && i < 6; ++i) {
             const auto& actor = (i == context.activePlayerPartyIndex) ? context.player : context.playerParty[i];
@@ -60,13 +76,14 @@ public:
                 renderer.drawWindow(bounds.x, y, bounds.width, bounds.height);
             }
 
-            uint16_t formIndex = 0;
-            if (actor.formId) {
-                for (const auto& form : PokerogueContent::kForms) {
-                    if (std::strcmp(form.id, actor.formId) == 0) { formIndex = form.upstreamFormIndex; break; }
-                }
+            if(appearances[i]) {
+                if(!m_icons.drawAppearance(renderer,appearances[i],bounds.x+14,y+2))
+                    renderer.drawTextFitted("?",bounds.x+14,y+2,0.3125f,20,0xffffffff);
+            } else if(normalIconAllowed[i]) {
+                m_icons.draw(renderer,actor.dex,formIndices[i],bounds.x+14,y+2,1.0f,1.0f);
+            } else {
+                renderer.drawTextFitted("?",bounds.x+14,y+2,0.3125f,20,0xffffffff);
             }
-            m_icons.draw(renderer, actor.dex, formIndex, bounds.x + 14, y + 2, 1.0f, 1.0f);
 
             if(actor.actorIdentityResolved && actor.actor.appearanceResolved && actor.actor.shiny && actor.actor.shinyVariant<=2)
                 drawVariant(renderer,actor.actor.shinyVariant,bounds.x+14,y+9);

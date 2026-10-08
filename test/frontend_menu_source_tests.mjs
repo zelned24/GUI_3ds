@@ -271,3 +271,7 @@ assert(frontend.includes("const auto bounds=pokedexCellRectangle(cell)"));
 
 assert(frontend.includes("nativeCaughtShinyVariants(*record)"));
 assert(frontend.includes("renderer->retireSpriteSheet(m_dexVariants)"));
+
+assert(partyPresentation.includes("m_icons.prepareAppearances(renderer,appearances,std::min(count,6u))"));
+assert(partyPresentation.includes("m_icons.drawAppearance(renderer,appearances[i]"));
+assert(partyPresentation.includes("!std::strcmp(form.speciesId,owner->id)"));

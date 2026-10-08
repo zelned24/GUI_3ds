@@ -2,6 +2,7 @@
 #include "gfx/renderer2d.hpp"
 #include "content/PokemonIcons.hpp"
 #include "content/CompactPokemonIcons.hpp"
+#include "content/AppearanceIconIdentities.hpp"
 #include <cmath>
 #include <algorithm>
 namespace Pokerogue3DS {
@@ -34,7 +35,58 @@ public:
     PokemonIconPresenter(const PokemonIconPresenter&)=delete;
     PokemonIconPresenter& operator=(const PokemonIconPresenter&)=delete;
     ~PokemonIconPresenter() {clear();}
-    void clear(Renderer2D* renderer=nullptr) {for(auto& slot:m_slots) {if(slot.sheet) {if(renderer) renderer->retireSpriteSheet(slot.sheet);else C2D_SpriteSheetFree(slot.sheet);}slot.sheet=nullptr;slot.page=0xffff;}}
+    void clear(Renderer2D* renderer=nullptr) {
+        for(auto& slot:m_slots) clearSlot(slot,renderer);
+        for(auto& slot:m_appearanceSlots) clearSlot(slot,renderer);
+        m_appearancesReady=false;
+    }
+    // Call once per visible team, after beginFrame and before submitting its draws.
+    // Keeps pages needed by this batch; no eviction occurs while its icons are drawn.
+    bool prepareAppearances(Renderer2D& renderer,const AppearanceIconIdentity* const* identities,unsigned count) {
+        m_appearancesReady=false;
+        if(count>6 || (count && !identities)) return false;
+        uint16_t pages[6]{};unsigned pageCount=0;
+        for(unsigned i=0;i<count;++i) {
+            if(!identities[i]) continue; // Legacy appearance remains explicitly unknown.
+            const auto* frame=appearanceIconPhysicalFrame(identities[i]);
+            if(!frame || frame->page>=sizeof(kAppearanceIconPages)/sizeof(kAppearanceIconPages[0])) return false;
+            bool present=false;for(unsigned j=0;j<pageCount;++j) if(pages[j]==frame->page) present=true;
+            if(!present) pages[pageCount++]=frame->page;
+        }
+        for(auto& slot:m_appearanceSlots) {
+            bool wanted=false;for(unsigned i=0;i<pageCount;++i) if(slot.page==pages[i]) wanted=true;
+            if(!wanted) clearSlot(slot,&renderer);
+        }
+        bool loaded=true;
+        for(unsigned i=0;i<pageCount;++i) {
+            Slot* selected=nullptr;
+            for(auto& slot:m_appearanceSlots) if(slot.page==pages[i]) selected=&slot;
+            if(!selected) {
+                for(auto& slot:m_appearanceSlots) if(slot.page==0xffff) {selected=&slot;break;}
+                if(!selected) return false;
+                selected->page=pages[i];
+                selected->sheet=C2D_SpriteSheetLoad(m_compact ? kCompactAppearanceIconPages[pages[i]] : kAppearanceIconPages[pages[i]]);
+                if(selected->sheet) {
+                    const auto image=C2D_SpriteSheetGetImage(selected->sheet,0);
+                    if(image.tex) C3D_TexSetFilter(image.tex,GPU_NEAREST,GPU_NEAREST);
+                }
+            }
+            if(!selected->sheet) loaded=false;
+        }
+        m_appearancesReady=true;
+        return loaded;
+    }
+    bool drawAppearance(Renderer2D& renderer,const AppearanceIconIdentity* identity,float x,float y,float opacity=1.0f) {
+        if(!m_appearancesReady || !std::isfinite(x) || !std::isfinite(y) || !std::isfinite(opacity) || opacity<=0) return false;
+        const auto* icon=appearanceIconPhysicalFrame(identity);if(!icon) return false;
+        Slot* selected=nullptr;for(auto& slot:m_appearanceSlots) if(slot.page==icon->page) selected=&slot;
+        if(!selected || !selected->sheet) return false;
+        const unsigned divisor=m_compact ? 2 : 1;
+        if(m_compact && ((icon->x|icon->y|icon->width|icon->height)&1)) return false;
+        Renderer2D::AtlasFrame frame{uint16_t(icon->x/divisor),uint16_t(icon->y/divisor),uint16_t(icon->width/divisor),uint16_t(icon->height/divisor),uint16_t(icon->width/divisor),uint16_t(icon->height/divisor),0,0};
+        renderer.drawAtlasFrame(C2D_SpriteSheetGetImage(selected->sheet,0),frame,std::round(x),std::round(y),frame.width,frame.height,std::min(opacity,1.0f));
+        return true;
+    }
     bool draw(Renderer2D& renderer,uint16_t dex,uint16_t formIndex,float x,float y,float opacity=1.0f,float scale=1.0f,uint32_t tint=0xffffffff) {
         if(!std::isfinite(x) || !std::isfinite(y) || !std::isfinite(opacity) || opacity<=0 ||
             !std::isfinite(scale) || scale<=0) return false;
@@ -61,6 +113,12 @@ public:
 private:
     bool m_compact=false;
     struct Slot {C2D_SpriteSheet sheet=nullptr;uint16_t page=0xffff;};
+    static void clearSlot(Slot& slot,Renderer2D* renderer) {
+        if(slot.sheet) {if(renderer) renderer->retireSpriteSheet(slot.sheet);else C2D_SpriteSheetFree(slot.sheet);}
+        slot.sheet=nullptr;slot.page=0xffff;
+    }
+    bool m_appearancesReady=false;
+    Slot m_appearanceSlots[6]{};
     Slot m_slots[sizeof(kPokemonIconPages)/sizeof(kPokemonIconPages[0])]{};
 };
 }
