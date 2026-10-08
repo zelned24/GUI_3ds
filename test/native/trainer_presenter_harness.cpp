@@ -1,4 +1,5 @@
 #include "runtime/TrainerPresenter.hpp"
+#include "runtime/ArenaPresenter.hpp"
 #include <cassert>
 #include <string>
 using namespace Pokerogue3DS;
@@ -18,6 +19,8 @@ Renderer2D::~Renderer2D() {}
 void Renderer2D::retireSpriteSheet(C2D_SpriteSheet sheet) {assert(sheet==&texture);++retired;}
 void Renderer2D::drawAtlasFrame(C2D_Image,const AtlasFrame&,float,float,float,float,float,uint32_t) {}
 void Renderer2D::drawImageDirect(C2D_Image,float,float,float,float,float,float,bool,bool,uint32_t) {}
+void Renderer2D::drawText(const char*,float,float,float,uint32_t) {}
+bool Renderer2D::drawWindow(float,float,float,float) {return true;}
 int main() {
     Renderer2D renderer;
     TrainerPresenter trainer;
@@ -40,4 +43,19 @@ int main() {
     trainer.clear(&renderer);
     assert(trainer.load("marley",&renderer) && loads==6);
     trainer.clear();assert(frees==1);
+    {
+        ArenaPresenter arena;
+        assert(arena.drawTrainerBattleIntro(renderer,65535,false,"marley") && loads==7);
+        assert(arena.drawTrainerBattleIntro(renderer,65535,false,"marley") && loads==7);
+        assert(arena.drawTrainerBattleIntro(renderer,65535,true,"marley") && loads==8);
+        assert(arena.drawTrainerBattleIntro(renderer,65535,true,"mira") && loads==9);
+        failLoad=true;
+        assert(!arena.drawTrainerBattleIntro(renderer,65535,true,"riley") && loads==10);
+        assert(!arena.drawTrainerBattleIntro(renderer,65535,true,"riley") && loads==10);
+        failLoad=false;
+        assert(!arena.drawTrainerBattleIntro(renderer,65535,true,"riley") && loads==10);
+        arena.clear();
+        assert(arena.drawTrainerBattleIntro(renderer,65535,true,"riley") && loads==11);
+    }
+
 }

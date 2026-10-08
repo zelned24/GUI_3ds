@@ -107,3 +107,8 @@ assert.throws(()=>validateMaterializedAppearanceCatalog(seal({...complete,reques
 assert.throws(()=>validateMaterializedAppearanceCatalog(seal({...withMissing,requested:3,
   missingInUpstream:[missingRow,missingRow]})),/duplicate/);
 console.log('PASS completed catalog: Python-compatible hash, missing classification and identity conflicts');
+
+assert.equal(validateMaterializedAppearanceCatalog(complete,new Set(['1:front:false:1'])).size,1);
+assert.throws(()=>validateMaterializedAppearanceCatalog(complete,new Set(['2:front:false:1'])),/omits/);
+assert.throws(()=>validateMaterializedAppearanceCatalog(complete,new Set(['1:front:false:1','2:front:false:1'])),/enumeration/);
+assert.equal(validateMaterializedAppearanceCatalog(seal(withMissing),new Set(['1:front:false:1','2:back:true:0'])).size,1);

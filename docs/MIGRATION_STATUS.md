@@ -3,7 +3,7 @@
 ## Avance local de presentación y apariencias (sin validación nativa)
 
 - Catálogo normal convertido: 3.112 atlas / 3.129 páginas `.t3x`; 210 identidades femeninas normales indexadas. Los 61.629.673 bytes corresponden al catálogo en disco, no a memoria residente.
-- Catálogo shiny: materialización completa pendiente; el proceso activo conserva fuente pinned y hashes. Bouffalant aplica el fallback negro de `rgbHexToRgba` upstream.
+- Catálogo shiny: materialización terminada exit 0 con 7.570 apariencias, cero ausencias y cero registros no soportados; staging completo iniciado, conversión e índice ampliado pendientes. Bouffalant aplica el fallback negro de `rgbHexToRgba` upstream.
 - Submenú global: conserva la opción de origen al regresar desde las nueve rutas; prueba nativa escrita, sin ejecutar.
 - Staging shiny: rechaza reportes parciales y exige coincidencia de identidad/hash PNG con el catálogo final y hash del reporte compatible con Python; ausencias pinned sin duplicados ni conflictos; guard JS PASS.
 - Estadísticas: cuatro métricas de descubrimiento calculadas en gameplay a partir del perfil real y catálogo canónico; etiquetas pinned importadas. Los contadores históricos siguen pendientes y no se presentan como cero. C++ escrito sin ejecución.
@@ -370,13 +370,13 @@ La instrucción más reciente del usuario aplaza compilaciones y Azahar hasta nu
 
 1. materialize_pokemon_appearance_catalog.py recorre árbol/masterlist del commit pinned; determina 7570 identidades front/back, formas, femenino y variantes declaradas. No usa un catálogo limitado a las especies de ejemplo.
 2. Reutiliza materialize/apply_palette. Reporte catalog-report.json guarda hashes, materializados, MISSING_IN_PINNED_UPSTREAM, INVALID_IMPORT y NOT_YET_SUPPORTED_BY_IMPORTER por separado; un error git sobre un path existente permanece fatal. Sin timestamp.
-3. Preparación completa ejecuta materialización antes del staging; pruebas de enumeración determinista/formas/género/variantes añadidas. Cinco tests Python PASS. Proceso activo; conversión `.t3x` ampliada e índice/runtime para todo el catálogo pendientes. No compilar programa ni abrir Azahar.
+3. Preparación completa ejecuta materialización antes del staging; pruebas de enumeración determinista/formas/género/variantes añadidas. Cinco tests Python PASS en ese checkpoint. Materialización ahora terminada: 7570/7570, cero ausencias/unsupported; conversión `.t3x` ampliada e índice/runtime para todo el catálogo pendientes. No compilar programa ni abrir Azahar.
 
 ### Reimportación visual completa de metadata (terminada)
 
 1. Import de 62 fuentes terminó exit 0. Dos imports iguales: hash canónico `c797658f2c13c494bd83eeb1b6ea8177e9c25b73d09abe5d1c653b7655dadf2b`. Verificados 1084 registros species.genderDiffs, 609 forms.genderDiffs y 10 exclusiones getBaseSpriteKey con provenance real.
 2. Regeneración en build/determinism/gender-runtime-content.hpp produjo bytes idénticos al header de producción: SHA `843be89458a9d82e8be128030fb5158f16daff5d57f0a21f6190493851cea12d`. No se compiló C++. Pruebas JS de metadata de género y exclusiones PASS; diff-check PASS.
-3. Materialización de 7570 apariencias continúa activa. Las tablas C++ y consulta del presenter están conectadas en código; todavía falta validar ejecución nativa/GPU, completar assets ampliados y selección. Compatibilidad de progreso previo vinculado a hashes antiguos sigue sin verificarse.
+3. Materialización de 7570 apariencias terminada; staging ampliado activo. Las tablas C++ y consulta del presenter están conectadas en código; todavía falta validar ejecución nativa/GPU, completar assets ampliados y selección. Compatibilidad de progreso previo vinculado a hashes antiguos sigue sin verificarse.
 
 ### Apariencia predeterminada de starters (sin compilar)
 
@@ -388,7 +388,7 @@ La instrucción más reciente del usuario aplaza compilaciones y Azahar hasta nu
 
 1. Renderer mantiene raster nativo entero, GPU_NEAREST, posiciones redondeadas y origen de tinta; inspección de drawText/drawTextWrapped/drawTextFitted no encontró un escalado fraccionario añadido. No se infiere que todos los layouts sean correctos.
 2. pixel_font_tests.py: 12 PASS. verify_presentation_media.py: PASS, incluyendo cuatro fuentes con alpha binario/métricas/hashes físicos, cinco ventanas, 20 tipos y 17 hojas HUD, items/trainers/cinemática. No compila C++ ni lanza Azahar.
-3. Comparación visual del texto y render en dispositivo pendiente. La materialización de apariencias continúa activa; los checkpoints consultados todavía no registraban faltantes ni unsupported, pero el catálogo aún no terminó.
+3. Comparación visual del texto y render en dispositivo pendiente. En aquel checkpoint la materialización continuaba activa; el resultado final posterior confirmó 7570/7570 sin faltantes ni unsupported.
 
 ### Resolver heredado: eliminación de verificación ficticia
 
@@ -400,4 +400,4 @@ La instrucción más reciente del usuario aplaza compilaciones y Azahar hasta nu
 
 1. CanonicalModels conserva atlasPath/icon/atlas/frame y capacidades shiny/género/variantes como null cuando no se importaron. PokerogueAdapter elimina rutas sintetizadas y frameIndex cero; resolveSprite sin binding físico devuelve estado explícito NOT_YET_SUPPORTED_BY_JS_ASSET_BINDING.
 2. Metadata suministrada explícitamente se conserva, incluido hasShiny:false. Guard JS PASS; diff-check PASS. Reimportación activa para publicar este cambio en el catálogo físico, sin compilar el programa.
-3. Otros consumidores del resolver heredado y su conexión al índice físico siguen pendientes. El catálogo de 7570 apariencias sigue materializándose en otro proceso confirmado activo.
+3. Otros consumidores del resolver heredado y su conexión al índice físico siguen pendientes. El catálogo de 7570 apariencias ya terminó su materialización; staging y conversión ampliada pendientes.

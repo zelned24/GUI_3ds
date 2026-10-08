@@ -54,7 +54,19 @@ if(all) {
 // same atlas staging/conversion path as base sprites, with distinct runtime IDs.
 if (process.argv.includes('--appearances')) {
   const appearanceRoot = path.join(destination, 'appearances');
-  const catalogIdentities=validateMaterializedAppearanceCatalog(JSON.parse(await fs.readFile(path.join(appearanceRoot,'catalog-report.json'),'utf8')));
+  if(!localPinned) throw new Error('Full appearance catalog verification requires pinned local sources');
+  const catalog=JSON.parse(await fs.readFile(path.join(appearanceRoot,'catalog-report.json'),'utf8'));
+  const masterBytes=execFileSync('git',['show',pinned.revision+':images/pokemon/variant/_masterlist.json'],{cwd:localRepo});
+  const generatorBytes=await fs.readFile(path.join(root,'scripts/materialize_pokemon_appearance_catalog.py'));
+  if(catalog.masterlistSHA256!==sha256(masterBytes) || catalog.catalogGeneratorSHA256!==sha256(generatorBytes))
+    throw new Error('Appearance catalog source/generator hash mismatch');
+  const tree=execFileSync('git',['ls-tree','-r','--name-only',pinned.revision,'images/pokemon'],{cwd:localRepo,encoding:'utf8'}).split(/\r?\n/);
+  // Reuse the authoritative enumeration function; no parallel ID rules or fixed catalog limit.
+  const jobs=JSON.parse(execFileSync('python',['-c',
+    'import sys,json; sys.path.insert(0,"scripts"); from materialize_pokemon_appearance_catalog import enumerate_appearances; d=json.loads(sys.stdin.buffer.read().decode("utf-8")); print(json.dumps(enumerate_appearances(d["paths"],d["master"])))'],
+    {cwd:root,input:JSON.stringify({paths:tree,master:JSON.parse(masterBytes)}),encoding:'utf8',maxBuffer:4*1024*1024}));
+  const expectedIdentities=new Set(jobs.map(row=>row.join(':')));
+  const catalogIdentities=validateMaterializedAppearanceCatalog(catalog,expectedIdentities);
   const stagedAppearanceIdentities=new Set();
   const visit = async directory => {
     let entries;

@@ -73,3 +73,9 @@ assert(trainerSource.includes('clear(renderer);\n        std::strcpy(m_failedKey
 const setup=await fs.readFile(new URL('../project/include/runtime/SetupPresenter.hpp',import.meta.url),'utf8');
 assert(setup.includes('abilityUiName(game.setupStarterAbilityId(species->dex))'));
 assert(!setup.includes('abilityUiName((form ? form->ability1 : species->ability1))'));
+
+const arena=await fs.readFile(new URL('../project/include/runtime/ArenaPresenter.hpp',import.meta.url),'utf8');
+assert(arena.includes('m_trainerCurrentFemale != female || m_trainerCurrentName != name'));
+assert(arena.includes('m_trainerAttempted=false;m_trainerCurrentFemale=false;m_trainerCurrentName.clear()'));
+assert(arena.includes('m_trainer.loadTrainer(trainerTypeId, female,&renderer)'));
+assert(!arena.includes('if (!m_trainer.isLoaded() || m_trainerCurrentTypeId'));

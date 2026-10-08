@@ -6,6 +6,7 @@
 #include "runtime/PokemonAtlasMetadata.hpp"
 #include "runtime/TrainerPresenter.hpp"
 #include <cstring>
+#include <string>
 namespace Pokerogue3DS {
 // Owns only the visible background; no gameplay or guessed asset paths.
 class ArenaPresenter {
@@ -24,6 +25,7 @@ public:
         }
         m_trainer.clear();
         m_trainerCurrentTypeId = 0;
+        m_trainerAttempted=false;m_trainerCurrentFemale=false;m_trainerCurrentName.clear();
     }
     bool draw(Renderer2D& renderer, const char* biomeKey, uint64_t animationTimeMs=0, bool drawBases=true) {
         const ArenaTextureDefinition* definition = nullptr;
@@ -84,10 +86,13 @@ public:
 
     bool drawTrainerBattleIntro(Renderer2D& renderer, uint16_t trainerTypeId, bool female, const char* trainerName, uint64_t animationTimeMs = 0) {
         if (trainerTypeId == 0 && (!trainerName || !*trainerName)) return false;
-        if (!m_trainer.isLoaded() || m_trainerCurrentTypeId != trainerTypeId) {
-            m_trainerCurrentTypeId = trainerTypeId;
-            if (!m_trainer.loadTrainer(trainerTypeId, female)) {
-                if (trainerName) m_trainer.load(trainerName);
+        const char* name=trainerName ? trainerName : "";
+        if (!m_trainerAttempted || m_trainerCurrentTypeId != trainerTypeId ||
+            m_trainerCurrentFemale != female || m_trainerCurrentName != name) {
+            m_trainerAttempted=true;m_trainerCurrentTypeId=trainerTypeId;
+            m_trainerCurrentFemale=female;m_trainerCurrentName=name;
+            if (!m_trainer.loadTrainer(trainerTypeId, female,&renderer)) {
+                if (*name) m_trainer.load(name,&renderer);
             }
         }
         if (!m_trainer.isLoaded()) return false;
@@ -109,5 +114,7 @@ private:
     PokemonAtlasMetadata m_layerMetadata[2];
     TrainerPresenter m_trainer;
     uint16_t m_trainerCurrentTypeId = 0;
+    bool m_trainerAttempted=false,m_trainerCurrentFemale=false;
+    std::string m_trainerCurrentName;
 };
 }

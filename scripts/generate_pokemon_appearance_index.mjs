@@ -16,7 +16,7 @@ export function materializedAppearanceCatalogHash(catalog) {
     character=>'\\u'+character.charCodeAt(0).toString(16).padStart(4,'0'));
   return crypto.createHash('sha256').update(bytes).digest('hex');
 }
-export function validateMaterializedAppearanceCatalog(catalog) {
+export function validateMaterializedAppearanceCatalog(catalog,expectedIdentities=null) {
   const pinned=POKEROGUE_REPOSITORIES['pokerogue-assets'];
   if(catalog?.schemaVersion!==1 || catalog.repository!==pinned.url || catalog.revision!==pinned.revision ||
     !Number.isInteger(catalog.requested) || catalog.requested<1 || !Array.isArray(catalog.materialized) ||
@@ -45,6 +45,13 @@ export function validateMaterializedAppearanceCatalog(catalog) {
     const identity=[row.atlasKey,row.facing,row.female,row.variant].join(':');
     if(identities.has(identity) || missing.has(identity)) throw new Error('Conflicting or duplicate missing appearance');
     missing.add(identity);
+  }
+  if(expectedIdentities!==null) {
+    if(!(expectedIdentities instanceof Set) || expectedIdentities.size!==catalog.requested)
+      throw new Error('Appearance catalog differs from pinned source enumeration');
+    for(const identity of expectedIdentities)
+      if(!identities.has(identity) && !missing.has(identity))
+        throw new Error('Appearance catalog omits a pinned source identity');
   }
   return identities;
 }
