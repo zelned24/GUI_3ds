@@ -210,6 +210,8 @@ extern "C" int runNativeSaveChecks() {
         }
         if(!eggSpeciesHasVariants(1,"absent-form") || eggSpeciesHasVariants(0) || eggSpeciesHasVariants(65535,"absent")) return 1276;
         if(eggSpeciesHasVariants(1007) || !eggSpeciesHasVariants(1007,"apex-build") || eggSpeciesHasVariants(1007,"absent-form")) return 1277;
+        if(!eggSpeciesFormHasVariants(1007,0) || !eggSpeciesFormHasVariants(1,0)
+            || eggSpeciesFormHasVariants(65535,0) || eggSpeciesFormHasVariants(1007,65535)) return 1281;
         const uint16_t filterPool[]={1,4};uint16_t filtered[2]={777,888};size_t filteredCount=999;
         const auto caughtFirst=[](uint16_t dex){return dex==1;};
         const auto absent=[](uint16_t){return false;};

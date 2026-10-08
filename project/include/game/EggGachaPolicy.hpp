@@ -120,6 +120,23 @@ inline bool eggSpeciesHasVariants(uint16_t dex,const char* formKey=nullptr) {
     return contains(specific);
 }
 
+// Canonical form keys preserve enum spelling; variant asset keys are lowercase.
+// Caller supplies the upstream form index of the species snapshot being tested.
+inline bool eggSpeciesFormHasVariants(uint16_t dex,uint16_t formIndex) {
+    if(!PokerogueContent::findSpeciesByDex(dex)) return false;
+    const auto* form=PokerogueContent::findFormByUpstreamIndex(dex,formIndex);
+    if(!form) return formIndex==0 && eggSpeciesHasVariants(dex);
+    if(!form->formKey) return eggSpeciesHasVariants(dex);
+    char key[64];size_t length=0;
+    for(const char* p=form->formKey;*p;++p) {
+        if(length+1>=sizeof(key)) return false;
+        const unsigned char c=static_cast<unsigned char>(*p);
+        key[length++]=c>='A' && c<='Z' ? char(c-'A'+'a') : char(c);
+    }
+    key[length]=0;
+    return eggSpeciesHasVariants(dex,key);
+}
+
 enum class EggPoolFilterResult : uint8_t {Ok,InvalidInput,InvalidVariant,InvalidPool,OutputTooSmall,EmptyPool};
 // Predicates read a stable profile/inventory/form snapshot. They must be pure:
 // validation/counting precedes publication, so they may be called more than once.

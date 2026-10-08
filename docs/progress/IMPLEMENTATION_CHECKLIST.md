@@ -1063,3 +1063,5 @@ La búsqueda del índice generado usa búsqueda binaria sobre identidades ordena
 
 - [x] Nueva compilación ARM solicitada sobre 45edb47: make -f Makefile.3ds 3ds -j2 terminó con código 0 y empaquetó build/GUI_3DS.3dsx con RomFS. Incluye la corrección del decodificador UTF-8 posterior al preview anterior. No prueba ejecución en Azahar ni en Old 3DS.
 - [ ] Advertencias de indentación del preview: previousUtf8 y dexAt separados en instrucciones explícitas conservando el recorrido y selección. Este ajuste posterior al binario requiere la próxima compilación autorizada; revisión de fuentes solamente.
+
+- [ ] Elegibilidad de variantes por forma canónica: eggSpeciesFormHasVariants resuelve el índice upstream mediante el catálogo existente y adapta la clave de enum a la clave de assets sin alterar datos importados. Caso Koraidon apex-build y rechazo de índices/especies inexistentes añadidos al gate nativo, pendiente de ejecución. No conecta todavía el perfil ni la transacción gacha.
