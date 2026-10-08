@@ -14,9 +14,12 @@ namespace Pokerogue3DS {
 
 class BattleHudPresenter {
 public:
-    void clear() {
+    void clear(Renderer2D* renderer=nullptr) {
         for (auto& sheet : m_sheets) {
-            if (sheet) C2D_SpriteSheetFree(sheet);
+            if (sheet) {
+                if(renderer) renderer->retireSpriteSheet(sheet);
+                else C2D_SpriteSheetFree(sheet);
+            }
             sheet = nullptr;
         }
         resetExperienceDisplay();

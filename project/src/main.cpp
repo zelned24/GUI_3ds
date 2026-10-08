@@ -848,7 +848,7 @@ int main() {
 #endif
 
         renderer.beginFrame();
-        if(game.presentationStage()!=Pokerogue3DS::NativeSaveStage::RunSetup) setup.releaseIconPages();
+        if(game.presentationStage()!=Pokerogue3DS::NativeSaveStage::RunSetup) setup.releaseIconPages(renderer);
 #if defined(POKEROGUE_ENABLE_QUICKJS)
         if (!isPaused && bridgeReady && bridge.healthy()) {
             bridge.tick(pressed);
@@ -955,14 +955,17 @@ int main() {
         gspWaitForVBlank();
     }
 
+    // Fence the last submitted frame before presenters with direct cleanup release textures.
+    renderer.beginFrame();
+    renderer.endFrame();
     player.exit();
     decisionMenu.clear();
     rewardMenu.clear();
     battleMenu.clear();
     partyMenu.clear();
     frontend.clear(&renderer);
-    setup.clear();
-    battleHud.clear();
+    setup.clear(&renderer);
+    battleHud.clear(&renderer);
     arena.clear(&renderer);
     secondEnemySprites.invalidate(&renderer);
     pokemonSprites.invalidate(&renderer);

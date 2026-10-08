@@ -783,3 +783,5 @@ La búsqueda del índice generado usa búsqueda binaria sobre identidades ordena
 - [ ] Revisión visual del fondo adaptado y retiro GPU de arena/capas: reemplazo y limpieza usan `retireSpriteSheet` con renderer; harness actualizado sin ejecutar. Fondos de batalla y capas todavía tienen escalas fraccionales pendientes.
 
 - [ ] HUD PS: tween visual conectado al reloj y a la identidad/lado de cada actor; duración `clamp(abs(lastHp-hp)*5,250,5000)`, `Sine.easeOut`, números `ceil(ratio*maxHp)` y barra recortada a píxeles enteros. Fuente pinned: `src/ui/battle-info/battle-info.ts::updatePokemonHp`, `player-battle-info.ts::onHpTweenUpdate`, `src/system/settings/default-settings.ts` (DEFAULT). Casos de daño/curación/interrupción y cadencias 15/30/60 escritos, sin ejecutar. Faltan espera de fases, ajustes persistentes de velocidad y comparación visual; no modifica los PS de gameplay.
+
+- [ ] Selector/HUD: limpieza explícita e iconos liberados mediante retirement GPU, drenado por SYNCDRAW antes de finalizar renderer. Guard de main/presenters PASS; caso de ownership del HUD escrito, sin ejecutar.

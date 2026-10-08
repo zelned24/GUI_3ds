@@ -256,7 +256,9 @@ int main() {
             actor.totalExperience=0;hud.draw(renderer,actor,true,258,146);assert(hud.displayedExperience()==0);
             actor.totalExperience=10;hud.draw(renderer,actor,true,258,146);assert(hud.displayedExperience()==2);
             hud.resetExperienceDisplay();hud.draw(renderer,actor,true,258,146);assert(hud.displayedExperience()==10);
-            renderer.endFrame(); // Submit before the temporary HUD releases its sheet.
+            const int hudFreeBefore=sheetFree;
+            hud.clear(&renderer);assert(sheetFree==hudFreeBefore && hud.displayedExperience()==0);
+            renderer.endFrame(); // The next SYNCDRAW drains the retired HUD sheet.
         }
         assert(renderer.setWindowStyle(2) && renderer.windowStyle()==2);
 

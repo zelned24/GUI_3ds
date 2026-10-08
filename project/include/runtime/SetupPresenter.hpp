@@ -21,16 +21,16 @@ public:
     SetupPresenter(const SetupPresenter&)=delete;
     SetupPresenter& operator=(const SetupPresenter&)=delete;
     ~SetupPresenter() {clear();}
-    void clear() {
-        if(m_logo) C2D_SpriteSheetFree(m_logo);
-        if(m_background) C2D_SpriteSheetFree(m_background);
-        if(m_grid) C2D_SpriteSheetFree(m_grid);
-        if(m_variantIcons) C2D_SpriteSheetFree(m_variantIcons);
+    void clear(Renderer2D* renderer=nullptr) {
+        if(m_logo) {if(renderer) renderer->retireSpriteSheet(m_logo);else C2D_SpriteSheetFree(m_logo);}
+        if(m_background) {if(renderer) renderer->retireSpriteSheet(m_background);else C2D_SpriteSheetFree(m_background);}
+        if(m_grid) {if(renderer) renderer->retireSpriteSheet(m_grid);else C2D_SpriteSheetFree(m_grid);}
+        if(m_variantIcons) {if(renderer) renderer->retireSpriteSheet(m_variantIcons);else C2D_SpriteSheetFree(m_variantIcons);}
         m_logo=nullptr;m_background=nullptr;m_grid=nullptr;m_variantIcons=nullptr;m_variantIconsAttempted=false;
-        m_backgroundAttempted=false;m_logoAttempted=false;m_gridAttempted=false;m_icons.clear();m_prompt.clear();
-        m_introCinematic.clear();
+        m_backgroundAttempted=false;m_logoAttempted=false;m_gridAttempted=false;m_icons.clear(renderer);m_prompt.clear(renderer);
+        m_introCinematic.clear(renderer);
     }
-    void releaseIconPages() {m_icons.clear();}
+    void releaseIconPages(Renderer2D& renderer) {m_icons.clear(&renderer);}
     bool confirmStart=false,confirmYes=true,formsOpen=false,candyStoreOpen=false;
     unsigned selectedForm=0,candyStoreSelection=0;
     const char* formFeedback=nullptr;

@@ -163,3 +163,11 @@ assert(main.includes("false,game.experienceLevelCap(),frameAnimationTimeMs"));
 const hudSource=await fs.readFile(new URL("../project/include/runtime/BattleHudPresenter.hpp",import.meta.url),"utf8");
 assert(hudSource.includes("display->tween.displayedHp(animationTimeMs)"));
 assert(hudSource.includes("std::array<HpDisplay,4>"));
+
+assert(main.includes("setup.clear(&renderer)"));
+assert(main.includes("battleHud.clear(&renderer)"));
+assert(main.includes("setup.releaseIconPages(renderer)"));
+assert(setup.includes("m_introCinematic.clear(renderer)"));
+assert(hudSource.includes("renderer->retireSpriteSheet(sheet)"));
+
+assert(main.includes("renderer.beginFrame();\n    renderer.endFrame();\n    player.exit()"));
