@@ -983,3 +983,6 @@ La búsqueda del índice generado usa búsqueda binaria sobre identidades ordena
 - [ ] Sustitución tras captura: nombres usan hasta dos líneas nativas de 10px en columna 159px, separada de icono original 40px y PS 67px. Cursor se coloca antes del icono para no taparlo, alineado al texto. Límites de columnas/filas añadidos al harness sin ejecución; guards y fuentes físicas PASS. Aspecto y navegación nativos pendientes.
 
 - [ ] Nombres de equipo en aventura: columna ampliada a 112px nativos; nivel/género pasan a segunda línea y17 con fuente 8px, separados del nombre y del estado/PS. Evita reducir prematuramente nombres a la antigua columna de 54px. Límites horizontales y verticales escritos sin ejecutar; guards JS/cobertura de glifos PASS. Composición visual nativa pendiente.
+
+- [x] Índice físico de tiles: prueba Python compara orden exacto de 5.054 sourcePath/SHA-256 con AppearanceIcons, revisión/inventario y orden de paths C++; PASS. Prueba correspondencia de metadata/píxeles, no carga/dibujo C++.
+- [x] Brain map actualizado con subgrafo nativeIconTiles: pipeline, índices, consumidores, geometría y pruebas; 265 archivos/577 dependencias. Estado actualizado distingue implementación y validación nativa pendiente.
