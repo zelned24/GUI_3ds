@@ -19,6 +19,30 @@ inline EggIncubationResult eggSpeciesWeight(EggTier tier,double starterCost,uint
     output=static_cast<uint32_t>(weight);return EggIncubationResult::Ok;
 }
 
+// General pool only; special Manaphy and legendary-focus branches occur before
+// this upstream filter. Numeric SpeciesId object keys iterate in ascending order.
+inline bool excludedFromGeneralEggPool(uint16_t dex) {
+    for(const auto excluded:kExcludedEggSpecies) if(dex==excluded) return true;
+    return false;
+}
+inline EggIncubationResult generalEggSpeciesPool(EggTier tier,uint16_t* output,size_t capacity,size_t& count) {
+    if(static_cast<unsigned>(tier)>=sizeof(kEggIncubationPolicies)/sizeof(kEggIncubationPolicies[0]))
+        return EggIncubationResult::InvalidTier;
+    size_t required=0;
+    for(const auto& row:kSpeciesEggTiers)
+        if(row.declared && row.tier==tier && !excludedFromGeneralEggPool(row.dex)) ++required;
+    if(required>capacity) return EggIncubationResult::OutputTooSmall;
+    if(required && !output) return EggIncubationResult::InvalidInput;
+    if(capacity>SIZE_MAX/sizeof(*output)) return EggIncubationResult::InvalidInput;
+    const uintptr_t first=reinterpret_cast<uintptr_t>(output),counter=reinterpret_cast<uintptr_t>(&count);
+    if(required && (first<=counter ? counter-first<required*sizeof(*output) : first-counter<sizeof(count)))
+        return EggIncubationResult::InvalidInput;
+    size_t written=0;
+    for(const auto& row:kSpeciesEggTiers)
+        if(row.declared && row.tier==tier && !excludedFromGeneralEggPool(row.dex)) output[written++]=row.dex;
+    count=written;return EggIncubationResult::Ok;
+}
+
 enum class EggSpeciesDrawResult : uint8_t {Ok,InvalidInput,InvalidTier,MissingSpecies,InvalidCost,DuplicateSpecies,WeightOverflow,InvalidRoll};
 // Caller owns the filtered upstream-order pool (unlock pity/variants/exclusions).
 // Validate every record before selection; supplied draw follows randSeedInt(total).

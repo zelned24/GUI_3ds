@@ -183,6 +183,16 @@ extern "C" int runNativeSaveChecks() {
         if(eggSpeciesWeight(static_cast<EggTier>(255),1,speciesWeight)!=EggIncubationResult::InvalidTier || speciesWeight!=777) return 1256;
         if(eggSpeciesWeight(EggTier::COMMON,NAN,speciesWeight)!=EggIncubationResult::InvalidInput || speciesWeight!=777) return 1257;
         if(eggSpeciesWeight(EggTier::COMMON,INFINITY,speciesWeight)!=EggIncubationResult::InvalidInput || speciesWeight!=777) return 1258;
+        uint16_t generalPool[sizeof(kSpeciesEggTiers)/sizeof(kSpeciesEggTiers[0])]{};size_t generalCount=999;
+        for(unsigned tier=0;tier<4;++tier) {
+            if(generalEggSpeciesPool(static_cast<EggTier>(tier),generalPool,sizeof(generalPool)/sizeof(generalPool[0]),generalCount)!=EggIncubationResult::Ok || !generalCount) return 1266;
+            for(size_t i=0;i<generalCount;++i) {
+                if(excludedFromGeneralEggPool(generalPool[i]) || (i && generalPool[i-1]>=generalPool[i])) return 1267;
+            }
+        }
+        generalCount=999;
+        if(generalEggSpeciesPool(EggTier::COMMON,generalPool,0,generalCount)!=EggIncubationResult::OutputTooSmall || generalCount!=999) return 1268;
+        if(!excludedFromGeneralEggPool(489) || !excludedFromGeneralEggPool(490) || !excludedFromGeneralEggPool(890) || excludedFromGeneralEggPool(1)) return 1269;
         const uint16_t eggPool[]={1,4};uint32_t poolWeight=999;uint16_t eggSpecies=777;
         if(eggSpeciesPoolWeight(EggTier::COMMON,eggPool,2,poolWeight)!=EggSpeciesDrawResult::Ok || poolWeight!=200) return 1259;
         if(eggSpeciesForWeightedRoll(EggTier::COMMON,eggPool,2,99,eggSpecies)!=EggSpeciesDrawResult::Ok || eggSpecies!=1) return 1260;
