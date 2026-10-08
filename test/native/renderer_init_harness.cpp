@@ -19,7 +19,7 @@ constexpr unsigned iconPageCount=sizeof(Pokerogue3DS::kPokemonIconPages)/sizeof(
 int iconTokens[iconPageCount]{},iconLoads=0;Tex3DS_SubTexture iconSub{512,512,0,1,1,0};
 int compactIconTokens[iconPageCount]{},compactIconLoads=0;Tex3DS_SubTexture compactIconSub{256,256,0,1,1,0};
 int fail=0,c3Free=0,c2Free=0,fontFree=0,sheetFree=0,bufferFree=0,targets=0;
-unsigned imageWidth=0,imageHeight=0;float imageTop=0;
+unsigned imageWidth=0,imageHeight=0;float imageTop=0,imageCenterX=0,imageCenterY=0,imageRotation=0;
 int draws=0;u32 lastFlags=0;float lastX=0,lastY=0,lastScale=0;
 int hudTokens[17]={3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19};Tex3DS_SubTexture hudSubs[17]={{20,460,0,1,1,0},{20,240,0,1,1,0},{20,240,0,1,1,0},{20,460,0,1,1,0},{20,240,0,1,1,0},{20,240,0,1,1,0},{22,64,0,1,1,0},{7,7,0,1,1,0},{48,6,0,1,1,0},{86,12,0,1,1,0},{85,2,0,1,1,0},{88,8,0,1,1,0},{88,8,0,1,1,0},{8,7,0,1,1,0},{13,7,0,1,1,0},{25,8,0,1,1,0},{16,7,0,1,1,0}};
 int hudLoads=0;bool hudMissing=false;
@@ -54,7 +54,7 @@ void C2D_TextBufClear(C2D_TextBuf buf) {if(buf==&measureToken) ++measureClears;e
 void C2D_SceneBegin(C3D_RenderTarget*) {}
 void C2D_TargetClear(C3D_RenderTarget*,u32) {}
 void C2D_DrawRectSolid(float,float,float,float,float,u32) {}
-void C2D_DrawImageAtRotated(C2D_Image image,float,float,float,float,const C2D_ImageTint*,float sx,float sy) {++imageDraws;imageWidth=image.subtex->width;imageHeight=image.subtex->height;imageTop=image.subtex->top;imageScaleX=sx;imageScaleY=sy;}
+void C2D_DrawImageAtRotated(C2D_Image image,float x,float y,float,float rotation,const C2D_ImageTint*,float sx,float sy) {imageCenterX=x;imageCenterY=y;imageRotation=rotation;++imageDraws;imageWidth=image.subtex->width;imageHeight=image.subtex->height;imageTop=image.subtex->top;imageScaleX=sx;imageScaleY=sy;}
 void C2D_PlainImageTint(C2D_ImageTint*,u32,float) {}
 void C2D_TextParse(C2D_Text*,C2D_TextBuf,const char*) {assert(false && "System font fallback in production path");}
 void C2D_TextFontParse(C2D_Text* text,C2D_Font font,C2D_TextBuf buf,const char* value) {
@@ -110,6 +110,13 @@ int main() {
             assert(imageDraws==before);
             renderer.drawImageDirect(image,0,0,24,24,0,2);
             assert(imageDraws==before+1 && imageScaleX==1 && imageScaleY==1);
+            renderer.drawImageDirect(image,1.4f,-2.7f,23,15);
+            assert(imageDraws==before+2 && imageCenterX==12.5f && imageCenterY==4.5f && imageRotation==0);
+            renderer.drawImageDirect(image,1.6f,-2.4f,23,15,0,1,true,true);
+            assert(imageDraws==before+3 && imageCenterX==13.5f && imageCenterY==5.5f && imageScaleX<0 && imageScaleY<0);
+            renderer.drawImageDirect(image,1.4f,-2.7f,23,15,0.25f);
+            assert(imageDraws==before+4 && std::fabs(imageCenterX-12.9f)<0.00001f
+                && std::fabs(imageCenterY-4.8f)<0.00001f && imageRotation==0.25f);
         }
 
         const float requested[]={0.25f,0.30f,0.375f,0.5f,1.0f};

@@ -239,7 +239,11 @@ void Renderer2D::drawImageDirect(
     // Force nearest-neighbor sampling on PICA200 GPU to preserve crisp pixel art
     C3D_TexSetFilter(img.tex, GPU_NEAREST, GPU_NEAREST);
 
-    const float centerX=x+width*0.5f,centerY=y+height*0.5f;
+    // Snap the unrotated sprite origin, not its center: odd native dimensions
+    // need half-pixel centers so their edges still land on integer pixels.
+    const float originX=rotation==0.0f ? std::round(x) : x;
+    const float originY=rotation==0.0f ? std::round(y) : y;
+    const float centerX=originX+width*0.5f,centerY=originY+height*0.5f;
     if(!std::isfinite(centerX) || !std::isfinite(centerY)) return;
     float scaleX = width / img.subtex->width;
     float scaleY = height / img.subtex->height;
