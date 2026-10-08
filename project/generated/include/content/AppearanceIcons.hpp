@@ -5090,6 +5090,35 @@ inline constexpr const char* kAppearanceIconPages[]={
 "romfs:/presentation/icons/appearance-icons-25.t3x",
 "romfs:/presentation/icons/appearance-icons-26.t3x",
 };
+inline constexpr const char* kCompactAppearanceIconPages[]={
+"romfs:/presentation/icons/appearance-icons-compact-0.t3x",
+"romfs:/presentation/icons/appearance-icons-compact-1.t3x",
+"romfs:/presentation/icons/appearance-icons-compact-2.t3x",
+"romfs:/presentation/icons/appearance-icons-compact-3.t3x",
+"romfs:/presentation/icons/appearance-icons-compact-4.t3x",
+"romfs:/presentation/icons/appearance-icons-compact-5.t3x",
+"romfs:/presentation/icons/appearance-icons-compact-6.t3x",
+"romfs:/presentation/icons/appearance-icons-compact-7.t3x",
+"romfs:/presentation/icons/appearance-icons-compact-8.t3x",
+"romfs:/presentation/icons/appearance-icons-compact-9.t3x",
+"romfs:/presentation/icons/appearance-icons-compact-10.t3x",
+"romfs:/presentation/icons/appearance-icons-compact-11.t3x",
+"romfs:/presentation/icons/appearance-icons-compact-12.t3x",
+"romfs:/presentation/icons/appearance-icons-compact-13.t3x",
+"romfs:/presentation/icons/appearance-icons-compact-14.t3x",
+"romfs:/presentation/icons/appearance-icons-compact-15.t3x",
+"romfs:/presentation/icons/appearance-icons-compact-16.t3x",
+"romfs:/presentation/icons/appearance-icons-compact-17.t3x",
+"romfs:/presentation/icons/appearance-icons-compact-18.t3x",
+"romfs:/presentation/icons/appearance-icons-compact-19.t3x",
+"romfs:/presentation/icons/appearance-icons-compact-20.t3x",
+"romfs:/presentation/icons/appearance-icons-compact-21.t3x",
+"romfs:/presentation/icons/appearance-icons-compact-22.t3x",
+"romfs:/presentation/icons/appearance-icons-compact-23.t3x",
+"romfs:/presentation/icons/appearance-icons-compact-24.t3x",
+"romfs:/presentation/icons/appearance-icons-compact-25.t3x",
+"romfs:/presentation/icons/appearance-icons-compact-26.t3x",
+};
 inline constexpr std::size_t kAppearanceIconCount=sizeof(kAppearanceIconFrames)/sizeof(kAppearanceIconFrames[0]);
 inline const AppearanceIconFrame* findAppearanceIcon(const char* sourceKey) {
     if(!sourceKey || !*sourceKey) return nullptr;

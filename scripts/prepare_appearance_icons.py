@@ -21,6 +21,8 @@ def write_index(root, report):
         header += "    {" + json.dumps(key) + "," + ",".join(str(row[field]) for field in ("page","x","y","width","height")) + "},\n"
     header += "};\ninline constexpr const char* kAppearanceIconPages[]={\n"
     header += "".join(json.dumps(row["runtimePath"])+",\n" for row in report["pages"])
+    header += "};\ninline constexpr const char* kCompactAppearanceIconPages[]={\n"
+    header += "".join(json.dumps(row["compactRuntimePath"])+",\n" for row in report["pages"])
     header += "};\ninline constexpr std::size_t kAppearanceIconCount=sizeof(kAppearanceIconFrames)/sizeof(kAppearanceIconFrames[0]);\n"
     header += """inline const AppearanceIconFrame* findAppearanceIcon(const char* sourceKey) {
     if(!sourceKey || !*sourceKey) return nullptr;
@@ -37,6 +39,20 @@ def write_index(root, report):
 """
     target=root / "project/generated/include/content/AppearanceIcons.hpp"
     target.write_bytes(header.encode("utf-8"))
+
+def prepare_compact(root, report):
+    for page in report["pages"]:
+        staged=root / "build/native-presentation/appearance-icons" / f"appearance-icons-{page['page']}.png"
+        png=staged.with_name(f"appearance-icons-compact-{page['page']}.png")
+        with Image.open(staged) as image:
+            image.convert("RGBA").resize((256,256),Image.Resampling.NEAREST).save(png)
+        target=root / "build/romfs/presentation/icons" / f"appearance-icons-compact-{page['page']}.t3x"
+        subprocess.run(["C:/devkitPro/tools/bin/tex3ds.exe","-f","rgba8","-o",str(target),str(png)],check=True,stdout=subprocess.DEVNULL)
+        page.update({"compactRuntimePath":f"romfs:/presentation/icons/appearance-icons-compact-{page['page']}.t3x",
+            "compactStagedSHA256":hashlib.sha256(png.read_bytes()).hexdigest(),
+            "compactConvertedSHA256":hashlib.sha256(target.read_bytes()).hexdigest(),
+            "compactEstimatedResidentBytes":256*256*4,"compactAdaptation":"NEAREST_1_2_NATIVE_20_15"})
+    return report
 
 def prepare(root=ROOT):
     source = inventory(root)
@@ -79,6 +95,7 @@ def prepare(root=ROOT):
         "sourceInventoryHash": source["contentSHA256"], "adaptation": "ORIGINAL_RGBA_PIXELS_1_TO_1",
         "runtimeValidation": "NOT_EXECUTED", "identityMapping": "RAW_SOURCE_PATH_ONLY",
         "pages": pages, "files": records}
+    prepare_compact(root, report)
     (root / "docs/generated/APPEARANCE_ICON_CONVERSION_REPORT.json").write_bytes(
         (json.dumps(report, sort_keys=True, indent=2)+"\n").encode("utf-8"))
     write_index(root, report)

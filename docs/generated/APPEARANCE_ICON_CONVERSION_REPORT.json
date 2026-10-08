@@ -45491,6 +45491,11 @@
   "identityMapping": "RAW_SOURCE_PATH_ONLY",
   "pages": [
     {
+      "compactAdaptation": "NEAREST_1_2_NATIVE_20_15",
+      "compactConvertedSHA256": "ef02e2f199ba71ad741465eadb20939617d81d08667075e1d74040bc61522f63",
+      "compactEstimatedResidentBytes": 262144,
+      "compactRuntimePath": "romfs:/presentation/icons/appearance-icons-compact-0.t3x",
+      "compactStagedSHA256": "f0fa6221f56785e6d5d3821ab74785b630ff3d5bf1c559ce4057e5b31a1656cb",
       "convertedSHA256": "6ee2a9b6f3cf87d96238d4449a89a49f9d9222b4a6f85a64591a7d4f78234d39",
       "estimatedResidentBytes": 1048576,
       "height": 512,
@@ -45500,6 +45505,11 @@
       "width": 512
     },
     {
+      "compactAdaptation": "NEAREST_1_2_NATIVE_20_15",
+      "compactConvertedSHA256": "ad588a05c941f1603bbf37aa6d437bc60c6ca358784121c7da09d6cc94a24c58",
+      "compactEstimatedResidentBytes": 262144,
+      "compactRuntimePath": "romfs:/presentation/icons/appearance-icons-compact-1.t3x",
+      "compactStagedSHA256": "af0b704836cb5e6be43a517296d7dbfc285ba7a6f117e14e3d79af541fca832c",
       "convertedSHA256": "538583555a6157660c99c75fd366e836c17df273a506d70060f9f1a2dd13fd58",
       "estimatedResidentBytes": 1048576,
       "height": 512,
@@ -45509,6 +45519,11 @@
       "width": 512
     },
     {
+      "compactAdaptation": "NEAREST_1_2_NATIVE_20_15",
+      "compactConvertedSHA256": "9ddf2b3018fddd179f5b064f53f9f1c612db0372190a15314a7e2c947d07189d",
+      "compactEstimatedResidentBytes": 262144,
+      "compactRuntimePath": "romfs:/presentation/icons/appearance-icons-compact-2.t3x",
+      "compactStagedSHA256": "f6e8c199c243846b723e5327907faf17743f0190423426413ed7e12064b47627",
       "convertedSHA256": "70851499a4fcfde2e356a4bb8946acd513641c0b263bce49620e2a4a317db368",
       "estimatedResidentBytes": 1048576,
       "height": 512,
@@ -45518,6 +45533,11 @@
       "width": 512
     },
     {
+      "compactAdaptation": "NEAREST_1_2_NATIVE_20_15",
+      "compactConvertedSHA256": "24192628dd76f46e6ee9591f1467765328afb54224779984f1d0c089b80bd266",
+      "compactEstimatedResidentBytes": 262144,
+      "compactRuntimePath": "romfs:/presentation/icons/appearance-icons-compact-3.t3x",
+      "compactStagedSHA256": "83c51a58110102080570581b91d9a0e26342d04b9607eb269859c7b621effffb",
       "convertedSHA256": "8525bec8a29da9763e45bf508343bd06e246f5b4e36d8d2e03ada8f434ded207",
       "estimatedResidentBytes": 1048576,
       "height": 512,
@@ -45527,6 +45547,11 @@
       "width": 512
     },
     {
+      "compactAdaptation": "NEAREST_1_2_NATIVE_20_15",
+      "compactConvertedSHA256": "ed87e4b4816665261895b582adfae86bedd2825da91f6b12808da31ef98d12ab",
+      "compactEstimatedResidentBytes": 262144,
+      "compactRuntimePath": "romfs:/presentation/icons/appearance-icons-compact-4.t3x",
+      "compactStagedSHA256": "88037ea9d2ca055fdbea082df32e0cddcd27e76ad1f566b55edf51799ce0d506",
       "convertedSHA256": "9a2ab8b69115b1c5eb5ea6f424f42a65c5b28fb92f34633f40dc380bb1a6f69a",
       "estimatedResidentBytes": 1048576,
       "height": 512,
@@ -45536,6 +45561,11 @@
       "width": 512
     },
     {
+      "compactAdaptation": "NEAREST_1_2_NATIVE_20_15",
+      "compactConvertedSHA256": "c5a92fe91fd7d6f8f739eb7e90d70d7a52734bd366e9cdd77822f1ddd3b78a58",
+      "compactEstimatedResidentBytes": 262144,
+      "compactRuntimePath": "romfs:/presentation/icons/appearance-icons-compact-5.t3x",
+      "compactStagedSHA256": "822548fb74dd14bb55ba02dea47caf65d9bde8ddfe9cca60b5c3545403320771",
       "convertedSHA256": "75d1b61bee25764e4c09da61d75873c8c95118d8a8d3d07257aecb14639fb7dc",
       "estimatedResidentBytes": 1048576,
       "height": 512,
@@ -45545,6 +45575,11 @@
       "width": 512
     },
     {
+      "compactAdaptation": "NEAREST_1_2_NATIVE_20_15",
+      "compactConvertedSHA256": "91d7cbfd49a2c1b72b6605b3574520936870523f46a2a9cf07a7b0712e377dec",
+      "compactEstimatedResidentBytes": 262144,
+      "compactRuntimePath": "romfs:/presentation/icons/appearance-icons-compact-6.t3x",
+      "compactStagedSHA256": "5b8af75f5739ad78b52e81f930e5ac9d5280129d9b1e521927e10b378bbb165b",
       "convertedSHA256": "d8275252c76f6510173de06bb4547fcb7d81aefd17746e4a9b1aad0ea4360f4a",
       "estimatedResidentBytes": 1048576,
       "height": 512,
@@ -45554,6 +45589,11 @@
       "width": 512
     },
     {
+      "compactAdaptation": "NEAREST_1_2_NATIVE_20_15",
+      "compactConvertedSHA256": "05f6b533fc760d35b4fa2754c1ad92f8f47ca4ca8456e1802b32cd7d603e33ec",
+      "compactEstimatedResidentBytes": 262144,
+      "compactRuntimePath": "romfs:/presentation/icons/appearance-icons-compact-7.t3x",
+      "compactStagedSHA256": "d70261a23d4755bf0ca34d4c7382fa7685201246ed5010a61f0465c6bdd02010",
       "convertedSHA256": "85ae4698e23b752d231f2e99b58b44f1cee12187671136064d6cef706af75203",
       "estimatedResidentBytes": 1048576,
       "height": 512,
@@ -45563,6 +45603,11 @@
       "width": 512
     },
     {
+      "compactAdaptation": "NEAREST_1_2_NATIVE_20_15",
+      "compactConvertedSHA256": "1f67a6b2e0ef207ac227b0ff469feda83147d515303c8df86a4b43693dc3f612",
+      "compactEstimatedResidentBytes": 262144,
+      "compactRuntimePath": "romfs:/presentation/icons/appearance-icons-compact-8.t3x",
+      "compactStagedSHA256": "8afd8cd5576ed834ab4de4fa64982c4eec85f48cd207bc7e223a2ce5fb36ad65",
       "convertedSHA256": "4aa5c066bbc8d68376afbe025bf5fdeaedac4e963b2cd856b212e83f83339e70",
       "estimatedResidentBytes": 1048576,
       "height": 512,
@@ -45572,6 +45617,11 @@
       "width": 512
     },
     {
+      "compactAdaptation": "NEAREST_1_2_NATIVE_20_15",
+      "compactConvertedSHA256": "d8662eb957f83eb7f451b0110c1eb5b97d5660f03ad7e5d1d706e1fd8b9e5dc8",
+      "compactEstimatedResidentBytes": 262144,
+      "compactRuntimePath": "romfs:/presentation/icons/appearance-icons-compact-9.t3x",
+      "compactStagedSHA256": "f98f257902adfef3ed9fd53edb624a9d423cb708f4d6699223e72d587a1eac4e",
       "convertedSHA256": "dc84ce45cb81bc7dac2e2840e622aeb593568f424598c244fb487cafa13a2e07",
       "estimatedResidentBytes": 1048576,
       "height": 512,
@@ -45581,6 +45631,11 @@
       "width": 512
     },
     {
+      "compactAdaptation": "NEAREST_1_2_NATIVE_20_15",
+      "compactConvertedSHA256": "57cbc66044607e2fbf14ea8e5939ab8ac8057f3e37e820539d23639ee596e013",
+      "compactEstimatedResidentBytes": 262144,
+      "compactRuntimePath": "romfs:/presentation/icons/appearance-icons-compact-10.t3x",
+      "compactStagedSHA256": "3c993fc060f3b345779cf28bf4822952d2a58b061d58802cfbdfc191b95d51c3",
       "convertedSHA256": "563351672d2618739b917db4c2717a6fbdeff09fa70c7e857211bd02095c9a47",
       "estimatedResidentBytes": 1048576,
       "height": 512,
@@ -45590,6 +45645,11 @@
       "width": 512
     },
     {
+      "compactAdaptation": "NEAREST_1_2_NATIVE_20_15",
+      "compactConvertedSHA256": "0cb29f0dc5d784a253c06e96b128d3f4448a8ef259e8719613095ed5d4c947e7",
+      "compactEstimatedResidentBytes": 262144,
+      "compactRuntimePath": "romfs:/presentation/icons/appearance-icons-compact-11.t3x",
+      "compactStagedSHA256": "eb2f62cbbe57439f311afa495811df986bbb5dc803eff62534c6536f212cee4c",
       "convertedSHA256": "4a6ef8f94785e884454226aa32fc52ec4cbde0a56eaf75c9bfe6352c3f7bec33",
       "estimatedResidentBytes": 1048576,
       "height": 512,
@@ -45599,6 +45659,11 @@
       "width": 512
     },
     {
+      "compactAdaptation": "NEAREST_1_2_NATIVE_20_15",
+      "compactConvertedSHA256": "f59984bade58c5e0d3a7be35f83048cca26470500bce3fdd6bb9fd0b5da9d1c2",
+      "compactEstimatedResidentBytes": 262144,
+      "compactRuntimePath": "romfs:/presentation/icons/appearance-icons-compact-12.t3x",
+      "compactStagedSHA256": "c17a5edc43e827d29c0c07f6eba00f8f11660bdee2a3367a9ac99ac20d63b0df",
       "convertedSHA256": "afade74b44e9641cb6308c5901de7b26598edd0b04f3878e6042d7596f04b1eb",
       "estimatedResidentBytes": 1048576,
       "height": 512,
@@ -45608,6 +45673,11 @@
       "width": 512
     },
     {
+      "compactAdaptation": "NEAREST_1_2_NATIVE_20_15",
+      "compactConvertedSHA256": "43dcc54250fd82fe93b9b1e3cfb7976d249c89a890a0e7d9982ff4c7840f9174",
+      "compactEstimatedResidentBytes": 262144,
+      "compactRuntimePath": "romfs:/presentation/icons/appearance-icons-compact-13.t3x",
+      "compactStagedSHA256": "8cff2eff0b8eee0a1fe43b489e525dc88def16172643a02efa7224499d7503b2",
       "convertedSHA256": "0fe22b54e8ee5c1992dc34e5f0155973fc63a13634a9c5af7a5c4bc37c497da0",
       "estimatedResidentBytes": 1048576,
       "height": 512,
@@ -45617,6 +45687,11 @@
       "width": 512
     },
     {
+      "compactAdaptation": "NEAREST_1_2_NATIVE_20_15",
+      "compactConvertedSHA256": "45edef94c29a7418e83fc1bcae61e05d0dbaea1ce5cb3da7690732abd88895fc",
+      "compactEstimatedResidentBytes": 262144,
+      "compactRuntimePath": "romfs:/presentation/icons/appearance-icons-compact-14.t3x",
+      "compactStagedSHA256": "3c809c3d01797a7f62f0390b5a0cb75ec634cb1d6a1ad99276638088ae08e050",
       "convertedSHA256": "d499e99bd1ac4feb915818f9298eb1004fd8fffac5d822e3d8cf41bb80bd8186",
       "estimatedResidentBytes": 1048576,
       "height": 512,
@@ -45626,6 +45701,11 @@
       "width": 512
     },
     {
+      "compactAdaptation": "NEAREST_1_2_NATIVE_20_15",
+      "compactConvertedSHA256": "c64f43342754f97cb2164e31d9220450a1a687b37c952a9c78de4e22695916b6",
+      "compactEstimatedResidentBytes": 262144,
+      "compactRuntimePath": "romfs:/presentation/icons/appearance-icons-compact-15.t3x",
+      "compactStagedSHA256": "c05629c6137e5b1889d719984cc17936ff8154c2dda58a9e85a58ece8f1b4d09",
       "convertedSHA256": "dfadcec656b508b4e255585323da40d390510c1cdd288bd566e7e6d31e663e84",
       "estimatedResidentBytes": 1048576,
       "height": 512,
@@ -45635,6 +45715,11 @@
       "width": 512
     },
     {
+      "compactAdaptation": "NEAREST_1_2_NATIVE_20_15",
+      "compactConvertedSHA256": "affb525f3785283d2447935345d340034684bcc99c1fb64508fc69c483c861d2",
+      "compactEstimatedResidentBytes": 262144,
+      "compactRuntimePath": "romfs:/presentation/icons/appearance-icons-compact-16.t3x",
+      "compactStagedSHA256": "b112e842323b4f6497e07e65b9b7401925ee56859c5ec1aa60217fa249e920f5",
       "convertedSHA256": "2f71d42af6aef334b4bd476206501ada393fe8e2702337e11cb23ccb33bb8b88",
       "estimatedResidentBytes": 1048576,
       "height": 512,
@@ -45644,6 +45729,11 @@
       "width": 512
     },
     {
+      "compactAdaptation": "NEAREST_1_2_NATIVE_20_15",
+      "compactConvertedSHA256": "a99a8157a69b3419cb73056fb752bfd516bf1decf80a226635353795362460fd",
+      "compactEstimatedResidentBytes": 262144,
+      "compactRuntimePath": "romfs:/presentation/icons/appearance-icons-compact-17.t3x",
+      "compactStagedSHA256": "d3d8283f90e82132cd6682ba24eab4c18b5d8265bb5c4d4a319a72162f45e7b9",
       "convertedSHA256": "9b84dbb95eefdb0de26274a369952d43ff21a3b24a0adacd172713b461a7fd44",
       "estimatedResidentBytes": 1048576,
       "height": 512,
@@ -45653,6 +45743,11 @@
       "width": 512
     },
     {
+      "compactAdaptation": "NEAREST_1_2_NATIVE_20_15",
+      "compactConvertedSHA256": "5a0dd78a3b1e8809edb51d8bbc7f8274a8e175508fce1ad6801db92fe84828a5",
+      "compactEstimatedResidentBytes": 262144,
+      "compactRuntimePath": "romfs:/presentation/icons/appearance-icons-compact-18.t3x",
+      "compactStagedSHA256": "e93820f8fbe0793fdbf1e04760ee7d0428e2fec63e685ec282313b8c8d75c915",
       "convertedSHA256": "c37a1c035023d39aaa6b9c40ddd2395912ae43826611be8a0d70321956bb866c",
       "estimatedResidentBytes": 1048576,
       "height": 512,
@@ -45662,6 +45757,11 @@
       "width": 512
     },
     {
+      "compactAdaptation": "NEAREST_1_2_NATIVE_20_15",
+      "compactConvertedSHA256": "c6e5b1168a439d033275bf88c77a2f66d4c894dd2e3e414da39e8e53bf6228bc",
+      "compactEstimatedResidentBytes": 262144,
+      "compactRuntimePath": "romfs:/presentation/icons/appearance-icons-compact-19.t3x",
+      "compactStagedSHA256": "10d690b81aed72f3801cd42a7361602692947d7a3b61bd3cf5bcfe3276b227be",
       "convertedSHA256": "71a168225ea0388ee636315244d762b0b65c7fc2250f7db420f918f8b0d9645e",
       "estimatedResidentBytes": 1048576,
       "height": 512,
@@ -45671,6 +45771,11 @@
       "width": 512
     },
     {
+      "compactAdaptation": "NEAREST_1_2_NATIVE_20_15",
+      "compactConvertedSHA256": "1f45dd69f9b640efa16a455cef3db3d818186adfdcd498d7090b700c73e424a3",
+      "compactEstimatedResidentBytes": 262144,
+      "compactRuntimePath": "romfs:/presentation/icons/appearance-icons-compact-20.t3x",
+      "compactStagedSHA256": "1ca7bb62d866d0ab84f87f5c471887db7edbe15344e0c970d8fe7a9a8fbb8e42",
       "convertedSHA256": "e1b44c90540ee1a9bcef2cd7928a22d1850f9254160009499f3b9ea457ecd1e9",
       "estimatedResidentBytes": 1048576,
       "height": 512,
@@ -45680,6 +45785,11 @@
       "width": 512
     },
     {
+      "compactAdaptation": "NEAREST_1_2_NATIVE_20_15",
+      "compactConvertedSHA256": "f633492cd0a81c4743671c1c24dbd47ff5192116e33b75c92dc73b6ed0785fbf",
+      "compactEstimatedResidentBytes": 262144,
+      "compactRuntimePath": "romfs:/presentation/icons/appearance-icons-compact-21.t3x",
+      "compactStagedSHA256": "039bf4966226558e5f70e843faca73951e528c02aaea62869c85dbfdb05fdbf6",
       "convertedSHA256": "883867a5020cf1e35283969e6ff66a67df4430c138b1693055e0a8332da3b140",
       "estimatedResidentBytes": 1048576,
       "height": 512,
@@ -45689,6 +45799,11 @@
       "width": 512
     },
     {
+      "compactAdaptation": "NEAREST_1_2_NATIVE_20_15",
+      "compactConvertedSHA256": "11b0953f47ac0d82bf7d394b2dc6471c510586ab5043ef42f6bc60087498ad69",
+      "compactEstimatedResidentBytes": 262144,
+      "compactRuntimePath": "romfs:/presentation/icons/appearance-icons-compact-22.t3x",
+      "compactStagedSHA256": "13a36dc50c58a1f24a4d9ebffaa85c59e994b1a12b2883fa42ed237289bbc7b1",
       "convertedSHA256": "87efe1ee4e81d27d13844ec7523c993a85a1013e9819f6709381459f33d1e380",
       "estimatedResidentBytes": 1048576,
       "height": 512,
@@ -45698,6 +45813,11 @@
       "width": 512
     },
     {
+      "compactAdaptation": "NEAREST_1_2_NATIVE_20_15",
+      "compactConvertedSHA256": "89364b58cbd669c20123d98f5f24983f89e313e65054ad164cbd7ab24f0fae73",
+      "compactEstimatedResidentBytes": 262144,
+      "compactRuntimePath": "romfs:/presentation/icons/appearance-icons-compact-23.t3x",
+      "compactStagedSHA256": "0cba5e9b286c8f583775229ca64b8a93290d9ca4236f0ffdf18a21b60b1d32cb",
       "convertedSHA256": "c3f4cd7c41236d2b7c15f6dd20039a3e5cedeb1f64c0772ae463eaee6f481325",
       "estimatedResidentBytes": 1048576,
       "height": 512,
@@ -45707,6 +45827,11 @@
       "width": 512
     },
     {
+      "compactAdaptation": "NEAREST_1_2_NATIVE_20_15",
+      "compactConvertedSHA256": "c9467ea85183c7596b4fa4c68a931ae3c228b8321e65e6af08e8462c58baa357",
+      "compactEstimatedResidentBytes": 262144,
+      "compactRuntimePath": "romfs:/presentation/icons/appearance-icons-compact-24.t3x",
+      "compactStagedSHA256": "bbd7199698712206cfc5a8ff4303a5cd556e99a7d2e2971eede3359e33e19b83",
       "convertedSHA256": "ee74e583229eb9b2c35b374ed7cf3efd9d9d542d1b9c1237afbd63b9908ed2ff",
       "estimatedResidentBytes": 1048576,
       "height": 512,
@@ -45716,6 +45841,11 @@
       "width": 512
     },
     {
+      "compactAdaptation": "NEAREST_1_2_NATIVE_20_15",
+      "compactConvertedSHA256": "4da34c97585cfbab5ffdcdea5498dba82a9ef32ebabfc13e2426142481f91ce3",
+      "compactEstimatedResidentBytes": 262144,
+      "compactRuntimePath": "romfs:/presentation/icons/appearance-icons-compact-25.t3x",
+      "compactStagedSHA256": "58734def1ebd884fcd2850f2f4c54b8e2e2d8c8bee53497c2afdf21bec638cb2",
       "convertedSHA256": "b9fd89adcf5b566650e53a1163742d55562ec042b78d6c18d74dfaed90902ec2",
       "estimatedResidentBytes": 1048576,
       "height": 512,
@@ -45725,6 +45855,11 @@
       "width": 512
     },
     {
+      "compactAdaptation": "NEAREST_1_2_NATIVE_20_15",
+      "compactConvertedSHA256": "a0f193218adc295e9424d1dd513798e5d1aaabbf8e32a667db53f42b769a1d6a",
+      "compactEstimatedResidentBytes": 262144,
+      "compactRuntimePath": "romfs:/presentation/icons/appearance-icons-compact-26.t3x",
+      "compactStagedSHA256": "00f11e40f9caa89c4c5a4526712cb8b1881908ef8ff7173a0a53194d5349cbd7",
       "convertedSHA256": "0d516759b3330265c1af735e0fa6ada4563400d1d3b782dc1f36711460084741",
       "estimatedResidentBytes": 1048576,
       "height": 512,
