@@ -977,7 +977,7 @@ int main() {
     decisionMenu.clear();
     rewardMenu.clear();
     battleMenu.clear();
-    partyMenu.clear();
+    partyMenu.clear(&renderer);
     frontend.clear(&renderer);
     setup.clear(&renderer);
     battleHud.clear(&renderer);

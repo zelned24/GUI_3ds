@@ -838,3 +838,5 @@ La búsqueda del índice generado usa búsqueda binaria sobre identidades ordena
 - [ ] Ruta nativa de iconos compactos: harness renderer cubre ocho páginas compactas, geometría reducida, escala 1×, caché sin recarga por frame, IDs ausentes y retirement hasta fence GPU. Pruebas escritas y registradas en harness existente, sin ejecutar por instrucción de no compilar.
 
 - [ ] Equipo: género real del battleState presentado junto al nombre, reservando ancho y usando tamaño raster del nombre; no inventa símbolo para género desconocido/genderless. Guards PASS; validación visual y variantes shiny en esta lista pendientes.
+
+- [ ] Equipo: indicador shiny original 15×14 a 1:1 con tint de variante 0/1/2, solo para identidad/apariencia resueltas del actor; no infiere shiny de datos ausentes. Hoja física existente reutilizada, carga diferida y retiro GPU conectado al cierre. Guards PASS; composición/ejecución nativa pendientes.

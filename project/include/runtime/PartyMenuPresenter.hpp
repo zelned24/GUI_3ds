@@ -4,6 +4,7 @@
 #include "runtime/PokemonIconPresenter.hpp"
 #include "runtime/TitleMenuPresenter.hpp"
 #include "runtime/TypePresentation.hpp"
+#include "content/StarterVariantIcons.hpp"
 #include "game/FirstRunRuntime.hpp"
 #include <cstdio>
 #include <cstring>
@@ -14,7 +15,15 @@ namespace Pokerogue3DS {
 
 class PartyMenuPresenter {
 public:
-    void clear() { m_icons.clear(); m_cursor.clear(); }
+    ~PartyMenuPresenter() {clear();}
+    void clear(Renderer2D* renderer=nullptr) {
+        m_icons.clear(renderer);m_cursor.clear(renderer);
+        if(m_variantSheet) {
+            if(renderer) renderer->retireSpriteSheet(m_variantSheet);
+            else C2D_SpriteSheetFree(m_variantSheet);
+        }
+        m_variantSheet=nullptr;m_variantAttempted=false;
+    }
     bool open = false;
     unsigned selected = 0;
 
@@ -58,6 +67,9 @@ public:
                 }
             }
             m_icons.draw(renderer, actor.dex, formIndex, bounds.x + 14, y + 2, 1.0f, 1.0f);
+
+            if(actor.actorIdentityResolved && actor.actor.appearanceResolved && actor.actor.shiny && actor.actor.shinyVariant<=2)
+                drawVariant(renderer,actor.actor.shinyVariant,bounds.x+14,y+9);
 
             // Name + Gender
             const char* name = actor.localizedName ? actor.localizedName : "Pokémon";
@@ -121,6 +133,21 @@ public:
     }
 
 private:
+    void drawVariant(Renderer2D& renderer,unsigned variant,float x,float y) {
+        if(!m_variantAttempted) {
+            m_variantAttempted=true;m_variantSheet=C2D_SpriteSheetLoad(kStarterVariantIconPath);
+            if(m_variantSheet) {
+                const auto image=C2D_SpriteSheetGetImage(m_variantSheet,0);
+                if(image.tex) C3D_TexSetFilter(image.tex,GPU_NEAREST,GPU_NEAREST);
+            }
+        }
+        if(!m_variantSheet) return;
+        const auto& frame=kStarterVariantIconFrames[variant];
+        renderer.drawAtlasFrame(C2D_SpriteSheetGetImage(m_variantSheet,0),frame,x,y,
+            frame.width,frame.height,1,kStarterVariantIconTints[variant]);
+    }
+    C2D_SpriteSheet m_variantSheet=nullptr;
+    bool m_variantAttempted=false;
     PokemonIconPresenter m_icons{true};
     TitleMenuPresenter m_cursor;
 };

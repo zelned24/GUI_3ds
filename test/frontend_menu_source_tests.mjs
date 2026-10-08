@@ -220,3 +220,7 @@ assert(!partyPresentation.includes("y + 2, 1.0f, 0.5f"));
 
 assert(partyPresentation.includes("gender ? 74 : 88"));
 assert(partyPresentation.includes("bounds.x+40+nameWidth+3"));
+
+assert(partyPresentation.includes("actor.actorIdentityResolved && actor.actor.appearanceResolved && actor.actor.shiny"));
+assert(partyPresentation.includes("kStarterVariantIconFrames[variant]"));
+assert(main.includes("partyMenu.clear(&renderer)"));
