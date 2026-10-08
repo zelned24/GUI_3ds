@@ -188,6 +188,12 @@ int main() {
         const auto rect=rewards.rectangle(i);
         assert(rewards.hitTest(rect.x,rect.y,3)==int(i));
     }
+    // Every native touch pixel belongs to exactly one submenu row or none.
+    for(unsigned y=0;y<=240;++y) for(unsigned x=0;x<=320;++x) {
+        const int expected=x>=24 && x<296 && y>=17 && y<197 ? int((y-17)/20) : -1;
+        assert(globalMenuRowAt(x,y)==expected);
+    }
+    assert(!globalMenuRowRectangle(kGlobalMenuRowCount).contains(0,0));
     FrontendMenuPresenter global(false);
     assert(global.input(KEY_X)==FrontendCommand::None && global.page()==FrontendPage::GlobalMenu);
     assert(global.input(KEY_A)==FrontendCommand::None && global.page()==FrontendPage::Settings);

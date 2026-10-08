@@ -189,7 +189,7 @@ public:
             if(keys & (KEY_DUP | KEY_CPAD_UP)) m_selected=(m_selected+total-1)%total;
             if(keys & (KEY_DDOWN | KEY_CPAD_DOWN)) m_selected=(m_selected+1)%total;
             if(keys & KEY_TOUCH) for(unsigned i=0;i<total;++i)
-                if(TouchRect{24,rowY(i),272,rowHeight()}.contains(touchX,touchY)) {
+                if(rowRectangle(i).contains(touchX,touchY)) {
                     if(m_selected==i) activatedByTouch = true;
                     else m_selected=i;
                     break;
@@ -467,7 +467,10 @@ private:
             ++slot;
         }
     }
-    unsigned rowY(unsigned index) const {return (m_page==FrontendPage::GlobalMenu ? 17 : 43)+index*rowHeight();}
+    TouchRect rowRectangle(unsigned index) const {
+        return m_page==FrontendPage::GlobalMenu ? globalMenuRowRectangle(index) : TouchRect{24,43+index*29,272,29};
+    }
+    unsigned rowY(unsigned index) const {return rowRectangle(index).y;}
     unsigned rowHeight() const {return m_page==FrontendPage::GlobalMenu ? 20 : 29;}
     static const char* const* globalMenuKeys() {
         static const char* keys[]={"menu-ui-handler:gameSettings","menu-ui-handler:achievements",
@@ -479,7 +482,7 @@ private:
     unsigned rowCount() const {
         switch(m_page) {
         case FrontendPage::ManageData:return 2;
-        case FrontendPage::GlobalMenu:return 9;
+        case FrontendPage::GlobalMenu:return kGlobalMenuRowCount;
         case FrontendPage::Modes:return sizeof(kFrontendModes)/sizeof(kFrontendModes[0]);
         case FrontendPage::Load:return m_titleSelection.hasContinue ? 1 : 0;
         case FrontendPage::Settings:return 4;

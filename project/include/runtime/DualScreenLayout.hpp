@@ -24,6 +24,16 @@ struct TouchRect {
         return px>=x && px-x<width && py>=y && py-y<height;
     }
 };
+// Nine upstream submenu entries fit the 320x240 touch screen.
+inline constexpr unsigned kGlobalMenuRowCount=9;
+inline constexpr TouchRect globalMenuRowRectangle(unsigned index) {
+    return index<kGlobalMenuRowCount ? TouchRect{24,17+index*20,272,20} : TouchRect{};
+}
+inline constexpr int globalMenuRowAt(unsigned x,unsigned y) {
+    for(unsigned i=0;i<kGlobalMenuRowCount;++i)
+        if(globalMenuRowRectangle(i).contains(x,y)) return int(i);
+    return -1;
+}
 // Pokédex uses native 40x30 icons in a 6x4 grid; draw and touch share bounds.
 inline constexpr unsigned kPokedexPageSize=24;
 inline constexpr TouchRect kPokedexFilterRects[]={{10,24,146,14},{164,24,146,14}};
