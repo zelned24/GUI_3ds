@@ -17,7 +17,16 @@ for row in report["files"]:
     with Image.open(source) as original, Image.open(staged) as raster:
         assert list(original.size) == row["sourceSize"]
         assert raster.size == (row["width"], row["height"])
-        expected = original.convert("RGBA").resize(raster.size, Image.Resampling.NEAREST)
+        assert raster.size == (400, 240)
+        source_raster_size = (400, original.height*5//4)
+        assert row["sourceRasterSize"] == list(source_raster_size)
+        assert row["bottomExtension"] == "LAST_SOURCE_ROW"
+        field = original.convert("RGBA").resize(source_raster_size, Image.Resampling.NEAREST)
+        expected = Image.new("RGBA", (400,240))
+        expected.paste(field,(0,0))
+        if field.height<240:
+            edge=field.crop((0,field.height-1,400,field.height))
+            expected.paste(edge.resize((400,240-field.height),Image.Resampling.NEAREST),(0,field.height))
         assert expected.tobytes() == raster.convert("RGBA").tobytes()
     title_png = staged.with_name(row["key"] + "-title.png")
     assert hashlib.sha256(title_png.read_bytes()).hexdigest() == row["titleStagedSHA256"]

@@ -16,8 +16,18 @@ def prepare(root, source, repository, revision):
             source_size = image.size
             if image.width != 320:
                 raise ValueError(f"Unsupported arena geometry: {png}: {image.size}")
-            runtime_size = (400, image.height * 5 // 4)
-            raster = image.convert("RGBA").resize(runtime_size, Image.Resampling.NEAREST)
+            source_raster_size = (400, image.height * 5 // 4)
+            if source_raster_size[1] > 240:
+                raise ValueError(f"Arena background exceeds display: {png}")
+            runtime_size = (400, 240)
+            field = image.convert("RGBA").resize(source_raster_size, Image.Resampling.NEAREST)
+            raster = Image.new("RGBA", runtime_size)
+            raster.paste(field, (0, 0))
+            if field.height < raster.height:
+                # Preserve the upstream horizon/platform coordinate system.
+                # Extend existing ground pixels rather than stretching the scene.
+                edge = field.crop((0, field.height-1, field.width, field.height))
+                raster.paste(edge.resize((field.width, raster.height-field.height), Image.Resampling.NEAREST), (0, field.height))
             adapted = staged / (key + ".png")
             raster.save(adapted)
             crop_width = image.height * 400 / 240
@@ -34,6 +44,7 @@ def prepare(root, source, repository, revision):
             "sourceSHA256": hashlib.sha256(png.read_bytes()).hexdigest(),
             "sourceSize": list(source_size), "width": runtime_size[0], "height": runtime_size[1],
             "resampling": "NEAREST", "battleRuntimeScale": 1,
+            "sourceRasterSize": list(source_raster_size), "bottomExtension": "LAST_SOURCE_ROW",
             "titleSourceBox": title_box, "titleRuntimeSize": [400, 240],
             "titleRuntimePath": "romfs:/presentation/arenas/" + key + "-title.t3x",
             "titleStagedSHA256": hashlib.sha256(title_png.read_bytes()).hexdigest(),

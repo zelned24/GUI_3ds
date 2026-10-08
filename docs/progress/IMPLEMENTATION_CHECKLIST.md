@@ -1105,7 +1105,7 @@ La compilación ARM solicitada terminó correctamente; no prueba ejecución de h
 - [ ] Verificar letras pequeñas y separación de etiquetas A/B en Azahar: reproducción offline confirma trazos rotos en rasterizaciones de 8/10 puntos; el renderer ahora usa 12 puntos y múltiplos enteros, sin encoger a fuentes dañadas. Revisar también etiquetas abreviadas por falta de ancho.
 - [ ] Comprobar A/B y táctil en cada menú: corregidas zonas táctiles de confirmar/volver en movimientos, equipo y destinatarios de recompensas; pruebas nativas pendientes. Diferenciar comandos rechazados por reglas pendientes de fallos de navegación.
 - [ ] Conectar reproducción real de audio; no hay backend de audio en producción.
-- [ ] Alinear la plataforma del jugador y cubrir por completo el fondo superior.
+- [ ] Verificar el fondo superior completo: 39 fondos convertidos a 400×240 conservando el horizonte y extendiendo la última fila original; comprobaciones físicas pasan. La alineación de la plataforma del jugador sigue pendiente.
 - [ ] Resolver iconos de objetos y nombres de recompensas parametrizadas, sin sustituirlos por imágenes inventadas.
 - [ ] Verificar recompensas con información solo arriba y controles abajo; eliminados el encabezado, las instrucciones duplicadas y el log de la pantalla inferior.
 - [ ] Completar la respuesta del enemigo tras captura fallida: la captura muestra `Enemy response could not resolve`.
