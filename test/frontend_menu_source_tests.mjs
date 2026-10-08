@@ -372,3 +372,8 @@ assert(touchConfirmation.includes('renderer.drawWindow(kConfirmationYesRect.x'))
 assert(touchConfirmation.includes('renderer.drawWindow(kConfirmationNoRect.x'));
 assert(touchConfirmation.includes('kConfirmationYesRect.width-16'));
 assert(touchConfirmation.includes('kConfirmationNoRect.width-16'));
+
+const windowDraw=rendererSource.slice(rendererSource.indexOf('bool Renderer2D::drawWindow('),rendererSource.indexOf('bool Renderer2D::drawTypeLabel('));
+assert(windowDraw.includes('!std::isfinite(width)'));
+assert(windowDraw.includes('width=std::round(width);height=std::round(height)'));
+assert(windowDraw.includes('image.subtex->left>=image.subtex->right'));

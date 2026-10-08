@@ -281,6 +281,19 @@ int main() {
         }
         hudSubs[11].width=87;assert(!renderer.drawHudGraphic("numbers","0",0,0));hudSubs[11].width=88;
         assert(renderer.drawHudGraphic("numbers","0",0,0));
+        {
+            const int before=imageDraws;
+            assert(!renderer.drawWindow(NAN,0,100,100));
+            assert(!renderer.drawWindow(0,NAN,100,100));
+            assert(!renderer.drawWindow(0,0,NAN,100));
+            assert(!renderer.drawWindow(0,0,100,INFINITY));
+            assert(imageDraws==before);
+            assert(renderer.drawWindow(1.4f,2.7f,100.4f,50.4f));
+            assert(imageDraws==before+9);
+            // Last patch shares integer-aligned outer edges at (101,53).
+            assert(imageCenterX+imageWidth*imageScaleX/2==101);
+            assert(imageCenterY+imageHeight*imageScaleY/2==53);
+        }
         assert(!renderer.setWindowStyle(2)); // Never free a texture before GPU submission.
         {
             Pokerogue3DS::BattleHudPresenter hud;

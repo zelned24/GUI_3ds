@@ -519,9 +519,19 @@ bool Renderer2D::drawWindow(float x,float y,float width,float height) {
 #if defined(__arm__) || defined(__3DS__) || defined(_3DS)
     const float border=Pokerogue3DS::kWindowBorder;
     if (!m_initialized || !m_frameActive || !m_currentTarget || !m_window ||
+        !std::isfinite(x) || !std::isfinite(y) || !std::isfinite(width) || !std::isfinite(height) ||
         width<2*border || height<2*border) return false;
+    // Snap the whole nine-slice geometry together: independently rounded origins
+    // with fractional patch sizes can leave seams between adjacent patches.
+    x=std::round(x);y=std::round(y);
+    width=std::round(width);height=std::round(height);
+    if(!std::isfinite(x+width) || !std::isfinite(y+height)
+        || width<2*border || height<2*border) return false;
     const auto image=C2D_SpriteSheetGetImage(m_window,0);
-    if (!image.subtex || image.subtex->width!=24 || image.subtex->height!=24) return false;
+    if (!image.tex || !image.subtex || image.subtex->width!=24 || image.subtex->height!=24
+        || !std::isfinite(image.subtex->left) || !std::isfinite(image.subtex->right)
+        || !std::isfinite(image.subtex->top) || !std::isfinite(image.subtex->bottom)
+        || image.subtex->left>=image.subtex->right || image.subtex->top<=image.subtex->bottom) return false;
     const float xs[]={x,x+border,x+width-border},ys[]={y,y+border,y+height-border};
     const float widths[]={border,width-2*border,border},heights[]={border,height-2*border,border};
     for (unsigned row=0;row<3;++row) for (unsigned column=0;column<3;++column) {
