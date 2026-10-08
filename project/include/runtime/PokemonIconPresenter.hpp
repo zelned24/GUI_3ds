@@ -3,10 +3,13 @@
 #include "content/PokemonIcons.hpp"
 #include "content/CompactPokemonIcons.hpp"
 #include "content/AppearanceIconIdentities.hpp"
+#include "content/AppearanceIconTiles.hpp"
 #include "content/PokerogueRuntimeContent.hpp"
 #include <cmath>
 #include <algorithm>
 namespace Pokerogue3DS {
+static_assert(sizeof(kAppearanceIconTiles)/sizeof(kAppearanceIconTiles[0])==kAppearanceIconCount,"Native tiles must cover the physical icon index");
+static_assert(kAppearanceIconCount<65535,"Native tile identities require a wider cache key");
 inline constexpr std::size_t kPokemonIconCount=sizeof(kPokemonIcons)/sizeof(kPokemonIcons[0]);
 inline constexpr bool pokemonIconIndexOrdered() {
     for(std::size_t i=1;i<kPokemonIconCount;++i) {
@@ -51,7 +54,7 @@ inline ResolvedPokemonIcon resolvePokemonIcon(uint16_t dex,const char* formId,bo
 // Current snapshot: eight 512x512 RGBA8 pages, up to 8 MiB of texture RAM.
 class PokemonIconPresenter {
 public:
-    explicit PokemonIconPresenter(bool compact=false,unsigned appearanceCapacity=6):m_compact(compact),m_appearanceCapacity(compact && appearanceCapacity==18 ? 18 : 6) {}
+    explicit PokemonIconPresenter(bool compact=false,unsigned appearanceCapacity=6,bool nativeTiles=false):m_compact(compact),m_nativeTiles(nativeTiles),m_appearanceCapacity(compact && appearanceCapacity==18 ? 18 : 6) {}
     PokemonIconPresenter(const PokemonIconPresenter&)=delete;
     PokemonIconPresenter& operator=(const PokemonIconPresenter&)=delete;
     ~PokemonIconPresenter() {clear();}
@@ -85,8 +88,9 @@ public:
             if(!identities[i]) continue; // Legacy appearance remains explicitly unknown.
             const auto* frame=appearanceIconPhysicalFrame(identities[i]);
             if(!frame || frame->page>=sizeof(kAppearanceIconPages)/sizeof(kAppearanceIconPages[0])) return false;
-            bool present=false;for(unsigned j=0;j<pageCount;++j) if(pages[j]==frame->page) present=true;
-            if(!present) {if(pageCount==m_appearanceCapacity) return false;pages[pageCount++]=frame->page;}
+            const auto key=m_nativeTiles ? uint16_t(frame-kAppearanceIconFrames) : frame->page;
+            bool present=false;for(unsigned j=0;j<pageCount;++j) if(pages[j]==key) present=true;
+            if(!present) {if(pageCount==m_appearanceCapacity) return false;pages[pageCount++]=key;}
         }
         for(auto& slot:m_appearanceSlots) {
             bool wanted=false;for(unsigned i=0;i<pageCount;++i) if(slot.page==pages[i]) wanted=true;
@@ -100,11 +104,11 @@ public:
                 for(unsigned index=0;index<m_appearanceCapacity;++index) if(m_appearanceSlots[index].page==0xffff) {selected=&m_appearanceSlots[index];break;}
                 if(!selected) return false;
                 selected->page=pages[i];
-                selected->sheet=C2D_SpriteSheetLoad(m_compact ? kCompactAppearanceIconPages[pages[i]] : kAppearanceIconPages[pages[i]]);
+                selected->sheet=C2D_SpriteSheetLoad(m_nativeTiles ? kAppearanceIconTiles[pages[i]] : m_compact ? kCompactAppearanceIconPages[pages[i]] : kAppearanceIconPages[pages[i]]);
                 if(selected->sheet) {
                     const auto image=C2D_SpriteSheetGetImage(selected->sheet,0);
-                    const unsigned expected=m_compact ? 256 : 512;
-                    if(!image.tex || !image.subtex || image.subtex->width!=expected || image.subtex->height!=expected ||
+                    const unsigned expected=m_nativeTiles ? 64 : m_compact ? 256 : 512;
+                    if(!image.tex || !image.subtex || image.subtex->width!=expected || image.subtex->height!=(m_nativeTiles ? 32 : expected) ||
                         image.subtex->top<image.subtex->bottom) {
                         renderer.retireSpriteSheet(selected->sheet);selected->sheet=nullptr;
                     } else C3D_TexSetFilter(image.tex,GPU_NEAREST,GPU_NEAREST);
@@ -119,11 +123,12 @@ public:
         if(scale<1 || scale>2) return false;
         if(!m_appearancesReady || !std::isfinite(x) || !std::isfinite(y) || !std::isfinite(opacity) || opacity<=0) return false;
         const auto* icon=appearanceIconPhysicalFrame(identity);if(!icon) return false;
-        Slot* selected=nullptr;for(auto& slot:m_appearanceSlots) if(slot.page==icon->page) selected=&slot;
+        Slot* selected=nullptr;for(auto& slot:m_appearanceSlots) if(slot.page==(m_nativeTiles ? uint16_t(icon-kAppearanceIconFrames) : icon->page)) selected=&slot;
         if(!selected || !selected->sheet) return false;
-        const unsigned divisor=m_compact ? 2 : 1;
-        if(m_compact && ((icon->x|icon->y|icon->width|icon->height)&1)) return false;
+        const unsigned divisor=m_nativeTiles ? 1 : m_compact ? 2 : 1;
+        if(m_compact && !m_nativeTiles && ((icon->x|icon->y|icon->width|icon->height)&1)) return false;
         Renderer2D::AtlasFrame frame{uint16_t(icon->x/divisor),uint16_t(icon->y/divisor),uint16_t(icon->width/divisor),uint16_t(icon->height/divisor),uint16_t(icon->width/divisor),uint16_t(icon->height/divisor),0,0};
+        if(m_nativeTiles) {frame.x=0;frame.y=0;}
         renderer.drawAtlasFrame(C2D_SpriteSheetGetImage(selected->sheet,0),frame,std::round(x),std::round(y),frame.width*scale,frame.height*scale,std::min(opacity,1.0f));
         return true;
     }
@@ -157,7 +162,7 @@ public:
         return true;
     }
 private:
-    bool m_compact=false;
+    bool m_compact=false,m_nativeTiles=false;
     struct Slot {C2D_SpriteSheet sheet=nullptr;uint16_t page=0xffff;};
     static void clearSlot(Slot& slot,Renderer2D* renderer) {
         if(slot.sheet) {if(renderer) renderer->retireSpriteSheet(slot.sheet);else C2D_SpriteSheetFree(slot.sheet);}

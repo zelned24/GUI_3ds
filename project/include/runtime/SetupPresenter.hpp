@@ -407,7 +407,7 @@ public:
             // unseen black. Catalogue membership never implies observation.
             const uint32_t tint=starterDiscoveryTint(starterDiscovery(unlocked,progress ? progress->observedFormAttr : 0));
             bool drawn=false;
-            if(gridIcons[i].appearance) drawn=m_icons.drawAppearance(renderer,gridIcons[i].appearance,x+3,y+2,1.0f,2);
+            if(gridIcons[i].appearance) drawn=m_icons.drawAppearance(renderer,gridIcons[i].appearance,x+3,y+2);
             else if(gridIcons[i].normalIconAllowed) drawn=m_icons.draw(renderer,species->dex,gridIcons[i].formIndex,x+3,y+2,1.0f,2.0f,tint);
             if(!drawn) renderer.drawText("?",x+16,y+8,0.4f,0xffffffff);
             bool shiny=false;uint8_t variant=0;
@@ -566,7 +566,7 @@ private:
     bool m_variantIconsAttempted=false;
     bool m_backgroundAttempted=false,m_logoAttempted=false,m_gridAttempted=false;
     C2D_SpriteSheet m_logo=nullptr,m_background=nullptr,m_grid=nullptr;
-    PokemonIconPresenter m_icons{true,kStarterGridPageSize};
+    PokemonIconPresenter m_icons{true,kStarterGridPageSize,true};
     PokemonIconPresenter m_teamIcons{true};
     TitleMenuPresenter m_prompt;
     IntroCinematicPresenter m_introCinematic;

@@ -26,6 +26,7 @@ C2D_SpriteSheet C2D_SpriteSheetLoad(const char* path) {
     ++iconLoads;
     const bool compact=std::strstr(path,"appearance-icons-compact-")!=nullptr;
     iconSubtexture.width=iconSubtexture.height=compact ? 256 : 512;
+    if(std::strstr(path,"/icon-tiles/")) {iconSubtexture.width=64;iconSubtexture.height=32;}
     return failIconLoad ? nullptr : &iconTexture;
 }
 C2D_Image C2D_SpriteSheetGetImage(C2D_SpriteSheet sheet,size_t index) {
@@ -379,6 +380,17 @@ int main() {
         }
         assert(grid.prepareAppearances(renderer,batch,18) && iconLoads==before+18);
         grid.clear(&renderer);
+    }
+
+    {
+        PokemonIconPresenter nativeGrid(true,18,true);
+        const AppearanceIconIdentity* batch[]={findAppearanceIconIdentity(1,0,false,true,0)};
+        assert(batch[0] && nativeGrid.prepareAppearances(renderer,batch,1));
+        const unsigned loaded=iconLoads;
+        assert(nativeGrid.drawAppearance(renderer,batch[0],1.4f,2.7f));
+        assert(lastIconFrame.x==0 && lastIconFrame.y==0 && lastIconWidth==40 && lastIconHeight==30);
+        assert(nativeGrid.prepareAppearances(renderer,batch,1) && iconLoads==loaded);
+        nativeGrid.clear(&renderer);
     }
 
 }
