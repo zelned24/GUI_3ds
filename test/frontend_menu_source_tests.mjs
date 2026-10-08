@@ -537,3 +537,9 @@ for(const field of ['power','accuracy']) {
   assert(fightGenerated.includes(JSON.stringify('fight-ui-handler:'+field)+','+JSON.stringify(fightLocale[field])));
   assert(movePresentation.includes('runtimeUiText("fight-ui-handler:'+field+'")'));
 }
+
+// Feedback may not hide lower-screen controls that remain interactive.
+assert(!frontend.includes('if(m_feedback) renderer.drawTextFitted(m_feedback,12,214'));
+assert(frontend.includes('m_title.draw(renderer,m_titleSelection,nullptr)'));
+assert(frontend.includes('const auto& bounds=kFrontendFeedbackRect'));
+assert(main.includes('frontend.drawFeedbackTop(renderer);\n            renderer.beginBottom();'));

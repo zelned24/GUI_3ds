@@ -28,6 +28,7 @@ struct TouchRect {
         return px>=x && px-x<width && py>=y && py-y<height;
     }
 };
+inline constexpr TouchRect kFrontendFeedbackRect{12,180,376,52};
 inline constexpr TouchRect kFrontendConfirmRect{12,205,142,30};
 inline constexpr TouchRect kFrontendBackRect{166,205,142,30};
 inline constexpr TouchRect kFrontendReadOnlyBackRect{12,205,296,30};

@@ -48,6 +48,20 @@ public:
         m_titleSelection.selected=0;
         if(!hasSave) m_confirmingDelete=false;
     }
+    // Feedback belongs to the information screen. It must not replace active
+    // lower-screen controls while their touch rectangles remain enabled.
+    void drawFeedbackTop(Renderer2D& renderer) const {
+        if(!m_feedback || !*m_feedback) return;
+        const auto& bounds=kFrontendFeedbackRect;
+        renderer.drawWindow(bounds.x,bounds.y,bounds.width,bounds.height);
+        constexpr float size=0.375f;
+        const unsigned lines=textLinesWithinHeight(bounds.height-12,
+            renderer.textInkHeight(size),renderer.textLineHeight(size),2);
+        if(!lines || !renderer.drawTextBox(m_feedback,bounds.x+8,bounds.y+6,
+            size,bounds.width-16,lines,0xffffffff))
+            renderer.drawTextFitted(m_feedback,bounds.x+8,bounds.y+6,
+                size,bounds.width-16,0xffffffff);
+    }
     void drawCursor(Renderer2D& renderer, float x, float y, float size) {
         m_title.drawCursor(renderer, x, y, size);
     }
@@ -322,7 +336,7 @@ public:
         }
         if(m_page==FrontendPage::Pokedex) {drawPokedex(renderer,game);return;}
         if(m_page==FrontendPage::ServiceInfo) {drawServiceInfo(renderer,game);return;}
-        if(m_page==FrontendPage::Title) {m_title.draw(renderer,m_titleSelection,m_feedback);return;}
+        if(m_page==FrontendPage::Title) {m_title.draw(renderer,m_titleSelection,nullptr);return;}
         renderer.clear(0xff3a303d);
         const char* heading=m_page==FrontendPage::Modes ? runtimeUiText("menu:selectGameMode") :
             m_page==FrontendPage::Load ? runtimeUiText("menu:loadGame") :
@@ -412,8 +426,7 @@ public:
                 }
             }
         }
-        if(m_feedback) renderer.drawTextFitted(m_feedback,12,214,0.375f,296,0xffffffff);
-        else {
+        {
             renderer.drawWindow(kFrontendConfirmRect.x,kFrontendConfirmRect.y,kFrontendConfirmRect.width,kFrontendConfirmRect.height);
             renderer.drawWindow(kFrontendBackRect.x,kFrontendBackRect.y,kFrontendBackRect.width,kFrontendBackRect.height);
             renderer.drawTextFitted("A: elegir",kFrontendConfirmRect.x+8,kFrontendConfirmRect.y+9,0.375f,kFrontendConfirmRect.width-16,0xffffffff);

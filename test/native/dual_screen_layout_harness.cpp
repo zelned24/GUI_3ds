@@ -15,6 +15,11 @@
 #include <initializer_list>
 using namespace Pokerogue3DS;
 int main() {
+    // Feedback occupies the upper 400x240 screen, independently of touch actions.
+    assert(kFrontendFeedbackRect.x+kFrontendFeedbackRect.width<=400);
+    assert(kFrontendFeedbackRect.y+kFrontendFeedbackRect.height<=240);
+    assert(kFrontendFeedbackRect.height>=2*16+12);
+
     for(unsigned slot=0;slot<6;++slot) {
         const auto icon=starterTeamIconRectangle(slot);
         assert(icon.width==40 && icon.height==30 && icon.x==11+slot*50 && icon.y==170);

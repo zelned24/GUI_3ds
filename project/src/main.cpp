@@ -392,6 +392,7 @@ int main() {
             setup.drawTop(renderer,game,false,frameAnimationTimeMs);
             frontend.drawPokedexTop(renderer,game);
             if(frontend.overlaysTitle()) renderer.drawRect(0,0,400,240,0x60000000);
+            frontend.drawFeedbackTop(renderer);
             renderer.beginBottom();
             frontend.draw(renderer,loaded==Pokerogue3DS::NativeSaveResult::Ok ? &restored : nullptr,&game);
             renderer.endFrame();

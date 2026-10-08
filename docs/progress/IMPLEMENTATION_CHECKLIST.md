@@ -2,7 +2,7 @@
 
 ## Cómo medir el avance
 
-- Referencia actual: rama `codex/pokerogue-3ds-migration`, último commit de implementación publicado confirmado `2e3ebea`; conversión física ampliada terminada: 10682 atlas y 10746 páginas `.t3x`. Validación nativa y visual pendiente. Los resultados históricos no verifican estos cambios locales.
+- Referencia actual: rama `codex/pokerogue-3ds-migration`, último commit de implementación publicado confirmado `8354656`; conversión física ampliada terminada: 10682 atlas y 10746 páginas `.t3x`. Validación nativa y visual pendiente. Los resultados históricos no verifican estos cambios locales.
 - Objetivo: PokéRogue jugable y fiel al snapshot upstream en Old 3DS, con ambas pantallas, progreso exportable y actualizaciones desde consola.
 - Cada ID es estable para reportar avances: `MOV-07`, `GUI-03`, etc. No equivale a un movimiento/habilidad individual.
 - Una casilla sin marcar puede tener código parcial; el resumen de cada área indica lo existente. Marcarla solo con integración completa y evidencia ejecutada pertinente.
@@ -1142,3 +1142,9 @@ La compilación ARM solicitada terminó correctamente; no prueba ejecución de h
 - Implementado sin verificar en GPU: Potencia/Precisión resueltas desde `es-ES/fight-ui-handler.json` de la revisión pinned de locales; namespace integrado en el importador existente y en `RuntimeUiText.hpp`. El consumidor upstream es `FightUiHandler` (`src/ui/handlers/fight-ui-handler.ts`).
 - Etiquetas pequeñas limitadas a 94 píxeles con raster nativo; indicación de objetivos retirada del área ocupada por A/B en dobles.
 - Comprobación de fuente: `node test/frontend_menu_source_tests.mjs`; no sustituye ejecución C++, compilación ARM ni comparación en Azahar. GUI/AST continúan abiertas.
+
+### Mensajes del menú y controles inferiores
+
+- Implementado sin ejecución nativa: mensajes de error/guardado del frontend se dibujan en un panel superior de 376×52, con hasta dos líneas a raster nativo; ya no reemplazan A/B en la pantalla inferior. El título conserva sus indicaciones de navegación abajo.
+- Los botones inferiores mantienen sus áreas táctiles y comandos existentes cuando hay feedback. Se añadieron guards de conexión y límites al harness nativo, cuya ejecución sigue aplazada.
+- Pendientes: inspección visual de mensajes largos, navegación física/táctil de todas las ventanas, audio audible, captura y medición de FPS. No se marca como cerrada la interfaz completa.
