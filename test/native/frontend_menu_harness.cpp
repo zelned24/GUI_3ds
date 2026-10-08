@@ -154,6 +154,7 @@ int main() {
     assert(global.input(KEY_X)==FrontendCommand::None && global.page()==FrontendPage::GlobalMenu);
     assert(global.input(KEY_A)==FrontendCommand::None && global.page()==FrontendPage::Settings);
     global.input(KEY_A);assert(global.page()==FrontendPage::SettingsGroup);
+    assert(global.overlaysTitle());
     global.input(KEY_B);assert(global.page()==FrontendPage::Settings);
     global.input(KEY_B);assert(global.page()==FrontendPage::GlobalMenu);
     for(unsigned row=1;row<9;++row) {
@@ -198,13 +199,16 @@ int main() {
         if(row!=0) touched.input(KEY_TOUCH,50,17+row*20+10);
         const auto destination=row==0 ? FrontendPage::Settings : row==5 ? FrontendPage::Pokedex : row==6 ? FrontendPage::ManageData : FrontendPage::ServiceInfo;
         assert(touched.page()==destination);
+        assert(touched.overlaysTitle()==(destination!=FrontendPage::Pokedex));
         touched.input(KEY_B);assert(touched.page()==FrontendPage::GlobalMenu);
         touched.input(KEY_A);assert(touched.page()==destination);
+        assert(touched.overlaysTitle()==(destination!=FrontendPage::Pokedex));
         touched.input(KEY_B);
         touched.input(KEY_TOUCH,320,17+row*20);
         assert(touched.page()==FrontendPage::GlobalMenu);
         touched.input(KEY_TOUCH,50,205);
         assert(touched.page()==FrontendPage::Title);
+        assert(!touched.overlaysTitle());
     }
     FrontendMenuPresenter fresh(false);
     assert(fresh.input(KEY_A)==FrontendCommand::None && fresh.page()==FrontendPage::Modes);

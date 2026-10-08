@@ -26,6 +26,11 @@ public:
     bool confirmingTouchDisable() const { return m_confirmingTouchDisable; }
     static uint32_t filterTouchInput(uint32_t keys,bool enabled) {return enabled ? keys : keys & ~KEY_TOUCH;}
     FrontendPage page() const {return m_page;}
+    bool overlaysTitle() const {
+        return m_page==FrontendPage::GlobalMenu || m_page==FrontendPage::ServiceInfo ||
+            m_page==FrontendPage::ManageData ||
+            (m_settingsFromGlobal && (m_page==FrontendPage::Settings || m_page==FrontendPage::SettingsGroup));
+    }
     void feedback(const char* value) {m_feedback=value;}
     bool isConfirmingDelete() const {return m_confirmingDelete;}
     bool isConfirmingImport() const {return m_confirmingImport;}

@@ -354,7 +354,7 @@ int main() {
             if (romfsReady) arena.draw(renderer,game.run().biomeId,frameAnimationTimeMs,false);
             setup.drawTop(renderer,game,false,frameAnimationTimeMs);
             frontend.drawPokedexTop(renderer,game);
-            if(frontend.page()==Pokerogue3DS::FrontendPage::GlobalMenu) renderer.drawRect(0,0,400,240,0x60000000);
+            if(frontend.overlaysTitle()) renderer.drawRect(0,0,400,240,0x60000000);
             renderer.beginBottom();
             frontend.draw(renderer,loaded==Pokerogue3DS::NativeSaveResult::Ok ? &restored : nullptr,&game);
             renderer.endFrame();

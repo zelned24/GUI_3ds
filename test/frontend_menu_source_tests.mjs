@@ -193,3 +193,5 @@ assert(preferencesSource.includes("values[0].hpBarSpeed!=values[1].hpBarSpeed"))
 assert(hudSource.includes("m_expTimeline.update(species->growthRate"));
 assert(!hudSource.includes("diff / 8"));
 assert(hudSource.includes("hudLevelDigitAtlas(player,uint16_t(visibleLevel)"));
+
+assert(main.includes("if(frontend.overlaysTitle()) renderer.drawRect(0,0,400,240,0x60000000)"));

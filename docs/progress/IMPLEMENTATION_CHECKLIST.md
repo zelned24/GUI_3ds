@@ -816,3 +816,5 @@ La búsqueda del índice generado usa búsqueda binaria sobre identidades ordena
 - [ ] Legibilidad y alineación visual de fuentes siguen pendientes: alpha binario y cobertura no prueban apariencia en pantalla ni alineación de todos los submenús. Sin compilación ni Azahar.
 
 - [ ] Submenú de nueve opciones: harness de navegación actualizado para la ruta real de Gestionar datos (exportar/importar, cancelar confirmación), entrada táctil y retorno a la misma fila en todas las opciones. Corrige una expectativa obsoleta de ServiceInfo; pruebas C++ escritas sin ejecutar. Logros/huevos/gacha/comunidad/sesión siguen sin servicio funcional completo.
+
+- [ ] Composición de submenú: atenuación del título mantenida en ajustes anidados, información y gestión de datos; Pokédex usa vista superior propia. Selector `overlaysTitle()` conectado a main, casos nativos escritos sin ejecutar; revisión visual pendiente.
