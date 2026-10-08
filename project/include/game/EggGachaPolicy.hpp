@@ -120,6 +120,42 @@ inline bool eggSpeciesHasVariants(uint16_t dex,const char* formKey=nullptr) {
     return contains(specific);
 }
 
+enum class EggPoolFilterResult : uint8_t {Ok,InvalidInput,InvalidVariant,InvalidPool,OutputTooSmall,EmptyPool};
+// Predicates read a stable profile/inventory/form snapshot. They must be pure:
+// validation/counting precedes publication, so they may be called more than once.
+// Apply locked guarantee BEFORE variant filtering, as pinned rollSpecies does.
+template<class Caught,class InEggs,class HasVariants>
+inline EggPoolFilterResult filterEggSpeciesPool(EggTier tier,const uint16_t* pool,size_t count,
+    uint32_t unlockPity,VariantTier variant,Caught caught,InEggs inEggs,HasVariants variants,
+    uint16_t* output,size_t capacity,size_t& written) {
+    if(static_cast<unsigned>(variant)>static_cast<unsigned>(VariantTier::EPIC)) return EggPoolFilterResult::InvalidVariant;
+    uint32_t total=0;
+    if(eggSpeciesPoolWeight(tier,pool,count,total)!=EggSpeciesDrawResult::Ok) return EggPoolFilterResult::InvalidPool;
+    if(capacity>SIZE_MAX/sizeof(*output)) return EggPoolFilterResult::InvalidInput;
+    const auto overlaps=[](const void* a,size_t na,const void* b,size_t nb) {
+        const uintptr_t x=reinterpret_cast<uintptr_t>(a),y=reinterpret_cast<uintptr_t>(b);
+        return na && nb && (x<=y ? y-x<na : x-y<nb);
+    };
+    if(overlaps(output,capacity*sizeof(*output),pool,count*sizeof(*pool))
+        || overlaps(output,capacity*sizeof(*output),&written,sizeof(written))
+        || overlaps(pool,count*sizeof(*pool),&written,sizeof(written))) return EggPoolFilterResult::InvalidInput;
+    size_t locked=0;
+    for(size_t i=0;i<count;++i) if(!caught(pool[i]) && !inEggs(pool[i])) ++locked;
+    const bool restrictLocked=useLockedEggSpeciesPool(unlockPity,locked);
+    const auto eligible=[&](uint16_t dex) {
+        return (!restrictLocked || (!caught(dex) && !inEggs(dex)))
+            && (variant==VariantTier::STANDARD || variants(dex));
+    };
+    size_t required=0;
+    for(size_t i=0;i<count;++i) if(eligible(pool[i])) ++required;
+    if(!required) return EggPoolFilterResult::EmptyPool;
+    if(required>capacity) return EggPoolFilterResult::OutputTooSmall;
+    if(!output) return EggPoolFilterResult::InvalidInput;
+    size_t next=0;
+    for(size_t i=0;i<count;++i) if(eligible(pool[i])) output[next++]=pool[i];
+    written=next;return EggPoolFilterResult::Ok;
+}
+
 // Egg.rollEggTier decision only. The supplied draw must be from the caller's
 // resolved gacha RNG (upstream randInt, not battle randSeedInt). No draw is made
 // here; guarantees/pity and voucher transactions are separate pending policies.

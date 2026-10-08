@@ -210,6 +210,14 @@ extern "C" int runNativeSaveChecks() {
         }
         if(!eggSpeciesHasVariants(1,"absent-form") || eggSpeciesHasVariants(0) || eggSpeciesHasVariants(65535,"absent")) return 1276;
         if(eggSpeciesHasVariants(1007) || !eggSpeciesHasVariants(1007,"apex-build") || eggSpeciesHasVariants(1007,"absent-form")) return 1277;
+        const uint16_t filterPool[]={1,4};uint16_t filtered[2]={777,888};size_t filteredCount=999;
+        const auto caughtFirst=[](uint16_t dex){return dex==1;};
+        const auto absent=[](uint16_t){return false;};
+        const auto variantsFirst=[](uint16_t dex){return dex==1;};
+        if(filterEggSpeciesPool(EggTier::COMMON,filterPool,2,9,VariantTier::STANDARD,caughtFirst,absent,variantsFirst,filtered,2,filteredCount)!=EggPoolFilterResult::Ok || filteredCount!=1 || filtered[0]!=4) return 1278;
+        filtered[0]=777;filteredCount=999;
+        if(filterEggSpeciesPool(EggTier::COMMON,filterPool,2,9,VariantTier::RARE,caughtFirst,absent,variantsFirst,filtered,2,filteredCount)!=EggPoolFilterResult::EmptyPool || filtered[0]!=777 || filteredCount!=999) return 1279;
+        if(filterEggSpeciesPool(EggTier::COMMON,filterPool,2,8,VariantTier::RARE,caughtFirst,absent,variantsFirst,filtered,2,filteredCount)!=EggPoolFilterResult::Ok || filteredCount!=1 || filtered[0]!=1) return 1280;
         const uint16_t eggPool[]={1,4};uint32_t poolWeight=999;uint16_t eggSpecies=777;
         if(eggSpeciesPoolWeight(EggTier::COMMON,eggPool,2,poolWeight)!=EggSpeciesDrawResult::Ok || poolWeight!=200) return 1259;
         if(eggSpeciesForWeightedRoll(EggTier::COMMON,eggPool,2,99,eggSpecies)!=EggSpeciesDrawResult::Ok || eggSpecies!=1) return 1260;
