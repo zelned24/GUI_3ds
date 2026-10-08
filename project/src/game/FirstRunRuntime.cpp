@@ -276,17 +276,33 @@ NativeSaveResult FirstRunRuntime::cycleSetupStarterAbility(int direction,NativeP
 }
 
 NativeSaveResult FirstRunRuntime::selectSetupStarterAbility(uint16_t dex,uint8_t index,NativeProgressStore& store) {
+    return selectSetupStarterPreference(dex,index,false,store);
+}
+NativeSaveResult FirstRunRuntime::selectSetupStarterNature(uint16_t dex,uint8_t index,NativeProgressStore& store) {
+    return selectSetupStarterPreference(dex,index,true,store);
+}
+NativeSaveResult FirstRunRuntime::cycleSetupStarterNature(int direction,NativeProgressStore& store) {
     if(m_runStarted) return NativeSaveResult::UnsupportedStage;
-    const auto* current=starterProgress(dex);uint16_t ability=0;
+    const uint16_t dex=selectedSetupStarterDex();const auto* record=starterProgress(dex);
+    PokemonNature next=PokemonNature::Unspecified;
+    if(!record || !canCycleSetupStarterNature(dex) ||
+        !nativeStarterNextNature(*record,setupStarterNature(dex),direction,next)) return NativeSaveResult::InvalidRecord;
+    return selectSetupStarterNature(dex,static_cast<uint8_t>(next),store);
+}
+NativeSaveResult FirstRunRuntime::selectSetupStarterPreference(uint16_t dex,uint8_t index,bool nature,NativeProgressStore& store) {
+    if(m_runStarted) return NativeSaveResult::UnsupportedStage;
+    const auto* current=starterProgress(dex);uint16_t ability=0;PokemonNature selectedNature=PokemonNature::Unspecified;
     if(!current || !starterUnlocked(dex) || !m_context.playerPartyCount || m_context.playerPartyCount>6 ||
-        (index!=255 && !nativeStarterSelectedAbility(*current,index,ability))) return NativeSaveResult::InvalidRecord;
+        (index!=255 && !(nature ? nativeStarterSelectedNature(*current,index,selectedNature) :
+            nativeStarterSelectedAbility(*current,index,ability)))) return NativeSaveResult::InvalidRecord;
     std::unique_ptr<FirstRunRuntime> prepared(new (std::nothrow) FirstRunRuntime(*this));
     if(!prepared) return NativeSaveResult::MemoryUnavailable;
     bool found=false;
     for(size_t i=0;i<prepared->m_starterProfileCount;++i) {
         auto& record=prepared->m_starterProfileRecords[i];
         if(record.speciesDex!=dex) continue;
-        record.preferredAbilityIndex=index;found=true;break;
+        if(nature) record.preferredNatureIndex=index;else record.preferredAbilityIndex=index;
+        found=true;break;
     }
     if(!found) return NativeSaveResult::InvalidRecord;
     PokerogueRngAdapter previewRng;previewRng.sow(m_seedCodeUnits.data(),m_seedLength);
@@ -4559,12 +4575,12 @@ bool FirstRunRuntime::resolveStarterFromDex(uint16_t dex, PokerogueRngAdapter& r
         PokemonNature starterNature = PokemonNature::Unspecified;
         if (starter.freshProfileStarter) {
             if (pokemonFreshProfileNature(starter.dex, starterNature) != PokemonFreshProfileResult::Ok) return false;
-        } else if (!nativeStarterDefaultNature(*dexMetadata, starterNature)) return false;
+        } else if (!nativeStarterPreparedNature(*dexMetadata, starterNature)) return false;
         if (m_starterProfileReady) {
             for (size_t record = 0; record < m_starterProfileCount; ++record) {
                 const auto& dexEntry = m_starterProfileRecords[record];
                 if (dexEntry.speciesDex == starter.dex) {
-                    if (dexEntry.natureAttr && !nativeStarterDefaultNature(dexEntry, starterNature)) return false;
+                    if (dexEntry.natureAttr && !nativeStarterPreparedNature(dexEntry, starterNature)) return false;
                     break;
                 }
             }

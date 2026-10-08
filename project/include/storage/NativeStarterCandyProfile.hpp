@@ -99,6 +99,10 @@ inline bool nativeStarterSelectedNature(const NativeStarterCandyRecord& record,u
         !(record.natureAttr & (1u<<(index+1)))) return false;
     output=static_cast<PokemonNature>(index);return true;
 }
+inline bool nativeStarterPreparedNature(const NativeStarterCandyRecord& record,PokemonNature& output) {
+    return record.preferredNatureIndex==255 ? nativeStarterDefaultNature(record,output) :
+        nativeStarterSelectedNature(record,record.preferredNatureIndex,output);
+}
 inline bool nativeStarterNextNature(const NativeStarterCandyRecord& record,PokemonNature current,int direction,PokemonNature& output) {
     const uint8_t start=static_cast<uint8_t>(current);PokemonNature validated=PokemonNature::Unspecified;
     if(!direction || !nativeStarterSelectedNature(record,start,validated)) return false;

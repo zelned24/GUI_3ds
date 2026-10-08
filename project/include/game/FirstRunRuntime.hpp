@@ -101,6 +101,20 @@ public:
     uint8_t starterCostReduction(uint16_t dex) const;
     uint16_t setupStarterFormIndex(uint16_t dex) const;
     NativeSaveResult selectSetupStarterAbility(uint16_t dex,uint8_t index,NativeProgressStore& store);
+    NativeSaveResult selectSetupStarterNature(uint16_t dex,uint8_t index,NativeProgressStore& store);
+    NativeSaveResult cycleSetupStarterNature(int direction,NativeProgressStore& store);
+    PokemonNature setupStarterNature(uint16_t dex) const {
+        PokemonNature nature=PokemonNature::Unspecified;
+        const auto* record=starterProgress(dex);
+        if(record && record->natureAttr) nativeStarterPreparedNature(*record,nature);
+        else pokemonFreshProfileNature(dex,nature);
+        return nature;
+    }
+    bool canCycleSetupStarterNature(uint16_t dex) const {
+        const auto* record=starterProgress(dex);
+        const uint32_t mask=record ? record->natureAttr : 0;
+        return !m_runStarted && starterUnlocked(dex) && !(mask & ~0x03fffffeu) && mask && (mask & (mask-1));
+    }
     NativeSaveResult cycleSetupStarterAbility(int direction,NativeProgressStore& store);
     bool canCycleSetupStarterAbility(uint16_t dex) const {
         const auto* record=starterProgress(dex);
@@ -287,6 +301,7 @@ public:
     bool throwPokeball(PokeballType type = PokeballType::Pokeball);
 
 private:
+    NativeSaveResult selectSetupStarterPreference(uint16_t dex,uint8_t index,bool nature,NativeProgressStore& store);
     bool restoreSetupInPlace(uint32_t seed, uint16_t starterDex);
     bool recordEncounterSeen();
     bool recordSeenPokemon(const ResolvedPokemon& pokemon);

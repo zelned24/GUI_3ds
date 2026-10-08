@@ -332,6 +332,42 @@ static int checkStarterAbilityPreferencePersistence() {
     return 0;
 }
 
+static int checkStarterNaturePreferencePersistence() {
+    using namespace Pokerogue3DS;
+    NativeStarterCandyRecord record{1,0,0,true};record.natureAttr=2u | (1u<<4);
+    record.abilityAttr=5;record.genderAttr=12;record.unlockedFormAttr=128;
+    record.preferredAbilityIndex=2;for(auto& iv:record.dexIvs) iv=15;
+    PokemonFriendshipPolicy policy{};policy.resolved=true;
+    policy.candyMultiplier=PokerogueContent::kClassicCandyFriendshipMultiplier;
+    FirstRunRuntime game(1);
+    if(!game.restoreStarterCandyProfile(&record,1,0,policy) || !game.restoreSetup(1,1)) return 752;
+    const uint32_t pokemonId=game.presentation().player.actor.pokemonId;
+    const uint16_t ability=game.presentation().player.battleState.abilityId;
+    const uint16_t originalAttack=game.presentation().player.battleState.stats[1];
+    const uint16_t originalSpecialAttack=game.presentation().player.battleState.stats[3];
+    static ProgressMemoryStorage runDisk,profileDisk;
+    static char scratch[2*kStarterCandyProfileMaxBytes]{};
+    NativeRunSaveStore runs(runDisk);NativeStarterCandyStore profiles(profileDisk,scratch,sizeof(scratch));NativeProgressStore store(runs,profiles);
+    if(!game.canCycleSetupStarterNature(1) || game.cycleSetupStarterNature(1,store)!=NativeSaveResult::Ok ||
+        game.setupStarterNature(1)!=PokemonNature::Adamant || game.presentation().player.actor.nature!=PokemonNature::Adamant ||
+        game.presentation().player.battleState.nature!=PokemonNature::Adamant ||
+        game.presentation().player.actor.pokemonId!=pokemonId || game.presentation().player.battleState.abilityId!=ability ||
+        game.starterProgress(1)->preferredAbilityIndex!=2 || !sceneNodesOwnedBy(game)) return 753;
+    if(game.presentation().player.battleState.stats[1]<=originalAttack ||
+        game.presentation().player.battleState.stats[3]>=originalSpecialAttack) return 758;
+    if(game.selectSetupStarterNature(1,1,store)!=NativeSaveResult::InvalidRecord) return 754;
+    profileDisk.interrupt=true;
+    if(game.selectSetupStarterNature(1,0,store)!=NativeSaveResult::IoError || game.setupStarterNature(1)!=PokemonNature::Adamant) return 755;
+    profileDisk.interrupt=false;
+    FirstRunRuntime restored(2);static NativeStarterCandyRecord staging[PokerogueContent::kSpeciesCount]{};
+    if(restored.loadNativeProgress(runs,profiles,staging,PokerogueContent::kSpeciesCount,policy)!=NativeSaveResult::Ok ||
+        restored.setupStarterNature(1)!=PokemonNature::Adamant ||
+        std::memcmp(game.presentation().player.battleState.stats,restored.presentation().player.battleState.stats,sizeof(game.presentation().player.battleState.stats))) return 756;
+    if(restored.selectSetupStarterNature(1,255,store)!=NativeSaveResult::Ok || restored.setupStarterNature(1)!=PokemonNature::Hardy ||
+        restored.starterProgress(1)->preferredAbilityIndex!=2 || restored.starterProgress(1)->preferredNatureIndex!=255) return 757;
+    return 0;
+}
+
 static int checkReserveStarterAbilityPreference() {
     using namespace Pokerogue3DS;
     const auto* reserveSpecies=PokerogueContent::findSpeciesByDex(7);
@@ -6264,6 +6300,7 @@ extern "C" int runFirstRunRestoreChecks() {
         {"checkPresentationExperienceLevelCap", checkPresentationExperienceLevelCap},
         {"checkStarterAbilityPreferencePersistence", checkStarterAbilityPreferencePersistence},
         {"checkReserveStarterAbilityPreference", checkReserveStarterAbilityPreference},
+        {"checkStarterNaturePreferencePersistence", checkStarterNaturePreferencePersistence},
         {"checkStarterFormPreferencePersistence", checkStarterFormPreferencePersistence},
         {"checkStarterCostPurchasePersistence", checkStarterCostPurchasePersistence},
         {"checkExtendedWaveAndBiomeSaveValidation", checkExtendedWaveAndBiomeSaveValidation},
