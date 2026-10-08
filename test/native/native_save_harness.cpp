@@ -169,6 +169,20 @@ extern "C" int runNativeSaveChecks() {
         const auto unchanged=pityPlan;
         if(planEggTierPity(EggTier::COMMON,EggSourceType::GACHA_MOVE,pity,pityPlan)!=EggPityResult::CounterOverflow ||
             pityPlan.tier!=unchanged.tier || pityPlan.pity.rare!=unchanged.pity.rare) return 1228;
+        uint32_t speciesWeight=777;
+        if(eggSpeciesWeight(EggTier::COMMON,1,speciesWeight)!=EggIncubationResult::Ok || speciesWeight!=200) return 1250;
+        if(eggSpeciesWeight(EggTier::COMMON,2,speciesWeight)!=EggIncubationResult::Ok || speciesWeight!=150) return 1251;
+        if(eggSpeciesWeight(EggTier::COMMON,3,speciesWeight)!=EggIncubationResult::Ok || speciesWeight!=100) return 1252;
+        for(unsigned tier=1;tier<4;++tier) {
+            const auto& bounds=kEggSpeciesCostBounds[tier];
+            if(eggSpeciesWeight(static_cast<EggTier>(tier),bounds.minimum-10.0,speciesWeight)!=EggIncubationResult::Ok || speciesWeight!=175) return 1253;
+            if(eggSpeciesWeight(static_cast<EggTier>(tier),bounds.maximum+10.0,speciesWeight)!=EggIncubationResult::Ok || speciesWeight!=100) return 1254;
+        }
+        if(eggSpeciesWeight(EggTier::COMMON,1.01,speciesWeight)!=EggIncubationResult::Ok || speciesWeight!=199) return 1255;
+        speciesWeight=777;
+        if(eggSpeciesWeight(static_cast<EggTier>(255),1,speciesWeight)!=EggIncubationResult::InvalidTier || speciesWeight!=777) return 1256;
+        if(eggSpeciesWeight(EggTier::COMMON,NAN,speciesWeight)!=EggIncubationResult::InvalidInput || speciesWeight!=777) return 1257;
+        if(eggSpeciesWeight(EggTier::COMMON,INFINITY,speciesWeight)!=EggIncubationResult::InvalidInput || speciesWeight!=777) return 1258;
         uint32_t vouchers[4]={50,50,50,50};EggVoucherPlan voucherPlan{};
         for(const auto& offer:kEggVoucherOffers) {
             if(planEggVoucherPull(offer.cursor,0,vouchers,voucherPlan)!=EggVoucherResult::Ok ||

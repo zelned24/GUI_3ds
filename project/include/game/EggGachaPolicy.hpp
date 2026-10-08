@@ -1,6 +1,24 @@
 #pragma once
 #include "game/EggIncubation.hpp"
+#include <cmath>
 namespace Pokerogue3DS {
+// Egg.rollSpecies weight only: JS numbers map to double, clamp before the
+// upstream arithmetic, then floor. Caller supplies canonical base starter cost.
+// No profile cost reduction, region multiplier, RNG or live state mutation here.
+inline EggIncubationResult eggSpeciesWeight(EggTier tier,double starterCost,uint32_t& output) {
+    const unsigned index=static_cast<unsigned>(tier);
+    if(index>=sizeof(kEggSpeciesCostBounds)/sizeof(kEggSpeciesCostBounds[0]))
+        return EggIncubationResult::InvalidTier;
+    if(!std::isfinite(starterCost)) return EggIncubationResult::InvalidInput;
+    const auto& bounds=kEggSpeciesCostBounds[index];
+    const double cost=starterCost<bounds.minimum ? bounds.minimum :
+        starterCost>bounds.maximum ? bounds.maximum : starterCost;
+    const double weight=std::floor((((bounds.maximum-cost)/(bounds.maximum-bounds.minimum+1))
+        *kEggSpeciesCostBoost+1)*kEggSpeciesWeightScale);
+    if(!std::isfinite(weight) || weight<1 || weight>UINT32_MAX) return EggIncubationResult::InvalidInput;
+    output=static_cast<uint32_t>(weight);return EggIncubationResult::Ok;
+}
+
 // Egg.rollEggTier decision only. The supplied draw must be from the caller's
 // resolved gacha RNG (upstream randInt, not battle randSeedInt). No draw is made
 // here; guarantees/pity and voucher transactions are separate pending policies.

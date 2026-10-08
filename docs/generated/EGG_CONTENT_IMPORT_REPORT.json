@@ -98,7 +98,7 @@
     "GACHA_DEFAULT_RARE_EGG_THRESHOLD": 8,
     "GACHA_LEGENDARY_UP_THRESHOLD_OFFSET": 1
   },
-  "generatedSHA256": "255f557c91c495dce7c9e73f5aa854e3b5e41c11ec0892ca4625e3db52cbf339",
+  "generatedSHA256": "d3dbafc08fadd85f36514872f29051dfe61f469e574c50a4b2483359f6a7a712",
   "incubationConstants": {
     "HATCH_WAVES_COMMON_EGG": 10,
     "HATCH_WAVES_EPIC_EGG": 50,
@@ -5658,6 +5658,10 @@
       "tier": "EPIC"
     }
   ],
+  "speciesWeightPolicy": {
+    "costBoost": 1.5,
+    "scale": 100
+  },
   "voucherOffers": [
     {
       "consumed": 1,
