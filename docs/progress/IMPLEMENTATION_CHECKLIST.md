@@ -852,3 +852,5 @@ La búsqueda del índice generado usa búsqueda binaria sobre identidades ordena
 - [ ] Memoria de menús: páginas compactas de equipo/captura/destinatario retiradas cuando dejan de usarse y al volver al título, mediante renderer después de beginFrame. Conserva navegación y selección; cierre de decisiones usa retirement. Guards PASS, ejecución GPU y pico real pendientes.
 
 - [ ] Pausa: draw e input comparten tres filas de 36px; corrige zonas táctiles desplazadas respecto del tercer texto y límites x/y. Etiquetas limitadas al panel y cursor alineado al raster elegido. Barrido de 320×240 escrito sin ejecutar; guards PASS, prueba visual pendiente.
+
+- [ ] Confirmación de movimientos: menú se cierra solo si `advanceBattleTurn()` acepta el comando, tanto A como táctil/Struggle. Rechazos (PP/políticas/runtime) conservan selección y feedback del motor; no altera reglas ni publica medio turno. Guard PASS; verificación nativa pendiente.

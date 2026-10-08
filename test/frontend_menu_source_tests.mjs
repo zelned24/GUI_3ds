@@ -245,3 +245,5 @@ assert(main.includes("rewardMenu.releasePartyIcons(renderer)"));
 assert(main.includes("pauseButtonAt(touch.px,touch.py)"));
 assert(main.includes("kPauseButtonRects[i].y+10"));
 assert(main.includes("36.0f,y,labelSize"));
+
+assert(main.includes("BattleMenuCommand::ExecuteMove:changed=game.advanceBattleTurn();if(changed) battleMenu.reset()"));

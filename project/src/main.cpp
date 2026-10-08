@@ -585,7 +585,7 @@ int main() {
             }
             case Pokerogue3DS::BattleMenuCommand::TargetPrevious:changed=game.cycleTarget(-1);break;
             case Pokerogue3DS::BattleMenuCommand::TargetNext:changed=game.cycleTarget(1);break;
-            case Pokerogue3DS::BattleMenuCommand::ExecuteMove:changed=game.advanceBattleTurn();battleMenu.reset();break;
+            case Pokerogue3DS::BattleMenuCommand::ExecuteMove:changed=game.advanceBattleTurn();if(changed) battleMenu.reset();break;
             case Pokerogue3DS::BattleMenuCommand::Party:partyMenu.open=true;partyMenu.selected=game.activePlayerPartyIndex();break;
             case Pokerogue3DS::BattleMenuCommand::ThrowBall:changed=game.throwPokeball(battleMenu.ballType());battleMenu.reset();break;
             case Pokerogue3DS::BattleMenuCommand::Flee:changed=game.fleeBattle();battleMenu.reset();break;
@@ -749,11 +749,11 @@ int main() {
             const int slot=struggleActive ? -1 : touchedMove;
             if(struggleActive && touchedMove==0) {
                 changed=game.advanceBattleTurn();
-                battleMenu.reset();
+                if(changed) battleMenu.reset();
             } else if (slot>=0 && slot<game.presentation().player.moveCount) {
                 if (game.selectedBattleMove() == unsigned(slot)) {
                     changed=game.advanceBattleTurn();
-                    battleMenu.reset();
+                    if(changed) battleMenu.reset();
                 } else {
                     const int delta=slot-int(game.selectedBattleMove());
                     for (int steps=delta<0 ? -delta : delta; steps>0; --steps)
