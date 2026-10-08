@@ -1313,6 +1313,22 @@ extern "C" int runNativeSaveChecks() {
         if(!species.starterEligible) continue;
         NativeStarterCandyRecord slotRecord{};slotRecord.speciesDex=species.dex;
         uint8_t slot=255;uint16_t ability=65535;
+        for(unsigned mask=0;mask<16;++mask) {
+            slotRecord.abilityAttr=mask;
+            const bool duplicate=!species.ability2 || species.ability1==species.ability2;
+            const unsigned expected=mask>7 ? 0 : (mask & 1u) |
+                ((mask & 2u) && !(duplicate && (mask & 1u)) ? 2u : 0u) |
+                ((mask & 4u) && species.abilityHidden ? 4u : 0u);
+            if(nativeStarterAbilityChoiceMask(slotRecord)!=expected) return 159;
+            for(unsigned candidate=0;candidate<4;++candidate) {
+                uint16_t chosen=65535;
+                const bool allowed=candidate<3 && (expected & (1u<<candidate));
+                if(nativeStarterSelectedAbility(slotRecord,candidate,chosen)!=allowed) return 160;
+                if(!allowed && chosen!=65535) return 161;
+                if(allowed && chosen!=(candidate==0 ? species.ability1 : candidate==1 ?
+                    (species.ability2 ? species.ability2 : species.ability1) : species.abilityHidden)) return 162;
+            }
+        }
         slotRecord.abilityAttr=2;
         if(!nativeStarterDefaultAbility(slotRecord,slot,ability) || slot!=1 ||
            ability!=(species.ability2 ? species.ability2 : species.ability1)) return 155;
@@ -1327,6 +1343,11 @@ extern "C" int runNativeSaveChecks() {
                (form.ability2 ? form.ability2 : primary)) return 157;
         }
         if(nativeStarterFormAbility(species,nullptr,3,species.ability1)) return 158;
+        for(const auto& form:PokerogueContent::kForms) {
+            if(!std::strcmp(form.speciesId,species.id)) continue;
+            if(nativeStarterFormAbility(species,&form,0,species.ability1)) return 163;
+            break;
+        }
     }
     auto hiddenOnly = purchased;
     hiddenOnly.abilityAttr = 4;

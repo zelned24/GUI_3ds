@@ -90,17 +90,35 @@ inline bool nativeStarterDefaultNature(const NativeStarterCandyRecord& record, P
     return false;
 }
 
+// Pinned StarterSelectUiHandler preference validation and canCycle.ability:
+// duplicate normal slots collapse unless only legacy slot 1 was unlocked.
+inline uint8_t nativeStarterAbilityChoiceMask(const NativeStarterCandyRecord& record) {
+    const auto* species=PokerogueContent::findSpeciesByDex(record.speciesDex);
+    if(!species || !record.abilityAttr || (record.abilityAttr & ~7u)) return 0;
+    uint8_t mask=record.abilityAttr;
+    const uint16_t second=species->ability2 ? species->ability2 : species->ability1;
+    if(species->ability1==second && (mask & 1u)) mask &= ~2u;
+    if(!species->ability1) mask &= ~3u;
+    if(!species->abilityHidden) mask &= ~4u;
+    return mask;
+}
+inline bool nativeStarterSelectedAbility(const NativeStarterCandyRecord& record,uint8_t index,uint16_t& output) {
+    if(index>2 || !(nativeStarterAbilityChoiceMask(record) & (1u<<index))) return false;
+    const auto* species=PokerogueContent::findSpeciesByDex(record.speciesDex);
+    output=index==0 ? species->ability1 : index==1 ?
+        (species->ability2 ? species->ability2 : species->ability1) : species->abilityHidden;
+    return true;
+}
+
 // Pinned PokemonSpeciesForm constructor aliases raw ability2=NONE to ability1.
 // getStarterDefaultAbilityIndex therefore always reserves slot two for hidden.
 inline bool nativeStarterDefaultAbility(const NativeStarterCandyRecord& record,
     uint8_t& outputIndex, uint16_t& outputAbility) {
-    const auto* species = PokerogueContent::findSpeciesByDex(record.speciesDex);
-    if (!species || !record.abilityAttr || (record.abilityAttr & ~7u)) return false;
-    const uint8_t index = (record.abilityAttr & 1u) ? 0 :
-        (record.abilityAttr & 2u) ? 1 : 2;
-    const uint16_t ability = index == 0 ? species->ability1 :
-        index == 1 ? (species->ability2 ? species->ability2 : species->ability1) : species->abilityHidden;
-    if (!ability) return false;
+    const uint8_t mask=nativeStarterAbilityChoiceMask(record);
+    if(!mask) return false;
+    const uint8_t index=(mask & 1u) ? 0 : (mask & 2u) ? 1 : 2;
+    uint16_t ability=0;
+    if(!nativeStarterSelectedAbility(record,index,ability)) return false;
     outputIndex = index;
     outputAbility = ability;
     return true;
@@ -109,7 +127,7 @@ inline bool nativeStarterDefaultAbility(const NativeStarterCandyRecord& record,
 // Preserve canonical raw NONE; apply constructor normalization at runtime.
 inline uint16_t nativeStarterFormAbility(const PokerogueContent::Species& species,
     const PokerogueContent::Form* form,uint8_t index,uint16_t fallback) {
-    if(index>2) return 0;
+    if(index>2 || (form && std::strcmp(form->speciesId,species.id))) return 0;
     if(!form) return fallback;
     const uint16_t primary=form->ability1 ? form->ability1 : species.ability1;
     const uint16_t selected=index==0 ? primary : index==1
