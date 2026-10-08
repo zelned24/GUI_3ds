@@ -261,6 +261,32 @@ NativeSaveResult FirstRunRuntime::selectSetupStarterForm(uint16_t dex, uint16_t 
     return NativeSaveResult::Ok;
 }
 
+NativeSaveResult FirstRunRuntime::selectSetupStarterAbility(uint16_t dex,uint8_t index,NativeProgressStore& store) {
+    if(m_runStarted) return NativeSaveResult::UnsupportedStage;
+    const auto* current=starterProgress(dex);uint16_t ability=0;
+    if(!current || !starterUnlocked(dex) || !m_context.playerPartyCount || m_context.playerPartyCount>6 ||
+        (index!=255 && !nativeStarterSelectedAbility(*current,index,ability))) return NativeSaveResult::InvalidRecord;
+    std::unique_ptr<FirstRunRuntime> prepared(new (std::nothrow) FirstRunRuntime(*this));
+    if(!prepared) return NativeSaveResult::MemoryUnavailable;
+    bool found=false;
+    for(size_t i=0;i<prepared->m_starterProfileCount;++i) {
+        auto& record=prepared->m_starterProfileRecords[i];
+        if(record.speciesDex!=dex) continue;
+        record.preferredAbilityIndex=index;found=true;break;
+    }
+    if(!found) return NativeSaveResult::InvalidRecord;
+    PokerogueRngAdapter previewRng;previewRng.sow(m_seedCodeUnits.data(),m_seedLength);
+    ResolvedPokemon selectedPreview{};
+    if(!prepared->resolveStarterFromDex(dex,previewRng,selectedPreview)) return NativeSaveResult::InvalidRecord;
+    uint16_t dexes[6]{};const uint8_t count=m_context.playerPartyCount;
+    for(uint8_t i=0;i<count;++i) dexes[i]=m_context.playerParty[i].dex;
+    if(!prepared->restoreStarterTeamSetup(m_run.seed,dexes,count)) return NativeSaveResult::InvalidRecord;
+    prepared->m_setupCursorDex=m_setupCursorDex;
+    const auto result=prepared->saveNativeProgress(store);
+    if(result!=NativeSaveResult::Ok) return result;
+    *this=*prepared;buildScene();return NativeSaveResult::Ok;
+}
+
 NativeSaveResult FirstRunRuntime::purchaseStarterCostReduction(uint16_t dex, NativeProgressStore& store,
     StarterCostPurchaseResult* purchaseResult) {
     if (purchaseResult) *purchaseResult = StarterCostPurchaseResult::InvalidRecord;
@@ -4543,7 +4569,7 @@ bool FirstRunRuntime::resolveStarterFromDex(uint16_t dex, PokerogueRngAdapter& r
             for (size_t record = 0; record < m_starterProfileCount; ++record) {
                 const auto& entry = m_starterProfileRecords[record];
                 if (entry.speciesDex != starter.dex) continue;
-                if (entry.abilityAttr && !nativeStarterDefaultAbility(entry, starterActor.abilityIndex, starterAbility)) return false;
+                if (entry.abilityAttr && !nativeStarterPreparedAbility(entry, starterActor.abilityIndex, starterAbility)) return false;
                 break;
             }
         }

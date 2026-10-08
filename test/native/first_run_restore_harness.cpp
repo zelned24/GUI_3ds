@@ -288,6 +288,42 @@ static int checkStarterCostPurchasePersistence() {
     return 0;
 }
 
+static int checkStarterAbilityPreferencePersistence() {
+    using namespace Pokerogue3DS;
+    const auto* species=PokerogueContent::findSpeciesByDex(1);
+    if(!species || !species->abilityHidden) return 724;
+    NativeStarterCandyRecord profile{1,0,0,true};
+    profile.natureAttr=2;profile.abilityAttr=5;profile.genderAttr=12;
+    profile.unlockedFormAttr=128;for(auto& iv:profile.dexIvs) iv=15;
+    PokemonFriendshipPolicy policy{};policy.resolved=true;
+    policy.candyMultiplier=PokerogueContent::kClassicCandyFriendshipMultiplier;
+    FirstRunRuntime game(1);
+    if(!game.restoreStarterCandyProfile(&profile,1,0,policy) || !game.restoreSetup(1,1)) return 725;
+    static ProgressMemoryStorage runDisk,profileDisk;
+    static char scratch[2*kStarterCandyProfileMaxBytes]{};
+    NativeRunSaveStore runs(runDisk);NativeStarterCandyStore profiles(profileDisk,scratch,sizeof(scratch));
+    NativeProgressStore store(runs,profiles);
+    const uint32_t pokemonId=game.presentation().player.actor.pokemonId;
+    if(game.selectSetupStarterAbility(1,2,store)!=NativeSaveResult::Ok ||
+        game.starterProgress(1)->preferredAbilityIndex!=2 || game.presentation().player.actor.abilityIndex!=2 ||
+        game.presentation().player.battleState.abilityId!=species->abilityHidden ||
+        game.setupStarterAbilityId(1)!=species->abilityHidden || game.presentation().player.actor.pokemonId!=pokemonId ||
+        !sceneNodesOwnedBy(game)) return 726;
+    if(game.selectSetupStarterAbility(1,1,store)!=NativeSaveResult::InvalidRecord) return 727;
+    profileDisk.interrupt=true;
+    if(game.selectSetupStarterAbility(1,0,store)!=NativeSaveResult::IoError ||
+        game.starterProgress(1)->preferredAbilityIndex!=2 || game.setupStarterAbilityId(1)!=species->abilityHidden) return 728;
+    profileDisk.interrupt=false;
+    FirstRunRuntime restored(2);static NativeStarterCandyRecord staging[PokerogueContent::kSpeciesCount]{};
+    if(restored.loadNativeProgress(runs,profiles,staging,PokerogueContent::kSpeciesCount,policy)!=NativeSaveResult::Ok ||
+        restored.starterProgress(1)->preferredAbilityIndex!=2 || restored.presentation().player.actor.abilityIndex!=2 ||
+        restored.setupStarterAbilityId(1)!=species->abilityHidden) return 729;
+    if(restored.selectSetupStarterAbility(1,255,store)!=NativeSaveResult::Ok ||
+        restored.starterProgress(1)->preferredAbilityIndex!=255 || restored.presentation().player.actor.abilityIndex!=0 ||
+        restored.setupStarterAbilityId(1)!=species->ability1) return 730;
+    return 0;
+}
+
 static int checkStarterFormPreferencePersistence() {
     using namespace Pokerogue3DS;
     const PokerogueContent::Species* chosen = nullptr;
@@ -6181,6 +6217,7 @@ extern "C" int runFirstRunRestoreChecks() {
         {"checkInitialStarterTeamSetup", checkInitialStarterTeamSetup},
         {"checkInitialTeamFirstTurnRoundtrip", checkInitialTeamFirstTurnRoundtrip},
         {"checkPresentationExperienceLevelCap", checkPresentationExperienceLevelCap},
+        {"checkStarterAbilityPreferencePersistence", checkStarterAbilityPreferencePersistence},
         {"checkStarterFormPreferencePersistence", checkStarterFormPreferencePersistence},
         {"checkStarterCostPurchasePersistence", checkStarterCostPurchasePersistence},
         {"checkExtendedWaveAndBiomeSaveValidation", checkExtendedWaveAndBiomeSaveValidation},

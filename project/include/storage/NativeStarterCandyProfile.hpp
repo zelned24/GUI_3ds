@@ -125,6 +125,13 @@ inline bool nativeStarterDefaultAbility(const NativeStarterCandyRecord& record,
     return true;
 }
 
+inline bool nativeStarterPreparedAbility(const NativeStarterCandyRecord& record,uint8_t& index,uint16_t& ability) {
+    if(record.preferredAbilityIndex==255) return nativeStarterDefaultAbility(record,index,ability);
+    uint16_t selected=0;
+    if(!nativeStarterSelectedAbility(record,record.preferredAbilityIndex,selected)) return false;
+    index=record.preferredAbilityIndex;ability=selected;return true;
+}
+
 // Preserve canonical raw NONE; apply constructor normalization at runtime.
 inline uint16_t nativeStarterFormAbility(const PokerogueContent::Species& species,
     const PokerogueContent::Form* form,uint8_t index,uint16_t fallback) {

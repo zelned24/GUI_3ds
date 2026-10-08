@@ -100,6 +100,7 @@ public:
     bool starterSelectionAllowed(const uint16_t* dexes, size_t count) const;
     uint8_t starterCostReduction(uint16_t dex) const;
     uint16_t setupStarterFormIndex(uint16_t dex) const;
+    NativeSaveResult selectSetupStarterAbility(uint16_t dex,uint8_t index,NativeProgressStore& store);
     NativeSaveResult cycleSetupStarterForm(int direction, NativeProgressStore& store);
     NativeSaveResult selectSetupStarterForm(uint16_t dex, uint16_t formIndex, NativeProgressStore& store);
     NativeSaveResult purchaseStarterCostReduction(uint16_t dex, NativeProgressStore& store,
@@ -147,7 +148,7 @@ public:
         if(!species) return 0;
         uint8_t index=0;uint16_t ability=species->ability1;
         const auto* progress=starterProgress(dex);
-        if(progress && progress->abilityAttr && !nativeStarterDefaultAbility(*progress,index,ability)) return 0;
+        if(progress && progress->abilityAttr && !nativeStarterPreparedAbility(*progress,index,ability)) return 0;
         const auto* form=PokerogueContent::findFormByUpstreamIndex(dex,setupStarterFormIndex(dex));
         return nativeStarterFormAbility(*species,form,index,ability);
     }
