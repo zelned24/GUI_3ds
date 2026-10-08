@@ -431,8 +431,9 @@ int main() {
             if(count && (rawPressed & (KEY_DOWN | KEY_CPAD_DOWN))) setup.selectedForm=(setup.selectedForm+1)%count;
             if(rawPressed & KEY_TOUCH) {
                 touchPosition touch{};hidTouchRead(&touch);
-                if(touch.px>=24 && touch.px<296 && touch.py>=43 && touch.py<181) {
-                    const unsigned row=setup.selectedForm/6*6+(touch.py-43)/23;
+                const int touchedRow=Pokerogue3DS::starterFormRowAt(touch.px,touch.py);
+                if(touchedRow>=0) {
+                    const unsigned row=setup.selectedForm/Pokerogue3DS::kStarterFormPageSize*Pokerogue3DS::kStarterFormPageSize+unsigned(touchedRow);
                     if(row<count) {
                         if(setup.selectedForm==row) {
                             const auto result=game.selectSetupStarterForm(game.selectedSetupStarterDex(),setup.formIndexAt(game,setup.selectedForm),progress);
@@ -443,7 +444,7 @@ int main() {
                             setup.selectedForm=row;
                         }
                     }
-                } else if(touch.py>=180) {
+                } else if(Pokerogue3DS::kStarterFormBackRect.contains(touch.px,touch.py)) {
                     setup.formsOpen=false;
                 }
             }

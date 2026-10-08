@@ -92,3 +92,9 @@ const mediaPipeline=await fs.readFile(new URL('../scripts/prepare_native_present
 assert(introPresenter.includes('Hold the sampled source frame'));
 assert(!introPresenter.includes('frameB'));
 assert(mediaPipeline.includes('interpolation=cv2.INTER_NEAREST'));
+
+assert(main.includes('starterFormRowAt(touch.px,touch.py)'));
+assert(main.includes('kStarterFormBackRect.contains(touch.px,touch.py)'));
+assert(setup.includes('renderer.drawWindow(kStarterFormBackRect.x'));
+assert(setup.includes('m_prompt.drawCursor(renderer,25,y,labelSize)'));
+assert(!setup.includes('renderer.drawText(form ? form->name'));

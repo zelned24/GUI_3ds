@@ -409,17 +409,21 @@ public:
             renderer.drawText(runtimeUiText("menu:no"),212,123,0.45f,0xffffffff);
             m_prompt.drawCursor(renderer,confirmYes ? 55 : 195,123,0.45f);
         } else if(formsOpen) {
-            renderer.drawWindow(12,30,296,174);
+            renderer.drawWindow(12,20,296,210);
+            renderer.drawTextFitted("Formas",24,27,0.3125f,272,0xffffffff);
             const auto* species=PokerogueContent::findSpeciesByDex(game.selectedSetupStarterDex());
-            const unsigned start=selectedForm/6*6;
-            for(unsigned i=0;i<6 && start+i<formCount(game);++i) {
+            const unsigned start=selectedForm/kStarterFormPageSize*kStarterFormPageSize;
+            for(unsigned i=0;i<kStarterFormPageSize && start+i<formCount(game);++i) {
                 const uint16_t index=formIndexAt(game,start+i);
                 const auto* form=PokerogueContent::findFormByUpstreamIndex(game.selectedSetupStarterDex(),index);
-                renderer.drawText(form ? form->name : species ? species->name : "",43,43+i*23,0.36f,
+                const float y=kStarterFormRowsRect.y+i*kStarterFormRowHeight;
+                const float labelSize=renderer.drawTextFitted(form ? form->name : species ? species->name : "",43,y,0.36f,249,
                     formUnlocked(game,index) ? 0xffffffff : 0xff909090);
-                if(start+i==selectedForm) m_prompt.drawCursor(renderer,25,43+i*23,0.36f);
+                if(start+i==selectedForm) m_prompt.drawCursor(renderer,25,y,labelSize);
             }
-            renderer.drawTextFitted(formFeedback ? formFeedback : "A: elegir forma   B: volver",24,182,0.28f,272,0xffffffff);
+            renderer.drawWindow(kStarterFormBackRect.x,kStarterFormBackRect.y,kStarterFormBackRect.width,kStarterFormBackRect.height);
+            renderer.drawTextFitted("Volver",43,189,0.3125f,249,0xffffffff);
+            renderer.drawTextFitted(formFeedback ? formFeedback : "A: elegir forma   B: volver",24,214,0.25f,272,0xffffffff);
         } else if(candyStoreOpen) {
             renderer.drawWindow(12,24,296,186);
             const uint16_t dex=game.selectedSetupStarterDex();
@@ -431,10 +435,10 @@ public:
             const auto* price=candyPriceFor(dex);
 
             renderer.drawText("Tienda de Caramelos",24,30,0.42f,0xffffffff);
-            if(species) renderer.drawText(species->name,24,52,0.36f,0xff70d8f0);
+            if(species) renderer.drawTextFitted(species->name,24,52,0.36f,143,0xff70d8f0);
             char cbuf[80];
             std::snprintf(cbuf,sizeof(cbuf),"Caramelos: %u",unsigned(candies));
-            renderer.drawText(cbuf,175,52,0.36f,0xffffd700);
+            renderer.drawTextFitted(cbuf,175,52,0.36f,121,0xffffd700);
 
             // Option 0: Cost reduction
             renderer.drawRect(20,74,280,44,candyStoreSelection==0 ? 0xff70d8f0 : 0xff463747);
@@ -448,7 +452,7 @@ public:
             } else {
                 std::snprintf(cbuf,sizeof(cbuf),"No disponible");
             }
-            renderer.drawText(cbuf,46,98,0.28f,0xffe0e0e0);
+            renderer.drawTextFitted(cbuf,46,98,0.28f,246,0xffe0e0e0);
 
             // Option 1: Passive ability
             renderer.drawRect(20,124,280,44,candyStoreSelection==1 ? 0xff70d8f0 : 0xff463747);
@@ -462,10 +466,10 @@ public:
             } else {
                 std::snprintf(cbuf,sizeof(cbuf),"No disponible");
             }
-            renderer.drawText(cbuf,46,148,0.28f,0xffe0e0e0);
+            renderer.drawTextFitted(cbuf,46,148,0.28f,246,0xffe0e0e0);
 
-            if(candyFeedback) renderer.drawText(candyFeedback,24,176,0.28f,0xff80ffff);
-            else renderer.drawText("A: Comprar   B: Volver   Arriba/Abajo: Elegir",24,176,0.28f,0xffffffff);
+            if(candyFeedback) renderer.drawTextFitted(candyFeedback,24,176,0.28f,272,0xff80ffff);
+            else renderer.drawTextFitted("A: Comprar   B: Volver   Arriba/Abajo: Elegir",24,176,0.28f,272,0xffffffff);
         }
     }
 private:

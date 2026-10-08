@@ -126,6 +126,9 @@ int main() {
     for(unsigned y=0;y<240;++y) for(unsigned x=0;x<320;++x) {
         const int expected=x>=16 && x<304 && y>=54 && y<162 ? int((y-54)/36*6+(x-16)/48) : -1;
         assert(starterGridAt(x,y)==expected);
+        const int formExpected=x>=24 && x<296 && y>=43 && y<181 ? int((y-43)/23) : -1;
+        assert(starterFormRowAt(x,y)==formExpected);
+        assert(!(formExpected>=0 && kStarterFormBackRect.contains(x,y)));
         unsigned hits=unsigned(expected>=0)+unsigned(kStarterFilterRect.contains(x,y));
         assert(unsigned(kStarterGenerationRect.contains(x,y))+unsigned(kStarterTypeRect.contains(x,y))==unsigned(kStarterFilterRect.contains(x,y)));
         int footer=-1;

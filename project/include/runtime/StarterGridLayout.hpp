@@ -38,6 +38,12 @@ enum class StarterCaptureFilter {All,Caught,Uncaught};
 inline constexpr bool starterMatchesCaptureFilter(StarterCaptureFilter filter,bool caught) {
     return filter==StarterCaptureFilter::All || (filter==StarterCaptureFilter::Caught ? caught : !caught);
 }
+inline constexpr unsigned kStarterFormPageSize=6,kStarterFormRowHeight=23;
+inline constexpr TouchRect kStarterFormRowsRect{24,43,272,kStarterFormPageSize*kStarterFormRowHeight};
+inline constexpr TouchRect kStarterFormBackRect{24,183,272,21};
+inline int starterFormRowAt(unsigned x,unsigned y) {
+    return kStarterFormRowsRect.contains(x,y) ? int((y-kStarterFormRowsRect.y)/kStarterFormRowHeight) : -1;
+}
 inline constexpr TouchRect kStarterCaptureFilterRect{254,2,58,18};
 inline constexpr unsigned kStarterGridColumns=6,kStarterGridRows=3;
 inline constexpr unsigned kStarterGridPageSize=kStarterGridColumns*kStarterGridRows;

@@ -744,3 +744,5 @@ La búsqueda del índice generado usa búsqueda binaria sobre identidades ordena
 
 - [x] Intro sin interpolación espacial: 16 muestras reales convertidas con nearest y verificadas píxel a píxel, timestamps y hashes de origen/conversión. Reproducción por timestamps escrita sin mezcla de samples.
 - [ ] Intro completa y fiel al vídeo de 101 fotogramas, reproducción nativa, memoria/VRAM y fluidez verificadas.
+
+- [ ] Modal de formas y caramelos: el panel de formas cubre los botones anteriores, comparte límites táctiles/dibujo y tiene regreso explícito. Nombres y textos largos usan ancho acotado y el cursor sigue el tamaño realmente dibujado. Guard JS PASS; prueba nativa exhaustiva de coordenadas escrita sin ejecutar. Validación visual pendiente.
