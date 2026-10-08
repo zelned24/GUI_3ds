@@ -747,9 +747,13 @@ int main() {
         if ((rawPressed & KEY_TOUCH) && battleMenuInput && battleMenu.movesOpen()) {
             touchPosition touch{};
             hidTouchRead(&touch);
-            const int slot=Pokerogue3DS::pokemonMovePpExhausted(game.presentation().player.battleState)
-                ? -1 : Pokerogue3DS::MoveMenuPresenter::hitTest(touch.px,touch.py);
-            if (slot>=0 && slot<game.presentation().player.moveCount) {
+            const bool struggleActive=Pokerogue3DS::pokemonMovePpExhausted(game.presentation().player.battleState);
+            const int touchedMove=Pokerogue3DS::MoveMenuPresenter::hitTest(touch.px,touch.py);
+            const int slot=struggleActive ? -1 : touchedMove;
+            if(struggleActive && touchedMove==0) {
+                changed=game.advanceBattleTurn();
+                battleMenu.reset();
+            } else if (slot>=0 && slot<game.presentation().player.moveCount) {
                 if (game.selectedBattleMove() == unsigned(slot)) {
                     changed=game.advanceBattleTurn();
                     battleMenu.reset();

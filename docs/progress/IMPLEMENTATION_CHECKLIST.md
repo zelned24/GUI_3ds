@@ -825,3 +825,5 @@ La búsqueda del índice generado usa búsqueda binaria sobre identidades ordena
 - [ ] Memoria residente y pico real de arena en Old 3DS siguen pendientes; estimaciones de textura no incluyen metadata, CPU, retirement ni otros presenters.
 
 - [ ] Movimientos en combate doble: selección de objetivo trasladada a franja y=210..233, separada de instrucciones y PP; paneles acortados y barra PP ajustada para evitar solapamiento. Nombres de objetivo y ayuda usan texto limitado a su región. Geometría nativa escrita sin ejecutar; guards de conexión PASS, comparación visual pendiente.
+
+- [ ] Movimientos táctiles: Struggle por PP agotados se activa tocando el primer rectángulo mediante el mismo comando de turno de A; otros slots permanecen inactivos. Nombres/PP derivan posición y ancho del rectángulo compartido con hit-test, evitando texto fuera de su botón. Guards de conexión PASS; comportamiento nativo y comparación visual pendientes.

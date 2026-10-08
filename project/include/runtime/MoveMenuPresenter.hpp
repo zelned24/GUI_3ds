@@ -46,23 +46,18 @@ public:
             const auto* struggle = PokerogueContent::findMoveById(PokerogueContent::kStruggleMoveId);
             if (struggle) {
                 cursor().drawCursor(renderer, 18, 50, 0.40f);
-                renderer.drawText(moveUiName(struggle->id), 32, 50, 0.40f, C2D_Color32(255, 255, 255, 255));
+                renderer.drawTextFitted(moveUiName(struggle->id), 32, 50, 0.40f, 60, C2D_Color32(255, 255, 255, 255));
                 renderer.drawText("PP --", 32, 74, 0.28f, C2D_Color32(220, 80, 80, 255));
             }
         } else {
-            static const struct { float x; float y; } kMovePos[] = {
-                {28.0f, 44.0f},   // Move 0: Top-left
-                {112.0f, 44.0f},  // Move 1: Top-right
-                {28.0f, 114.0f},  // Move 2: Bottom-left
-                {112.0f, 114.0f}  // Move 3: Bottom-right
-            };
-
             for (unsigned i = 0; i < pokemon.moveCount && i < 4; ++i) {
                 const auto* move = PokerogueContent::findMoveById(pokemon.moveIds[i]);
                 if (!move) continue;
 
-                const float mx = kMovePos[i].x;
-                const float my = kMovePos[i].y;
+                const auto& bounds=kMoveButtonRects[i];
+                const float mx=bounds.x+20;
+                const float my=bounds.y+8;
+                const float nameWidth=bounds.width-28;
                 const bool isSel = (i == selectedMove);
                 const uint8_t curPp = pokemon.battleState.moves[i].pp;
                 const uint8_t maxPp = pokemon.battleState.moves[i].maxPp;
@@ -73,14 +68,14 @@ public:
                     : isSel ? C2D_Color32(255, 255, 255, 255) : C2D_Color32(215, 210, 225, 255);
                 const uint32_t shadowColor = C2D_Color32(0x50, 0x40, 0x60, 255);
 
-                renderer.drawTextFitted(moveName, mx + 1.0f, my + 1.0f, 0.36f, 72.0f, shadowColor);
-                const float nameSize=renderer.drawTextFitted(moveName,mx,my,0.36f,72.0f,textColor);
+                renderer.drawTextFitted(moveName, mx + 1.0f, my + 1.0f, 0.36f, nameWidth, shadowColor);
+                const float nameSize=renderer.drawTextFitted(moveName,mx,my,0.36f,nameWidth,textColor);
                 if(isSel) cursor().drawCursor(renderer,mx-12,my,nameSize);
 
                 char ppText[16];
                 std::snprintf(ppText, sizeof(ppText), "PP %u/%u", unsigned(curPp), unsigned(maxPp));
                 const uint32_t ppColor = outOfPp ? C2D_Color32(230, 60, 60, 255) : C2D_Color32(165, 160, 180, 255);
-                renderer.drawText(ppText, mx, my + 24.0f, 0.26f, ppColor);
+                renderer.drawTextFitted(ppText, mx, my + 24.0f, 0.26f, nameWidth, ppColor);
             }
         }
 
