@@ -29,6 +29,26 @@ int main() {
     assert(!expVisual.update("UNKNOWN",7,400,10001));
     assert(!expVisual.update("MEDIUM_FAST",7,300,10001));
     assert(expVisual.update("MEDIUM_FAST",5,150,10002,true) && expVisual.level()==5);
+    ExperienceBarTimeline updatedDuringPause;
+    assert(updatedDuringPause.update("MEDIUM_FAST",5,150,1));
+    assert(updatedDuringPause.update("MEDIUM_FAST",7,400,10));
+    assert(updatedDuringPause.update("MEDIUM_FAST",7,400,855));
+    assert(updatedDuringPause.update("MEDIUM_FAST",8,550,900));
+    assert(updatedDuringPause.level()==6 && updatedDuringPause.fraction()==1);
+    assert(updatedDuringPause.total()==216);
+    assert(updatedDuringPause.update("MEDIUM_FAST",8,550,1000));
+    assert(updatedDuringPause.level()==6 && updatedDuringPause.fraction()==1);
+    assert(updatedDuringPause.update("MEDIUM_FAST",8,550,1112));
+    assert(updatedDuringPause.level()==6 && updatedDuringPause.fraction()<0.01);
+    assert(updatedDuringPause.update("MEDIUM_FAST",8,550,20000));
+    assert(updatedDuringPause.level()==8 && updatedDuringPause.total()==550);
+    assert(std::fabs(updatedDuringPause.fraction()-38.0/217)<1e-12);
+    ExperienceBarTimeline updatedDuringFill;
+    assert(updatedDuringFill.update("MEDIUM_FAST",5,150,1));
+    assert(updatedDuringFill.update("MEDIUM_FAST",7,400,10));
+    assert(updatedDuringFill.update("MEDIUM_FAST",8,550,100));
+    assert(updatedDuringFill.update("MEDIUM_FAST",8,550,855));
+    assert(updatedDuringFill.level()==6 && updatedDuringFill.fraction()==1);
     for(unsigned fps:{15u,30u,60u}) {
         ExperienceBarTimeline cadence;
         assert(cadence.update("MEDIUM_FAST",5,150,1));

@@ -21,8 +21,13 @@ public:
         }
         if(!advance(growth,double(now))) return false;
         if(m_target!=total || m_finalLevel!=finalLevel) {
-            m_target=total;m_finalLevel=finalLevel;m_phase=Idle;
-            if(!begin(growth,double(now))) return false;
+            m_target=total;m_finalLevel=finalLevel;
+            // A full bar belongs to the preceding level during its pause.
+            // Keep that pause (and an in-flight level-up segment) before
+            // consuming the latest target in the following segment.
+            if(m_phase!=Pause && !(m_phase==Tween && m_levelUp && m_level<finalLevel)) {
+                if(!begin(growth,double(now))) return false;
+            }
         }
         return advance(growth,double(now));
     }
