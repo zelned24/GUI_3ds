@@ -321,3 +321,9 @@ const rewardPartyLayout=await fs.readFile(new URL('../project/include/runtime/Re
 assert(rewardPartyLayout.includes('renderer.drawWindow(kPartyHeaderRect.x'));
 assert(rewardPartyLayout.includes('renderer.drawWindow(kPartyFooterRect.x'));
 assert(rewardPartyLayout.includes('feedback.empty() ? "Elige el Pokémon destinatario" : feedback.c_str()'));
+
+const pokemonAtlasSource=await fs.readFile(new URL('../project/src/runtime/PokemonAtlasPresenter.cpp',import.meta.url),'utf8');
+const spriteBoxBody=pokemonAtlasSource.slice(pokemonAtlasSource.indexOf('void PokemonAtlasPresenter::draw('),pokemonAtlasSource.indexOf('float PokemonAtlasPresenter::calculateProportionalScale'));
+assert(spriteBoxBody.indexOf('width<=0 || height<=0')<spriteBoxBody.indexOf('selectMetadata('));
+const anchoredBody=pokemonAtlasSource.slice(pokemonAtlasSource.indexOf('void PokemonAtlasPresenter::drawAnchored('),pokemonAtlasSource.indexOf('void PokemonAtlasPresenter::drawTrainerAnchored('));
+assert(anchoredBody.indexOf('!std::isfinite(scale) || scale<0')<anchoredBody.indexOf('selectMetadata('));

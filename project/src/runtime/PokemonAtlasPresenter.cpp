@@ -135,6 +135,8 @@ bool PokemonAtlasPresenter::selectPage(Slot& slot, const std::string& key, bool 
 
 void PokemonAtlasPresenter::draw(Renderer2D& renderer, const ResolvedPokemon& pokemon,
     bool back, float x, float y, float width, float height, uint64_t animationTimeMs) {
+    if(!std::isfinite(x) || !std::isfinite(y) || !std::isfinite(width) || !std::isfinite(height)
+        || width<=0 || height<=0) return;
     std::string key;
     if (!atlasKey(pokemon, back, key)) return;
     Slot& slot = back ? m_back : m_front;
@@ -178,6 +180,7 @@ float PokemonAtlasPresenter::calculateProportionalScale(const ResolvedPokemon& p
 
 void PokemonAtlasPresenter::drawAnchored(Renderer2D& renderer, const ResolvedPokemon& pokemon,
     bool back, float anchorX, float anchorY, float scale, uint64_t animationTimeMs) {
+    if(!std::isfinite(anchorX) || !std::isfinite(anchorY) || !std::isfinite(scale) || scale<0) return;
     std::string key;
     if (!atlasKey(pokemon, back, key)) return;
     Slot& slot = back ? m_back : m_front;
