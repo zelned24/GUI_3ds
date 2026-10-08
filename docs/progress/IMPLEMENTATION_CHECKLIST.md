@@ -826,6 +826,7 @@ La búsqueda del índice generado usa búsqueda binaria sobre identidades ordena
 - [x] Reproducibilidad de arena: segunda conversión de fondos y capas compara 158 hashes de reportes, cabeceras, texturas y metadata; todos idénticos (`test/arena_conversion_determinism_tests.py`). Guards de raster 1:1 y selección de recursos PASS. Esto no valida salida Citro2D.
 
 - [x] Fuentes físicas: las cuatro hojas BCFNT A4 contienen exclusivamente alpha 0/15; cobertura ASCII/UI/catálogos y hashes de cada archivo PASS. Fuente TTF pinned y métricas publicadas en `docs/generated/NATIVE_FONT_REPORT.json`; pipeline conserva el reporte versionado.
+- [x] Integridad física de los glifos: las cuatro fuentes BCFNT coinciden byte a byte al rasterizar nuevamente todos sus glifos mapeados desde el TTF upstream fijado, con versiones Pillow/FreeType verificadas. `test/ui_font_coverage_tests.py`: 3 PASS. Comprueba conversión y cobertura, no renderizado GPU ni apariencia en consola.
 - [ ] Legibilidad y alineación visual de fuentes siguen pendientes: alpha binario y cobertura no prueban apariencia en pantalla ni alineación de todos los submenús. Sin compilación ni Azahar.
 
 - [ ] Submenú de nueve opciones: harness de navegación actualizado para la ruta real de Gestionar datos (exportar/importar, cancelar confirmación), entrada táctil y retorno a la misma fila en todas las opciones. Corrige una expectativa obsoleta de ServiceInfo; pruebas C++ escritas sin ejecutar. Logros/huevos/gacha/comunidad/sesión siguen sin servicio funcional completo.

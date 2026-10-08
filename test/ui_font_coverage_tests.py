@@ -1,9 +1,10 @@
 """Static native-font coverage; does not compile or launch the game."""
-import hashlib,json,re,struct,subprocess,sys,unittest
+import hashlib,io,json,re,struct,subprocess,sys,unittest
 from pathlib import Path
 ROOT=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT/'scripts'))
-from pixel_font import glyph_ink_bounds
+from pixel_font import glyph_ink_bounds, monochrome_font
+from PIL import ImageFont, __version__ as pillow_version, features
 class UiFontCoverage(unittest.TestCase):
     def test_native_font_provenance_and_binary_alpha(self):
         report=json.loads((ROOT/'docs/generated/NATIVE_FONT_REPORT.json').read_text(encoding='utf-8'))
@@ -21,6 +22,22 @@ class UiFontCoverage(unittest.TestCase):
             self.assertEqual(len(alpha),row['sheetBytes'])
             self.assertTrue(alpha)
             self.assertTrue(all(byte in (0,15,240,255) for byte in alpha))
+
+    def test_every_native_glyph_matches_pinned_monochrome_source(self):
+        report=json.loads((ROOT/'docs/generated/NATIVE_FONT_REPORT.json').read_text(encoding='utf-8'))
+        self.assertEqual(report['rasterizer'],{'pillow':pillow_version,'freetype':features.version('freetype2')},
+                         'Rasterizer changed: review/rebuild font assets explicitly')
+        raw=subprocess.check_output(['git','-C',str(ROOT/'build/upstream/pokerogue-assets'),
+                                     'show',report['revision']+':'+report['sourcePath']])
+        for row in report['files']:
+            font=ImageFont.truetype(io.BytesIO(raw),row['points']*96/72)
+            def rasterize(cp):
+                mask,offset=font.getmask2(chr(cp),mode='1',anchor='ls')
+                return bytes(mask),mask.size,offset
+            data=(ROOT/'build/romfs'/row['convertedPath'].removeprefix('romfs:/')).read_bytes()
+            with self.subTest(points=row['points']):
+                self.assertEqual(monochrome_font(data,rasterize),data,
+                                 'Native glyph pixels differ from pinned source conversion')
 
     def test_ui_literals_have_ink_in_every_native_font(self):
         files=[ROOT/'project/generated/include/content/RuntimeUiText.hpp',ROOT/'project/generated/include/content/NatureUiNames.hpp',ROOT/'project/src/main.cpp']
