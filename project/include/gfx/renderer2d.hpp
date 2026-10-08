@@ -124,6 +124,7 @@ private:
     C2D_SpriteSheet m_hudIndicators[2]{};
     C2D_SpriteSheet m_hudBars[3]{};
     C2D_SpriteSheet m_hudGraphics[6]{};
+    bool m_hudLoadAttempted[17]{};
 #endif
     const char* m_initError=nullptr;
     unsigned m_windowStyle=1;

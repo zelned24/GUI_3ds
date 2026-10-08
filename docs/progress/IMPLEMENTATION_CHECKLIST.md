@@ -1116,3 +1116,5 @@ La compilación ARM solicitada terminó correctamente; no prueba ejecución de h
 - [ ] Validación de presentación actual: seis pruebas físicas de importación añadidas a la suite npm. Actualizadas comprobaciones de geometría compartida, apariencia shiny explícita y filtro nearest del intro tras inspeccionar consumidores reales. Harness HUD usa dimensiones reales y cubre fallos de carga/invalidation/imagen malformada; ejecución C++ y suite completa permanecen aplazadas por la restricción de compilación.
 
 - [ ] Validar en runtime los botones inferiores separados de aceptar/volver: la zona táctil anterior interpretaba toda la franja como B. Corregido el despacho a KEY_A/KEY_B y añadida cobertura nativa de cada píxel; ejecución nativa y Azahar pendientes por indicación del usuario.
+
+- [ ] Verificar rendimiento y recuperación de los 17 atlas del HUD: fallos de carga se cachean hasta reiniciar el renderer; geometría inválida retira la textura tras la GPU y coordenadas no finitas se rechazan. Pruebas nativas actualizadas, sin ejecutar por la restricción de compilación.

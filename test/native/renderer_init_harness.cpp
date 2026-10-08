@@ -228,7 +228,12 @@ int main() {
         assert(!renderer.drawHudTypeIcon("NONE",true,0,false,0,0));
         assert(!renderer.drawHudTypeIcon("FIRE",true,2,true,0,0));
         assert(!renderer.drawHudTypeIcon("FIRE",true,1,false,0,0));
-        hudMissing=true;assert(!renderer.drawHudTypeIcon("FIRE",true,0,false,0,0));hudMissing=false;
+        hudMissing=true;const int failedHudLoads=hudLoads;
+        for(unsigned retry=0;retry<10;++retry) assert(!renderer.drawHudTypeIcon("FIRE",true,0,false,0,0));
+        assert(hudLoads==failedHudLoads+1);hudMissing=false;
+        assert(!renderer.drawHudTypeIcon("FIRE",true,0,false,0,0));
+        assert(hudLoads==failedHudLoads+1);
+        renderer.endFrame();renderer.fini();assert(renderer.init());renderer.beginFrame();renderer.beginTop();
         for(unsigned i=0;i<6;++i) {
             const bool player=i<3;const unsigned slot=i%3==2 ? 1 : 0;const bool dual=i%3!=0;
             const auto& atlas=Pokerogue3DS::kHudIconAtlases[i];
@@ -239,12 +244,16 @@ int main() {
             }
         }
         hudSubs[0].width=19;assert(!renderer.drawHudTypeIcon("FIRE",true,0,false,0,0));hudSubs[0].width=20;
+        assert(!renderer.drawHudTypeIcon("Fire",true,0,false,0,0));
+        renderer.endFrame();renderer.fini();assert(renderer.init());renderer.beginFrame();renderer.beginTop();
         assert(renderer.drawHudTypeIcon("Fire",true,0,false,0,0));
         assert(!renderer.drawHudIndicator(nullptr,false,0,0));
         assert(!renderer.drawHudIndicator("NONE",false,0,0));
         assert(!renderer.drawHudIndicator("owned",false,0,0));
         assert(!renderer.drawHudIndicator("burn",true,0,0));
         hudMissing=true;assert(!renderer.drawHudIndicator("burn",false,0,0));hudMissing=false;
+        assert(!renderer.drawHudIndicator("burn",false,0,0));
+        renderer.endFrame();renderer.fini();assert(renderer.init());renderer.beginFrame();renderer.beginTop();
         for(unsigned i=6;i<8;++i) {
             const auto& atlas=Pokerogue3DS::kHudIconAtlases[i];
             for(unsigned f=0;f<atlas.count;++f) {
@@ -254,6 +263,8 @@ int main() {
             }
         }
         hudSubs[6].width=21;assert(!renderer.drawHudIndicator("burn",false,0,0));hudSubs[6].width=22;
+        assert(!renderer.drawHudIndicator("burn",false,0,0));
+        renderer.endFrame();renderer.fini();assert(renderer.init());renderer.beginFrame();renderer.beginTop();
         assert(renderer.drawHudIndicator("burn",false,0,0));
         const int beforeBar=imageDraws;
         assert(renderer.drawHudBar(false,false,0,0,0));assert(imageDraws==beforeBar);
@@ -261,6 +272,8 @@ int main() {
         assert(!renderer.drawHudBar(false,false,std::numeric_limits<float>::quiet_NaN(),0,0));
         assert(!renderer.drawHudBar(false,false,std::numeric_limits<float>::infinity(),0,0));
         hudMissing=true;assert(!renderer.drawHudBar(false,false,1,0,0));hudMissing=false;
+        assert(!renderer.drawHudBar(false,false,1,0,0));
+        renderer.endFrame();renderer.fini();assert(renderer.init());renderer.beginFrame();renderer.beginTop();
         assert(renderer.drawHudBar(false,false,1,0,0));assert(imageWidth==48 && imageHeight==2 && imageTop==1);
         assert(renderer.drawHudBar(false,false,0.5f,0,0));assert(imageWidth==24 && std::fabs(imageTop-2.0f/3)<0.0001f);
         assert(renderer.drawHudBar(false,false,0.25f,0,0));assert(imageWidth==12 && std::fabs(imageTop-1.0f/3)<0.0001f);
@@ -268,12 +281,16 @@ int main() {
         assert(renderer.drawHudBar(false,true,2,0,0));assert(imageWidth==86 && imageHeight==4);
         assert(renderer.drawHudBar(true,false,0.5f,0,0));assert(imageWidth==42 && imageHeight==2 && imageScaleX==1 && imageScaleY==1);
         hudSubs[8].width=47;assert(!renderer.drawHudBar(false,false,1,0,0));hudSubs[8].width=48;
+        assert(!renderer.drawHudBar(false,false,1,0,0));
+        renderer.endFrame();renderer.fini();assert(renderer.init());renderer.beginFrame();renderer.beginTop();
         assert(renderer.drawHudBar(false,false,1,0,0));
         assert(!renderer.drawHudGraphic(nullptr,"0",0,0));
         assert(!renderer.drawHudGraphic("numbers",nullptr,0,0));
         assert(!renderer.drawHudGraphic("unknown","0",0,0));
         assert(!renderer.drawHudGraphic("numbers","bad",0,0));
         hudMissing=true;assert(!renderer.drawHudGraphic("numbers","0",0,0));hudMissing=false;
+        assert(!renderer.drawHudGraphic("numbers","0",0,0));
+        renderer.endFrame();renderer.fini();assert(renderer.init());renderer.beginFrame();renderer.beginTop();
         for(unsigned i=11;i<17;++i) {
             const auto& atlas=Pokerogue3DS::kHudIconAtlases[i];
             for(unsigned f=0;f<atlas.count;++f) {
@@ -283,6 +300,8 @@ int main() {
             }
         }
         hudSubs[11].width=87;assert(!renderer.drawHudGraphic("numbers","0",0,0));hudSubs[11].width=88;
+        assert(!renderer.drawHudGraphic("numbers","0",0,0));
+        renderer.endFrame();renderer.fini();assert(renderer.init());renderer.beginFrame();renderer.beginTop();
         assert(renderer.drawHudGraphic("numbers","0",0,0));
         {
             const int before=imageDraws;
@@ -445,6 +464,19 @@ int main() {
             renderer.endFrame();
         }
 
+        // Refill all independently owned HUD caches after failure/reinitialization.
+        renderer.beginFrame();renderer.beginTop();
+        assert(renderer.drawTypeLabel("FIRE",0,0,32,14));
+        for(unsigned i=0;i<6;++i) {
+            const auto& atlas=Pokerogue3DS::kHudIconAtlases[i];
+            assert(renderer.drawHudTypeIcon(atlas.frames[0].key,i<3,i%3==2 ? 1 : 0,i%3!=0,0,0));
+        }
+        for(unsigned i=6;i<8;++i) assert(renderer.drawHudIndicator(Pokerogue3DS::kHudIconAtlases[i].frames[0].key,i==7,0,0));
+        assert(renderer.drawHudBar(false,false,1,0,0));
+        assert(renderer.drawHudBar(false,true,1,0,0));
+        assert(renderer.drawHudBar(true,false,1,0,0));
+        for(unsigned i=11;i<17;++i) assert(renderer.drawHudGraphic(Pokerogue3DS::kHudIconAtlases[i].key,Pokerogue3DS::kHudIconAtlases[i].frames[0].key,0,0));
+        renderer.endFrame();
         const int fontsBeforeClose=fontFree;
         const int buffersBeforeClose=bufferFree;
         const int sheetsBeforeClose=sheetFree;

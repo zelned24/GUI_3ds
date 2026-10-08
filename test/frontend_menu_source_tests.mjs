@@ -478,3 +478,7 @@ assert(frontend.includes("else if(kFrontendBackRect.contains(touchX,touchY)) key
 assert(!frontend.includes("TouchRect{12,205,296,35}.contains"));
 assert(frontend.includes("renderer.drawWindow(kFrontendConfirmRect.x"));
 assert(frontend.includes("renderer.drawWindow(kFrontendBackRect.x"));
+
+// HUD atlas failures are cached until renderer reset, never retried per frame.
+assert.equal((rendererSource.match(/if\(!m_hudLoadAttempted\[index\]\)/g)||[]).length,4);
+assert(rendererSource.includes("for(auto& attempted:m_hudLoadAttempted) attempted=false;"));
