@@ -95,6 +95,12 @@ def test_trainers():
             assert record[0].split(b"\0",1)[0].decode("ascii") == frame["filename"]
             bounds,source_size,trim = frame["frame"],frame["sourceSize"],frame["spriteSourceSize"]
             assert record[1:9] == (bounds["x"],bounds["y"],bounds["w"],bounds["h"],source_size["w"],source_size["h"],trim["x"],trim["y"])
+            # Mirror native geometry preconditions, including its one-pixel trim tolerance.
+            x,y,w,h,sw,sh,tx,ty,duration,flags = record[1:]
+            assert w and h and sw and sh and not (flags & ~1), (row["key"],frame["filename"])
+            assert x+w<=row["width"] and y+h<=row["height"], (row["key"],frame["filename"])
+            assert tx+w<=sw+1 and ty+h<=sh+1, (row["key"],frame["filename"])
+
     print(f"  [OK] All trainer metadata records match source; {omitted_count} extended records preserved in provenance")
 
     # Verify .p3a binary header on sample files

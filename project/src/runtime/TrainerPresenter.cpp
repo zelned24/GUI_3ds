@@ -16,6 +16,7 @@ void TrainerPresenter::clear(Renderer2D* renderer) {
     m_currentKey[0] = '\0';
     m_failedKey[0] = '\0';
     m_animationStartMs = 0;
+    m_animationStarted = false;
 }
 
 bool TrainerPresenter::load(const char* key, Renderer2D* renderer) {
@@ -66,7 +67,10 @@ void TrainerPresenter::draw(Renderer2D& renderer, float x, float y, float width,
     C3D_TexSetFilter(img.tex, GPU_NEAREST, GPU_NEAREST);
 
     if (m_metadata.frameCount() > 0) {
-        if (m_animationStartMs == 0) m_animationStartMs = animationTimeMs;
+        if (!m_animationStarted) {
+            m_animationStartMs = animationTimeMs;
+            m_animationStarted = true;
+        }
         const uint64_t elapsedMs = animationTimeMs >= m_animationStartMs ? animationTimeMs - m_animationStartMs : 0;
         const auto* frame = m_metadata.animationFrame(elapsedMs,24,128);
         if (frame) {
@@ -90,7 +94,10 @@ void TrainerPresenter::drawAnchored(Renderer2D& renderer, float anchorX, float a
     C3D_TexSetFilter(img.tex, GPU_NEAREST, GPU_NEAREST);
 
     if (m_metadata.frameCount() > 0) {
-        if (m_animationStartMs == 0) m_animationStartMs = animationTimeMs;
+        if (!m_animationStarted) {
+            m_animationStartMs = animationTimeMs;
+            m_animationStarted = true;
+        }
         const uint64_t elapsedMs = animationTimeMs >= m_animationStartMs ? animationTimeMs - m_animationStartMs : 0;
         const auto* frame = m_metadata.animationFrame(elapsedMs,24,128);
         if (frame) {

@@ -37,6 +37,7 @@ private:
     char m_currentKey[64]{};
     char m_failedKey[64]{}; // A failed physical load is retried after clear or another identity.
     uint64_t m_animationStartMs = 0;
+    bool m_animationStarted = false;
 };
 
 } // namespace Pokerogue3DS

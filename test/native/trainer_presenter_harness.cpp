@@ -20,6 +20,11 @@ void Renderer2D::retireSpriteSheet(C2D_SpriteSheet sheet) {assert(sheet==&textur
 void Renderer2D::drawAtlasFrame(C2D_Image,const AtlasFrame&,float,float,float,float,float,uint32_t) {}
 void Renderer2D::drawImageDirect(C2D_Image,float,float,float,float,float,float,bool,bool,uint32_t) {}
 void Renderer2D::drawText(const char*,float,float,float,uint32_t) {}
+float Renderer2D::drawTextFitted(const char*,float x,float y,float size,float width,uint32_t,float* drawnWidth) {
+    assert(x==20.0f && y==13.0f && width==164.0f);
+    if(drawnWidth) *drawnWidth=0;
+    return size;
+}
 bool Renderer2D::drawWindow(float,float,float,float) {return true;}
 int main() {
     Renderer2D renderer;

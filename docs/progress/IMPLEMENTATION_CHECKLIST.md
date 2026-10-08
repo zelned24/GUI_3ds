@@ -769,3 +769,5 @@ La búsqueda del índice generado usa búsqueda binaria sobre identidades ordena
 
 - [x] Empaquetado de entrenadores: 303 metadatos comparados registro a registro con fuente pinned; 378 registros extendidos de tres atlas conservados íntegros en `docs/generated/TRAINER_PRESENTATION_REPORT.json`. Blue conserva 80 frames compatibles; ya no se truncan nombres inválidos. Conversión y verificador físico PASS, sin compilación del juego.
 - [ ] Parser C++ y reproducción visual de entrenadores: reloj 24 FPS y límite 0001–0128 implementados; pruebas nativas escritas sin ejecutar.
+
+- [ ] Reloj de entrenador: inicio en timestamp cero conserva su origen con flag explícito; clear reinicia el flag. Código corregido y guards PASS; comportamiento C++ pendiente de ejecución. Harness de entrenador actualizado para la nueva ruta de texto ajustado.

@@ -138,3 +138,7 @@ assert(trainerSource.includes("!std::isfinite(anchorX)"));
 assert(trainerSource.includes("!std::isfinite(scale) || scale<=0"));
 
 assert(trainerSource.includes("m_metadata.animationFrame(elapsedMs,24,128)"));
+
+assert(!trainerSource.includes("if (m_animationStartMs == 0)"));
+assert(trainerSource.includes("m_animationStarted = false"));
+assert(trainerSource.includes("if (!m_animationStarted)"));
