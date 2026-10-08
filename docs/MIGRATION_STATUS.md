@@ -8,6 +8,7 @@
 - Staging shiny: rechaza reportes parciales y exige coincidencia de identidad/hash PNG con el catálogo final y hash del reporte compatible con Python; ausencias pinned sin duplicados ni conflictos; guard JS PASS.
 - Estadísticas: cuatro métricas de descubrimiento calculadas en gameplay a partir del perfil real y catálogo canónico; etiquetas pinned importadas. Los contadores históricos siguen pendientes y no se presentan como cero. C++ escrito sin ejecución.
 - Discrepancia pendiente confirmada en slots de habilidades: el helper legacy interpreta ability2=NONE crudo como ausencia de slot 1, pero upstream lo normaliza a ability1 y reserva slot 2 para oculta. Corrección C++ escrita para default oculto, captura y forma compartida con UI; casos nativos añadidos sin ejecutar. Verificación y compatibilidad de saves pendientes. La ficha refleja hoy el resolver local, sin afirmar paridad.
+- Pasivas: importación real corregida para `passives` compartidas/por forma; las 1.084 especies conservan IDs y provenance. Resolver C++ y nombre en tienda escritos; esto no ejecuta los triggers en combate.
 - Habilidad de la ficha: consume slot por defecto desbloqueado del perfil y forma seleccionada mediante gameplay; comparación con actor escrita sin ejecución, selector manual pendiente.
 - Selector: indicadores shiny originales, perfiles vistos/capturados/desconocidos, filtros; títulos/submenús/Pokédex y exportación/importación con confirmación tienen rutas C++ escritas.
 - Sprites: caché de fallos por página del atlas y última identidad de entrenador para evitar I/O repetido cada frame; reset explícito permite recuperación. Guards estáticos PASS; comportamiento GPU no ejecutado.
@@ -24,7 +25,7 @@ El avance se publica como trabajo en curso. Classic completo y la fidelidad visu
 1. PokéRogue: `8555c08c823b856cbec4eb99ca84ea52a955836d`.
 2. Assets: `056a1f408f26a3be4fef243f7462cb43608c7928`.
 3. Locales: `23aea1cb0da5a0b15b836f3c243791591cc42303`.
-4. Hash canónico: `b1b5821edb39a088e641682ae5f5eae9567eef03ffbc2aa3a257c148d0106edf`.
+4. Hash canónico vigente: `20e7cef5a58d28f31254ab5dfaab0815be92c6a4e7c1e10a3c12c05ebbc9fe27` (reimportación doble determinista tras normalizar pasivas).
 
 ## Trabajo actual sin compilación
 

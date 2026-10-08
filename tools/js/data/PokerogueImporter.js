@@ -18,6 +18,29 @@ export function parseUpstreamGenderDifferences(literal, context) {
   return match ? match[1]==='true' : null;
 }
 
+export function parseUpstreamPassives(source,context) {
+  const declaration=/\bpassives?\s*:\s*/.exec(source);
+  if(!declaration) return null;
+  const start=declaration.index+declaration[0].length;
+  if(source[start]!=='{') {
+    const symbol=/^AbilityId\.([A-Z0-9_]+)\s*[,}]/.exec(source.slice(start));
+    if(!symbol) throw new Error(`Invalid import: unsupported passive declaration for ${context}`);
+    return {kind:'SHARED',sharedSymbol:symbol[1],byFormIndex:{},raw:symbol[0].slice(0,-1).trim()};
+  }
+  const raw=extractBalancedLiteral(source,start);
+  if(!raw) throw new Error(`Invalid import: unclosed passive map for ${context}`);
+  const values={};
+  for(const field of splitTopLevelArguments(raw.slice(1,-1).replace(/\/\*[\s\S]*?\*\/|\/\/[^\n]*/g,''))) {
+    if(!field.trim()) continue;
+    const row=/^\s*(\d+)\s*:\s*AbilityId\.([A-Z0-9_]+)\s*$/.exec(field);
+    if(!row || Number(row[1])>65535 || Object.hasOwn(values,Number(row[1])))
+      throw new Error(`Invalid import: unsupported/duplicate passive form for ${context}`);
+    values[Number(row[1])]=row[2];
+  }
+  if(!Object.hasOwn(values,0)) throw new Error(`Invalid import: passive map lacks default form for ${context}`);
+  return {kind:'BY_FORM',sharedSymbol:null,byFormIndex:values,raw};
+}
+
 export function parseGenderSpriteExclusions(source, formSymbols) {
   const method=source.indexOf('getBaseSpriteKey(female: boolean');
   const condition=source.indexOf('const showGenderDiffs',method);
@@ -1299,6 +1322,18 @@ export class PokerogueImporter {
         const symbol = record.id.toUpperCase();
         const numericId = enumCatalogs.species.getId(symbol);
         if (numericId === undefined) throw new Error(`Invalid import: species ${symbol} is absent from pinned SpeciesId enum`);
+        const passive=record.extensions?.upstreamPassives;
+        if(passive) {
+          const resolve=symbol=>{
+            const id=enumCatalogs.ability.getId(symbol);
+            if(id===undefined) throw new Error(`Invalid import: unknown passive AbilityId ${symbol} for ${record.id}`);
+            return id;
+          };
+          passive.sharedId=passive.sharedSymbol ? resolve(passive.sharedSymbol) : null;
+          passive.byFormIndexIds=Object.fromEntries(Object.entries(passive.byFormIndex).map(([index,symbol])=>[index,resolve(symbol)]));
+          passive.source={repository:game.url,revision:game.revision,sourcePath:path,
+            sourceSymbol:`generationSpeciesData[SpeciesId.${symbol}].passives`,sha256:sourceHash(file),schemaVersion:'1.0.0'};
+        }
         record.speciesId = numericId;
         record.nationalDexId = numericId;
         record.sprites = { atlasPath: null, icon: null, atlas: null, frame: null, hasFemale: null, hasShiny: null, hasVariants: null };
@@ -2292,7 +2327,9 @@ export class PokerogueImporter {
       const ab1Match = block.match(/(?:ability1|primary)\s*:\s*(?:AbilityId\.)?([A-Za-z0-9_]+)/i);
       const ab2Match = block.match(/(?:ability2|secondary)\s*:\s*(?:AbilityId\.)?([A-Za-z0-9_]+)/i);
       const abhMatch = block.match(/(?:abilityHidden|hidden)\s*:\s*(?:AbilityId\.)?([A-Za-z0-9_]+)/i);
-      const abpMatch = block.match(/passive\s*:\s*(?:AbilityId\.)?([A-Za-z0-9_]+)/i);
+      const passiveDefinition = parseUpstreamPassives(block,speciesKey);
+      const passiveSymbol = passiveDefinition?.sharedSymbol ?? passiveDefinition?.byFormIndex[0];
+      const abpMatch = passiveSymbol ? [null,passiveSymbol] : null;
 
       const heightMatch = block.match(/height\s*:\s*([\d\.]+)/i);
       const weightMatch = block.match(/weight\s*:\s*([\d\.]+)/i);
@@ -2424,6 +2461,7 @@ export class PokerogueImporter {
         extensions: {
           upstreamRawRecord: { format: 'typescript-source-fragment', value: block },
           ...(formLevelMoves ? { upstreamFormLevelMoves: formLevelMoves } : {}),
+          ...(passiveDefinition ? {upstreamPassives:passiveDefinition} : {}),
           category: block.match(/category\s*:\s*["']([^"']+)/)?.[1] || null,
           ...(evolutionArrayMatch ? { upstreamEvolutionDeclarations: { status: unsupportedEvolutionDeclarations.length ? 'PARTIAL_PARSE' : 'PARSED', unsupported: unsupportedEvolutionDeclarations } } : { upstreamEvolutionDeclarations: { status: 'NOT_DECLARED' } })
         }

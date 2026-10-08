@@ -139,6 +139,9 @@ public:
             ? &m_starterProfileRecords[first] : nullptr;
     }
     const NativeStarterCandyRecord* starterProfileRecords() const { return m_starterProfileRecords.data(); }
+    uint16_t setupStarterPassiveAbilityId(uint16_t dex) const {
+        return PokerogueContent::speciesPassiveAbilityId(dex,setupStarterFormIndex(dex));
+    }
     uint16_t setupStarterAbilityId(uint16_t dex) const {
         const auto* species=PokerogueContent::findSpeciesByDex(dex);
         if(!species) return 0;

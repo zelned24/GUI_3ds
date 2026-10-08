@@ -13,6 +13,13 @@
 #include <initializer_list>
 using namespace Pokerogue3DS;
 int main() {
+    for(const auto& species:PokerogueContent::kSpecies)
+        assert(PokerogueContent::speciesPassiveAbilityId(species.dex,0)==species.abilityPassive);
+    for(const auto& passive:PokerogueContent::kSpeciesPassiveFormAbilities) {
+        assert(PokerogueContent::findSpeciesByDex(passive.dex));
+        assert(PokerogueContent::speciesPassiveAbilityId(passive.dex,passive.formIndex)==passive.abilityId);
+    }
+    assert(PokerogueContent::speciesPassiveAbilityId(65535,0)==0);
     static_assert(starterDiscovery(false,0)==StarterDiscovery::Unknown);
     static_assert(starterDiscovery(false,128)==StarterDiscovery::Seen);
     static_assert(starterDiscovery(true,0)==StarterDiscovery::Caught);

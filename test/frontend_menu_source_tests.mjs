@@ -119,3 +119,5 @@ assert(setup.includes('if(!candyPriceFor(dex))'));
 assert(setup.includes('Captura este Pokémon para usar caramelos.'));
 assert(setup.includes('pres==StarterCostPurchaseResult::MissingPrice'));
 assert(setup.includes('pres==StarterPassivePurchaseResult::MissingPrice'));
+
+assert(setup.includes("abilityUiName(game.setupStarterPassiveAbilityId(dex))"));

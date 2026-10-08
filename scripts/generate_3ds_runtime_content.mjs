@@ -586,6 +586,10 @@ const speciesRows = collections.species.map(item => {
   const learnset = learnsetRanges.get(item.id);
   const eggMoveRange = eggMoveRanges.get(item.id);
   const abilityData = item.abilities ?? {};
+  const passiveDeclaration=item.extensions?.upstreamPassives;
+  const passiveAbilityId=passiveDeclaration?.sharedId ?? passiveDeclaration?.byFormIndexIds?.[0] ?? abilityIdFor(abilityData.passive);
+  if(!Number.isInteger(passiveAbilityId) || !collections.abilities.some(row=>row.abilityId===passiveAbilityId))
+    throw new Error(`Invalid canonical passive ability for ${item.id}`);
   const primaryAbilityId = abilityIdFor(abilityData.primary ?? abilityData.ability1);
   const secondaryAbilityId = abilityIdFor(abilityData.secondary ?? abilityData.ability2) || primaryAbilityId;
   const flag = value => value === true ? 1 : value === false ? 0 : -1;
@@ -599,7 +603,7 @@ const speciesRows = collections.species.map(item => {
     throw new Error(`Unresolved canonical prevolution for ${item.id}`);
   }
   const freshStarterOrdinal = defaultStarterOrder.get(item.id) ?? 255;
-  return `    {${item.nationalDexId}, ${prevolution?.nationalDexId ?? 0}, ${item.baseExp}, ${malePercentTenths}, ${item.generation ?? 0}, ${item.starterCost ?? -1}, ${item.starterEligible === true ? 'true' : 'false'}, ${defaultStarterSet.has(item.id) ? 'true' : 'false'}, ${freshStarterOrdinal}, ${item.baseTotal ?? 0}, ${stats.hp}, ${stats.atk}, ${stats.def}, ${stats.spatk}, ${stats.spdef}, ${stats.spd}, ${primaryAbilityId}, ${secondaryAbilityId}, ${abilityIdFor(abilityData.hidden ?? abilityData.abilityHidden)}, ${abilityIdFor(abilityData.passive)}, ${learnset.offset}, ${learnset.count}, ${eggMoveRange.offset}, ${eggMoveRange.count}, ${flag(item.rarity?.legendary)}, ${flag(item.rarity?.subLegendary)}, ${flag(item.rarity?.mythical)}, "${field(item.growthRate ?? '')}", "${field(item.id)}", "${field(item.name)}", "${field(item.type1)}", "${field(item.type2)}", "${field(form?.id ?? '')}", "${field(asset?.sourcePath ?? '')}", "${field(item.source?.sourcePath ?? '')}", "${field(item.source?.sourceSymbol ?? '')}", "${field(item.source?.sourceHash ?? '')}"}`;
+  return `    {${item.nationalDexId}, ${prevolution?.nationalDexId ?? 0}, ${item.baseExp}, ${malePercentTenths}, ${item.generation ?? 0}, ${item.starterCost ?? -1}, ${item.starterEligible === true ? 'true' : 'false'}, ${defaultStarterSet.has(item.id) ? 'true' : 'false'}, ${freshStarterOrdinal}, ${item.baseTotal ?? 0}, ${stats.hp}, ${stats.atk}, ${stats.def}, ${stats.spatk}, ${stats.spdef}, ${stats.spd}, ${primaryAbilityId}, ${secondaryAbilityId}, ${abilityIdFor(abilityData.hidden ?? abilityData.abilityHidden)}, ${passiveAbilityId}, ${learnset.offset}, ${learnset.count}, ${eggMoveRange.offset}, ${eggMoveRange.count}, ${flag(item.rarity?.legendary)}, ${flag(item.rarity?.subLegendary)}, ${flag(item.rarity?.mythical)}, "${field(item.growthRate ?? '')}", "${field(item.id)}", "${field(item.name)}", "${field(item.type1)}", "${field(item.type2)}", "${field(form?.id ?? '')}", "${field(asset?.sourcePath ?? '')}", "${field(item.source?.sourcePath ?? '')}", "${field(item.source?.sourceSymbol ?? '')}", "${field(item.source?.sourceHash ?? '')}"}`;
 }).join(',\n');
 const localeRows = collections.locales
   .filter(item => ['pokemon', 'move', 'ability', 'item', 'modifier-type', 'gameMode', 'biomes', 'trainer-classes', 'trainer-names'].includes(item.namespace))
@@ -1839,5 +1843,44 @@ inline bool genderSpriteFormExcluded(const char* key) {
 }
 }
 `;
-await fs.writeFile(outputPath, indexedFormHeader+genderHeader+formGenderHeader, 'utf8');
-console.log(JSON.stringify({ output: path.relative(root, outputPath), bytes: Buffer.byteLength(indexedFormHeader+genderHeader+formGenderHeader), hash: report.contentHash }));
+const passiveFormRows=[];
+const passiveAbilityIds=new Set(collections.abilities.map(row=>row.abilityId));
+for(const species of collections.species) {
+  const declaration=species.extensions?.upstreamPassives;
+  if(declaration?.kind!=='BY_FORM') continue;
+  for(const [index,id] of Object.entries(declaration.byFormIndexIds ?? {})) {
+    const formIndex=Number(index);
+    if(!Number.isInteger(formIndex) || formIndex<0 || formIndex>65535 || !passiveAbilityIds.has(id))
+      throw new Error(`Invalid canonical passive form ${species.id}:${index}`);
+    passiveFormRows.push({dex:species.nationalDexId,formIndex,abilityId:id});
+  }
+}
+passiveFormRows.sort((a,b)=>a.dex-b.dex || a.formIndex-b.formIndex);
+const passiveHeader=`
+#include <array>
+namespace PokerogueContent {
+struct SpeciesPassiveFormAbility {uint16_t dex,formIndex,abilityId;};
+inline constexpr std::array<SpeciesPassiveFormAbility,${passiveFormRows.length}> kSpeciesPassiveFormAbilities{{
+${passiveFormRows.map(row=>`    {${row.dex},${row.formIndex},${row.abilityId}},`).join('\n')}
+}};
+// Pinned SpeciesDataRegistry.getPassive: explicit form override, else form zero.
+inline constexpr uint16_t speciesPassiveAbilityId(uint16_t dex,uint16_t formIndex) {
+    const auto* species=findSpeciesByDex(dex);
+    if(!species) return 0;
+    std::size_t first=0,last=kSpeciesPassiveFormAbilities.size();
+    while(first<last) {
+        const auto middle=first+(last-first)/2;
+        const auto& row=kSpeciesPassiveFormAbilities[middle];
+        if(row.dex<dex || (row.dex==dex && row.formIndex<formIndex)) first=middle+1;
+        else last=middle;
+    }
+    if(first<kSpeciesPassiveFormAbilities.size()) {
+        const auto& row=kSpeciesPassiveFormAbilities[first];
+        if(row.dex==dex && row.formIndex==formIndex) return row.abilityId;
+    }
+    return species->abilityPassive;
+}
+}
+`;
+await fs.writeFile(outputPath, indexedFormHeader+genderHeader+formGenderHeader+passiveHeader, 'utf8');
+console.log(JSON.stringify({ output: path.relative(root, outputPath), bytes: Buffer.byteLength(indexedFormHeader+genderHeader+formGenderHeader+passiveHeader), hash: report.contentHash }));

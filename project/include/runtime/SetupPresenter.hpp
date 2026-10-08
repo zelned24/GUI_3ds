@@ -464,7 +464,9 @@ public:
             renderer.drawRect(20,124,280,44,candyStoreSelection==1 ? 0xff70d8f0 : 0xff463747);
             renderer.drawWindow(22,126,276,40);
             if(candyStoreSelection==1) m_prompt.drawCursor(renderer,28,130,0.35f);
-            renderer.drawText("Habilidad Pasiva",46,130,0.35f,0xffffffff);
+            renderer.drawTextFitted(runtimeUiText("starter-select-ui-handler:unlockPassive"),46,130,0.35f,246,0xffffffff);
+            const char* passiveName=abilityUiName(game.setupStarterPassiveAbilityId(dex));
+            renderer.drawTextFitted(passiveName ? passiveName : "Pasiva no disponible",46,144,0.3125f,246,0xffffffff);
             if(passive) {
                 std::snprintf(cbuf,sizeof(cbuf),"Estado: Desbloqueada");
             } else if(!game.starterUnlocked(dex)) {
@@ -474,7 +476,7 @@ public:
             } else {
                 std::snprintf(cbuf,sizeof(cbuf),"No disponible");
             }
-            renderer.drawTextFitted(cbuf,46,148,0.28f,246,0xffe0e0e0);
+            renderer.drawTextFitted(cbuf,46,158,0.25f,246,0xffe0e0e0);
 
             renderer.drawWindow(kStarterCandyBackRect.x,kStarterCandyBackRect.y,kStarterCandyBackRect.width,kStarterCandyBackRect.height);
             renderer.drawTextFitted("Volver",43,189,0.3125f,249,0xffffffff);
