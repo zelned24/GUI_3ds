@@ -4,11 +4,21 @@ from pathlib import Path
 from PIL import Image
 from inventory_pokemon_icons import inventory
 ROOT=Path(__file__).resolve().parents[1]
+def cached_tile_valid(png,texture,png_bytes,previous):
+    if not previous or not png.exists() or not texture.exists(): return False
+    return png.read_bytes()==png_bytes and hashlib.sha256(texture.read_bytes()).hexdigest()==previous.get('convertedSHA256')
+
 def prepare(root=ROOT):
     source=inventory(root)
     archive=subprocess.check_output(['git','-C',str(root/'build/upstream/pokerogue-assets'),'archive','--format=zip',source['revision'],source['sourceRoot']])
     staged=root/'build/native-presentation/appearance-icon-tiles';staged.mkdir(parents=True,exist_ok=True)
     output=root/'build/romfs/presentation/icon-tiles';output.mkdir(parents=True,exist_ok=True)
+    report_path=root/'docs/generated/APPEARANCE_ICON_TILE_REPORT.json'
+    previous={}
+    if report_path.exists():
+        prior=json.loads(report_path.read_text(encoding='utf-8'))
+        if prior.get('revision')==source['revision'] and prior.get('sourceInventoryHash')==source['contentSHA256']:
+            previous={row['sourcePath']:row for row in prior['files']}
     rows=[]
     with zipfile.ZipFile(io.BytesIO(archive)) as files:
         for index,row in enumerate(source['files']):
@@ -20,7 +30,7 @@ def prepare(root=ROOT):
             canvas=Image.new('RGBA',(64,32));canvas.paste(image,(0,0))
             png=staged/f'{index}.png';texture=output/f'{index}.t3x'
             encoded=io.BytesIO();canvas.save(encoded,format='PNG');png_bytes=encoded.getvalue()
-            unchanged=png.exists() and png.read_bytes()==png_bytes and texture.exists()
+            unchanged=cached_tile_valid(png,texture,png_bytes,previous.get(row['sourcePath']))
             png.write_bytes(png_bytes)
             if not unchanged: subprocess.run(['C:/devkitPro/tools/bin/tex3ds.exe','-f','rgba8','-o',str(texture),str(png)],check=True,stdout=subprocess.DEVNULL)
             rows.append({'sourcePath':row['sourcePath'],'sourceSHA256':row['sourceSHA256'],'runtimePath':f'romfs:/presentation/icon-tiles/{index}.t3x','stagedSHA256':hashlib.sha256(png_bytes).hexdigest(),'convertedSHA256':hashlib.sha256(texture.read_bytes()).hexdigest(),'width':40,'height':30,'textureWidth':64,'textureHeight':32,'estimatedResidentBytes':64*32*4})

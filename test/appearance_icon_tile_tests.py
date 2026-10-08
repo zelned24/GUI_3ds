@@ -25,3 +25,22 @@ print('PASS original pinned pixels, transparent padding, provenance and conversi
 header=(ROOT/'project/generated/include/content/AppearanceIconTiles.hpp').read_text(encoding='utf-8')
 assert header.count('romfs:/presentation/icon-tiles/')==len(report['files'])
 for row in report['files']: assert json.dumps(row['runtimePath'])+',' in header
+
+import importlib.util,tempfile
+spec=importlib.util.spec_from_file_location('icon_tiles',ROOT/'scripts/prepare_appearance_icon_tiles.py')
+import sys
+sys.path.insert(0,str(ROOT/'scripts'))
+module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module)
+with tempfile.TemporaryDirectory() as directory:
+    png=Path(directory)/'source.png';texture=Path(directory)/'icon.t3x'
+    png.write_bytes(b'pixels');texture.write_bytes(b'converted')
+    previous={'convertedSHA256':hashlib.sha256(b'converted').hexdigest()}
+    assert module.cached_tile_valid(png,texture,b'pixels',previous)
+    texture.write_bytes(b'corrupt')
+    assert not module.cached_tile_valid(png,texture,b'pixels',previous)
+    texture.write_bytes(b'converted')
+    assert not module.cached_tile_valid(png,texture,b'changed',previous)
+    assert not module.cached_tile_valid(png,texture,b'pixels',None)
+    texture.unlink()
+    assert not module.cached_tile_valid(png,texture,b'pixels',previous)
+print('PASS cache reuse requires unchanged pixels and verified converted bytes')
