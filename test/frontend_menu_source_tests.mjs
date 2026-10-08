@@ -518,3 +518,12 @@ assert(ballControls.includes("kBallConfirmRect.contains(x,y)"));
 assert(ballControls.includes("kBallBackRect.contains(x,y)"));
 assert(!ballControls.includes("TouchRect{12,202,296,32}"));
 assert(ballControls.includes("touchActivated = m_selected == i;"));
+
+// Defeat A/touch restore setup before either backend; B/touch return to title.
+const defeat=main.slice(main.indexOf("// Defeat owns physical"),main.indexOf("const bool jsCommands"));
+assert(defeat.includes("const bool restart=(rawPressed & KEY_A)"));
+assert(defeat.includes("const bool back=(rawPressed & KEY_B)"));
+assert(defeat.includes("game.restoreSetup(game.run().seed,starterDex)"));
+assert(defeat.includes("kResultConfirmRect.contains(resultTouch.px,resultTouch.py)"));
+assert(defeat.includes("kResultBackRect.contains(resultTouch.px,resultTouch.py)"));
+assert(main.includes("if (!rewardInput && !game.rewardsPending() && !(game.battleFinished() && !game.playerWon()))"));

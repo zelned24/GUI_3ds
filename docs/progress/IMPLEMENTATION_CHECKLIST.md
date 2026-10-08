@@ -1134,3 +1134,5 @@ La compilación ARM solicitada terminó correctamente; no prueba ejecución de h
 - [ ] Validar controles de Poké Balls: áreas táctiles separadas de lanzar/volver; tocar otra Ball selecciona primero y el segundo toque confirma. Corregido el pie completo que antes actuaba como B; cobertura nativa añadida, ejecución pendiente.
 
 - [ ] Validar catálogo visual de Balls: multiplicadores/formato importados desde getPokeballCatchMultiplier, IDs del parser existente y nombres del namespace es-ES pinned; UI sin lista fija de rates, textos acotados y faltantes de iconos explícitos. Import report reproducible generado; prueba GPU pendiente.
+
+- [ ] Validar fin de partida: A y botón táctil Reiniciar restauran la selección usando seed/starter existentes antes de despachar comandos C++/QuickJS; B y botón Título vuelven al menú. Antes A intentaba otro turno y sólo el táctil restauraba setup. Flujo corregido; recorrido nativo de derrota pendiente.

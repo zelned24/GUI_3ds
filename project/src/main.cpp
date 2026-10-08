@@ -750,14 +750,33 @@ int main() {
             changed=true;
             rawPressed=0; // Reward input cannot also trigger a battle/touch command.
         }
+        // Defeat owns physical and touch confirmation before either command backend.
+        // A must restore setup rather than try to execute a turn with a fainted party.
+        if(game.battleFinished() && !game.playerWon() && !game.capturePartyChoicePending()
+            && !game.moveLearningPending() && !game.evolutionPending()) {
+            touchPosition resultTouch{};if(rawPressed & KEY_TOUCH) hidTouchRead(&resultTouch);
+            const bool restart=(rawPressed & KEY_A) || ((rawPressed & KEY_TOUCH)
+                && Pokerogue3DS::kResultConfirmRect.contains(resultTouch.px,resultTouch.py));
+            const bool back=(rawPressed & KEY_B) || ((rawPressed & KEY_TOUCH)
+                && Pokerogue3DS::kResultBackRect.contains(resultTouch.px,resultTouch.py));
+            if(restart) {
+                const uint16_t starterDex=game.run().starterDex ? game.run().starterDex : 1;
+                if(game.restoreSetup(game.run().seed,starterDex)) {
+                    setup.generationFilter=0;setup.typeFilter=nullptr;
+                    setup.captureFilter=Pokerogue3DS::StarterCaptureFilter::All;
+                    player.load(game.scene());titleVisible=true;
+                }
+            } else if(back) titleVisible=true;
+            if(titleVisible) {battleMenu.reset();rewardMenu.resetSelection();continue;}
+        }
 #if defined(POKEROGUE_ENABLE_QUICKJS)
-        const bool jsCommands = bridgeReady && bridge.healthy();
+        const bool jsCommands = bridgeReady && bridge.healthy() && !(game.battleFinished() && !game.playerWon());
         if (jsCommands) changed = bridge.processPendingAction() || changed;
         if (!jsCommands) {
 #endif
         if (pressed & KEY_SELECT)
             changed = game.togglePlayerEvolutionPause(game.activePlayerPartyIndex()) || changed;
-        if (!rewardInput && !game.rewardsPending()) {
+        if (!rewardInput && !game.rewardsPending() && !(game.battleFinished() && !game.playerWon())) {
             if (pressed & (KEY_LEFT | KEY_CPAD_LEFT)) changed = game.cycleStarter(-1);
             else if (pressed & (KEY_RIGHT | KEY_CPAD_RIGHT)) changed = game.cycleStarter(1);
             else if (pressed & (KEY_UP | KEY_CPAD_UP)) { game.selectBattleMove(-1); changed = true; }
@@ -859,16 +878,8 @@ int main() {
             else if(Pokerogue3DS::kEvolutionBackRect.contains(touch.px,touch.py)) changed=game.skipVictoryReward();
         } else if((rawPressed & KEY_TOUCH) && game.battleFinished()) {
             touchPosition touch{};hidTouchRead(&touch);
-            if (touch.py >= 130 && touch.py < 170) {
-                if (game.playerWon()) changed=game.advanceBattleTurn();
-                else {
-                    const uint16_t starterDex = game.run().starterDex ? game.run().starterDex : 1;
-                    if(game.restoreSetup(game.run().seed, starterDex)) {
-                        titleVisible=true;
-                        changed=true;
-                    }
-                }
-            }
+            if(game.playerWon() && Pokerogue3DS::kResultConfirmRect.contains(touch.px,touch.py))
+                changed=game.advanceBattleTurn();
         }
         } // !isPaused
         if (changed) player.load(game.scene());

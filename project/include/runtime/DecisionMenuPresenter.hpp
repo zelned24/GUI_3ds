@@ -77,7 +77,8 @@ public:
             renderer.drawText(game.playerWon() ? "Victoria" : "Fin de partida",26,55,0.55f,0xffffffff);
             char line[64];std::snprintf(line,sizeof(line),"Ola %u   Nivel %u",unsigned(game.run().wave),unsigned(game.presentation().player.level));
             renderer.drawText(line,26,91,0.4f,0xffffffff);
-            renderer.drawText(game.playerWon() ? "A: continuar" : "A: nueva partida",26,145,0.4f,0xffffffff);
+            if(game.playerWon()) renderer.drawTextFitted("A: continuar",26,145,0.375f,267,0xffffffff);
+            else drawActions(renderer,kResultConfirmRect,kResultBackRect,"A: Reiniciar","B: Título",9);
         }
         renderer.drawTextFitted(game.battleFeedback().c_str(),12,213,0.3f,296,0xffffffff);
     }

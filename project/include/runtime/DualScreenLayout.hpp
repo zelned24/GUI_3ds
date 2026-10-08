@@ -95,6 +95,8 @@ inline constexpr TouchRect kLearnConfirmRect{12,200,142,30};
 inline constexpr TouchRect kLearnBackRect{166,200,142,30};
 inline constexpr TouchRect kEvolutionConfirmRect{20,140,136,30};
 inline constexpr TouchRect kEvolutionBackRect{164,140,136,30};
+inline constexpr TouchRect kResultConfirmRect=kEvolutionConfirmRect;
+inline constexpr TouchRect kResultBackRect=kEvolutionBackRect;
 inline constexpr TouchRect kPartyButtonRects[]={
     {8,24,304,32},{8,56,304,32},{8,88,304,32},
     {8,120,304,32},{8,152,304,32},{8,184,304,32}
