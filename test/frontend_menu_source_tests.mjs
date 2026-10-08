@@ -267,10 +267,16 @@ assert(main.includes("battleMenu.clear(&renderer)"));
 assert(main.indexOf("battleMenu.clear(&renderer)") < main.indexOf("renderer.fini()"));
 
 const itemPresentation=await fs.readFile(new URL('../project/include/runtime/ItemIconPresenter.hpp',import.meta.url),'utf8');
-assert(itemPresentation.includes('rect, std::round(x), std::round(y), size, size, opacity'));
+assert(itemPresentation.includes('renderer.drawImageDirect(image,std::round(x),std::round(y),size,size,0,'));
 assert(itemPresentation.indexOf('!std::isfinite(size)') < itemPresentation.indexOf('C2D_SpriteSheetLoad'));
-assert(itemPresentation.includes('frame->page >= sizeof(kItemIconPages)/sizeof(kItemIconPages[0])'));
-assert(itemPresentation.includes('renderer->retireSpriteSheet(m_sheet)'));
+assert(itemPresentation.includes('image.subtex->width!=definition->width'));
+assert(itemPresentation.includes('image.subtex->height!=definition->height'));
+assert(itemPresentation.includes('findItemIconTexture(key)'));
+assert(itemPresentation.includes('Slot m_slots[8]{}'));
+assert(itemPresentation.includes('slot.definition==definition'));
+assert(!itemPresentation.includes('kItemIconPages'));
+assert(itemPresentation.includes('renderer->retireSpriteSheet(slot.sheet)'));
+assert(itemPresentation.includes('renderer.retireSpriteSheet(chosen->sheet)'));
 assert(rewardPresentation.includes('m_icons.clear(renderer)'));
 assert(main.includes('rewardMenu.clear(&renderer)'));
 

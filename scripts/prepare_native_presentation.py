@@ -262,6 +262,8 @@ item_header+="\n};\ninline constexpr const char* kItemIconPages[]= {\n"+"\n".joi
 (ROOT / "project/generated/include/content/ItemIcons.hpp").write_text(item_header,encoding="utf-8",newline="\n")
 (output.parent / "item-icon-provenance.json").write_text(json.dumps({"repository":REPOSITORY,"revision":REVISION,"sourcePath":"images/items.json","sourceSHA256":hashlib.sha256(item_manifest_source.read_bytes()).hexdigest(),"schemaVersion":1,"frames":item_frames},sort_keys=True,indent=2)+"\n",encoding="utf-8",newline="\n")
 print(f"Imported {len(item_frames)} original item icon frames")
+from prepare_item_icon_index import prepare as prepare_item_icon_index
+prepare_item_icon_index(ROOT)
 
 # Reuse the existing upstream enum parser for native ball IDs.
 import re

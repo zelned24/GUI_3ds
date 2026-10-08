@@ -1,90 +1,65 @@
 #pragma once
 #include "gfx/renderer2d.hpp"
-#include "content/ItemIcons.hpp"
+#include "content/ItemIconTextures.hpp"
 #include "content/ItemIconReferences.hpp"
-#include <cstdio>
-#include <cstring>
 #include <cmath>
+#include <cstdint>
 
 namespace Pokerogue3DS {
-
 class ItemIconPresenter {
 public:
     ItemIconPresenter() = default;
     ItemIconPresenter(const ItemIconPresenter&) = delete;
     ItemIconPresenter& operator=(const ItemIconPresenter&) = delete;
     ~ItemIconPresenter() { clear(); }
-
     void clear(Renderer2D* renderer=nullptr) {
-        if (m_sheet) {
-            if (renderer) renderer->retireSpriteSheet(m_sheet);
-            else C2D_SpriteSheetFree(m_sheet);
-        }
-        if (m_looseSheet) {
-            if (renderer) renderer->retireSpriteSheet(m_looseSheet);
-            else C2D_SpriteSheetFree(m_looseSheet);
-        }
-        m_sheet = nullptr;
-        m_looseSheet = nullptr;
-        m_page = 0xffff;
-        m_failedPage = 0xffff;
-        m_looseKey[0] = '\0';
-    }
-
-    bool draw(Renderer2D& renderer, const char* key, float x, float y, float size = 32, float opacity = 1.0f) {
-        if (!key || !*key || !std::isfinite(x) || !std::isfinite(y) ||
-            !std::isfinite(size) || size <= 0 || !std::isfinite(opacity) || opacity <= 0) return false;
-        if (opacity > 1) opacity = 1;
-        const ItemIconFrame* frame = nullptr;
-        for (const auto& row : kItemIconFrames) {
-            if (std::strcmp(row.key, key) == 0) { frame = &row; break; }
-        }
-        if (frame) {
-            if (frame->page >= sizeof(kItemIconPages)/sizeof(kItemIconPages[0]) ||
-                !frame->width || !frame->height || !frame->sourceWidth || !frame->sourceHeight) return false;
-            if(m_failedPage==frame->page) return false;
-            if (!m_sheet || m_page != frame->page) {
-                if (m_sheet) renderer.retireSpriteSheet(m_sheet);
-                m_failedPage=0xffff;
-                m_page = frame->page;
-                m_sheet = C2D_SpriteSheetLoad(kItemIconPages[m_page]);
-                if(!m_sheet) {m_failedPage=m_page;return false;}
+        for(auto& slot:m_slots) {
+            if(slot.sheet) {
+                if(renderer) renderer->retireSpriteSheet(slot.sheet);
+                else C2D_SpriteSheetFree(slot.sheet);
             }
-            if (m_sheet) {
-                C2D_Image img = C2D_SpriteSheetGetImage(m_sheet, 0);
-                if(!img.tex || !img.subtex || !img.subtex->width || !img.subtex->height) {
-                    renderer.retireSpriteSheet(m_sheet);m_sheet=nullptr;m_failedPage=m_page;return false;
-                }
-                if(unsigned(frame->x)+frame->width>img.subtex->width ||
-                    unsigned(frame->y)+frame->height>img.subtex->height ||
-                    unsigned(frame->trimX)+frame->width>frame->sourceWidth ||
-                    unsigned(frame->trimY)+frame->height>frame->sourceHeight) return false;
-                C3D_TexSetFilter(img.tex, GPU_NEAREST, GPU_NEAREST);
-                Renderer2D::AtlasFrame rect{
-                    frame->x, frame->y, frame->width, frame->height,
-                    frame->sourceWidth, frame->sourceHeight, frame->trimX, frame->trimY
-                };
-                renderer.drawAtlasFrame(img, rect, std::round(x), std::round(y), size, size, opacity);
-                return true;
-            }
+            slot={};
         }
-
-        return false;
+        m_serial=0;
     }
-
-    bool drawItem(Renderer2D& renderer, const char* itemId, float x, float y, float size = 32, float opacity = 1.0f) {
-        if (!itemId) return false;
-        const char* key = findItemIconKey(itemId);
-        if (key) return draw(renderer, key, x, y, size, opacity);
-        return false;
+    bool draw(Renderer2D& renderer,const char* key,float x,float y,float size = 32,float opacity=1.0f) {
+        if(!key || !std::isfinite(x) || !std::isfinite(y) || !std::isfinite(size)
+            || size<=0 || !std::isfinite(opacity) || opacity<=0) return false;
+        const auto* definition=findItemIconTexture(key);
+        if(!definition || !definition->width || !definition->height) return false;
+        Slot* chosen=nullptr;
+        for(auto& slot:m_slots) if(slot.definition==definition) {chosen=&slot;break;}
+        if(!chosen) {
+            for(auto& slot:m_slots) if(!slot.definition) {chosen=&slot;break;}
+            if(!chosen) {
+                chosen=&m_slots[0];
+                for(auto& slot:m_slots) if(slot.serial<chosen->serial) chosen=&slot;
+            }
+            if(chosen->sheet) renderer.retireSpriteSheet(chosen->sheet);
+            *chosen={};chosen->definition=definition;
+            chosen->sheet=C2D_SpriteSheetLoad(definition->path);
+            // Retain failed entries too; retry only after explicit cache invalidation.
+        }
+        if(++m_serial==0) {for(auto& slot:m_slots) slot.serial=0;m_serial=1;}
+        chosen->serial=m_serial;
+        if(!chosen->sheet) return false;
+        const auto image=C2D_SpriteSheetGetImage(chosen->sheet,0);
+        if(!image.tex || !image.subtex || image.subtex->width!=definition->width
+            || image.subtex->height!=definition->height) return false;
+        C3D_TexSetFilter(image.tex,GPU_NEAREST,GPU_NEAREST);
+        renderer.drawImageDirect(image,std::round(x),std::round(y),size,size,0,
+            opacity>1 ? 1 : opacity);
+        return true;
     }
-
+    bool drawItem(Renderer2D& renderer,const char* itemId,float x,float y,float size = 32,float opacity=1.0f) {
+        const char* key=findItemIconKey(itemId);
+        return key && draw(renderer,key,x,y,size,opacity);
+    }
 private:
-    C2D_SpriteSheet m_sheet = nullptr;
-    C2D_SpriteSheet m_looseSheet = nullptr;
-    uint16_t m_page = 0xffff;
-    uint16_t m_failedPage = 0xffff;
-    char m_looseKey[64]{};
+    // Five balls or three reward choices fit without per-frame texture churn.
+    // Physical 32x32 sources replace each presenter's full 512x512 atlas allocation.
+    struct Slot {const ItemIconTexture* definition=nullptr;C2D_SpriteSheet sheet=nullptr;uint64_t serial=0;};
+    Slot m_slots[8]{};
+    uint64_t m_serial=0;
 };
-
-} // namespace Pokerogue3DS
+}
