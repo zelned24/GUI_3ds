@@ -5,6 +5,7 @@
 #include "storage/NativeProgressStore.hpp"
 #include "storage/NativeProgressBundle.hpp"
 #include "storage/NativeEggInventory.hpp"
+#include "storage/NativeEggProgress.hpp"
 #include "game/EggGachaPolicy.hpp"
 #include "storage/IntegritySha256.hpp"
 #include "content/PokerogueRuntimeContent.hpp"
@@ -191,6 +192,32 @@ extern "C" int runNativeSaveChecks() {
         if(eggTierForRoll(256,EggSourceType::GACHA_MOVE,invalidOutput)!=EggIncubationResult::InvalidInput ||
             invalidOutput!=EggTier::EPIC || eggTierForRoll(0,static_cast<EggSourceType>(255),invalidOutput)
             !=EggIncubationResult::InvalidInput || invalidOutput!=EggTier::EPIC) return 1222;
+        {
+            EggIncubationRecord envelopeEgg{};envelopeEgg.id=123;envelopeEgg.hatchWaves=10;
+            const uint32_t balances[4]={1,2,3,4};const EggPityState pityLedger{5,6,7,8};
+            char envelope[212]{},repeat[212]{};size_t envelopeSize=0,repeatSize=0;
+            if(encodeNativeEggProgress(&envelopeEgg,1,balances,pityLedger,17,PokerogueContent::kContentHash,
+                envelope,sizeof(envelope),envelopeSize)!=NativeSaveResult::Ok || envelopeSize!=212 ||
+                encodeNativeEggProgress(&envelopeEgg,1,balances,pityLedger,17,PokerogueContent::kContentHash,
+                repeat,sizeof(repeat),repeatSize)!=NativeSaveResult::Ok || repeatSize!=envelopeSize ||
+                std::memcmp(envelope,repeat,envelopeSize)) return 1235;
+            NativeEggProgressView eggView{};
+            if(inspectNativeEggProgress(envelope,envelopeSize,PokerogueContent::kContentHash,eggView)!=NativeSaveResult::Ok ||
+                eggView.generation!=17 || eggView.eggCount!=1 || eggView.vouchers[3]!=4 ||
+                eggView.pity.common!=5 || eggView.pity.rare!=6 || eggView.pity.epic!=7 || eggView.pity.legendary!=8)
+                return 1236;
+            envelope[76]^=1;
+            if(inspectNativeEggProgress(envelope,envelopeSize,PokerogueContent::kContentHash,eggView)
+                !=NativeSaveResult::ChecksumMismatch || eggView.generation!=17) return 1237;
+            envelope[76]^=1;char otherHash[65];std::memcpy(otherHash,PokerogueContent::kContentHash,65);
+            otherHash[0]=otherHash[0]=='a'?'b':'a';
+            if(inspectNativeEggProgress(envelope,envelopeSize,otherHash,eggView)!=NativeSaveResult::ContentMismatch)
+                return 1238;
+            envelopeSize=99;
+            if(encodeNativeEggProgress(&envelopeEgg,1,balances,pityLedger,0,PokerogueContent::kContentHash,
+                envelope,sizeof(envelope),envelopeSize)!=NativeSaveResult::InvalidRecord || envelopeSize!=99)
+                return 1239;
+        }
         EggTier resolvedTier=EggTier::COMMON;
         for(const auto& row:kSpeciesEggTiers)
             if(speciesEggTier(row.dex,resolvedTier)!=EggIncubationResult::Ok || resolvedTier!=row.tier) return 1214;
