@@ -29,9 +29,8 @@ enum class BattleMenuCommand {
 
 class BattleCommandMenuPresenter {
 public:
-    // Item sheets are released after the final frame fence in main.
     void clear(Renderer2D* renderer=nullptr) {
-        m_icons.clear();
+        m_icons.clear(renderer);
         m_cursor.clear(renderer);
         MoveMenuPresenter::clear(renderer);
     }

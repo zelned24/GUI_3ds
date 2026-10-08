@@ -18,10 +18,10 @@ public:
         return rewardChoiceAt(x,y,count);
     }
 
-    void clear() {
-        m_icons.clear();
-        m_partyPresenter.clear();
-        m_cursor.clear();
+    void clear(Renderer2D* renderer=nullptr) {
+        m_icons.clear(renderer);
+        m_partyPresenter.clear(renderer);
+        m_cursor.clear(renderer);
         resetSelection();
     }
 

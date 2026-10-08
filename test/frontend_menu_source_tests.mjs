@@ -257,3 +257,11 @@ assert(!commandPresentation.includes('y >= 210 && m_page'));
 assert(commandPresentation.includes("MoveMenuPresenter::clear(renderer)"));
 assert(main.includes("battleMenu.clear(&renderer)"));
 assert(main.indexOf("battleMenu.clear(&renderer)") < main.indexOf("renderer.fini()"));
+
+const itemPresentation=await fs.readFile(new URL('../project/include/runtime/ItemIconPresenter.hpp',import.meta.url),'utf8');
+assert(itemPresentation.includes('rect, std::round(x), std::round(y), size, size, opacity'));
+assert(itemPresentation.indexOf('!std::isfinite(size)') < itemPresentation.indexOf('C2D_SpriteSheetLoad'));
+assert(itemPresentation.includes('frame->page >= sizeof(kItemIconPages)/sizeof(kItemIconPages[0])'));
+assert(itemPresentation.includes('renderer->retireSpriteSheet(m_sheet)'));
+assert(rewardPresentation.includes('m_icons.clear(renderer)'));
+assert(main.includes('rewardMenu.clear(&renderer)'));

@@ -4,6 +4,7 @@
 #include "content/ItemIconReferences.hpp"
 #include <cstdio>
 #include <cstring>
+#include <cmath>
 
 namespace Pokerogue3DS {
 
@@ -14,9 +15,15 @@ public:
     ItemIconPresenter& operator=(const ItemIconPresenter&) = delete;
     ~ItemIconPresenter() { clear(); }
 
-    void clear() {
-        if (m_sheet) C2D_SpriteSheetFree(m_sheet);
-        if (m_looseSheet) C2D_SpriteSheetFree(m_looseSheet);
+    void clear(Renderer2D* renderer=nullptr) {
+        if (m_sheet) {
+            if (renderer) renderer->retireSpriteSheet(m_sheet);
+            else C2D_SpriteSheetFree(m_sheet);
+        }
+        if (m_looseSheet) {
+            if (renderer) renderer->retireSpriteSheet(m_looseSheet);
+            else C2D_SpriteSheetFree(m_looseSheet);
+        }
         m_sheet = nullptr;
         m_looseSheet = nullptr;
         m_page = 0xffff;
@@ -24,12 +31,16 @@ public:
     }
 
     bool draw(Renderer2D& renderer, const char* key, float x, float y, float size = 24, float opacity = 1.0f) {
-        if (!key || !*key) return false;
+        if (!key || !*key || !std::isfinite(x) || !std::isfinite(y) ||
+            !std::isfinite(size) || size <= 0 || !std::isfinite(opacity) || opacity <= 0) return false;
+        if (opacity > 1) opacity = 1;
         const ItemIconFrame* frame = nullptr;
         for (const auto& row : kItemIconFrames) {
             if (std::strcmp(row.key, key) == 0) { frame = &row; break; }
         }
         if (frame) {
+            if (frame->page >= sizeof(kItemIconPages)/sizeof(kItemIconPages[0]) ||
+                !frame->width || !frame->height || !frame->sourceWidth || !frame->sourceHeight) return false;
             if (!m_sheet || m_page != frame->page) {
                 if (m_sheet) renderer.retireSpriteSheet(m_sheet);
                 m_page = frame->page;
@@ -45,7 +56,7 @@ public:
                     frame->x, frame->y, frame->width, frame->height,
                     frame->sourceWidth, frame->sourceHeight, frame->trimX, frame->trimY
                 };
-                renderer.drawAtlasFrame(img, rect, x, y, size, size, opacity);
+                renderer.drawAtlasFrame(img, rect, std::round(x), std::round(y), size, size, opacity);
                 return true;
             }
         }
