@@ -250,8 +250,19 @@ setup_rows=[]
 for key in ["starter_select_bg","starter_container_bg"]:
     source=output / ("images/ui/"+key+".png")
     target=ROOT / ("build/romfs/presentation/ui/"+key+".t3x")
-    subprocess.run(["C:/devkitPro/tools/bin/tex3ds.exe","-f","rgba8","-o",str(target),str(source)],check=True,stdout=subprocess.DEVNULL)
-    setup_rows.append({"sourcePath":"images/ui/"+key+".png","sourceSHA256":hashlib.sha256(source.read_bytes()).hexdigest(),"runtimePath":"romfs:/presentation/ui/"+key+".t3x","convertedSHA256":hashlib.sha256(target.read_bytes()).hexdigest()})
+    conversion_source=source
+    adaptation=None
+    if key=="starter_select_bg":
+        conversion_source=output.parent / "starter-select-native.png"
+        with Image.open(source) as image:
+            source_size=list(image.size)
+            image.convert("RGBA").resize((400,225),Image.Resampling.NEAREST).save(conversion_source)
+        adaptation={"sourceSize":source_size,"runtimeSize":[400,225],
+            "resampling":"NEAREST","runtimeScale":1,
+            "stagedPath":"build/native-presentation/starter-select-native.png",
+            "stagedSHA256":hashlib.sha256(conversion_source.read_bytes()).hexdigest()}
+    subprocess.run(["C:/devkitPro/tools/bin/tex3ds.exe","-f","rgba8","-o",str(target),str(conversion_source)],check=True,stdout=subprocess.DEVNULL)
+    setup_rows.append({"sourcePath":"images/ui/"+key+".png","sourceSHA256":hashlib.sha256(source.read_bytes()).hexdigest(),"runtimePath":"romfs:/presentation/ui/"+key+".t3x","convertedSHA256":hashlib.sha256(target.read_bytes()).hexdigest(),"adaptation":adaptation})
 (output.parent / "setup-provenance.json").write_text(json.dumps({"repository":REPOSITORY,"revision":REVISION,"schemaVersion":1,"files":setup_rows},sort_keys=True,indent=2)+"\n",encoding="utf-8",newline="\n")
 
 # Preserve source atlas frame geometry, including trim offsets.

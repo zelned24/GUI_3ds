@@ -778,3 +778,6 @@ La búsqueda del índice generado usa búsqueda binaria sobre identidades ordena
 - [ ] Finalización de intro conectada a `isFinished()` del reproductor en lugar del reloj global. Saltar usa retirement GPU, también cubierto en harness nativo escrito; guards de conexión PASS, ejecución nativa pendiente.
 
 - [x] Ruta de intro: retirada la carga/dibujado de arena oculta detrás de la cinemática. Guard de conexión PASS; sin medición de ahorro real.
+
+- [x] Fondo de selector adaptado offline: 320×180 original → 400×225 nearest, raster final 1:1 y provenance/hash preservados; comparación pixel a pixel y hashes físicos PASS. No implica píxeles originales uniformes: la adaptación fuente sigue siendo 1.25×.
+- [ ] Revisión visual del fondo adaptado y retiro GPU de arena/capas: reemplazo y limpieza usan `retireSpriteSheet` con renderer; harness actualizado sin ejecutar. Fondos de batalla y capas todavía tienen escalas fraccionales pendientes.

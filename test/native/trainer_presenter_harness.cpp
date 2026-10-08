@@ -59,7 +59,7 @@ int main() {
         assert(!arena.drawTrainerBattleIntro(renderer,65535,true,"riley") && loads==10);
         failLoad=false;
         assert(!arena.drawTrainerBattleIntro(renderer,65535,true,"riley") && loads==10);
-        arena.clear();
+        arena.clear(&renderer);
         assert(arena.drawTrainerBattleIntro(renderer,65535,true,"riley") && loads==11);
     }
 

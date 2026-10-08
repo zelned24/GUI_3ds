@@ -15,15 +15,21 @@ public:
     ArenaPresenter() = default;
     ArenaPresenter(const ArenaPresenter&) = delete;
     ArenaPresenter& operator=(const ArenaPresenter&) = delete;
-    void clear() {
-        if (m_sheet) C2D_SpriteSheetFree(m_sheet);
+    void clear(Renderer2D* renderer=nullptr) {
+        if (m_sheet) {
+            if(renderer) renderer->retireSpriteSheet(m_sheet);
+            else C2D_SpriteSheetFree(m_sheet);
+        }
         m_sheet = nullptr;
         m_definition = nullptr;
         for (unsigned i=0;i<2;++i) {
-            if (m_layers[i]) C2D_SpriteSheetFree(m_layers[i]);
+            if (m_layers[i]) {
+                if(renderer) renderer->retireSpriteSheet(m_layers[i]);
+                else C2D_SpriteSheetFree(m_layers[i]);
+            }
             m_layers[i]=nullptr; m_layerDefinitions[i]=nullptr; m_layerMetadata[i].clear();
         }
-        m_trainer.clear();
+        m_trainer.clear(renderer);
         m_trainerCurrentTypeId = 0;
         m_trainerAttempted=false;m_trainerCurrentFemale=false;m_trainerCurrentName.clear();
     }
@@ -31,9 +37,9 @@ public:
         const ArenaTextureDefinition* definition = nullptr;
         if (biomeKey) for (const auto& row : kArenaTextures)
             if (std::strcmp(row.key, biomeKey) == 0) { definition = &row; break; }
-        if (!definition) { clear(); return false; }
+        if (!definition) { clear(&renderer); return false; }
         if (definition != m_definition) {
-            clear();
+            clear(&renderer);
             m_definition = definition;
             m_sheet = C2D_SpriteSheetLoad(definition->path);
             if (m_sheet) {
@@ -58,7 +64,7 @@ public:
                 if (std::strcmp(row.key,key)==0) { layer=&row; break; }
             if (!layer) continue;
             if (layer!=m_layerDefinitions[i]) {
-                if (m_layers[i]) C2D_SpriteSheetFree(m_layers[i]);
+                if (m_layers[i]) renderer.retireSpriteSheet(m_layers[i]);
                 m_layerDefinitions[i]=layer;
                 m_layers[i]=C2D_SpriteSheetLoad(layer->path);
                 if (m_layers[i]) {

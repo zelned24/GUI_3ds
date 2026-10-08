@@ -963,7 +963,7 @@ int main() {
     frontend.clear(&renderer);
     setup.clear();
     battleHud.clear();
-    arena.clear();
+    arena.clear(&renderer);
     secondEnemySprites.invalidate(&renderer);
     pokemonSprites.invalidate(&renderer);
 #if defined(POKEROGUE_ENABLE_QUICKJS)

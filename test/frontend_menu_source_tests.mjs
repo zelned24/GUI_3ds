@@ -154,3 +154,7 @@ assert(introPresenter.includes("if(renderer) renderer->retireSpriteSheet(m_sheet
 
 const introBranch=main.slice(main.indexOf("if (introActive) {\n                renderer.beginFrame()"),main.indexOf("// The menu consumes input"));
 assert(introBranch.includes("setup.drawTop") && !introBranch.includes("arena.draw"));
+
+assert(arena.includes("if (!definition) { clear(&renderer); return false; }"));
+assert(arena.includes("renderer.retireSpriteSheet(m_layers[i])"));
+assert(main.includes("arena.clear(&renderer)"));

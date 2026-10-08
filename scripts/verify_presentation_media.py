@@ -184,6 +184,27 @@ def test_intro_cinematic():
     print(f"  [OK] All {len(frames)} intro frames in {len(sheets)} pages: exact nearest pixels, timestamps and physical hashes")
 
 
+def test_setup_background():
+    from PIL import Image
+    root=Path(ROOT)
+    report=json.loads((root/"build/native-presentation/setup-provenance.json").read_text(encoding="utf-8"))
+    assert report["revision"]=="056a1f408f26a3be4fef243f7462cb43608c7928"
+    for row in report["files"]:
+        source=root/"build/native-presentation/source"/row["sourcePath"]
+        texture=root/"build/romfs"/row["runtimePath"].removeprefix("romfs:/")
+        assert hashlib.sha256(source.read_bytes()).hexdigest()==row["sourceSHA256"]
+        assert hashlib.sha256(texture.read_bytes()).hexdigest()==row["convertedSHA256"]
+        if row["adaptation"]:
+            a=row["adaptation"];staged=root/a["stagedPath"]
+            assert a["runtimeSize"]==[400,225] and a["runtimeScale"]==1 and a["resampling"]=="NEAREST"
+            assert hashlib.sha256(staged.read_bytes()).hexdigest()==a["stagedSHA256"]
+            with Image.open(source) as original, Image.open(staged) as native:
+                assert list(original.size)==a["sourceSize"] and native.size==(400,225)
+                expected=original.convert("RGBA").resize((400,225),Image.Resampling.NEAREST)
+                assert expected.tobytes()==native.convert("RGBA").tobytes()
+    print("  [OK] Setup background: exact offline nearest 400x225 raster and physical hashes")
+
+
 def test_windows():
     root=Path(ROOT)
     report=json.loads((root / "build/native-presentation/window-provenance.json").read_text(encoding="utf-8"))
@@ -274,6 +295,7 @@ if __name__ == "__main__":
     test_items()
     test_trainers()
     test_intro_cinematic()
+    test_setup_background()
     test_windows()
     test_type_labels()
     test_hud_types()
