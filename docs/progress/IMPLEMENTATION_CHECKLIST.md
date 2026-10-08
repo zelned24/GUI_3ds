@@ -2,7 +2,7 @@
 
 ## Cómo medir el avance
 
-- Referencia actual: rama `codex/pokerogue-3ds-migration`, último commit publicado `c59d74c` y cambios locales posteriores sin publicar. Los resultados históricos no verifican estos cambios locales.
+- Referencia actual: rama `codex/pokerogue-3ds-migration`, último commit publicado `95209c7` y cambios locales posteriores sin publicar. Los resultados históricos no verifican estos cambios locales.
 - Objetivo: PokéRogue jugable y fiel al snapshot upstream en Old 3DS, con ambas pantallas, progreso exportable y actualizaciones desde consola.
 - Cada ID es estable para reportar avances: `MOV-07`, `GUI-03`, etc. No equivale a un movimiento/habilidad individual.
 - Una casilla sin marcar puede tener código parcial; el resumen de cada área indica lo existente. Marcarla solo con integración completa y evidencia ejecutada pertinente.
@@ -730,3 +730,7 @@ La búsqueda del índice generado usa búsqueda binaria sobre identidades ordena
 - [x] Verificar valores de referencia del slot por defecto mediante función upstream inspeccionada: `test/starter_ability_upstream_tests.mjs` PASS, 7.588 casos y 517 especies con ability2 raw NONE. Esta referencia no ejecuta el C++.
 
 - [ ] Intro de entrenador por identidad completa: ArenaPresenter recarga por ID, género y nombre; recuerda intentos fallidos hasta cambio de identidad/clear, y entrega al renderer la retirada de texturas al recargar. Casos nativos de mismo sprite, cambio de género/nombre, fallo repetido y recuperación añadidos sin ejecutar; guard estático PASS.
+
+- [ ] Finalización ampliada verificable: rechaza duplicados/conteos inconsistentes, valida archivos/hashes y escribe un reporte temporal completo antes de reemplazar `converted-sprite-assets.json`. Guard estático JS PASS; ejecución final sobre todo el catálogo pendiente. La conversión de texturas no se declara publicación transaccional de un paquete.
+
+- [ ] Render de imágenes válido: `drawImageDirect` rechaza coordenadas/tamaños/rotación/opacidad no finitos y dimensiones no positivas; limita alfa a 1 sin cambiar escalas ni flip. Casos C++ escritos para NaN/infinito/cero/negativo y dibujo válido 1×, sin ejecutar; guard estático JS PASS.

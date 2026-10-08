@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
+import fs from 'node:fs/promises';
 import {execFileSync} from 'node:child_process';
 import {buildPokemonAppearanceHeader,validateMaterializedAppearanceCatalog,materializedAppearanceCatalogHash} from '../scripts/generate_pokemon_appearance_index.mjs';
 import {POKEROGUE_REPOSITORIES} from '../tools/js/data/PokerogueSource.js';
@@ -112,3 +113,10 @@ assert.equal(validateMaterializedAppearanceCatalog(complete,new Set(['1:front:fa
 assert.throws(()=>validateMaterializedAppearanceCatalog(complete,new Set(['2:front:false:1'])),/omits/);
 assert.throws(()=>validateMaterializedAppearanceCatalog(complete,new Set(['1:front:false:1','2:front:false:1'])),/enumeration/);
 assert.equal(validateMaterializedAppearanceCatalog(seal(withMissing),new Set(['1:front:false:1','2:back:true:0'])).size,1);
+
+// Finalizer source guards; transactional texture-package publication is outside this test.
+const finalizer=await fs.readFile(new URL('../scripts/finalize_pokerogue_sprite_conversion.mjs',import.meta.url),'utf8');
+assert(finalizer.includes('normalById.size!==normal.assets.length'));
+assert(finalizer.includes('if(sourceIdentities.has(id))'));
+assert(finalizer.indexOf('await fs.writeFile(pendingPath, manifestBytes)')<finalizer.indexOf('await fs.rename(pendingPath, inventoryPath)'));
+assert(!finalizer.includes('await fs.writeFile(inventoryPath, manifestBytes)'));

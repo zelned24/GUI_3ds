@@ -230,12 +230,17 @@ void Renderer2D::drawImageDirect(
     bool flipY,
     uint32_t tintColor
 ) {
-    if (!m_currentTarget || opacity <= 0.001f || !img.tex || !img.subtex
+    if (!m_currentTarget || !std::isfinite(x) || !std::isfinite(y) ||
+        !std::isfinite(width) || !std::isfinite(height) || !std::isfinite(rotation) ||
+        !std::isfinite(opacity) || width<=0 || height<=0 || opacity<=0.001f || !img.tex || !img.subtex
         || !img.subtex->width || !img.subtex->height) return;
+    opacity=std::min(opacity,1.0f);
 
     // Force nearest-neighbor sampling on PICA200 GPU to preserve crisp pixel art
     C3D_TexSetFilter(img.tex, GPU_NEAREST, GPU_NEAREST);
 
+    const float centerX=x+width*0.5f,centerY=y+height*0.5f;
+    if(!std::isfinite(centerX) || !std::isfinite(centerY)) return;
     float scaleX = width / img.subtex->width;
     float scaleY = height / img.subtex->height;
     if (flipX) scaleX = -scaleX;
@@ -254,7 +259,7 @@ void Renderer2D::drawImageDirect(
     // Call real Citro2D rotated & scaled image renderer
     C2D_DrawImageAtRotated(
         img,
-        x + width * 0.5f, y + height * 0.5f,
+        centerX, centerY,
         0.5f,
         rotation,
         &tint,

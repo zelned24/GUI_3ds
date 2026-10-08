@@ -79,3 +79,8 @@ assert(arena.includes('m_trainerCurrentFemale != female || m_trainerCurrentName 
 assert(arena.includes('m_trainerAttempted=false;m_trainerCurrentFemale=false;m_trainerCurrentName.clear()'));
 assert(arena.includes('m_trainer.loadTrainer(trainerTypeId, female,&renderer)'));
 assert(!arena.includes('if (!m_trainer.isLoaded() || m_trainerCurrentTypeId'));
+
+const rendererSource=await fs.readFile(new URL('../project/src/gfx/renderer2d.cpp',import.meta.url),'utf8');
+const imageDraw=rendererSource.slice(rendererSource.indexOf('void Renderer2D::drawImageDirect('),rendererSource.indexOf('void Renderer2D::drawAtlasFrame('));
+for(const field of ['x','y','width','height','rotation','opacity']) assert(imageDraw.includes('std::isfinite('+field+')'));
+assert(imageDraw.includes('opacity=std::min(opacity,1.0f)'));

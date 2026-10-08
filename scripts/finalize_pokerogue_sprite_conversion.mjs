@@ -28,7 +28,12 @@ const checkedFile = async (relative, expected) => {
   if (found !== expected) throw new Error(`Converted file hash mismatch: ${relative}`);
   return bytes.length;
 };
+if(!Array.isArray(staged.assets) || staged.staged!==staged.assets.length ||
+    !Array.isArray(normal.assets) || normal.total!==normal.assets.length)
+  throw new Error('Sprite inventories have invalid catalog counts');
 const normalById = new Map(normal.assets.map(asset => [`${asset.atlasKey}:${asset.facing}`, asset]));
+if(normalById.size!==normal.assets.length) throw new Error('Duplicate converted atlas identity');
+const sourceIdentities=new Set();
 const output = { schemaVersion: 1, repository: pinned.url, revision: pinned.revision,
   nativePixelPolicy: normal.nativePixelPolicy ?? null,
   atlasCount: 0, textureCount: 0, textureBytes: 0, assets: [] };
@@ -38,6 +43,8 @@ if(normal.assets.some(asset=>asset.nativeOverride) && (!output.nativePixelPolicy
   throw new Error('Native sprite plan uses an obsolete policy/converter');
 for (const source of staged.assets) {
   const id = `${source.atlasKey}:${source.facing}`;
+  if(sourceIdentities.has(id)) throw new Error(`Duplicate staged atlas identity: ${id}`);
+  sourceIdentities.add(id);
   const regular = normalById.get(id);
   let metadataPath, metadataSha256, textures;
   if(regular?.nativeOverride) {
@@ -93,5 +100,9 @@ if (output.atlasCount !== staged.staged || output.atlasCount !== normal.total)
   throw new Error('Not every staged atlas has a converted texture and metadata');
 const manifestBytes = Buffer.from(JSON.stringify(output, null, 2) + '\n');
 const inventoryPath = path.join(build, 'converted-sprite-assets.json');
-await fs.writeFile(inventoryPath, manifestBytes);
+// Write the whole verified report before replacing the previous inventory.
+// Texture conversion itself is not a transactional package publication.
+const pendingPath=inventoryPath+'.pending';
+await fs.writeFile(pendingPath, manifestBytes);
+await fs.rename(pendingPath, inventoryPath);
 console.log(`${output.atlasCount} pinned atlases, ${output.textureCount} .t3x pages, ${output.textureBytes} texture bytes; inventory SHA-256 ${sha256(manifestBytes)}`);

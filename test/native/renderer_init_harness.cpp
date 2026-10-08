@@ -92,6 +92,25 @@ int main() {
         fail=0;assert(renderer.init());assert(renderer.isInitialized() && !renderer.initializationError());
         assert(renderer.textLineHeight(0.5f)==19.0f);assert(renderer.textInkHeight(0.5f)==12.0f);assert(renderer.windowStyle()==1);
         renderer.beginTop();
+        {
+            const C2D_Image image{&tex,&sub};
+            const int before=imageDraws;
+            const float nan=std::numeric_limits<float>::quiet_NaN();
+            const float inf=std::numeric_limits<float>::infinity();
+            renderer.drawImageDirect(image,nan,0,24,24);
+            renderer.drawImageDirect(image,0,inf,24,24);
+            renderer.drawImageDirect(image,0,0,nan,24);
+            renderer.drawImageDirect(image,0,0,24,inf);
+            renderer.drawImageDirect(image,0,0,24,24,inf);
+            renderer.drawImageDirect(image,0,0,24,24,0,nan);
+            renderer.drawImageDirect(image,0,0,0,24);
+            renderer.drawImageDirect(image,0,0,24,-1);
+            renderer.drawImageDirect(image,std::numeric_limits<float>::max(),0,std::numeric_limits<float>::max(),24);
+            assert(imageDraws==before);
+            renderer.drawImageDirect(image,0,0,24,24,0,2);
+            assert(imageDraws==before+1 && imageScaleX==1 && imageScaleY==1);
+        }
+
         const float requested[]={0.25f,0.30f,0.375f,0.5f,1.0f};
         for(float size:requested) {
             renderer.drawText("WÉ",1.4f,2.7f,size,0xffffffff);
