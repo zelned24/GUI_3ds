@@ -25,6 +25,8 @@ inline NativeSaveResult validateNativeProgressPair(const char* runBytes, size_t 
         return NativeSaveResult::InvalidRecord;
     auto status = decodeNativeRunSave(runBytes, runSize, hash, scratch);
     if (status != NativeSaveResult::Ok) return status;
+    // Pair-only transport cannot drop a referenced egg component.
+    if(scratch.eggProgressGeneration) return NativeSaveResult::UnsupportedVersion;
     size_t count = 0;
     uint32_t generation = 0;
     status = inspectNativeStarterCandyProfile(profileBytes, profileSize, hash,

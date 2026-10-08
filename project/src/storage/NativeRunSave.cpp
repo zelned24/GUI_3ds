@@ -1,5 +1,6 @@
 #include "storage/NativeRunSave.hpp"
 #include "storage/NativeStarterCandyStore.hpp"
+#include "storage/NativeEggProgressStore.hpp"
 #include "storage/IntegritySha256.hpp"
 #include "game/PokemonExperience.hpp"
 #include "game/PokemonStarterMoveset.hpp"
@@ -15,7 +16,7 @@
 namespace Pokerogue3DS {
 namespace {
 // Stable envelope marker; saveVersion carries the independently migrated
-// payload schema (currently version 27).
+// payload schema (currently version 28).
 constexpr char kMagic[] = "POKEROGUE-3DS-SAVE 1\n";
 constexpr size_t kDigestLineLength = 72;
 
@@ -1544,6 +1545,7 @@ NativeSaveResult encodeNativeRunSave(const NativeRunSave& save, char* output, si
     };
     writeAppearance(save.enemyAppearance);
     for (const auto& member : save.trainerParty) writeAppearance(member.appearance);
+    writer.text("eggProgressGeneration="); writer.hex(save.eggProgressGeneration,8);
 
     if (!writer.valid) return NativeSaveResult::TooLarge;
     char hash[65];
@@ -1563,7 +1565,7 @@ NativeSaveResult decodeNativeRunSave(const char* bytes, size_t length, const cha
     auto status = inspectEnvelope(bytes, length, value, payloadStart);
     if (status != NativeSaveResult::Ok) return status;
     if (value.saveVersion > kNativeSaveVersion) return NativeSaveResult::UnsupportedVersion;
-    if (value.saveVersion != 1 && value.saveVersion != 2 && value.saveVersion != 3 && value.saveVersion != 4 && value.saveVersion != 5 && value.saveVersion != 6 && value.saveVersion != 7 && value.saveVersion != 8 && value.saveVersion != 9 && value.saveVersion != 10 && value.saveVersion != 11 && value.saveVersion != 12 && value.saveVersion != 13 && value.saveVersion != 14 && value.saveVersion != 15 && value.saveVersion != 16 && value.saveVersion != 17 && value.saveVersion != 18 && value.saveVersion != 19 && value.saveVersion != 20 && value.saveVersion != 21 && value.saveVersion != 22 && value.saveVersion != 23 && value.saveVersion != 24 && value.saveVersion != 25 && value.saveVersion != 26 &&
+    if (value.saveVersion != 1 && value.saveVersion != 2 && value.saveVersion != 3 && value.saveVersion != 4 && value.saveVersion != 5 && value.saveVersion != 6 && value.saveVersion != 7 && value.saveVersion != 8 && value.saveVersion != 9 && value.saveVersion != 10 && value.saveVersion != 11 && value.saveVersion != 12 && value.saveVersion != 13 && value.saveVersion != 14 && value.saveVersion != 15 && value.saveVersion != 16 && value.saveVersion != 17 && value.saveVersion != 18 && value.saveVersion != 19 && value.saveVersion != 20 && value.saveVersion != 21 && value.saveVersion != 22 && value.saveVersion != 23 && value.saveVersion != 24 && value.saveVersion != 25 && value.saveVersion != 26 && value.saveVersion != 27 &&
         value.saveVersion != kNativeSaveVersion) return NativeSaveResult::UnsupportedVersion;
     const bool legacySetup = value.saveVersion == 1 && value.runtimeVersion == 1;
     const bool legacyBattle = value.saveVersion == 2 && value.runtimeVersion == 2;
@@ -1591,9 +1593,10 @@ NativeSaveResult decodeNativeRunSave(const char* bytes, size_t length, const cha
     const bool legacyCriticalTags = value.saveVersion == 24 && value.runtimeVersion == 24;
     const bool legacyBerryFlags = value.saveVersion == 25 && value.runtimeVersion == 25;
     const bool legacyBerryHistories = value.saveVersion == 26 && value.runtimeVersion == 26;
+    const bool legacyAppearance = value.saveVersion == 27 && value.runtimeVersion == 27;
     const bool currentPayload = value.saveVersion == kNativeSaveVersion &&
         value.runtimeVersion == kNativeSaveRuntimeVersion;
-    if (!currentPayload && !legacySetup && !legacyBattle && !legacyProgress && !legacyTrainer && !legacySwitch && !legacyStages && !legacyWeather && !legacyRoom && !legacyInventory && !legacyParty && !legacyHeld && !legacyProfile && !legacyParticipants && !legacySetupParty && !legacyStatus && !legacyConfusion && !legacyConfusionSource && !legacyConfusionActor && !legacySurvival && !legacyBoss && !legacyGlobalRng && !legacyDoubleField && !legacyPersistent && !legacyCriticalTags && !legacyBerryFlags && !legacyBerryHistories)
+    if (!currentPayload && !legacySetup && !legacyBattle && !legacyProgress && !legacyTrainer && !legacySwitch && !legacyStages && !legacyWeather && !legacyRoom && !legacyInventory && !legacyParty && !legacyHeld && !legacyProfile && !legacyParticipants && !legacySetupParty && !legacyStatus && !legacyConfusion && !legacyConfusionSource && !legacyConfusionActor && !legacySurvival && !legacyBoss && !legacyGlobalRng && !legacyDoubleField && !legacyPersistent && !legacyCriticalTags && !legacyBerryFlags && !legacyBerryHistories && !legacyAppearance)
         return NativeSaveResult::IncompatibleRuntime;
     if (!isHash(expectedContentHash)) return NativeSaveResult::InvalidFormat;
     if (!equal(value.contentHash, expectedContentHash)) return NativeSaveResult::ContentMismatch;
@@ -1944,10 +1947,12 @@ NativeSaveResult decodeNativeRunSave(const char* bytes, size_t length, const cha
             for (auto& member : value.trainerParty)
                 if (!readAppearance(member.appearance)) return NativeSaveResult::InvalidFormat;
         }
+        if(value.saveVersion>=28 && (!reader.literal("eggProgressGeneration=")
+            || !reader.hex(8,value.eggProgressGeneration))) return NativeSaveResult::InvalidFormat;
         // All version-specific fields, including confusion source metadata, must be
         // consumed before checking for trailing or missing payload bytes.
         if (reader.position != reader.end) return NativeSaveResult::InvalidFormat;
-        if (legacyBattle || legacyProgress || legacyTrainer || legacySwitch || legacyStages || legacyWeather || legacyRoom || legacyInventory || legacyParty || legacyHeld || legacyProfile || legacyParticipants || legacySetupParty || legacyStatus || legacyConfusion || legacyConfusionSource || legacyConfusionActor || legacySurvival || legacyBoss || legacyGlobalRng || legacyDoubleField || legacyPersistent || legacyCriticalTags || legacyBerryFlags || legacyBerryHistories) {
+        if (legacyBattle || legacyProgress || legacyTrainer || legacySwitch || legacyStages || legacyWeather || legacyRoom || legacyInventory || legacyParty || legacyHeld || legacyProfile || legacyParticipants || legacySetupParty || legacyStatus || legacyConfusion || legacyConfusionSource || legacyConfusionActor || legacySurvival || legacyBoss || legacyGlobalRng || legacyDoubleField || legacyPersistent || legacyCriticalTags || legacyBerryFlags || legacyBerryHistories || legacyAppearance) {
             value.saveVersion = kNativeSaveVersion;
             value.runtimeVersion = kNativeSaveRuntimeVersion;
         }
@@ -1975,6 +1980,12 @@ NativeSaveResult NativeRunSaveStore::load(const char* contentHash, NativeRunSave
         if (decoded != NativeSaveResult::Ok)
             return decoded == NativeSaveResult::NotFound ? NativeSaveResult::InvalidRecord : decoded;
     }
+    if(candidate.eggProgressGeneration) {
+        if(!m_eggs) return NativeSaveResult::InvalidRecord;
+        decoded=m_eggs->inspectGeneration(contentHash,candidate.eggProgressGeneration);
+        if(decoded!=NativeSaveResult::Ok)
+            return decoded==NativeSaveResult::NotFound ? NativeSaveResult::InvalidRecord : decoded;
+    }
     output = candidate;
     return NativeSaveResult::Ok;
 }
@@ -1985,6 +1996,11 @@ NativeSaveResult NativeRunSaveStore::save(const NativeRunSave& value) {
         if (!m_profiles) return NativeSaveResult::InvalidRecord;
         status = m_profiles->inspectGeneration(value.contentHash, value.starterProfileGeneration);
         if (status == NativeSaveResult::NotFound) status = NativeSaveResult::InvalidRecord;
+    }
+    if(status==NativeSaveResult::Ok && value.eggProgressGeneration) {
+        if(!m_eggs) return NativeSaveResult::InvalidRecord;
+        status=m_eggs->inspectGeneration(value.contentHash,value.eggProgressGeneration);
+        if(status==NativeSaveResult::NotFound) status=NativeSaveResult::InvalidRecord;
     }
     if (status != NativeSaveResult::Ok) return status;
     std::unique_ptr<JournalSlot[]> slotsStorage(new (std::nothrow) JournalSlot[2]);
@@ -2069,7 +2085,7 @@ NativeSaveResult NativeRunSaveStore::importExport(const char* contentHash) {
     status = decodeNativeRunSave(bytes, size, contentHash, value);
     if (status != NativeSaveResult::Ok) return status;
     // A foreign profile sequence is not a local identity; paired import must rebase it.
-    if (value.starterProfileGeneration) return NativeSaveResult::InvalidRecord;
+    if (value.starterProfileGeneration || value.eggProgressGeneration) return NativeSaveResult::InvalidRecord;
     return save(value);
 }
 

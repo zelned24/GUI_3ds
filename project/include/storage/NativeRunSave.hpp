@@ -8,8 +8,8 @@
 
 namespace Pokerogue3DS {
 
-inline constexpr uint16_t kNativeSaveVersion = 27;
-inline constexpr uint16_t kNativeSaveRuntimeVersion = 27;
+inline constexpr uint16_t kNativeSaveVersion = 28;
+inline constexpr uint16_t kNativeSaveRuntimeVersion = 28;
 // Bounded text envelope including six trainer members and field/inventory state.
 inline constexpr size_t kNativeSaveMaxBytes = 8192;
 inline constexpr size_t kNativeHeldModifierCapacity = 32;
@@ -123,6 +123,7 @@ struct NativeRunSave {
     uint32_t generation = 0;
     // Zero denotes a legacy/unlinked run; otherwise load this exact profile generation.
     uint32_t starterProfileGeneration = 0;
+    uint32_t eggProgressGeneration = 0; // v28; zero means no committed egg component.
     // Sorted Pokemon identity IDs; legacy history remains explicitly unknown.
     bool participantHistoryResolved = false;
     uint8_t participantCount = 0;
@@ -272,12 +273,14 @@ public:
 };
 
 class NativeStarterCandyStore;
+class NativeEggProgressStore;
 
 class NativeRunSaveStore {
 public:
     explicit NativeRunSaveStore(NativeSaveStorage& storage) : m_storage(storage) {}
     // Borrowed profile journal; host binds before SD/QuickJS operations.
     void bindStarterProfiles(NativeStarterCandyStore& profiles) { m_profiles = &profiles; }
+    void bindEggProgress(NativeEggProgressStore& eggs) { m_eggs = &eggs; }
     NativeSaveResult load(const char* contentHash, NativeRunSave& output);
     NativeSaveResult save(const NativeRunSave& value);
     NativeSaveResult deleteSave();
@@ -287,6 +290,7 @@ public:
 private:
     NativeSaveStorage& m_storage;
     NativeStarterCandyStore* m_profiles = nullptr;
+    NativeEggProgressStore* m_eggs = nullptr;
 };
 
 // The production backend stores only these fixed files, without user-controlled

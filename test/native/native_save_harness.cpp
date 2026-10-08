@@ -450,6 +450,41 @@ extern "C" int runNativeSaveChecks() {
     if (std::strcmp(digest, "248d6a61d20638b8e5c026930c3e6039a33ce45964ff2167f6ecedd419db06c1") != 0) return 11;
     MemoryStorage disk; NativeRunSaveStore store(disk); NativeRunSave original{}, restored{};
     if (makeNativeRunSetupSave(123, 1, original) != NativeSaveResult::Ok) return 2;
+    // v27 preserves appearance but predates committed egg references.
+    {
+        char current[kNativeSaveMaxBytes]{},legacy[kNativeSaveMaxBytes]{};size_t size=0;
+        auto linked=original;linked.eggProgressGeneration=19;
+        if(encodeNativeRunSave(linked,current,sizeof(current),size)!=NativeSaveResult::Ok
+            || decodeNativeRunSave(current,size,PokerogueContent::kContentHash,restored)!=NativeSaveResult::Ok
+            || restored.eggProgressGeneration!=19 || store.save(linked)!=NativeSaveResult::InvalidRecord) return 1296;
+        const auto* suffix=std::strstr(current,"eggProgressGeneration=");if(!suffix) return 1297;
+        const size_t payload=static_cast<size_t>(suffix-current);std::memcpy(legacy,current,payload);
+        auto* version=std::strstr(legacy,"saveVersion=001c");auto* runtime=std::strstr(legacy,"runtimeVersion=001c");
+        if(!version || !runtime) return 1298;
+        std::memcpy(version+12,"001b",4);std::memcpy(runtime+15,"001b",4);
+        char checksum[65]{};IntegritySha256::hashHex(legacy,payload,checksum);
+        std::memcpy(legacy+payload,"sha256=",7);std::memcpy(legacy+payload+7,checksum,64);legacy[payload+71]=char(10);
+        if(decodeNativeRunSave(legacy,payload+72,PokerogueContent::kContentHash,restored)!=NativeSaveResult::Ok
+            || restored.saveVersion!=kNativeSaveVersion || restored.eggProgressGeneration) return 1299;
+    }
+    {
+        MemoryStorage eggDisk,runDisk;char eggScratch[456]{};
+        NativeEggProgressStore eggs(eggDisk,eggScratch,sizeof(eggScratch),228);
+        NativeRunSaveStore linkedRuns(runDisk);linkedRuns.bindEggProgress(eggs);
+        EggIncubationRecord egg{};egg.id=23;egg.speciesDex=1;
+        uint32_t vouchers[4]{},unlock[4]{};EggPityState pity{};size_t eggBytes=0;
+        if(encodeNativeEggProgress(&egg,1,vouchers,pity,unlock,19,PokerogueContent::kContentHash,
+            eggDisk.slots[0],sizeof(eggDisk.slots[0]),eggBytes)!=NativeSaveResult::Ok) return 1300;
+        eggDisk.sizes[0]=eggBytes;auto linked=original;linked.eggProgressGeneration=19;
+        if(linkedRuns.save(linked)!=NativeSaveResult::Ok
+            || linkedRuns.load(PokerogueContent::kContentHash,restored)!=NativeSaveResult::Ok
+            || restored.eggProgressGeneration!=19) return 1301;
+        linked.eggProgressGeneration=20;
+        if(linkedRuns.save(linked)!=NativeSaveResult::InvalidRecord) return 1302;
+        eggDisk.slots[0][10]^=1;restored.eggProgressGeneration=777;
+        if(linkedRuns.load(PokerogueContent::kContentHash,restored)==NativeSaveResult::Ok
+            || restored.eggProgressGeneration!=777) return 1303;
+    }
     // v26 has Berry history but no appearance trailer. Migration keeps unknown
     // appearance instead of manufacturing a normal or shiny encounter.
     {
@@ -460,8 +495,8 @@ extern "C" int runNativeSaveChecks() {
         if (!suffix) return 10511;
         const size_t size = static_cast<size_t>(suffix - current);
         std::memcpy(legacy, current, size);
-        auto* version = std::strstr(legacy, "saveVersion=001b");
-        auto* runtime = std::strstr(legacy, "runtimeVersion=001b");
+        auto* version = std::strstr(legacy, "saveVersion=001c");
+        auto* runtime = std::strstr(legacy, "runtimeVersion=001c");
         if (!version || !runtime) return 10512;
         std::memcpy(version + 12, "001a", 4);
         std::memcpy(runtime + 15, "001a", 4);
@@ -493,8 +528,8 @@ extern "C" int runNativeSaveChecks() {
         if (!suffix) return 10431;
         const size_t size = static_cast<size_t>(suffix - current);
         std::memcpy(legacy, current, size);
-        auto* version = std::strstr(legacy, "saveVersion=001b");
-        auto* runtime = std::strstr(legacy, "runtimeVersion=001b");
+        auto* version = std::strstr(legacy, "saveVersion=001c");
+        auto* runtime = std::strstr(legacy, "runtimeVersion=001c");
         if (!version || !runtime) return 10432;
         std::memcpy(version + 12, "0018", 4);
         std::memcpy(runtime + 15, "0018", 4);
@@ -518,8 +553,8 @@ extern "C" int runNativeSaveChecks() {
         if (!suffix) return 10502;
         const size_t size = static_cast<size_t>(suffix - current);
         std::memcpy(legacy, current, size);
-        auto* version = std::strstr(legacy, "saveVersion=001b");
-        auto* runtime = std::strstr(legacy, "runtimeVersion=001b");
+        auto* version = std::strstr(legacy, "saveVersion=001c");
+        auto* runtime = std::strstr(legacy, "runtimeVersion=001c");
         if (!version || !runtime) return 10503;
         std::memcpy(version + 12, "0019", 4);
         std::memcpy(runtime + 15, "0019", 4);
@@ -544,8 +579,8 @@ extern "C" int runNativeSaveChecks() {
         if (!suffix) return 10371;
         const size_t size = static_cast<size_t>(suffix - current);
         std::memcpy(legacy, current, size);
-        auto* version = std::strstr(legacy, "saveVersion=001b");
-        auto* runtime = std::strstr(legacy, "runtimeVersion=001b");
+        auto* version = std::strstr(legacy, "saveVersion=001c");
+        auto* runtime = std::strstr(legacy, "runtimeVersion=001c");
         if (!version || !runtime) return 10372;
         std::memcpy(version + 12, "0017", 4);
         std::memcpy(runtime + 15, "0017", 4);
@@ -713,8 +748,8 @@ extern "C" int runNativeSaveChecks() {
         const size_t payloadSize = static_cast<size_t>(suffix - randomBytes);
         char legacy[kNativeSaveMaxBytes]{};
         std::memcpy(legacy, randomBytes, payloadSize);
-        char* version = std::strstr(legacy, "saveVersion=001b");
-        char* runtime = std::strstr(legacy, "runtimeVersion=001b");
+        char* version = std::strstr(legacy, "saveVersion=001c");
+        char* runtime = std::strstr(legacy, "runtimeVersion=001c");
         if (!version || !runtime) return 10266;
         std::memcpy(version + 12, "0014", 4);
         std::memcpy(runtime + 15, "0014", 4);
@@ -732,8 +767,8 @@ extern "C" int runNativeSaveChecks() {
         const size_t v21Size = static_cast<size_t>(suffix - randomBytes);
         std::memset(legacy, 0, sizeof(legacy));
         std::memcpy(legacy, randomBytes, v21Size);
-        version = std::strstr(legacy, "saveVersion=001b");
-        runtime = std::strstr(legacy, "runtimeVersion=001b");
+        version = std::strstr(legacy, "saveVersion=001c");
+        runtime = std::strstr(legacy, "runtimeVersion=001c");
         if (!version || !runtime) return 10291;
         std::memcpy(version + 12, "0015", 4);
         std::memcpy(runtime + 15, "0015", 4);
@@ -833,8 +868,8 @@ extern "C" int runNativeSaveChecks() {
         if (!suffix) return 10093;
         const size_t payloadSize = static_cast<size_t>(suffix - partyBytes);
         std::memcpy(legacy, partyBytes, payloadSize);
-        char* version = std::strstr(legacy, "saveVersion=001b");
-        char* runtime = std::strstr(legacy, "runtimeVersion=001b");
+        char* version = std::strstr(legacy, "saveVersion=001c");
+        char* runtime = std::strstr(legacy, "runtimeVersion=001c");
         if (!version || !runtime) return 10094;
         std::memcpy(version + 12, "0012", 4);
         std::memcpy(runtime + 15, "0012", 4);
@@ -851,8 +886,8 @@ extern "C" int runNativeSaveChecks() {
         const size_t v19Size = static_cast<size_t>(bossSuffix - partyBytes);
         std::memset(legacy, 0, sizeof(legacy));
         std::memcpy(legacy, partyBytes, v19Size);
-        version = std::strstr(legacy, "saveVersion=001b");
-        runtime = std::strstr(legacy, "runtimeVersion=001b");
+        version = std::strstr(legacy, "saveVersion=001c");
+        runtime = std::strstr(legacy, "runtimeVersion=001c");
         if (!version || !runtime) return 10135;
         std::memcpy(version + 12, "0013", 4);
         std::memcpy(runtime + 15, "0013", 4);
@@ -873,9 +908,9 @@ extern "C" int runNativeSaveChecks() {
         const size_t legacyPayload = static_cast<size_t>(sourceStart - partyBytes);
         std::memcpy(legacyBytes, partyBytes, legacyPayload);
         for (size_t n = 0; n < legacyPayload; ++n) {
-            if (n + 16 <= legacyPayload && std::memcmp(legacyBytes + n, "saveVersion=001b", 16) == 0)
+            if (n + 16 <= legacyPayload && std::memcmp(legacyBytes + n, "saveVersion=001c", 16) == 0)
                 std::memcpy(legacyBytes + n + 12, "0010", 4);
-            if (n + 19 <= legacyPayload && std::memcmp(legacyBytes + n, "runtimeVersion=001b", 19) == 0)
+            if (n + 19 <= legacyPayload && std::memcmp(legacyBytes + n, "runtimeVersion=001c", 19) == 0)
                 std::memcpy(legacyBytes + n + 15, "0010", 4);
         }
         IntegritySha256::hashHex(legacyBytes, legacyPayload, digest);
@@ -893,9 +928,9 @@ extern "C" int runNativeSaveChecks() {
         const size_t v17Payload = static_cast<size_t>(actorStart - partyBytes);
         std::memcpy(legacyBytes, partyBytes, v17Payload);
         for (size_t n = 0; n < v17Payload; ++n) {
-            if (n + 16 <= v17Payload && std::memcmp(legacyBytes + n, "saveVersion=001b", 16) == 0)
+            if (n + 16 <= v17Payload && std::memcmp(legacyBytes + n, "saveVersion=001c", 16) == 0)
                 std::memcpy(legacyBytes + n + 12, "0011", 4);
-            if (n + 19 <= v17Payload && std::memcmp(legacyBytes + n, "runtimeVersion=001b", 19) == 0)
+            if (n + 19 <= v17Payload && std::memcmp(legacyBytes + n, "runtimeVersion=001c", 19) == 0)
                 std::memcpy(legacyBytes + n + 15, "0011", 4);
         }
         IntegritySha256::hashHex(legacyBytes, v17Payload, digest);
