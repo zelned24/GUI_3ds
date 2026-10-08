@@ -241,3 +241,7 @@ assert(!rewardPresentation.includes('definition ? definition->name'));
 assert(main.includes("if(!partyMenu.open) partyMenu.clear(&renderer)"));
 assert(main.includes("if(!game.capturePartyChoicePending()) decisionMenu.releaseIcons(renderer)"));
 assert(main.includes("rewardMenu.releasePartyIcons(renderer)"));
+
+assert(main.includes("pauseButtonAt(touch.px,touch.py)"));
+assert(main.includes("kPauseButtonRects[i].y+10"));
+assert(main.includes("36.0f,y,labelSize"));

@@ -54,6 +54,12 @@ inline constexpr int partyButtonAt(unsigned x,unsigned y,unsigned count) {
     return -1;
 }
 
+inline constexpr TouchRect kPauseButtonRects[]={{24,42,272,36},{24,78,272,36},{24,114,272,36}};
+inline constexpr int pauseButtonAt(unsigned x,unsigned y) {
+    for(unsigned i=0;i<3;++i) if(kPauseButtonRects[i].contains(x,y)) return int(i);
+    return -1;
+}
+
 // Full-width command grid; dialogue is displayed on the upper screen.
 inline constexpr TouchRect kCommandButtonRects[] = {
     {10,10,146,94}, {164,10,146,94},

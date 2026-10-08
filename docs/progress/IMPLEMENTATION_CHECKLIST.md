@@ -850,3 +850,5 @@ La búsqueda del índice generado usa búsqueda binaria sobre identidades ordena
 - [ ] Iconos: coordenadas/opacity/escala no finitas y escalas no positivas rechazadas antes de cargar texturas; opacity limitada a 1. Casos nativos escritos para ausencia de I/O en entradas inválidas, sin ejecutar.
 
 - [ ] Memoria de menús: páginas compactas de equipo/captura/destinatario retiradas cuando dejan de usarse y al volver al título, mediante renderer después de beginFrame. Conserva navegación y selección; cierre de decisiones usa retirement. Guards PASS, ejecución GPU y pico real pendientes.
+
+- [ ] Pausa: draw e input comparten tres filas de 36px; corrige zonas táctiles desplazadas respecto del tercer texto y límites x/y. Etiquetas limitadas al panel y cursor alineado al raster elegido. Barrido de 320×240 escrito sin ejecutar; guards PASS, prueba visual pendiente.

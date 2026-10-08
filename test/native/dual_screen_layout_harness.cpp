@@ -14,6 +14,11 @@
 #include <initializer_list>
 using namespace Pokerogue3DS;
 int main() {
+    for(unsigned y=0;y<240;++y) for(unsigned x=0;x<320;++x) {
+        const int row=x>=24 && x<296 && y>=42 && y<150 ? int((y-42)/36) : -1;
+        assert(pauseButtonAt(x,y)==row);
+    }
+    assert(pauseButtonAt(UINT_MAX,UINT_MAX)==-1);
     assert(textLinesWithinHeight(46,10,26,3)==2);
     assert(textLinesWithinHeight(10,10,26,3)==1);
     assert(textLinesWithinHeight(9,10,26,3)==0);

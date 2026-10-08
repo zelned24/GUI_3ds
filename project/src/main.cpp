@@ -386,18 +386,12 @@ int main() {
             } else if (rawPressed & KEY_TOUCH) {
                 touchPosition touch{};
                 hidTouchRead(&touch);
-                if (touch.px >= 24 && touch.px <= 296) {
-                    if (touch.py >= 42 && touch.py < 84) {
-                        pauseSelection = 0;
-                        isPaused = false;
-                    } else if (touch.py >= 84 && touch.py < 126) {
-                        pauseSelection = 1;
-                        saveAndReturnToTitle();
-                    } else if (touch.py >= 126 && touch.py < 172) {
-                        pauseSelection = 2;
-                        titleVisible = true;
-                        isPaused = false;
-                    }
+                const int row=Pokerogue3DS::pauseButtonAt(touch.px,touch.py);
+                if(row>=0) {
+                    pauseSelection=unsigned(row);
+                    if(row==0) isPaused=false;
+                    else if(row==1) saveAndReturnToTitle();
+                    else {titleVisible=true;isPaused=false;}
                 }
             } else if (rawPressed & KEY_A) {
                 if (pauseSelection == 0) {
@@ -957,10 +951,10 @@ int main() {
                 "Salir al menú principal"
             };
             for (unsigned i = 0; i < 3; ++i) {
-                const float y = 52.0f + i * 36.0f;
-                renderer.drawText(pauseOptions[i], 56.0f, y, 0.42f, 0xffffffff);
+                const float y=Pokerogue3DS::kPauseButtonRects[i].y+10;
+                const float labelSize=renderer.drawTextFitted(pauseOptions[i],56.0f,y,0.42f,228,0xffffffff);
                 if (pauseSelection == i) {
-                    frontend.drawCursor(renderer, 36.0f, y, 0.42f);
+                    frontend.drawCursor(renderer,36.0f,y,labelSize);
                 }
             }
             renderer.drawTextFitted(pauseFeedback ? pauseFeedback : "A: Seleccionar   B / START: Continuar", 16, 214, 0.30f, 288, 0xffffffff);
