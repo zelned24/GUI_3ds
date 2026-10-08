@@ -42,6 +42,26 @@ class NativeSpriteTests(unittest.TestCase):
         pages,metadata,adjustment=adapt_atlas(image,bytes(data),6,4)
         self.assertEqual(adjustment["originalCanvas"],[13,8])
         self.assertEqual(struct.unpack_from("<HH",metadata,84+20),struct.unpack_from("<HH",metadata,116+20))
+    def test_trimmed_frames_keep_common_bottom_center_anchor(self):
+        image,raw=self.source();data=bytearray(raw)
+        # Different source canvases and trim positions: reconstruct exactly
+        # before nearest conversion rather than resizing each crop separately.
+        struct.pack_into('<10H',data,84+12,0,0,12,8,16,12,2,3,100,0)
+        struct.pack_into('<10H',data,116+12,12,0,12,8,18,14,3,4,101,0)
+        pages,metadata,adjustment=adapt_atlas(image,bytes(data),9,7)
+        self.assertEqual(adjustment['originalCanvas'],[18,14])
+        self.assertEqual(adjustment['runtimeCanvas'],[9,7])
+        for i,(cw,ch,tx,ty) in enumerate([(16,12,2,3),(18,14,3,4)]):
+            common=Image.new('RGBA',(18,14))
+            common.paste(image.crop((i*12,0,i*12+12,8)),((18-cw)//2+tx,14-ch+ty))
+            expected=common.resize((9,7),Image.Resampling.NEAREST)
+            x,y,w,h,sw,sh,trim_x,trim_y,duration,flags=struct.unpack_from('<10H',metadata,84+i*32+12)
+            actual=Image.new('RGBA',(sw,sh))
+            actual.paste(pages[flags>>1].crop((x,y,x+w,y+h)),(trim_x,trim_y))
+            self.assertEqual(actual.tobytes(),expected.tobytes())
+            self.assertEqual((sw,sh,duration),(9,7,100+i))
+        self.assertEqual(adapt_atlas(image,bytes(data),9,7)[1],metadata)
+
     def test_cpp_runtime_reads_native_canvas_and_clears_failed_load(self):
         image,raw=self.source();data=bytearray(raw)
         struct.pack_into('<H',data,116+20,13)
