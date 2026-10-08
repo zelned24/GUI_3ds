@@ -3,6 +3,7 @@ import hashlib
 import io
 import json
 import subprocess
+import re
 import zipfile
 from pathlib import Path
 from PIL import Image
@@ -27,3 +28,13 @@ with zipfile.ZipFile(io.BytesIO(archive)) as files:
         actual=images[row["page"]].crop((row["x"],row["y"],row["x"]+row["width"],row["y"]+row["height"]))
         assert actual.size==expected.size and actual.tobytes()==expected.tobytes(),row["sourcePath"]
 print("PASS exact pinned pixels and conversion hashes:",len(report["files"]),"icons")
+
+header=(ROOT / "project/generated/include/content/AppearanceIcons.hpp").read_text(encoding="utf-8")
+rows=re.findall(r'    \{"([^"\n]+)",(\d+),(\d+),(\d+),(\d+),(\d+)\},',header)
+expected=[(row["sourcePath"].removeprefix("images/pokemon/icons/"),*(str(row[field]) for field in ("page","x","y","width","height"))) for row in report["files"]]
+assert rows==expected, "Generated C++ index differs from conversion report"
+for page in report["pages"]: assert json.dumps(page["runtimePath"])+"," in header
+for row in report["files"]:
+    assert row["page"]<len(report["pages"])
+    assert row["x"]+row["width"]<=512 and row["y"]+row["height"]<=512
+print("PASS generated appearance icon index and physical page bounds")

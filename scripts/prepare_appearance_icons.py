@@ -10,6 +10,34 @@ from inventory_pokemon_icons import inventory
 
 ROOT = Path(__file__).resolve().parents[1]
 
+def write_index(root, report):
+    prefix = "images/pokemon/icons/"
+    keys = [row["sourcePath"].removeprefix(prefix) for row in report["files"]]
+    if keys != sorted(set(keys)) or any(not row["sourcePath"].startswith(prefix) for row in report["files"]):
+        raise ValueError("Appearance icon source keys must be unique, ordered and within the pinned root")
+    header = "// Generated physical icon keys from pinned assets; actor identity mapping is separate.\n#pragma once\n#include <cstdint>\n#include <cstddef>\n#include <cstring>\nnamespace Pokerogue3DS {\n"
+    header += "struct AppearanceIconFrame {const char* sourceKey;uint16_t page,x,y,width,height;};\ninline constexpr AppearanceIconFrame kAppearanceIconFrames[]={\n"
+    for key, row in zip(keys, report["files"]):
+        header += "    {" + json.dumps(key) + "," + ",".join(str(row[field]) for field in ("page","x","y","width","height")) + "},\n"
+    header += "};\ninline constexpr const char* kAppearanceIconPages[]={\n"
+    header += "".join(json.dumps(row["runtimePath"])+",\n" for row in report["pages"])
+    header += "};\ninline constexpr std::size_t kAppearanceIconCount=sizeof(kAppearanceIconFrames)/sizeof(kAppearanceIconFrames[0]);\n"
+    header += """inline const AppearanceIconFrame* findAppearanceIcon(const char* sourceKey) {
+    if(!sourceKey || !*sourceKey) return nullptr;
+    std::size_t first=0,last=kAppearanceIconCount;
+    while(first<last) {
+        const auto middle=first+(last-first)/2;
+        if(std::strcmp(kAppearanceIconFrames[middle].sourceKey,sourceKey)<0) first=middle+1;
+        else last=middle;
+    }
+    return first<kAppearanceIconCount && !std::strcmp(kAppearanceIconFrames[first].sourceKey,sourceKey)
+        ? &kAppearanceIconFrames[first] : nullptr;
+}
+}
+"""
+    target=root / "project/generated/include/content/AppearanceIcons.hpp"
+    target.write_bytes(header.encode("utf-8"))
+
 def prepare(root=ROOT):
     source = inventory(root)
     archive = subprocess.check_output(["git", "-C", str(root / "build/upstream/pokerogue-assets"),
@@ -53,6 +81,7 @@ def prepare(root=ROOT):
         "pages": pages, "files": records}
     (root / "docs/generated/APPEARANCE_ICON_CONVERSION_REPORT.json").write_bytes(
         (json.dumps(report, sort_keys=True, indent=2)+"\n").encode("utf-8"))
+    write_index(root, report)
     print(f"Packed {len(records)} pinned appearance icons in {len(pages)} native pages")
     return report
 

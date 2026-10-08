@@ -1,5 +1,6 @@
 #include "content/PokemonAppearanceAssets.hpp"
 #include "content/PokemonIcons.hpp"
+#include "content/AppearanceIcons.hpp"
 #include "runtime/PokemonAtlasPresenter.hpp"
 #include "runtime/PokemonIconPresenter.hpp"
 #include "runtime/ItemIconPresenter.hpp"
@@ -37,6 +38,16 @@ void Renderer2D::drawAtlasFrame(C2D_Image,const AtlasFrame& frame,float x,float 
     lastIconWidth=width;lastIconHeight=height;lastIconOpacity=opacity;
 }
 int main() {
+    assert(!findAppearanceIcon(nullptr) && !findAppearanceIcon("") && !findAppearanceIcon("missing/icon.png"));
+    for(std::size_t i=0;i<kAppearanceIconCount;++i) {
+        const auto& frame=kAppearanceIconFrames[i];
+        assert(findAppearanceIcon(frame.sourceKey)==&frame);
+        assert(frame.page<sizeof(kAppearanceIconPages)/sizeof(kAppearanceIconPages[0]));
+        assert(frame.width==40 && frame.height==30 && frame.x+frame.width<=512 && frame.y+frame.height<=512);
+        if(i) assert(std::strcmp(kAppearanceIconFrames[i-1].sourceKey,frame.sourceKey)<0);
+    }
+    assert(findAppearanceIcon("1/1.png") && findAppearanceIcon("1/1s.png"));
+
     NativeStarterCandyRecord shinyRecord;
     assert(nativeCaughtShinyVariants(shinyRecord)==0);
     shinyRecord.caught=true;
