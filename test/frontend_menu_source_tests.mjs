@@ -512,3 +512,9 @@ assert(main.includes("kEvolutionConfirmRect.contains(touch.px,touch.py)"));
 assert(main.includes("kEvolutionBackRect.contains(touch.px,touch.py)"));
 assert(!main.includes("touch.py >= 195 && touch.px > 160"));
 assert(!main.includes("touch.py >= 200 && touch.px > 160"));
+
+const ballControls=await fs.readFile(new URL("../project/include/runtime/BattleCommandMenuPresenter.hpp",import.meta.url),"utf8");
+assert(ballControls.includes("kBallConfirmRect.contains(x,y)"));
+assert(ballControls.includes("kBallBackRect.contains(x,y)"));
+assert(!ballControls.includes("TouchRect{12,202,296,32}"));
+assert(ballControls.includes("touchActivated = m_selected == i;"));

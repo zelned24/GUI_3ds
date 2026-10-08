@@ -1130,3 +1130,5 @@ La compilación ARM solicitada terminó correctamente; no prueba ejecución de h
 - [ ] Validar controles inferiores de pausa: A/Elegir y B/Continuar táctiles emiten las mismas teclas físicas; feedback de guardado separado dentro del panel, sin invadir botones. Cobertura de geometría completa añadida; ejecución nativa y Azahar pendientes.
 
 - [ ] Validar botones táctiles de captura/equipo lleno, aprendizaje y evolución: confirmar/descartar usan límites compartidos con el dibujo, en lugar de áreas abiertas fuera de pantalla; controles visibles y cobertura nativa de no solapamiento añadidos. Ejecución nativa y Azahar pendientes.
+
+- [ ] Validar controles de Poké Balls: áreas táctiles separadas de lanzar/volver; tocar otra Ball selecciona primero y el segundo toque confirma. Corregido el pie completo que antes actuaba como B; cobertura nativa añadida, ejecución pendiente.

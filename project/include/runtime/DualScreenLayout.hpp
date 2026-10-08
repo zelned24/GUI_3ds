@@ -58,6 +58,8 @@ inline constexpr int pokedexCellAt(unsigned x,unsigned y) {
     return -1;
 }
 inline constexpr TouchRect kDialogueAdvanceRect{12,208,156,20};
+inline constexpr TouchRect kBallConfirmRect{12,202,142,32};
+inline constexpr TouchRect kBallBackRect{166,202,142,32};
 inline constexpr TouchRect ballMenuRectangle(unsigned index) {return {16,24+index*34,288,32};}
 // Floor to complete columns; zero PP stays empty and over-cap values clamp.
 inline constexpr unsigned movePpBarPixels(unsigned current,unsigned maximum,unsigned width) {

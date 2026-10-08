@@ -39,7 +39,7 @@ public:
     PokeballType ballType() const { return static_cast<PokeballType>(kBallMenuDefinitions[m_selected].id); }
 
     BattleMenuCommand input(uint32_t keys, bool doubleBattle, unsigned x = 0, unsigned y = 0) {
-        if ((keys & KEY_B) || ((keys & KEY_TOUCH) && ((m_page==BattleMenuPage::Moves && moveBackRectangle(doubleBattle).contains(x,y)) || (m_page==BattleMenuPage::Balls && TouchRect{12,202,296,32}.contains(x,y))))) {
+        if ((keys & KEY_B) || ((keys & KEY_TOUCH) && ((m_page==BattleMenuPage::Moves && moveBackRectangle(doubleBattle).contains(x,y)) || (m_page==BattleMenuPage::Balls && kBallBackRect.contains(x,y))))) {
             reset();
             return BattleMenuCommand::None;
         }
@@ -102,14 +102,14 @@ public:
         if (keys & KEY_TOUCH) {
             for (unsigned i = 0; i < count; ++i) {
                 if (ballMenuRectangle(i).contains(x, y)) {
+                    touchActivated = m_selected == i;
                     m_selected = i;
-                    touchActivated = true;
                     break;
                 }
             }
         }
 
-        if (!((keys & KEY_A) || touchActivated)) return BattleMenuCommand::None;
+        if (!((keys & KEY_A) || touchActivated || ((keys & KEY_TOUCH) && kBallConfirmRect.contains(x,y)))) return BattleMenuCommand::None;
         return BattleMenuCommand::ThrowBall;
     }
 
@@ -180,9 +180,10 @@ public:
             }
 
             // Footer bar
-            renderer.drawWindow(12, 202, 296, 32);
-            renderer.drawTextFitted("A: Lanzar",24,210,0.375f,128,0xffffffff);
-            renderer.drawTextFitted("B: Volver",172,210,0.375f,120,0xffffffff);
+            renderer.drawWindow(kBallConfirmRect.x,kBallConfirmRect.y,kBallConfirmRect.width,kBallConfirmRect.height);
+            renderer.drawWindow(kBallBackRect.x,kBallBackRect.y,kBallBackRect.width,kBallBackRect.height);
+            renderer.drawTextFitted("A: Lanzar",kBallConfirmRect.x+8,kBallConfirmRect.y+8,0.375f,kBallConfirmRect.width-16,0xffffffff);
+            renderer.drawTextFitted("B: Volver",kBallBackRect.x+8,kBallBackRect.y+8,0.375f,kBallBackRect.width-16,0xffffffff);
         }
     }
 

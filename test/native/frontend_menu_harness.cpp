@@ -235,6 +235,18 @@ int main() {
     assert(combatControls.input(KEY_R,false)==BattleMenuCommand::None);
     assert(combatControls.input(KEY_DRIGHT,false)==BattleMenuCommand::MoveColToggle);
     combatControls.input(KEY_B,false);assert(!combatControls.movesOpen());
+    BattleCommandMenuPresenter ballControls;
+    ballControls.input(KEY_RIGHT,false);ballControls.input(KEY_A,false);
+    assert(static_cast<unsigned>(ballControls.ballType())==kBallMenuDefinitions[0].id);
+    const auto secondBall=ballMenuRectangle(1);
+    assert(ballControls.input(KEY_TOUCH,false,secondBall.x+8,secondBall.y+8)==BattleMenuCommand::None);
+    assert(static_cast<unsigned>(ballControls.ballType())==kBallMenuDefinitions[1].id);
+    assert(ballControls.input(KEY_TOUCH,false,secondBall.x+8,secondBall.y+8)==BattleMenuCommand::ThrowBall);
+    assert(ballControls.input(KEY_TOUCH,false,kBallConfirmRect.x+8,kBallConfirmRect.y+8)==BattleMenuCommand::ThrowBall);
+    assert(ballControls.input(KEY_A,false)==BattleMenuCommand::ThrowBall);
+    assert(ballControls.input(KEY_TOUCH,false,319,239)==BattleMenuCommand::None);
+    assert(ballControls.input(KEY_TOUCH,false,kBallBackRect.x+8,kBallBackRect.y+8)==BattleMenuCommand::None);
+    assert(ballControls.input(KEY_A,false)==BattleMenuCommand::None && ballControls.movesOpen());
     for(unsigned generation:{0u,1u,9u,999u}) for(unsigned start:{0u,24u,500u,2000u}) {
         const auto matches=[&](const auto& species) {return !generation || species.generation==generation;};
         const auto page=catalogSpeciesPage<24>(start,matches);

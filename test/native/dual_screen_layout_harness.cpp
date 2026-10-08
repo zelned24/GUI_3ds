@@ -75,6 +75,7 @@ int main() {
         assert(pauseButtonAt(x,y)==row);
     }
     for(const auto& pair : {std::array<TouchRect,2>{kLearnConfirmRect,kLearnBackRect},
+                           std::array<TouchRect,2>{kBallConfirmRect,kBallBackRect},
                            std::array<TouchRect,2>{kEvolutionConfirmRect,kEvolutionBackRect},
                            std::array<TouchRect,2>{kPartyConfirmRect,kPartyBackRect}}) {
         for(const auto& rect:pair) assert(rect.x+rect.width<=320 && rect.y+rect.height<=240);
