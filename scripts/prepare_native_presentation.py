@@ -93,6 +93,8 @@ ui_header+="\n};\ninline const char* runtimeUiText(const char* key) {unsigned fi
 (output.parent / "ui-locale-provenance.json").write_text(json.dumps({"repository":"https://github.com/pagefaultgames/pokerogue-locales","revision":ui_locale_revision,"schemaVersion":1,"files":ui_sources},sort_keys=True,indent=2)+"\n",encoding="utf-8",newline="\n")
 from prepare_nature_ui import prepare as prepare_nature_ui
 nature_report=prepare_nature_ui(ROOT)
+from prepare_egg_content import prepare as prepare_egg_content
+egg_report=prepare_egg_content(ROOT)
 for row in nature_report["rows"]: characters.update(row["name"])
 codepoints=sorted(ord(ch) for ch in characters if ord(ch)>=32)
 whitelist=output.parent / "font-codepoints.txt"

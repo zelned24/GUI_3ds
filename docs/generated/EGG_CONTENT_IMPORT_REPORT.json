@@ -1,0 +1,123 @@
+{
+  "enums": {
+    "EggSourceType": [
+      {
+        "id": 0,
+        "symbol": "GACHA_MOVE"
+      },
+      {
+        "id": 1,
+        "symbol": "GACHA_LEGENDARY"
+      },
+      {
+        "id": 2,
+        "symbol": "GACHA_SHINY"
+      },
+      {
+        "id": 3,
+        "symbol": "SAME_SPECIES_EGG"
+      },
+      {
+        "id": 4,
+        "symbol": "EVENT"
+      }
+    ],
+    "EggTier": [
+      {
+        "id": 0,
+        "symbol": "COMMON"
+      },
+      {
+        "id": 1,
+        "symbol": "RARE"
+      },
+      {
+        "id": 2,
+        "symbol": "EPIC"
+      },
+      {
+        "id": 3,
+        "symbol": "LEGENDARY"
+      }
+    ],
+    "VoucherType": [
+      {
+        "id": 0,
+        "symbol": "REGULAR"
+      },
+      {
+        "id": 1,
+        "symbol": "PLUS"
+      },
+      {
+        "id": 2,
+        "symbol": "PREMIUM"
+      },
+      {
+        "id": 3,
+        "symbol": "GOLDEN"
+      }
+    ]
+  },
+  "generatedSHA256": "745258724592b0382a2d7d663dfc5b3ce20efb2e4de12fe6c5c09fd17cfd1929",
+  "incubationConstants": {
+    "HATCH_WAVES_COMMON_EGG": 10,
+    "HATCH_WAVES_EPIC_EGG": 50,
+    "HATCH_WAVES_LEGENDARY_EGG": 100,
+    "HATCH_WAVES_MANAPHY_EGG": 50,
+    "HATCH_WAVES_RARE_EGG": 25
+  },
+  "runtimeIntegration": "PENDING_INVENTORY_GACHA_HATCHING",
+  "schemaVersion": 1,
+  "scope": "IDENTIFIERS_AND_INCUBATION_CONSTANTS_ONLY",
+  "sources": [
+    {
+      "hash": "2e1cba3f737b66fa1d3a69b55f079c802a80e461ce06d9b4eac14d33d1aa1d25",
+      "repository": "https://github.com/pagefaultgames/pokerogue",
+      "revision": "8555c08c823b856cbec4eb99ca84ea52a955836d",
+      "schemaVersion": 1,
+      "sourcePath": "src/enums/egg-type.ts",
+      "sourceSymbol": "EggTier"
+    },
+    {
+      "hash": "9b7a34a1555d5730df8d8cc517ef97d10c89414a65cd8b091baed71d04c102f2",
+      "repository": "https://github.com/pagefaultgames/pokerogue",
+      "revision": "8555c08c823b856cbec4eb99ca84ea52a955836d",
+      "schemaVersion": 1,
+      "sourcePath": "src/enums/egg-source-types.ts",
+      "sourceSymbol": "EggSourceType"
+    },
+    {
+      "hash": "dd79f8a3e432d05e8dcd25e305162ec758acd68add66f294a40ce995b8a64e26",
+      "repository": "https://github.com/pagefaultgames/pokerogue",
+      "revision": "8555c08c823b856cbec4eb99ca84ea52a955836d",
+      "schemaVersion": 1,
+      "sourcePath": "src/enums/voucher-type.ts",
+      "sourceSymbol": "VoucherType"
+    },
+    {
+      "hash": "69e1761285c07870974f9074edd3677d8b797f3438902418a73536f1439fda87",
+      "repository": "https://github.com/pagefaultgames/pokerogue",
+      "revision": "8555c08c823b856cbec4eb99ca84ea52a955836d",
+      "schemaVersion": 1,
+      "sourcePath": "src/data/balance/rates.ts",
+      "sourceSymbol": "HATCH_WAVES_*_EGG"
+    },
+    {
+      "hash": "681ff197da300ce319e02bdc4f29e4f505acda387a7810c2b413f87742aeea8e",
+      "repository": "https://github.com/pagefaultgames/pokerogue",
+      "revision": "8555c08c823b856cbec4eb99ca84ea52a955836d",
+      "schemaVersion": 1,
+      "sourcePath": "src/data/egg.ts",
+      "sourceSymbol": "Egg.getEggTierDefaultHatchWaves"
+    },
+    {
+      "hash": "91e06a8b73132b4b6a9bbf70fda8b8ec4fbd34854951c586ffd85c52e41f99b7",
+      "repository": "https://github.com/pagefaultgames/pokerogue",
+      "revision": "8555c08c823b856cbec4eb99ca84ea52a955836d",
+      "schemaVersion": 1,
+      "sourcePath": "src/phases/egg-lapse-phase.ts",
+      "sourceSymbol": "EggLapsePhase.start"
+    }
+  ]
+}

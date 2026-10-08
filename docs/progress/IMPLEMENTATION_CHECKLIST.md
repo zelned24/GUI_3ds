@@ -990,3 +990,6 @@ La búsqueda del índice generado usa búsqueda binaria sobre identidades ordena
 - [ ] UV inválidas: renderer directo rechaza UV NaN/infinito; atlas rechaza también regiones degeneradas/rotadas. Loader de apariencias aplica validación antes de registrar textura disponible y recuerda el fallo hasta clear. Casos directos/atlas añadidos al harness sin ejecutar; guards estáticos PASS. Sin prueba GPU ni compilación.
 
 - [ ] Nombre de modo en el selector: limitado a 124 píxeles en la columna izquierda (x=16..140), separado del panel de detalles que empieza en x=151; usa ajuste de fuente nativa. Guard de fuente añadido; validación C++/Azahar pendiente por indicación del usuario.
+
+- [x] Egg identifiers and incubation constants imported from pinned upstream into EggContentPolicy.hpp: EggTier, EggSourceType, VoucherType; tier waves and Manaphy exception constant. SHA-256/source symbols preserved; Python provenance and repeated generation checks pass. Scope: data only.
+- [ ] Connect imported egg policy to persistent inventory, wave lapse, hatching and gacha commands. Species generation, unlocks and animations remain pending; no native validation or compilation performed.
