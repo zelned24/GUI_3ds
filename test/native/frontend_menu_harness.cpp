@@ -443,6 +443,11 @@ int main() {
     assert(touchMenu.input(KEY_B)==FrontendCommand::None && !touchMenu.confirmingTouchDisable());
     touchMenu.input(KEY_A);
     assert(touchMenu.input(KEY_TOUCH,32,130)==FrontendCommand::ToggleTouchControls);
+    touchMenu.input(KEY_A);
+    assert(touchMenu.input(KEY_TOUCH,kFrontendBackRect.x+1,kFrontendBackRect.y+1)==FrontendCommand::None);
+    assert(!touchMenu.confirmingTouchDisable());
+    touchMenu.input(KEY_A);
+    assert(touchMenu.input(KEY_TOUCH,kFrontendConfirmRect.x+1,kFrontendConfirmRect.y+1)==FrontendCommand::ToggleTouchControls);
     touchMenu.setTouchControls(false);
     // Physical navigation remains available after global touch filtering.
     assert(FrontendMenuPresenter::filterTouchInput(KEY_TOUCH | KEY_A,false)==KEY_A);
@@ -481,6 +486,15 @@ int main() {
     dataMenu.input(KEY_A);
     dataMenu.input(KEY_DLEFT);
     assert(dataMenu.input(KEY_A)==FrontendCommand::ImportProgress && !dataMenu.isConfirmingImport());
+    dataMenu.input(KEY_A);
+    assert(dataMenu.isConfirmingImport());
+    assert(dataMenu.input(KEY_TOUCH,kFrontendConfirmRect.x+1,kFrontendConfirmRect.y+1)==FrontendCommand::None);
+    assert(!dataMenu.isConfirmingImport()); // Footer A preserves default No.
+    dataMenu.input(KEY_A);dataMenu.input(KEY_DLEFT);
+    assert(dataMenu.input(KEY_TOUCH,kFrontendConfirmRect.x+1,kFrontendConfirmRect.y+1)==FrontendCommand::ImportProgress);
+    dataMenu.input(KEY_A);
+    assert(dataMenu.input(KEY_TOUCH,kFrontendBackRect.x+1,kFrontendBackRect.y+1)==FrontendCommand::None);
+    assert(!dataMenu.isConfirmingImport() && dataMenu.page()==FrontendPage::ManageData);
     dataMenu.input(KEY_B);
     assert(dataMenu.page()==FrontendPage::GlobalMenu);
 

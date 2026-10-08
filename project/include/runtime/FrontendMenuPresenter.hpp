@@ -89,6 +89,15 @@ private:
             size_t(m_confirmingTouchDisable),size_t(m_confirmingImport)*2+size_t(m_importYes)};
     }
     FrontendCommand inputNavigation(uint32_t keys,unsigned touchX,unsigned touchY,const FirstRunRuntime* game) {
+        // Footer touches emit the same action as physical buttons. The previous
+        // full-width back region swallowed the displayed A action.
+        if((keys & KEY_TOUCH) && m_page!=FrontendPage::Title) {
+            const bool readOnly=m_page==FrontendPage::Pokedex ||
+                (m_page==FrontendPage::ServiceInfo && m_service!=3);
+            if(readOnly && kFrontendReadOnlyBackRect.contains(touchX,touchY)) keys|=KEY_B;
+            else if(kFrontendConfirmRect.contains(touchX,touchY)) keys|=KEY_A;
+            else if(kFrontendBackRect.contains(touchX,touchY)) keys|=KEY_B;
+        }
         if(m_confirmingImport) {
             if(keys & KEY_B) {m_confirmingImport=false;return FrontendCommand::None;}
             if(keys & (KEY_DLEFT | KEY_CPAD_LEFT)) m_importYes=true;
@@ -118,15 +127,6 @@ private:
             && ((keys & KEY_B) || ((keys & KEY_TOUCH) && kEggListBackRect.contains(touchX,touchY)))) {
             m_eggDetails=false;return FrontendCommand::None;
         }
-        // Footer touches emit the same action as physical buttons. The previous
-        // full-width back region swallowed the displayed A action.
-        if((keys & KEY_TOUCH) && m_page!=FrontendPage::Title) {
-            const bool readOnly=m_page==FrontendPage::Pokedex ||
-                (m_page==FrontendPage::ServiceInfo && m_service!=3);
-            if(readOnly && kFrontendReadOnlyBackRect.contains(touchX,touchY)) keys|=KEY_B;
-            else if(kFrontendConfirmRect.contains(touchX,touchY)) keys|=KEY_A;
-            else if(kFrontendBackRect.contains(touchX,touchY)) keys|=KEY_B;
-        }
         if(keys & KEY_B) {
             if(m_confirmingDelete) {
                 m_confirmingDelete = false;
@@ -142,8 +142,8 @@ private:
             const size_t count=game ? game->eggInventoryCount() : 0;
             if(!count) return FrontendCommand::None;
             if(m_eggSelected>=count) m_eggSelected=0;
-            if(keys & KEY_UP) m_eggSelected=(m_eggSelected+count-1)%count;
-            else if(keys & KEY_DOWN) m_eggSelected=(m_eggSelected+1)%count;
+            if(keys & (KEY_UP | KEY_CPAD_UP)) m_eggSelected=(m_eggSelected+count-1)%count;
+            else if(keys & (KEY_DOWN | KEY_CPAD_DOWN)) m_eggSelected=(m_eggSelected+1)%count;
             if(!m_eggDetails && (keys & KEY_TOUCH)) {
                 const size_t first=(m_eggSelected/5)*5;
                 for(size_t row=0;row<5 && first+row<count;++row)

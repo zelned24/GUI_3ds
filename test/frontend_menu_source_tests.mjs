@@ -543,3 +543,9 @@ assert(!frontend.includes('if(m_feedback) renderer.drawTextFitted(m_feedback,12,
 assert(frontend.includes('m_title.draw(renderer,m_titleSelection,nullptr)'));
 assert(frontend.includes('const auto& bounds=kFrontendFeedbackRect'));
 assert(main.includes('frontend.drawFeedbackTop(renderer);\n            renderer.beginBottom();'));
+
+const navigation=frontend.slice(frontend.indexOf('FrontendCommand inputNavigation('));
+assert(navigation.indexOf('kFrontendConfirmRect.contains(touchX,touchY)')<navigation.indexOf('if(m_confirmingImport)'));
+assert(navigation.indexOf('kFrontendBackRect.contains(touchX,touchY)')<navigation.indexOf('if(m_confirmingTouchDisable)'));
+assert(frontend.includes('if(keys & (KEY_UP | KEY_CPAD_UP)) m_eggSelected'));
+assert(frontend.includes('else if(keys & (KEY_DOWN | KEY_CPAD_DOWN)) m_eggSelected'));

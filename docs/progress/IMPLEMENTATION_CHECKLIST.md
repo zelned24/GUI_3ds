@@ -2,7 +2,7 @@
 
 ## Cómo medir el avance
 
-- Referencia actual: rama `codex/pokerogue-3ds-migration`, último commit de implementación publicado confirmado `63e0360`; conversión física ampliada terminada: 10682 atlas y 10746 páginas `.t3x`. Validación nativa y visual pendiente. Los resultados históricos no verifican estos cambios locales.
+- Referencia actual: rama `codex/pokerogue-3ds-migration`, último commit de implementación publicado confirmado `669191a`; conversión física ampliada terminada: 10682 atlas y 10746 páginas `.t3x`. Validación nativa y visual pendiente. Los resultados históricos no verifican estos cambios locales.
 - Objetivo: PokéRogue jugable y fiel al snapshot upstream en Old 3DS, con ambas pantallas, progreso exportable y actualizaciones desde consola.
 - Cada ID es estable para reportar avances: `MOV-07`, `GUI-03`, etc. No equivale a un movimiento/habilidad individual.
 - Una casilla sin marcar puede tener código parcial; el resumen de cada área indica lo existente. Marcarla solo con integración completa y evidencia ejecutada pertinente.
@@ -1154,3 +1154,9 @@ La compilación ARM solicitada terminó correctamente; no prueba ejecución de h
 - Importación verificada offline: 92 referencias literales/de variantes resueltas y 17 casos dinámicos explícitamente pendientes. Se incorporaron DIRE_HIT y tres vales a partir de `modifierTypeInitObj` y `getVoucherTypeIcon`, sin inventar nombres de archivos ni imágenes.
 - `docs/generated/ITEM_ICON_REFERENCE_REPORT.json` conserva revisión, sourcePath/SHA-256 y símbolos del constructor/resolver; cada clave resuelta existe en el índice físico pinned.
 - `python test/item_icon_reference_import_tests.py`: PASS; header y reporte idénticos tras dos importaciones. La prueba se registra en la suite de presentación. No demuestra carga GPU ni concede implementación de vales/gacha o MT: faltan sus comportamientos y variantes de gameplay.
+
+### Confirmaciones táctiles y lista de huevos
+
+- Implementado sin ejecución nativa: la normalización de los botones táctiles A/B precede las confirmaciones de importar y desactivar táctil. El pie inferior sigue los mismos comandos físicos; importar conserva la selección inicial No y requiere seleccionar Sí para emitir ImportProgress.
+- Circle Pad añadido a navegación vertical de la lista de huevos, equivalente al D-Pad. No implementa incubación ni eclosión.
+- Guards de orden/rutas PASS; harness C++ ampliado con confirmación/cancelación por pie táctil y selección inicial No. Ejecución C++ y aceptación visual siguen aplazadas.
