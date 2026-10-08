@@ -63,7 +63,7 @@ Esta tabla describe código inspeccionado, no resultados de ejecución. Las nota
 
 1. **Implementado sin ejecución nativa:** submenu de nueve opciones, geometría compartida de filas/confirmaciones/carga, nombres de movimientos hasta dos líneas, barras PP enteras y ajustes HP/EXP persistidos en preferencias v4.
 2. **Implementado sin prueba GPU:** iconos de apariencia en equipo/party/captura, cache acotada de seis páginas compactas y retiro sincronizado; trainers/items rechazan imágenes inválidas y recuerdan fallos de carga.
-3. **Pendiente de integrar:** selector manual de habilidad/naturaleza/teratipo y aparición detallada, iconos de apariencia del grid/Pokédex, funciones completas de logros/huevos/gacha/comunidad/sesión, audio y animaciones ligadas a todas las fases.
+3. **Pendiente de integrar:** selector manual de naturaleza/teratipo y aparición detallada; selección de habilidad conectada sin validación nativa, iconos de apariencia del grid/Pokédex, funciones completas de logros/huevos/gacha/comunidad/sesión, audio y animaciones ligadas a todas las fases.
 4. **Pendiente de verificar:** todos los harness C++ recientes, fuente/cursor/recortes y cada menú en Azahar; consumo de memoria, latencia y rendimiento en Old 3DS física. Continúa la prohibición de compilar/abrir Azahar.
 5. **No cerrado:** GUI-01–12/14 y AST-01–08 conservan su alcance completo; ningún guard estático sustituye su aceptación visual o funcional.
 
@@ -933,3 +933,5 @@ La búsqueda del índice generado usa búsqueda binaria sobre identidades ordena
 - [ ] Selección de habilidad transaccional: comando de gameplay prepara copia/equipo y guarda antes de publicar; ficha y actor consumen preferencia compartida, 255 vuelve al default. Regresión de Bulbasaur real normal/oculta, PID estable, slot inválido, escritura fallida y restauración escrita sin ejecutar. Controles visibles aún pendientes; no se afirma paridad de triggers por elegir la habilidad.
 
 - [ ] Control de habilidad conectado: submenú de formas muestra botón 272×18 con habilidad localizada actual, Y/táctil emiten ciclo al runtime. Slots duplicados/bloqueados se omiten mediante validación compartida; SD falla sin publicar cambios. Casos de ciclo directo/inverso y guard de conexión escritos. Guards JS PASS; C++/visual pendientes, sin compilar/Azahar.
+
+- [ ] Habilidad en equipo de varios starters: regresión de Bulbasaur líder/Squirtle reserva exige preferencia oculta del cursor, actor reserva correcto, PID/orden/líder intactos y restauración SD del equipo. Fallo de escritura de run tras guardar perfil exige estado en memoria intacto y carga de generación compatible. Casos escritos sin ejecutar; no prueba triggers ni runtime GPU.

@@ -9,7 +9,7 @@
 - Estadísticas: cuatro métricas de descubrimiento calculadas en gameplay a partir del perfil real y catálogo canónico; etiquetas pinned importadas. Los contadores históricos siguen pendientes y no se presentan como cero. C++ escrito sin ejecución.
 - Discrepancia pendiente confirmada en slots de habilidades: el helper legacy interpreta ability2=NONE crudo como ausencia de slot 1, pero upstream lo normaliza a ability1 y reserva slot 2 para oculta. Corrección C++ escrita para default oculto, captura y forma compartida con UI; casos nativos añadidos sin ejecutar. Verificación y compatibilidad de saves pendientes. La ficha refleja hoy el resolver local, sin afirmar paridad.
 - Pasivas: importación real corregida para `passives` compartidas/por forma; las 1.084 especies conservan IDs y provenance. Resolver C++ y nombre en tienda escritos; esto no ejecuta los triggers en combate.
-- Habilidad de la ficha: consume slot por defecto desbloqueado del perfil y forma seleccionada mediante gameplay; comparación con actor escrita sin ejecución, selector manual pendiente.
+- Habilidad de la ficha: consume slot por defecto desbloqueado del perfil y forma seleccionada mediante gameplay; comparación con actor escrita sin ejecución, selector manual conectado mediante Y/táctil en submenú de formas, aún sin ejecución nativa.
 - Selector: indicadores shiny originales, perfiles vistos/capturados/desconocidos, filtros; títulos/submenús/Pokédex y exportación/importación con confirmación tienen rutas C++ escritas.
 - Sprites: caché de fallos por página del atlas y última identidad de entrenador para evitar I/O repetido cada frame; reset explícito permite recuperación. Guards estáticos PASS; comportamiento GPU no ejecutado.
 - Intro completa preparada: 101 frames pinned en seis páginas, raster nearest 200×100 y ampliación entera 2×, reproducción por timestamps. Conversión y píxeles comprobados físicamente; carga/dibujo, audio, latencia y memoria nativos pendientes.
@@ -22,10 +22,11 @@
 
 1. Iconos de apariencia: 5.054 fuentes físicas, 27 páginas completas y 27 compactas; 12.000 identidades de especie/forma/género/shiny/variante con fallback normal explícito upstream. No cubre reemplazos temporales por eventos. Equipo inicial, party y captura consumen el resolver; grid/Pokédex aún requieren integración de apariencias.
 2. Fuentes: rasters nativos monocromos 8/10/12/16, posiciones enteras; cobertura de glifos/alpha binaria PASS físico. Los nombres de movimientos admiten dos líneas y la barra PP columnas enteras. Etiquetas de tipo mantienen atlas 32×14; alternativa textual acotada y centrada por tinta.
-3. Preferencias v4: estilo, táctil, velocidad HP y EXP; lectura legacy v1–v3, journal y rechazos de conflictos/flags desconocidos. Regresiones C++ escritas, sin ejecutar.
-4. Recursos: trainers/items rechazan hojas sin textura/región; carga fallida no se repite cada frame hasta reset/cambio. Items usa únicamente el índice generado, sin ruta de fallback no producida por el pipeline.
-5. Submenú de referencia: nueve opciones y límites táctiles compartidos, retorno al origen. Logros, huevos/gacha, comunidad y cuenta siguen informativos; no son implementaciones completas.
-6. Gates repetidos sin compilación: cobertura de fuentes (2 tests) e índices de apariencia regenerados dos veces PASS; guards de menú y diff check PASS. No prueba nativa/ARM/Azahar/hardware.
+3. Perfil de starters v10 (`P3CANDYA`): elección de habilidad validada, default explícito 255 y lectura legacy v1–v9. Comando transaccional reconstruye equipo y publica después de SD; ficha/actor comparten resolver. Y/táctil conectado en formas; pruebas de reservas y escrituras fallidas pendientes de ejecución.
+4. Preferencias v4: estilo, táctil, velocidad HP y EXP; lectura legacy v1–v3, journal y rechazos de conflictos/flags desconocidos. Regresiones C++ escritas, sin ejecutar.
+5. Recursos: trainers/items rechazan hojas sin textura/región; carga fallida no se repite cada frame hasta reset/cambio. Items usa únicamente el índice generado, sin ruta de fallback no producida por el pipeline.
+6. Submenú de referencia: nueve opciones y límites táctiles compartidos, retorno al origen. Logros, huevos/gacha, comunidad y cuenta siguen informativos; no son implementaciones completas.
+7. Gates repetidos sin compilación: cobertura de fuentes (2 tests) e índices de apariencia regenerados dos veces PASS; guards de menú y diff check PASS. No prueba nativa/ARM/Azahar/hardware.
 
 ## Revisión del avance local
 

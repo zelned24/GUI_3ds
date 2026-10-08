@@ -314,6 +314,11 @@ static int checkStarterAbilityPreferencePersistence() {
     if(game.selectSetupStarterAbility(1,0,store)!=NativeSaveResult::IoError ||
         game.starterProgress(1)->preferredAbilityIndex!=2 || game.setupStarterAbilityId(1)!=species->abilityHidden) return 728;
     profileDisk.interrupt=false;
+    runDisk.interrupt=true;
+    if(game.selectSetupStarterAbility(1,0,store)!=NativeSaveResult::IoError ||
+        game.starterProgress(1)->preferredAbilityIndex!=2 || game.presentation().player.actor.abilityIndex!=2 ||
+        game.presentation().player.battleState.abilityId!=species->abilityHidden || !sceneNodesOwnedBy(game)) return 732;
+    runDisk.interrupt=false;
     FirstRunRuntime restored(2);static NativeStarterCandyRecord staging[PokerogueContent::kSpeciesCount]{};
     if(restored.loadNativeProgress(runs,profiles,staging,PokerogueContent::kSpeciesCount,policy)!=NativeSaveResult::Ok ||
         restored.starterProgress(1)->preferredAbilityIndex!=2 || restored.presentation().player.actor.abilityIndex!=2 ||
@@ -324,6 +329,43 @@ static int checkStarterAbilityPreferencePersistence() {
     if(!restored.canCycleSetupStarterAbility(1) || restored.cycleSetupStarterAbility(0,store)!=NativeSaveResult::InvalidRecord ||
         restored.cycleSetupStarterAbility(1,store)!=NativeSaveResult::Ok || restored.setupStarterAbilityId(1)!=species->abilityHidden ||
         restored.cycleSetupStarterAbility(-1,store)!=NativeSaveResult::Ok || restored.setupStarterAbilityId(1)!=species->ability1) return 731;
+    return 0;
+}
+
+static int checkReserveStarterAbilityPreference() {
+    using namespace Pokerogue3DS;
+    const auto* reserveSpecies=PokerogueContent::findSpeciesByDex(7);
+    if(!reserveSpecies || !reserveSpecies->abilityHidden) return 733;
+    NativeStarterCandyRecord records[2]{};
+    for(unsigned i=0;i<2;++i) {
+        auto& record=records[i];record.speciesDex=i ? 7 : 1;record.caught=true;
+        record.natureAttr=2;record.abilityAttr=5;record.genderAttr=12;record.unlockedFormAttr=128;
+        for(auto& iv:record.dexIvs) iv=15;
+    }
+    PokemonFriendshipPolicy policy{};policy.resolved=true;
+    policy.candyMultiplier=PokerogueContent::kClassicCandyFriendshipMultiplier;
+    FirstRunRuntime game(1);const uint16_t team[]={1,7};
+    if(!game.restoreStarterCandyProfile(records,2,0,policy) || !game.restoreStarterTeamSetup(1,team,2) ||
+        !game.selectSetupStarter(7)) return 734;
+    const auto originalLeader=game.presentation().player;
+    const auto originalReserve=*game.playerPartyMember(1);
+    static ProgressMemoryStorage runDisk,profileDisk;
+    static char scratch[2*kStarterCandyProfileMaxBytes]{};
+    NativeRunSaveStore runs(runDisk);NativeStarterCandyStore profiles(profileDisk,scratch,sizeof(scratch));
+    NativeProgressStore store(runs,profiles);
+    if(game.cycleSetupStarterAbility(1,store)!=NativeSaveResult::Ok || game.selectedSetupStarterDex()!=7 ||
+        game.playerPartyCount()!=2 || game.starterProgress(7)->preferredAbilityIndex!=2 ||
+        game.setupStarterAbilityId(7)!=reserveSpecies->abilityHidden) return 735;
+    const auto* reserve=game.playerPartyMember(1);
+    if(!reserve || reserve->actor.abilityIndex!=2 || reserve->battleState.abilityId!=reserveSpecies->abilityHidden ||
+        reserve->actor.pokemonId!=originalReserve.actor.pokemonId ||
+        game.presentation().player.actor.pokemonId!=originalLeader.actor.pokemonId ||
+        game.presentation().player.battleState.abilityId!=originalLeader.battleState.abilityId || !sceneNodesOwnedBy(game)) return 736;
+    FirstRunRuntime restored(2);static NativeStarterCandyRecord staging[PokerogueContent::kSpeciesCount]{};
+    if(restored.loadNativeProgress(runs,profiles,staging,PokerogueContent::kSpeciesCount,policy)!=NativeSaveResult::Ok ||
+        restored.playerPartyCount()!=2 || !restored.playerPartyMember(1) ||
+        restored.playerPartyMember(1)->actor.abilityIndex!=2 ||
+        restored.playerPartyMember(1)->battleState.abilityId!=reserveSpecies->abilityHidden) return 737;
     return 0;
 }
 
@@ -6221,6 +6263,7 @@ extern "C" int runFirstRunRestoreChecks() {
         {"checkInitialTeamFirstTurnRoundtrip", checkInitialTeamFirstTurnRoundtrip},
         {"checkPresentationExperienceLevelCap", checkPresentationExperienceLevelCap},
         {"checkStarterAbilityPreferencePersistence", checkStarterAbilityPreferencePersistence},
+        {"checkReserveStarterAbilityPreference", checkReserveStarterAbilityPreference},
         {"checkStarterFormPreferencePersistence", checkStarterFormPreferencePersistence},
         {"checkStarterCostPurchasePersistence", checkStarterCostPurchasePersistence},
         {"checkExtendedWaveAndBiomeSaveValidation", checkExtendedWaveAndBiomeSaveValidation},
