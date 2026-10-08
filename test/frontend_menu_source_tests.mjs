@@ -504,3 +504,11 @@ assert(main.includes("kPauseBackRect.contains(pauseTouch.px,pauseTouch.py)"));
 assert(main.includes("rawPressed=(rawPressed & ~KEY_TOUCH) | KEY_A"));
 assert(main.includes("rawPressed=(rawPressed & ~KEY_TOUCH) | KEY_B"));
 assert(main.includes("const auto& bounds=Pokerogue3DS::kPauseFeedbackRect"));
+
+// Explicit decision buttons replace unbounded discard hit areas.
+assert(main.includes("kLearnConfirmRect.contains(touch.px,touch.py)"));
+assert(main.includes("kLearnBackRect.contains(touch.px,touch.py)"));
+assert(main.includes("kEvolutionConfirmRect.contains(touch.px,touch.py)"));
+assert(main.includes("kEvolutionBackRect.contains(touch.px,touch.py)"));
+assert(!main.includes("touch.py >= 195 && touch.px > 160"));
+assert(!main.includes("touch.py >= 200 && touch.px > 160"));

@@ -41,7 +41,7 @@ public:
                 renderer.drawTextFitted(hp,237,y+4,0.3125f,67,0xffffffff);
                 if(i==game.selectedCapturePartyChoice()) m_cursor.drawCursor(renderer,10,y+4,nameSize);
             }
-            renderer.drawTextFitted("A: sustituir   B: no incorporar",12,224,0.25f,296,0xffffffff);
+            drawActions(renderer,kPartyConfirmRect,kPartyBackRect,"A: Sustituir","B: Descartar",4);
             return;
         }
         if(game.moveLearningPending()) {
@@ -58,7 +58,7 @@ public:
                     nameSize=renderer.drawTextFitted(name,rect.x+21,rect.y+9,nameSize,rect.width-30,0xffffffff);
                 if(i==game.selectedBattleMove()) m_cursor.drawCursor(renderer,rect.x+7,rect.y+9,nameSize);
             }
-            renderer.drawTextFitted("A: aprender   B: no aprender",12,204,0.32f,296,0xffffffff);
+            drawActions(renderer,kLearnConfirmRect,kLearnBackRect,"A: Aprender","B: Omitir",9);
             return;
         }
         renderer.drawWindow(12,40,296,158);
@@ -72,7 +72,7 @@ public:
                 target ? target->name : "Evolucion";
             if(!renderer.drawTextBox(question,26,91,0.375f,267,2,0xffffffff))
                 renderer.drawTextFitted(question,26,91,0.375f,267,0xffffffff);
-            renderer.drawTextFitted("A: confirmar   B: cancelar",26,145,0.35f,267,0xffffffff);
+            drawActions(renderer,kEvolutionConfirmRect,kEvolutionBackRect,"A: Confirmar","B: Cancelar",9);
         } else {
             renderer.drawText(game.playerWon() ? "Victoria" : "Fin de partida",26,55,0.55f,0xffffffff);
             char line[64];std::snprintf(line,sizeof(line),"Ola %u   Nivel %u",unsigned(game.run().wave),unsigned(game.presentation().player.level));
@@ -82,6 +82,13 @@ public:
         renderer.drawTextFitted(game.battleFeedback().c_str(),12,213,0.3f,296,0xffffffff);
     }
 private:
+    static void drawActions(Renderer2D& renderer,const TouchRect& confirm,const TouchRect& back,
+        const char* confirmText,const char* backText,unsigned insetY) {
+        renderer.drawWindow(confirm.x,confirm.y,confirm.width,confirm.height);
+        renderer.drawWindow(back.x,back.y,back.width,back.height);
+        renderer.drawTextFitted(confirmText,confirm.x+8,confirm.y+insetY,0.375f,confirm.width-16,0xffffffff);
+        renderer.drawTextFitted(backText,back.x+8,back.y+insetY,0.375f,back.width-16,0xffffffff);
+    }
     TitleMenuPresenter m_cursor;PokemonIconPresenter m_icons{true,6,true};
 };
 }

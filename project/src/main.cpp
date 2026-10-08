@@ -833,7 +833,9 @@ int main() {
                     for(unsigned i=0;i<6 && game.selectedCapturePartyChoice()!=unsigned(choice);++i) game.selectBattleMove(1);
                     changed=true;
                 }
-            } else if (touch.py >= 200 && touch.px > 160) {
+            } else if(Pokerogue3DS::kPartyConfirmRect.contains(touch.px,touch.py)) {
+                changed=game.resolveCapturePartyChoice(game.selectedCapturePartyChoice());
+            } else if(Pokerogue3DS::kPartyBackRect.contains(touch.px,touch.py)) {
                 changed=game.resolveCapturePartyChoice(-1);
             }
         } else if((rawPressed & KEY_TOUCH) && game.moveLearningPending()) {
@@ -846,15 +848,15 @@ int main() {
                     for(unsigned i=0;i<4 && game.selectedBattleMove()!=unsigned(slot);++i) game.selectBattleMove(1);
                     changed=true;
                 }
-            } else if (touch.py >= 195 && touch.px > 160) {
+            } else if(Pokerogue3DS::kLearnConfirmRect.contains(touch.px,touch.py)) {
+                changed=game.resolvePendingLearnMove(game.selectedBattleMove());
+            } else if(Pokerogue3DS::kLearnBackRect.contains(touch.px,touch.py)) {
                 changed=game.resolvePendingLearnMove(-1);
             }
         } else if((rawPressed & KEY_TOUCH) && game.evolutionPending()) {
             touchPosition touch{};hidTouchRead(&touch);
-            if (touch.py >= 130 && touch.py < 170) {
-                if (touch.px < 160) changed=game.advanceBattleTurn();
-                else changed=game.skipVictoryReward();
-            }
+            if(Pokerogue3DS::kEvolutionConfirmRect.contains(touch.px,touch.py)) changed=game.advanceBattleTurn();
+            else if(Pokerogue3DS::kEvolutionBackRect.contains(touch.px,touch.py)) changed=game.skipVictoryReward();
         } else if((rawPressed & KEY_TOUCH) && game.battleFinished()) {
             touchPosition touch{};hidTouchRead(&touch);
             if (touch.py >= 130 && touch.py < 170) {

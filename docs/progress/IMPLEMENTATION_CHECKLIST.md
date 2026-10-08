@@ -1128,3 +1128,5 @@ La compilación ARM solicitada terminó correctamente; no prueba ejecución de h
 - [ ] Validar volúmenes general/interfaz: niveles y valores por defecto importados del upstream pinned, mezcla NDSP multiplicativa, opciones A/izquierda/derecha con límites 0–100, preferencias SD versión 5 con lectura 1–4 y conservación al cambiar otras opciones. Cobertura nativa añadida para 121 combinaciones, conflictos y valores inválidos; ejecución C++/NDSP pendiente.
 
 - [ ] Validar controles inferiores de pausa: A/Elegir y B/Continuar táctiles emiten las mismas teclas físicas; feedback de guardado separado dentro del panel, sin invadir botones. Cobertura de geometría completa añadida; ejecución nativa y Azahar pendientes.
+
+- [ ] Validar botones táctiles de captura/equipo lleno, aprendizaje y evolución: confirmar/descartar usan límites compartidos con el dibujo, en lugar de áreas abiertas fuera de pantalla; controles visibles y cobertura nativa de no solapamiento añadidos. Ejecución nativa y Azahar pendientes.

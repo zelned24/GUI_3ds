@@ -10,6 +10,7 @@
 #include "runtime/ExperienceBarTimeline.hpp"
 #include "gfx/ImageTintPolicy.hpp"
 #include <cassert>
+#include <array>
 #include <climits>
 #include <initializer_list>
 using namespace Pokerogue3DS;
@@ -73,6 +74,15 @@ int main() {
         const int row=x>=24 && x<296 && y>=42 && y<150 ? int((y-42)/36) : -1;
         assert(pauseButtonAt(x,y)==row);
     }
+    for(const auto& pair : {std::array<TouchRect,2>{kLearnConfirmRect,kLearnBackRect},
+                           std::array<TouchRect,2>{kEvolutionConfirmRect,kEvolutionBackRect},
+                           std::array<TouchRect,2>{kPartyConfirmRect,kPartyBackRect}}) {
+        for(const auto& rect:pair) assert(rect.x+rect.width<=320 && rect.y+rect.height<=240);
+        for(unsigned y=0;y<240;++y) for(unsigned x=0;x<320;++x)
+            assert(!(pair[0].contains(x,y) && pair[1].contains(x,y)));
+    }
+    for(const auto& rect:kMoveButtonRects) assert(rect.y+rect.height<kLearnConfirmRect.y);
+    for(const auto& rect:kPartyButtonRects) assert(rect.y+rect.height<kPartyConfirmRect.y);
     assert(pauseButtonAt(UINT_MAX,UINT_MAX)==-1);
     for(unsigned y=0;y<240;++y) for(unsigned x=0;x<320;++x) {
         const bool confirm=kPauseConfirmRect.contains(x,y),back=kPauseBackRect.contains(x,y);
