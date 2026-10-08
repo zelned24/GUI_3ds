@@ -66,11 +66,11 @@ static void checkPreferences() {
     IntegritySha256 legacyHash;legacyHash.update(legacyBytes,20);legacyHash.finish(reinterpret_cast<uint8_t*>(legacyBytes+20));
     assert(NativePresentationSettingsStore::decode(legacyBytes,sizeof(legacyBytes),restored)==NativeSaveResult::Ok);
     assert(restored.windowStyle==2 && restored.touchControls);
-    assert(restored.hpBarSpeed==0);
+    assert(restored.hpBarSpeed==0 && restored.expGainsSpeed==0);
     NativePresentationSettingsStore::encode(legacy,legacyBytes);legacyBytes[8]=2;
     IntegritySha256 v2Hash;v2Hash.update(legacyBytes,20);v2Hash.finish(reinterpret_cast<uint8_t*>(legacyBytes+20));
     assert(NativePresentationSettingsStore::decode(legacyBytes,sizeof(legacyBytes),restored)==NativeSaveResult::Ok);
-    assert(!restored.touchControls && restored.hpBarSpeed==0);
+    assert(!restored.touchControls && restored.hpBarSpeed==0 && restored.expGainsSpeed==0);
     for(unsigned speed=0;speed<4;++speed) for(bool touch:{false,true}) {
         NativePresentationSettings value{7,2,touch,speed};
         assert(NativePresentationSettingsStore::encode(value,legacyBytes)==NativeSaveResult::Ok);
@@ -95,6 +95,51 @@ static void checkPreferences() {
     assert(expStore.save(2,true,0,4)==NativeSaveResult::InvalidRecord);
     NativePresentationSettings invalidExp{7,2,true,0,4};
     assert(NativePresentationSettingsStore::encode(invalidExp,legacyBytes)==NativeSaveResult::InvalidRecord);
+    // Interrupted/corrupted updates recover all preferences, including EXP.
+    expDisk.interrupted=true;
+    assert(expStore.save(4,false,1,0)==NativeSaveResult::IoError);
+    assert(expStore.load(restored,&recovered)==NativeSaveResult::Ok && recovered);
+    assert(restored.generation==2 && restored.windowStyle==3 && restored.touchControls && restored.hpBarSpeed==2 && restored.expGainsSpeed==3);
+    expDisk.interrupted=false;expDisk.corruptWrite=true;
+    assert(expStore.save(4,false,1,0)==NativeSaveResult::ChecksumMismatch);
+    assert(expStore.load(restored,&recovered)==NativeSaveResult::Ok && recovered && restored.expGainsSpeed==3);
+    expDisk.corruptWrite=false;
+    // EXP-only conflicts block overwrite and leave caller state/storage untouched.
+    PreferenceDisk expConflictDisk;NativePresentationSettingsStore expConflictStore(expConflictDisk);
+    NativePresentationSettings exp0{7,2,true,1,0},exp1{7,2,true,1,1};
+    NativePresentationSettingsStore::encode(exp0,expConflictDisk.bytes[0]);
+    NativePresentationSettingsStore::encode(exp1,expConflictDisk.bytes[1]);
+    expConflictDisk.sizes[0]=expConflictDisk.sizes[1]=sizeof(legacyBytes);
+    char conflictBefore[2][NativePresentationSettingsStore::kBytes];
+    std::memcpy(conflictBefore,expConflictDisk.bytes,sizeof(conflictBefore));
+    restored={987,3,false,2,3};
+    assert(expConflictStore.load(restored)==NativeSaveResult::AmbiguousJournal);
+    assert(restored.generation==987 && restored.expGainsSpeed==3);
+    assert(expConflictStore.save(4,true,0,0)==NativeSaveResult::AmbiguousJournal);
+    assert(std::memcmp(conflictBefore,expConflictDisk.bytes,sizeof(conflictBefore))==0);
+    // Every reserved flag is invalid even with a valid checksum for that schema.
+    for(unsigned version=1;version<=4;++version) {
+        const unsigned firstReserved=version==1 ? 16 : version==2 ? 17 : version==3 ? 19 : 21;
+        for(unsigned bit=firstReserved;bit<32;++bit) {
+            NativePresentationSettings base{7,2,false,0,0};
+            NativePresentationSettingsStore::encode(base,legacyBytes);
+            legacyBytes[8]=static_cast<char>(version);
+            legacyBytes[8+bit/8]=static_cast<char>(static_cast<unsigned char>(legacyBytes[8+bit/8]) | (1u<<(bit%8)));
+            IntegritySha256 reservedHash;reservedHash.update(legacyBytes,20);
+            reservedHash.finish(reinterpret_cast<uint8_t*>(legacyBytes+20));
+            restored={987,3,false,2,3};
+            assert(NativePresentationSettingsStore::decode(legacyBytes,sizeof(legacyBytes),restored)==NativeSaveResult::InvalidRecord);
+            assert(restored.generation==987 && restored.windowStyle==3 && !restored.touchControls && restored.hpBarSpeed==2 && restored.expGainsSpeed==3);
+        }
+    }
+    // A legacy v3 record upgrades to v4 without losing HP or touch preferences.
+    PreferenceDisk upgradeDisk;NativePresentationSettingsStore upgradeStore(upgradeDisk);
+    NativePresentationSettingsStore::encode(v3,upgradeDisk.bytes[0]);upgradeDisk.bytes[0][8]=3;
+    IntegritySha256 upgradeHash;upgradeHash.update(upgradeDisk.bytes[0],20);
+    upgradeHash.finish(reinterpret_cast<uint8_t*>(upgradeDisk.bytes[0]+20));
+    upgradeDisk.sizes[0]=sizeof(legacyBytes);
+    assert(upgradeStore.save(4,false,0xffffffffu,2)==NativeSaveResult::Ok);
+    assert(upgradeStore.load(restored)==NativeSaveResult::Ok && restored.generation==8 && restored.hpBarSpeed==3 && restored.expGainsSpeed==2 && !restored.touchControls);
     PreferenceDisk roundtripDisk;NativePresentationSettingsStore roundtrip(roundtripDisk);
     for(unsigned speed=0;speed<4;++speed) {
         assert(roundtrip.save(2,false,speed)==NativeSaveResult::Ok);
