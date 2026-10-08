@@ -14,6 +14,13 @@
 #include <initializer_list>
 using namespace Pokerogue3DS;
 int main() {
+    for(unsigned slot=0;slot<6;++slot) {
+        const auto icon=starterTeamIconRectangle(slot);
+        assert(icon.width==40 && icon.height==30 && icon.x==11+slot*50 && icon.y==170);
+        assert(icon.x>=9+slot*50 && icon.x+icon.width<=9+slot*50+44);
+        assert(icon.y>=169 && icon.y+icon.height<=201);
+    }
+    assert(starterTeamIconRectangle(6).width==0);
     for(const auto& nameBounds:{kStarterAbilityNameRect,kStarterPassiveNameRect}) {
         assert(nameBounds.x+nameBounds.width<=392 && nameBounds.y+nameBounds.height<=159);
         assert(textLinesWithinHeight(nameBounds.height,8,11,2)==2);

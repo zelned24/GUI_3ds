@@ -284,7 +284,7 @@ assert(iconPresentation.includes("image.subtex->width!=expected || image.subtex-
 assert(iconPresentation.includes("renderer.retireSpriteSheet(selected->sheet);selected->sheet=nullptr"));
 
 const setupPresentation=await fs.readFile(new URL("../project/include/runtime/SetupPresenter.hpp",import.meta.url),"utf8");
-assert(setupPresentation.includes("PokemonIconPresenter m_teamIcons{true}"));
+assert(setupPresentation.includes("PokemonIconPresenter m_teamIcons{true,6,true}"));
 assert(setupPresentation.includes("m_teamIcons.prepareAppearances(renderer,appearances"));
 assert(setupPresentation.includes("m_teamIcons.clear(&renderer)"));
 assert(setupPresentation.includes("resolvePokemonIcon(actor.dex,actor.formId"));
@@ -309,3 +309,6 @@ assert(setupPresentation.includes("abilityUiName(game.setupStarterAbilityId(dex)
 assert(setupPresentation.includes("kStarterPassiveNameRect,passiveUnlocked ? 0xffffffff : 0xff909090"));
 assert(setupPresentation.includes("starter-select-ui-handler:passive"));
 assert(setupPresentation.includes("renderer.drawTextFitted(label,161,211,0.3125f,220"));
+
+assert(setupPresentation.includes("const auto iconBounds=starterTeamIconRectangle(i)"));
+assert(setupPresentation.includes("teamIcons[i].appearance,iconBounds.x,iconBounds.y"));

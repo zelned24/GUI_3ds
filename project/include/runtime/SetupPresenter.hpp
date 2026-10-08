@@ -433,13 +433,15 @@ public:
             const auto& actor=context.playerParty[i];
             const bool known=actor.actorIdentityResolved && actor.actor.appearanceResolved && actor.actor.gender!=PokemonGender::Unspecified;
             teamIcons[i]=resolvePokemonIcon(actor.dex,actor.formId,known,actor.actor.gender==PokemonGender::Female,actor.actor.shiny,actor.actor.shinyVariant);
+            resolvePokemonDiscoveryIcon(teamIcons[i]);
             appearances[i]=teamIcons[i].appearance;
         }
         m_teamIcons.prepareAppearances(renderer,appearances,std::min(unsigned(context.playerPartyCount),6u));
         for(unsigned i=0;i<context.playerPartyCount && i<6;++i) {
             const auto& actor=context.playerParty[i];
             bool drawn=false;
-            if(teamIcons[i].appearance) drawn=m_teamIcons.drawAppearance(renderer,teamIcons[i].appearance,21+i*50,177);
+            const auto iconBounds=starterTeamIconRectangle(i);
+            if(teamIcons[i].appearance) drawn=m_teamIcons.drawAppearance(renderer,teamIcons[i].appearance,iconBounds.x,iconBounds.y);
             else if(teamIcons[i].normalIconAllowed) drawn=m_teamIcons.draw(renderer,actor.dex,teamIcons[i].formIndex,21+i*50,177);
             if(!drawn) renderer.drawTextFitted("?",21+i*50,177,0.3125f,20,0xffffffff);
             if(actor.actorIdentityResolved && actor.actor.appearanceResolved && actor.actor.shiny && actor.actor.shinyVariant<=2)
@@ -570,7 +572,7 @@ private:
     bool m_backgroundAttempted=false,m_logoAttempted=false,m_gridAttempted=false;
     C2D_SpriteSheet m_logo=nullptr,m_background=nullptr,m_grid=nullptr;
     PokemonIconPresenter m_icons{true,kStarterGridPageSize,true};
-    PokemonIconPresenter m_teamIcons{true};
+    PokemonIconPresenter m_teamIcons{true,6,true};
     TitleMenuPresenter m_prompt;
     IntroCinematicPresenter m_introCinematic;
 };

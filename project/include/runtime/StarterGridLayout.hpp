@@ -45,6 +45,10 @@ inline constexpr TouchRect kStarterFormRowsRect{24,43,272,kStarterFormPageSize*k
 inline constexpr TouchRect kStarterAbilityNameRect{161,98,220,23};
 inline constexpr TouchRect kStarterPassiveNameRect{161,134,220,23};
 inline constexpr TouchRect kStarterNatureNameRect{161,159,220,15};
+// Original 40x30 icon centered within the 44x32 team slot.
+inline constexpr TouchRect starterTeamIconRectangle(unsigned slot) {
+    return slot<6 ? TouchRect{11+slot*50,170,40,30} : TouchRect{0,0,0,0};
+}
 inline constexpr TouchRect kStarterFormAbilityRect{24,207,132,18};
 inline constexpr TouchRect kStarterFormNatureRect{164,207,132,18};
 inline constexpr TouchRect kStarterFormBackRect{164,183,132,21};
