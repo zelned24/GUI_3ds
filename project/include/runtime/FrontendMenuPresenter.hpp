@@ -269,15 +269,28 @@ public:
         renderer.drawWindow(16,m_page==FrontendPage::GlobalMenu ? 8 : 33,288,m_page==FrontendPage::GlobalMenu ? 196 : 168);
         if(m_confirmingImport) {
             drawBoundedDescription(renderer,"Importar reemplazará la partida y el perfil locales. ¿Continuar?",28,62,264,55);
-            renderer.drawWindow(kConfirmationYesRect.x,kConfirmationYesRect.y,kConfirmationYesRect.width,kConfirmationYesRect.height);
-            renderer.drawWindow(kConfirmationNoRect.x,kConfirmationNoRect.y,kConfirmationNoRect.width,kConfirmationNoRect.height);
-            renderer.drawTextFitted("Sí",56,134,0.375f,88,0xffffffff);
-            renderer.drawTextFitted("No",184,134,0.375f,96,0xffffffff);
-            m_title.drawCursor(renderer,m_importYes ? 39 : 167,134,0.375f);
+            const TouchRect buttons[]={kConfirmationYesRect,kConfirmationNoRect};
+            const char* const keys[]={"menu:yes","menu:no"};
+            for(unsigned i=0;i<2;++i) {
+                const auto& rect=buttons[i];
+                const bool selected=m_importYes ? i==0 : i==1;
+                if(selected) renderer.drawRect(rect.x-1,rect.y-1,rect.width+2,rect.height+2,0xff70d8f0);
+                renderer.drawWindow(rect.x,rect.y,rect.width,rect.height);
+                const float labelSize=renderer.drawTextFitted(runtimeUiText(keys[i]),rect.x+24,rect.y+9,
+                    0.375f,rect.width-32,0xffffffff);
+                if(selected) m_title.drawCursor(renderer,rect.x+7,rect.y+9,labelSize);
+            }
         } else if(m_confirmingTouchDisable) {
             drawBoundedDescription(renderer,runtimeUiText("settings:confirmDisableTouch"),28,62,264,55);
-            renderer.drawTextFitted("A: Sí",32,130,0.4f,120,0xffffffff);
-            renderer.drawTextFitted("B: No",160,130,0.4f,128,0xffffffff);
+            renderer.drawWindow(kConfirmationYesRect.x,kConfirmationYesRect.y,kConfirmationYesRect.width,kConfirmationYesRect.height);
+            renderer.drawWindow(kConfirmationNoRect.x,kConfirmationNoRect.y,kConfirmationNoRect.width,kConfirmationNoRect.height);
+            char yesLabel[96],noLabel[96];
+            std::snprintf(yesLabel,sizeof(yesLabel),"A: %s",runtimeUiText("menu:yes"));
+            std::snprintf(noLabel,sizeof(noLabel),"B: %s",runtimeUiText("menu:no"));
+            renderer.drawTextFitted(yesLabel,kConfirmationYesRect.x+8,kConfirmationYesRect.y+6,
+                0.4f,kConfirmationYesRect.width-16,0xffffffff);
+            renderer.drawTextFitted(noLabel,kConfirmationNoRect.x+8,kConfirmationNoRect.y+6,
+                0.4f,kConfirmationNoRect.width-16,0xffffffff);
         } else if(m_page==FrontendPage::History) {
             drawBoundedDescription(renderer,"Historial pendiente: todavía no se guardan los resúmenes de partidas finalizadas.",28,58,264,100);
         } else if(m_page==FrontendPage::Load) {

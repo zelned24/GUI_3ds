@@ -363,3 +363,12 @@ assert(directImageGuard.includes('img.subtex->left>=img.subtex->right'));
 assert(directImageGuard.includes('img.subtex->top<=img.subtex->bottom'));
 assert(directImageGuard.includes('if (flipX) scaleX = -scaleX'));
 assert(directImageGuard.includes('if (flipY) scaleY = -scaleY'));
+
+const importConfirmation=frontend.slice(frontend.indexOf('const TouchRect buttons[]={kConfirmationYesRect'),frontend.indexOf('} else if(m_page==FrontendPage::History)',frontend.indexOf('const TouchRect buttons[]={kConfirmationYesRect')));
+assert(importConfirmation.includes('m_title.drawCursor(renderer,rect.x+7,rect.y+9,labelSize)'));
+assert(importConfirmation.includes('runtimeUiText(keys[i])'));
+const touchConfirmation=importConfirmation.slice(importConfirmation.indexOf('} else if(m_confirmingTouchDisable)'));
+assert(touchConfirmation.includes('renderer.drawWindow(kConfirmationYesRect.x'));
+assert(touchConfirmation.includes('renderer.drawWindow(kConfirmationNoRect.x'));
+assert(touchConfirmation.includes('kConfirmationYesRect.width-16'));
+assert(touchConfirmation.includes('kConfirmationNoRect.width-16'));
