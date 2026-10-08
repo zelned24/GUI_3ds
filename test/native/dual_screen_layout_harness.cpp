@@ -74,6 +74,16 @@ int main() {
         assert(pauseButtonAt(x,y)==row);
     }
     assert(pauseButtonAt(UINT_MAX,UINT_MAX)==-1);
+    for(unsigned i=0;i<3;++i) {
+        const auto card=rewardCardRectangle(i),name=rewardCardNameRectangle(i);
+        assert(card.x+card.width<=400 && card.y+card.height<=240);
+        assert(name.x>=card.x && name.x+name.width<=card.x+card.width);
+        assert(name.y+name.height<=card.y+kRewardRarityOffsetY);
+        assert(card.y+kRewardRarityOffsetY+3<card.y+142);
+        assert(textLinesWithinHeight(name.height,9,14,3)==3);
+        if(i) assert(rewardCardRectangle(i-1).x+card.width<card.x);
+    }
+    assert(rewardCardRectangle(3).width==0 && rewardCardNameRectangle(3).height==0);
     assert(textLinesWithinHeight(46,10,26,3)==2);
     assert(textLinesWithinHeight(10,10,26,3)==1);
     assert(textLinesWithinHeight(9,10,26,3)==0);

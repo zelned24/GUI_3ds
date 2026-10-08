@@ -112,6 +112,15 @@ inline constexpr int commandButtonAt(unsigned x, unsigned y) {
     return -1;
 }
 
+// Upper-screen reward cards have separate icon, name, rarity and action areas.
+inline constexpr TouchRect rewardCardRectangle(unsigned index) {
+    return index<3 ? TouchRect{14+index*127,46,118,175} : TouchRect{};
+}
+inline constexpr TouchRect rewardCardNameRectangle(unsigned index) {
+    const auto card=rewardCardRectangle(index);
+    return index<3 ? TouchRect{card.x+6,card.y+68,card.width-12,44} : TouchRect{};
+}
+inline constexpr unsigned kRewardRarityOffsetY=120;
 // Reward choices and recipient moves use the same rectangles for draw and input.
 inline constexpr TouchRect kRewardChoiceRects[]={{16,54,88,40},{116,54,88,40},{216,54,88,40}};
 inline constexpr TouchRect kRewardMoveConfirmRect{16,200,136,24};

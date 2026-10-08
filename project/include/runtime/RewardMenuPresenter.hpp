@@ -47,11 +47,6 @@ public:
         renderer.drawTextFitted("Elige una Recompensa", 24.0f, 12.0f, 0.46f, 352.0f, 0xffffffff);
 
         const unsigned count = game.rewardChoiceCount();
-        const float cardW = 118.0f;
-        const float cardH = 175.0f;
-        const float startX = 14.0f;
-        const float spacing = 127.0f;
-        const float cardY = 46.0f;
 
         for (unsigned i = 0; i < count && i < 3; ++i) {
             const auto* reward = game.rewardChoice(i);
@@ -68,7 +63,8 @@ public:
                     if(type.id==static_cast<unsigned>(reward->berryType)) {berry=berryUiEntry(type.symbol);break;}
                 if(berry) name=berry->name;
             }
-            const float cx = startX + i * spacing;
+            const auto card=rewardCardRectangle(i);
+            const float cx=card.x,cardY=card.y,cardW=card.width,cardH=card.height;
             const bool isSelected = (i == game.selectedRewardChoice());
 
             // Presentation accents by the imported rarity tier:
@@ -103,12 +99,17 @@ public:
                 : m_icons.drawItem(renderer,reward->poolEntry->itemId,iconX,cardY+16,32);
             if(!iconDrawn) renderer.drawTextFitted("?",iconX+10,cardY+24,0.375f,20,0xffffffff);
 
-            // Item Name
-            if(!renderer.drawTextBox(name,cx+6,cardY+68,0.3125f,cardW-12,3,0xffffffff))
-                renderer.drawTextFitted(name,cx+6,cardY+68,0.3125f,cardW-12,0xffffffff);
+            // Bound wrapping by actual native font ink/line metrics. The rarity
+            // band starts below this region, including the third wrapped line.
+            const auto nameBounds=rewardCardNameRectangle(i);
+            constexpr float nameSize=0.375f;
+            const unsigned nameLines=textLinesWithinHeight(nameBounds.height,
+                renderer.textInkHeight(nameSize),renderer.textLineHeight(nameSize),3);
+            if(!nameLines || !renderer.drawTextBox(name,nameBounds.x,nameBounds.y,nameSize,nameBounds.width,nameLines,0xffffffff))
+                renderer.drawTextFitted(name,nameBounds.x,nameBounds.y,nameSize,nameBounds.width,0xffffffff);
 
             // Visual rarity accent band (strictly NO textual "COMMON" or "Común")
-            renderer.drawRect(cx + 12.0f, cardY + 104.0f, cardW - 24.0f, 3.0f, rarityColor);
+            renderer.drawRect(cx + 12.0f, cardY + kRewardRarityOffsetY, cardW - 24.0f, 3.0f, rarityColor);
 
             // Selected indicator
             if (isSelected) {

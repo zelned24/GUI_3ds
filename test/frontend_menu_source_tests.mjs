@@ -482,3 +482,8 @@ assert(frontend.includes("renderer.drawWindow(kFrontendBackRect.x"));
 // HUD atlas failures are cached until renderer reset, never retried per frame.
 assert.equal((rendererSource.match(/if\(!m_hudLoadAttempted\[index\]\)/g)||[]).length,4);
 assert(rendererSource.includes("for(auto& attempted:m_hudLoadAttempted) attempted=false;"));
+
+// Reward names are height-bounded before the rarity accent instead of overlapping it.
+assert(rewardPresentation.includes("const auto nameBounds=rewardCardNameRectangle(i)"));
+assert(rewardPresentation.includes("textLinesWithinHeight(nameBounds.height"));
+assert(rewardPresentation.includes("cardY + kRewardRarityOffsetY"));

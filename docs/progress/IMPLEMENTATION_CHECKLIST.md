@@ -1118,3 +1118,5 @@ La compilación ARM solicitada terminó correctamente; no prueba ejecución de h
 - [ ] Validar en runtime los botones inferiores separados de aceptar/volver: la zona táctil anterior interpretaba toda la franja como B. Corregido el despacho a KEY_A/KEY_B y añadida cobertura nativa de cada píxel; ejecución nativa y Azahar pendientes por indicación del usuario.
 
 - [ ] Verificar rendimiento y recuperación de los 17 atlas del HUD: fallos de carga se cachean hasta reiniciar el renderer; geometría inválida retira la textura tras la GPU y coordenadas no finitas se rechazan. Pruebas nativas actualizadas, sin ejecutar por la restricción de compilación.
+
+- [ ] Validar tarjetas de recompensas con nombres largos: área de nombre separada de la banda de rareza, líneas limitadas por métricas de la fuente nativa y cobertura de límites de las tres tarjetas. Implementado en presentación; ejecución nativa y captura de Azahar pendientes.
