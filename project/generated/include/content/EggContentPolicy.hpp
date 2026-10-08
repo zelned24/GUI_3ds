@@ -28,6 +28,8 @@ enum class VariantTier : uint8_t {
 };
 struct EggGachaThresholds {uint16_t common,rare,epic,legendaryOffset;};
 inline constexpr EggGachaThresholds kEggGachaThresholds={52,8,1,1};
+struct EggPityThresholds {uint32_t rare,epic,legendary;};
+inline constexpr EggPityThresholds kEggPityThresholds={9,59,412};
 struct EggIncubationPolicy { EggTier tier; uint16_t waves; };
 inline constexpr EggIncubationPolicy kEggIncubationPolicies[]={
     {EggTier::COMMON,10},

@@ -5,6 +5,7 @@
 #include "storage/NativeProgressStore.hpp"
 #include "storage/NativeProgressBundle.hpp"
 #include "storage/NativeEggInventory.hpp"
+#include "game/EggGachaPolicy.hpp"
 #include "storage/IntegritySha256.hpp"
 #include "content/PokerogueRuntimeContent.hpp"
 #include <cstring>
@@ -144,6 +145,28 @@ extern "C" int runNativeSaveChecks() {
             if(distribution[0]!=(legendary?203u:204u) || distribution[1]!=44 || distribution[2]!=7 ||
                 distribution[3]!=(legendary?2u:1u)) return 1221;
         }
+        EggTierPityPlan pityPlan{};
+        EggPityState pity{7,kEggPityThresholds.rare-1,kEggPityThresholds.epic-1,kEggPityThresholds.legendary-1};
+        if(planEggTierPity(EggTier::COMMON,EggSourceType::GACHA_MOVE,pity,pityPlan)!=EggPityResult::Ok ||
+            pityPlan.tier!=EggTier::LEGENDARY || pityPlan.pity.legendary ||
+            pityPlan.pity.epic!=kEggPityThresholds.epic || pityPlan.pity.rare!=kEggPityThresholds.rare ||
+            pityPlan.pity.common!=7) return 1223;
+        if(planEggTierPity(EggTier::RARE,EggSourceType::GACHA_LEGENDARY,pity,pityPlan)!=EggPityResult::Ok ||
+            pityPlan.tier!=EggTier::RARE || pityPlan.pity.rare ||
+            pityPlan.pity.legendary!=kEggPityThresholds.legendary+1) return 1224;
+        pity.legendary=0;
+        if(planEggTierPity(EggTier::COMMON,EggSourceType::GACHA_MOVE,pity,pityPlan)!=EggPityResult::Ok ||
+            pityPlan.tier!=EggTier::EPIC || pityPlan.pity.epic || pityPlan.pity.rare!=kEggPityThresholds.rare) return 1225;
+        pity.epic=0;
+        if(planEggTierPity(EggTier::COMMON,EggSourceType::GACHA_MOVE,pity,pityPlan)!=EggPityResult::Ok ||
+            pityPlan.tier!=EggTier::RARE || pityPlan.pity.rare || pityPlan.pity.epic!=1) return 1226;
+        pity.rare=0;
+        if(planEggTierPity(EggTier::COMMON,EggSourceType::GACHA_MOVE,pity,pityPlan)!=EggPityResult::Ok ||
+            pityPlan.tier!=EggTier::COMMON || pityPlan.pity.common || pityPlan.pity.rare!=1) return 1227;
+        pity.rare=UINT32_MAX;
+        const auto unchanged=pityPlan;
+        if(planEggTierPity(EggTier::COMMON,EggSourceType::GACHA_MOVE,pity,pityPlan)!=EggPityResult::CounterOverflow ||
+            pityPlan.tier!=unchanged.tier || pityPlan.pity.rare!=unchanged.pity.rare) return 1228;
         EggTier invalidOutput=EggTier::EPIC;
         if(eggTierForRoll(256,EggSourceType::GACHA_MOVE,invalidOutput)!=EggIncubationResult::InvalidInput ||
             invalidOutput!=EggTier::EPIC || eggTierForRoll(0,static_cast<EggSourceType>(255),invalidOutput)

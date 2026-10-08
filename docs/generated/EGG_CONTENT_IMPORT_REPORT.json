@@ -83,13 +83,18 @@
     "GACHA_DEFAULT_RARE_EGG_THRESHOLD": 8,
     "GACHA_LEGENDARY_UP_THRESHOLD_OFFSET": 1
   },
-  "generatedSHA256": "f2e762c306951315a29427be20284b210220538534d75b88ba81ba65ca441089",
+  "generatedSHA256": "3c9793f7f86054cff131a4ae06c58840031eb912e1097396019dbeeb08fee891",
   "incubationConstants": {
     "HATCH_WAVES_COMMON_EGG": 10,
     "HATCH_WAVES_EPIC_EGG": 50,
     "HATCH_WAVES_LEGENDARY_EGG": 100,
     "HATCH_WAVES_MANAPHY_EGG": 50,
     "HATCH_WAVES_RARE_EGG": 25
+  },
+  "pityThresholds": {
+    "EGG_PITY_EPIC_THRESHOLD": 59,
+    "EGG_PITY_LEGENDARY_THRESHOLD": 412,
+    "EGG_PITY_RARE_THRESHOLD": 9
   },
   "runtimeIntegration": "PENDING_INVENTORY_GACHA_HATCHING",
   "schemaVersion": 1,
@@ -125,7 +130,7 @@
       "revision": "8555c08c823b856cbec4eb99ca84ea52a955836d",
       "schemaVersion": 1,
       "sourcePath": "src/data/balance/rates.ts",
-      "sourceSymbol": "HATCH_WAVES_*_EGG/GACHA_*_THRESHOLD/GACHA_LEGENDARY_UP_THRESHOLD_OFFSET"
+      "sourceSymbol": "HATCH_WAVES_*_EGG/GACHA_*_THRESHOLD/GACHA_LEGENDARY_UP_THRESHOLD_OFFSET/EGG_PITY_*_THRESHOLD"
     },
     {
       "hash": "681ff197da300ce319e02bdc4f29e4f505acda387a7810c2b413f87742aeea8e",
@@ -133,7 +138,7 @@
       "revision": "8555c08c823b856cbec4eb99ca84ea52a955836d",
       "schemaVersion": 1,
       "sourcePath": "src/data/egg.ts",
-      "sourceSymbol": "Egg.getEggTierDefaultHatchWaves"
+      "sourceSymbol": "Egg.getEggTierDefaultHatchWaves/rollEggTier/checkForPityTierOverrides"
     },
     {
       "hash": "91e06a8b73132b4b6a9bbf70fda8b8ec4fbd34854951c586ffd85c52e41f99b7",

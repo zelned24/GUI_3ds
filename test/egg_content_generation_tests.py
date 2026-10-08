@@ -17,6 +17,7 @@ class EggContentTests(unittest.TestCase):
             self.assertEqual(hashlib.sha256(raw).hexdigest(),source['hash'])
         self.assertEqual(report['incubationConstants'],{'HATCH_WAVES_COMMON_EGG':10,'HATCH_WAVES_RARE_EGG':25,'HATCH_WAVES_EPIC_EGG':50,'HATCH_WAVES_LEGENDARY_EGG':100,'HATCH_WAVES_MANAPHY_EGG':50})
         self.assertEqual(report['runtimeIntegration'],'PENDING_INVENTORY_GACHA_HATCHING')
+        self.assertEqual(report['pityThresholds'],{'EGG_PITY_RARE_THRESHOLD':9,'EGG_PITY_EPIC_THRESHOLD':59,'EGG_PITY_LEGENDARY_THRESHOLD':412})
         self.assertEqual(report['gachaThresholds'],{'GACHA_DEFAULT_COMMON_EGG_THRESHOLD':52,'GACHA_DEFAULT_RARE_EGG_THRESHOLD':8,'GACHA_DEFAULT_EPIC_EGG_THRESHOLD':1,'GACHA_LEGENDARY_UP_THRESHOLD_OFFSET':1})
         self.assertEqual(report['specialIncubationSpecies'],[{'symbol':'PHIONE','id':489},{'symbol':'MANAPHY','id':490}])
         canonical=(ROOT/report['canonicalInput']['sourcePath']).read_bytes()
