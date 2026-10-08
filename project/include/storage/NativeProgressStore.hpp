@@ -188,7 +188,10 @@ public:
         char* workspace, size_t workspaceSize, NativeStarterCandyRecord* records, size_t capacity) {
         if (!workspace || workspaceSize < 2 * kNativeProgressBundleMaxBytes)
             return NativeSaveResult::TooLarge;
-        if (capacity > PokerogueContent::kSpeciesCount ||
+        if (capacity > PokerogueContent::kSpeciesCount || (capacity && !records)
+            || m_profiles.overlapsWorkspace(workspace,workspaceSize)
+            || (m_eggs && m_eggs->overlapsWorkspace(workspace,workspaceSize))
+            || (records && m_eggs && m_eggs->overlapsWorkspace(records,capacity*sizeof(*records))) ||
             (hash && StarterCandyProfileCodec::overlaps(workspace, workspaceSize, hash, 65)) ||
             (records && StarterCandyProfileCodec::overlaps(workspace, workspaceSize,
                 records, capacity * sizeof(*records)))) return NativeSaveResult::InvalidRecord;
@@ -196,8 +199,21 @@ public:
         if (!runStorage) return NativeSaveResult::MemoryUnavailable;
         auto& run = *runStorage;
         size_t count = 0, runSize = 0, profileSize = 0, bundleSize = 0;
-        auto status = load(hash, run, records, capacity, count);
-        if (status != NativeSaveResult::Ok) return status;
+        auto status=m_runs.load(hash,run);if(status!=NativeSaveResult::Ok) return status;
+        if(!run.starterProfileGeneration) return NativeSaveResult::InvalidRecord;
+        uint32_t profileGeneration=0;
+        status=m_profiles.loadGeneration(hash,run.starterProfileGeneration,records,capacity,count,profileGeneration);
+        if(status!=NativeSaveResult::Ok) return status;
+        NativeEggProgressView eggView{};size_t eggSize=0;
+        char* eggBytes=workspace+kNativeSaveMaxBytes+kStarterCandyProfileMaxBytes;
+        if(run.eggProgressGeneration) {
+            if(!m_eggs) return NativeSaveResult::InvalidRecord;
+            status=m_eggs->load(hash,eggView,run.eggProgressGeneration);if(status!=NativeSaveResult::Ok) return status;
+            eggSize=eggView.headerBytes+eggView.inventorySize+64;
+            if(eggSize>kNativeSaveMaxBytes) return NativeSaveResult::TooLarge;
+            // Preserve the validated component bytes, including legacy metadata.
+            std::memcpy(eggBytes,eggView.inventoryBytes-eggView.headerBytes,eggSize);
+        }
         status = encodeNativeRunSave(run, workspace, kNativeSaveMaxBytes, runSize);
         if (status != NativeSaveResult::Ok) return status;
         status = encodeNativeStarterCandyProfile(records, count, run.starterProfileGeneration,
@@ -205,8 +221,11 @@ public:
             kStarterCandyProfileMaxBytes, profileSize);
         if (status != NativeSaveResult::Ok) return status;
         char* bundle = workspace + kNativeProgressBundleMaxBytes;
-        status = encodeNativeProgressBundle(workspace, runSize, workspace + kNativeSaveMaxBytes,
-            profileSize, hash, run, bundle, kNativeProgressBundleMaxBytes, bundleSize);
+        status=eggSize
+            ? encodeNativeProgressBundle(workspace,runSize,workspace+kNativeSaveMaxBytes,profileSize,eggBytes,eggSize,
+                hash,run,bundle,kNativeProgressBundleMaxBytes,bundleSize)
+            : encodeNativeProgressBundle(workspace,runSize,workspace+kNativeSaveMaxBytes,profileSize,
+                hash,run,bundle,kNativeProgressBundleMaxBytes,bundleSize);
         if (status != NativeSaveResult::Ok) return status;
         status = storage.writeBundle(bundle, bundleSize);
         if (status != NativeSaveResult::Ok) return status;
@@ -236,6 +255,7 @@ public:
         NativeProgressBundleView view{};
         status = inspectNativeProgressBundle(workspace, read, hash, candidate, view);
         if (status != NativeSaveResult::Ok) return status;
+        if(view.eggSize) return NativeSaveResult::UnsupportedVersion;
         uint32_t generation = 0;
         return decodeNativeStarterCandyProfile(view.profileBytes, view.profileSize, hash,
             PokerogueContent::kMaxStarterCandyCount, records, capacity, count, generation);

@@ -529,6 +529,17 @@ extern "C" int runNativeSaveChecks() {
             || snapshot.eggProgressGeneration<=committedEgg || snapshot.starterProfileGeneration<=committedProfile
             || eggs.load(PokerogueContent::kContentHash,view,snapshot.eggProgressGeneration)!=NativeSaveResult::Ok
             || view.vouchers[0]!=2) return 1315;
+        static MemoryBundleStorage eggTransport;static char exportWorkspace[2*kNativeProgressBundleMaxBytes]{};
+        if(all.exportBundle(eggTransport,PokerogueContent::kContentHash,exportWorkspace,sizeof(exportWorkspace),&loadedProfile,1)
+            !=NativeSaveResult::Ok) return 1327;
+        NativeProgressBundleView exported{};
+        if(inspectNativeProgressBundle(eggTransport.bytes,eggTransport.size,PokerogueContent::kContentHash,restored,exported)
+            !=NativeSaveResult::Ok || exported.sourceEggGeneration!=snapshot.eggProgressGeneration || !exported.eggSize
+            || inspectNativeEggProgress(exported.eggBytes,exported.eggSize,PokerogueContent::kContentHash,view)
+            !=NativeSaveResult::Ok || view.vouchers[0]!=2 || view.unlockPity[1]!=9) return 1328;
+        loadedProfiles=999;
+        if(all.readBundleCandidate(eggTransport,PokerogueContent::kContentHash,exportWorkspace,sizeof(exportWorkspace),
+            restored,&loadedProfile,1,loadedProfiles)!=NativeSaveResult::UnsupportedVersion || loadedProfiles!=999) return 1329;
         snapshot.eggProgressGeneration=0;
         if(all.commit(snapshot,&record,1,&egg,1,vouchers,pity,unlock)!=NativeSaveResult::InvalidRecord) return 1316;
     }
