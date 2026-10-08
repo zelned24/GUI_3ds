@@ -67,6 +67,18 @@ int main() {
         assert(!back.contains(208,202)); // PP panel never closes the menu.
         if(doubleBattle) for(const auto& target:kTargetButtonRects) assert(back.y+back.height<=target.y);
     }
+    ExperienceBarTimeline defaultExp,fastExp,skipExp;
+    assert(defaultExp.update("MEDIUM_FAST",5,150,0,false,0));
+    assert(fastExp.update("MEDIUM_FAST",5,150,0,false,2));
+    assert(skipExp.update("MEDIUM_FAST",5,150,0,false,3));
+    assert(defaultExp.update("MEDIUM_FAST",5,200,10,false,0));
+    assert(fastExp.update("MEDIUM_FAST",5,200,10,false,2));
+    assert(skipExp.update("MEDIUM_FAST",5,200,10,false,3) && skipExp.total()==200);
+    assert(defaultExp.update("MEDIUM_FAST",5,200,210,false,0));
+    assert(fastExp.update("MEDIUM_FAST",5,200,210,false,2));
+    assert(fastExp.total()>defaultExp.total());
+    const auto unchanged=defaultExp.total();
+    assert(!defaultExp.update("MEDIUM_FAST",5,200,300,false,4) && defaultExp.total()==unchanged);
     ExperienceBarTimeline expVisual;
     assert(expVisual.update("MEDIUM_FAST",5,150,1));
     assert(expVisual.level()==5 && expVisual.total()==150);

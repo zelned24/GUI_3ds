@@ -77,6 +77,24 @@ static void checkPreferences() {
         assert(NativePresentationSettingsStore::decode(legacyBytes,sizeof(legacyBytes),restored)==NativeSaveResult::Ok);
         assert(restored.hpBarSpeed==speed && restored.touchControls==touch);
     }
+    for(unsigned exp=0;exp<4;++exp) for(unsigned hp=0;hp<4;++hp) for(bool touch:{false,true}) {
+        NativePresentationSettings value{7,2,touch,hp,exp};
+        assert(NativePresentationSettingsStore::encode(value,legacyBytes)==NativeSaveResult::Ok);
+        assert(NativePresentationSettingsStore::decode(legacyBytes,sizeof(legacyBytes),restored)==NativeSaveResult::Ok);
+        assert(restored.expGainsSpeed==exp && restored.hpBarSpeed==hp && restored.touchControls==touch);
+    }
+    NativePresentationSettings v3{7,2,false,3,0};
+    NativePresentationSettingsStore::encode(v3,legacyBytes);legacyBytes[8]=3;
+    IntegritySha256 v3Hash;v3Hash.update(legacyBytes,20);v3Hash.finish(reinterpret_cast<uint8_t*>(legacyBytes+20));
+    assert(NativePresentationSettingsStore::decode(legacyBytes,sizeof(legacyBytes),restored)==NativeSaveResult::Ok);
+    assert(restored.hpBarSpeed==3 && restored.expGainsSpeed==0 && !restored.touchControls);
+    PreferenceDisk expDisk;NativePresentationSettingsStore expStore(expDisk);
+    assert(expStore.save(2,false,2,3)==NativeSaveResult::Ok);
+    assert(expStore.save(3,true)==NativeSaveResult::Ok);
+    assert(expStore.load(restored)==NativeSaveResult::Ok && restored.expGainsSpeed==3 && restored.hpBarSpeed==2);
+    assert(expStore.save(2,true,0,4)==NativeSaveResult::InvalidRecord);
+    NativePresentationSettings invalidExp{7,2,true,0,4};
+    assert(NativePresentationSettingsStore::encode(invalidExp,legacyBytes)==NativeSaveResult::InvalidRecord);
     PreferenceDisk roundtripDisk;NativePresentationSettingsStore roundtrip(roundtripDisk);
     for(unsigned speed=0;speed<4;++speed) {
         assert(roundtrip.save(2,false,speed)==NativeSaveResult::Ok);
@@ -94,7 +112,7 @@ static void checkPreferences() {
     NativePresentationSettingsStore::encode(speed1,speedDisk.bytes[1]);speedDisk.sizes[1]=sizeof(legacyBytes);
     assert(speeds.load(restored)==NativeSaveResult::AmbiguousJournal);
     // Unknown flags with a valid digest must not be silently discarded.
-    NativePresentationSettingsStore::encode(legacy,legacyBytes);legacyBytes[10]=8;
+    NativePresentationSettingsStore::encode(legacy,legacyBytes);legacyBytes[10]=32;
     IntegritySha256 flagsHash;flagsHash.update(legacyBytes,20);flagsHash.finish(reinterpret_cast<uint8_t*>(legacyBytes+20));
     assert(NativePresentationSettingsStore::decode(legacyBytes,sizeof(legacyBytes),restored)==NativeSaveResult::InvalidRecord);
     // Same generation with different touch state is a conflict even if style matches.
@@ -102,7 +120,7 @@ static void checkPreferences() {
     NativePresentationSettingsStore::encode(yes,touchDisk.bytes[0]);NativePresentationSettingsStore::encode(no,touchDisk.bytes[1]);
     assert(touches.load(restored)==NativeSaveResult::AmbiguousJournal);
     // A checksummed future version blocks fallback and overwrite.
-    disk.bytes[0][8]=4;IntegritySha256 hash;hash.update(disk.bytes[0],20);hash.finish(reinterpret_cast<uint8_t*>(disk.bytes[0]+20));
+    disk.bytes[0][8]=5;IntegritySha256 hash;hash.update(disk.bytes[0],20);hash.finish(reinterpret_cast<uint8_t*>(disk.bytes[0]+20));
     assert(store.save(1)==NativeSaveResult::UnsupportedVersion);
     disk.sizes[0]=sizeof(first)+1;
     assert(store.save(1)==NativeSaveResult::TooLarge);
@@ -260,6 +278,11 @@ int main() {
     assert(windowMenu.input(KEY_DLEFT)==FrontendCommand::PreviousHpBarSpeed);
     assert(windowMenu.input(KEY_DRIGHT)==FrontendCommand::NextHpBarSpeed);
     windowMenu.setHpBarSpeed(3);
+    windowMenu.input(KEY_DDOWN);
+    assert(windowMenu.input(KEY_A)==FrontendCommand::NextExpGainsSpeed);
+    assert(windowMenu.input(KEY_DLEFT)==FrontendCommand::PreviousExpGainsSpeed);
+    assert(windowMenu.input(KEY_DRIGHT)==FrontendCommand::NextExpGainsSpeed);
+    windowMenu.setExpGainsSpeed(3);
     FrontendMenuPresenter touchMenu(false);
     touchMenu.input(KEY_TOUCH,25,48+3*29);touchMenu.input(KEY_A);
     for(unsigned i=0;i<3;++i) touchMenu.input(KEY_DDOWN);

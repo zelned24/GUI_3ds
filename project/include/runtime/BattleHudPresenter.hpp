@@ -26,6 +26,7 @@ public:
         resetExperienceDisplay();
         resetHpDisplay();
     }
+    void setExpGainsSpeed(unsigned speed) {if(speed<=3) m_expGainsSpeed=speed;}
     void setHpBarSpeed(unsigned speed) {if(speed<=3) m_hpBarSpeed=speed;}
     void resetHpDisplay() {m_hpDisplays={};}
     void resetExperienceDisplay() {m_displayedExp=0;m_lastPlayerId=0;m_expTimeline.clear();}
@@ -59,7 +60,7 @@ public:
                 m_expTimeline.clear();m_lastPlayerId=actor.battleState.pokemonId;
             }
             if(m_expTimeline.update(species->growthRate,actor.level,actor.totalExperience,
-                animationTimeMs,!animationTimeMs || !actor.battleState.pokemonId)) {
+                animationTimeMs,!animationTimeMs || !actor.battleState.pokemonId,m_expGainsSpeed)) {
                 m_displayedExp=m_expTimeline.total();visibleLevel=m_expTimeline.level();
             } else {
                 // Invalid growth/EXP bounds do not produce an invented tween.
@@ -191,7 +192,7 @@ private:
     struct HpDisplay {uint32_t identity=0;uint64_t lastSeen=0;bool bound=false,player=false;HpRatioTween tween;};
     // Four concurrent field actors; catalogue size does not affect this cache.
     std::array<HpDisplay,4> m_hpDisplays{};
-    unsigned m_hpBarSpeed=0;
+    unsigned m_hpBarSpeed=0,m_expGainsSpeed=0;
     C2D_SpriteSheet m_sheets[3]{};
     uint32_t m_displayedExp = 0;
     uint32_t m_lastPlayerId = 0;

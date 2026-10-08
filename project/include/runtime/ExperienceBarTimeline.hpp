@@ -11,7 +11,9 @@ public:
     unsigned level() const {return m_level;}
     double fraction() const {return m_ratio;}
     uint32_t total() const {return m_displayed;}
-    bool update(const char* growth,unsigned finalLevel,uint32_t total,uint64_t now,bool instant=false) {
+    bool update(const char* growth,unsigned finalLevel,uint32_t total,uint64_t now,bool instant=false,unsigned speed=0) {
+        if(speed>3) return false;
+        m_speed=speed;
         uint32_t low=0,high=0;
         if(!bounds(growth,finalLevel,low,high) || total<low || total>=high) return false;
         const auto snapshot=[&]() {
@@ -36,6 +38,7 @@ public:
         return advance(growth,double(now));
     }
 private:
+    unsigned m_speed=0;
     enum Phase {Idle,Tween,Pause};
     static bool bounds(const char* growth,unsigned level,uint32_t& low,uint32_t& high) {
         return level && level<10000 &&
@@ -47,7 +50,7 @@ private:
         if(m_finalLevel<m_level || m_target<m_low) return false;
         m_levelUp=m_level<m_finalLevel;
         m_from=m_ratio;m_to=m_levelUp ? 1 : double(m_target-m_low)/(m_high-m_low);
-        if(m_to<0 || m_to>1 || !expSegmentTiming(m_level,m_finalLevel,m_to,0,true,m_duration,m_pause)) return false;
+        if(m_to<0 || m_to>1 || !expSegmentTiming(m_level,m_finalLevel,m_to,m_speed,true,m_duration,m_pause)) return false;
         m_start=now;m_phase=Tween;return true;
     }
     bool advance(const char* growth,double now) {

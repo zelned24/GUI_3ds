@@ -16,7 +16,7 @@
 #include <initializer_list>
 namespace Pokerogue3DS {
 enum class FrontendPage {Title,Modes,Load,History,Settings,SettingsGroup,GlobalMenu,Pokedex,ServiceInfo,ManageData};
-enum class FrontendCommand {None,Continue,NewClassic,Load,DeleteSave,NextWindowStyle,PreviousWindowStyle,ToggleTouchControls,ExportProgress,ImportProgress,NextHpBarSpeed,PreviousHpBarSpeed};
+enum class FrontendCommand {None,Continue,NewClassic,Load,DeleteSave,NextWindowStyle,PreviousWindowStyle,ToggleTouchControls,ExportProgress,ImportProgress,NextHpBarSpeed,PreviousHpBarSpeed,NextExpGainsSpeed,PreviousExpGainsSpeed};
 // Owns navigation and presentation only. Returned commands are handled by main.
 class FrontendMenuPresenter {
 public:
@@ -25,6 +25,7 @@ public:
     void clear(Renderer2D* renderer=nullptr) {m_title.clear(renderer);m_dexIcons.clear(renderer);
         if(m_dexVariants) {if(renderer) renderer->retireSpriteSheet(m_dexVariants);else C2D_SpriteSheetFree(m_dexVariants);}
         m_dexVariants=nullptr;m_dexVariantsAttempted=false; m_confirmingDelete=false;m_confirmingImport=false;}
+    void setExpGainsSpeed(unsigned speed) {if(speed<=3) m_expGainsSpeed=speed;}
     void setHpBarSpeed(unsigned speed) {if(speed<=3) m_hpBarSpeed=speed;}
     void setTouchControls(bool enabled) { m_touchControls=enabled; }
     bool confirmingTouchDisable() const { return m_confirmingTouchDisable; }
@@ -178,6 +179,10 @@ public:
             if(keys & (KEY_DLEFT | KEY_CPAD_LEFT)) return FrontendCommand::PreviousHpBarSpeed;
             if(keys & (KEY_DRIGHT | KEY_CPAD_RIGHT)) return FrontendCommand::NextHpBarSpeed;
         }
+        if(m_page==FrontendPage::SettingsGroup && m_group==1 && m_selected==3) {
+            if(keys & (KEY_DLEFT | KEY_CPAD_LEFT)) return FrontendCommand::PreviousExpGainsSpeed;
+            if(keys & (KEY_DRIGHT | KEY_CPAD_RIGHT)) return FrontendCommand::NextExpGainsSpeed;
+        }
         const unsigned total=rowCount();
         bool activatedByTouch = false;
         if(total) {
@@ -212,6 +217,7 @@ public:
         case FrontendPage::SettingsGroup:
             if(m_group==1 && m_selected==1) return FrontendCommand::NextWindowStyle;
             if(m_group==1 && m_selected==2) return FrontendCommand::NextHpBarSpeed;
+            if(m_group==1 && m_selected==3) return FrontendCommand::NextExpGainsSpeed;
             if(m_group==3 && m_selected==0) {
                 if(m_touchControls) m_confirmingTouchDisable=true;
                 else return FrontendCommand::ToggleTouchControls;
@@ -315,9 +321,9 @@ public:
                 if(m_page==FrontendPage::SettingsGroup) {
                     char value[16];
                     if(m_group==1 && i==1) std::snprintf(value,sizeof(value),"%u",renderer.windowStyle());
-                    else if(m_group==1 && i==2) {
+                    else if(m_group==1 && (i==2 || i==3)) {
                         static const char* keys[]={"settings:default","settings:fast","settings:faster","settings:skip"};
-                        std::snprintf(value,sizeof(value),"%s",runtimeUiText(keys[m_hpBarSpeed]));
+                        std::snprintf(value,sizeof(value),"%s",runtimeUiText(keys[i==2 ? m_hpBarSpeed : m_expGainsSpeed]));
                     }
                     else if(m_group==3 && i==0) std::snprintf(value,sizeof(value),"%s",runtimeUiText(m_touchControls ? "settings:on" : "settings:off"));
                     else std::snprintf(value,sizeof(value),"--");
@@ -486,14 +492,14 @@ private:
     }
     static const char* settingKey(unsigned group,unsigned row) {
         static const char* general[]={"settings:gameSpeed","settings:battleStyle","settings:enableRetries","settings:tutorials"};
-        static const char* display[]={"settings:language","settings:windowType","settings:hpBarSpeed","settings:expPartyDisplay"};
+        static const char* display[]={"settings:language","settings:windowType","settings:hpBarSpeed","settings:expGainsSpeed"};
         static const char* audio[]={"settings:masterVolume","settings:bgmVolume","settings:fieldVolume","settings:seVolume","settings:uiVolume"};
         return group==0 ? general[row] : group==1 ? display[row] : group==2 ? audio[row] : "settings:touchControls";
     }
     PokemonIconPresenter m_dexIcons;
     C2D_SpriteSheet m_dexVariants=nullptr;
     bool m_dexVariantsAttempted=false;
-    unsigned m_hpBarSpeed=0;
+    unsigned m_hpBarSpeed=0,m_expGainsSpeed=0;
     unsigned m_dexSelected=0,m_dexGeneration=0,m_dexCapture=0;
     bool m_confirmingImport=false,m_importYes=false;
     TitleMenuPresenter m_title;

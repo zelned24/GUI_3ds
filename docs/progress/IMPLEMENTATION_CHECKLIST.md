@@ -896,3 +896,7 @@ La búsqueda del índice generado usa búsqueda binaria sobre identidades ordena
 - [ ] Confirmaciones: inicio de starters usa rectángulos compartidos 105×32 y ya no acepta toda la franja horizontal; borrar guardado dibuja dos botones coincidentes con input half-open compartido. Casos nativos de límites/huecos/fuera de pantalla y barrido completo de starters escritos sin ejecutar. Source guards PASS; compilación y visual pendientes.
 
 - [ ] Cargar partida: botones separados de cargar/reintentar y eliminar, con geometría común 132×34 y texto acotado. Touch de eliminar abre confirmación; perfil sin guardado no ofrece eliminación y sí reintento de lectura. Límites y huecos escritos en pruebas nativas sin ejecutar; guards PASS, prueba visual pendiente.
+
+- [ ] Velocidad EXP: ajuste `settings:expGainsSpeed` conectado a comandos, HUD y expSegmentTiming pinned (default/fast/faster/skip). Preferencias v4 guardan bits 19–20; leen v1–v3 con EXP default, preservan el valor desde callers legacy, rechazan versiones futuras/flags desconocidos. Audio y espera de fase siguen pendientes. Casos de 32 combinaciones, v3 legacy, navegación y velocidad visual escritos sin ejecutar; guards PASS, sin compilación/Azahar.
+
+  Referencia EXP fijada: `8555c08c823b856cbec4eb99ca84ea52a955836d`, `src/enums/exp-gains-speed.ts::ExpGainsSpeed` y `src/ui/battle-info/player-battle-info.ts::doUpdateExpAnimation`; divide duración por 2^speed y conserva pausa de nivel. El cambio v4 mueve el caso de versión futura a v5 y reserva flags desde bit 21; no elimina comprobaciones de formato.
