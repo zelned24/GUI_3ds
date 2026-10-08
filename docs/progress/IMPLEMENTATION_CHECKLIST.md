@@ -862,3 +862,5 @@ La búsqueda del índice generado usa búsqueda binaria sobre identidades ordena
 - [ ] Cierre de menús: el command presenter libera también el cursor estático de movimientos antes de finalizar Citro2D, mediante retirement del renderer. Guard de ownership/orden sin compilación; ejecución nativa pendiente.
 
 - [ ] Objetos/balls: posición de atlas redondeada a píxeles físicos; conserva canvas original de 32px en consumidores actuales. Valida coordenadas/tamaño/opacity antes de I/O e índice de página; cierre de recompensas y combate retira texturas mediante renderer. Guards sin compilación; prueba nativa/visual pendiente.
+
+- [ ] Pruebas nativas de objetos: casos escritos para coordenadas/tamaño/opacity inválidos sin I/O, error de carga y reintento, caché, trim upstream intacto, destino redondeado, alpha limitado y limpieza idempotente con retirement. Integrados en harness existente; sin compilar ni ejecutar por indicación del usuario.

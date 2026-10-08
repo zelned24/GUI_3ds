@@ -2,6 +2,8 @@
 #include "content/PokemonIcons.hpp"
 #include "runtime/PokemonAtlasPresenter.hpp"
 #include "runtime/PokemonIconPresenter.hpp"
+#include "runtime/ItemIconPresenter.hpp"
+#include <limits>
 #include "runtime/TypePresentation.hpp"
 #include "runtime/BattleHudGeometry.hpp"
 #include "runtime/Utf8Abbreviation.hpp"
@@ -27,7 +29,12 @@ void C3D_TexSetFilter(C3D_Tex* texture,GPU_TEXTURE_FILTER_PARAM magnify,GPU_TEXT
 Renderer2D::Renderer2D() {}
 Renderer2D::~Renderer2D() {}
 void Renderer2D::retireSpriteSheet(C2D_SpriteSheet sheet) {assert(sheet==&iconTexture);++iconRetired;}
-void Renderer2D::drawAtlasFrame(C2D_Image,const AtlasFrame&,float,float,float,float,float,uint32_t) {++iconDraws;}
+static Renderer2D::AtlasFrame lastIconFrame{};
+static float lastIconX=0,lastIconY=0,lastIconWidth=0,lastIconHeight=0,lastIconOpacity=0;
+void Renderer2D::drawAtlasFrame(C2D_Image,const AtlasFrame& frame,float x,float y,float width,float height,float opacity,uint32_t) {
+    ++iconDraws;lastIconFrame=frame;lastIconX=x;lastIconY=y;
+    lastIconWidth=width;lastIconHeight=height;lastIconOpacity=opacity;
+}
 int main() {
     assert(pokemonIconIndexOrdered());
     for(const auto& row:kPokemonIcons) assert(findPokemonIcon(row.dex,row.formIndex)==&row);
@@ -49,6 +56,42 @@ int main() {
         assert(presenter.draw(renderer,1,0,0,0) && iconLoads==3);
     }
     assert(iconFrees==1);
+    // Item canvases keep pinned trim geometry and draw at integer destinations.
+    {
+        ItemIconPresenter items;
+        const auto& item=kItemIconFrames[0];
+        const unsigned loads=iconLoads,draws=iconDraws,frees=iconFrees,retired=iconRetired;
+        const float nan=std::numeric_limits<float>::quiet_NaN();
+        const float inf=std::numeric_limits<float>::infinity();
+        assert(!items.draw(renderer,item.key,nan,0,32));
+        assert(!items.draw(renderer,item.key,0,inf,32));
+        for(float size:{0.0f,-1.0f,nan,inf}) assert(!items.draw(renderer,item.key,0,0,size));
+        for(float opacity:{0.0f,-1.0f,nan,inf}) assert(!items.draw(renderer,item.key,0,0,32,opacity));
+        assert(!items.draw(renderer,nullptr,0,0,32));
+        assert(!items.draw(renderer,"missing-test-item",0,0,32));
+        assert(iconLoads==loads && iconDraws==draws);
+        failIconLoad=true;
+        assert(!items.draw(renderer,item.key,10.25f,11.75f,32));
+        failIconLoad=false;
+        assert(items.draw(renderer,item.key,10.25f,11.75f,32,2));
+        assert(iconLoads==loads+2 && iconDraws==draws+1);
+        assert(lastIconX==10 && lastIconY==12 && lastIconWidth==32 && lastIconHeight==32);
+        assert(lastIconOpacity==1);
+        assert(lastIconFrame.x==item.x && lastIconFrame.y==item.y);
+        assert(lastIconFrame.width==item.width && lastIconFrame.height==item.height);
+        assert(lastIconFrame.sourceWidth==item.sourceWidth && lastIconFrame.sourceHeight==item.sourceHeight);
+        assert(lastIconFrame.trimX==item.trimX && lastIconFrame.trimY==item.trimY);
+        assert(items.draw(renderer,item.key,10,12,32,0.35f));
+        assert(iconLoads==loads+2 && lastIconOpacity==0.35f);
+        items.clear(&renderer);
+        assert(iconRetired==retired+1 && iconFrees==frees);
+        items.clear(&renderer);
+        assert(iconRetired==retired+1);
+        assert(items.draw(renderer,item.key,10,12,32) && iconLoads==loads+3);
+        items.clear();
+        assert(iconFrees==frees+1);
+    }
+
     // Generated physical appearances resolve by exact identity; never fallback to another variant/facing.
     for(const auto& asset:kPokemonAppearanceAssets) {
         assert(findPokemonAppearanceAsset(asset.baseKey,asset.back,asset.female,asset.variant,asset.shiny)==&asset);
