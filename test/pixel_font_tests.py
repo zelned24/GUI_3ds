@@ -45,7 +45,13 @@ class PixelFontTests(unittest.TestCase):
         raster=lambda cp: (bytes([0,255,0]),(1,3),(0,-2))
         result=monochrome_font(source,raster)
         self.assertEqual(result[:128],source[:128])
-        self.assertEqual(result[128+2048:],source[128+2048:])
+        cwdh=struct.unpack_from("<I",source,40)[0]
+        for glyph in range(6):
+            metric=cwdh+8+glyph*3
+            self.assertEqual(result[metric],source[metric])
+            self.assertEqual(result[metric+1],source[metric+1] if glyph==3 else 1)
+            self.assertEqual(result[metric+2],source[metric+2])
+        self.assertEqual(result[cwdh+28:],source[cwdh+28:])
         self.assertEqual(glyph_ink_bounds(result,ord('C')),(1,2))
         self.assertEqual(monochrome_font(result,raster),result)
         self.assertEqual(crisp_font(result),result)
@@ -59,6 +65,16 @@ class PixelFontTests(unittest.TestCase):
         self.assertEqual(result[cwdh+8+2*3+1],2)
         self.assertEqual(result[cwdh+8+2*3+2],source[cwdh+8+2*3+2]) # Advance retained.
         self.assertEqual(glyph_ink_bounds(result,ord('C')),(1,2))
+
+    def test_monochrome_replaces_stale_bitmap_width(self):
+        source=bytearray(self.compact_source())
+        cwdh=struct.unpack_from("<I",source,40)[0]
+        metric=cwdh+8+2*3
+        source[metric+1]=30
+        result=monochrome_font(bytes(source),lambda cp:(bytes([255,255]),(2,1),(0,-1)))
+        self.assertEqual(result[metric+1],2)
+        self.assertEqual(result[metric],source[metric])
+        self.assertEqual(result[metric+2],source[metric+2])
 
     def test_monochrome_rejects_clipped_ink_and_invalid_masks(self):
         source=self.compact_source()

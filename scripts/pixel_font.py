@@ -229,10 +229,11 @@ def monochrome_font(data: bytes, rasterize) -> bytes:
         gy=baseline+top
         width_offset=bitmap_width_offsets.get(glyph)
         if width_offset is None: raise ValueError("Missing glyph width metrics")
-        # Monochrome hinting can extend the bitmap by one column. Preserve
-        # advance/bearing while widening its UV rectangle to avoid clipping.
+        # Replace the grayscale bitmap width with the actual monochrome ink
+        # extent. Retaining a stale larger width can sample adjacent glyphs.
+        # Advance and left bearing remain unchanged.
         ink_width=max((x+1 for y in range(mh) for x in range(mw) if mask[y*mw+x]),default=0)
-        result[width_offset]=max(data[width_offset],ink_width)
+        result[width_offset]=ink_width
         # Empty rows can extend outside the bitmap's actual ink bounds.
         for y in range(mh):
             for x in range(mw):
