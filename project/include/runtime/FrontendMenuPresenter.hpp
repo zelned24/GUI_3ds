@@ -413,7 +413,12 @@ private:
         unsigned count=0;for(const auto& species:PokerogueContent::kSpecies) if(dexMatches(species,game)) ++count;return count;
     }
     const PokerogueContent::Species* dexAt(unsigned ordinal,const FirstRunRuntime* game) const {
-        for(const auto& species:PokerogueContent::kSpecies) if(dexMatches(species,game)) {if(!ordinal) return &species;--ordinal;}return nullptr;
+        for(const auto& species:PokerogueContent::kSpecies) {
+            if(!dexMatches(species,game)) continue;
+            if(!ordinal) return &species;
+            --ordinal;
+        }
+        return nullptr;
     }
     void drawDexFilters(Renderer2D& renderer) const {
         char text[48];

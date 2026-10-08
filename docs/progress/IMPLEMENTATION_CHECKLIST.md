@@ -1060,3 +1060,6 @@ La búsqueda del índice generado usa búsqueda binaria sobre identidades ordena
 - [ ] Egg variant lookup: binary search over deterministic lexically sorted pinned keys avoids full scans per candidate. Existing native gate now covers every imported key, base fallback, absent keys and form-only Koraidon eligibility. Native cases unexecuted; runtime filter/transaction still pending.
 
 - [ ] Combined egg pool filter: validate canonical pool, apply nonempty locked-species guarantee before RARE/EPIC variant eligibility, preserve supplied order and explicitly reject empty final pools without fabricating fallback. Pure predicates consume stable caller snapshots; preflight capacity/overlap before output. Native cases prove intended order/failure preservation when executed; execution and persistent-profile/inventory adapter remain pending.
+
+- [x] Nueva compilación ARM solicitada sobre 45edb47: make -f Makefile.3ds 3ds -j2 terminó con código 0 y empaquetó build/GUI_3DS.3dsx con RomFS. Incluye la corrección del decodificador UTF-8 posterior al preview anterior. No prueba ejecución en Azahar ni en Old 3DS.
+- [ ] Advertencias de indentación del preview: previousUtf8 y dexAt separados en instrucciones explícitas conservando el recorrido y selección. Este ajuste posterior al binario requiere la próxima compilación autorizada; revisión de fuentes solamente.

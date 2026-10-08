@@ -15,7 +15,10 @@ inline unsigned utf8CodePoint(const char* p,uint32_t& cp) {
     return n;
 }
 inline std::size_t previousUtf8(const char* text,std::size_t end) {
-    if(!end) return 0;--end;while(end && (static_cast<unsigned char>(text[end])&0xc0)==0x80) --end;return end;
+    if(!end) return 0;
+    --end;
+    while(end && (static_cast<unsigned char>(text[end])&0xc0)==0x80) --end;
+    return end;
 }
 inline bool jsTrailingSpace(uint32_t cp) {
     return (cp>=9 && cp<=13) || cp==32 || cp==0xa0 || cp==0x1680 || (cp>=0x2000 && cp<=0x200a) || cp==0x2028 || cp==0x2029 || cp==0x202f || cp==0x205f || cp==0x3000 || cp==0xfeff;
