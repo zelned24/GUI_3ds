@@ -247,3 +247,9 @@ assert(main.includes("kPauseButtonRects[i].y+10"));
 assert(main.includes("36.0f,y,labelSize"));
 
 assert(main.includes("BattleMenuCommand::ExecuteMove:changed=game.advanceBattleTurn();if(changed) battleMenu.reset()"));
+
+const commandPresentation=await fs.readFile(new URL('../project/include/runtime/BattleCommandMenuPresenter.hpp',import.meta.url),'utf8');
+assert(commandPresentation.includes('doubleBattle && (keys & KEY_L)'));
+assert(commandPresentation.includes('doubleBattle && (keys & KEY_R)'));
+assert(commandPresentation.includes('moveBackRectangle(doubleBattle).contains(x,y)'));
+assert(!commandPresentation.includes('y >= 210 && m_page'));

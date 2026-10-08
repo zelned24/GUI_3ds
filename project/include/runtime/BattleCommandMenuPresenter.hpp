@@ -35,19 +35,20 @@ public:
     PokeballType ballType() const { return static_cast<PokeballType>(kBallMenuDefinitions[m_selected].id); }
 
     BattleMenuCommand input(uint32_t keys, bool doubleBattle, unsigned x = 0, unsigned y = 0) {
-        if ((keys & KEY_B) || ((keys & KEY_TOUCH) && y >= 210 && m_page != BattleMenuPage::Root)) {
+        if ((keys & KEY_B) || ((keys & KEY_TOUCH) && ((m_page==BattleMenuPage::Moves && moveBackRectangle(doubleBattle).contains(x,y)) || (m_page==BattleMenuPage::Balls && TouchRect{12,202,296,32}.contains(x,y))))) {
             reset();
             return BattleMenuCommand::None;
         }
 
         if (m_page == BattleMenuPage::Moves) {
-            // 2D D-Pad move navigation: UP/DOWN toggles row ±2, LEFT/RIGHT toggles column ±1
+            // D-Pad navigates every move; shoulders select the double-battle target.
+            if(doubleBattle && (keys & KEY_L)) return BattleMenuCommand::TargetPrevious;
+            if(doubleBattle && (keys & KEY_R)) return BattleMenuCommand::TargetNext;
             if (keys & (KEY_DUP | KEY_CPAD_UP | KEY_DDOWN | KEY_CPAD_DOWN)) {
                 return BattleMenuCommand::MoveRowToggle;
             }
             if (keys & (KEY_DLEFT | KEY_CPAD_LEFT | KEY_DRIGHT | KEY_CPAD_RIGHT)) {
-                return doubleBattle ? ((keys & (KEY_DLEFT | KEY_CPAD_LEFT)) ? BattleMenuCommand::TargetPrevious : BattleMenuCommand::TargetNext)
-                                    : BattleMenuCommand::MoveColToggle;
+                return BattleMenuCommand::MoveColToggle;
             }
             if (keys & KEY_A) return BattleMenuCommand::ExecuteMove;
             return BattleMenuCommand::None;

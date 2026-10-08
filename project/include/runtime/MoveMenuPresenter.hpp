@@ -142,6 +142,7 @@ public:
 
         // Double battle target selector overlay if required
         if (game.doubleBattle()) {
+            renderer.drawTextFitted("L/R: objetivo",20,194,0.25f,160,0xff80ffff);
             for (unsigned i = 0; i < 2; ++i) {
                 const auto& bounds = kTargetButtonRects[i];
                 const auto& target = i ? game.presentation().secondEnemy : game.presentation().enemy;

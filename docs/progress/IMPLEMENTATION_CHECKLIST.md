@@ -854,3 +854,5 @@ La búsqueda del índice generado usa búsqueda binaria sobre identidades ordena
 - [ ] Pausa: draw e input comparten tres filas de 36px; corrige zonas táctiles desplazadas respecto del tercer texto y límites x/y. Etiquetas limitadas al panel y cursor alineado al raster elegido. Barrido de 320×240 escrito sin ejecutar; guards PASS, prueba visual pendiente.
 
 - [ ] Confirmación de movimientos: menú se cierra solo si `advanceBattleTurn()` acepta el comando, tanto A como táctil/Struggle. Rechazos (PP/políticas/runtime) conservan selección y feedback del motor; no altera reglas ni publica medio turno. Guard PASS; verificación nativa pendiente.
+
+- [ ] Navegación doble: D-Pad/circle pad recorren ambas columnas de movimientos; L/R cambian objetivo con ayuda visible. Salida táctil del command presenter usa región B compartida y ya no intercepta botones de objetivo y=210. Guard PASS; interacción nativa pendiente.
