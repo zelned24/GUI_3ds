@@ -73,7 +73,7 @@
       }
     ]
   },
-  "generatedSHA256": "73060c93add4dae05f258e893382b0d5bdc7f446daffacaf57479c468ddb8bbb",
+  "generatedSHA256": "98d6e9506618b2fe2f05f99d9c665aced72fbcf03c2bf49767777db436b1251b",
   "incubationConstants": {
     "HATCH_WAVES_COMMON_EGG": 10,
     "HATCH_WAVES_EPIC_EGG": 50,
@@ -148,6 +148,24 @@
       "schemaVersion": 1,
       "sourcePath": "src/enums/variant-tier.ts",
       "sourceSymbol": "VariantTier"
+    },
+    {
+      "hash": "8de32506ccc1efbdf701c5cb644ec9724ea740e3882184da4826c8c8f5aa38d1",
+      "repository": "https://github.com/pagefaultgames/pokerogue",
+      "revision": "8555c08c823b856cbec4eb99ca84ea52a955836d",
+      "schemaVersion": 1,
+      "sourcePath": "src/enums/species-id.ts",
+      "sourceSymbol": "SpeciesId"
+    }
+  ],
+  "specialIncubationSpecies": [
+    {
+      "id": 489,
+      "symbol": "PHIONE"
+    },
+    {
+      "id": 490,
+      "symbol": "MANAPHY"
     }
   ]
 }

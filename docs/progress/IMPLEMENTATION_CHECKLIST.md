@@ -1003,3 +1003,5 @@ La búsqueda del índice generado usa búsqueda binaria sobre identidades ordena
 - [ ] Existing native save gate now includes egg codec and incubation cases (round trip, deterministic bytes, metadata, malformed records, duplicate IDs, failed-call preservation, ready ordering and empty inventory). Added eggInventory brain-map subgraph. Native gate remains unexecuted; durable journals/export still do not contain eggs.
 
 - [ ] Fitted-text raster selection now validates and bounds UTF-8 before every measurement; long labels cannot overflow the 256-glyph measurement scratch. Renderer harness includes 1023-byte labels and malformed UTF-8, pending native execution. No visual or hardware proof yet.
+
+- [ ] Default egg incubation resolver uses imported tier durations and special-species IDs parsed from the pinned Egg method/SpeciesId enum. No IDs are hardcoded in UI. Python provenance/determinism passes; native save gate covers every tier, both special species and invalid inputs, unexecuted. Species egg-tier resolution and gacha creation remain pending.

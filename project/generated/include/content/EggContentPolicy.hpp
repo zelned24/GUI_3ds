@@ -33,5 +33,6 @@ inline constexpr EggIncubationPolicy kEggIncubationPolicies[]={
     {EggTier::EPIC,50},
     {EggTier::LEGENDARY,100},
 };
+inline constexpr uint16_t kSpecialEggIncubationSpecies[]={489,490};
 inline constexpr uint16_t kManaphyEggHatchWaves=50;
 }

@@ -133,6 +133,19 @@ extern "C" int runNativeSaveChecks() {
     // Egg component coverage belongs to the existing save gate. This component
     // has not yet been connected to the durable profile/run journals.
     {
+        uint16_t waves=999;
+        for(const auto& policy:kEggIncubationPolicies) {
+            if(defaultEggIncubationWaves(1,policy.tier,waves)!=EggIncubationResult::Ok || waves!=policy.waves)
+                return 1210;
+            for(const auto dex:kSpecialEggIncubationSpecies)
+                if(defaultEggIncubationWaves(dex,policy.tier,waves)!=EggIncubationResult::Ok || waves!=kManaphyEggHatchWaves)
+                    return 1211;
+        }
+        waves=999;
+        if(defaultEggIncubationWaves(1,static_cast<EggTier>(255),waves)!=EggIncubationResult::InvalidTier || waves!=999)
+            return 1212;
+        if(defaultEggIncubationWaves(65535,EggTier::COMMON,waves)!=EggIncubationResult::MissingSpecies || waves!=999)
+            return 1213;
         EggIncubationRecord eggs[2]{};eggs[0].id=3;eggs[1].id=8;
         eggs[0].hatchWaves=-2147483647-1;eggs[0].timestamp=UINT64_MAX;
         eggs[0].variantTier=VariantTier::EPIC;eggs[0].isShiny=true;

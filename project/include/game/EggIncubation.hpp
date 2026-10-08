@@ -32,6 +32,19 @@ inline EggIncubationResult validateEggIncubationRecord(const EggIncubationRecord
         return EggIncubationResult::MissingSpecies;
     return EggIncubationResult::Ok;
 }
+// Egg.getEggTierDefaultHatchWaves. Tier resolution for an explicitly selected
+// species is a separate upstream registry rule; caller supplies the resolved tier.
+inline EggIncubationResult defaultEggIncubationWaves(uint16_t speciesDex,EggTier tier,uint16_t& waves) {
+    const unsigned index=static_cast<unsigned>(tier);
+    if(index>=sizeof(kEggIncubationPolicies)/sizeof(kEggIncubationPolicies[0]))
+        return EggIncubationResult::InvalidTier;
+    if(speciesDex && !PokerogueContent::findSpeciesByDex(speciesDex))
+        return EggIncubationResult::MissingSpecies;
+    for(const auto special:kSpecialEggIncubationSpecies) if(speciesDex==special) {
+        waves=kManaphyEggHatchWaves;return EggIncubationResult::Ok;
+    }
+    waves=kEggIncubationPolicies[index].waves;return EggIncubationResult::Ok;
+}
 // EggLapsePhase.start: decrement all eggs, then collect ready eggs in inventory
 // order. Call only at the victory phase boundary, excluding a final classic wave.
 // No hatch removal, RNG, rewards or unlocks occur here. Validate the entire batch
