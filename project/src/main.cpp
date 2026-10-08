@@ -411,6 +411,14 @@ int main() {
             rawPressed &= ~KEY_START; // Do not immediately close the pause we just opened.
         }
         if (isPaused) {
+            touchPosition pauseTouch{};
+            if(rawPressed & KEY_TOUCH) {
+                hidTouchRead(&pauseTouch);
+                if(Pokerogue3DS::kPauseConfirmRect.contains(pauseTouch.px,pauseTouch.py))
+                    rawPressed=(rawPressed & ~KEY_TOUCH) | KEY_A;
+                else if(Pokerogue3DS::kPauseBackRect.contains(pauseTouch.px,pauseTouch.py))
+                    rawPressed=(rawPressed & ~KEY_TOUCH) | KEY_B;
+            }
             if (rawPressed & (KEY_UP | KEY_CPAD_UP)) {
                 pauseSelection = (pauseSelection + 2) % 3;
             } else if (rawPressed & (KEY_DOWN | KEY_CPAD_DOWN)) {
@@ -418,9 +426,7 @@ int main() {
             } else if (rawPressed & (KEY_B | KEY_START)) {
                 isPaused = false;
             } else if (rawPressed & KEY_TOUCH) {
-                touchPosition touch{};
-                hidTouchRead(&touch);
-                const int row=Pokerogue3DS::pauseButtonAt(touch.px,touch.py);
+                const int row=Pokerogue3DS::pauseButtonAt(pauseTouch.px,pauseTouch.py);
                 if(row>=0) {
                     pauseSelection=unsigned(row);
                     if(row==0) isPaused=false;
@@ -1011,7 +1017,20 @@ int main() {
                     frontend.drawCursor(renderer,36.0f,y,labelSize);
                 }
             }
-            renderer.drawTextFitted(pauseFeedback ? pauseFeedback : "A: Seleccionar   B / START: Continuar", 16, 214, 0.30f, 288, 0xffffffff);
+            if(pauseFeedback) {
+                const auto& bounds=Pokerogue3DS::kPauseFeedbackRect;
+                constexpr float size=0.375f;
+                const unsigned lines=Pokerogue3DS::textLinesWithinHeight(bounds.height,
+                    renderer.textInkHeight(size),renderer.textLineHeight(size),2);
+                if(!lines || !renderer.drawTextBox(pauseFeedback,bounds.x,bounds.y,size,bounds.width,lines,0xffff8080))
+                    renderer.drawTextFitted(pauseFeedback,bounds.x,bounds.y,size,bounds.width,0xffff8080);
+            }
+            const auto& confirm=Pokerogue3DS::kPauseConfirmRect;
+            const auto& back=Pokerogue3DS::kPauseBackRect;
+            renderer.drawWindow(confirm.x,confirm.y,confirm.width,confirm.height);
+            renderer.drawWindow(back.x,back.y,back.width,back.height);
+            renderer.drawTextFitted("A: Elegir",confirm.x+8,confirm.y+9,0.375f,confirm.width-16,0xffffffff);
+            renderer.drawTextFitted("B: Continuar",back.x+8,back.y+9,0.375f,back.width-16,0xffffffff);
         } else if(game.capturePartyChoicePending() || game.moveLearningPending() || game.evolutionPending()) decisionMenu.draw(renderer,game);
         else if (game.rewardsPending()) rewardMenu.draw(renderer,game,rewardMenu.partySelectionMode());
         else if (partyMenu.open) partyMenu.draw(renderer,game);

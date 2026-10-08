@@ -74,6 +74,15 @@ int main() {
         assert(pauseButtonAt(x,y)==row);
     }
     assert(pauseButtonAt(UINT_MAX,UINT_MAX)==-1);
+    for(unsigned y=0;y<240;++y) for(unsigned x=0;x<320;++x) {
+        const bool confirm=kPauseConfirmRect.contains(x,y),back=kPauseBackRect.contains(x,y);
+        assert(!(confirm && back));
+        if(confirm || back) assert(pauseButtonAt(x,y)==-1 && !kPauseFeedbackRect.contains(x,y));
+    }
+    for(const auto& button:kPauseButtonRects) assert(button.y+button.height<=kPauseFeedbackRect.y);
+    assert(kPauseFeedbackRect.y+kPauseFeedbackRect.height<kPauseConfirmRect.y);
+    assert(kPauseConfirmRect.x+kPauseConfirmRect.width<=320 && kPauseBackRect.x+kPauseBackRect.width<=320);
+    assert(kPauseConfirmRect.y+kPauseConfirmRect.height<=240 && kPauseBackRect.y+kPauseBackRect.height<=240);
     for(unsigned i=0;i<3;++i) {
         const auto card=rewardCardRectangle(i),name=rewardCardNameRectangle(i);
         assert(card.x+card.width<=400 && card.y+card.height<=240);

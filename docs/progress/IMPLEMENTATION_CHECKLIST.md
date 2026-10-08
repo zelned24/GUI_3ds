@@ -2,7 +2,7 @@
 
 ## Cómo medir el avance
 
-- Referencia actual: rama `codex/pokerogue-3ds-migration`, último commit de implementación publicado confirmado `0e6f187`; conversión física ampliada terminada: 10682 atlas y 10746 páginas `.t3x`. Validación nativa y visual pendiente. Los resultados históricos no verifican estos cambios locales.
+- Referencia actual: rama `codex/pokerogue-3ds-migration`, último commit de implementación publicado confirmado `047f392`; conversión física ampliada terminada: 10682 atlas y 10746 páginas `.t3x`. Validación nativa y visual pendiente. Los resultados históricos no verifican estos cambios locales.
 - Objetivo: PokéRogue jugable y fiel al snapshot upstream en Old 3DS, con ambas pantallas, progreso exportable y actualizaciones desde consola.
 - Cada ID es estable para reportar avances: `MOV-07`, `GUI-03`, etc. No equivale a un movimiento/habilidad individual.
 - Una casilla sin marcar puede tener código parcial; el resumen de cada área indica lo existente. Marcarla solo con integración completa y evidencia ejecutada pertinente.
@@ -54,14 +54,14 @@ Esta tabla describe código inspeccionado, no resultados de ejecución. Las nota
 | HP-05 / MOV-07 | Struggle virtual conectado a selección jugador/IA, orden, locales, daño/retroceso boss y campo actual de tres actores | Segundo activo jugador, modifiers, restricciones por otros tags y validación ejecutada |
 | HP-01–08 | HP/PP/status, daño/curación, EXP parcial persistida, checkpoint de derrota simultánea y residual de Poison/Toxic/Burn para ambos enemigos | Composición completa, fases tras faint/summon, otros tags/callbacks y feedback visual; falta ejecución de pruebas |
 | FLU-05 / SAV-03 | Checkpoint v22: bioma, actores explícitos, jefes, RNG global, trainer resuelto y segundo enemigo del campo doble | Segundo activo jugador, fase final, decisiones pendientes y recorrido completo; casos de trainer posterior/dobles sin verificar |
-| GUI-01–14 / AST-01–08 | Presentación nativa, índices, filtrado GPU nearest-neighbor para sprites nítidos y assets convertidos | Todas las pantallas, HUD HP/PP/EXP, animación/audio, controles y comparación visual |
+| GUI-01–14 / AST-01–08 | Presentación nativa, rasters nearest, HUD HP/EXP, iconos reales de items/huevos, controles compartidos y sonidos UI NDSP con volúmenes persistidos | Cerrar todas las pantallas, música/efectos de batalla, animaciones, controles restantes y comparación visual |
 | SAV-01–08 | Codecs, journals y bundles | Todos los estados de run/perfil, export/import conectado a UI y compatibilidad de contenido |
 | OTA-01–08 | Infraestructura de packs | Catálogo de gameplay cargable, firma, descarga e instalación desde consola |
-| 3DS-01–06 / VAL-01–12 | Pruebas escritas y pipeline | Ejecución final, build, Azahar y medición en Old 3DS XL física |
+| 3DS-01–06 / VAL-01–12 | Pruebas escritas y pipeline; 23 comprobaciones de presentación JS/Python sin compilación pasan | 7 gates nativos de presentación pendientes, suite completa, build, Azahar y medición en Old 3DS XL física |
 
 ### Presentación: evidencia vigente y siguiente integración
 
-1. **Implementado sin ejecución nativa:** submenu de nueve opciones, geometría compartida de filas/confirmaciones/carga, nombres de movimientos hasta dos líneas, barras PP enteras y ajustes HP/EXP persistidos en preferencias v4.
+1. **Implementado sin ejecución nativa:** submenu de nueve opciones, geometría compartida de filas/confirmaciones/carga, nombres de movimientos hasta dos líneas, barras PP enteras y ajustes HP/EXP y volúmenes general/interfaz persistidos en preferencias v5 (lectura compatible de v1–v4).
 2. **Implementado sin prueba GPU:** iconos de apariencia en equipo/party/captura, cache acotada de seis páginas compactas y retiro sincronizado; trainers/items rechazan imágenes inválidas y recuerdan fallos de carga.
 3. **Pendiente de integrar:** validación nativa del selector de naturaleza, selector de teratipo y aparición detallada; selección de habilidad conectada sin validación nativa, iconos de apariencia del grid/Pokédex, funciones completas de logros/huevos/gacha/comunidad/sesión, audio y animaciones ligadas a todas las fases.
 4. **Pendiente de verificar:** todos los harness C++ recientes, fuente/cursor/recortes y cada menú en Azahar; consumo de memoria, latencia y rendimiento en Old 3DS física. Continúa la prohibición de compilar/abrir Azahar.
@@ -1126,3 +1126,5 @@ La compilación ARM solicitada terminó correctamente; no prueba ejecución de h
 - [ ] Validar audio de navegación frontend: evento consumible separado de los comandos de juego para cursores, cambios de página, apertura del menú y opciones rechazadas. Conectado a los PCM pinned precargados; ejecución NDSP y prueba audible pendientes.
 
 - [ ] Validar volúmenes general/interfaz: niveles y valores por defecto importados del upstream pinned, mezcla NDSP multiplicativa, opciones A/izquierda/derecha con límites 0–100, preferencias SD versión 5 con lectura 1–4 y conservación al cambiar otras opciones. Cobertura nativa añadida para 121 combinaciones, conflictos y valores inválidos; ejecución C++/NDSP pendiente.
+
+- [ ] Validar controles inferiores de pausa: A/Elegir y B/Continuar táctiles emiten las mismas teclas físicas; feedback de guardado separado dentro del panel, sin invadir botones. Cobertura de geometría completa añadida; ejecución nativa y Azahar pendientes.

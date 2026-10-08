@@ -250,7 +250,7 @@ assert(main.includes("if(!partyMenu.open) partyMenu.clear(&renderer)"));
 assert(main.includes("if(!game.capturePartyChoicePending()) decisionMenu.releaseIcons(renderer)"));
 assert(main.includes("rewardMenu.releasePartyIcons(renderer)"));
 
-assert(main.includes("pauseButtonAt(touch.px,touch.py)"));
+assert(main.includes("pauseButtonAt(pauseTouch.px,pauseTouch.py)"));
 assert(main.includes("kPauseButtonRects[i].y+10"));
 assert(main.includes("36.0f,y,labelSize"));
 
@@ -497,3 +497,10 @@ assert(frontend.includes("FrontendCommand::NextMasterVolume"));
 assert(frontend.includes("FrontendCommand::NextUiVolume"));
 assert(preferencesSource.includes("values[0].masterVolume!=values[1].masterVolume"));
 assert(preferencesSource.includes("values[0].uiVolume!=values[1].uiVolume"));
+
+// Pause footer touch maps to A/B before dispatch, with feedback outside buttons.
+assert(main.includes("kPauseConfirmRect.contains(pauseTouch.px,pauseTouch.py)"));
+assert(main.includes("kPauseBackRect.contains(pauseTouch.px,pauseTouch.py)"));
+assert(main.includes("rawPressed=(rawPressed & ~KEY_TOUCH) | KEY_A"));
+assert(main.includes("rawPressed=(rawPressed & ~KEY_TOUCH) | KEY_B"));
+assert(main.includes("const auto& bounds=Pokerogue3DS::kPauseFeedbackRect"));
