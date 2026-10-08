@@ -1,6 +1,7 @@
 #pragma once
 #include "gfx/renderer2d.hpp"
 #include "content/PokemonIcons.hpp"
+#include "content/CompactPokemonIcons.hpp"
 namespace Pokerogue3DS {
 inline constexpr std::size_t kPokemonIconCount=sizeof(kPokemonIcons)/sizeof(kPokemonIcons[0]);
 inline constexpr bool pokemonIconIndexOrdered() {
@@ -10,6 +11,7 @@ inline constexpr bool pokemonIconIndexOrdered() {
     }
     return true;
 }
+static_assert(sizeof(kCompactPokemonIconPages)==sizeof(kPokemonIconPages),"Compact icon page count must match source index");
 static_assert(pokemonIconIndexOrdered(),"Generated icon index must have unique sorted species/form identities");
 inline const PokemonIconDefinition* findPokemonIcon(uint16_t dex,uint16_t formIndex) {
     std::size_t first=0,last=kPokemonIconCount;
@@ -26,7 +28,7 @@ inline const PokemonIconDefinition* findPokemonIcon(uint16_t dex,uint16_t formIn
 // Current snapshot: eight 512x512 RGBA8 pages, up to 8 MiB of texture RAM.
 class PokemonIconPresenter {
 public:
-    PokemonIconPresenter()=default;
+    explicit PokemonIconPresenter(bool compact=false):m_compact(compact) {}
     PokemonIconPresenter(const PokemonIconPresenter&)=delete;
     PokemonIconPresenter& operator=(const PokemonIconPresenter&)=delete;
     ~PokemonIconPresenter() {clear();}
@@ -34,22 +36,25 @@ public:
     bool draw(Renderer2D& renderer,uint16_t dex,uint16_t formIndex,float x,float y,float opacity=1.0f,float scale=1.0f,uint32_t tint=0xffffffff) {
         const auto* icon=findPokemonIcon(dex,formIndex);
         if(!icon || icon->page>=sizeof(kPokemonIconPages)/sizeof(kPokemonIconPages[0])) return false;
+        if(m_compact && ((icon->x|icon->y|icon->width|icon->height)&1)) return false;
         Slot* slot=&m_slots[icon->page];
         // page records the attempted identity even after an I/O failure.
         // clear() resets it, allowing recovery after an asset update.
         if(slot->page!=icon->page) {
-            slot->sheet=C2D_SpriteSheetLoad(kPokemonIconPages[icon->page]);slot->page=icon->page;
+            slot->sheet=C2D_SpriteSheetLoad(m_compact ? kCompactPokemonIconPages[icon->page] : kPokemonIconPages[icon->page]);slot->page=icon->page;
             if(slot->sheet) {
                 const auto img=C2D_SpriteSheetGetImage(slot->sheet,0);
                 if(img.tex) C3D_TexSetFilter(img.tex, GPU_NEAREST, GPU_NEAREST);
             }
         }
         if(!slot->sheet) return false;
-        Renderer2D::AtlasFrame frame{icon->x,icon->y,icon->width,icon->height,icon->width,icon->height,0,0};
-        renderer.drawAtlasFrame(C2D_SpriteSheetGetImage(slot->sheet,0),frame,x,y,icon->width*scale,icon->height*scale,opacity,tint);
+        const unsigned divisor=m_compact ? 2 : 1;
+        Renderer2D::AtlasFrame frame{uint16_t(icon->x/divisor),uint16_t(icon->y/divisor),uint16_t(icon->width/divisor),uint16_t(icon->height/divisor),uint16_t(icon->width/divisor),uint16_t(icon->height/divisor),0,0};
+        renderer.drawAtlasFrame(C2D_SpriteSheetGetImage(slot->sheet,0),frame,x,y,frame.width*scale,frame.height*scale,opacity,tint);
         return true;
     }
 private:
+    bool m_compact=false;
     struct Slot {C2D_SpriteSheet sheet=nullptr;uint16_t page=0xffff;};
     Slot m_slots[sizeof(kPokemonIconPages)/sizeof(kPokemonIconPages[0])]{};
 };

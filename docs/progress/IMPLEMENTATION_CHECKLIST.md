@@ -831,3 +831,6 @@ La búsqueda del índice generado usa búsqueda binaria sobre identidades ordena
 - [ ] Volver táctil en movimientos: región compartida con etiqueta B, acotada a x=100..187; funciona también en combate doble y no consume toques sobre PP/detalles. Instrucciones A/B separadas, botones de objetivo no se solapan. Barrido de geometría escrito sin ejecutar; guards PASS, ejecución/visual pendientes.
 
 - [ ] Equipo: columnas separadas para nombre/nivel/estado/PS; números PS y pie limitados al ancho de pantalla, cursor usa el tamaño real del nombre. Barra PS limita hp a maxHp y ancho a píxeles enteros, color amarillo hasta 25% como HUD upstream. Guards de conexión PASS; prueba nativa y apariencia pendientes. Iconos de esta lista siguen a 0.5×, adaptación pendiente.
+
+- [x] Iconos compactos de equipo: 1500 iconos 40×30 reducidos offline a 20×15 nearest en ocho páginas; identidad y fuente/hash de cada icono conservados. Comparación con PNG pinned por icono PASS (`test/compact_icon_assets_tests.py`).
+- [ ] Equipo consume páginas compactas a 1:1; native rendering pendiente. Ocho texturas 256×256 RGBA8 estiman 2 MiB frente a 8 MiB de páginas originales; es un catálogo de recursos, no memoria real medida. Otros consumidores conservan tamaño original.

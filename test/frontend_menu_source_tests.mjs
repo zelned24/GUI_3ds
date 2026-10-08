@@ -214,3 +214,6 @@ assert(partyPresentation.includes('hpX + 16, y + 3, 0.24f, 70'));
 assert(partyPresentation.includes('std::floor(84*frac)'));
 assert(partyPresentation.includes('std::min(actor.battleState.hp,actor.battleState.maxHp)'));
 assert(!partyPresentation.includes('hpX + 68'));
+
+assert(partyPresentation.includes("PokemonIconPresenter m_icons{true}"));
+assert(!partyPresentation.includes("y + 2, 1.0f, 0.5f"));

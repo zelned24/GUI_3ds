@@ -57,7 +57,7 @@ public:
                     if (std::strcmp(form.id, actor.formId) == 0) { formIndex = form.upstreamFormIndex; break; }
                 }
             }
-            m_icons.draw(renderer, actor.dex, formIndex, bounds.x + 14, y + 2, 1.0f, 0.5f);
+            m_icons.draw(renderer, actor.dex, formIndex, bounds.x + 14, y + 2, 1.0f, 1.0f);
 
             // Name + Gender
             const char* name = actor.localizedName ? actor.localizedName : "Pokémon";
@@ -116,7 +116,7 @@ public:
     }
 
 private:
-    PokemonIconPresenter m_icons;
+    PokemonIconPresenter m_icons{true};
     TitleMenuPresenter m_cursor;
 };
 
