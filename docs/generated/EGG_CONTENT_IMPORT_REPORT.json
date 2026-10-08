@@ -77,6 +77,20 @@
       }
     ]
   },
+  "excludedSpecies": [
+    {
+      "id": 489,
+      "symbol": "PHIONE"
+    },
+    {
+      "id": 490,
+      "symbol": "MANAPHY"
+    },
+    {
+      "id": 890,
+      "symbol": "ETERNATUS"
+    }
+  ],
   "gachaInventoryLimit": 99,
   "gachaThresholds": {
     "GACHA_DEFAULT_COMMON_EGG_THRESHOLD": 52,
@@ -84,7 +98,7 @@
     "GACHA_DEFAULT_RARE_EGG_THRESHOLD": 8,
     "GACHA_LEGENDARY_UP_THRESHOLD_OFFSET": 1
   },
-  "generatedSHA256": "a73e768c1eaac4528b2371887b246e5b676668724b47e7cb3f1c423f1b78d360",
+  "generatedSHA256": "255f557c91c495dce7c9e73f5aa854e3b5e41c11ec0892ca4625e3db52cbf339",
   "incubationConstants": {
     "HATCH_WAVES_COMMON_EGG": 10,
     "HATCH_WAVES_EPIC_EGG": 50,
@@ -139,7 +153,7 @@
       "revision": "8555c08c823b856cbec4eb99ca84ea52a955836d",
       "schemaVersion": 1,
       "sourcePath": "src/data/egg.ts",
-      "sourceSymbol": "Egg.getEggTierDefaultHatchWaves/rollEggTier/checkForPityTierOverrides"
+      "sourceSymbol": "Egg.getEggTierDefaultHatchWaves/rollEggTier/checkForPityTierOverrides/rollSpecies"
     },
     {
       "hash": "91e06a8b73132b4b6a9bbf70fda8b8ec4fbd34854951c586ffd85c52e41f99b7",
@@ -198,6 +212,28 @@
     {
       "id": 490,
       "symbol": "MANAPHY"
+    }
+  ],
+  "speciesCostBounds": [
+    {
+      "maximum": 3,
+      "minimum": 1,
+      "tier": "COMMON"
+    },
+    {
+      "maximum": 5,
+      "minimum": 4,
+      "tier": "RARE"
+    },
+    {
+      "maximum": 7,
+      "minimum": 6,
+      "tier": "EPIC"
+    },
+    {
+      "maximum": 9,
+      "minimum": 8,
+      "tier": "LEGENDARY"
     }
   ],
   "speciesTiers": [

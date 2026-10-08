@@ -26,6 +26,9 @@ enum class VariantTier : uint8_t {
     RARE = 1,
     EPIC = 2,
 };
+struct EggSpeciesCostBounds {uint8_t minimum,maximum;};
+inline constexpr EggSpeciesCostBounds kEggSpeciesCostBounds[]={{1,3},{4,5},{6,7},{8,9}};
+inline constexpr uint16_t kExcludedEggSpecies[]={489,490,890};
 struct EggGachaThresholds {uint16_t common,rare,epic,legendaryOffset;};
 inline constexpr EggGachaThresholds kEggGachaThresholds={52,8,1,1};
 struct EggPityThresholds {uint32_t rare,epic,legendary;};

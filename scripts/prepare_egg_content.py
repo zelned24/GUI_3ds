@@ -22,6 +22,20 @@ def prepare(root=ROOT):
     if not special_names or re.sub(r'this\._species === SpeciesId\.[A-Z0-9_]+|\|\||\s','',match[1]):
         raise ValueError('Unsupported special-species incubation predicate')
     special_species=[{'symbol':name,'id':species_ids[name]} for name in special_names]
+    species_switch=re.search('switch [(]this[.]tier[)][ \t\n\r]*[{](.*?)\n[ \t\n\r]*[}]',egg_source[egg_source.index('private rollSpecies()'):],re.S)
+    if not species_switch: raise ValueError('Unsupported species cost tier switch')
+    pattern='(?:case EggTier[.]([A-Z_]+)|default):[ \t\n\r]*minStarterValue = ([0-9]+);[ \t\n\r]*maxStarterValue = ([0-9]+);[ \t\n\r]*break;'
+    ranges=[{'tier':name or 'COMMON','minimum':int(low),'maximum':int(high)} for name,low,high in re.findall(pattern,species_switch[1])]
+    if re.sub(pattern,'',species_switch[1]).strip() or len(ranges)!=4 or {r['tier'] for r in ranges}!={'COMMON','RARE','EPIC','LEGENDARY'}:
+        raise ValueError('Unsupported species cost bounds')
+    ranges.sort(key=lambda r:['COMMON','RARE','EPIC','LEGENDARY'].index(r['tier']))
+    if any(not 0<r['minimum']<=r['maximum']<=255 for r in ranges): raise ValueError('Invalid species cost bounds')
+    ignored=re.search('const ignoredSpecies = '+chr(92)+'[(.*?)'+chr(92)+'];',egg_source)
+    if not ignored: raise ValueError('Missing egg species exclusions')
+    excluded_names=re.findall(r'SpeciesId[.]([A-Z0-9_]+)',ignored[1])
+    if any(not re.fullmatch(r'SpeciesId[.][A-Z0-9_]+',part.strip()) for part in ignored[1].split(',')) or not excluded_names:
+        raise ValueError('Unsupported egg species exclusions')
+    excluded_species=[{'symbol':name,'id':species_ids[name]} for name in excluded_names]
     rates=raw[paths[3]].decode('utf-8')
     constants={}
     for suffix in ['COMMON','RARE','EPIC','LEGENDARY','MANAPHY']:
@@ -66,6 +80,7 @@ def prepare(root=ROOT):
     header='// Generated from pinned egg enums and balance rates.\n#pragma once\n#include <cstdint>\nnamespace Pokerogue3DS {\n'
     for symbol,rows in enums.items():
         header+='enum class '+symbol+' : uint8_t {\n'+''.join('    '+r['symbol']+' = '+str(r['id'])+',\n' for r in rows)+'};\n'
+    header+='struct EggSpeciesCostBounds {uint8_t minimum,maximum;};\ninline constexpr EggSpeciesCostBounds kEggSpeciesCostBounds[]={'+','.join('{'+str(r['minimum'])+','+str(r['maximum'])+'}' for r in ranges)+'};\ninline constexpr uint16_t kExcludedEggSpecies[]={'+','.join(str(r['id']) for r in excluded_species)+'};\n'
     header+='struct EggGachaThresholds {uint16_t common,rare,epic,legendaryOffset;};\ninline constexpr EggGachaThresholds kEggGachaThresholds={'+','.join(str(value) for value in gacha_constants.values())+'};\n'
     header+='struct EggPityThresholds {uint32_t rare,epic,legendary;};\ninline constexpr EggPityThresholds kEggPityThresholds={'+','.join(str(value) for value in pity_constants.values())+'};\n'
     header+='struct EggVoucherOffer {uint8_t cursor;VoucherType voucher;uint16_t consumed,pulls;};\ninline constexpr EggVoucherOffer kEggVoucherOffers[]={\n'+''.join('    {'+str(r['cursor'])+',VoucherType::'+r['voucher']+','+str(r['consumed'])+','+str(r['pulls'])+'},\n' for r in offers)+'};\ninline constexpr uint32_t kEggGachaInventoryLimit='+str(inventory_limit)+';\n'
@@ -91,7 +106,7 @@ def prepare(root=ROOT):
     header=header[:-2]+'struct SpeciesEggTier {uint16_t dex; EggTier tier; bool declared;};\ninline constexpr SpeciesEggTier kSpeciesEggTiers[]={\n'
     header+=''.join('    {'+str(r['dex'])+',EggTier::'+r['tier']+','+('true' if r['declared'] else 'false')+'},\n' for r in species_tiers)+'};\n}\n'
     target=root/'project/generated/include/content/EggContentPolicy.hpp';target.parent.mkdir(parents=True,exist_ok=True);target.write_bytes(header.encode('utf-8'))
-    report={'schemaVersion':1,'sources':[{'repository':REPOSITORY,'revision':GAME_REV,'sourcePath':p,'sourceSymbol':{'src/enums/egg-type.ts':'EggTier','src/enums/egg-source-types.ts':'EggSourceType','src/enums/voucher-type.ts':'VoucherType','src/data/balance/rates.ts':'HATCH_WAVES_*_EGG/GACHA_*_THRESHOLD/GACHA_LEGENDARY_UP_THRESHOLD_OFFSET/EGG_PITY_*_THRESHOLD','src/data/egg.ts':'Egg.getEggTierDefaultHatchWaves/rollEggTier/checkForPityTierOverrides','src/phases/egg-lapse-phase.ts':'EggLapsePhase.start','src/system/egg-data.ts':'EggData','src/enums/variant-tier.ts':'VariantTier','src/enums/species-id.ts':'SpeciesId','src/data/species-data-registry.ts':'SpeciesDataRegistry.getEggTier/getSpeciesForEggTier','src/ui/handlers/egg-gacha-ui-handler.ts':'EggGachaUiHandler.cursorToVoucher/handleVoucherSelectAction'}[p],'schemaVersion':1,'hash':hashlib.sha256(raw[p]).hexdigest()} for p in paths],'enums':enums,'incubationConstants':constants,'gachaThresholds':gacha_constants,'pityThresholds':pity_constants,'voucherOffers':offers,'gachaInventoryLimit':inventory_limit,'specialIncubationSpecies':special_species,'canonicalInput':{'sourcePath':'project/data/pokerogue/canonical-content.json','hash':hashlib.sha256(canonical_raw).hexdigest()},'speciesTiers':species_tiers,'scope':'IDENTIFIERS_SPECIES_TIERS_AND_INCUBATION_CONSTANTS','runtimeIntegration':'PENDING_INVENTORY_GACHA_HATCHING','generatedSHA256':hashlib.sha256(target.read_bytes()).hexdigest()}
+    report={'schemaVersion':1,'sources':[{'repository':REPOSITORY,'revision':GAME_REV,'sourcePath':p,'sourceSymbol':{'src/enums/egg-type.ts':'EggTier','src/enums/egg-source-types.ts':'EggSourceType','src/enums/voucher-type.ts':'VoucherType','src/data/balance/rates.ts':'HATCH_WAVES_*_EGG/GACHA_*_THRESHOLD/GACHA_LEGENDARY_UP_THRESHOLD_OFFSET/EGG_PITY_*_THRESHOLD','src/data/egg.ts':'Egg.getEggTierDefaultHatchWaves/rollEggTier/checkForPityTierOverrides/rollSpecies','src/phases/egg-lapse-phase.ts':'EggLapsePhase.start','src/system/egg-data.ts':'EggData','src/enums/variant-tier.ts':'VariantTier','src/enums/species-id.ts':'SpeciesId','src/data/species-data-registry.ts':'SpeciesDataRegistry.getEggTier/getSpeciesForEggTier','src/ui/handlers/egg-gacha-ui-handler.ts':'EggGachaUiHandler.cursorToVoucher/handleVoucherSelectAction'}[p],'schemaVersion':1,'hash':hashlib.sha256(raw[p]).hexdigest()} for p in paths],'enums':enums,'incubationConstants':constants,'gachaThresholds':gacha_constants,'pityThresholds':pity_constants,'speciesCostBounds':ranges,'excludedSpecies':excluded_species,'voucherOffers':offers,'gachaInventoryLimit':inventory_limit,'specialIncubationSpecies':special_species,'canonicalInput':{'sourcePath':'project/data/pokerogue/canonical-content.json','hash':hashlib.sha256(canonical_raw).hexdigest()},'speciesTiers':species_tiers,'scope':'IDENTIFIERS_SPECIES_TIERS_AND_INCUBATION_CONSTANTS','runtimeIntegration':'PENDING_INVENTORY_GACHA_HATCHING','generatedSHA256':hashlib.sha256(target.read_bytes()).hexdigest()}
     destination=root/'docs/generated/EGG_CONTENT_IMPORT_REPORT.json';destination.parent.mkdir(parents=True,exist_ok=True);destination.write_bytes((json.dumps(report,ensure_ascii=False,sort_keys=True,indent=2)+'\n').encode('utf-8'))
     return report
 if __name__=='__main__':
