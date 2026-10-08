@@ -44,3 +44,11 @@ with tempfile.TemporaryDirectory() as directory:
     texture.unlink()
     assert not module.cached_tile_valid(png,texture,b'pixels',previous)
 print('PASS cache reuse requires unchanged pixels and verified converted bytes')
+
+physical=json.loads((ROOT/'docs/generated/APPEARANCE_ICON_CONVERSION_REPORT.json').read_text(encoding='utf-8'))
+assert [(row['sourcePath'],row['sourceSHA256']) for row in report['files']]==[(row['sourcePath'],row['sourceSHA256']) for row in physical['files']], 'Native tile ordinal must match physical appearance frame ordinal'
+assert report['revision']==physical['revision'] and report['sourceInventoryHash']==physical['sourceInventoryHash']
+import re
+paths=re.findall(r'"(romfs:/presentation/icon-tiles/[^"\n]+)"',header)
+assert paths==[row['runtimePath'] for row in report['files']], 'Runtime tile path order differs from source index'
+print('PASS tile ordinal/source/paths match physical appearance frame index')

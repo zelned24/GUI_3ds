@@ -1,5 +1,13 @@
 # Estado de PokéRogue para Old 3DS XL
 
+## Presentación actual: tiles nativos y preferencias
+
+1. Los 5.054 iconos físicos tienen tiles con los 40×30 píxeles originales, padding transparente 64×32 y hashes pinned. La generación comprueba también el hash antes de reutilizar una conversión.
+2. Selector, equipo, captura y grid Pokédex consumen tiles a escala 1×; cachés limitadas a 18/6/24 identidades visibles. Filas compartidas de equipo/captura miden 32px, con header/pie independientes. Las estimaciones de texturas no prueban RAM/VRAM real ni fluidez.
+3. Perfil actual v11 conserva preferencias independientes de habilidad y naturaleza; selección física/táctil de naturaleza y nombres españoles importados están conectados. Compatibilidad y stats tienen pruebas C++ escritas sin ejecutar.
+4. Fuentes monocromas nativas, sampling nearest y posiciones enteras siguen vigentes. Nombres de movimientos en recompensas/captura admiten dos líneas antes de abreviar; todavía falta verificar su aspecto en consola/emulador.
+5. Pendientes: formas y atributos completos de Pokédex, huevos/gacha, servicios restantes del submenú, audio y fases, actualización desde consola conectada a cargadores y el resto de reglas/flujo del checklist. No hay evidencia de migración completa.
+
 ## Avance local de presentación y apariencias (sin validación nativa)
 
 - Catálogo completo convertido y físicamente verificado: 10.682 atlas / 10.746 páginas `.t3x`, 215.222.942 bytes en disco. Índice generado: 7.780 apariencias (7.570 shiny y 210 femeninas normales). Hash del inventario `3320f75cd8323e651fd7372bbe01894d4c9089f3d5b3e0e357e55e5ccdd3f02b`. Estos bytes no representan RAM/VRAM residente; carga y dibujo nativo pendientes.
@@ -42,7 +50,7 @@ El avance se publica como trabajo en curso. Classic completo y la fidelidad visu
 La instrucción más reciente del usuario aplaza compilaciones y Azahar hasta nueva autorización. Los resultados históricos siguientes no validan estos cambios nuevos.
 
 1. Selector: catálogo elegible con estados capturado/visto/desconocido, filtro de captura y costes importados; registro de observación de encuentros y evolución conectado al perfil. Validación nativa pendiente.
-2. Perfil P3CANDY9 conserva atributos de apariencia observada/capturada y mantiene desconocidos en perfiles antiguos. Actor `pokemon=e` conserva apariencia explícita.
+2. Perfil actual P3CANDYB (v11) conserva atributos de apariencia observada/capturada y mantiene desconocidos en perfiles antiguos. Actor `pokemon=e` conserva apariencia explícita.
 3. Partida v27 conserva apariencia del enemigo principal y equipo de entrenador; v26 migra sin inventar shiny. El equipo jugador exige snapshot si su apariencia está resuelta. Casos de codec/migración escritos, sin ejecución.
 4. Resolver de apariencia inicial sigue `GameData.getSpeciesDefaultDexAttrProps` del pin: shiny capturado y variante más alta. Falta conectar generación, preferencias de selección y assets shiny completos.
 5. Fuentes: la conversión actual rasteriza el TTF pinned en monocromo a tamaños nativos; reemplaza el antiguo umbral A4 que borraba trazos débiles. Comparación visual final pendiente.
