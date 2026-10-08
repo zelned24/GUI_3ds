@@ -1,0 +1,172 @@
+{
+  "generatedSHA256": "997a7809c0ea0ece47a01e6a4d535a79e21adcb35f35af31c3dd516023b71920",
+  "rows": [
+    {
+      "id": 0,
+      "localeKey": "nature:hardy",
+      "name": "Fuerte",
+      "symbol": "HARDY"
+    },
+    {
+      "id": 1,
+      "localeKey": "nature:lonely",
+      "name": "Huraña",
+      "symbol": "LONELY"
+    },
+    {
+      "id": 2,
+      "localeKey": "nature:brave",
+      "name": "Audaz",
+      "symbol": "BRAVE"
+    },
+    {
+      "id": 3,
+      "localeKey": "nature:adamant",
+      "name": "Firme",
+      "symbol": "ADAMANT"
+    },
+    {
+      "id": 4,
+      "localeKey": "nature:naughty",
+      "name": "Pícara",
+      "symbol": "NAUGHTY"
+    },
+    {
+      "id": 5,
+      "localeKey": "nature:bold",
+      "name": "Osada",
+      "symbol": "BOLD"
+    },
+    {
+      "id": 6,
+      "localeKey": "nature:docile",
+      "name": "Dócil",
+      "symbol": "DOCILE"
+    },
+    {
+      "id": 7,
+      "localeKey": "nature:relaxed",
+      "name": "Plácida",
+      "symbol": "RELAXED"
+    },
+    {
+      "id": 8,
+      "localeKey": "nature:impish",
+      "name": "Agitada",
+      "symbol": "IMPISH"
+    },
+    {
+      "id": 9,
+      "localeKey": "nature:lax",
+      "name": "Floja",
+      "symbol": "LAX"
+    },
+    {
+      "id": 10,
+      "localeKey": "nature:timid",
+      "name": "Miedosa",
+      "symbol": "TIMID"
+    },
+    {
+      "id": 11,
+      "localeKey": "nature:hasty",
+      "name": "Activa",
+      "symbol": "HASTY"
+    },
+    {
+      "id": 12,
+      "localeKey": "nature:serious",
+      "name": "Seria",
+      "symbol": "SERIOUS"
+    },
+    {
+      "id": 13,
+      "localeKey": "nature:jolly",
+      "name": "Alegre",
+      "symbol": "JOLLY"
+    },
+    {
+      "id": 14,
+      "localeKey": "nature:naive",
+      "name": "Ingenua",
+      "symbol": "NAIVE"
+    },
+    {
+      "id": 15,
+      "localeKey": "nature:modest",
+      "name": "Modesta",
+      "symbol": "MODEST"
+    },
+    {
+      "id": 16,
+      "localeKey": "nature:mild",
+      "name": "Afable",
+      "symbol": "MILD"
+    },
+    {
+      "id": 17,
+      "localeKey": "nature:quiet",
+      "name": "Mansa",
+      "symbol": "QUIET"
+    },
+    {
+      "id": 18,
+      "localeKey": "nature:bashful",
+      "name": "Tímida",
+      "symbol": "BASHFUL"
+    },
+    {
+      "id": 19,
+      "localeKey": "nature:rash",
+      "name": "Alocada",
+      "symbol": "RASH"
+    },
+    {
+      "id": 20,
+      "localeKey": "nature:calm",
+      "name": "Serena",
+      "symbol": "CALM"
+    },
+    {
+      "id": 21,
+      "localeKey": "nature:gentle",
+      "name": "Amable",
+      "symbol": "GENTLE"
+    },
+    {
+      "id": 22,
+      "localeKey": "nature:sassy",
+      "name": "Grosera",
+      "symbol": "SASSY"
+    },
+    {
+      "id": 23,
+      "localeKey": "nature:careful",
+      "name": "Cauta",
+      "symbol": "CAREFUL"
+    },
+    {
+      "id": 24,
+      "localeKey": "nature:quirky",
+      "name": "Rara",
+      "symbol": "QUIRKY"
+    }
+  ],
+  "schemaVersion": 1,
+  "sources": [
+    {
+      "repository": "https://github.com/pagefaultgames/pokerogue",
+      "revision": "8555c08c823b856cbec4eb99ca84ea52a955836d",
+      "sourcePath": "src/enums/nature.ts",
+      "sourceSHA256": "41f46d31d6a91c75be598e55ac7a75c42e809aa5a21a7f733d11c4718fe090c2",
+      "sourceSymbol": "Nature"
+    },
+    {
+      "repository": "https://github.com/pagefaultgames/pokerogue-locales",
+      "revision": "23aea1cb0da5a0b15b836f3c243791591cc42303",
+      "sourcePath": "es-ES/nature.json",
+      "sourceSHA256": "210c45066317368d8a7e2fe3a8a1248f70510c1633897a81e782b89010a69411",
+      "sourceSymbol": "nature"
+    }
+  ]
+}

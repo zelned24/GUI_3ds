@@ -21,8 +21,11 @@ int main() {
     assert(kStarterAbilityNameRect.y+kStarterAbilityNameRect.height<=123);
 
     for(unsigned y=0;y<=240;++y) for(unsigned x=0;x<=320;++x) {
-        const bool ability=x>=24 && x<296 && y>=207 && y<225;
+        const bool ability=x>=24 && x<156 && y>=207 && y<225;
         assert(kStarterFormAbilityRect.contains(x,y)==ability);
+        const bool nature=x>=164 && x<296 && y>=207 && y<225;
+        assert(kStarterFormNatureRect.contains(x,y)==nature);
+        assert(!(ability && nature));
         if(ability) assert(starterFormRowAt(x,y)==-1 && !kStarterFormBackRect.contains(x,y) && !kStarterFormCandyRect.contains(x,y));
     }
 

@@ -23,7 +23,7 @@ class UiFontCoverage(unittest.TestCase):
             self.assertTrue(all(byte in (0,15,240,255) for byte in alpha))
 
     def test_ui_literals_have_ink_in_every_native_font(self):
-        files=[ROOT/'project/generated/include/content/RuntimeUiText.hpp',ROOT/'project/src/main.cpp']
+        files=[ROOT/'project/generated/include/content/RuntimeUiText.hpp',ROOT/'project/generated/include/content/NatureUiNames.hpp',ROOT/'project/src/main.cpp']
         for directory in ['project/include/runtime','project/src/runtime']:
             files.extend(p for p in (ROOT/directory).rglob('*') if p.suffix in ['.hpp','.cpp'])
         chars={chr(i) for i in range(33,127)}

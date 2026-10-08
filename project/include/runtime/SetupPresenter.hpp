@@ -10,6 +10,7 @@
 #include "game/PokemonFreshProfile.hpp"
 #include "content/RuntimeUiText.hpp"
 #include "content/EntityUiNames.hpp"
+#include "content/NatureUiNames.hpp"
 #include "content/StarterVariantIcons.hpp"
 #include "storage/NativeStarterCandyProfile.hpp"
 #include "storage/NativeProgressStore.hpp"
@@ -460,8 +461,14 @@ public:
             const bool abilityEnabled=game.canCycleSetupStarterAbility(dex);
             renderer.drawWindow(kStarterFormAbilityRect.x,kStarterFormAbilityRect.y,kStarterFormAbilityRect.width,kStarterFormAbilityRect.height);
             char abilityButton[160];
-            std::snprintf(abilityButton,sizeof(abilityButton),"Y %s %s",runtimeUiText("starter-select-ui-handler:cycleAbility"),abilityUiName(game.setupStarterAbilityId(dex)));
+            std::snprintf(abilityButton,sizeof(abilityButton),"Y: %s",abilityUiName(game.setupStarterAbilityId(dex)));
             renderer.drawTextFitted(abilityButton,kStarterFormAbilityRect.x+6,kStarterFormAbilityRect.y+4,0.25f,kStarterFormAbilityRect.width-12,abilityEnabled ? 0xffffffff : 0xff909090);
+            const bool natureEnabled=game.canCycleSetupStarterNature(dex);
+            const char* natureName=natureUiName(static_cast<uint8_t>(game.setupStarterNature(dex)));
+            renderer.drawWindow(kStarterFormNatureRect.x,kStarterFormNatureRect.y,kStarterFormNatureRect.width,kStarterFormNatureRect.height);
+            char natureButton[96];
+            std::snprintf(natureButton,sizeof(natureButton),"START: %s",natureName ? natureName : "—");
+            renderer.drawTextFitted(natureButton,kStarterFormNatureRect.x+6,kStarterFormNatureRect.y+4,0.25f,kStarterFormNatureRect.width-12,natureEnabled ? 0xffffffff : 0xff909090);
             renderer.drawTextFitted(formFeedback ? formFeedback : "L/R: página   A: elegir   B: volver",24,3,0.25f,272,0xffffffff);
         } else if(candyStoreOpen) {
             renderer.drawWindow(12,20,296,210);

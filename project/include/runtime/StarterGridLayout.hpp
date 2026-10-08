@@ -44,7 +44,8 @@ inline constexpr TouchRect kStarterFormRowsRect{24,43,272,kStarterFormPageSize*k
 // Upper-screen detail names reserve two native lines without touching stats.
 inline constexpr TouchRect kStarterAbilityNameRect{161,98,220,23};
 inline constexpr TouchRect kStarterPassiveNameRect{161,134,220,23};
-inline constexpr TouchRect kStarterFormAbilityRect{24,207,272,18};
+inline constexpr TouchRect kStarterFormAbilityRect{24,207,132,18};
+inline constexpr TouchRect kStarterFormNatureRect{164,207,132,18};
 inline constexpr TouchRect kStarterFormBackRect{164,183,132,21};
 inline constexpr TouchRect kStarterFormCandyRect{24,183,132,21};
 inline constexpr TouchRect kStarterCandyBackRect{24,183,272,21};

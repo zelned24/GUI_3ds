@@ -457,7 +457,14 @@ int main() {
                 setup.formFeedback=changed ? nullptr : game.canCycleSetupStarterAbility(game.selectedSetupStarterDex())
                     ? "No se pudo guardar la habilidad." : "No hay otra habilidad desbloqueada.";
             };
+            const auto cycleNature=[&]() {
+                const auto result=game.cycleSetupStarterNature(1,progress);
+                changed=result==Pokerogue3DS::NativeSaveResult::Ok;
+                setup.formFeedback=changed ? nullptr : game.canCycleSetupStarterNature(game.selectedSetupStarterDex())
+                    ? "No se pudo guardar la naturaleza." : "No hay otra naturaleza desbloqueada.";
+            };
             if(rawPressed & KEY_Y) {cycleAbility();rawPressed=0;}
+            if(rawPressed & KEY_START) {cycleNature();rawPressed=0;}
             if(rawPressed & KEY_X) {
                 setup.formsOpen=false;setup.candyStoreOpen=true;setup.candyStoreSelection=0;setup.candyFeedback=nullptr;
                 rawPressed=0;
@@ -484,6 +491,8 @@ int main() {
                     }
                 } else if(Pokerogue3DS::kStarterFormAbilityRect.contains(touch.px,touch.py)) {
                     cycleAbility();
+                } else if(Pokerogue3DS::kStarterFormNatureRect.contains(touch.px,touch.py)) {
+                    cycleNature();
                 } else if(Pokerogue3DS::kStarterFormCandyRect.contains(touch.px,touch.py)) {
                     setup.formsOpen=false;setup.candyStoreOpen=true;setup.candyStoreSelection=0;setup.candyFeedback=nullptr;
                 } else if(Pokerogue3DS::kStarterFormBackRect.contains(touch.px,touch.py)) {

@@ -63,7 +63,7 @@ Esta tabla describe código inspeccionado, no resultados de ejecución. Las nota
 
 1. **Implementado sin ejecución nativa:** submenu de nueve opciones, geometría compartida de filas/confirmaciones/carga, nombres de movimientos hasta dos líneas, barras PP enteras y ajustes HP/EXP persistidos en preferencias v4.
 2. **Implementado sin prueba GPU:** iconos de apariencia en equipo/party/captura, cache acotada de seis páginas compactas y retiro sincronizado; trainers/items rechazan imágenes inválidas y recuerdan fallos de carga.
-3. **Pendiente de integrar:** selector manual de naturaleza/teratipo y aparición detallada; selección de habilidad conectada sin validación nativa, iconos de apariencia del grid/Pokédex, funciones completas de logros/huevos/gacha/comunidad/sesión, audio y animaciones ligadas a todas las fases.
+3. **Pendiente de integrar:** validación nativa del selector de naturaleza, selector de teratipo y aparición detallada; selección de habilidad conectada sin validación nativa, iconos de apariencia del grid/Pokédex, funciones completas de logros/huevos/gacha/comunidad/sesión, audio y animaciones ligadas a todas las fases.
 4. **Pendiente de verificar:** todos los harness C++ recientes, fuente/cursor/recortes y cada menú en Azahar; consumo de memoria, latencia y rendimiento en Old 3DS física. Continúa la prohibición de compilar/abrir Azahar.
 5. **No cerrado:** GUI-01–12/14 y AST-01–08 conservan su alcance completo; ningún guard estático sustituye su aceptación visual o funcional.
 
@@ -943,3 +943,5 @@ La búsqueda del índice generado usa búsqueda binaria sobre identidades ordena
 - [ ] Preferencia de naturaleza: perfil v11 (`P3CANDYB`, 43 bytes/registro) conserva enum elegido o 255 default y habilidad independiente; v1–v10 leen sin elección fabricada. Validación exige naturaleza desbloqueada de starter capturado. Roundtrip de 25 naturalezas, v10 legacy, índices bloqueados y versión futura sin mutar salida escritos sin ejecutar. Comando/UI/estadísticas todavía pendientes.
 
 - [ ] Naturaleza aplicada: habilidad/naturaleza comparten transacción de setup y conservan la otra preferencia. Resolver preparado lleva naturaleza a actor y fórmula de estadísticas; 255 vuelve al default, ciclo recorre solo desbloqueadas. Bulbasaur Adamant con habilidad oculta, PID estable, rechazo/SD fallido y restauración de stats escritos sin ejecutar. Controles/nombre localizado aún pendientes.
+
+- [ ] Controles de naturaleza conectados al submenú de formas: START y táctil comparten comando persistente; botones separados de 132×18 para habilidad y naturaleza. Los 25 nombres españoles se generan desde enum/locales pinned con SHA-256, sin strings de naturaleza inventados. Generación repetida y provenance: 2 tests Python PASS; cobertura de glifos: 2 PASS; guards JS PASS. Barrido de geometría actualizado en harness C++ sin ejecutar. Compilación, interacción y aspecto en Azahar pendientes por instrucción del usuario.

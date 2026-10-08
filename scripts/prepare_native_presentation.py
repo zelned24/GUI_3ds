@@ -91,6 +91,9 @@ ui_header+="\n".join("    {"+json.dumps(key)+","+json.dumps(value,ensure_ascii=F
 ui_header+="\n};\ninline const char* runtimeUiText(const char* key) {unsigned first=0,last=sizeof(kRuntimeUiTexts)/sizeof(kRuntimeUiTexts[0]);while(first<last) {const unsigned mid=first+(last-first)/2;const int order=std::strcmp(kRuntimeUiTexts[mid].key,key);if(!order) return kRuntimeUiTexts[mid].text;if(order<0) first=mid+1;else last=mid;}return key;}\n}\n"
 (ROOT / "project/generated/include/content/RuntimeUiText.hpp").write_text(ui_header,encoding="utf-8",newline="\n")
 (output.parent / "ui-locale-provenance.json").write_text(json.dumps({"repository":"https://github.com/pagefaultgames/pokerogue-locales","revision":ui_locale_revision,"schemaVersion":1,"files":ui_sources},sort_keys=True,indent=2)+"\n",encoding="utf-8",newline="\n")
+from prepare_nature_ui import prepare as prepare_nature_ui
+nature_report=prepare_nature_ui(ROOT)
+for row in nature_report["rows"]: characters.update(row["name"])
 codepoints=sorted(ord(ch) for ch in characters if ord(ch)>=32)
 whitelist=output.parent / "font-codepoints.txt"
 whitelist.write_text(" ".join(hex(cp) for cp in codepoints)+"\n",encoding="utf-8",newline="\n")
