@@ -209,7 +209,7 @@ assert(movePresentation.includes('game.doubleBattle() ? 196 : 224'));
 assert(movePresentation.includes('bounds.width-16'));
 assert(movePresentation.includes('const auto back=moveBackRectangle(game.doubleBattle())'));
 assert(!movePresentation.includes('"L/R: objetivo",20,194'));
-assert(movePresentation.includes('drawTextFitted("PRECISIÓN", 208, 142, 0.3125f, 94'));
+assert(movePresentation.includes('drawTextFitted(runtimeUiText("fight-ui-handler:accuracy"), 208, 142, 0.3125f, 94'));
 assert(movePresentation.includes('drawTextFitted(ppFull, 208, 182, 0.3125f, 94'));
 
 assert(main.includes("if(struggleActive && touchedMove==0)"));
@@ -530,3 +530,10 @@ assert(defeat.includes("game.restoreSetup(game.run().seed,starterDex)"));
 assert(defeat.includes("kResultConfirmRect.contains(resultTouch.px,resultTouch.py)"));
 assert(defeat.includes("kResultBackRect.contains(resultTouch.px,resultTouch.py)"));
 assert(main.includes("if (!rewardInput && !game.rewardsPending() && !(game.battleFinished() && !game.playerWon()))"));
+
+const fightLocale=JSON.parse(await fs.readFile(new URL('../build/upstream/pokerogue-locales/es-ES/fight-ui-handler.json',import.meta.url),'utf8'));
+const fightGenerated=await fs.readFile(new URL('../project/generated/include/content/RuntimeUiText.hpp',import.meta.url),'utf8');
+for(const field of ['power','accuracy']) {
+  assert(fightGenerated.includes(JSON.stringify('fight-ui-handler:'+field)+','+JSON.stringify(fightLocale[field])));
+  assert(movePresentation.includes('runtimeUiText("fight-ui-handler:'+field+'")'));
+}

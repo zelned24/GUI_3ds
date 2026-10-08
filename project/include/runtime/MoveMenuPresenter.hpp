@@ -6,6 +6,7 @@
 #include "game/PokemonRecoilEffect.hpp"
 #include "content/PokerogueRuntimeContent.hpp"
 #include "content/EntityUiNames.hpp"
+#include "content/RuntimeUiText.hpp"
 #include "runtime/TitleMenuPresenter.hpp"
 #include <cstdio>
 
@@ -119,14 +120,14 @@ public:
             renderer.drawTextFitted(catName, 208, 68, 0.3125f, 94, catCol);
 
             // Power
-            renderer.drawTextFitted("POTENCIA", 208, 98, 0.3125f, 94, C2D_Color32(175, 170, 185, 255));
+            renderer.drawTextFitted(runtimeUiText("fight-ui-handler:power"), 208, 98, 0.3125f, 94, C2D_Color32(175, 170, 185, 255));
             char powStr[16];
             if (curMove->power > 0) std::snprintf(powStr, sizeof(powStr), "%d", curMove->power);
             else std::snprintf(powStr, sizeof(powStr), "--");
             renderer.drawText(powStr, 208, 112, 0.36f, C2D_Color32(255, 255, 255, 255));
 
             // Accuracy
-            renderer.drawTextFitted("PRECISIÓN", 208, 142, 0.3125f, 94, C2D_Color32(175, 170, 185, 255));
+            renderer.drawTextFitted(runtimeUiText("fight-ui-handler:accuracy"), 208, 142, 0.3125f, 94, C2D_Color32(175, 170, 185, 255));
             char accStr[16];
             if (curMove->accuracy > 0) std::snprintf(accStr, sizeof(accStr), "%d%%", curMove->accuracy);
             else std::snprintf(accStr, sizeof(accStr), "--");

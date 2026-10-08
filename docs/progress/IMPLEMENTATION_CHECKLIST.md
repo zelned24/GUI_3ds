@@ -2,13 +2,13 @@
 
 ## Cómo medir el avance
 
-- Referencia actual: rama `codex/pokerogue-3ds-migration`, último commit de implementación publicado confirmado `047f392`; conversión física ampliada terminada: 10682 atlas y 10746 páginas `.t3x`. Validación nativa y visual pendiente. Los resultados históricos no verifican estos cambios locales.
+- Referencia actual: rama `codex/pokerogue-3ds-migration`, último commit de implementación publicado confirmado `2e3ebea`; conversión física ampliada terminada: 10682 atlas y 10746 páginas `.t3x`. Validación nativa y visual pendiente. Los resultados históricos no verifican estos cambios locales.
 - Objetivo: PokéRogue jugable y fiel al snapshot upstream en Old 3DS, con ambas pantallas, progreso exportable y actualizaciones desde consola.
 - Cada ID es estable para reportar avances: `MOV-07`, `GUI-03`, etc. No equivale a un movimiento/habilidad individual.
 - Una casilla sin marcar puede tener código parcial; el resumen de cada área indica lo existente. Marcarla solo con integración completa y evidencia ejecutada pertinente.
 - Estados para reportes: **pendiente**, **parcial**, **implementado sin verificar**, **verificado**. Registrar commit, archivos, prueba/resultado y limitaciones.
 - No hay porcentaje global fiable todavía: falta medir la cobertura por ID/atributo/contexto. Contar estas tareas como pesos iguales distorsionaría el avance.
-- Pins: juego `8555c08c823b856cbec4eb99ca84ea52a955836d`; assets `056a1f408f26a3be4fef243f7462cb43608c7928`; locales `23aea1cb0da5a0b15b836f3c243791cc42303`.
+- Pins: juego `8555c08c823b856cbec4eb99ca84ea52a955836d`; assets `056a1f408f26a3be4fef243f7462cb43608c7928`; locales `23aea1cb0da5a0b15b836f3c243791591cc42303`.
 - Fuente de detalle: [estado](../MIGRATION_STATUS.md), [inventario anterior](POKEROGUE_3DS_REMAINING_WORK.md), `project/` y scripts actuales. El inventario anterior incluye notas históricas, no resultados vigentes.
 - GUI significa interfaz **del juego**; no reconstruir el editor eliminado. El código actual usa gameplay C++ y bridge QuickJS opcional: su presencia no demuestra un port completo de la web.
 
@@ -57,7 +57,7 @@ Esta tabla describe código inspeccionado, no resultados de ejecución. Las nota
 | GUI-01–14 / AST-01–08 | Presentación nativa, rasters nearest, HUD HP/EXP, iconos reales de items/huevos, controles compartidos y sonidos UI NDSP con volúmenes persistidos | Cerrar todas las pantallas, música/efectos de batalla, animaciones, controles restantes y comparación visual |
 | SAV-01–08 | Codecs, journals y bundles | Todos los estados de run/perfil, export/import conectado a UI y compatibilidad de contenido |
 | OTA-01–08 | Infraestructura de packs | Catálogo de gameplay cargable, firma, descarga e instalación desde consola |
-| 3DS-01–06 / VAL-01–12 | Pruebas escritas y pipeline; 23 comprobaciones de presentación JS/Python sin compilación pasan | 7 gates nativos de presentación pendientes, suite completa, build, Azahar y medición en Old 3DS XL física |
+| 3DS-01–06 / VAL-01–12 | Pruebas escritas y pipeline; 24 comprobaciones de presentación JS/Python sin compilación pasan | 7 gates nativos de presentación pendientes, suite completa, build, Azahar y medición en Old 3DS XL física |
 
 ### Presentación: evidencia vigente y siguiente integración
 
@@ -1136,3 +1136,9 @@ La compilación ARM solicitada terminó correctamente; no prueba ejecución de h
 - [ ] Validar catálogo visual de Balls: multiplicadores/formato importados desde getPokeballCatchMultiplier, IDs del parser existente y nombres del namespace es-ES pinned; UI sin lista fija de rates, textos acotados y faltantes de iconos explícitos. Import report reproducible generado; prueba GPU pendiente.
 
 - [ ] Validar fin de partida: A y botón táctil Reiniciar restauran la selección usando seed/starter existentes antes de despachar comandos C++/QuickJS; B y botón Título vuelven al menú. Antes A intentaba otro turno y sólo el táctil restauraba setup. Flujo corregido; recorrido nativo de derrota pendiente.
+
+### Panel de movimientos: locales oficiales y límites de texto
+
+- Implementado sin verificar en GPU: Potencia/Precisión resueltas desde `es-ES/fight-ui-handler.json` de la revisión pinned de locales; namespace integrado en el importador existente y en `RuntimeUiText.hpp`. El consumidor upstream es `FightUiHandler` (`src/ui/handlers/fight-ui-handler.ts`).
+- Etiquetas pequeñas limitadas a 94 píxeles con raster nativo; indicación de objetivos retirada del área ocupada por A/B en dobles.
+- Comprobación de fuente: `node test/frontend_menu_source_tests.mjs`; no sustituye ejecución C++, compilación ARM ni comparación en Azahar. GUI/AST continúan abiertas.
