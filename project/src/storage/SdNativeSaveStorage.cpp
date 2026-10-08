@@ -1,6 +1,7 @@
 #include "storage/NativeRunSave.hpp"
 #include "storage/NativeStarterCandyStore.hpp"
 #include "storage/NativeProgressBundle.hpp"
+#include "storage/NativeEggProgressStore.hpp"
 #include "storage/NativePresentationSettings.hpp"
 #include <cstdio>
 #include <cerrno>
@@ -93,5 +94,19 @@ NativeSaveResult SdNativePresentationStorage::readSlot(unsigned slot,char* bytes
 NativeSaveResult SdNativePresentationStorage::writeSlot(unsigned slot,const char* bytes,size_t size) {
     if(slot>1) return NativeSaveResult::InvalidRecord;
     return writeFile(slot==0 ? "sdmc:/3ds/pokerogue/saves/ui0.p3prefs" : "sdmc:/3ds/pokerogue/saves/ui1.p3prefs",bytes,size,NativePresentationSettingsStore::kBytes);
+}
+NativeSaveResult SdNativeEggProgressStorage::readSlot(unsigned slot,char* output,size_t capacity,size_t& size) {
+    if(slot>1) return NativeSaveResult::InvalidRecord;
+    return readFile(slot==0 ? "sdmc:/3ds/pokerogue/saves/eggs0.p3eggs" : "sdmc:/3ds/pokerogue/saves/eggs1.p3eggs",output,capacity,size);
+}
+NativeSaveResult SdNativeEggProgressStorage::writeSlot(unsigned slot,const char* bytes,size_t size) {
+    if(slot>1) return NativeSaveResult::InvalidRecord;
+    return writeFile(slot==0 ? "sdmc:/3ds/pokerogue/saves/eggs0.p3eggs" : "sdmc:/3ds/pokerogue/saves/eggs1.p3eggs",bytes,size);
+}
+NativeSaveResult SdNativeEggProgressStorage::readExport(char* output,size_t capacity,size_t& size) {
+    return readFile("sdmc:/3ds/pokerogue/exports/eggs.p3eggs",output,capacity,size);
+}
+NativeSaveResult SdNativeEggProgressStorage::writeExport(const char* bytes,size_t size) {
+    return writeFile("sdmc:/3ds/pokerogue/exports/eggs.p3eggs",bytes,size);
 }
 } // namespace Pokerogue3DS

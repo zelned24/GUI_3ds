@@ -6,6 +6,7 @@
 #include "storage/NativeProgressBundle.hpp"
 #include "storage/NativeEggInventory.hpp"
 #include "storage/NativeEggProgress.hpp"
+#include "storage/NativeEggProgressStore.hpp"
 #include "game/EggGachaPolicy.hpp"
 #include "storage/IntegritySha256.hpp"
 #include "content/PokerogueRuntimeContent.hpp"
@@ -217,6 +218,30 @@ extern "C" int runNativeSaveChecks() {
             if(encodeNativeEggProgress(&envelopeEgg,1,balances,pityLedger,0,PokerogueContent::kContentHash,
                 envelope,sizeof(envelope),envelopeSize)!=NativeSaveResult::InvalidRecord || envelopeSize!=99)
                 return 1239;
+        }
+        {
+            MemoryStorage eggStorage;char journalScratch[424]{};
+            NativeEggProgressStore eggStore(eggStorage,journalScratch,sizeof(journalScratch),212);
+            EggIncubationRecord egg{};egg.id=17;egg.hatchWaves=10;
+            uint32_t balances[4]={1,2,3,4};EggPityState ledger{};uint32_t prepared=99;
+            if(eggStore.prepare(&egg,1,balances,ledger,PokerogueContent::kContentHash,0,prepared)!=NativeSaveResult::Ok || prepared!=1)
+                return 1240;
+            NativeEggProgressView view{};
+            if(eggStore.load(PokerogueContent::kContentHash,view,1)!=NativeSaveResult::Ok || view.generation!=1 || view.vouchers[0]!=1)
+                return 1241;
+            balances[0]=9;eggStorage.interrupt=true;prepared=99;
+            if(eggStore.prepare(&egg,1,balances,ledger,PokerogueContent::kContentHash,1,prepared)!=NativeSaveResult::IoError || prepared!=99)
+                return 1242;
+            eggStorage.interrupt=false;
+            if(eggStore.load(PokerogueContent::kContentHash,view,1)!=NativeSaveResult::Ok || view.vouchers[0]!=1)
+                return 1243;
+            if(eggStore.prepare(&egg,1,balances,ledger,PokerogueContent::kContentHash,1,prepared)!=NativeSaveResult::Ok || prepared!=2)
+                return 1244;
+            if(eggStore.load(PokerogueContent::kContentHash,view,1)!=NativeSaveResult::Ok || view.vouchers[0]!=1 ||
+                eggStore.load(PokerogueContent::kContentHash,view,2)!=NativeSaveResult::Ok || view.vouchers[0]!=9)
+                return 1245;
+            if(eggStore.prepare(&egg,1,balances,ledger,PokerogueContent::kContentHash,0,prepared)!=NativeSaveResult::InvalidRecord)
+                return 1246;
         }
         EggTier resolvedTier=EggTier::COMMON;
         for(const auto& row:kSpeciesEggTiers)
