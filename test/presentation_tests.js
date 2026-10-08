@@ -168,8 +168,8 @@ export function registerPresentationTests(test) {
     expect(sprites.includes('m_trainerFrontFemale != female'),'Trainer cache identity includes gender variant');
     const menus=fs.readFileSync(path.join(root,'project/include/runtime/FrontendMenuPresenter.hpp'),'utf8');
     const hud=fs.readFileSync(path.join(root,'project/include/runtime/BattleHudPresenter.hpp'),'utf8');
-    expect(hud.includes('m_lastPlayerId != actor.battleState.pokemonId') && !hud.includes('m_lastPlayerDex'),'EXP display must distinguish actors of the same species');
-    expect(main.includes('if(titleVisible) battleHud.resetExperienceDisplay()'),'A new run/restore must not inherit the previous EXP animation');
+    expect(/m_lastPlayerId\s*!=\s*actor\.battleState\.pokemonId/.test(hud) && !hud.includes('m_lastPlayerDex'),'EXP display must distinguish actors of the same species');
+    expect(/if\(titleVisible\)\s*\{\s*battleHud\.resetExperienceDisplay\(\)/.test(main),'A new run/restore must not inherit the previous EXP animation');
     expect(hud.includes('canonicalPresentationTypes(actor.dex,actor.formId,type1,type2)'), 'HUD badges must use the actual canonical form');
     expect(hud.includes('drawHudTypeIcon(type1,player,0,dual'), 'HUD uses original compact icon variants');
     expect(!hud.includes('drawTypeBadge(renderer'), 'Type labels cannot overlap the status row');
@@ -178,23 +178,23 @@ export function registerPresentationTests(test) {
     expect(!hud.includes('tagColor'), 'No synthetic status badge in battle HUD');
     expect(hud.includes('constexpr float scale = 1.0f'), 'HUD panels must preserve native pixel scale');
     expect(hud.includes('drawHudBar(false,boss,fraction'), 'HP uses the original two-tone bar atlas');
-    expect(hud.includes('drawHudBar(true,false,expFraction'), 'EXP uses the original patterned texture');
+    expect(hud.includes('drawHudBar(true,false,static_cast<float>(m_expTimeline.fraction()),expX,expY)'), 'EXP uses the original patterned texture');
     expect(main.includes('true, 258.0f, 146.0f,false,game.experienceLevelCap()'), 'Player HUD remains above the feedback panel');
     expect(hud.includes('drawHudGraphic("numbers",digit'), 'HUD numbers must use original digit atlas');
     expect(hud.includes('drawHudGraphic("overlay_exp_label"'), 'EXP label must use original localized artwork');
     expect(!hud.includes('renderer.drawText(level'), 'Level numbers must not use scaled font glyphs');
-    expect(hud.includes('hudLevelDigitAtlas(player,actor.level,experienceLevelCap)'), 'Capped level digit color consumes the runtime policy');
+    expect(hud.includes('hudLevelDigitAtlas(player,uint16_t(visibleLevel),experienceLevelCap)'), 'Capped level digit color consumes the runtime policy');
     expect(hud.includes('sizeof(displayName),displayedNameWidth,true)'),'Gender position must use measured fitted glyph width');
     expect(!hud.includes('drawTextFitted(name,'), 'Long HUD names must keep font scale and use upstream abbreviation');
     expect(!hud.includes('approxNameWidth'),'UTF-8 byte count cannot estimate glyph width');
     const title=fs.readFileSync(path.join(root,'project/include/runtime/TitleMenuPresenter.hpp'),'utf8');
     expect(menus.includes('m_title.drawCursor(renderer,25,y,labelSize)'),'Submenu cursor uses fitted text height');
     expect(title.includes('drawCursor(renderer,25,y,labelSize)'),'Title cursor uses fitted text height');
-    expect(menus.includes('m_page==FrontendPage::SettingsGroup ? 220 : 249'),'Settings reserve room for their value column');
+    expect(menus.includes('m_page==FrontendPage::SettingsGroup ? 180 : 249'),'Settings reserve room for their value column');
     expect(main.includes('filterTouchInput(hidKeysDown(),preferences.touchControls)'), 'Touch disable must apply before title, menus and gameplay dispatch');
     expect(menus.includes('drawBoundedDescription(renderer,runtimeUiText("settings:confirmDisableTouch")'), 'Confirmation uses bounded wrapping with native font rasters');
     expect(main.includes('uiSettings.load(preferences,&recoveredPreferences)'), 'Boot restores persisted device preferences');
-    expect(main.includes('uiSettings.save(next,preferences.touchControls)'), 'Applied window style must reach the SD journal');
+    expect(main.includes('uiSettings.save(next,preferences.touchControls,preferences.hpBarSpeed,preferences.expGainsSpeed)'), 'Applied window style must reach the SD journal');
     expect(main.includes('renderer.setWindowStyle(next)'), 'Window setting must reach the renderer through a command');
     expect(menus.includes('return FrontendCommand::NextWindowStyle'), 'Window option must emit a runtime command');
     expect(main.includes('FrontendCommand::Continue || command==Pokerogue3DS::FrontendCommand::Load'),'Continue and Load must read the committed save, not current unsaved state');
@@ -209,7 +209,7 @@ export function registerPresentationTests(test) {
     expect(save.includes('result != Pokerogue3DS::NativeSaveResult::Ok'),'Save failure must be checked');
     expect(save.indexOf('saves.load(')<save.indexOf('frontend.setHasSave(true)'),'Save metadata must be read back before success');
     expect(!trainer.includes('romfs:/presentation/trainers/%s'),'Trainer paths must come from the generated index');
-    expect(intro.includes('screenW, screenH, 1.0f);') && !intro.includes('frameB'),'Sampled intro frames must remain opaque without invented temporal blending');
+    expect(intro.includes('screenW,screenH,opacity);') && intro.includes('float opacity=1.0f;') && intro.includes('if (elapsedMs>=kIntroTotalDurationMs)') && !intro.includes('frameB'),'Sampled intro frames remain opaque during playback; only the final transition fades');
   });
 
   test('Native touch layout: moves, targets, party sizes 0..6, all 76800 pixels and overflow',()=>{
