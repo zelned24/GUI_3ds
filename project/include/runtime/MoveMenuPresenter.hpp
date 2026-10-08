@@ -106,7 +106,7 @@ public:
             drawTypeBadge(renderer, curMove->type, 208, 24, 94, 18, 0.26f);
 
             // Category
-            renderer.drawText("CATEGORÍA", 208, 54, 0.22f, C2D_Color32(175, 170, 185, 255));
+            renderer.drawTextFitted("CATEGORÍA", 208, 54, 0.3125f, 94, C2D_Color32(175, 170, 185, 255));
             const char* catName = "Estado";
             uint32_t catCol = C2D_Color32(160, 160, 160, 255);
             if (curMove->category == PokerogueContent::MovePhysical) {
@@ -116,17 +116,17 @@ public:
                 catName = "Especial";
                 catCol = C2D_Color32(65, 120, 240, 255);
             }
-            renderer.drawText(catName, 208, 68, 0.34f, catCol);
+            renderer.drawTextFitted(catName, 208, 68, 0.3125f, 94, catCol);
 
             // Power
-            renderer.drawText("POTENCIA", 208, 98, 0.22f, C2D_Color32(175, 170, 185, 255));
+            renderer.drawTextFitted("POTENCIA", 208, 98, 0.3125f, 94, C2D_Color32(175, 170, 185, 255));
             char powStr[16];
             if (curMove->power > 0) std::snprintf(powStr, sizeof(powStr), "%d", curMove->power);
             else std::snprintf(powStr, sizeof(powStr), "--");
             renderer.drawText(powStr, 208, 112, 0.36f, C2D_Color32(255, 255, 255, 255));
 
             // Accuracy
-            renderer.drawText("PRECISIÓN", 208, 142, 0.22f, C2D_Color32(175, 170, 185, 255));
+            renderer.drawTextFitted("PRECISIÓN", 208, 142, 0.3125f, 94, C2D_Color32(175, 170, 185, 255));
             char accStr[16];
             if (curMove->accuracy > 0) std::snprintf(accStr, sizeof(accStr), "%d%%", curMove->accuracy);
             else std::snprintf(accStr, sizeof(accStr), "--");
@@ -138,7 +138,7 @@ public:
                 const uint8_t maxPp = pokemon.battleState.moves[selectedMove].maxPp;
                 char ppFull[24];
                 std::snprintf(ppFull, sizeof(ppFull), "PP  %u / %u", unsigned(curPp), unsigned(maxPp));
-                renderer.drawText(ppFull, 208, 186, 0.28f, C2D_Color32(230, 225, 240, 255));
+                renderer.drawTextFitted(ppFull, 208, 182, 0.3125f, 94, C2D_Color32(230, 225, 240, 255));
 
                 const float ppRatio = maxPp ? float(curPp) / maxPp : 0.0f;
                 renderer.drawRect(208, game.doubleBattle() ? 198 : 202, 94, 3, C2D_Color32(35, 30, 42, 255));
@@ -152,7 +152,7 @@ public:
 
         // Double battle target selector overlay if required
         if (game.doubleBattle()) {
-            renderer.drawTextFitted("L/R: objetivo",20,194,0.25f,160,0xff80ffff);
+            // Target controls own the bottom row; keep the action footer unobstructed.
             for (unsigned i = 0; i < 2; ++i) {
                 const auto& bounds = kTargetButtonRects[i];
                 const auto& target = i ? game.presentation().secondEnemy : game.presentation().enemy;

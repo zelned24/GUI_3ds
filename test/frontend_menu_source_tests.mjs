@@ -208,6 +208,9 @@ const movePresentation=await fs.readFile(new URL('../project/include/runtime/Mov
 assert(movePresentation.includes('game.doubleBattle() ? 196 : 224'));
 assert(movePresentation.includes('bounds.width-16'));
 assert(movePresentation.includes('const auto back=moveBackRectangle(game.doubleBattle())'));
+assert(!movePresentation.includes('"L/R: objetivo",20,194'));
+assert(movePresentation.includes('drawTextFitted("PRECISIÓN", 208, 142, 0.3125f, 94'));
+assert(movePresentation.includes('drawTextFitted(ppFull, 208, 182, 0.3125f, 94'));
 
 assert(main.includes("if(struggleActive && touchedMove==0)"));
 assert(movePresentation.includes("const auto& bounds=kMoveButtonRects[i]"));
