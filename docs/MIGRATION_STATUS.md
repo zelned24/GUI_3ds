@@ -12,11 +12,20 @@
 - Habilidad de la ficha: consume slot por defecto desbloqueado del perfil y forma seleccionada mediante gameplay; comparación con actor escrita sin ejecución, selector manual pendiente.
 - Selector: indicadores shiny originales, perfiles vistos/capturados/desconocidos, filtros; títulos/submenús/Pokédex y exportación/importación con confirmación tienen rutas C++ escritas.
 - Sprites: caché de fallos por página del atlas y última identidad de entrenador para evitar I/O repetido cada frame; reset explícito permite recuperación. Guards estáticos PASS; comportamiento GPU no ejecutado.
-- Intro: nearest en la conversión espacial y reproducción por timestamps sin mezcla de fotogramas; los 16 samples se compararon píxel a píxel con el vídeo pinned. No es reproducción completa de sus 101 fotogramas; fidelidad y rendimiento nativos pendientes.
+- Intro completa preparada: 101 frames pinned en seis páginas, raster nearest 200×100 y ampliación entera 2×, reproducción por timestamps. Conversión y píxeles comprobados físicamente; carga/dibujo, audio, latencia y memoria nativos pendientes.
 - Fuentes: cobertura de glifos especiales, texto UTF-8 y rasters físicos comprobados. Cache de iconos y paginación reducen recorridos; rendimiento de hardware no medido.
 - Gates permitidos: guards JS de menú e índice de apariencias, metadata de género pinned; tests Python de cobertura de glifos, indicadores y paletas: PASS. `git diff --check`: PASS.
 - Compilación, suite nativa, Azahar y hardware aplazados por instrucción del usuario. No considerar completo Classic, todos los submenús ni la migración.
 
+
+## Últimas conexiones de presentación (base publicada `0e6f187`)
+
+1. Iconos de apariencia: 5.054 fuentes físicas, 27 páginas completas y 27 compactas; 12.000 identidades de especie/forma/género/shiny/variante con fallback normal explícito upstream. No cubre reemplazos temporales por eventos. Equipo inicial, party y captura consumen el resolver; grid/Pokédex aún requieren integración de apariencias.
+2. Fuentes: rasters nativos monocromos 8/10/12/16, posiciones enteras; cobertura de glifos/alpha binaria PASS físico. Los nombres de movimientos admiten dos líneas y la barra PP columnas enteras. Etiquetas de tipo mantienen atlas 32×14; alternativa textual acotada y centrada por tinta.
+3. Preferencias v4: estilo, táctil, velocidad HP y EXP; lectura legacy v1–v3, journal y rechazos de conflictos/flags desconocidos. Regresiones C++ escritas, sin ejecutar.
+4. Recursos: trainers/items rechazan hojas sin textura/región; carga fallida no se repite cada frame hasta reset/cambio. Items usa únicamente el índice generado, sin ruta de fallback no producida por el pipeline.
+5. Submenú de referencia: nueve opciones y límites táctiles compartidos, retorno al origen. Logros, huevos/gacha, comunidad y cuenta siguen informativos; no son implementaciones completas.
+6. Gates repetidos sin compilación: cobertura de fuentes (2 tests) e índices de apariencia regenerados dos veces PASS; guards de menú y diff check PASS. No prueba nativa/ARM/Azahar/hardware.
 
 ## Revisión del avance local
 
@@ -24,7 +33,7 @@ El avance se publica como trabajo en curso. Classic completo y la fidelidad visu
 
 1. PokéRogue: `8555c08c823b856cbec4eb99ca84ea52a955836d`.
 2. Assets: `056a1f408f26a3be4fef243f7462cb43608c7928`.
-3. Locales: `23aea1cb0da5a0b15b836f3c243791591cc42303`.
+3. Locales: `23aea1cb0da5a0b15b836f3c243791cc42303`.
 4. Hash canónico vigente: `20e7cef5a58d28f31254ab5dfaab0815be92c6a4e7c1e10a3c12c05ebbc9fe27` (reimportación doble determinista tras normalizar pasivas).
 
 ## Trabajo actual sin compilación
@@ -39,7 +48,7 @@ La instrucción más reciente del usuario aplaza compilaciones y Azahar hasta nu
 
 6. Reemplazo e invalidación de atlas Pokémon/trainers retiran texturas hasta SYNCDRAW; un trainer sin mapping limpia el anterior. Guard estático JS PASS, sin validación nativa/GPU.
 
-7. Materializador de variantes usa `_masterlist.json`, PNG/atlas y paletas de la revisión pinned, con provenance del shader y datos; cuatro pruebas Python PASS. Salida marcada `SOURCE_MATERIALIZED_NOT_YET_T3X`; falta staging, conversión e integración de runtime.
+7. Materializador de variantes usa `_masterlist.json`, PNG/atlas y paletas de la revisión pinned, con provenance del shader y datos; cuatro pruebas Python PASS. El materializador etiqueta su etapa `SOURCE_MATERIALIZED_NOT_YET_T3X`; staging y conversión posteriores ya existen (ver inventario físico arriba). Integración completa y ejecución runtime siguen pendientes.
 
 8. Submenú global C++ con nueve etiquetas originales pinned, navegación X/táctil/D-pad, panel inferior y overlay superior. Ajustes conectado; servicios restantes aún pendientes y explícitos. Guard estático JS PASS; casos C++ y comparación visual pendientes.
 
