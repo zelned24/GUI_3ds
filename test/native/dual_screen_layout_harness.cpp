@@ -96,6 +96,9 @@ int main() {
     }
     for(bool doubleBattle:{false,true}) {
         const auto back=moveBackRectangle(doubleBattle);
+        const auto confirm=moveConfirmRectangle(doubleBattle);
+        assert(confirm.x+confirm.width<=back.x);
+        assert(confirm.y==back.y && confirm.height==back.height);
         for(unsigned y=0;y<240;++y) for(unsigned x=0;x<320;++x)
             assert(back.contains(x,y)==(x>=100 && x<188 && y>=(doubleBattle ? 174u : 192u) && y<(doubleBattle ? 204u : 222u)));
         assert(!back.contains(UINT_MAX,UINT_MAX));

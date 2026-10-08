@@ -54,7 +54,7 @@ public:
             if (keys & (KEY_DLEFT | KEY_CPAD_LEFT | KEY_DRIGHT | KEY_CPAD_RIGHT)) {
                 return BattleMenuCommand::MoveColToggle;
             }
-            if (keys & KEY_A) return BattleMenuCommand::ExecuteMove;
+            if ((keys & KEY_A) || ((keys & KEY_TOUCH) && moveConfirmRectangle(doubleBattle).contains(x,y))) return BattleMenuCommand::ExecuteMove;
             return BattleMenuCommand::None;
         }
 

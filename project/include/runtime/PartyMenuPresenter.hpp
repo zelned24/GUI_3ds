@@ -143,8 +143,8 @@ public:
 
         // Bottom footer window
         renderer.drawWindow(kPartyFooterRect.x,kPartyFooterRect.y,kPartyFooterRect.width,kPartyFooterRect.height);
-        renderer.drawTextFitted("Elige a un Pokémon.", 18, 224, 0.25f, 160, C2D_Color32(245, 245, 245, 255));
-        renderer.drawTextFitted("A: Cambiar   B: Salir", 188, 224, 0.25f, 112, C2D_Color32(140, 210, 255, 255));
+        renderer.drawTextFitted("A: Cambiar",kPartyConfirmRect.x+10,kPartyConfirmRect.y+4,0.375f,kPartyConfirmRect.width-20,0xffffffff);
+        renderer.drawTextFitted("B: Volver",kPartyBackRect.x+10,kPartyBackRect.y+4,0.375f,kPartyBackRect.width-20,0xffffffff);
     }
 
 private:

@@ -188,6 +188,12 @@ int main() {
         assert(combatControls.movesOpen());
     }
     assert(combatControls.input(KEY_TOUCH,true,319,239)==BattleMenuCommand::None && combatControls.movesOpen());
+    for(bool doubles:{false,true}) {
+        const auto confirm=moveConfirmRectangle(doubles);
+        assert(combatControls.input(KEY_TOUCH,doubles,confirm.x+8,confirm.y+8)==BattleMenuCommand::ExecuteMove);
+        assert(combatControls.movesOpen());
+        assert(combatControls.input(KEY_A,doubles)==BattleMenuCommand::ExecuteMove);
+    }
     const auto back=moveBackRectangle(true);
     assert(combatControls.input(KEY_TOUCH,true,back.x,back.y)==BattleMenuCommand::None && !combatControls.movesOpen());
     combatControls.input(KEY_A,false);

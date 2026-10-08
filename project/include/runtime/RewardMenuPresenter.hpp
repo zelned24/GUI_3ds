@@ -129,7 +129,10 @@ public:
                 renderer.drawTextFitted(pp,234,bounds.y+6,0.25f,58,0xff80ffff);
                 if(i==m_moveSelection.selected) m_cursor.drawCursor(renderer,27,bounds.y+5,nameSize);
             }
-            renderer.drawTextFitted("A: aplicar   B: volver al equipo",16,204,0.30f,288,0xff80ffff);
+            renderer.drawWindow(kRewardMoveConfirmRect.x,kRewardMoveConfirmRect.y,kRewardMoveConfirmRect.width,kRewardMoveConfirmRect.height);
+            renderer.drawWindow(kRewardMoveBackRect.x,kRewardMoveBackRect.y,kRewardMoveBackRect.width,kRewardMoveBackRect.height);
+            renderer.drawTextFitted("A: Aplicar",24,206,0.375f,120,0xffffffff);
+            renderer.drawTextFitted("B: Volver",176,206,0.375f,120,0xffffffff);
             renderer.drawTextFitted(game.battleFeedback().c_str(),16,225,0.24f,288,0xffffffff);
             return;
         }
@@ -140,7 +143,8 @@ public:
             const auto& feedback=game.battleFeedback();
             renderer.drawTextFitted(feedback.empty() ? "Elige el Pokémon destinatario" : feedback.c_str(),18,8,0.3125f,284,0xff70d8f0);
             renderer.drawWindow(kPartyFooterRect.x,kPartyFooterRect.y,kPartyFooterRect.width,kPartyFooterRect.height);
-            renderer.drawTextFitted("A: elegir   B: volver a recompensas",18,224,0.25f,284,0xff80ffff);
+            renderer.drawTextFitted("A: Elegir",kPartyConfirmRect.x+10,kPartyConfirmRect.y+4,0.375f,kPartyConfirmRect.width-20,0xffffffff);
+            renderer.drawTextFitted("B: Volver",kPartyBackRect.x+10,kPartyBackRect.y+4,0.375f,kPartyBackRect.width-20,0xffffffff);
             return;
         }
 

@@ -433,3 +433,10 @@ assert(textRasterPolicy.includes('result={kNativeLegibleFontIndex,scale,candidat
 const fittingPolicy=rendererSource.slice(rendererSource.indexOf('float Renderer2D::drawTextFitted('),rendererSource.indexOf('float Renderer2D::textRasterY('));
 assert(fittingPolicy.includes('while(raster.scale>1 && measure(bounded)>maxWidth)'));
 assert(!fittingPolicy.includes('raster.index=i'));
+
+assert(main.includes('kPartyConfirmRect.contains(touch.px,touch.py)'));
+assert(main.includes('kPartyBackRect.contains(touch.px,touch.py)'));
+assert(main.includes('kRewardMoveConfirmRect.contains(touch.px,touch.py)'));
+assert(main.includes('kRewardMoveBackRect.contains(touch.px,touch.py)'));
+const combatInput=await fs.readFile(new URL('../project/include/runtime/BattleCommandMenuPresenter.hpp',import.meta.url),'utf8');
+assert(combatInput.includes('moveConfirmRectangle(doubleBattle).contains(x,y)'));

@@ -62,6 +62,9 @@ inline constexpr int moveButtonAt(unsigned x,unsigned y) {
     for (unsigned i=0;i<4;++i) if (kMoveButtonRects[i].contains(x,y)) return int(i);
     return -1;
 }
+inline constexpr TouchRect moveConfirmRectangle(bool doubleBattle) {
+    return {8,doubleBattle ? 174u : 192u,88,30};
+}
 inline constexpr TouchRect moveBackRectangle(bool doubleBattle) {
     return {100,doubleBattle ? 174u : 192u,88,30};
 }
@@ -72,6 +75,8 @@ inline constexpr int targetButtonAt(unsigned x,unsigned y) {
 }
 inline constexpr TouchRect kPartyHeaderRect{8,4,304,18};
 inline constexpr TouchRect kPartyFooterRect{8,220,304,18};
+inline constexpr TouchRect kPartyConfirmRect{8,220,148,18};
+inline constexpr TouchRect kPartyBackRect{164,220,148,18};
 inline constexpr TouchRect kPartyButtonRects[]={
     {8,24,304,32},{8,56,304,32},{8,88,304,32},
     {8,120,304,32},{8,152,304,32},{8,184,304,32}
@@ -101,6 +106,8 @@ inline constexpr int commandButtonAt(unsigned x, unsigned y) {
 
 // Reward choices and recipient moves use the same rectangles for draw and input.
 inline constexpr TouchRect kRewardChoiceRects[]={{16,54,88,40},{116,54,88,40},{216,54,88,40}};
+inline constexpr TouchRect kRewardMoveConfirmRect{16,200,136,24};
+inline constexpr TouchRect kRewardMoveBackRect{168,200,136,24};
 inline constexpr TouchRect kRewardMoveRects[]={{16,44,288,32},{16,81,288,32},{16,118,288,32},{16,155,288,32}};
 inline constexpr int rewardChoiceAt(unsigned x,unsigned y,unsigned count) {
     if(count>3) return -1;

@@ -633,7 +633,10 @@ int main() {
                     } else {
                         partyMenu.selected=unsigned(selected);
                     }
-                } else if(touch.py>=200) {
+                } else if(Pokerogue3DS::kPartyConfirmRect.contains(touch.px,touch.py)) {
+                    changed=game.switchPlayerPokemon(partyMenu.selected);
+                    if(changed) partyMenu.open=false;
+                } else if(Pokerogue3DS::kPartyBackRect.contains(touch.px,touch.py)) {
                     partyMenu.open=false;
                 }
             } else if (rawPressed & KEY_B) partyMenu.open=false;
@@ -682,7 +685,8 @@ int main() {
                     else if(rawPressed & KEY_TOUCH) {
                         const int slot=Pokerogue3DS::RewardMoveSelection::hit(touch.px,touch.py,actor.battleState.moveCount);
                         if(slot>=0) {confirm=selection.selected==unsigned(slot);selection.selected=unsigned(slot);}
-                        else if(touch.py>=200) rewardMenu.setPartySelectionMode(true);
+                        else if(Pokerogue3DS::kRewardMoveConfirmRect.contains(touch.px,touch.py)) confirm=true;
+                        else if(Pokerogue3DS::kRewardMoveBackRect.contains(touch.px,touch.py)) rewardMenu.setPartySelectionMode(true);
                     }
                     if(confirm && game.claimRecoveryRewardChoice(static_cast<uint8_t>(member),static_cast<uint8_t>(selection.selected))) rewardMenu.resetSelection();
                 }
@@ -696,7 +700,8 @@ int main() {
                     if(member>=0) {
                         if(rewardMenu.partyPresenter().selected==unsigned(member)) claimForMember();
                         else rewardMenu.partyPresenter().selected=unsigned(member);
-                    } else if(touch.py>=200) rewardMenu.resetSelection();
+                    } else if(Pokerogue3DS::kPartyConfirmRect.contains(touch.px,touch.py)) claimForMember();
+                    else if(Pokerogue3DS::kPartyBackRect.contains(touch.px,touch.py)) rewardMenu.resetSelection();
                 }
             } else if(rawPressed & KEY_B) game.skipVictoryReward();
             else if(rawPressed & (KEY_LEFT | KEY_CPAD_LEFT)) game.selectRewardChoice(-1);
