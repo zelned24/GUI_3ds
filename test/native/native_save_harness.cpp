@@ -1164,7 +1164,7 @@ extern "C" int runNativeSaveChecks() {
         poor.candyCount || poor.costReduction || poor.friendship != 42 || !poor.caught) return 120;
     if (encodeNativeStarterCandyProfile(&purchased, 1, 1, PokerogueContent::kContentHash,
             PokerogueContent::kMaxStarterCandyCount, caughtEncoded, sizeof(caughtEncoded), caughtWritten) !=
-            NativeSaveResult::Ok || std::memcmp(caughtEncoded, "P3CANDYA", 8) ||
+            NativeSaveResult::Ok || std::memcmp(caughtEncoded, "P3CANDYB", 8) ||
         decodeNativeStarterCandyProfile(caughtEncoded, caughtWritten, PokerogueContent::kContentHash,
             PokerogueContent::kMaxStarterCandyCount, caughtDecoded, 1, caughtCount, caughtGeneration) !=
             NativeSaveResult::Ok || caughtDecoded[0].costReduction != 2 || !caughtDecoded[0].caught ||
@@ -1216,7 +1216,38 @@ extern "C" int runNativeSaveChecks() {
     invalidPreference=purchased;invalidPreference.caught=false;invalidPreference.caughtAppearanceAttr=0;
     invalidPreference.passiveUnlocked=false;invalidPreference.preferredFormIndex=65535;
     if(StarterCandyProfileCodec::valid(invalidPreference,0,PokerogueContent::kMaxStarterCandyCount)) return 723;
+    // v11 persists all unlocked nature enum values independently of ability.
+    for(unsigned nature=0;nature<25;++nature) {
+        auto naturePreference=purchased;naturePreference.natureAttr=1u<<(nature+1);
+        naturePreference.preferredNatureIndex=nature;
+        if(encodeNativeStarterCandyProfile(&naturePreference,1,1,PokerogueContent::kContentHash,
+            PokerogueContent::kMaxStarterCandyCount,caughtEncoded,sizeof(caughtEncoded),caughtWritten)!=NativeSaveResult::Ok ||
+            decodeNativeStarterCandyProfile(caughtEncoded,caughtWritten,PokerogueContent::kContentHash,
+            PokerogueContent::kMaxStarterCandyCount,caughtDecoded,1,caughtCount,caughtGeneration)!=NativeSaveResult::Ok ||
+            caughtDecoded[0].preferredNatureIndex!=nature || caughtDecoded[0].preferredAbilityIndex!=2) return 746;
+    }
+    auto naturePreference=purchased;naturePreference.preferredNatureIndex=25;
+    if(StarterCandyProfileCodec::valid(naturePreference,0,PokerogueContent::kMaxStarterCandyCount)) return 747;
+    naturePreference.preferredNatureIndex=1; // Only Hardy/Quirky unlocked in purchased.
+    if(StarterCandyProfileCodec::valid(naturePreference,0,PokerogueContent::kMaxStarterCandyCount)) return 748;
+    char v10Bytes[256]{};
+    std::memcpy(v10Bytes,caughtEncoded,122);std::memcpy(v10Bytes,"P3CANDYA",8);
+    const size_t v10Size=kStarterCandyProfileOverhead+42;
+    IntegritySha256::hashHex(v10Bytes,v10Size-64,digest);std::memcpy(v10Bytes+v10Size-64,digest,64);
+    if(decodeNativeStarterCandyProfile(v10Bytes,v10Size,PokerogueContent::kContentHash,
+        PokerogueContent::kMaxStarterCandyCount,caughtDecoded,1,caughtCount,caughtGeneration)!=NativeSaveResult::Ok ||
+        caughtDecoded[0].preferredNatureIndex!=255 || caughtDecoded[0].preferredAbilityIndex!=2) return 749;
+    // Unknown future version cannot mutate decoded records/count/generation.
+    std::memcpy(v10Bytes,"P3CANDYC",8);
+    IntegritySha256::hashHex(v10Bytes,v10Size-64,digest);std::memcpy(v10Bytes+v10Size-64,digest,64);
+    caughtCount=77;caughtGeneration=88;caughtDecoded[0].preferredNatureIndex=9;
+    if(decodeNativeStarterCandyProfile(v10Bytes,v10Size,PokerogueContent::kContentHash,
+        PokerogueContent::kMaxStarterCandyCount,caughtDecoded,1,caughtCount,caughtGeneration)!=NativeSaveResult::UnsupportedVersion ||
+        caughtCount!=77 || caughtGeneration!=88 || caughtDecoded[0].preferredNatureIndex!=9) return 750;
     purchased.preferredAbilityIndex=255;
+    // Restore the current encoded baseline for the older-version cases below.
+    if(encodeNativeStarterCandyProfile(&purchased,1,1,PokerogueContent::kContentHash,
+        PokerogueContent::kMaxStarterCandyCount,caughtEncoded,sizeof(caughtEncoded),caughtWritten)!=NativeSaveResult::Ok) return 751;
     char v8Bytes[256]{};
     std::memcpy(v8Bytes,caughtEncoded,119);std::memcpy(v8Bytes,"P3CANDY8",8);
     const size_t v8Size=kStarterCandyProfileOverhead+39;
