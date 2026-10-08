@@ -1463,13 +1463,45 @@ extern "C" int runNativeSaveChecks() {
             NativeSaveResult::Ok || encodeNativeProgressBundle(partyBytes, bundleRunSize, bundleProfile,
             bundleProfileSize, PokerogueContent::kContentHash, restored, repeatedBundle, sizeof(repeatedBundle), repeatedSize) !=
             NativeSaveResult::InvalidRecord || repeatedSize) return 100;
-    bundleBytes[7] = '2';
+    bundleBytes[7] = '3';
     if (inspectNativeProgressBundle(bundleBytes, bundleSize, PokerogueContent::kContentHash, restored,
             bundleView) != NativeSaveResult::UnsupportedVersion) return 101;
     bundleBytes[7] = '1';
     StarterCandyProfileCodec::put(0xffffffffU, bundleBytes + 8, 4);
     if (inspectNativeProgressBundle(bundleBytes, bundleSize, PokerogueContent::kContentHash, restored,
             bundleView) != NativeSaveResult::InvalidFormat) return 102;
+    {
+        auto snapshot=original;snapshot.starterProfileGeneration=17;snapshot.eggProgressGeneration=9;
+        char runBytes[kNativeSaveMaxBytes]{},profileBytes[512]{},eggBytes[228]{};
+        size_t runSize=0,profileSize=0,eggSize=0,size=0,repeatSize=0;
+        NativeStarterCandyRecord record{};record.speciesDex=1;record.caught=true;
+        EggIncubationRecord egg{};egg.id=41;egg.speciesDex=4;uint32_t vouchers[4]={3,2,1,0},unlock[4]={9,0,0,0};EggPityState pity{};
+        if(encodeNativeRunSave(snapshot,runBytes,sizeof(runBytes),runSize)!=NativeSaveResult::Ok
+            || encodeNativeStarterCandyProfile(&record,1,17,PokerogueContent::kContentHash,PokerogueContent::kMaxStarterCandyCount,
+                profileBytes,sizeof(profileBytes),profileSize)!=NativeSaveResult::Ok
+            || encodeNativeEggProgress(&egg,1,vouchers,pity,unlock,9,PokerogueContent::kContentHash,eggBytes,sizeof(eggBytes),eggSize)
+                !=NativeSaveResult::Ok) return 1320;
+        if(encodeNativeProgressBundle(runBytes,runSize,profileBytes,profileSize,eggBytes,eggSize,PokerogueContent::kContentHash,
+            restored,bundleBytes,sizeof(bundleBytes),size)!=NativeSaveResult::Ok
+            || encodeNativeProgressBundle(runBytes,runSize,profileBytes,profileSize,eggBytes,eggSize,PokerogueContent::kContentHash,
+            restored,repeatedBundle,sizeof(repeatedBundle),repeatSize)!=NativeSaveResult::Ok
+            || size!=repeatSize || std::memcmp(bundleBytes,repeatedBundle,size)) return 1321;
+        if(inspectNativeProgressBundle(bundleBytes,size,PokerogueContent::kContentHash,restored,bundleView)!=NativeSaveResult::Ok
+            || bundleView.sourceEggGeneration!=9 || bundleView.sourceProfileGeneration!=17 || bundleView.eggSize!=eggSize) return 1322;
+        NativeEggProgressView eggs{};
+        if(inspectNativeEggProgress(bundleView.eggBytes,bundleView.eggSize,PokerogueContent::kContentHash,eggs)!=NativeSaveResult::Ok
+            || eggs.vouchers[0]!=3 || !eggs.unlockPityResolved || eggs.unlockPity[0]!=9) return 1323;
+        bundleBytes[20+runSize+profileSize+8]^=1;
+        if(inspectNativeProgressBundle(bundleBytes,size,PokerogueContent::kContentHash,restored,bundleView)
+            !=NativeSaveResult::ChecksumMismatch || bundleView.sourceEggGeneration!=9) return 1324;
+        bundleBytes[20+runSize+profileSize+8]^=1;
+        if(encodeNativeEggProgress(&egg,1,vouchers,pity,unlock,10,PokerogueContent::kContentHash,eggBytes,sizeof(eggBytes),eggSize)
+            !=NativeSaveResult::Ok) return 1325;
+        repeatSize=999;
+        if(encodeNativeProgressBundle(runBytes,runSize,profileBytes,profileSize,eggBytes,eggSize,PokerogueContent::kContentHash,
+            restored,repeatedBundle,sizeof(repeatedBundle),repeatSize)!=NativeSaveResult::InvalidRecord
+            || repeatSize!=999 || std::memcmp(bundleBytes,repeatedBundle,size)) return 1326;
+    }
     // Real paired journal -> SD-like bundle transport -> foreign generation rebase.
     disk.sizes[0] = disk.sizes[1] = other.sizes[0] = other.sizes[1] = 0;
     NativeRunSave portable{};
