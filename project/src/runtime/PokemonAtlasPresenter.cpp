@@ -37,7 +37,8 @@ void PokemonAtlasPresenter::invalidate(Renderer2D* renderer) {
     m_trainerFront.clear(renderer);
     m_playerBack.clear(renderer);
     m_trainerFrontTypeId = 0;
-    m_playerBackLoaded = false;
+    m_trainerFrontAttempted = false;
+    m_playerBackAttempted = false;
 }
 
 bool PokemonAtlasPresenter::atlasKey(const ResolvedPokemon& pokemon, bool back, std::string& out) {
@@ -202,7 +203,8 @@ void PokemonAtlasPresenter::drawAnchored(Renderer2D& renderer, const ResolvedPok
 
 void PokemonAtlasPresenter::drawTrainerAnchored(Renderer2D& renderer, uint16_t trainerTypeId, bool female,
     float anchorX, float anchorY, float scale, uint64_t animationTimeMs) {
-    if (!m_trainerFront.isLoaded() || m_trainerFrontTypeId != trainerTypeId || m_trainerFrontFemale != female) {
+    if (!m_trainerFrontAttempted || m_trainerFrontTypeId != trainerTypeId || m_trainerFrontFemale != female) {
+        m_trainerFrontAttempted = true;
         m_trainerFrontTypeId = trainerTypeId;
         m_trainerFrontFemale = female;
         m_trainerFront.loadTrainer(trainerTypeId, female, &renderer);
@@ -214,9 +216,10 @@ void PokemonAtlasPresenter::drawTrainerAnchored(Renderer2D& renderer, uint16_t t
 
 void PokemonAtlasPresenter::drawPlayerBackAnchored(Renderer2D& renderer, bool female,
     float anchorX, float anchorY, float scale, uint64_t animationTimeMs) {
-    if (!m_playerBackLoaded || m_playerBackFemale != female) {
+    if (!m_playerBackAttempted || m_playerBackFemale != female) {
+        m_playerBackAttempted = true;
         m_playerBackFemale = female;
-        m_playerBackLoaded = m_playerBack.loadPlayerBack(female, &renderer);
+        m_playerBack.loadPlayerBack(female, &renderer);
     }
     if (m_playerBack.isLoaded()) {
         m_playerBack.drawAnchored(renderer, anchorX, anchorY, scale, animationTimeMs);

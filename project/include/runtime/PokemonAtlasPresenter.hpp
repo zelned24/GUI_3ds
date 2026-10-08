@@ -82,7 +82,8 @@ private:
     uint16_t m_trainerFrontTypeId = 0;
     bool m_trainerFrontFemale = false;
     bool m_playerBackFemale = false;
-    bool m_playerBackLoaded = false;
+    bool m_trainerFrontAttempted = false;
+    bool m_playerBackAttempted = false;
     bool atlasKey(const ResolvedPokemon&, bool back, std::string& out);
     static bool selectMetadata(Renderer2D&, Slot&, const std::string& key, bool back, uint64_t nowMs);
     static bool selectPage(Slot&, const std::string& key, bool back, uint8_t page);

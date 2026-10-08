@@ -2,7 +2,7 @@
 
 ## Cómo medir el avance
 
-- Referencia actual: rama `codex/pokerogue-3ds-migration`, último commit de implementación publicado confirmado `c8bff4c`; conversión física ampliada terminada: 10682 atlas y 10746 páginas `.t3x`. Validación nativa y visual pendiente. Los resultados históricos no verifican estos cambios locales.
+- Referencia actual: rama `codex/pokerogue-3ds-migration`, último commit de implementación publicado confirmado `c8b557b`; conversión física ampliada terminada: 10682 atlas y 10746 páginas `.t3x`. Validación nativa y visual pendiente. Los resultados históricos no verifican estos cambios locales.
 - Objetivo: PokéRogue jugable y fiel al snapshot upstream en Old 3DS, con ambas pantallas, progreso exportable y actualizaciones desde consola.
 - Cada ID es estable para reportar avances: `MOV-07`, `GUI-03`, etc. No equivale a un movimiento/habilidad individual.
 - Una casilla sin marcar puede tener código parcial; el resumen de cada área indica lo existente. Marcarla solo con integración completa y evidencia ejecutada pertinente.
@@ -1166,3 +1166,8 @@ La compilación ARM solicitada terminó correctamente; no prueba ejecución de h
 - Implementado sin ejecución nativa: cambios de cursor en comandos/Poké Balls, apertura/cierre de páginas y comandos de movimiento emiten el sonido UI select ya importado. El consumidor main lo entrega una vez a NativeUiAudio; idle/táctil fuera de controles no emiten eventos.
 - Guards de conexión PASS; harness C++ añadido para cursor, apertura de Balls, selección, back, idle y consumo único. Falta ejecutar ese harness y escuchar en Azahar/hardware.
 - AST/audio permanece abierto: música, efectos de batalla, inicialización audible y volumen efectivo no están verificados.
+
+### Resolución de entrenadores fallidos por frame
+
+- Implementado sin ejecución nativa: PokemonAtlasPresenter recuerda intentos de resolver entrenador frontal y jugador de espalda, incluyendo fallos. Reintenta al cambiar tipo/género o invalidar contenido. TrainerPresenter ya tenía cache de fallo físico; este cambio evita llamadas repetidas y búsquedas en su consumidor.
+- Guards de conexión/reset PASS. No se atribuye a esta ruta la caída de FPS ni se declara una mejora medida: faltan perfilado y ejecución nativa.

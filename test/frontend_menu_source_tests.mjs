@@ -554,3 +554,9 @@ assert(commandPresentation.includes('selected!=m_selected'));
 assert(commandPresentation.includes('const char* takeNavigationSound()'));
 assert(main.includes('battleMenu.takeNavigationSound()'));
 assert(!main.includes('wasMovesOpen!=battleMenu.movesOpen()'));
+
+const actorSprites=await fs.readFile(new URL('../project/src/runtime/PokemonAtlasPresenter.cpp',import.meta.url),'utf8');
+assert(actorSprites.includes('if (!m_trainerFrontAttempted || m_trainerFrontTypeId'));
+assert(actorSprites.includes('if (!m_playerBackAttempted || m_playerBackFemale'));
+assert(actorSprites.includes('m_trainerFrontAttempted = false;'));
+assert(actorSprites.includes('m_playerBackAttempted = false;'));

@@ -7,6 +7,15 @@ import {execFileSync} from 'node:child_process';
 import {fileURLToPath} from 'node:url';
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 export function registerPresentationTests(test) {
+  test('Native actor cache: failed trainer identities retry only after change or invalidation',()=>{
+    const compiler=process.platform==='win32' ? 'C:/devkitPro/msys2/usr/bin/g++.exe' : 'g++';
+    const output=path.join(root,'build','pokemon-actor-cache-test'+(process.platform==='win32'?'.exe':''));
+    execFileSync(compiler,['-std=c++17','-O2','-ffunction-sections','-fdata-sections','-Wl,--gc-sections',
+      '-idirafter',path.join(root,'test/native/host_compat'),'-I'+path.join(root,'project/include'),'-I'+path.join(root,'project/generated/include'),
+      path.join(root,'test/native/pokemon_actor_cache_harness.cpp'),path.join(root,'project/src/runtime/PokemonAtlasPresenter.cpp'),
+      path.join(root,'project/src/runtime/PokemonAtlasMetadata.cpp'),'-o',output],{stdio:'pipe'});
+    execFileSync(output,[],{stdio:'pipe'});
+  });
   for(const script of ['item_icon_reference_import_tests.py','item_icon_index_tests.py','ui_audio_assets_tests.py','egg_ui_import_tests.py',
       'egg_texture_assets_tests.py','item_ui_import_tests.py','berry_ui_import_tests.py','arena_alignment_tests.py','ball_menu_import_tests.py'])
     test('Pinned presentation pipeline: '+script,()=>{
