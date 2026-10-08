@@ -233,7 +233,7 @@ public:
     void draw(Renderer2D& renderer,const NativeRunSave* saved,const FirstRunRuntime* game=nullptr) {
         if(m_page!=FrontendPage::Pokedex) m_dexIcons.clear(); // Caller began a synchronized frame.
         if(m_page==FrontendPage::Pokedex) {drawPokedex(renderer,game);return;}
-        if(m_page==FrontendPage::ServiceInfo) {drawServiceInfo(renderer);return;}
+        if(m_page==FrontendPage::ServiceInfo) {drawServiceInfo(renderer,game);return;}
         if(m_page==FrontendPage::Title) {m_title.draw(renderer,m_titleSelection,m_feedback);return;}
         renderer.clear(0xff3a303d);
         const char* heading=m_page==FrontendPage::Modes ? runtimeUiText("menu:selectGameMode") :
@@ -315,14 +315,33 @@ private:
     inline static constexpr TouchRect kConfirmationNoRect{160,125,128,30};
     // These destinations expose missing integrations without inventing profile data
     // or pretending that network/account actions succeeded.
-    void drawServiceInfo(Renderer2D& renderer) const {
+    void drawServiceInfo(Renderer2D& renderer,const FirstRunRuntime* game) const {
         renderer.clear(0xff3a303d);
         renderer.drawTextFitted(runtimeUiText(globalMenuKeys()[m_service]),12,8,0.45f,296,0xffffffff);
         renderer.drawWindow(16,33,288,171);
+        if(m_service==2) {
+            FirstRunRuntime::ProfileCatalogStats stats;
+            if(!game || !game->profileCatalogStats(stats)) {
+                drawBoundedDescription(renderer,"Perfil no disponible.",28,54,264,140);
+            } else {
+                const char* keys[]={"game-stats-ui-handler:starters","game-stats-ui-handler:shinyStarters",
+                    "game-stats-ui-handler:speciesSeen","game-stats-ui-handler:speciesCaught"};
+                const unsigned values[]={stats.startersCaught,stats.shinyStartersCaught,stats.speciesSeen,stats.speciesCaught};
+                const unsigned totals[]={stats.startersTotal,stats.startersTotal,stats.speciesTotal,stats.speciesTotal};
+                for(unsigned row=0;row<4;++row) {
+                    const float y=46+row*31;
+                    renderer.drawTextFitted(runtimeUiText(keys[row]),28,y,0.3125f,264,0xffffffff);
+                    char value[48];std::snprintf(value,sizeof(value),"%u / %u",values[row],totals[row]);
+                    renderer.drawTextFitted(value,28,y+13,0.3125f,264,0xff80ffff);
+                }
+                renderer.drawTextFitted("Historial de partidas pendiente.",28,178,0.25f,264,0xffffffff);
+            }
+            renderer.drawTextFitted("B: volver al menú",12,214,0.3125f,296,0xffffffff);
+            return;
+        }
         const char* description=nullptr;
         switch(m_service) {
         case 1:description="Logros pendientes: falta conectar las condiciones y recompensas al perfil persistente.";break;
-        case 2:description="Estadísticas pendientes: aún no se registran los contadores históricos de partidas del upstream.";break;
         case 3:description="Lista de huevos pendiente: falta el inventario persistente, la incubación y la eclosión.";break;
         case 4:description="Gacha pendiente: falta conectar vales, máquinas, probabilidades y resultados al perfil.";break;
         case 7:description="Comunidad requiere enlaces externos. Este runtime todavía no dispone de un servicio conectado para abrirlos.";break;

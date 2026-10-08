@@ -2,7 +2,7 @@
 
 ## Cómo medir el avance
 
-- Referencia actual: rama `codex/pokerogue-3ds-migration`, último commit publicado `a6d9807` y cambios locales posteriores sin publicar. Los resultados históricos no verifican estos cambios locales.
+- Referencia actual: rama `codex/pokerogue-3ds-migration`, último commit publicado `1ffb77b` y cambios locales posteriores sin publicar. Los resultados históricos no verifican estos cambios locales.
 - Objetivo: PokéRogue jugable y fiel al snapshot upstream en Old 3DS, con ambas pantallas, progreso exportable y actualizaciones desde consola.
 - Cada ID es estable para reportar avances: `MOV-07`, `GUI-03`, etc. No equivale a un movimiento/habilidad individual.
 - Una casilla sin marcar puede tener código parcial; el resumen de cada área indica lo existente. Marcarla solo con integración completa y evidencia ejecutada pertinente.
@@ -699,3 +699,7 @@ La búsqueda del índice generado usa búsqueda binaria sobre identidades ordena
 
 - [ ] Catálogo shiny completo integrado: el staging exige reporte final, conteos completos, cero registros inválidos/no soportados, identidad única y hash PNG coincidente con el registro materializado, hash del reporte compatible con Python y ausencias upstream sin duplicados/conflictos. Guard JS PASS; las 7.570 apariencias y su conversión final siguen pendientes.
 - [ ] Retorno de submenús verificado en consola: la navegación C++ conserva la fila de origen al volver desde cualquiera de las nueve opciones. Casos nativos escritos para las nueve rutas y ajustes anidados; ejecución aplazada por instrucción de no compilar.
+
+### Estadísticas de descubrimiento del perfil
+
+- [ ] Pantalla nativa de estadísticas completa: cuatro métricas de catálogo conectadas al perfil (iniciales capturados, iniciales shiny, especies vistas y capturadas), con denominadores canónicos y etiquetas de locales pinned. Reutiliza `FirstRunRuntime::profileCatalogStats`, semántica de `game-stats-ui-handler.ts::displayStats`. No deriva combates, capturas repetidas ni tiempo jugado a partir de flags. Prueba nativa de perfil ausente/fresco/shiny escrita sin ejecutar; guard de wiring/localización y cobertura de glifos PASS. Historial, demás métricas y validación visual siguen pendientes.

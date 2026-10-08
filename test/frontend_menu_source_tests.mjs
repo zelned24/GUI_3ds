@@ -1,5 +1,7 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
+import {execFileSync} from 'node:child_process';
+import {POKEROGUE_REPOSITORIES} from '../tools/js/data/PokerogueSource.js';
 const frontend=await fs.readFile(new URL('../project/include/runtime/FrontendMenuPresenter.hpp',import.meta.url),'utf8');
 const main=await fs.readFile(new URL('../project/src/main.cpp',import.meta.url),'utf8');
 // Source guard only: this does not execute native input, storage or rendering.
@@ -41,3 +43,18 @@ assert(!frontend.includes('*dexAt(start+cell,game)'));
 
 assert(frontend.includes("m_globalSelection=m_selected"));
 assert(frontend.includes("m_page==FrontendPage::GlobalMenu ? m_globalSelection : 0"));
+
+const statsLabels=await fs.readFile(new URL('../project/generated/include/content/RuntimeUiText.hpp',import.meta.url),'utf8');
+for(const key of ['starters','shinyStarters','speciesSeen','speciesCaught']) {
+  assert(frontend.includes('game-stats-ui-handler:'+key));
+  assert(statsLabels.includes('game-stats-ui-handler:'+key));
+}
+assert(frontend.includes('game->profileCatalogStats(stats)'));
+
+// Check the real pinned locale, rather than merely checking generated key presence.
+const locale=POKEROGUE_REPOSITORIES['pokerogue-locales'];
+const statsLocale=JSON.parse(execFileSync('git',['show',locale.revision+':es-ES/game-stats-ui-handler.json'],
+  {cwd:new URL('../build/upstream/pokerogue-locales/',import.meta.url),encoding:'utf8'}));
+for(const key of ['starters','shinyStarters','speciesSeen','speciesCaught'])
+  assert(statsLabels.includes('{'+JSON.stringify('game-stats-ui-handler:'+key)+','+JSON.stringify(statsLocale[key])+'}'));
+console.log('PASS profile-statistics locale labels match pinned upstream');

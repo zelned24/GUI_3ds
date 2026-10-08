@@ -139,6 +139,32 @@ public:
             ? &m_starterProfileRecords[first] : nullptr;
     }
     const NativeStarterCandyRecord* starterProfileRecords() const { return m_starterProfileRecords.data(); }
+    struct ProfileCatalogStats {
+        unsigned speciesTotal=0,speciesSeen=0,speciesCaught=0;
+        unsigned startersTotal=0,startersCaught=0,shinyStartersCaught=0;
+    };
+    // Pinned game-stats-ui-handler.ts::displayStats dexSeen/dexCaught and
+    // startersUnlocked/shinyStartersUnlocked. No historical encounter counters
+    // are inferred from discovery flags, and unavailable profiles return false.
+    bool profileCatalogStats(ProfileCatalogStats& output) const {
+        output={};
+        if(!m_starterProfileReady) return false;
+        for(const auto& species:PokerogueContent::kSpecies) {
+            ++output.speciesTotal;
+            if(species.starterEligible) ++output.startersTotal;
+            const auto* record=starterProgress(species.dex);
+            if(!record) continue;
+            if(record->caught || record->observedFormAttr) ++output.speciesSeen;
+            if(!record->caught) continue;
+            ++output.speciesCaught;
+            if(species.starterEligible) {
+                ++output.startersCaught;
+                if(record->caughtAppearanceAttr & 2u) ++output.shinyStartersCaught;
+            }
+        }
+        return true;
+    }
+
     bool capturePartyChoicePending() const { return m_capturePartyChoicePending; }
     uint8_t selectedCapturePartyChoice() const { return m_selectedCapturePartyChoice; }
     const ResolvedPokemon& pendingCapturedPokemon() const { return m_pendingCapturedPokemon; }

@@ -3370,6 +3370,25 @@ static int checkPlayerPartyManagementAndSwitching() {
         const auto& legacy=legacyAppearance.presentation().player.actor;
         if(legacy.appearanceResolved || legacy.shiny || legacy.shinyVariant || legacy.pokemonId!=normal.pokemonId) return 926;
     }
+    {
+        FirstRunRuntime unavailable(1);
+        FirstRunRuntime::ProfileCatalogStats stats;
+        stats.speciesSeen=999;
+        if(unavailable.profileCatalogStats(stats) || stats.speciesSeen || stats.speciesTotal) return 940;
+        if(!freshProfileGame.profileCatalogStats(stats)) return 941;
+        unsigned total=0,eligible=0,fresh=0;
+        for(const auto& species:PokerogueContent::kSpecies) {
+            ++total;if(species.starterEligible) ++eligible;if(species.freshProfileStarter) ++fresh;
+        }
+        if(stats.speciesTotal!=total || stats.startersTotal!=eligible || stats.speciesSeen!=fresh ||
+           stats.speciesCaught!=fresh || stats.startersCaught!=fresh || stats.shinyStartersCaught) return 942;
+        auto shiny=freshProfileGame.starterProfileRecords()[0];
+        shiny.caughtAppearanceAttr=83;shiny.observedAppearanceAttr=83;
+        FirstRunRuntime shinyProfile(1);
+        if(!shinyProfile.restoreStarterCandyProfile(&shiny,1,0,captureFriendshipPolicy) ||
+           !shinyProfile.profileCatalogStats(stats) || stats.speciesCaught!=1 ||
+           stats.speciesSeen!=1 || stats.startersCaught!=1 || stats.shinyStartersCaught!=1) return 943;
+    }
     uint32_t expectedFreshCaught = 0;
     for (const auto& species : PokerogueContent::kSpecies) {
         if (species.freshProfileStarter) {
@@ -3416,6 +3435,10 @@ static int checkPlayerPartyManagementAndSwitching() {
         for(size_t i=0;i<observedGame.starterProfileCount();++i)
             if(observedGame.starterProfileRecords()[i].speciesDex==enemyDex) seen=&observedGame.starterProfileRecords()[i];
         if(!seen || !(seen->observedFormAttr & form) || observedGame.caughtSpeciesCount()!=caughtBefore) return 904;
+        FirstRunRuntime::ProfileCatalogStats observedStats;
+        if(!observedGame.profileCatalogStats(observedStats) || observedStats.speciesCaught!=caughtBefore ||
+           observedStats.speciesSeen<caughtBefore || observedStats.speciesSeen>caughtBefore+1) return 944;
+
         const auto* species=PokerogueContent::findSpeciesByDex(enemyDex);
         if(!species || (!species->freshProfileStarter && (seen->caught || seen->candyCount || seen->unlockedFormAttr || seen->abilityAttr))) return 905;
         static ProgressMemoryStorage seenRunDisk,seenProfileDisk;
@@ -3434,6 +3457,12 @@ static int checkPlayerPartyManagementAndSwitching() {
         if(!restoredSeen || restoredSeen->observedFormAttr!=seen->observedFormAttr ||
             restoredSeen->caught!=seen->caught || restoredSeen->candyCount!=seen->candyCount ||
             restoredSeen->unlockedFormAttr!=seen->unlockedFormAttr || seenReloaded.caughtSpeciesCount()!=caughtBefore) return 908;
+        FirstRunRuntime::ProfileCatalogStats restoredStats;
+        if(!seenReloaded.profileCatalogStats(restoredStats) || restoredStats.speciesSeen!=observedStats.speciesSeen ||
+           restoredStats.speciesCaught!=observedStats.speciesCaught ||
+           restoredStats.startersCaught!=observedStats.startersCaught ||
+           restoredStats.shinyStartersCaught!=observedStats.shinyStartersCaught) return 945;
+
 
     }
 

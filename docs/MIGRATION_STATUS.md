@@ -6,6 +6,7 @@
 - Catálogo shiny: materialización completa pendiente; el proceso activo conserva fuente pinned y hashes. Bouffalant aplica el fallback negro de `rgbHexToRgba` upstream.
 - Submenú global: conserva la opción de origen al regresar desde las nueve rutas; prueba nativa escrita, sin ejecutar.
 - Staging shiny: rechaza reportes parciales y exige coincidencia de identidad/hash PNG con el catálogo final y hash del reporte compatible con Python; ausencias pinned sin duplicados ni conflictos; guard JS PASS.
+- Estadísticas: cuatro métricas de descubrimiento calculadas en gameplay a partir del perfil real y catálogo canónico; etiquetas pinned importadas. Los contadores históricos siguen pendientes y no se presentan como cero. C++ escrito sin ejecución.
 - Selector: indicadores shiny originales, perfiles vistos/capturados/desconocidos, filtros; títulos/submenús/Pokédex y exportación/importación con confirmación tienen rutas C++ escritas.
 - Fuentes: cobertura de glifos especiales, texto UTF-8 y rasters físicos comprobados. Cache de iconos y paginación reducen recorridos; rendimiento de hardware no medido.
 - Gates permitidos: guards JS de menú e índice de apariencias, metadata de género pinned; tests Python de cobertura de glifos, indicadores y paletas: PASS. `git diff --check`: PASS.
