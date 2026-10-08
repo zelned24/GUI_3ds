@@ -278,3 +278,7 @@ assert(partyPresentation.includes("resolvePokemonIcon(actor.dex,actor.formId"));
 
 assert(decisions.includes("resolvePokemonIcon(actor.dex,actor.formId"));
 assert(decisions.includes("m_icons.drawAppearance(renderer,icons[i].appearance,34,y+5)"));
+
+const iconPresentation=await fs.readFile(new URL("../project/include/runtime/PokemonIconPresenter.hpp",import.meta.url),"utf8");
+assert(iconPresentation.includes("image.subtex->width!=expected || image.subtex->height!=expected"));
+assert(iconPresentation.includes("renderer.retireSpriteSheet(selected->sheet);selected->sheet=nullptr"));

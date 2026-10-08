@@ -19,11 +19,17 @@ using namespace Pokerogue3DS;
 // Host doubles verify cache ownership; they do not prove GPU behavior.
 static unsigned iconLoads=0,iconDraws=0,iconFilters=0,iconFrees=0,iconRetired=0;
 static bool failIconLoad=true;
+static bool malformedIconImage=false;
 static C3D_Tex iconTexture{};
 static Tex3DS_SubTexture iconSubtexture{512,512,0,0,1,1};
-C2D_SpriteSheet C2D_SpriteSheetLoad(const char*) {++iconLoads;return failIconLoad ? nullptr : &iconTexture;}
+C2D_SpriteSheet C2D_SpriteSheetLoad(const char* path) {
+    ++iconLoads;
+    const bool compact=std::strstr(path,"appearance-icons-compact-")!=nullptr;
+    iconSubtexture.width=iconSubtexture.height=compact ? 256 : 512;
+    return failIconLoad ? nullptr : &iconTexture;
+}
 C2D_Image C2D_SpriteSheetGetImage(C2D_SpriteSheet sheet,size_t index) {
-    assert(sheet==&iconTexture && index==0);return {&iconTexture,&iconSubtexture};
+    assert(sheet==&iconTexture && index==0);return {malformedIconImage ? nullptr : &iconTexture,&iconSubtexture};
 }
 void C2D_SpriteSheetFree(C2D_SpriteSheet sheet) {assert(sheet==&iconTexture);++iconFrees;}
 void C3D_TexSetFilter(C3D_Tex* texture,GPU_TEXTURE_FILTER_PARAM magnify,GPU_TEXTURE_FILTER_PARAM minify) {
@@ -299,6 +305,17 @@ int main() {
         assert(!icons.drawAppearance(renderer,batch[0],std::numeric_limits<float>::quiet_NaN(),0));
         assert(icons.prepareAppearances(renderer,nullptr,0));
         assert(!icons.drawAppearance(renderer,batch[0],0,0));
+        const unsigned retiredBeforeMalformed=iconRetired;
+        malformedIconImage=true;
+        assert(!icons.prepareAppearances(renderer,batch,1));
+        assert(iconRetired==retiredBeforeMalformed+1);
+        assert(!icons.drawAppearance(renderer,batch[0],0,0));
+        const unsigned loadsAfterMalformed=iconLoads;
+        malformedIconImage=false;
+        assert(!icons.prepareAppearances(renderer,batch,1) && iconLoads==loadsAfterMalformed);
+        icons.clear(&renderer);
+        assert(icons.prepareAppearances(renderer,batch,1));
+        icons.clear(&renderer);
     }
 
 }

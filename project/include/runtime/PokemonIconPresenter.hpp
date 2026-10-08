@@ -87,7 +87,11 @@ public:
                 selected->sheet=C2D_SpriteSheetLoad(m_compact ? kCompactAppearanceIconPages[pages[i]] : kAppearanceIconPages[pages[i]]);
                 if(selected->sheet) {
                     const auto image=C2D_SpriteSheetGetImage(selected->sheet,0);
-                    if(image.tex) C3D_TexSetFilter(image.tex,GPU_NEAREST,GPU_NEAREST);
+                    const unsigned expected=m_compact ? 256 : 512;
+                    if(!image.tex || !image.subtex || image.subtex->width!=expected || image.subtex->height!=expected ||
+                        image.subtex->top<image.subtex->bottom) {
+                        renderer.retireSpriteSheet(selected->sheet);selected->sheet=nullptr;
+                    } else C3D_TexSetFilter(image.tex,GPU_NEAREST,GPU_NEAREST);
                 }
             }
             if(!selected->sheet) loaded=false;
