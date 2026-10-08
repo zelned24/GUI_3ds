@@ -189,8 +189,8 @@ def monochrome_font(data: bytes, rasterize) -> bytes:
     """Replace glyph coverage with monochrome outlines, retaining advances/baselines.
 
     rasterize(codepoint) returns a binary mask, (width,height), and baseline
-    offset (left,top). The left bearing remains represented by CWDH; the
-    atlas stores the bitmap at the cell origin, as mkbcfnt does.
+    offset (left,top). CWDH retains the source advance but uses the matching
+    monochrome left bearing; the atlas stores ink at the cell origin.
     """
     compact_font(data)  # Validate CFNT maps, dimensions and offsets first.
     tglp, cwdh, cmap = struct.unpack_from("<III", data, 36)
@@ -224,14 +224,16 @@ def monochrome_font(data: bytes, rasterize) -> bytes:
     for glyph,cp in sorted(mappings.items()):
         sheet,local=divmod(glyph,columns*rows)
         if sheet>=sheets: raise ValueError("Glyph exceeds font sheets")
-        mask,(mw,mh),(_,top)=rasterize(cp)
+        mask,(mw,mh),(left,top)=rasterize(cp)
         if len(mask)!=mw*mh: raise ValueError("Invalid monochrome glyph mask")
         gy=baseline+top
         width_offset=bitmap_width_offsets.get(glyph)
         if width_offset is None: raise ValueError("Missing glyph width metrics")
         # Replace the grayscale bitmap width with the actual monochrome ink
         # extent. Retaining a stale larger width can sample adjacent glyphs.
-        # Advance and left bearing remain unchanged.
+        # Advance remains unchanged; hinting can change the left bearing too.
+        if not -128<=left<=127: raise ValueError("Invalid monochrome left bearing")
+        result[width_offset-1]=left & 255
         ink_width=max((x+1 for y in range(mh) for x in range(mw) if mask[y*mw+x]),default=0)
         result[width_offset]=ink_width
         # Empty rows can extend outside the bitmap's actual ink bounds.

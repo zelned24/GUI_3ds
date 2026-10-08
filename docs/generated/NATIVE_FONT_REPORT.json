@@ -30,7 +30,7 @@
       "capitalInkHeight": 9,
       "capitalInkTop": 12,
       "convertedPath": "romfs:/presentation/fonts/emerald-12.bcfnt",
-      "convertedSHA256": "f6d4b611eea5cc0044ae0fb84af8d312ed939faeb13c52b9c4951c6c8713c429",
+      "convertedSHA256": "9f24d4baa255305a7c52097ef12f69f2539bba9dc7088adb8873bca5537d497f",
       "lineFeed": 14,
       "points": 12,
       "rasterCellHeight": 23,
@@ -42,7 +42,7 @@
       "capitalInkHeight": 12,
       "capitalInkTop": 16,
       "convertedPath": "romfs:/presentation/fonts/emerald.bcfnt",
-      "convertedSHA256": "4e7c39ada6b0170be72bedb8b7c4ee9d2b1a7edb7f6f0248288a5b4ffb80417b",
+      "convertedSHA256": "5d78c2d08255d0333fbbe1e97cf671e6c26d0f4948a5e8e79b7a9cd8cca357f7",
       "lineFeed": 19,
       "points": 16,
       "rasterCellHeight": 31,
@@ -50,6 +50,7 @@
       "uncompactedBytes": 525060
     }
   ],
+  "glyphMetricsPolicy": "monochrome ink width and left bearing; mkbcfnt advance and baseline preserved",
   "rasterizer": {
     "freetype": "2.13.3",
     "pillow": "11.3.0"

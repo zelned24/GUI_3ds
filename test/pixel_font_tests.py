@@ -76,6 +76,17 @@ class PixelFontTests(unittest.TestCase):
         self.assertEqual(result[metric],source[metric])
         self.assertEqual(result[metric+2],source[metric+2])
 
+    def test_monochrome_bearing_matches_raster_preserving_advance(self):
+        source=bytearray(self.compact_source())
+        cwdh=struct.unpack_from("<I",source,40)[0]
+        metric=cwdh+8+2*3
+        source[metric]=1
+        result=monochrome_font(bytes(source),lambda cp:(bytes([255]),(1,1),(-1,-1)))
+        self.assertEqual(struct.unpack_from('<b',result,metric)[0],-1)
+        self.assertEqual(result[metric+2],source[metric+2])
+        with self.assertRaisesRegex(ValueError,'left bearing'):
+            monochrome_font(bytes(source),lambda cp:(bytes([255]),(1,1),(128,-1)))
+
     def test_monochrome_rejects_clipped_ink_and_invalid_masks(self):
         source=self.compact_source()
         with self.assertRaisesRegex(ValueError,"exceeds native cell"):

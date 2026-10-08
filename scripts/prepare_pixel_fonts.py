@@ -35,7 +35,7 @@ def prepare_fonts(root, whitelist):
         glyph=struct.unpack_from("<I",data,36)[0]
         sheet_bytes=struct.unpack_from("<I",data,glyph+4)[0]*struct.unpack_from("<H",data,glyph+8)[0]
         rows.append({"capitalInkTop":ink_top,"capitalInkHeight":ink_bottom-ink_top,"uncompactedBytes":len(original),"rasterCellHeight":data[glyph+1],"lineFeed":data[29],"sheetBytes":sheet_bytes,"points":points,"convertedPath":"romfs:/presentation/fonts/"+name,"convertedSHA256":hashlib.sha256(path.read_bytes()).hexdigest(),"bytes":path.stat().st_size})
-    report={"repository":REPOSITORY,"revision":REVISION,"sourcePath":SOURCE,"sourceSHA256":hashlib.sha256(raw).hexdigest(),"schemaVersion":1,"whitelistSHA256":hashlib.sha256(whitelist.read_bytes()).hexdigest(),"alphaPolicy":"FreeType monochrome outlines at 96 DPI; native CFNT metrics","rasterizer":{"pillow":pillow_version,"freetype":features.version("freetype2")},"files":rows}
+    report={"repository":REPOSITORY,"revision":REVISION,"sourcePath":SOURCE,"sourceSHA256":hashlib.sha256(raw).hexdigest(),"schemaVersion":1,"whitelistSHA256":hashlib.sha256(whitelist.read_bytes()).hexdigest(),"alphaPolicy":"FreeType monochrome outlines at 96 DPI; native CFNT metrics","glyphMetricsPolicy":"monochrome ink width and left bearing; mkbcfnt advance and baseline preserved","rasterizer":{"pillow":pillow_version,"freetype":features.version("freetype2")},"files":rows}
     (root/"build/native-presentation/font-provenance.json").write_text(json.dumps(report,sort_keys=True,indent=2)+"\n",encoding="utf-8",newline="\n")
     (root/"docs/generated/NATIVE_FONT_REPORT.json").write_bytes((json.dumps(report,sort_keys=True,indent=2)+"\n").encode("utf-8"))
     header=root/"project/generated/include/content/NativeFontMetrics.hpp"
