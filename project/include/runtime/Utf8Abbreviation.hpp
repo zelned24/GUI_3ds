@@ -38,7 +38,7 @@ template<class Measure> bool abbreviateUtf8(const char* source,char* out,std::si
     auto appendDot=[&]() {
         if(length && out[length-1]=='.') --length;
         else if(length) length=previousUtf8(out,length);
-        while(length) {const auto start=previousUtf8(out,length);uint32_t cp;utf8CodePoint(out+start,cp);if(!jsTrailingSpace(cp)) break;length=start;}
+        while(length) {const auto start=previousUtf8(out,length);uint32_t cp=0;if(!utf8CodePoint(out+start,cp) || !jsTrailingSpace(cp)) break;length=start;}
         out[length++]='.';out[length]=0;
     };
     if(overflow) appendDot();
@@ -50,7 +50,7 @@ template<class Measure> bool abbreviateUtf8(const char* source,char* out,std::si
         // If an earlier iteration appended '.', remove one more full codepoint.
         if(out[length-1]=='.') {--length;if(length) length=previousUtf8(out,length);out[length]=0;}
         else length=previousUtf8(out,length);
-        while(length) {const auto start=previousUtf8(out,length);uint32_t cp;utf8CodePoint(out+start,cp);if(!jsTrailingSpace(cp)) break;length=start;}
+        while(length) {const auto start=previousUtf8(out,length);uint32_t cp=0;if(!utf8CodePoint(out+start,cp) || !jsTrailingSpace(cp)) break;length=start;}
         out[length++]='.';out[length]=0;
     }
 }

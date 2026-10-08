@@ -377,3 +377,6 @@ const windowDraw=rendererSource.slice(rendererSource.indexOf('bool Renderer2D::d
 assert(windowDraw.includes('!std::isfinite(width)'));
 assert(windowDraw.includes('width=std::round(width);height=std::round(height)'));
 assert(windowDraw.includes('image.subtex->left>=image.subtex->right'));
+
+const utf8Abbreviation=await fs.readFile(new URL('../project/include/runtime/Utf8Abbreviation.hpp',import.meta.url),'utf8');
+assert.equal(utf8Abbreviation.split('uint32_t cp=0;if(!utf8CodePoint(out+start,cp) || !jsTrailingSpace(cp)) break;').length-1,2);
