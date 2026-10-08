@@ -376,6 +376,19 @@ public:
             }
         }
         else renderer.drawWindow(8,51,304,112);
+        ResolvedPokemonIcon gridIcons[kStarterGridPageSize]{};
+        const AppearanceIconIdentity* gridAppearances[kStarterGridPageSize]{};
+        unsigned visibleCount=0;
+        for(;visibleCount<kStarterGridPageSize;++visibleCount) {
+            const auto* entry=at(game,start+visibleCount);if(!entry) break;
+            ResolvedPokemon visual{};
+            if(!game.setupStarterVisual(entry->dex,visual)) continue;
+            const bool known=game.starterUnlocked(*entry) && visual.actor.appearanceResolved;
+            gridIcons[visibleCount]=resolvePokemonIcon(entry->dex,visual.formId,known,
+                visual.actor.gender==PokemonGender::Female,visual.actor.shiny,visual.actor.shinyVariant);
+            gridAppearances[visibleCount]=gridIcons[visibleCount].appearance;
+        }
+        m_icons.prepareAppearances(renderer,gridAppearances,visibleCount);
         for(unsigned i=0;i<kStarterGridPageSize;++i) {
             const auto* species=at(game,start+i);if(!species) break;
             const float x=16+(i%6)*48,y=54+(i/6)*36;
@@ -392,8 +405,10 @@ public:
             // Pinned starter-select-ui-handler: caught normal, seen gray,
             // unseen black. Catalogue membership never implies observation.
             const uint32_t tint=starterDiscoveryTint(starterDiscovery(unlocked,progress ? progress->observedFormAttr : 0));
-            if(!m_icons.draw(renderer,species->dex,game.setupStarterFormIndex(species->dex),x+3,y+2,1.0f,1.0f,tint))
-                renderer.drawText("?",x+16,y+8,0.4f,0xffffffff);
+            bool drawn=false;
+            if(gridIcons[i].appearance) drawn=m_icons.drawAppearance(renderer,gridIcons[i].appearance,x+3,y+2,1.0f,2);
+            else if(gridIcons[i].normalIconAllowed) drawn=m_icons.draw(renderer,species->dex,gridIcons[i].formIndex,x+3,y+2,1.0f,2.0f,tint);
+            if(!drawn) renderer.drawText("?",x+16,y+8,0.4f,0xffffffff);
             bool shiny=false;uint8_t variant=0;
             if(progress && unlocked && nativeStarterDefaultAppearance(*progress,shiny,variant) && shiny)
                 drawVariantIndicator(renderer,variant,x+30,y+18);
@@ -550,7 +565,7 @@ private:
     bool m_variantIconsAttempted=false;
     bool m_backgroundAttempted=false,m_logoAttempted=false,m_gridAttempted=false;
     C2D_SpriteSheet m_logo=nullptr,m_background=nullptr,m_grid=nullptr;
-    PokemonIconPresenter m_icons;
+    PokemonIconPresenter m_icons{true,kStarterGridPageSize};
     PokemonIconPresenter m_teamIcons{true};
     TitleMenuPresenter m_prompt;
     IntroCinematicPresenter m_introCinematic;

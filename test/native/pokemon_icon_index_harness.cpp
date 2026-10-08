@@ -352,4 +352,28 @@ int main() {
         icons.clear(&renderer);
     }
 
+    {
+        PokemonIconPresenter grid(true,18);
+        const AppearanceIconIdentity* batch[19]{};unsigned count=0;
+        for(const auto& identity:kAppearanceIconIdentities) {
+            const auto* frame=appearanceIconPhysicalFrame(&identity);if(!frame) continue;
+            bool unique=true;
+            for(unsigned i=0;i<count;++i) if(appearanceIconPhysicalFrame(batch[i])->page==frame->page) unique=false;
+            if(unique) batch[count++]=&identity;
+            if(count==19) break;
+        }
+        assert(count==19);
+        const unsigned before=iconLoads;
+        assert(!grid.prepareAppearances(renderer,batch,19) && iconLoads==before);
+        assert(grid.prepareAppearances(renderer,batch,18) && iconLoads==before+18);
+        for(unsigned i=0;i<18;++i) {
+            assert(grid.drawAppearance(renderer,batch[i],1.4f,2.7f,1,2));
+            assert(lastIconWidth==40 && lastIconHeight==30 && lastIconX==1 && lastIconY==3);
+            assert(!grid.drawAppearance(renderer,batch[i],0,0,1,0));
+            assert(!grid.drawAppearance(renderer,batch[i],0,0,1,3));
+        }
+        assert(grid.prepareAppearances(renderer,batch,18) && iconLoads==before+18);
+        grid.clear(&renderer);
+    }
+
 }

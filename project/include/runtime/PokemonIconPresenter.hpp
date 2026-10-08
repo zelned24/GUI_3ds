@@ -50,7 +50,7 @@ inline ResolvedPokemonIcon resolvePokemonIcon(uint16_t dex,const char* formId,bo
 // Current snapshot: eight 512x512 RGBA8 pages, up to 8 MiB of texture RAM.
 class PokemonIconPresenter {
 public:
-    explicit PokemonIconPresenter(bool compact=false):m_compact(compact) {}
+    explicit PokemonIconPresenter(bool compact=false,unsigned appearanceCapacity=6):m_compact(compact),m_appearanceCapacity(compact && appearanceCapacity==18 ? 18 : 6) {}
     PokemonIconPresenter(const PokemonIconPresenter&)=delete;
     PokemonIconPresenter& operator=(const PokemonIconPresenter&)=delete;
     ~PokemonIconPresenter() {clear();}
@@ -63,14 +63,14 @@ public:
     // Keeps pages needed by this batch; no eviction occurs while its icons are drawn.
     bool prepareAppearances(Renderer2D& renderer,const AppearanceIconIdentity* const* identities,unsigned count) {
         m_appearancesReady=false;
-        if(count>6 || (count && !identities)) return false;
-        uint16_t pages[6]{};unsigned pageCount=0;
+        if(count>m_appearanceCapacity || (count && !identities)) return false;
+        uint16_t pages[18]{};unsigned pageCount=0;
         for(unsigned i=0;i<count;++i) {
             if(!identities[i]) continue; // Legacy appearance remains explicitly unknown.
             const auto* frame=appearanceIconPhysicalFrame(identities[i]);
             if(!frame || frame->page>=sizeof(kAppearanceIconPages)/sizeof(kAppearanceIconPages[0])) return false;
             bool present=false;for(unsigned j=0;j<pageCount;++j) if(pages[j]==frame->page) present=true;
-            if(!present) pages[pageCount++]=frame->page;
+            if(!present) {if(pageCount==m_appearanceCapacity) return false;pages[pageCount++]=frame->page;}
         }
         for(auto& slot:m_appearanceSlots) {
             bool wanted=false;for(unsigned i=0;i<pageCount;++i) if(slot.page==pages[i]) wanted=true;
@@ -81,7 +81,7 @@ public:
             Slot* selected=nullptr;
             for(auto& slot:m_appearanceSlots) if(slot.page==pages[i]) selected=&slot;
             if(!selected) {
-                for(auto& slot:m_appearanceSlots) if(slot.page==0xffff) {selected=&slot;break;}
+                for(unsigned index=0;index<m_appearanceCapacity;++index) if(m_appearanceSlots[index].page==0xffff) {selected=&m_appearanceSlots[index];break;}
                 if(!selected) return false;
                 selected->page=pages[i];
                 selected->sheet=C2D_SpriteSheetLoad(m_compact ? kCompactAppearanceIconPages[pages[i]] : kAppearanceIconPages[pages[i]]);
@@ -99,7 +99,8 @@ public:
         m_appearancesReady=true;
         return loaded;
     }
-    bool drawAppearance(Renderer2D& renderer,const AppearanceIconIdentity* identity,float x,float y,float opacity=1.0f) {
+    bool drawAppearance(Renderer2D& renderer,const AppearanceIconIdentity* identity,float x,float y,float opacity=1.0f,unsigned scale=1) {
+        if(scale<1 || scale>2) return false;
         if(!m_appearancesReady || !std::isfinite(x) || !std::isfinite(y) || !std::isfinite(opacity) || opacity<=0) return false;
         const auto* icon=appearanceIconPhysicalFrame(identity);if(!icon) return false;
         Slot* selected=nullptr;for(auto& slot:m_appearanceSlots) if(slot.page==icon->page) selected=&slot;
@@ -107,7 +108,7 @@ public:
         const unsigned divisor=m_compact ? 2 : 1;
         if(m_compact && ((icon->x|icon->y|icon->width|icon->height)&1)) return false;
         Renderer2D::AtlasFrame frame{uint16_t(icon->x/divisor),uint16_t(icon->y/divisor),uint16_t(icon->width/divisor),uint16_t(icon->height/divisor),uint16_t(icon->width/divisor),uint16_t(icon->height/divisor),0,0};
-        renderer.drawAtlasFrame(C2D_SpriteSheetGetImage(selected->sheet,0),frame,std::round(x),std::round(y),frame.width,frame.height,std::min(opacity,1.0f));
+        renderer.drawAtlasFrame(C2D_SpriteSheetGetImage(selected->sheet,0),frame,std::round(x),std::round(y),frame.width*scale,frame.height*scale,std::min(opacity,1.0f));
         return true;
     }
     bool draw(Renderer2D& renderer,uint16_t dex,uint16_t formIndex,float x,float y,float opacity=1.0f,float scale=1.0f,uint32_t tint=0xffffffff) {
@@ -147,7 +148,8 @@ private:
         slot.sheet=nullptr;slot.page=0xffff;
     }
     bool m_appearancesReady=false;
-    Slot m_appearanceSlots[6]{};
+    unsigned m_appearanceCapacity=6;
+    Slot m_appearanceSlots[18]{};
     Slot m_slots[sizeof(kPokemonIconPages)/sizeof(kPokemonIconPages[0])]{};
 };
 }
