@@ -288,18 +288,31 @@ public:
             else
                 std::snprintf(label,sizeof(label),"Coste: %u.%02u pts",unsigned(quarters/4),unsigned(quarters%4)*25);
         } else std::snprintf(label,sizeof(label),"Coste no disponible");
-        renderer.drawText(label,161,73,0.4f,0xffffffff);
-        const char* ability=abilityUiName(game.setupStarterAbilityId(species->dex));
-        if(!renderer.drawTextBox(ability ? ability : "",161,94,0.375f,220,2,0xffffffff))
-            renderer.drawTextFitted(ability ? ability : "",161,99,0.375f,220,0xffffffff);
-        renderer.drawText(game.starterUnlocked(species->dex) ? "Disponible" : runtimeUiText("starter-select-ui-handler:locked"),161,122,0.375f,0xffffffff);
+        renderer.drawTextFitted(label,161,73,0.375f,220,0xffffffff);
+        const auto drawName=[&](const char* name,const TouchRect& bounds,uint32_t color) {
+            const float size=0.3125f;
+            const char* text=name && *name ? name : "—";
+            const unsigned lines=textLinesWithinHeight(bounds.height,renderer.textInkHeight(size),renderer.textLineHeight(size),2);
+            if(!lines || !renderer.drawTextBox(text,bounds.x,bounds.y,size,bounds.width,lines,color))
+                renderer.drawTextFitted(text,bounds.x,bounds.y,size,bounds.width,color);
+        };
+        renderer.drawTextFitted(runtimeUiText("starter-select-ui-handler:ability"),161,87,0.25f,220,0xffc0b8cc);
+        drawName(abilityUiName(game.setupStarterAbilityId(species->dex)),kStarterAbilityNameRect,0xffffffff);
+        const auto* record=game.starterProgress(species->dex);
+        const bool passiveUnlocked=record && record->passiveUnlocked;
+        char passiveHeading[100];
+        std::snprintf(passiveHeading,sizeof(passiveHeading),"%s%s",runtimeUiText("starter-select-ui-handler:passive"),
+            passiveUnlocked ? "" : " [X]");
+        renderer.drawTextFitted(passiveHeading,161,123,0.25f,220,0xffc0b8cc);
+        drawName(abilityUiName(game.setupStarterPassiveAbilityId(species->dex)),kStarterPassiveNameRect,passiveUnlocked ? 0xffffffff : 0xff909090);
+        renderer.drawTextFitted(game.starterUnlocked(species->dex) ? "Disponible" : runtimeUiText("starter-select-ui-handler:locked"),161,159,0.3125f,220,0xffffffff);
         std::snprintf(label,sizeof(label),"PS %u   ATQ %u   DEF %u",(form ? form->hp : species->hp),(form ? form->atk : species->atk),(form ? form->def : species->def));
-        renderer.drawText(label,161,146,0.375f,0xffffffff);
+        renderer.drawTextFitted(label,161,178,0.3125f,220,0xffffffff);
         std::snprintf(label,sizeof(label),"AE %u   DE %u   VEL %u",(form ? form->spatk : species->spatk),(form ? form->spdef : species->spdef),(form ? form->speed : species->speed));
-        renderer.drawText(label,161,168,0.375f,0xffffffff);
+        renderer.drawTextFitted(label,161,194,0.3125f,220,0xffffffff);
         const unsigned bst=(form ? form->hp : species->hp)+(form ? form->atk : species->atk)+(form ? form->def : species->def)+(form ? form->spatk : species->spatk)+(form ? form->spdef : species->spdef)+(form ? form->speed : species->speed);
         std::snprintf(label,sizeof(label),"Total base (BST): %u",bst);
-        renderer.drawText(label,161,193,0.375f,0xffffffff);
+        renderer.drawTextFitted(label,161,211,0.3125f,220,0xffffffff);
         renderer.drawText(game.presentation().modeName ? game.presentation().modeName : "",16,217,0.4f,0xffffffff);
     }
     void drawBottom(Renderer2D& renderer,const FirstRunRuntime& game) {

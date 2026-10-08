@@ -305,3 +305,7 @@ assert(main.includes("game.cycleSetupStarterAbility(1,progress)"));
 assert(main.includes("kStarterFormAbilityRect.contains(touch.px,touch.py)"));
 assert(setupPresentation.includes("game.canCycleSetupStarterAbility(dex)"));
 assert(setupPresentation.includes("abilityUiName(game.setupStarterAbilityId(dex))"));
+
+assert(setupPresentation.includes("kStarterPassiveNameRect,passiveUnlocked ? 0xffffffff : 0xff909090"));
+assert(setupPresentation.includes("starter-select-ui-handler:passive"));
+assert(setupPresentation.includes("renderer.drawTextFitted(label,161,211,0.3125f,220"));
