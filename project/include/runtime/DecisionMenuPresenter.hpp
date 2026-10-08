@@ -39,7 +39,8 @@ public:
                 const auto* current=i<actor.moveCount ? PokerogueContent::findMoveById(actor.moves[i].moveId) : nullptr;
                 const char* name=current ? moveUiName(current->id) : "--";
                 float nameSize=0.3125f;
-                if(!renderer.drawTextBox(name,rect.x+21,rect.y+9,nameSize,rect.width-30,3,0xffffffff))
+                const unsigned lines=textLinesWithinHeight(rect.height-18,renderer.textInkHeight(nameSize),renderer.textLineHeight(nameSize),3);
+                if(!lines || !renderer.drawTextBox(name,rect.x+21,rect.y+9,nameSize,rect.width-30,lines,0xffffffff))
                     nameSize=renderer.drawTextFitted(name,rect.x+21,rect.y+9,nameSize,rect.width-30,0xffffffff);
                 if(i==game.selectedBattleMove()) m_cursor.drawCursor(renderer,rect.x+7,rect.y+9,nameSize);
             }

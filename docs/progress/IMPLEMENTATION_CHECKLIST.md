@@ -842,3 +842,5 @@ La búsqueda del índice generado usa búsqueda binaria sobre identidades ordena
 - [ ] Equipo: indicador shiny original 15×14 a 1:1 con tint de variante 0/1/2, solo para identidad/apariencia resueltas del actor; no infiere shiny de datos ausentes. Hoja física existente reutilizada, carga diferida y retiro GPU conectado al cierre. Guards PASS; composición/ejecución nativa pendientes.
 
 - [ ] Decisiones de captura/aprendizaje: filas de reemplazo usan rectángulos compartidos de input, PS e instrucciones limitados al ancho, iconos compactos a 1:1 en lugar de escala 0.5×. Guards PASS; integración nativa y composición visual pendientes.
+
+- [ ] Aprendizaje de movimientos: máximo de líneas calculado con ink height y line feed reales dentro del botón, evitando tercera línea fuera de la región. Fallback fitted cuando no cabe; casos de límites/no finitos escritos sin ejecutar, guards PASS. Comparación visual pendiente.

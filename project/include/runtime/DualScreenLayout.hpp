@@ -1,4 +1,5 @@
 #pragma once
+#include <cmath>
 namespace Pokerogue3DS {
 // Zero requests automatic placement; positive values are explicit presentation scale.
 inline constexpr float anchoredSpriteScale(float requested,float automatic) {
@@ -7,6 +8,14 @@ inline constexpr float anchoredSpriteScale(float requested,float automatic) {
 
 inline constexpr float nativeCombatSpriteScale(unsigned width,unsigned height,bool boss,unsigned maxHeight) {
     return width && height && !boss && width<=48 && height<=48 && height<=maxHeight/2 ? 2.0f : 1.0f;
+}
+
+// Count complete ink rows using actual native line feed, not authored font size.
+inline unsigned textLinesWithinHeight(float height,float inkHeight,float lineHeight,unsigned limit) {
+    if(!limit || !std::isfinite(height) || !std::isfinite(inkHeight) || !std::isfinite(lineHeight)
+        || inkHeight<=0 || lineHeight<=0 || height<inkHeight) return 0;
+    const float extra=std::floor((height-inkHeight)/lineHeight);
+    return extra>=limit-1 ? limit : 1+static_cast<unsigned>(extra);
 }
 
 struct TouchRect {

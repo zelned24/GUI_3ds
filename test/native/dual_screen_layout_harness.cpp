@@ -14,6 +14,13 @@
 #include <initializer_list>
 using namespace Pokerogue3DS;
 int main() {
+    assert(textLinesWithinHeight(46,10,26,3)==2);
+    assert(textLinesWithinHeight(10,10,26,3)==1);
+    assert(textLinesWithinHeight(9,10,26,3)==0);
+    assert(textLinesWithinHeight(100,10,26,3)==3);
+    assert(textLinesWithinHeight(NAN,10,26,3)==0);
+    assert(textLinesWithinHeight(46,10,0,3)==0);
+    assert(textLinesWithinHeight(46,10,26,0)==0);
     assert(presentationAnimationFrame(0,12,3)==0);
     assert(presentationAnimationFrame(83,12,3)==0);
     assert(presentationAnimationFrame(84,12,3)==1);

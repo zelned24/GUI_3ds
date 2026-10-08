@@ -230,3 +230,5 @@ assert(decisions.includes('bounds=kPartyButtonRects[i]'));
 assert(decisions.includes('drawTextFitted(hp,237,y+3,0.32f,67'));
 assert(decisions.includes('PokemonIconPresenter m_icons{true}'));
 assert(!decisions.includes('34,y+5,1,0.5f'));
+
+assert(decisions.includes("textLinesWithinHeight(rect.height-18,renderer.textInkHeight(nameSize),renderer.textLineHeight(nameSize),3)"));
