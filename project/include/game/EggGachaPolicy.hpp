@@ -103,12 +103,21 @@ inline uint32_t eggUnlockPityAfterSelection(uint32_t previous,bool caught,bool a
 // PokemonSpecies.hasVariants: presence of species-form key OR base species
 // key in the pinned masterlist. Presence matters, not converted texture status.
 inline bool eggSpeciesHasVariants(uint16_t dex,const char* formKey=nullptr) {
+    const auto contains=[](const char* wanted) {
+        size_t first=0,last=sizeof(kEggVariantSpeciesKeys)/sizeof(kEggVariantSpeciesKeys[0]);
+        while(first<last) {
+            const size_t middle=first+(last-first)/2;
+            const int order=std::strcmp(kEggVariantSpeciesKeys[middle],wanted);
+            if(!order) return true;
+            if(order<0) first=middle+1;else last=middle;
+        }
+        return false;
+    };
     char base[8];std::snprintf(base,sizeof(base),"%u",unsigned(dex));
-    for(const char* key:kEggVariantSpeciesKeys) if(!std::strcmp(key,base)) return true;
+    if(contains(base)) return true;
     if(!formKey || !*formKey || std::strlen(formKey)>63) return false;
     char specific[80];std::snprintf(specific,sizeof(specific),"%s-%s",base,formKey);
-    for(const char* key:kEggVariantSpeciesKeys) if(!std::strcmp(key,specific)) return true;
-    return false;
+    return contains(specific);
 }
 
 // Egg.rollEggTier decision only. The supplied draw must be from the caller's

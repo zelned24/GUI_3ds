@@ -203,6 +203,13 @@ extern "C" int runNativeSaveChecks() {
         EggTier excludedTier{};
         if(speciesEggTier(890,excludedTier)!=EggIncubationResult::Ok ||
             eggSpeciesPoolWeight(excludedTier,excludedPool,1,rejectedPoolWeight)!=EggSpeciesDrawResult::InvalidMembership || rejectedPoolWeight!=777) return 1274;
+        for(const char* key:kEggVariantSpeciesKeys) {
+            unsigned dex=0;const char* suffix=key;
+            while(*suffix>='0' && *suffix<='9') {dex=dex*10+unsigned(*suffix-'0');++suffix;}
+            if(dex>65535 || !eggSpeciesHasVariants(static_cast<uint16_t>(dex),*suffix=='-' ? suffix+1 : nullptr)) return 1275;
+        }
+        if(!eggSpeciesHasVariants(1,"absent-form") || eggSpeciesHasVariants(0) || eggSpeciesHasVariants(65535,"absent")) return 1276;
+        if(eggSpeciesHasVariants(1007) || !eggSpeciesHasVariants(1007,"apex-build") || eggSpeciesHasVariants(1007,"absent-form")) return 1277;
         const uint16_t eggPool[]={1,4};uint32_t poolWeight=999;uint16_t eggSpecies=777;
         if(eggSpeciesPoolWeight(EggTier::COMMON,eggPool,2,poolWeight)!=EggSpeciesDrawResult::Ok || poolWeight!=200) return 1259;
         if(eggSpeciesForWeightedRoll(EggTier::COMMON,eggPool,2,99,eggSpecies)!=EggSpeciesDrawResult::Ok || eggSpecies!=1) return 1260;

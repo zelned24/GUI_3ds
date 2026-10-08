@@ -1056,3 +1056,5 @@ La búsqueda del índice generado usa búsqueda binaria sobre identidades ordena
 - [ ] Weighted general egg pool validation: reject undeclared tier fallbacks, species belonging to another egg tier and imported excluded species before publishing totals/selection. Native malformed-pool cases written, unexecuted. Variant eligibility still requires species/form variantData semantics, not inferred converted sprite presence.
 
 - [ ] Egg variant eligibility: pinned masterlist root species/form keys imported with asset revision/SHA; C++ follows hasVariants presence semantics with base-species fallback. Nested female/back sprite namespaces remain in source provenance, not species eligibility. Physical/provenance/determinism data tests pass; C++ pool filter integration/validation remains pending.
+
+- [ ] Egg variant lookup: binary search over deterministic lexically sorted pinned keys avoids full scans per candidate. Existing native gate now covers every imported key, base fallback, absent keys and form-only Koraidon eligibility. Native cases unexecuted; runtime filter/transaction still pending.
