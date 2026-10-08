@@ -800,3 +800,6 @@ La búsqueda del índice generado usa búsqueda binaria sobre identidades ordena
 
 - [x] Fondos de batalla preparados offline a ancho 400 con nearest y altura proporcional; raster de batalla dibujado 1:1. Fuentes pinned, pixels y hashes físicos comprobados en `test/arena_background_assets_tests.py`; reporte `docs/generated/ARENA_BACKGROUND_REPORT.json`. Esto conserva replicación desigual de pixels de origen a 1.25×.
 - [ ] Fondos: ejecución GPU y composición visual pendientes; título y bases/capas animadas aún se escalan en runtime. No compilado ni abierto Azahar.
+
+- [x] Raster de título: 39 fondos con recorte centrado proporcional a 400×240 nearest, ruta física y hashes propios; comparación pixel a pixel PASS. Presenter cambia de recurso al cambiar entre título y batalla, retirando el anterior mediante renderer.
+- [ ] Validación nativa del cambio de raster y composición de título pendiente. Bases/capas siguen con escala fraccional; el nearest offline no convierte el escalado original en una escala entera.

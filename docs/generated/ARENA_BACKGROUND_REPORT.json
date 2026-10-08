@@ -14,6 +14,19 @@
         180
       ],
       "stagedSHA256": "76abe5b4bc31cf331b6d9b2bd260996943d74da26416c9a12afea4e4fd7209df",
+      "titleConvertedSHA256": "2aa7619cf35fe67c9c9c8661721f1d8a13587c0a72f4bf86a6050c816b4da921",
+      "titleRuntimePath": "romfs:/presentation/arenas/abyss-title.t3x",
+      "titleRuntimeSize": [
+        400,
+        240
+      ],
+      "titleSourceBox": [
+        10.0,
+        0,
+        310.0,
+        180
+      ],
+      "titleStagedSHA256": "87658e340ccb346aaddd21ce64803622191ff840b5bc288556780a41eeb08f32",
       "width": 400
     },
     {
@@ -30,6 +43,19 @@
         180
       ],
       "stagedSHA256": "9488ec69959b84c77d0adc27b39fc35aad8271264a564c8dedde3b44446232d2",
+      "titleConvertedSHA256": "e33d38100b5944b795fa3bf6e33df013338eac26d0d7c0bdf2fa54d0ed64269d",
+      "titleRuntimePath": "romfs:/presentation/arenas/badlands-title.t3x",
+      "titleRuntimeSize": [
+        400,
+        240
+      ],
+      "titleSourceBox": [
+        10.0,
+        0,
+        310.0,
+        180
+      ],
+      "titleStagedSHA256": "4a0a135488da2a20b77b6ea477c3b00b8aa55257c3f96b7acb93f0f7f458a7a7",
       "width": 400
     },
     {
@@ -46,6 +72,19 @@
         180
       ],
       "stagedSHA256": "024d5119c81992b4ac6cbd932bb6c079e65be421327ac7088cec89f6339dd144",
+      "titleConvertedSHA256": "7d45a792a23518b04cce001136fcdc1698bae8da55138c3016d3247490a300bd",
+      "titleRuntimePath": "romfs:/presentation/arenas/beach-title.t3x",
+      "titleRuntimeSize": [
+        400,
+        240
+      ],
+      "titleSourceBox": [
+        10.0,
+        0,
+        310.0,
+        180
+      ],
+      "titleStagedSHA256": "0d82576967f3d6508435729d733e33c79d6526040abcad7a6b75e3a4a953753d",
       "width": 400
     },
     {
@@ -62,6 +101,19 @@
         180
       ],
       "stagedSHA256": "6a7ff3de653edfc4bd334f20d014c4a298c6847d1499597f2593e93e35f135d6",
+      "titleConvertedSHA256": "2039f296fe9ddf925d48df0694422924185481d90685f49fb563aad8b820712e",
+      "titleRuntimePath": "romfs:/presentation/arenas/cave-title.t3x",
+      "titleRuntimeSize": [
+        400,
+        240
+      ],
+      "titleSourceBox": [
+        10.0,
+        0,
+        310.0,
+        180
+      ],
+      "titleStagedSHA256": "c23bfd233ca490de5506ab78c8cd65e4487a08aa92dd35f5f87c5ae14c3d2a63",
       "width": 400
     },
     {
@@ -78,6 +130,19 @@
         180
       ],
       "stagedSHA256": "ad00da7687204f074860f0b3d167302b899a32397f2ca7d39e92960f2414fca6",
+      "titleConvertedSHA256": "538e231510c3cc4b09d2cc4da0fc67ea6cefef6e56bed95da5f6878bff1c37a5",
+      "titleRuntimePath": "romfs:/presentation/arenas/construction_site-title.t3x",
+      "titleRuntimeSize": [
+        400,
+        240
+      ],
+      "titleSourceBox": [
+        10.0,
+        0,
+        310.0,
+        180
+      ],
+      "titleStagedSHA256": "64a5d9a24e6c95878b71852b08795a1a59dd5058c5841c9e4b5723f55c7fe490",
       "width": 400
     },
     {
@@ -94,6 +159,19 @@
         132
       ],
       "stagedSHA256": "de8a318787b8a8085b0806de01e075ad771a3a08a6fdfe96669573def18a21c8",
+      "titleConvertedSHA256": "276c1ca62ecad90fbace4a8f8b6b19d7687ab72ad3425caee75112fb72fc3d44",
+      "titleRuntimePath": "romfs:/presentation/arenas/default-title.t3x",
+      "titleRuntimeSize": [
+        400,
+        240
+      ],
+      "titleSourceBox": [
+        50.0,
+        0,
+        270.0,
+        132
+      ],
+      "titleStagedSHA256": "aa82379632b6808ec906c371fbbd9e1b15bbf2a9169588be31ae6c9a2f52e611",
       "width": 400
     },
     {
@@ -110,6 +188,19 @@
         180
       ],
       "stagedSHA256": "3d38ce70f5f96fa57c37cfe1cc41f9d1820b71601cdc2dae174186c79a2627bd",
+      "titleConvertedSHA256": "2c5114272c0e375fe00ed0ee8b599064d463c30767591926d5e014fce2207787",
+      "titleRuntimePath": "romfs:/presentation/arenas/desert-title.t3x",
+      "titleRuntimeSize": [
+        400,
+        240
+      ],
+      "titleSourceBox": [
+        10.0,
+        0,
+        310.0,
+        180
+      ],
+      "titleStagedSHA256": "8fea05b75fa16553cacccf36d507ce1f4169a8d063122cb94dd901c654002f4e",
       "width": 400
     },
     {
@@ -126,6 +217,19 @@
         180
       ],
       "stagedSHA256": "a45d205c08e9738a6fd096b4e377658a27233cefa04b009c1a3094114932208d",
+      "titleConvertedSHA256": "572b972d0f70e61d021936d52a4f7c71ea27917ca7128a9ff0f0d46430235004",
+      "titleRuntimePath": "romfs:/presentation/arenas/dojo-title.t3x",
+      "titleRuntimeSize": [
+        400,
+        240
+      ],
+      "titleSourceBox": [
+        10.0,
+        0,
+        310.0,
+        180
+      ],
+      "titleStagedSHA256": "89351ab1ffbfb35eb755aedc6fba6d788b696d90d5eaf5747e949fa8e7b723a9",
       "width": 400
     },
     {
@@ -142,6 +246,19 @@
         180
       ],
       "stagedSHA256": "18cb8d4afbd4cb66bc98779e8f05b01b8430741950d5df4757bbf677c9c2571f",
+      "titleConvertedSHA256": "93f300a2149f39e32b549cfb2fe36c61e3a058079eb6e617846b6c895f75042f",
+      "titleRuntimePath": "romfs:/presentation/arenas/end-title.t3x",
+      "titleRuntimeSize": [
+        400,
+        240
+      ],
+      "titleSourceBox": [
+        10.0,
+        0,
+        310.0,
+        180
+      ],
+      "titleStagedSHA256": "70e48d071464e4afa2d1c844ed3490bbeae474f91bc49d773794daf7249f51a4",
       "width": 400
     },
     {
@@ -158,6 +275,19 @@
         180
       ],
       "stagedSHA256": "b336f39254dd01f902be1e4af022c9cdec3a98433ae7ae64aee6a9660a12ed5e",
+      "titleConvertedSHA256": "e0f0d6aeb50ee000d636e0c97139404cbde7cda67e491856a209254626e1888c",
+      "titleRuntimePath": "romfs:/presentation/arenas/factory-title.t3x",
+      "titleRuntimeSize": [
+        400,
+        240
+      ],
+      "titleSourceBox": [
+        10.0,
+        0,
+        310.0,
+        180
+      ],
+      "titleStagedSHA256": "f47128becec90ea2cd743e198ec35e414cd55d6480cb83dbdd986a574c2f6531",
       "width": 400
     },
     {
@@ -174,6 +304,19 @@
         180
       ],
       "stagedSHA256": "4d912c172052931c365d96d6293d50f77b3e48cdcf70ea57c90ba9b90a9c00ac",
+      "titleConvertedSHA256": "1c8a3cb111c8f761b2f8f29f7985bf5124b91d99175896a71afadbc4a2c5bb72",
+      "titleRuntimePath": "romfs:/presentation/arenas/fairy_cave-title.t3x",
+      "titleRuntimeSize": [
+        400,
+        240
+      ],
+      "titleSourceBox": [
+        10.0,
+        0,
+        310.0,
+        180
+      ],
+      "titleStagedSHA256": "6f941aafbe2bcbdbc59e0aa80096b03a10de2c7fdc457c0d03b68c387452544a",
       "width": 400
     },
     {
@@ -190,6 +333,19 @@
         180
       ],
       "stagedSHA256": "35803e2f449cfdee1ed25afdb8b3fc699b0e2a8506f2f81976c78c06d3f2bb57",
+      "titleConvertedSHA256": "d7e8d01941b6408d2368c06b350ac72a832abc883e944b0bd764f3ceb0e522db",
+      "titleRuntimePath": "romfs:/presentation/arenas/forest-title.t3x",
+      "titleRuntimeSize": [
+        400,
+        240
+      ],
+      "titleSourceBox": [
+        10.0,
+        0,
+        310.0,
+        180
+      ],
+      "titleStagedSHA256": "04a1da2f285ec0858e2ac784c3cf997b0685738b763cab12bdec29a6535d9580",
       "width": 400
     },
     {
@@ -206,6 +362,19 @@
         180
       ],
       "stagedSHA256": "234448a2566376b1e753e53a6cba5041beabaef982027a118df5fb50c70416d1",
+      "titleConvertedSHA256": "a98efcf5dc8ed64f0d348df970f6d3d89343a13819e4db84b4ade835ee9d8ab3",
+      "titleRuntimePath": "romfs:/presentation/arenas/grass-title.t3x",
+      "titleRuntimeSize": [
+        400,
+        240
+      ],
+      "titleSourceBox": [
+        10.0,
+        0,
+        310.0,
+        180
+      ],
+      "titleStagedSHA256": "8a87dd9c30aad31f639b0774a5b8728a32dbd55fcf633a5ac4146d8576adc58a",
       "width": 400
     },
     {
@@ -222,6 +391,19 @@
         180
       ],
       "stagedSHA256": "a7f785c5f141fd9caf11838bf422b9202308e0a1e89ef8e5a47efb24ea5d9a90",
+      "titleConvertedSHA256": "904a1b319cadd938655bd160f75bd6b2d08934435d5fb76ef6cfd99d0f9d7cc7",
+      "titleRuntimePath": "romfs:/presentation/arenas/graveyard-title.t3x",
+      "titleRuntimeSize": [
+        400,
+        240
+      ],
+      "titleSourceBox": [
+        10.0,
+        0,
+        310.0,
+        180
+      ],
+      "titleStagedSHA256": "01396c90952eb0bf34e5bb0fac332a73aaa630080f5f5ddd7c31d30c6f6dbb62",
       "width": 400
     },
     {
@@ -238,6 +420,19 @@
         180
       ],
       "stagedSHA256": "c3c4c6ecb24947d55da0b10d5627c579f38ee0caabae1d5bc08c66d7045295a8",
+      "titleConvertedSHA256": "d6db6b6c688ed0822f471a31c8ba60c7d98c557c97e172394186d014219a1734",
+      "titleRuntimePath": "romfs:/presentation/arenas/ice_cave-title.t3x",
+      "titleRuntimeSize": [
+        400,
+        240
+      ],
+      "titleSourceBox": [
+        10.0,
+        0,
+        310.0,
+        180
+      ],
+      "titleStagedSHA256": "de74862368ee6aece1bf8e75e6d3728175730a2e79cc56b073b3e97996d75f03",
       "width": 400
     },
     {
@@ -254,6 +449,19 @@
         180
       ],
       "stagedSHA256": "15d72129255d026a3bc982f8c78381d637cdc134d4b8e9f5de8036ac45c19eee",
+      "titleConvertedSHA256": "f6d60a76724a057e1f4497eac6396bcb7b4c6bb18d1dfe631511d866d7c9afff",
+      "titleRuntimePath": "romfs:/presentation/arenas/island-title.t3x",
+      "titleRuntimeSize": [
+        400,
+        240
+      ],
+      "titleSourceBox": [
+        10.0,
+        0,
+        310.0,
+        180
+      ],
+      "titleStagedSHA256": "c72bc0d991ca8fba698f14af3fdf6d9fb094b2bcdd9252067725eb2cff5b3c2f",
       "width": 400
     },
     {
@@ -270,6 +478,19 @@
         180
       ],
       "stagedSHA256": "a240a97a260f9f97e7ee387b4bf74c830f561a1a8b59c5aad7352305660c809d",
+      "titleConvertedSHA256": "4839ca880e627c5a18ad6024f643049745937aef1036fb8292aff35957340096",
+      "titleRuntimePath": "romfs:/presentation/arenas/jungle-title.t3x",
+      "titleRuntimeSize": [
+        400,
+        240
+      ],
+      "titleSourceBox": [
+        10.0,
+        0,
+        310.0,
+        180
+      ],
+      "titleStagedSHA256": "dab117cf349a93332a78e0bf07641693e907d60a217b5a8035f54f47144ff275",
       "width": 400
     },
     {
@@ -286,6 +507,19 @@
         180
       ],
       "stagedSHA256": "996badce59b03f4abcf1e32f9459bb17eac6a78c29d95d1632d2a9cb52cfcd4e",
+      "titleConvertedSHA256": "a4165b901740eabad07e268a4739544fcc42d074c63c25ba9261f11b07bde0c5",
+      "titleRuntimePath": "romfs:/presentation/arenas/laboratory-title.t3x",
+      "titleRuntimeSize": [
+        400,
+        240
+      ],
+      "titleSourceBox": [
+        10.0,
+        0,
+        310.0,
+        180
+      ],
+      "titleStagedSHA256": "7630f3a1f0176d920261bafc8b93a592c6f667f099ce2560d5da03b9d6b903b6",
       "width": 400
     },
     {
@@ -302,6 +536,19 @@
         180
       ],
       "stagedSHA256": "f868cb55b1d3feebfc97be8ce0644427fc8aea96373ea90bcd7c60228cb0f345",
+      "titleConvertedSHA256": "81748517c97f976644b6a9f003bd54100c29a1acb330f8c032f6ab65702cbdc7",
+      "titleRuntimePath": "romfs:/presentation/arenas/lake-title.t3x",
+      "titleRuntimeSize": [
+        400,
+        240
+      ],
+      "titleSourceBox": [
+        10.0,
+        0,
+        310.0,
+        180
+      ],
+      "titleStagedSHA256": "fad5d2fc49dc97788d356baa17133083fe40a30bcc8e2a24be2c859e997fa958",
       "width": 400
     },
     {
@@ -318,6 +565,19 @@
         180
       ],
       "stagedSHA256": "25b72569b81f53d3e2299f273b4b35095b5f50db008aa5a1effa4615adfca388",
+      "titleConvertedSHA256": "1e74a60d9cdba0f432f9a7d2d1af9eaff132c8bffcd83b8b7a6cd794143a531a",
+      "titleRuntimePath": "romfs:/presentation/arenas/loading-title.t3x",
+      "titleRuntimeSize": [
+        400,
+        240
+      ],
+      "titleSourceBox": [
+        10.0,
+        0,
+        310.0,
+        180
+      ],
+      "titleStagedSHA256": "c755e00cd629c241f3cfe2976876bee701a504278f96a2569a585cac8b212f33",
       "width": 400
     },
     {
@@ -334,6 +594,19 @@
         180
       ],
       "stagedSHA256": "827e7fa8e1e76d55fa319db473d6e077aaa17ecff74a46b9ff80fc04fc575419",
+      "titleConvertedSHA256": "9db01bda832a344d7a7e6a2b5cdca7b274f6d78480717ad621e21f4ac98e5b83",
+      "titleRuntimePath": "romfs:/presentation/arenas/meadow-title.t3x",
+      "titleRuntimeSize": [
+        400,
+        240
+      ],
+      "titleSourceBox": [
+        10.0,
+        0,
+        310.0,
+        180
+      ],
+      "titleStagedSHA256": "d95d6b696aa3d175934050c9797ba37b447e27a0a51885b7d8bc9ebc0e7e75d7",
       "width": 400
     },
     {
@@ -350,6 +623,19 @@
         180
       ],
       "stagedSHA256": "33ad856c727e39993e831b76c3aec81179cf76037682bff1053c3f52be84d3db",
+      "titleConvertedSHA256": "f50d272d29089d67f2ec7b76715f777ad66f0dfbefc5a11c7cbf48c71ec6d350",
+      "titleRuntimePath": "romfs:/presentation/arenas/metropolis-title.t3x",
+      "titleRuntimeSize": [
+        400,
+        240
+      ],
+      "titleSourceBox": [
+        10.0,
+        0,
+        310.0,
+        180
+      ],
+      "titleStagedSHA256": "ebe75c48865c6ebc7aca131f7f3f178096eff097d7e363c149b5562a1a88d465",
       "width": 400
     },
     {
@@ -366,6 +652,19 @@
         180
       ],
       "stagedSHA256": "d96354829d4b91a76ce91a0aedad17c532300f09cc3a48ff2f94b56a6bcc517d",
+      "titleConvertedSHA256": "4498742a0b5932088bc02285696499ef288d0790ae8942496b57a98d30f073b2",
+      "titleRuntimePath": "romfs:/presentation/arenas/mountain-title.t3x",
+      "titleRuntimeSize": [
+        400,
+        240
+      ],
+      "titleSourceBox": [
+        10.0,
+        0,
+        310.0,
+        180
+      ],
+      "titleStagedSHA256": "ce077f65fefbf03ec543776019dc4195998248818571a8daf7f4656c89761e16",
       "width": 400
     },
     {
@@ -382,6 +681,19 @@
         180
       ],
       "stagedSHA256": "9bbc792678f4c5425575064468286b842cbcdeeeb040617d94b10d0c4e9161f4",
+      "titleConvertedSHA256": "853a320df79f2850906296031536e18c3d9b07444c0ed2a1e6dca77bdcf7fa5f",
+      "titleRuntimePath": "romfs:/presentation/arenas/plains-title.t3x",
+      "titleRuntimeSize": [
+        400,
+        240
+      ],
+      "titleSourceBox": [
+        10.0,
+        0,
+        310.0,
+        180
+      ],
+      "titleStagedSHA256": "146589040943f5e7733e4ebcacd9249c387007c9b97317a262ac2722995ee9e1",
       "width": 400
     },
     {
@@ -398,6 +710,19 @@
         180
       ],
       "stagedSHA256": "d90184db27cff2762d724f54223b009e61bead32d2184d7291b9911a00690f0b",
+      "titleConvertedSHA256": "f955f019c6d3e8d6b09177b5017096b2ebe26df937442d13deafa8e5f0c74fca",
+      "titleRuntimePath": "romfs:/presentation/arenas/power_plant-title.t3x",
+      "titleRuntimeSize": [
+        400,
+        240
+      ],
+      "titleSourceBox": [
+        10.0,
+        0,
+        310.0,
+        180
+      ],
+      "titleStagedSHA256": "4791f94a35a55b492e6e406f303ac354f53cd208b284883a66dde70ac1c477ab",
       "width": 400
     },
     {
@@ -414,6 +739,19 @@
         180
       ],
       "stagedSHA256": "b73b26470a4ff105e0a5b55569a23ea7522331f73b04b8a6d0fc026c1fca6f92",
+      "titleConvertedSHA256": "5793d1e3198b2eee622b68ab7ee61e9a6e453c86a86f7141ec0414545495a622",
+      "titleRuntimePath": "romfs:/presentation/arenas/rockycoast-title.t3x",
+      "titleRuntimeSize": [
+        400,
+        240
+      ],
+      "titleSourceBox": [
+        10.0,
+        0,
+        310.0,
+        180
+      ],
+      "titleStagedSHA256": "20e70649451bb6f24b1d4e369864a55e522b25297567565b3d1d478354f49c9b",
       "width": 400
     },
     {
@@ -430,6 +768,19 @@
         180
       ],
       "stagedSHA256": "a477eca8baa414ef0154a63dabebde8b0f7327daad6096b1e856995ff14d4d14",
+      "titleConvertedSHA256": "b22d75ca222377276236b50e32648eb73f6762ad136853d9125fd5eb9530d54a",
+      "titleRuntimePath": "romfs:/presentation/arenas/ruins-title.t3x",
+      "titleRuntimeSize": [
+        400,
+        240
+      ],
+      "titleSourceBox": [
+        10.0,
+        0,
+        310.0,
+        180
+      ],
+      "titleStagedSHA256": "8cbc824522e8a1f68400536d8d9a80ccb0c660c760d2b8867998e3ed9d4caa68",
       "width": 400
     },
     {
@@ -446,6 +797,19 @@
         180
       ],
       "stagedSHA256": "2890db8bb28001ed29aa52fdae1f00f7f32567dc9fd166a68f1123ea1141acd5",
+      "titleConvertedSHA256": "a4d50d8b83dee8519d70164ca0875205079acbf8d74f1f633cd324a9cd986502",
+      "titleRuntimePath": "romfs:/presentation/arenas/sea-title.t3x",
+      "titleRuntimeSize": [
+        400,
+        240
+      ],
+      "titleSourceBox": [
+        10.0,
+        0,
+        310.0,
+        180
+      ],
+      "titleStagedSHA256": "26727209d4697681540774d23bc1b926c709bc935141c836bf980e22fabaac09",
       "width": 400
     },
     {
@@ -462,6 +826,19 @@
         180
       ],
       "stagedSHA256": "01f97cb6857ec0db2fa5da21ba0d67531fba8693ccab75079a08493428f93682",
+      "titleConvertedSHA256": "7cb543c62abe5e725c3b03e6a188f73b0e81b702efa945c28ad04c78dce3e8e8",
+      "titleRuntimePath": "romfs:/presentation/arenas/seabed-title.t3x",
+      "titleRuntimeSize": [
+        400,
+        240
+      ],
+      "titleSourceBox": [
+        10.0,
+        0,
+        310.0,
+        180
+      ],
+      "titleStagedSHA256": "6b2b427682f6de8ba502f14b4575f9bb45b7ce62bcda06210176de31847e7c48",
       "width": 400
     },
     {
@@ -478,6 +855,19 @@
         180
       ],
       "stagedSHA256": "57b559ea18e009822038465cda7144b80b38a51257eedd6eebb63f27469a4656",
+      "titleConvertedSHA256": "ca04f939c03548870d3eba30c7f07b39dc7c5205760f1e8cd1e0075b332eb26f",
+      "titleRuntimePath": "romfs:/presentation/arenas/slum-title.t3x",
+      "titleRuntimeSize": [
+        400,
+        240
+      ],
+      "titleSourceBox": [
+        10.0,
+        0,
+        310.0,
+        180
+      ],
+      "titleStagedSHA256": "3648b2aee11874df8ba9145f479bfae1f1a0a25f9aa3760d7291d4d9106fb6ff",
       "width": 400
     },
     {
@@ -494,6 +884,19 @@
         180
       ],
       "stagedSHA256": "94049a0425046e15d775884200f2196b12ca19a8330b693d6992a7eb762dbe99",
+      "titleConvertedSHA256": "d12a6c08d75ba02544196ba3ad6d7e2919ebb2f0f537b1e411b9043b96edb606",
+      "titleRuntimePath": "romfs:/presentation/arenas/snowy_forest-title.t3x",
+      "titleRuntimeSize": [
+        400,
+        240
+      ],
+      "titleSourceBox": [
+        10.0,
+        0,
+        310.0,
+        180
+      ],
+      "titleStagedSHA256": "063fcc8f678ed7e107408eb43086192f2328e42b651d58565c6196eb3fe61c9b",
       "width": 400
     },
     {
@@ -510,6 +913,19 @@
         180
       ],
       "stagedSHA256": "37a529d462f54065f6de2b460161ce9bcb193de5eebc7cdde2f0ae4fed5cfce8",
+      "titleConvertedSHA256": "3c311dd91619cf181860b32491e1fd3cac244dcace0c145896f5dd900e6d1622",
+      "titleRuntimePath": "romfs:/presentation/arenas/space-title.t3x",
+      "titleRuntimeSize": [
+        400,
+        240
+      ],
+      "titleSourceBox": [
+        10.0,
+        0,
+        310.0,
+        180
+      ],
+      "titleStagedSHA256": "5a4bbe0da9808a78c9e6ac843c6ee3c246c9ff242d38a9e577c31fbf27391ee6",
       "width": 400
     },
     {
@@ -526,6 +942,19 @@
         180
       ],
       "stagedSHA256": "5caae2d4b7b68b6846d266b346e3f28e9440aed3d3fa7d2a651e5cc187e7c2a7",
+      "titleConvertedSHA256": "a0d61feb783f377e117bbc9f943587fc2a47634e8dd0734175642dbc047d8833",
+      "titleRuntimePath": "romfs:/presentation/arenas/swamp-title.t3x",
+      "titleRuntimeSize": [
+        400,
+        240
+      ],
+      "titleSourceBox": [
+        10.0,
+        0,
+        310.0,
+        180
+      ],
+      "titleStagedSHA256": "91862d5475c132132eb1f9a14d72a655d124e2037901cac85503c9e4c63de634",
       "width": 400
     },
     {
@@ -542,6 +971,19 @@
         180
       ],
       "stagedSHA256": "7cfbe6e26eb5c0386dd2e24d99a47dbb5a2b6d72365b8a9f607afa67a12de1ef",
+      "titleConvertedSHA256": "e8cc185fa86a5180cd1c366742ea9d87e00efec2c21890844587c067c7d583e8",
+      "titleRuntimePath": "romfs:/presentation/arenas/tall_grass-title.t3x",
+      "titleRuntimeSize": [
+        400,
+        240
+      ],
+      "titleSourceBox": [
+        10.0,
+        0,
+        310.0,
+        180
+      ],
+      "titleStagedSHA256": "ef7db7820c2bf73bcdb26c63b65f56b1ddc0a71d890b6f8790a57674a5d11f79",
       "width": 400
     },
     {
@@ -558,6 +1000,19 @@
         180
       ],
       "stagedSHA256": "be32d270d6ebbb46075516ec1e301efbb372f74e5a8e97919552a13ca73a6010",
+      "titleConvertedSHA256": "d1ddf699766903c7119e404cec82a488df5868fd4b2f08c4b4fb90f564aeeced",
+      "titleRuntimePath": "romfs:/presentation/arenas/temple-title.t3x",
+      "titleRuntimeSize": [
+        400,
+        240
+      ],
+      "titleSourceBox": [
+        10.0,
+        0,
+        310.0,
+        180
+      ],
+      "titleStagedSHA256": "66e12c2fd16544f345d291748953a8d66f2e6f1e894b67be1c616a2e36ba26bc",
       "width": 400
     },
     {
@@ -574,6 +1029,19 @@
         180
       ],
       "stagedSHA256": "0dd7bc26c7bf1d27713a775f5432754ca287fbde4728d94f9df3b4627fe04d52",
+      "titleConvertedSHA256": "24878721bef75afe6cbbdd2320ab7daab3ad2145e4b72bd83d6d48cd06f3c113",
+      "titleRuntimePath": "romfs:/presentation/arenas/town-title.t3x",
+      "titleRuntimeSize": [
+        400,
+        240
+      ],
+      "titleSourceBox": [
+        10.0,
+        0,
+        310.0,
+        180
+      ],
+      "titleStagedSHA256": "043539f915c7216fea9ae121eafdf54cc9a51ec64be26c365b6a143069258050",
       "width": 400
     },
     {
@@ -590,6 +1058,19 @@
         180
       ],
       "stagedSHA256": "3e76137726b5c8e87d81169d3bb12eca66dbb8ba66a21b88e142a50ab7803f50",
+      "titleConvertedSHA256": "bffde2f6b556292bfd3ec8d29a0b06af242618c141b5bc7a4d9302526ef6e0fe",
+      "titleRuntimePath": "romfs:/presentation/arenas/volcano-title.t3x",
+      "titleRuntimeSize": [
+        400,
+        240
+      ],
+      "titleSourceBox": [
+        10.0,
+        0,
+        310.0,
+        180
+      ],
+      "titleStagedSHA256": "42c0dbab441999b4f41fb940823676f1839365c63894d9bfb5acc364e73f35c1",
       "width": 400
     },
     {
@@ -606,6 +1087,19 @@
         180
       ],
       "stagedSHA256": "34232412f320c282956d55ff00d721b387ff14f20d5335823e5357231e347768",
+      "titleConvertedSHA256": "adb796fe78edd59c89b001f69165a36618274b28994c4b1eb6e0b71246bd7318",
+      "titleRuntimePath": "romfs:/presentation/arenas/wasteland-title.t3x",
+      "titleRuntimeSize": [
+        400,
+        240
+      ],
+      "titleSourceBox": [
+        10.0,
+        0,
+        310.0,
+        180
+      ],
+      "titleStagedSHA256": "a1bb849ef6d47c815c22d4c4495b518ef98680031666bfb22fc7e8aae27b84cb",
       "width": 400
     },
     {
@@ -622,12 +1116,25 @@
         180
       ],
       "stagedSHA256": "3cc9891e5a97d0bd31266a105beec926f27561f7ef302345e0cec8ca0bae0189",
+      "titleConvertedSHA256": "7d2d8440e533263fbb916d18d8ea3e38b02c2139f8bb88570ae6984df3d3428b",
+      "titleRuntimePath": "romfs:/presentation/arenas/well-title.t3x",
+      "titleRuntimeSize": [
+        400,
+        240
+      ],
+      "titleSourceBox": [
+        10.0,
+        0,
+        310.0,
+        180
+      ],
+      "titleStagedSHA256": "790597e2ed3aacb8fc1e342845dcdf3d95c1e3619c031ba887faa53088473d24",
       "width": 400
     }
   ],
   "limitations": [
     "Source pixels replicated nonuniformly at 1.25x",
-    "Title background and arena layers still scaled at runtime"
+    "Arena layers still scaled at runtime; title source pixels replicated nonuniformly"
   ],
   "repository": "https://github.com/pagefaultgames/pokerogue-assets",
   "revision": "056a1f408f26a3be4fef243f7462cb43608c7928",

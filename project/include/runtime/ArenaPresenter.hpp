@@ -39,22 +39,20 @@ public:
         if (biomeKey) for (const auto& row : kArenaTextures)
             if (std::strcmp(row.key, biomeKey) == 0) { definition = &row; break; }
         if (!definition) { clear(&renderer); return false; }
-        if (definition != m_definition) {
+        if (definition != m_definition || m_drawBases!=drawBases) {
             clear(&renderer);
             m_definition = definition;
-            m_sheet = C2D_SpriteSheetLoad(definition->path);
+            m_drawBases=drawBases;
+            m_sheet = C2D_SpriteSheetLoad(drawBases ? definition->path : definition->titlePath);
             if (m_sheet) {
                 const auto img = C2D_SpriteSheetGetImage(m_sheet, 0);
                 if (img.tex) C3D_TexSetFilter(img.tex, GPU_NEAREST, GPU_NEAREST);
             }
         }
         if (!m_sheet) return false;
-        // Battle background is prepared as 400x225 nearest raster for 1:1 drawing.
-        const float backgroundScale = drawBases ? 1.0f
-            : 240.0f / definition->height;
-        const float backgroundWidth=definition->width*backgroundScale;
+        // Both background rasters are prepared offline, sampled at 1:1.
         renderer.drawImageDirect(C2D_SpriteSheetGetImage(m_sheet, 0),
-            (400.0f-backgroundWidth)*0.5f, 0.0f, backgroundWidth, definition->height * backgroundScale);
+            0.0f, 0.0f, definition->width, drawBases ? definition->height : 240.0f);
         if (!drawBases) return true;
         const float scale=400.0f/320.0f; // Original layer geometry; adaptation pending.
         for (unsigned i=0;i<2;++i) {
@@ -118,6 +116,7 @@ public:
 private:
     const ArenaTextureDefinition* m_definition = nullptr;
     C2D_SpriteSheet m_sheet = nullptr;
+    bool m_drawBases=true;
     C2D_SpriteSheet m_layers[2]{};
     const ArenaLayerTextureDefinition* m_layerDefinitions[2]{};
     PokemonAtlasMetadata m_layerMetadata[2];
