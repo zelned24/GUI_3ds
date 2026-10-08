@@ -20,6 +20,7 @@ int iconTokens[iconPageCount]{},iconLoads=0;Tex3DS_SubTexture iconSub{512,512,0,
 int compactIconTokens[iconPageCount]{},compactIconLoads=0;Tex3DS_SubTexture compactIconSub{256,256,0,1,1,0};
 int fail=0,c3Free=0,c2Free=0,fontFree=0,sheetFree=0,bufferFree=0,targets=0;
 unsigned imageWidth=0,imageHeight=0;float imageTop=0,imageCenterX=0,imageCenterY=0,imageRotation=0;
+size_t maxMeasureBytes=0;
 int draws=0;u32 lastFlags=0;float lastX=0,lastY=0,lastScale=0;
 int hudTokens[17]={3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19};Tex3DS_SubTexture hudSubs[17]={{20,460,0,1,1,0},{20,240,0,1,1,0},{20,240,0,1,1,0},{20,460,0,1,1,0},{20,240,0,1,1,0},{20,240,0,1,1,0},{22,64,0,1,1,0},{7,7,0,1,1,0},{48,6,0,1,1,0},{86,12,0,1,1,0},{85,2,0,1,1,0},{88,8,0,1,1,0},{88,8,0,1,1,0},{8,7,0,1,1,0},{13,7,0,1,1,0},{25,8,0,1,1,0},{16,7,0,1,1,0}};
 int hudLoads=0;bool hudMissing=false;
@@ -58,6 +59,7 @@ void C2D_DrawImageAtRotated(C2D_Image image,float x,float y,float,float rotation
 void C2D_PlainImageTint(C2D_ImageTint*,u32,float) {}
 void C2D_TextParse(C2D_Text*,C2D_TextBuf,const char*) {assert(false && "System font fallback in production path");}
 void C2D_TextFontParse(C2D_Text* text,C2D_Font font,C2D_TextBuf buf,const char* value) {
+    if(buf==&measureToken && std::strlen(value)>maxMeasureBytes) maxMeasureBytes=std::strlen(value);
     unsigned points=16;for(unsigned i=0;i<3;++i) if(font==&fontTokens[i]) points=Pokerogue3DS::kNativeFontPoints[i];
     text->font=font;
     text->width=0;for(const char* p=value;*p;) {uint32_t cp;unsigned n=Pokerogue3DS::utf8CodePoint(p,cp);assert(n);text->width+=std::round((cp=='W' ? 20 : 10)*float(points)/16);p+=n;}
@@ -174,6 +176,13 @@ int main() {
         assert(std::fabs(width-10)<0.000001f && std::fabs(lastScale-1)<0.000001f && !std::strcmp(lastParsed,"A."));
         assert(lastY==2.0f-Pokerogue3DS::kNativeFontInkTop[0]); // Fitted text uses the chosen raster, not the requested size.
         renderer.drawTextFitted("ABC",1,2,0.4f,200,0xffffffff,&width);assert(width==24.0f && std::fabs(lastScale-1)<0.000001f);
+        char longLabel[1024];std::memset(longLabel,'W',sizeof(longLabel)-1);longLabel[sizeof(longLabel)-1]=0;
+        maxMeasureBytes=0;const int beforeLong=draws;
+        renderer.drawTextFitted(longLabel,1,2,0.375f,100,0xffffffff,&width);
+        assert(draws==beforeLong+1 && maxMeasureBytes<256 && width<=100 && std::strlen(lastParsed)<256);
+        const int beforeMalformed=draws;
+        renderer.drawTextFitted("\xc3",1,2,0.375f,100,0xffffffff,&width);
+        assert(draws==beforeMalformed && width==0);
         const int frameClears=mainClears,allocatedBefore=textAllocations;
         char abbreviated[128];float nameWidth=0;
         assert(renderer.abbreviateText("ABCDE",0.3f,20,abbreviated,sizeof(abbreviated),nameWidth));

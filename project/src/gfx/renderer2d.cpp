@@ -430,16 +430,20 @@ float Renderer2D::drawTextFitted(const char* text,float x,float y,float size,flo
         float width=0;const float scale=nativeFontScale(raster.index,raster.scale);
         C2D_TextGetDimensions(&parsed,scale,scale,&width,nullptr);return width;
     };
-    char display[256];float width=0;
+    char display[256],bounded[256];float width=0;
+    // Every measurement must fit the 256-glyph scratch buffer. Validate UTF-8
+    // and bound the candidate before selecting a raster, not only before drawing.
+    if(!Pokerogue3DS::abbreviateUtf8(text,bounded,sizeof(bounded),65536,false,measure,width))
+        return raster.authoredSize;
     // Keep the largest native raster that fits, including whole multiples of
     // smaller sources (e.g. 12 points at 2x before dropping a 32-point label).
-    if(measure(text)>maxWidth) {
+    if(measure(bounded)>maxWidth) {
         const unsigned preferredPoints=Pokerogue3DS::kNativeFontPoints[raster.index]*raster.scale;
         auto chosen=Pokerogue3DS::nativeTextRaster(0.25f);
         unsigned bestPoints=0;
         for(unsigned i=0;i<4;++i) {
             raster.index=i;raster.scale=1;
-            const float nativeWidth=measure(text);
+            const float nativeWidth=measure(bounded);
             const unsigned limit=std::min(8u,preferredPoints/Pokerogue3DS::kNativeFontPoints[i]);
             unsigned multiple=limit;
             while(multiple && nativeWidth*multiple>maxWidth) --multiple;
