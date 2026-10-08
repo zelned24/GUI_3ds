@@ -405,6 +405,11 @@ int main() {
             assert(partyButtonAt(x,y,count)==expected);
         }
     }
+    for(const auto& row:kRewardMoveRects) {
+        assert(textLinesWithinHeight(row.height-10,8,12,2)==2);
+        assert(row.y+5+8+12<=row.y+row.height);
+        assert(44+180<234 && 234+58<=row.x+row.width);
+    }
     assert(kPartyHeaderRect.y+kPartyHeaderRect.height<kPartyButtonRects[0].y);
     assert(kPartyButtonRects[5].y+kPartyButtonRects[5].height<kPartyFooterRect.y);
     assert(kPartyFooterRect.y+kPartyFooterRect.height<=240);

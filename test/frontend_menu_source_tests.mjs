@@ -235,7 +235,7 @@ assert(decisions.includes("textLinesWithinHeight(rect.height-18,renderer.textInk
 
 const rewardPresentation=await fs.readFile(new URL('../project/include/runtime/RewardMenuPresenter.hpp',import.meta.url),'utf8');
 assert(rewardPresentation.includes('definition ? moveUiName(definition->id)'));
-assert(rewardPresentation.includes('27,bounds.y+6,nameSize'));
+assert(rewardPresentation.includes('27,bounds.y+5,nameSize'));
 assert(!rewardPresentation.includes('definition ? definition->name'));
 
 assert(main.includes("if(!partyMenu.open) partyMenu.clear(&renderer)"));
@@ -327,3 +327,6 @@ const spriteBoxBody=pokemonAtlasSource.slice(pokemonAtlasSource.indexOf('void Po
 assert(spriteBoxBody.indexOf('width<=0 || height<=0')<spriteBoxBody.indexOf('selectMetadata('));
 const anchoredBody=pokemonAtlasSource.slice(pokemonAtlasSource.indexOf('void PokemonAtlasPresenter::drawAnchored('),pokemonAtlasSource.indexOf('void PokemonAtlasPresenter::drawTrainerAnchored('));
 assert(anchoredBody.indexOf('!std::isfinite(scale) || scale<0')<anchoredBody.indexOf('selectMetadata('));
+
+assert(rewardPartyLayout.includes("renderer.drawTextBox(name,44,bounds.y+5,nameSize,180,nameLines"));
+assert(rewardPartyLayout.includes("m_cursor.drawCursor(renderer,27,bounds.y+5,nameSize)"));

@@ -120,10 +120,14 @@ public:
                 renderer.drawWindow(bounds.x,bounds.y,bounds.width,bounds.height);
                 const auto& move=actor.battleState.moves[i];
                 const auto* definition=PokerogueContent::findMoveById(move.moveId);
-                const float nameSize=renderer.drawTextFitted(definition ? moveUiName(definition->id) : "Movimiento desconocido",44,bounds.y+6,0.34f,180,0xffffffff);
+                const char* name=definition ? moveUiName(definition->id) : "Movimiento desconocido";
+                float nameSize=0.3125f;
+                const unsigned nameLines=textLinesWithinHeight(bounds.height-10,renderer.textInkHeight(nameSize),renderer.textLineHeight(nameSize),2);
+                if(!nameLines || !renderer.drawTextBox(name,44,bounds.y+5,nameSize,180,nameLines,0xffffffff))
+                    nameSize=renderer.drawTextFitted(name,44,bounds.y+5,nameSize,180,0xffffffff);
                 char pp[32];std::snprintf(pp,sizeof(pp),"PP %u/%u",unsigned(move.pp),unsigned(move.maxPp));
-                renderer.drawTextFitted(pp,234,bounds.y+6,0.28f,58,0xff80ffff);
-                if(i==m_moveSelection.selected) m_cursor.drawCursor(renderer,27,bounds.y+6,nameSize);
+                renderer.drawTextFitted(pp,234,bounds.y+6,0.25f,58,0xff80ffff);
+                if(i==m_moveSelection.selected) m_cursor.drawCursor(renderer,27,bounds.y+5,nameSize);
             }
             renderer.drawTextFitted("A: aplicar   B: volver al equipo",16,204,0.30f,288,0xff80ffff);
             renderer.drawTextFitted(game.battleFeedback().c_str(),16,225,0.24f,288,0xffffffff);
