@@ -388,3 +388,13 @@ assert(rewardPresentation.includes('skip.width-24'));
 assert(rewardPresentation.includes('cx+10,cardY+142,labelSize'));
 assert(rewardPresentation.includes('bounds.x+20,bounds.y+9,labelSize'));
 assert(!rewardPresentation.includes('renderer.drawText('));
+
+// Party statuses reuse the imported localized atlas at native scale.
+for(const status of ['paralysis','poison','toxic','burn','sleep','freeze']) {
+    assert(partyPresentation.includes('statusKey="'+status+'"'));
+}
+assert(partyPresentation.includes('renderer.drawHudIndicator(statusKey,false,bounds.x+178,y+4)'));
+assert(!partyPresentation.includes('renderer.drawText('));
+assert(partyPresentation.includes('"PS", hpX, y + 4, 0.20f, 14'));
+
+assert(partyPresentation.includes('renderer.drawHudIndicator("faint",false,bounds.x+178,y+4)'));

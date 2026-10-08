@@ -42,7 +42,7 @@ public:
         renderer.clear(C2D_Color32(36, 28, 44, 255));
 
         // Header
-        renderer.drawText("EQUIPO POKÉMON", 12, 10, 0.40f, C2D_Color32(245, 245, 250, 255));
+        renderer.drawTextFitted("EQUIPO POKÉMON",12,6,0.3125f,296,C2D_Color32(245,245,250,255));
 
         const auto& context = game.presentation();
         const unsigned count = context.playerPartyCount ? context.playerPartyCount : 1;
@@ -91,7 +91,7 @@ public:
                 actor.battleState.gender==PokemonGender::Female ? "♀" : nullptr;
             const float nameSize=renderer.drawTextFitted(name, bounds.x + 60, y + 3, 0.3125f, 112,
                 isSel ? C2D_Color32(255, 255, 255, 255) : C2D_Color32(220, 215, 230, 255));
-            if(gender) renderer.drawText(gender,bounds.x+110,y+17,0.25f,
+            if(gender) renderer.drawTextFitted(gender,bounds.x+110,y+17,0.25f,16,
                 actor.battleState.gender==PokemonGender::Male ? C2D_Color32(110,180,255,255) : C2D_Color32(255,140,220,255));
 
             if(isSel) m_cursor.drawCursor(renderer,bounds.x+3,y+3,nameSize);
@@ -103,27 +103,29 @@ public:
 
             // Active or status indicator
             if (actor.battleState.hp == 0) {
-                renderer.drawText("DEB", bounds.x + 178, y + 4, 0.26f, C2D_Color32(240, 50, 50, 255));
+                if(!renderer.drawHudIndicator("faint",false,bounds.x+178,y+4))
+                    renderer.drawTextFitted("?",bounds.x+178,y+4,0.25f,28,0xffffffff);
             } else if (actor.battleState.status.present && actor.battleState.status.effect != PokemonStatusEffect::None) {
-                const char* st = "EST";
-                uint32_t stCol = C2D_Color32(240, 180, 30, 255);
-                switch (actor.battleState.status.effect) {
-                    case PokemonStatusEffect::Paralysis: st = "PAR"; stCol = C2D_Color32(240, 180, 0, 255); break;
-                    case PokemonStatusEffect::Poison: st = "VEN"; stCol = C2D_Color32(160, 64, 160, 255); break;
-                    case PokemonStatusEffect::Toxic: st = "TOX"; stCol = C2D_Color32(120, 30, 140, 255); break;
-                    case PokemonStatusEffect::Burn: st = "QUE"; stCol = C2D_Color32(240, 80, 30, 255); break;
-                    case PokemonStatusEffect::Sleep: st = "DOR"; stCol = C2D_Color32(140, 140, 150, 255); break;
-                    case PokemonStatusEffect::Freeze: st = "CON"; stCol = C2D_Color32(60, 180, 240, 255); break;
-                    default: break;
+                // Pinned PartySlot: localized statuses atlas, native pixels.
+                const char* statusKey=nullptr;
+                switch(actor.battleState.status.effect) {
+                    case PokemonStatusEffect::Paralysis: statusKey="paralysis";break;
+                    case PokemonStatusEffect::Poison: statusKey="poison";break;
+                    case PokemonStatusEffect::Toxic: statusKey="toxic";break;
+                    case PokemonStatusEffect::Burn: statusKey="burn";break;
+                    case PokemonStatusEffect::Sleep: statusKey="sleep";break;
+                    case PokemonStatusEffect::Freeze: statusKey="freeze";break;
+                    default:break;
                 }
-                renderer.drawText(st, bounds.x + 178, y + 4, 0.26f, stCol);
+                if(!statusKey || !renderer.drawHudIndicator(statusKey,false,bounds.x+178,y+4))
+                    renderer.drawTextFitted("?",bounds.x+178,y+4,0.25f,28,0xffffffff);
             } else if (i == context.activePlayerPartyIndex) {
-                renderer.drawText("ACT", bounds.x + 178, y + 4, 0.26f, C2D_Color32(80, 220, 140, 255));
+                renderer.drawTextFitted("ACT", bounds.x + 178, y + 4, 0.26f, 28, C2D_Color32(80, 220, 140, 255));
             }
 
             // "PS" label and HP track groove
             const float hpX = bounds.x + 210;
-            renderer.drawText("PS", hpX, y + 4, 0.20f, C2D_Color32(245, 195, 60, 255));
+            renderer.drawTextFitted("PS", hpX, y + 4, 0.20f, 14, C2D_Color32(245, 195, 60, 255));
 
             const float frac = actor.battleState.maxHp ? float(std::min(actor.battleState.hp,actor.battleState.maxHp)) / actor.battleState.maxHp : 0.0f;
             const uint32_t barCol = frac > 0.5f ? C2D_Color32(60, 220, 100, 255)
