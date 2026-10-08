@@ -19,6 +19,10 @@ int main() {
         assert(textLinesWithinHeight(nameBounds.height,8,11,2)==2);
     }
     assert(kStarterAbilityNameRect.y+kStarterAbilityNameRect.height<=123);
+    assert(kStarterPassiveNameRect.y+kStarterPassiveNameRect.height<=kStarterNatureNameRect.y);
+    assert(kStarterNatureNameRect.x+kStarterNatureNameRect.width<=392);
+    assert(kStarterNatureNameRect.y+kStarterNatureNameRect.height<=178);
+    assert(textLinesWithinHeight(kStarterNatureNameRect.height,8,11,1)==1);
 
     for(unsigned y=0;y<=240;++y) for(unsigned x=0;x<=320;++x) {
         const bool ability=x>=24 && x<156 && y>=207 && y<225;
@@ -26,7 +30,7 @@ int main() {
         const bool nature=x>=164 && x<296 && y>=207 && y<225;
         assert(kStarterFormNatureRect.contains(x,y)==nature);
         assert(!(ability && nature));
-        if(ability) assert(starterFormRowAt(x,y)==-1 && !kStarterFormBackRect.contains(x,y) && !kStarterFormCandyRect.contains(x,y));
+        if(ability || nature) assert(starterFormRowAt(x,y)==-1 && !kStarterFormBackRect.contains(x,y) && !kStarterFormCandyRect.contains(x,y));
     }
 
     assert(movePpBarPixels(0,10,94)==0);

@@ -306,7 +306,12 @@ public:
             passiveUnlocked ? "" : " [X]");
         renderer.drawTextFitted(passiveHeading,161,123,0.25f,220,0xffc0b8cc);
         drawName(abilityUiName(game.setupStarterPassiveAbilityId(species->dex)),kStarterPassiveNameRect,passiveUnlocked ? 0xffffffff : 0xff909090);
-        renderer.drawTextFitted(game.starterUnlocked(species->dex) ? "Disponible" : runtimeUiText("starter-select-ui-handler:locked"),161,159,0.3125f,220,0xffffffff);
+        const char* natureName=natureUiName(static_cast<uint8_t>(game.setupStarterNature(species->dex)));
+        if(game.starterUnlocked(species->dex))
+            std::snprintf(label,sizeof(label),"%s %s",runtimeUiText("starter-select-ui-handler:nature"),natureName ? natureName : "—");
+        else
+            std::snprintf(label,sizeof(label),"%s",runtimeUiText("starter-select-ui-handler:locked"));
+        renderer.drawTextFitted(label,kStarterNatureNameRect.x,kStarterNatureNameRect.y,0.3125f,kStarterNatureNameRect.width,0xffffffff);
         std::snprintf(label,sizeof(label),"PS %u   ATQ %u   DEF %u",(form ? form->hp : species->hp),(form ? form->atk : species->atk),(form ? form->def : species->def));
         renderer.drawTextFitted(label,161,178,0.3125f,220,0xffffffff);
         std::snprintf(label,sizeof(label),"AE %u   DE %u   VEL %u",(form ? form->spatk : species->spatk),(form ? form->spdef : species->spdef),(form ? form->speed : species->speed));

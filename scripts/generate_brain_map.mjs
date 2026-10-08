@@ -41,6 +41,12 @@ for (const from of files) {
 }
 const unique = [...new Map(edges.map(e => [JSON.stringify(e), e])).values()].sort((a,b) => compare(JSON.stringify(a), JSON.stringify(b)));
 const tasks = {
+  starterNature: ['scripts/prepare_nature_ui.py', 'project/generated/include/content/NatureUiNames.hpp',
+    'docs/generated/NATURE_UI_IMPORT_REPORT.json', 'project/include/storage/NativeStarterCandyProfile.hpp',
+    'project/src/game/FirstRunRuntime.cpp', 'project/include/runtime/SetupPresenter.hpp',
+    'project/include/runtime/StarterGridLayout.hpp', 'project/src/main.cpp',
+    'test/nature_ui_generation_tests.py', 'test/ui_font_coverage_tests.py',
+    'test/native/dual_screen_layout_harness.cpp', 'test/native/first_run_restore_harness.cpp'],
   species: ['tools/js/data/PokerogueImporter.js', 'scripts/import_pokerogue_content.mjs', 'scripts/generate_3ds_runtime_content.mjs', 'test/migration_content_tests.js'],
   battle: ['project/include/game/PokemonBattleState.hpp', 'project/src/game/PokemonBattleState.cpp', 'test/battle_tests.js'],
   presentation: ['project/src/main.cpp', 'project/src/runtime/PokemonAtlasPresenter.cpp', 'project/src/gfx/renderer2d.cpp'],
