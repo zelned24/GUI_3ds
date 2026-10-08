@@ -6,6 +6,48 @@ import {POKEROGUE_REPOSITORIES} from '../tools/js/data/PokerogueSource.js';
 
 // Only physically converted, hash-checked textures enter the runtime index.
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
+// Matches Python json.dumps(sort_keys=True, separators=(",", ":")) for this
+// integer/string/boolean report schema, including ensure_ascii Unicode escaping.
+export function materializedAppearanceCatalogHash(catalog) {
+  const ordered=value=>Array.isArray(value) ? value.map(ordered) : value && typeof value==='object'
+    ? Object.fromEntries(Object.keys(value).sort().map(key=>[key,ordered(value[key])])) : value;
+  const {contentHash,...payload}=catalog;
+  const bytes=JSON.stringify(ordered(payload)).replace(/[\u007f-\uffff]/g,
+    character=>'\\u'+character.charCodeAt(0).toString(16).padStart(4,'0'));
+  return crypto.createHash('sha256').update(bytes).digest('hex');
+}
+export function validateMaterializedAppearanceCatalog(catalog) {
+  const pinned=POKEROGUE_REPOSITORIES['pokerogue-assets'];
+  if(catalog?.schemaVersion!==1 || catalog.repository!==pinned.url || catalog.revision!==pinned.revision ||
+    !Number.isInteger(catalog.requested) || catalog.requested<1 || !Array.isArray(catalog.materialized) ||
+    !Array.isArray(catalog.missingInUpstream) || !Array.isArray(catalog.unsupported) || catalog.unsupported.length ||
+    catalog.materialized.length+catalog.missingInUpstream.length!==catalog.requested ||
+    !/^[0-9a-f]{64}$/.test(catalog.contentHash??'')) throw new Error('Incomplete or invalid pinned appearance catalog');
+  if(materializedAppearanceCatalogHash(catalog)!==catalog.contentHash)
+    throw new Error('Materialized appearance catalog hash mismatch');
+  const identities=new Map();
+  for(const row of catalog.materialized) {
+    if(!/^[1-9][0-9]*(?:-[a-z0-9-]+)?$/.test(row.atlasKey) || !['front','back'].includes(row.facing) ||
+      typeof row.female!=='boolean' || ![0,1,2].includes(row.variant) || !/^[0-9a-f]{64}$/.test(row.pngSHA256))
+      throw new Error('Invalid materialized appearance record');
+    const identity=[row.atlasKey,row.facing,row.female,row.variant].join(':');
+    if(identities.has(identity)) throw new Error('Duplicate materialized appearance record');
+    identities.set(identity,row.pngSHA256);
+  }
+  const missing=new Set();
+  for(const row of catalog.missingInUpstream) {
+    if(!/^[1-9][0-9]*(?:-[a-z0-9-]+)?$/.test(row.atlasKey) || !['front','back'].includes(row.facing) ||
+      typeof row.female!=='boolean' || ![0,1,2].includes(row.variant) ||
+      row.classification!=='MISSING_IN_PINNED_UPSTREAM' || typeof row.source!=='string' ||
+      !row.source.startsWith(pinned.revision+':images/pokemon/') ||
+      row.source.split(':').length!==2 || row.source.split('/').some(part=>part==='.' || part==='..') ||
+      row.source.includes('\\')) throw new Error('Invalid missing upstream appearance record');
+    const identity=[row.atlasKey,row.facing,row.female,row.variant].join(':');
+    if(identities.has(identity) || missing.has(identity)) throw new Error('Conflicting or duplicate missing appearance');
+    missing.add(identity);
+  }
+  return identities;
+}
 export async function buildPokemonAppearanceHeader(raw,readPhysical=relative=>fs.readFile(path.resolve(root,relative))) {
 const inventory=JSON.parse(raw);
 const pinned=POKEROGUE_REPOSITORIES['pokerogue-assets'];

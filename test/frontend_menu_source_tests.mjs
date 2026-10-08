@@ -38,3 +38,6 @@ assert(icons.includes('const auto* icon=findPokemonIcon(dex,formIndex)'));
 
 assert(frontend.includes('const auto page=catalogSpeciesPage<24>(start'));
 assert(!frontend.includes('*dexAt(start+cell,game)'));
+
+assert(frontend.includes("m_globalSelection=m_selected"));
+assert(frontend.includes("m_page==FrontendPage::GlobalMenu ? m_globalSelection : 0"));

@@ -230,6 +230,26 @@ int main() {
     dataMenu.input(KEY_B);
     assert(dataMenu.page()==FrontendPage::GlobalMenu);
 
+    // Every global destination returns to its originating row, including nested settings.
+    for(unsigned row=0;row<9;++row) {
+        FrontendMenuPresenter submenu(false);
+        submenu.input(KEY_X);
+        for(unsigned i=0;i<row;++i) submenu.input(KEY_DDOWN);
+        submenu.input(KEY_A);
+        const auto destination=submenu.page();
+        assert(destination!=FrontendPage::GlobalMenu);
+        if(row==0) {
+            submenu.input(KEY_A);
+            assert(submenu.page()==FrontendPage::SettingsGroup);
+            submenu.input(KEY_B);
+            assert(submenu.page()==FrontendPage::Settings);
+        }
+        submenu.input(KEY_B);
+        assert(submenu.page()==FrontendPage::GlobalMenu);
+        submenu.input(KEY_A);
+        assert(submenu.page()==destination); // Reopens the same destination without moving.
+    }
+
     FrontendMenuPresenter toDelete(true);
     toDelete.input(KEY_TOUCH,25,48+2*29);toDelete.input(KEY_A);
     assert(toDelete.page()==FrontendPage::Load);

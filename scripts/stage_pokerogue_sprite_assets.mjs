@@ -1,4 +1,5 @@
 import fs from 'node:fs/promises';
+import {validateMaterializedAppearanceCatalog} from './generate_pokemon_appearance_index.mjs';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import { execFileSync } from 'node:child_process';
@@ -53,6 +54,8 @@ if(all) {
 // same atlas staging/conversion path as base sprites, with distinct runtime IDs.
 if (process.argv.includes('--appearances')) {
   const appearanceRoot = path.join(destination, 'appearances');
+  const catalogIdentities=validateMaterializedAppearanceCatalog(JSON.parse(await fs.readFile(path.join(appearanceRoot,'catalog-report.json'),'utf8')));
+  const stagedAppearanceIdentities=new Set();
   const visit = async directory => {
     let entries;
     try { entries = await fs.readdir(directory, { withFileTypes: true }); }
@@ -83,6 +86,10 @@ if (process.argv.includes('--appearances')) {
         }
         if(actualHash!==source.sha256) throw new Error('Appearance source hash mismatch');
       }
+      const catalogIdentity=[appearance.atlasKey,appearance.facing,appearance.female,appearance.variant].join(':');
+      if(catalogIdentities.get(catalogIdentity)!==appearance.pngSHA256 || stagedAppearanceIdentities.has(catalogIdentity))
+        throw new Error('Appearance files differ from completed pinned catalog');
+      stagedAppearanceIdentities.add(catalogIdentity);
       const basename = entry.name.slice(0,-'-provenance.json'.length);
       const expectedName = appearance.atlasKey+'-shiny-v'+appearance.variant;
       if (basename!==expectedName) throw new Error('Appearance filename differs from identity');
@@ -100,6 +107,7 @@ if (process.argv.includes('--appearances')) {
     }
   };
   await visit(appearanceRoot);
+  if(stagedAppearanceIdentities.size!==catalogIdentities.size) throw new Error('Completed appearance catalog has missing physical records');
 }
 selected.sort((a, b) => a.key.localeCompare(b.key, 'en', { numeric: true }) || a.facing.localeCompare(b.facing));
 

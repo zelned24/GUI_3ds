@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
-import {buildPokemonAppearanceHeader} from '../scripts/generate_pokemon_appearance_index.mjs';
+import {execFileSync} from 'node:child_process';
+import {buildPokemonAppearanceHeader,validateMaterializedAppearanceCatalog,materializedAppearanceCatalogHash} from '../scripts/generate_pokemon_appearance_index.mjs';
 import {POKEROGUE_REPOSITORIES} from '../tools/js/data/PokerogueSource.js';
 // Isolated parser tests: these bytes are never staged as production textures.
 const sha=bytes=>crypto.createHash('sha256').update(bytes).digest('hex');
@@ -71,3 +72,38 @@ files.set(metadataPath,metadata);
 const empty=await build({...inventory,assets:[]});
 assert.equal(empty.count,0);assert(empty.header.includes('std::array<PokemonAppearanceAsset, 0>'));
 console.log('PASS appearance index: deterministic output, identity, pins, paths, corruption, duplicates and empty catalog');
+
+const complete={schemaVersion:1,repository:inventory.repository,revision:inventory.revision,
+  requested:1,materialized:[{atlasKey:'1',facing:'front',female:false,variant:1,pngSHA256:sha(texture)}],
+  missingInUpstream:[],unsupported:[],contentHash:sha(texture)};
+complete.contentHash=materializedAppearanceCatalogHash(complete);
+assert.equal(validateMaterializedAppearanceCatalog(complete).size,1);
+for(const patch of [{requested:2},{contentHash:undefined},{unsupported:[{}]},{revision:'0'.repeat(40)},
+  {requested:2,materialized:[...complete.materialized,...complete.materialized]}])
+  assert.throws(()=>validateMaterializedAppearanceCatalog({...complete,...patch}));
+
+assert.equal(validateMaterializedAppearanceCatalog(complete).get("1:front:false:1"),sha(texture));
+
+assert.throws(()=>validateMaterializedAppearanceCatalog({...complete,contentHash:"0".repeat(64)}),/hash/);
+
+// Cross-language proof of the report format actually written by the Python materializer.
+const unicodeReport={...complete,note:'Pokémon 漢字 😀',nested:{z:2,a:true}};
+const pythonHash=execFileSync('python',['-c',
+  'import sys,json,hashlib; d=json.loads(sys.stdin.buffer.read().decode("utf-8")); d.pop("contentHash",None); print(hashlib.sha256(json.dumps(d,sort_keys=True,separators=(",",":")).encode()).hexdigest())'],
+  {input:JSON.stringify(unicodeReport),encoding:'utf8'}).trim();
+assert.equal(materializedAppearanceCatalogHash(unicodeReport),pythonHash);
+
+const seal=report=>({...report,contentHash:materializedAppearanceCatalogHash(report)});
+const missingRow={atlasKey:'2',facing:'back',female:true,variant:0,
+  classification:'MISSING_IN_PINNED_UPSTREAM',source:inventory.revision+':images/pokemon/back/shiny/female/2.json'};
+const withMissing={...complete,requested:2,missingInUpstream:[missingRow]};
+assert.equal(validateMaterializedAppearanceCatalog(seal(withMissing)).size,1);
+for(const patch of [{classification:'INVALID_IMPORT'}, {source:'other:images/pokemon/2.json'},
+  {source:inventory.revision+':images/pokemon/../2.json'}, {female:'true'}, {variant:3},
+  {atlasKey:'1',facing:'front',female:false,variant:1}])
+  assert.throws(()=>validateMaterializedAppearanceCatalog(seal({...withMissing,missingInUpstream:[{...missingRow,...patch}]})));
+assert.throws(()=>validateMaterializedAppearanceCatalog(seal({...complete,requested:2,
+  materialized:[...complete.materialized,...complete.materialized]})),/Duplicate/);
+assert.throws(()=>validateMaterializedAppearanceCatalog(seal({...withMissing,requested:3,
+  missingInUpstream:[missingRow,missingRow]})),/duplicate/);
+console.log('PASS completed catalog: Python-compatible hash, missing classification and identity conflicts');

@@ -70,7 +70,8 @@ public:
             if(m_page==FrontendPage::SettingsGroup) m_page=FrontendPage::Settings;
             else if((m_page==FrontendPage::Settings && m_settingsFromGlobal) || m_page==FrontendPage::Pokedex || m_page==FrontendPage::ServiceInfo || m_page==FrontendPage::ManageData) m_page=FrontendPage::GlobalMenu;
             else m_page=FrontendPage::Title;
-            m_selected=0;m_feedback=nullptr;return FrontendCommand::None;
+            m_selected=m_page==FrontendPage::GlobalMenu ? m_globalSelection : 0;
+            m_feedback=nullptr;return FrontendCommand::None;
         }
         if(m_page==FrontendPage::Pokedex) {
             if((keys & KEY_X) || ((keys & KEY_TOUCH) && TouchRect{10,24,146,14}.contains(touchX,touchY))) {
@@ -178,6 +179,7 @@ public:
         if(!((keys & (KEY_A | KEY_START)) || activatedByTouch)) return FrontendCommand::None;
         switch(m_page) {
         case FrontendPage::GlobalMenu:
+            m_globalSelection=m_selected;
             if(m_selected==0) {
                 m_settingsFromGlobal=true;m_page=FrontendPage::Settings;m_selected=0;m_feedback=nullptr;
             } else if(m_selected==5) {m_page=FrontendPage::Pokedex;m_feedback=nullptr;}
@@ -424,7 +426,7 @@ private:
     TitleMenuPresenter m_title;
     TitleMenuSelection m_titleSelection;
     FrontendPage m_page=FrontendPage::Title;
-    unsigned m_selected=0,m_group=0,m_service=0;
+    unsigned m_selected=0,m_group=0,m_service=0,m_globalSelection=0;
     bool m_confirmingDelete=false,m_touchControls=true,m_confirmingTouchDisable=false,m_settingsFromGlobal=false;
     const char* m_feedback=nullptr;
 };

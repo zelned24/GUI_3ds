@@ -2,7 +2,7 @@
 
 ## Cómo medir el avance
 
-- Referencia actual: rama `codex/pokerogue-3ds-migration`, último commit publicado `7345b78` y cambios locales posteriores sin publicar. Los resultados históricos no verifican estos cambios locales.
+- Referencia actual: rama `codex/pokerogue-3ds-migration`, último commit publicado `a6d9807` y cambios locales posteriores sin publicar. Los resultados históricos no verifican estos cambios locales.
 - Objetivo: PokéRogue jugable y fiel al snapshot upstream en Old 3DS, con ambas pantallas, progreso exportable y actualizaciones desde consola.
 - Cada ID es estable para reportar avances: `MOV-07`, `GUI-03`, etc. No equivale a un movimiento/habilidad individual.
 - Una casilla sin marcar puede tener código parcial; el resumen de cada área indica lo existente. Marcarla solo con integración completa y evidencia ejecutada pertinente.
@@ -694,3 +694,8 @@ La búsqueda del índice generado usa búsqueda binaria sobre identidades ordena
 - [x] Importar y convertir tres frames originales, tints de `getVariantTint` e IDs de `VariantTier` con el parser de enums existente; tres tests Python pasan (hashes upstream/físicos, regeneración idéntica, guard de binding).
 
 - [ ] Verificación visual completa: atlas original de tres indicadores convertido y generado, colores importados de `getVariantTint`; cuadrícula conectada al nivel shiny mayor acreditado por `caughtAppearanceAttr`. No infiere desbloqueos de perfiles legacy sin metadata. Dibujo 1:1 y `GPU_NEAREST`; carga lazy con un intento por sesión. Pendiente de compilación y Azahar.
+
+### Controles del catálogo completo y retorno de submenús
+
+- [ ] Catálogo shiny completo integrado: el staging exige reporte final, conteos completos, cero registros inválidos/no soportados, identidad única y hash PNG coincidente con el registro materializado, hash del reporte compatible con Python y ausencias upstream sin duplicados/conflictos. Guard JS PASS; las 7.570 apariencias y su conversión final siguen pendientes.
+- [ ] Retorno de submenús verificado en consola: la navegación C++ conserva la fila de origen al volver desde cualquiera de las nueve opciones. Casos nativos escritos para las nueve rutas y ajustes anidados; ejecución aplazada por instrucción de no compilar.

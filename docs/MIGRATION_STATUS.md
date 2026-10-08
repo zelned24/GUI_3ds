@@ -4,6 +4,8 @@
 
 - Catálogo normal convertido: 3.112 atlas / 3.129 páginas `.t3x`; 210 identidades femeninas normales indexadas. Los 61.629.673 bytes corresponden al catálogo en disco, no a memoria residente.
 - Catálogo shiny: materialización completa pendiente; el proceso activo conserva fuente pinned y hashes. Bouffalant aplica el fallback negro de `rgbHexToRgba` upstream.
+- Submenú global: conserva la opción de origen al regresar desde las nueve rutas; prueba nativa escrita, sin ejecutar.
+- Staging shiny: rechaza reportes parciales y exige coincidencia de identidad/hash PNG con el catálogo final y hash del reporte compatible con Python; ausencias pinned sin duplicados ni conflictos; guard JS PASS.
 - Selector: indicadores shiny originales, perfiles vistos/capturados/desconocidos, filtros; títulos/submenús/Pokédex y exportación/importación con confirmación tienen rutas C++ escritas.
 - Fuentes: cobertura de glifos especiales, texto UTF-8 y rasters físicos comprobados. Cache de iconos y paginación reducen recorridos; rendimiento de hardware no medido.
 - Gates permitidos: guards JS de menú e índice de apariencias, metadata de género pinned; tests Python de cobertura de glifos, indicadores y paletas: PASS. `git diff --check`: PASS.
