@@ -312,3 +312,7 @@ assert(setupPresentation.includes("renderer.drawTextFitted(label,161,211,0.3125f
 
 assert(setupPresentation.includes("const auto iconBounds=starterTeamIconRectangle(i)"));
 assert(setupPresentation.includes("teamIcons[i].appearance,iconBounds.x,iconBounds.y"));
+
+const partyPresentation=await fs.readFile(new URL('../project/include/runtime/PartyMenuPresenter.hpp',import.meta.url),'utf8');
+assert(partyPresentation.includes('if(!m_icons.draw(renderer,actor.dex,formIndices[i]'));
+assert(partyPresentation.includes('if(!m_icons.drawAppearance(renderer,appearances[i]'));

@@ -75,7 +75,8 @@ public:
                 if(!m_icons.drawAppearance(renderer,appearances[i],bounds.x+14,y+2))
                     renderer.drawTextFitted("?",bounds.x+14,y+2,0.3125f,20,0xffffffff);
             } else if(normalIconAllowed[i]) {
-                m_icons.draw(renderer,actor.dex,formIndices[i],bounds.x+14,y+2,1.0f,1.0f);
+                if(!m_icons.draw(renderer,actor.dex,formIndices[i],bounds.x+14,y+2,1.0f,1.0f))
+                    renderer.drawTextFitted("?",bounds.x+14,y+2,0.3125f,20,0xffffffff);
             } else {
                 renderer.drawTextFitted("?",bounds.x+14,y+2,0.3125f,20,0xffffffff);
             }
