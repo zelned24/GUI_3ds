@@ -52,10 +52,18 @@ public:
         uint32_t committedGeneration,uint32_t& preparedGeneration) {
         return prepareImpl(eggs,count,vouchers,pity,&unlockPity,hash,committedGeneration,preparedGeneration);
     }
+    // Only the global coordinator may use this after proving the authoritative
+    // run has eggProgressGeneration zero (or no run exists). Pending slots then
+    // have no committed owner and may be replaced on bootstrap retry.
+    NativeSaveResult prepareUnreferenced(const EggIncubationRecord* eggs,size_t count,
+        const uint32_t (&vouchers)[4],const EggPityState& pity,const uint32_t (&unlockPity)[4],
+        const char* hash,uint32_t& preparedGeneration) {
+        return prepareImpl(eggs,count,vouchers,pity,&unlockPity,hash,0,preparedGeneration,true);
+    }
 private:
     NativeSaveResult prepareImpl(const EggIncubationRecord* eggs,size_t count,const uint32_t (&vouchers)[4],
         const EggPityState& pity,const uint32_t (*unlockPity)[4],const char* hash,
-        uint32_t committedGeneration,uint32_t& preparedGeneration) {
+        uint32_t committedGeneration,uint32_t& preparedGeneration,bool unreferenced=false) {
         if(!StarterCandyProfileCodec::validHash(hash) || count>SIZE_MAX/sizeof(*eggs) || (count && !eggs))
             return NativeSaveResult::InvalidRecord;
         if(unlockPity) {
@@ -83,13 +91,16 @@ private:
             return NativeSaveResult::UnsupportedVersion;
         unsigned target=0;uint32_t next=1;
         if(selected>=0) {
-            if(!committedGeneration) return NativeSaveResult::InvalidRecord;
+            if(!committedGeneration && !unreferenced) return NativeSaveResult::InvalidRecord;
             if(m_generations[selected]==UINT32_MAX) return NativeSaveResult::SequenceExhausted;
             next=m_generations[selected]+1;
-            int committed=-1;
-            for(unsigned i=0;i<2;++i) if(m_valid[i] && m_generations[i]==committedGeneration) committed=int(i);
-            if(committed<0) return NativeSaveResult::NotFound;
-            target=unsigned(committed==0?1:0); // Retry never replaces committed state.
+            if(!committedGeneration) target=unsigned(selected==0 ? 1 : 0);
+            else {
+                int committed=-1;
+                for(unsigned i=0;i<2;++i) if(m_valid[i] && m_generations[i]==committedGeneration) committed=int(i);
+                if(committed<0) return NativeSaveResult::NotFound;
+                target=unsigned(committed==0?1:0); // Retry never replaces committed state.
+            }
         } else if(committedGeneration) return NativeSaveResult::NotFound;
         size_t written=0;
         status=unlockPity

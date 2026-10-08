@@ -21,6 +21,7 @@ public:
     char exported[kNativeSaveMaxBytes]{};
     size_t exportSize = 0;
     bool interrupt = false;
+    bool failBeforeWrite = false;
     NativeSaveResult readSlot(unsigned i, char* out, size_t cap, size_t& size) override {
         size = sizes[i];
         if (!size) return NativeSaveResult::NotFound;
@@ -28,6 +29,7 @@ public:
         std::memcpy(out, slots[i], size); return NativeSaveResult::Ok;
     }
     NativeSaveResult writeSlot(unsigned i, const char* in, size_t size) override {
+        if(failBeforeWrite) return NativeSaveResult::IoError;
         sizes[i] = interrupt ? size / 2 : size;
         std::memcpy(slots[i], in, sizes[i]);
         return interrupt ? NativeSaveResult::IoError : NativeSaveResult::Ok;
@@ -484,6 +486,39 @@ extern "C" int runNativeSaveChecks() {
         eggDisk.slots[0][10]^=1;restored.eggProgressGeneration=777;
         if(linkedRuns.load(PokerogueContent::kContentHash,restored)==NativeSaveResult::Ok
             || restored.eggProgressGeneration!=777) return 1303;
+    }
+    {
+        MemoryStorage runDisk,profileDisk,eggDisk;NativeRunSaveStore runs(runDisk);
+        std::unique_ptr<char[]> profileScratch(new char[2*kStarterCandyProfileMaxBytes]{});
+        NativeStarterCandyStore profiles(profileDisk,profileScratch.get(),2*kStarterCandyProfileMaxBytes);
+        char eggScratch[456]{};NativeEggProgressStore eggs(eggDisk,eggScratch,sizeof(eggScratch),228);
+        NativeProgressStore all(runs,profiles,eggs);auto snapshot=original;
+        NativeStarterCandyRecord record{};record.speciesDex=1;record.caught=true;
+        EggIncubationRecord egg{};egg.id=31;egg.speciesDex=4;egg.hatchWaves=10;
+        uint32_t vouchers[4]={1,0,0,0},unlock[4]={0,9,0,0};EggPityState pity{};
+        profileDisk.failBeforeWrite=true;
+        if(all.commit(snapshot,&record,1,&egg,1,vouchers,pity,unlock)!=NativeSaveResult::IoError
+            || snapshot.starterProfileGeneration || snapshot.eggProgressGeneration) return 1310;
+        profileDisk.failBeforeWrite=false;
+        if(all.commit(snapshot,&record,1,&egg,1,vouchers,pity,unlock)!=NativeSaveResult::Ok
+            || !snapshot.starterProfileGeneration || snapshot.eggProgressGeneration!=2) return 1311;
+        const uint32_t committedProfile=snapshot.starterProfileGeneration,committedEgg=snapshot.eggProgressGeneration;
+        vouchers[0]=2;runDisk.interrupt=true;
+        if(all.commit(snapshot,&record,1,&egg,1,vouchers,pity,unlock)!=NativeSaveResult::IoError
+            || snapshot.starterProfileGeneration!=committedProfile || snapshot.eggProgressGeneration!=committedEgg) return 1312;
+        runDisk.interrupt=false;
+        if(runs.load(PokerogueContent::kContentHash,restored)!=NativeSaveResult::Ok
+            || restored.starterProfileGeneration!=committedProfile || restored.eggProgressGeneration!=committedEgg) return 1313;
+        NativeEggProgressView view{};
+        if(eggs.load(PokerogueContent::kContentHash,view,committedEgg)!=NativeSaveResult::Ok
+            || view.vouchers[0]!=1 || view.unlockPity[1]!=9) return 1314;
+        snapshot=restored;
+        if(all.commit(snapshot,&record,1,&egg,1,vouchers,pity,unlock)!=NativeSaveResult::Ok
+            || snapshot.eggProgressGeneration<=committedEgg || snapshot.starterProfileGeneration<=committedProfile
+            || eggs.load(PokerogueContent::kContentHash,view,snapshot.eggProgressGeneration)!=NativeSaveResult::Ok
+            || view.vouchers[0]!=2) return 1315;
+        snapshot.eggProgressGeneration=0;
+        if(all.commit(snapshot,&record,1,&egg,1,vouchers,pity,unlock)!=NativeSaveResult::InvalidRecord) return 1316;
     }
     // v26 has Berry history but no appearance trailer. Migration keeps unknown
     // appearance instead of manufacturing a normal or shiny encounter.

@@ -1,6 +1,7 @@
 #pragma once
 #include "storage/NativeStarterCandyStore.hpp"
 #include "storage/NativeProgressBundle.hpp"
+#include "storage/NativeEggProgressStore.hpp"
 #include <memory>
 #include <new>
 
@@ -8,11 +9,16 @@ namespace Pokerogue3DS {
 
 // The run is the commit record. Profile writes precede it and preserve the
 // generation referenced by the current run until the new run becomes durable.
-// One owner must serialize all writes to these two journals.
+// One owner must serialize all writes to the run and component journals.
 class NativeProgressStore {
 public:
     NativeProgressStore(NativeRunSaveStore& runs, NativeStarterCandyStore& profiles)
         : m_runs(runs), m_profiles(profiles) { m_runs.bindStarterProfiles(profiles); }
+    NativeProgressStore(NativeRunSaveStore& runs,NativeStarterCandyStore& profiles,NativeEggProgressStore& eggs)
+        :m_runs(runs),m_profiles(profiles),m_eggs(&eggs) {
+        m_runs.bindStarterProfiles(profiles);m_runs.bindEggProgress(eggs);
+    }
+
 
     NativeSaveResult load(const char* hash, NativeRunSave& run,
         NativeStarterCandyRecord* records, size_t capacity, size_t& count) {
@@ -44,7 +50,8 @@ public:
         status = m_runs.load(run.contentHash, previous);
         if (status != NativeSaveResult::Ok && status != NativeSaveResult::NotFound) return status;
         const uint32_t committed = status == NativeSaveResult::Ok ? previous.starterProfileGeneration : 0;
-        if (run.starterProfileGeneration != committed) return NativeSaveResult::InvalidRecord;
+        if (run.starterProfileGeneration != committed || run.eggProgressGeneration !=
+            (status==NativeSaveResult::Ok ? previous.eggProgressGeneration : 0)) return NativeSaveResult::InvalidRecord;
         uint32_t prepared = 0;
         status = committed
             ? m_profiles.prepareFromCommitted(records, count, run.contentHash, committed, prepared)
@@ -64,6 +71,51 @@ public:
         if (previous.starterProfileGeneration != prepared) return NativeSaveResult::InvalidRecord;
         run = previous;
         return NativeSaveResult::Ok;
+    }
+
+    // Three-component transaction: prepare eggs/profile, commit the run last.
+    // Failure leaves caller snapshot unchanged. Reload authoritative run before
+    // retry: the last durable write may have succeeded despite an I/O error.
+    NativeSaveResult commit(NativeRunSave& run,const NativeStarterCandyRecord* records,size_t count,
+        const EggIncubationRecord* eggs,size_t eggCount,const uint32_t (&vouchers)[4],
+        const EggPityState& pity,const uint32_t (&unlockPity)[4]) {
+        if(!m_eggs || count>PokerogueContent::kSpeciesCount || (count && !records)
+            || eggCount>SIZE_MAX/sizeof(*eggs) || (eggCount && !eggs)) return NativeSaveResult::InvalidRecord;
+        if(StarterCandyProfileCodec::overlaps(&run,sizeof(run),records,count*sizeof(*records))
+            || StarterCandyProfileCodec::overlaps(&run,sizeof(run),eggs,eggCount*sizeof(*eggs))
+            || StarterCandyProfileCodec::overlaps(&run,sizeof(run),vouchers,sizeof(vouchers))
+            || StarterCandyProfileCodec::overlaps(&run,sizeof(run),&pity,sizeof(pity))
+            || StarterCandyProfileCodec::overlaps(&run,sizeof(run),unlockPity,sizeof(unlockPity)))
+            return NativeSaveResult::InvalidRecord;
+        auto status=validateNativeRunSave(run,run.contentHash);if(status!=NativeSaveResult::Ok) return status;
+        uint16_t prior=0;
+        for(size_t i=0;i<count;++i) {
+            if(!StarterCandyProfileCodec::valid(records[i],prior,PokerogueContent::kMaxStarterCandyCount))
+                return NativeSaveResult::InvalidRecord;
+            prior=records[i].speciesDex;
+        }
+        std::unique_ptr<NativeRunSave> storage(new(std::nothrow) NativeRunSave{});
+        if(!storage) return NativeSaveResult::MemoryUnavailable;
+        auto& candidate=*storage;
+        status=m_runs.load(run.contentHash,candidate);
+        if(status!=NativeSaveResult::Ok && status!=NativeSaveResult::NotFound) return status;
+        const uint32_t profileGeneration=status==NativeSaveResult::Ok ? candidate.starterProfileGeneration : 0;
+        const uint32_t eggGeneration=status==NativeSaveResult::Ok ? candidate.eggProgressGeneration : 0;
+        if(run.starterProfileGeneration!=profileGeneration || run.eggProgressGeneration!=eggGeneration)
+            return NativeSaveResult::InvalidRecord;
+        uint32_t preparedEgg=0,preparedProfile=0;
+        status=eggGeneration ? m_eggs->prepare(eggs,eggCount,vouchers,pity,unlockPity,run.contentHash,eggGeneration,preparedEgg)
+            : m_eggs->prepareUnreferenced(eggs,eggCount,vouchers,pity,unlockPity,run.contentHash,preparedEgg);
+        if(status!=NativeSaveResult::Ok) return status;
+        status=profileGeneration ? m_profiles.prepareFromCommitted(records,count,run.contentHash,profileGeneration,preparedProfile)
+            : m_profiles.save(records,count,run.contentHash,preparedProfile);
+        if(status!=NativeSaveResult::Ok) return status;
+        candidate=run;candidate.starterProfileGeneration=preparedProfile;candidate.eggProgressGeneration=preparedEgg;
+        status=m_runs.save(candidate);if(status!=NativeSaveResult::Ok) return status;
+        candidate={};status=m_runs.load(run.contentHash,candidate);if(status!=NativeSaveResult::Ok) return status;
+        if(candidate.starterProfileGeneration!=preparedProfile || candidate.eggProgressGeneration!=preparedEgg)
+            return NativeSaveResult::InvalidRecord;
+        run=candidate;return NativeSaveResult::Ok;
     }
 
     // Both exports are verified, but these two files are not an atomic portable
@@ -156,5 +208,6 @@ public:
 private:
     NativeRunSaveStore& m_runs;
     NativeStarterCandyStore& m_profiles;
+    NativeEggProgressStore* m_eggs=nullptr;
 };
 } // namespace Pokerogue3DS
