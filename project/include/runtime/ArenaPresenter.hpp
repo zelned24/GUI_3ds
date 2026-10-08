@@ -49,13 +49,14 @@ public:
             }
         }
         if (!m_sheet) return false;
-        // Original 320x180 field retains its aspect ratio on the 400px screen.
-        const float scale = drawBases ? 400.0f / definition->width
+        // Battle background is prepared as 400x225 nearest raster for 1:1 drawing.
+        const float backgroundScale = drawBases ? 1.0f
             : 240.0f / definition->height;
-        const float backgroundWidth=definition->width*scale;
+        const float backgroundWidth=definition->width*backgroundScale;
         renderer.drawImageDirect(C2D_SpriteSheetGetImage(m_sheet, 0),
-            (400.0f-backgroundWidth)*0.5f, 0.0f, backgroundWidth, definition->height * scale);
+            (400.0f-backgroundWidth)*0.5f, 0.0f, backgroundWidth, definition->height * backgroundScale);
         if (!drawBases) return true;
+        const float scale=400.0f/320.0f; // Original layer geometry; adaptation pending.
         for (unsigned i=0;i<2;++i) {
             char key[96];
             const int length=std::snprintf(key,sizeof(key),"%s_%c",biomeKey,i ? 'b' : 'a');

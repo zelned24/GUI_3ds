@@ -797,3 +797,6 @@ La búsqueda del índice generado usa búsqueda binaria sobre identidades ordena
 - [ ] EXP actualizada durante animación: conserva la pausa del nivel y el tramo de llenado activo al recibir una ganancia posterior; consume el objetivo actualizado en el siguiente tramo. Casos nativos para actualización durante pausa y llenado escritos, sin ejecutar. Coordinación de fases y comparación visual siguen pendientes.
 
 - [ ] Capas animadas de arena: índice de frame calculado sin multiplicación del timestamp completo, conservando 12 FPS y orden actual. Casos de límites y UINT64_MAX escritos sin ejecutar. Raster de fondos/bases a tamaño nativo pendiente; hoy permanecen escalas fraccionales de 1.25×.
+
+- [x] Fondos de batalla preparados offline a ancho 400 con nearest y altura proporcional; raster de batalla dibujado 1:1. Fuentes pinned, pixels y hashes físicos comprobados en `test/arena_background_assets_tests.py`; reporte `docs/generated/ARENA_BACKGROUND_REPORT.json`. Esto conserva replicación desigual de pixels de origen a 1.25×.
+- [ ] Fondos: ejecución GPU y composición visual pendientes; título y bases/capas animadas aún se escalan en runtime. No compilado ni abierto Azahar.
