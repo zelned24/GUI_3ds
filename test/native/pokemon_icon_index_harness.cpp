@@ -129,6 +129,8 @@ int main() {
         failIconLoad=true;
         assert(!items.draw(renderer,item.key,10.25f,11.75f,32));
         failIconLoad=false;
+        assert(!items.draw(renderer,item.key,10.25f,11.75f,32) && iconLoads==loads+1);
+        items.clear(&renderer); // Explicit recovery, never a repeated per-frame load.
         assert(items.draw(renderer,item.key,10.25f,11.75f,32,2));
         assert(iconLoads==loads+2 && iconDraws==draws+1);
         assert(lastIconX==10 && lastIconY==12 && lastIconWidth==32 && lastIconHeight==32);
@@ -146,6 +148,20 @@ int main() {
         assert(items.draw(renderer,item.key,10,12,32) && iconLoads==loads+3);
         items.clear();
         assert(iconFrees==frees+1);
+    }
+
+    {
+        ItemIconPresenter malformed;
+        const auto& item=kItemIconFrames[0];
+        const unsigned loads=iconLoads,draws=iconDraws,retired=iconRetired;
+        malformedIconImage=true;
+        assert(!malformed.draw(renderer,item.key,0,0,32));
+        assert(iconLoads==loads+1 && iconDraws==draws && iconRetired==retired+1);
+        malformedIconImage=false;
+        assert(!malformed.draw(renderer,item.key,0,0,32) && iconLoads==loads+1);
+        malformed.clear(&renderer);
+        assert(malformed.draw(renderer,item.key,0,0,32) && iconLoads==loads+2);
+        malformed.clear(&renderer);
     }
 
     // Generated physical appearances resolve by exact identity; never fallback to another variant/facing.

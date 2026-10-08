@@ -908,3 +908,5 @@ La búsqueda del índice generado usa búsqueda binaria sobre identidades ordena
 - [ ] Lista de movimientos: nombres localizados usan hasta dos líneas de raster nativo antes del fallback acotado; PP debajo sin invadir el nombre. Barra de PP cuantizada a columnas enteras, clamp y producto de 64 bits. Casos de límites escritos sin ejecución nativa; revisión visual y compilación pendientes.
 
 - [ ] Entrenadores: carga rechaza hojas sin textura/región o dimensiones nulas, retira recursos mediante renderer y evita reintentos por frame hasta clear/cambio de identidad. Dibujo directo alinea posiciones a píxeles enteros; encuentro conserva escala 1×. Casos nativos de tres fallos físicos escritos sin ejecutar; revisión visual pendiente.
+
+- [ ] Iconos de objetos: únicamente rutas del índice físico generado; eliminado fallback ui/items-0.t3x que no produce el pipeline actual. Fallos de página recuerdan estado hasta clear/cambio de página; imágenes inválidas se retiran y devuelven false. Validación de rectángulo/trim antes de dibujar. Regresiones de recuperación explícita y hoja malformada escritas, sin ejecutar C++; sin compilación/Azahar.

@@ -27,6 +27,7 @@ public:
         m_sheet = nullptr;
         m_looseSheet = nullptr;
         m_page = 0xffff;
+        m_failedPage = 0xffff;
         m_looseKey[0] = '\0';
     }
 
@@ -41,17 +42,24 @@ public:
         if (frame) {
             if (frame->page >= sizeof(kItemIconPages)/sizeof(kItemIconPages[0]) ||
                 !frame->width || !frame->height || !frame->sourceWidth || !frame->sourceHeight) return false;
+            if(m_failedPage==frame->page) return false;
             if (!m_sheet || m_page != frame->page) {
                 if (m_sheet) renderer.retireSpriteSheet(m_sheet);
+                m_failedPage=0xffff;
                 m_page = frame->page;
                 m_sheet = C2D_SpriteSheetLoad(kItemIconPages[m_page]);
-                if (!m_sheet && m_page == 0) {
-                    m_sheet = C2D_SpriteSheetLoad("romfs:/presentation/ui/items-0.t3x");
-                }
+                if(!m_sheet) {m_failedPage=m_page;return false;}
             }
             if (m_sheet) {
                 C2D_Image img = C2D_SpriteSheetGetImage(m_sheet, 0);
-                if (img.tex) C3D_TexSetFilter(img.tex, GPU_NEAREST, GPU_NEAREST);
+                if(!img.tex || !img.subtex || !img.subtex->width || !img.subtex->height) {
+                    renderer.retireSpriteSheet(m_sheet);m_sheet=nullptr;m_failedPage=m_page;return false;
+                }
+                if(unsigned(frame->x)+frame->width>img.subtex->width ||
+                    unsigned(frame->y)+frame->height>img.subtex->height ||
+                    unsigned(frame->trimX)+frame->width>frame->sourceWidth ||
+                    unsigned(frame->trimY)+frame->height>frame->sourceHeight) return false;
+                C3D_TexSetFilter(img.tex, GPU_NEAREST, GPU_NEAREST);
                 Renderer2D::AtlasFrame rect{
                     frame->x, frame->y, frame->width, frame->height,
                     frame->sourceWidth, frame->sourceHeight, frame->trimX, frame->trimY
@@ -75,6 +83,7 @@ private:
     C2D_SpriteSheet m_sheet = nullptr;
     C2D_SpriteSheet m_looseSheet = nullptr;
     uint16_t m_page = 0xffff;
+    uint16_t m_failedPage = 0xffff;
     char m_looseKey[64]{};
 };
 
