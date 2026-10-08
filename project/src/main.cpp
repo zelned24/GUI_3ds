@@ -349,6 +349,9 @@ int main() {
                 }
             }
             renderer.beginFrame();
+            partyMenu.clear(&renderer);
+            decisionMenu.releaseIcons(renderer);
+            rewardMenu.releasePartyIcons(renderer);
             renderer.beginTop();
             renderer.clear(0xff281f22);
             if (romfsReady) arena.draw(renderer,game.run().biomeId,frameAnimationTimeMs,false);
@@ -874,6 +877,9 @@ int main() {
 #endif
         }
 #endif
+        if(!partyMenu.open) partyMenu.clear(&renderer);
+        if(!game.capturePartyChoicePending()) decisionMenu.releaseIcons(renderer);
+        if(!game.rewardsPending() || !rewardMenu.partySelectionMode()) rewardMenu.releasePartyIcons(renderer);
         renderer.beginTop();
         // Native presentation owns the top screen; do not draw diagnostic scene nodes.
         renderer.clear(0xff281f22);
@@ -974,7 +980,7 @@ int main() {
     renderer.beginFrame();
     renderer.endFrame();
     player.exit();
-    decisionMenu.clear();
+    decisionMenu.clear(&renderer);
     rewardMenu.clear();
     battleMenu.clear();
     partyMenu.clear(&renderer);

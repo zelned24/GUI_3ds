@@ -237,3 +237,7 @@ const rewardPresentation=await fs.readFile(new URL('../project/include/runtime/R
 assert(rewardPresentation.includes('definition ? moveUiName(definition->id)'));
 assert(rewardPresentation.includes('27,bounds.y+6,nameSize'));
 assert(!rewardPresentation.includes('definition ? definition->name'));
+
+assert(main.includes("if(!partyMenu.open) partyMenu.clear(&renderer)"));
+assert(main.includes("if(!game.capturePartyChoicePending()) decisionMenu.releaseIcons(renderer)"));
+assert(main.includes("rewardMenu.releasePartyIcons(renderer)"));

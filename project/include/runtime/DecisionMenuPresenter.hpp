@@ -9,7 +9,8 @@
 namespace Pokerogue3DS {
 class DecisionMenuPresenter {
 public:
-    void clear() {m_icons.clear();m_cursor.clear();}
+    void clear(Renderer2D* renderer=nullptr) {m_icons.clear(renderer);m_cursor.clear(renderer);}
+    void releaseIcons(Renderer2D& renderer) {m_icons.clear(&renderer);}
     void draw(Renderer2D& renderer,const FirstRunRuntime& game) {
         renderer.clear(0xff3a303d);
         if(game.capturePartyChoicePending()) {

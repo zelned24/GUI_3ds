@@ -25,6 +25,8 @@ public:
         resetSelection();
     }
 
+    void releasePartyIcons(Renderer2D& renderer) {m_partyPresenter.clear(&renderer);}
+
     bool partySelectionMode() const { return m_partySelectMode; }
     void resetSelection() { m_partySelectMode=false; m_moveSelectMode=false; m_moveSelection.reset(); }
     void setPartySelectionMode(bool mode) { m_partySelectMode=mode; if(mode) m_moveSelectMode=false; }

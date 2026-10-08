@@ -848,3 +848,5 @@ La búsqueda del índice generado usa búsqueda binaria sobre identidades ordena
 - [ ] Recompensas sobre movimientos: nombres localizados mediante ID canónico (antes nombre upstream sin locale), cursor usa raster real tras ajuste de ancho. Cabecera/destinatario/instrucciones limitados a su región. Guards PASS; prueba nativa y visual pendientes.
 
 - [ ] Iconos: coordenadas/opacity/escala no finitas y escalas no positivas rechazadas antes de cargar texturas; opacity limitada a 1. Casos nativos escritos para ausencia de I/O en entradas inválidas, sin ejecutar.
+
+- [ ] Memoria de menús: páginas compactas de equipo/captura/destinatario retiradas cuando dejan de usarse y al volver al título, mediante renderer después de beginFrame. Conserva navegación y selección; cierre de decisiones usa retirement. Guards PASS, ejecución GPU y pico real pendientes.
