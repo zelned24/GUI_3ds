@@ -735,3 +735,7 @@ La búsqueda del índice generado usa búsqueda binaria sobre identidades ordena
 - [ ] Finalización ampliada verificable: rechaza duplicados/conteos inconsistentes, valida archivos/hashes y escribe un reporte temporal completo antes de reemplazar `converted-sprite-assets.json`. Guard estático JS PASS; ejecución final sobre todo el catálogo pendiente. La conversión de texturas no se declara publicación transaccional de un paquete.
 
 - [ ] Render de imágenes válido: `drawImageDirect` rechaza coordenadas/tamaños/rotación/opacidad no finitos y dimensiones no positivas; limita alfa a 1 sin cambiar escalas ni flip. Casos C++ escritos para NaN/infinito/cero/negativo y dibujo válido 1×, sin ejecutar; guard estático JS PASS.
+
+### Identidad visual del retrato de selección
+
+- [ ] Retrato del cursor concordante con la aventura: `FirstRunRuntime::setupStarterVisual` resuelve especie/forma y apariencia/género desde el perfil; `main.cpp` consume esa identidad en lugar de crear un actor sin metadata. Pruebas nativas de concordancia normal/shiny épico/legacy escritas y pendientes de ejecución. Guard de conexión JS PASS. La conversión ampliada y la comprobación visual siguen pendientes.

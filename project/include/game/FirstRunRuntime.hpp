@@ -148,6 +148,33 @@ public:
         const auto* form=PokerogueContent::findFormByUpstreamIndex(dex,setupStarterFormIndex(dex));
         return nativeStarterFormAbility(*species,form,index,ability);
     }
+    // Visual identity of the cursor species, independent from the selected team.
+    // Uses the same caught DexAttr defaults as actor preparation; no RNG or
+    // invented shiny/gender unlocks are introduced by the presenter.
+    bool setupStarterVisual(ResolvedPokemon& output) const {
+        output={};
+        const auto* species=PokerogueContent::findSpeciesByDex(selectedSetupStarterDex());
+        if(!species || !species->starterEligible) return false;
+        ResolvedPokemon candidate{};candidate.dex=species->dex;
+        const auto* form=PokerogueContent::findFormByUpstreamIndex(species->dex,setupStarterFormIndex(species->dex));
+        candidate.formId=form ? form->id : nullptr;
+        candidate.actor.gender=species->malePercentTenths==65534 ? PokemonGender::Genderless :
+            species->malePercentTenths==0 ? PokemonGender::Female : PokemonGender::Male;
+        const auto* progress=starterProgress(species->dex);
+        if(progress && progress->caught) {
+            if(progress->genderAttr && !nativeStarterDefaultGender(*progress,candidate.actor.gender)) return false;
+            if(progress->preferredFormIndex!=65535 && form && form->formKey &&
+               std::strcmp(form->formKey,"FEMALE")==0) {
+                if(!(progress->genderAttr & 8u)) return false;
+                candidate.actor.gender=PokemonGender::Female;
+            }
+            if(progress->caughtAppearanceAttr) {
+                if(!nativeStarterDefaultAppearance(*progress,candidate.actor.shiny,candidate.actor.shinyVariant)) return false;
+                candidate.actor.appearanceResolved=true;
+            }
+        }
+        output=candidate;return true;
+    }
     struct ProfileCatalogStats {
         unsigned speciesTotal=0,speciesSeen=0,speciesCaught=0;
         unsigned startersTotal=0,startersCaught=0,shinyStartersCaught=0;

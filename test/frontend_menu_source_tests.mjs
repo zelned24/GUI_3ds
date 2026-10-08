@@ -84,3 +84,5 @@ const rendererSource=await fs.readFile(new URL('../project/src/gfx/renderer2d.cp
 const imageDraw=rendererSource.slice(rendererSource.indexOf('void Renderer2D::drawImageDirect('),rendererSource.indexOf('void Renderer2D::drawAtlasFrame('));
 for(const field of ['x','y','width','height','rotation','opacity']) assert(imageDraw.includes('std::isfinite('+field+')'));
 assert(imageDraw.includes('opacity=std::min(opacity,1.0f)'));
+
+assert(main.includes("if(game.setupStarterVisual(selected))"));

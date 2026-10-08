@@ -3394,6 +3394,14 @@ static int checkPlayerPartyManagementAndSwitching() {
            !legacyAppearance.restoreStarterTeamSetup(1,&appearanceDex,1)) return 925;
         const auto& legacy=legacyAppearance.presentation().player.actor;
         if(legacy.appearanceResolved || legacy.shiny || legacy.shinyVariant || legacy.pokemonId!=normal.pokemonId) return 926;
+        for(const auto* runtime : {&normalAppearance,&epicAppearance,&legacyAppearance}) {
+            ResolvedPokemon visual{};
+            if(!runtime->setupStarterVisual(visual)) return 951;
+            const auto& actor=runtime->presentation().player.actor;
+            if(visual.dex!=appearanceDex || visual.actor.gender!=actor.gender ||
+               visual.actor.appearanceResolved!=actor.appearanceResolved ||
+               visual.actor.shiny!=actor.shiny || visual.actor.shinyVariant!=actor.shinyVariant) return 952;
+        }
     }
     {
         FirstRunRuntime unavailable(1);

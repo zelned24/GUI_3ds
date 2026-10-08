@@ -845,11 +845,8 @@ int main() {
             if (game.presentationStage()==Pokerogue3DS::NativeSaveStage::RunSetup) {
                 setup.drawBackground(renderer);
                 Pokerogue3DS::ResolvedPokemon selected{};
-                selected.dex=game.selectedSetupStarterDex();
-                const auto* form=PokerogueContent::findFormByUpstreamIndex(selected.dex,
-                    game.setupStarterFormIndex(selected.dex));
-                if (form) selected.formId=form->id;
-                secondEnemySprites.draw(renderer,selected,false,22,55,112,112,animationTimeMs);
+                if(game.setupStarterVisual(selected))
+                    secondEnemySprites.draw(renderer,selected,false,22,55,112,112,animationTimeMs);
             } else {
             arena.draw(renderer, game.run().biomeId, animationTimeMs);
             // Player Pokémon anchored on player grass platform
