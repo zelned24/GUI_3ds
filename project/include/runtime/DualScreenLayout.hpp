@@ -24,6 +24,11 @@ struct TouchRect {
         return px>=x && px-x<width && py>=y && py-y<height;
     }
 };
+inline constexpr TouchRect kEggListConfirmRect{12,205,142,30};
+inline constexpr TouchRect kEggListBackRect{166,205,142,30};
+inline constexpr TouchRect eggListRowRectangle(unsigned row) {
+    return row<5 ? TouchRect{20,38+row*30,280,28} : TouchRect{};
+}
 // Nine upstream submenu entries fit the 320x240 touch screen.
 inline constexpr unsigned kGlobalMenuRowCount=9;
 inline constexpr TouchRect globalMenuRowRectangle(unsigned index) {

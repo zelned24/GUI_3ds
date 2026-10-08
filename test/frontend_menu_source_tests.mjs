@@ -456,3 +456,8 @@ assert(frontend.includes("game->eggAt(selected)"));
 assert(frontend.includes("m_eggDetails=false;return FrontendCommand::None;"));
 assert(frontend.includes("eggHatchMessageKey(egg->hatchWaves)"));
 assert(frontend.includes("first+row<count"));
+
+assert(frontend.includes("eggListRowRectangle(unsigned(row)).contains(touchX,touchY)"));
+assert(frontend.includes("kEggListConfirmRect.contains(touchX,touchY)"));
+assert(frontend.includes("renderer.drawWindow(kEggListConfirmRect.x"));
+assert(frontend.includes("renderer.drawWindow(kEggListBackRect.x"));

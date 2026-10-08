@@ -76,10 +76,10 @@ public:
             return FrontendCommand::None;
         }
         if(m_page==FrontendPage::ServiceInfo && m_service==3 && m_eggDetails
-            && ((keys & KEY_B) || ((keys & KEY_TOUCH) && TouchRect{12,205,296,35}.contains(touchX,touchY)))) {
+            && ((keys & KEY_B) || ((keys & KEY_TOUCH) && kEggListBackRect.contains(touchX,touchY)))) {
             m_eggDetails=false;return FrontendCommand::None;
         }
-        if((keys & KEY_B) || ((keys & KEY_TOUCH) && TouchRect{12,205,296,35}.contains(touchX,touchY) && m_page != FrontendPage::Title)) {
+        if((keys & KEY_B) || ((keys & KEY_TOUCH) && (m_page==FrontendPage::ServiceInfo && m_service==3 ? kEggListBackRect.contains(touchX,touchY) : TouchRect{12,205,296,35}.contains(touchX,touchY)) && m_page != FrontendPage::Title)) {
             if(m_confirmingDelete) {
                 m_confirmingDelete = false;
                 return FrontendCommand::None;
@@ -99,11 +99,11 @@ public:
             if(!m_eggDetails && (keys & KEY_TOUCH)) {
                 const size_t first=(m_eggSelected/5)*5;
                 for(size_t row=0;row<5 && first+row<count;++row)
-                    if(TouchRect{20,38u+unsigned(row)*30u,280,28}.contains(touchX,touchY)) {
+                    if(eggListRowRectangle(unsigned(row)).contains(touchX,touchY)) {
                         m_eggSelected=first+row;m_eggDetails=true;break;
                     }
             }
-            if(keys & KEY_A) m_eggDetails=true;
+            if((keys & KEY_A) || ((keys & KEY_TOUCH) && kEggListConfirmRect.contains(touchX,touchY))) m_eggDetails=true;
             return FrontendCommand::None;
         }
         if(m_page==FrontendPage::Pokedex) {
@@ -425,7 +425,12 @@ private:
                     }
                 }
             }
-            renderer.drawTextFitted(m_eggDetails ? "B: Lista" : "A: Detalles   B: Volver",12,214,0.375f,296,0xffffffff);
+            if(!m_eggDetails) {
+                renderer.drawWindow(kEggListConfirmRect.x,kEggListConfirmRect.y,kEggListConfirmRect.width,kEggListConfirmRect.height);
+                renderer.drawTextFitted("A: Detalles",kEggListConfirmRect.x+8,kEggListConfirmRect.y+9,0.375f,kEggListConfirmRect.width-16,0xffffffff);
+            }
+            renderer.drawWindow(kEggListBackRect.x,kEggListBackRect.y,kEggListBackRect.width,kEggListBackRect.height);
+            renderer.drawTextFitted(m_eggDetails ? "B: Lista" : "B: Volver",kEggListBackRect.x+8,kEggListBackRect.y+9,0.375f,kEggListBackRect.width-16,0xffffffff);
             return;
         }
         if(m_service==2) {

@@ -245,6 +245,16 @@ int main() {
         assert(globalMenuRowAt(x,y)==expected);
     }
     assert(!globalMenuRowRectangle(kGlobalMenuRowCount).contains(0,0));
+    // Egg controls never share a touch pixel with each other or an inventory row.
+    for(unsigned y=0;y<=240;++y) for(unsigned x=0;x<=320;++x) {
+        unsigned hits=kEggListConfirmRect.contains(x,y)+kEggListBackRect.contains(x,y);
+        for(unsigned row=0;row<5;++row) hits+=eggListRowRectangle(row).contains(x,y);
+        assert(hits<=1);
+        assert(kEggListConfirmRect.contains(x,y)==(x>=12 && x<154 && y>=205 && y<235));
+        assert(kEggListBackRect.contains(x,y)==(x>=166 && x<308 && y>=205 && y<235));
+    }
+    assert(!eggListRowRectangle(5).contains(0,0));
+
     FrontendMenuPresenter global(false);
     assert(global.input(KEY_X)==FrontendCommand::None && global.page()==FrontendPage::GlobalMenu);
     assert(global.input(KEY_A)==FrontendCommand::None && global.page()==FrontendPage::Settings);
