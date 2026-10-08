@@ -288,7 +288,7 @@ public:
                 std::snprintf(label,sizeof(label),"Coste: %u.%02u pts",unsigned(quarters/4),unsigned(quarters%4)*25);
         } else std::snprintf(label,sizeof(label),"Coste no disponible");
         renderer.drawText(label,161,73,0.4f,0xffffffff);
-        const char* ability=abilityUiName((form ? form->ability1 : species->ability1));
+        const char* ability=abilityUiName(game.setupStarterAbilityId(species->dex));
         if(!renderer.drawTextBox(ability ? ability : "",161,94,0.375f,220,2,0xffffffff))
             renderer.drawTextFitted(ability ? ability : "",161,99,0.375f,220,0xffffffff);
         renderer.drawText(game.starterUnlocked(species->dex) ? "Disponible" : runtimeUiText("starter-select-ui-handler:locked"),161,122,0.375f,0xffffffff);

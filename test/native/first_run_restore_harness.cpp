@@ -3357,6 +3357,7 @@ static int checkPlayerPartyManagementAndSwitching() {
            !normalAppearance.restoreStarterTeamSetup(1,&appearanceDex,1)) return 921;
         const auto& normal=normalAppearance.presentation().player.actor;
         if(!normal.appearanceResolved || normal.shiny || normal.shinyVariant) return 922;
+        if(normalAppearance.setupStarterAbilityId(appearanceDex)!=normalAppearance.presentation().player.battleState.abilityId) return 946;
         appearanceRecord.caughtAppearanceAttr=83u; // Owned normal, shiny, default and epic bits.
         appearanceRecord.observedAppearanceAttr=83u;
         if(!epicAppearance.restoreStarterCandyProfile(&appearanceRecord,1,0,captureFriendshipPolicy) ||
@@ -3364,6 +3365,30 @@ static int checkPlayerPartyManagementAndSwitching() {
         const auto& epic=epicAppearance.presentation().player.actor;
         if(!epic.appearanceResolved || !epic.shiny || epic.shinyVariant!=2 ||
            epic.pokemonId!=normal.pokemonId || epic.initialTeraTypeIndex!=normal.initialTeraTypeIndex) return 924;
+        if(const auto* species=PokerogueContent::findSpeciesByDex(appearanceDex);species && species->abilityHidden) {
+            auto hiddenRecord=appearanceRecord;hiddenRecord.abilityAttr=4;
+            FirstRunRuntime hiddenAppearance(1);
+            if(!hiddenAppearance.restoreStarterCandyProfile(&hiddenRecord,1,0,captureFriendshipPolicy) ||
+               !hiddenAppearance.restoreStarterTeamSetup(1,&appearanceDex,1)) return 947;
+            if(hiddenAppearance.presentation().player.actor.abilityIndex!=2 ||
+               hiddenAppearance.presentation().player.battleState.abilityId!=species->abilityHidden ||
+               hiddenAppearance.setupStarterAbilityId(appearanceDex)!=species->abilityHidden) return 948;
+            const auto& hidden=hiddenAppearance.presentation().player;
+            NativePokemonSave hiddenSave{},hiddenDecoded{};
+            char hiddenBytes[1024]{};size_t hiddenLength=0;
+            PokemonBattleState hiddenRestored{};PokemonActorIdentity hiddenIdentity{};
+            if(!captureNativePokemonActorSave(hidden.battleState,hidden.actor,hidden.totalExperience,hiddenSave) ||
+               encodeNativePokemonSave(hiddenSave,hiddenBytes,sizeof(hiddenBytes),hiddenLength)!=NativeSaveResult::Ok ||
+               decodeNativePokemonSave(hiddenBytes,hiddenLength,hiddenDecoded)!=NativeSaveResult::Ok ||
+               !restoreNativePokemonActorSave(hiddenDecoded,hiddenRestored,hiddenIdentity) ||
+               hiddenIdentity.abilityIndex!=2 || hiddenRestored.abilityId!=species->abilityHidden) return 949;
+            const auto second=species->ability2 ? species->ability2 : species->ability1;
+            if(second!=species->abilityHidden) {
+                hiddenDecoded.abilityIndex=1;
+                if(restoreNativePokemonActorSave(hiddenDecoded,hiddenRestored,hiddenIdentity)) return 950;
+            }
+
+        }
         appearanceRecord.caughtAppearanceAttr=0;
         if(!legacyAppearance.restoreStarterCandyProfile(&appearanceRecord,1,0,captureFriendshipPolicy) ||
            !legacyAppearance.restoreStarterTeamSetup(1,&appearanceDex,1)) return 925;

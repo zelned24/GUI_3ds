@@ -139,6 +139,15 @@ public:
             ? &m_starterProfileRecords[first] : nullptr;
     }
     const NativeStarterCandyRecord* starterProfileRecords() const { return m_starterProfileRecords.data(); }
+    uint16_t setupStarterAbilityId(uint16_t dex) const {
+        const auto* species=PokerogueContent::findSpeciesByDex(dex);
+        if(!species) return 0;
+        uint8_t index=0;uint16_t ability=species->ability1;
+        const auto* progress=starterProgress(dex);
+        if(progress && progress->abilityAttr && !nativeStarterDefaultAbility(*progress,index,ability)) return 0;
+        const auto* form=PokerogueContent::findFormByUpstreamIndex(dex,setupStarterFormIndex(dex));
+        return nativeStarterFormAbility(*species,form,index,ability);
+    }
     struct ProfileCatalogStats {
         unsigned speciesTotal=0,speciesSeen=0,speciesCaught=0;
         unsigned startersTotal=0,startersCaught=0,shinyStartersCaught=0;

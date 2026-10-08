@@ -69,3 +69,7 @@ assert(trainerSource.includes('if(std::strcmp(m_failedKey,key)==0) return false;
 assert(trainerSource.includes("m_failedKey[0] = '\\0';"));
 assert(trainerSource.includes('std::strlen(key)>=sizeof(m_currentKey)'));
 assert(trainerSource.includes('clear(renderer);\n        std::strcpy(m_failedKey,key);'));
+
+const setup=await fs.readFile(new URL('../project/include/runtime/SetupPresenter.hpp',import.meta.url),'utf8');
+assert(setup.includes('abilityUiName(game.setupStarterAbilityId(species->dex))'));
+assert(!setup.includes('abilityUiName((form ? form->ability1 : species->ability1))'));

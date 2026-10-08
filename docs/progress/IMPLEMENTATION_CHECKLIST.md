@@ -2,7 +2,7 @@
 
 ## Cómo medir el avance
 
-- Referencia actual: rama `codex/pokerogue-3ds-migration`, último commit publicado `0d8d5ba` y cambios locales posteriores sin publicar. Los resultados históricos no verifican estos cambios locales.
+- Referencia actual: rama `codex/pokerogue-3ds-migration`, último commit publicado `7b3a55f` y cambios locales posteriores sin publicar. Los resultados históricos no verifican estos cambios locales.
 - Objetivo: PokéRogue jugable y fiel al snapshot upstream en Old 3DS, con ambas pantallas, progreso exportable y actualizaciones desde consola.
 - Cada ID es estable para reportar avances: `MOV-07`, `GUI-03`, etc. No equivale a un movimiento/habilidad individual.
 - Una casilla sin marcar puede tener código parcial; el resumen de cada área indica lo existente. Marcarla solo con integración completa y evidencia ejecutada pertinente.
@@ -707,3 +707,16 @@ La búsqueda del índice generado usa búsqueda binaria sobre identidades ordena
 ### Carga fallida de texturas
 
 - [ ] Verificación nativa de caché de errores: `PokemonAtlasPresenter` recuerda páginas físicas que fallaron (hasta cuatro por atlas) y `TrainerPresenter` recuerda la última identidad fallida. Cambio de identidad/invalidate/clear permite reintentar. Rechaza keys truncadas y mantiene liberación mediante el renderer al fallar metadata de entrenador. Harness de entrenador añadido a la suite: carga fallida repetida, clear/identidad para recuperar, metadata faltante, key larga y liberación diferida. No ejecutado. Guards estáticos JS PASS; ejecución de I/O, carga GPU y comportamiento visual pendientes.
+
+### Habilidad mostrada en la selección
+
+- [ ] Verificar ficha y actor de starters: la ficha consume `FirstRunRuntime::setupStarterAbilityId`, resolviendo slot desbloqueado del perfil con `nativeStarterDefaultAbility` y habilidad de la forma seleccionada. Ya no fuerza ability1 en UI. Comparación nativa con la habilidad del actor preparada, pendiente de ejecución; guard estático JS PASS. Selección manual de habilidad/naturaleza y preferencia persistente siguen pendientes.
+
+### Discrepancia detectada: slots de habilidades y guardado
+
+- [ ] Corregir y verificar slots reales de habilidades: en juego pinned `8555c08c823b856cbec4eb99ca84ea52a955836d`, `src/data/pokemon-species.ts::PokemonSpeciesForm.constructor` convierte ability2=NONE en ability1; `getAbility` usa índices 0/1/2 fijos. `starter-select-ui-utils.ts::getStarterDefaultAbilityIndex` recibe esa instancia efectiva. El helper local usa el NONE crudo y devuelve slot 1 para habilidad oculta cuando no existe segunda regular: discrepancia real, no paridad demostrada.
+- [ ] Revisar consumidores de la corrección: `NativeStarterCandyProfile.hpp::nativeStarterDefaultAbility`, preparación y forma de starter en `FirstRunRuntime.cpp`, asignación de abilityAttr al capturar, reconstrucción por identidad en `PokemonBattleState.cpp`, replay y compatibilidad de saves con actores históricos. El constructor de batalla por identidad ya trata slot 1 como segunda regular/alias y slot 2 como oculta. Agregar regresiones para especies con una/dos regulares, formas, captura y save/load antes de dar esta corrección por verificada.
+
+- [ ] Corrección escrita de slots: default oculto usa índice 2; segundo regular ausente se resuelve como alias de ability1. Captura registra bits 1<<índice sin reinterpretar slot 1 como oculto. Ficha y preparación comparten `nativeStarterFormAbility`. Regresiones nativas añadidas para todas las especies starter y formas, perfil hidden-only y concordancia ficha/actor; ejecución y compatibilidad de guardados pendientes. `NativeRunSave.cpp::restoreNativePokemonActorSave` valida abilityId frente a índices fijos y ya rechaza actor histórico incoherente (slot 1 con habilidad oculta), no se agregó una migración inferida.
+
+- [ ] Round-trip de actor hidden-only: capture → encode → decode → restore conserva slot 2 y abilityId; caso incoherente slot 1/habilidad oculta distinta debe rechazarse. Regresión C++ escrita, no ejecutada.

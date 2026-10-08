@@ -756,7 +756,7 @@ bool FirstRunRuntime::recordCaughtSpecies(uint16_t dex, const ResolvedPokemon* c
             if (!originalSpecies) return false;
             if (species->starterEligible) {
                 const uint8_t index = captured->actor.abilityIndex;
-                entry.abilityAttr |= index == 1 && !originalSpecies->ability2 ? 4u : static_cast<uint8_t>(1u << index);
+                entry.abilityAttr |= static_cast<uint8_t>(1u << index);
             }
             if (captured->actor.gender == PokemonGender::Male) entry.genderAttr |= 4u;
             else if (captured->actor.gender == PokemonGender::Female) entry.genderAttr |= 8u;
@@ -4606,11 +4606,7 @@ bool FirstRunRuntime::resolveStarterFromDex(uint16_t dex, PokerogueRngAdapter& r
         starterInput.nature = starterActor.nature;
         starterInput.gender = starterActor.gender;
         starterInput.abilityId = starterAbility;
-        if (starterForm) {
-            const uint16_t formAbility = starterActor.abilityIndex == 0 ? starterForm->ability1 :
-                starterActor.abilityIndex == 1 && starter.ability2 ? starterForm->ability2 : starterForm->abilityHidden;
-            if (formAbility) starterInput.abilityId = formAbility;
-        }
+        starterInput.abilityId = nativeStarterFormAbility(starter,starterForm,starterActor.abilityIndex,starterAbility);
         for (uint8_t i = 0; i < 6; ++i) starterInput.ivs[i] = starterActor.ivs[i];
         starterInput.moveCount = prepared.moveCount;
         for (uint8_t i = 0; i < starterInput.moveCount; ++i)

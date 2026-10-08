@@ -1308,10 +1308,30 @@ extern "C" int runNativeSaveChecks() {
     uint16_t defaultAbility = 65535;
     if (!nativeStarterDefaultAbility(purchased, defaultAbilityIndex, defaultAbility) ||
         defaultAbilityIndex != 0 || defaultAbility != purchasedSpecies->ability1) return 136;
+    // Canonical raw NONE is normalized by the runtime constructor, not by changing imports.
+    for(const auto& species:PokerogueContent::kSpecies) {
+        if(!species.starterEligible) continue;
+        NativeStarterCandyRecord slotRecord{};slotRecord.speciesDex=species.dex;
+        uint8_t slot=255;uint16_t ability=65535;
+        slotRecord.abilityAttr=2;
+        if(!nativeStarterDefaultAbility(slotRecord,slot,ability) || slot!=1 ||
+           ability!=(species.ability2 ? species.ability2 : species.ability1)) return 155;
+        if(species.abilityHidden) {
+            slotRecord.abilityAttr=4;
+            if(!nativeStarterDefaultAbility(slotRecord,slot,ability) || slot!=2 || ability!=species.abilityHidden) return 156;
+        }
+        for(const auto& form:PokerogueContent::kForms) {
+            if(std::strcmp(form.speciesId,species.id)) continue;
+            const auto primary=form.ability1 ? form.ability1 : species.ability1;
+            if(nativeStarterFormAbility(species,&form,1,species.ability1)!=
+               (form.ability2 ? form.ability2 : primary)) return 157;
+        }
+        if(nativeStarterFormAbility(species,nullptr,3,species.ability1)) return 158;
+    }
     auto hiddenOnly = purchased;
     hiddenOnly.abilityAttr = 4;
     if (!nativeStarterDefaultAbility(hiddenOnly, defaultAbilityIndex, defaultAbility) ||
-        defaultAbilityIndex != (purchasedSpecies->ability2 ? 2 : 1) || defaultAbility != purchasedSpecies->abilityHidden) return 137;
+        defaultAbilityIndex != 2 || defaultAbility != purchasedSpecies->abilityHidden) return 137;
     hiddenOnly.abilityAttr = 0;
     const uint8_t retainedIndex = defaultAbilityIndex;
     const uint16_t retainedAbility = defaultAbility;
