@@ -121,3 +121,18 @@ assert(setup.includes('pres==StarterCostPurchaseResult::MissingPrice'));
 assert(setup.includes('pres==StarterPassivePurchaseResult::MissingPrice'));
 
 assert(setup.includes("abilityUiName(game.setupStarterPassiveAbilityId(dex))"));
+
+assert(frontend.includes("TouchRect{12,205,296,35}.contains(touchX,touchY)"));
+assert(!frontend.includes("No hay partidas finalizadas registradas."));
+
+assert(arena.includes("drawTextFitted(trainerName, 20.0f, 13.0f, 0.45f, 164.0f"));
+for(const method of ["drawText", "drawTextWrapped", "drawTextFitted"]) {
+ const body=rendererSource.slice(rendererSource.indexOf("Renderer2D::"+method+"("));
+ const guard=body.slice(0,body.indexOf("#if"));
+ assert(guard.includes("std::isfinite(x)") && guard.includes("std::isfinite(y)"));
+}
+
+assert(arena.includes("265.0f, 82.0f, 1.0f, animationTimeMs"));
+assert(!arena.includes("265.0f, 82.0f, 1.5f"));
+assert(trainerSource.includes("!std::isfinite(anchorX)"));
+assert(trainerSource.includes("!std::isfinite(scale) || scale<=0"));

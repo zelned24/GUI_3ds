@@ -344,7 +344,9 @@ void Renderer2D::drawText(
     uint32_t color,
     float opacity
 ) {
-    if (!text || !m_currentTarget || opacity <= 0.001f) return;
+    if (!m_initialized || !m_frameActive || !text || !m_currentTarget ||
+        !std::isfinite(x) || !std::isfinite(y) || !std::isfinite(opacity) || opacity <= 0.001f) return;
+    opacity=std::min(opacity,1.0f);
 
     uint32_t a = (color >> 24) & 0xFF;
     a = static_cast<uint32_t>(a * opacity);
@@ -368,7 +370,7 @@ void Renderer2D::drawText(
 }
 
 void Renderer2D::drawText(const char* text,float x,float y,float size,uint32_t color) {
-    if(!m_initialized || !m_frameActive || !m_currentTarget || !m_textBuf || !text || !std::isfinite(size) || size<=0) return;
+    if(!m_initialized || !m_frameActive || !m_currentTarget || !m_textBuf || !text || !std::isfinite(x) || !std::isfinite(y) || !std::isfinite(size) || size<=0) return;
     C2D_Text value;
 #if defined(__arm__) || defined(__3DS__) || defined(_3DS)
     const auto raster=Pokerogue3DS::nativeTextRaster(size);
@@ -383,7 +385,7 @@ void Renderer2D::drawText(const char* text,float x,float y,float size,uint32_t c
 }
 
 void Renderer2D::drawTextWrapped(const char* text,float x,float y,float size,float maxWidth,uint32_t color) {
-    if(!m_initialized || !m_frameActive || !m_currentTarget || !m_textBuf || !text || !std::isfinite(size) || size<=0 || !std::isfinite(maxWidth) || maxWidth<=0) return;
+    if(!m_initialized || !m_frameActive || !m_currentTarget || !m_textBuf || !text || !std::isfinite(x) || !std::isfinite(y) || !std::isfinite(size) || size<=0 || !std::isfinite(maxWidth) || maxWidth<=0) return;
 #if defined(__arm__) || defined(__3DS__) || defined(_3DS)
     const auto raster=Pokerogue3DS::nativeTextRaster(size);
     C2D_Text value;
@@ -411,7 +413,7 @@ bool Renderer2D::drawTextBox(const char* text,float x,float y,float size,float m
 
 float Renderer2D::drawTextFitted(const char* text,float x,float y,float size,float maxWidth,uint32_t color,float* drawnWidth) {
     if(drawnWidth) *drawnWidth=0;
-    if(!m_initialized || !m_frameActive || !m_currentTarget || !m_textBuf || !text || !std::isfinite(size) || size<=0 || !std::isfinite(maxWidth) || maxWidth<=0) return size;
+    if(!m_initialized || !m_frameActive || !m_currentTarget || !m_textBuf || !text || !std::isfinite(x) || !std::isfinite(y) || !std::isfinite(size) || size<=0 || !std::isfinite(maxWidth) || maxWidth<=0) return size;
 #if defined(__arm__) || defined(__3DS__) || defined(_3DS)
     auto raster=Pokerogue3DS::nativeTextRaster(size);
     const auto measure=[&](const char* candidate) {

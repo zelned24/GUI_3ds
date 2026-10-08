@@ -62,7 +62,7 @@ public:
             }
             return FrontendCommand::None;
         }
-        if((keys & KEY_B) || ((keys & KEY_TOUCH) && touchY >= 205 && m_page != FrontendPage::Title)) {
+        if((keys & KEY_B) || ((keys & KEY_TOUCH) && TouchRect{12,205,296,35}.contains(touchX,touchY) && m_page != FrontendPage::Title)) {
             if(m_confirmingDelete) {
                 m_confirmingDelete = false;
                 return FrontendCommand::None;
@@ -254,7 +254,7 @@ public:
             renderer.drawTextFitted("A: Sí",32,130,0.4f,120,0xffffffff);
             renderer.drawTextFitted("B: No",160,130,0.4f,128,0xffffffff);
         } else if(m_page==FrontendPage::History) {
-            renderer.drawTextFitted("No hay partidas finalizadas registradas.",28,58,0.32f,264,0xffffffff);
+            drawBoundedDescription(renderer,"Historial pendiente: todavía no se guardan los resúmenes de partidas finalizadas.",28,58,264,100);
         } else if(m_page==FrontendPage::Load) {
             if(!saved || !m_titleSelection.hasContinue) {
                 renderer.drawTextFitted(runtimeUiText("menu:noSaves"),28,58,0.36f,264,0xffffffff);

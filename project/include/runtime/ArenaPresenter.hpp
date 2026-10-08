@@ -96,10 +96,11 @@ public:
             }
         }
         if (!m_trainer.isLoaded()) return false;
-        m_trainer.drawAnchored(renderer, 265.0f, 82.0f, 1.5f, animationTimeMs);
+        // Native texels: avoid fractional sampling and top clipping during the intro.
+        m_trainer.drawAnchored(renderer, 265.0f, 82.0f, 1.0f, animationTimeMs);
         if (trainerName && *trainerName) {
             renderer.drawWindow(12.0f, 8.0f, 180.0f, 26.0f);
-            renderer.drawText(trainerName, 20.0f, 13.0f, 0.45f, 0xffffffff);
+            renderer.drawTextFitted(trainerName, 20.0f, 13.0f, 0.45f, 164.0f, 0xffffffff);
         }
         return true;
     }

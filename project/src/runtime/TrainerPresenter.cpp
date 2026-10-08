@@ -59,7 +59,8 @@ bool TrainerPresenter::loadPlayerBack(bool female, Renderer2D* renderer) {
 }
 
 void TrainerPresenter::draw(Renderer2D& renderer, float x, float y, float width, float height, uint64_t animationTimeMs) {
-    if (!m_sheet) return;
+    if (!m_sheet || !std::isfinite(x) || !std::isfinite(y) ||
+        !std::isfinite(width) || !std::isfinite(height) || width<=0 || height<=0) return;
     C2D_Image img = C2D_SpriteSheetGetImage(m_sheet, 0);
     if (!img.tex) return;
     C3D_TexSetFilter(img.tex, GPU_NEAREST, GPU_NEAREST);
@@ -82,7 +83,8 @@ void TrainerPresenter::draw(Renderer2D& renderer, float x, float y, float width,
 }
 
 void TrainerPresenter::drawAnchored(Renderer2D& renderer, float anchorX, float anchorY, float scale, uint64_t animationTimeMs) {
-    if (!m_sheet) return;
+    if (!m_sheet || !std::isfinite(anchorX) || !std::isfinite(anchorY) ||
+        !std::isfinite(scale) || scale<=0) return;
     C2D_Image img = C2D_SpriteSheetGetImage(m_sheet, 0);
     if (!img.tex) return;
     C3D_TexSetFilter(img.tex, GPU_NEAREST, GPU_NEAREST);

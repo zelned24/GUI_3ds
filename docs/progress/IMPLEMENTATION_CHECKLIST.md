@@ -2,7 +2,7 @@
 
 ## Cómo medir el avance
 
-- Referencia actual: rama `codex/pokerogue-3ds-migration`, último commit publicado confirmado `184bb92`, que incluye la corrección de padding de `305234a`; conversión ampliada de assets todavía en curso. Los resultados históricos no verifican estos cambios locales.
+- Referencia actual: rama `codex/pokerogue-3ds-migration`, último commit publicado confirmado `26c933b`; conversión física ampliada terminada: 10682 atlas y 10746 páginas `.t3x`. Validación nativa y visual pendiente. Los resultados históricos no verifican estos cambios locales.
 - Objetivo: PokéRogue jugable y fiel al snapshot upstream en Old 3DS, con ambas pantallas, progreso exportable y actualizaciones desde consola.
 - Cada ID es estable para reportar avances: `MOV-07`, `GUI-03`, etc. No equivale a un movimiento/habilidad individual.
 - Una casilla sin marcar puede tener código parcial; el resumen de cada área indica lo existente. Marcarla solo con integración completa y evidencia ejecutada pertinente.
@@ -37,7 +37,7 @@ Estos son criterios de cierre, no cantidades de ataques o habilidades pendientes
 
 Prioridad de gameplay pendiente: completar el segundo Pokémon activo del jugador y el campo de cuatro actores (**TUR-05**), checks previos y cola dinámica de acciones (**TUR-01–04**), ampliar habilidades/movimientos (**HAB / MOV**) y cerrar Eternatus con persistencia (**FLU-09 / SAV-03**). Struggle por PP agotados y guardado del campo actual de tres actores ya tienen rutas conectadas; no cubren todos los contextos. Las regresiones de replay y restauración se verifican en la suite FirstRunRuntime; consultar resultados vigentes en MIGRATION_STATUS.md.
 
-Prioridad visual actual: integrar el catálogo completo de apariencias físicas; completar sprites femeninos normales y selección de variantes desbloqueadas; comprobar tipografía, recortes, cursor y distribución de todos los submenús. La generación/conversión de assets continúa autorizada. Compilación, tests que compilan y Azahar están aplazados por la última instrucción del usuario.
+Prioridad visual actual: validar en runtime el catálogo completo convertido y su selección de apariencias desbloqueadas; comprobar tipografía, recortes, cursor y distribución de todos los submenús. Quedan adaptación de escalas fraccionales de fondos/intro y validación de la composición del entrenador a escala nativa y reproducción completa de la intro. La generación/conversión de assets continúa autorizada. Compilación, tests que compilan y Azahar están aplazados por la última instrucción del usuario.
 
 ## Estado consolidado para seguimiento
 
@@ -755,3 +755,12 @@ La búsqueda del índice generado usa búsqueda binaria sobre identidades ordena
 
 - [x] Pasivas reales normalizadas: corrige `passives` plural; 894 definiciones compartidas y 190 mapas por forma, con IDs de enum/provenance/raw conservados. Importación pinned repetida produce el mismo hash `20e7cef5a58d28f31254ab5dfaab0815be92c6a4e7c1e10a3c12c05ebbc9fe27`; test JS de las 1.084 especies y declaraciones inválidas PASS.
 - [ ] Resolver nativo de pasivas por forma y nombre en tienda: tabla generada de overrides con fallback a forma cero conforme a `SpeciesDataRegistry.getPassive`; UI consume gameplay y locale importado. Casos C++ escritos sin ejecutar. Activación, supresión y triggers de las pasivas en combate pendientes.
+
+### Presentación: cambios locales pendientes de validación nativa
+
+- [x] Comprobaciones de fuente: nombres de entrenador ajustados a su ventana de 164 px; coordenadas no finitas rechazadas por las tres rutas de texto.
+- [x] Submenú global: área de retorno táctil acotada; historial identificado como pendiente en lugar de afirmar ausencia de partidas.
+- [ ] Ejecutar casos C++ y comprobar estas pantallas en Azahar cuando el usuario lo autorice. Los guards de fuente no prueban el renderizado.
+
+- [x] Intro de entrenador: dibujado nativo `1×` en lugar de `1.5×`; validación de coordenadas, tamaño y escala antes de cargar el frame para dibujarlo. Comprobado por guards de fuente.
+- [ ] Validar visualmente sprites de entrenador altos y animados con el anclaje actual; no se afirma ausencia de recortes para todo el catálogo.
