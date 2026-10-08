@@ -1,0 +1,1272 @@
+{
+  "files": [
+    {
+      "convertedSHA256": "1184f07a4f3b6fca9c0a41c8380e0674907f052d66cdeff3bcf3bea629358740",
+      "height": 165,
+      "key": "abyss_a",
+      "metadataPath": null,
+      "resampling": "NEAREST",
+      "runtimePath": "romfs:/presentation/arenas/abyss_a.t3x",
+      "runtimeScale": 1,
+      "sourcePath": "images/arenas/abyss_a.png",
+      "sourceSHA256": "ca5fea817ac32378a03c7d43f67a15280190f744e48f7e3e9c726cc238e45a23",
+      "sourceSize": [
+        320,
+        132
+      ],
+      "stagedSHA256": "66e4c0032b45d8464de04f9e154c7a2b8b294464c402200f4417aebcbb74e598",
+      "width": 400
+    },
+    {
+      "convertedSHA256": "73162ff5589ca8d22c8d9ec7f9c1b669e8cf0700f6a4505be11c967eb8892434",
+      "height": 165,
+      "key": "abyss_b",
+      "metadataPath": null,
+      "resampling": "NEAREST",
+      "runtimePath": "romfs:/presentation/arenas/abyss_b.t3x",
+      "runtimeScale": 1,
+      "sourcePath": "images/arenas/abyss_b.png",
+      "sourceSHA256": "96d7ee3149ecd0b33c25480190491ab15568112eddfac0649baf28bc290ff356",
+      "sourceSize": [
+        320,
+        132
+      ],
+      "stagedSHA256": "720624636f58dbe8a9a941a607261ffd6ff39fe624739930c5887d8a4b2e0680",
+      "width": 400
+    },
+    {
+      "convertedSHA256": "0a67016179f599269c8a15e22f4cb3ee6c0ec6820a02d50f05e077e11586dfb4",
+      "height": 165,
+      "key": "badlands_a",
+      "metadataPath": null,
+      "resampling": "NEAREST",
+      "runtimePath": "romfs:/presentation/arenas/badlands_a.t3x",
+      "runtimeScale": 1,
+      "sourcePath": "images/arenas/badlands_a.png",
+      "sourceSHA256": "e0a21d9a853f9fb748fb18e115807a5fd879103ae2a63d31ca1955542441663d",
+      "sourceSize": [
+        320,
+        132
+      ],
+      "stagedSHA256": "0139648148323d8080860868b94ce0023f49a8f6697878627a5ad6aa15d413c4",
+      "width": 400
+    },
+    {
+      "convertedSHA256": "e6c9b156fd1bb074ecc0cd1e8f4e63eb45f973aec453ab9aff3dcadbfec88824",
+      "height": 165,
+      "key": "badlands_b",
+      "metadataPath": null,
+      "resampling": "NEAREST",
+      "runtimePath": "romfs:/presentation/arenas/badlands_b.t3x",
+      "runtimeScale": 1,
+      "sourcePath": "images/arenas/badlands_b.png",
+      "sourceSHA256": "9aa33607aed73955415fce437ccc06d73f5e8f46a16e632cef0628f9d8f201bf",
+      "sourceSize": [
+        320,
+        132
+      ],
+      "stagedSHA256": "6a94a04572181e201ea21be8ac9a0a210e25de128a5d5c8a24dd2aee301d1776",
+      "width": 400
+    },
+    {
+      "convertedSHA256": "7a507e69e0fc4e3f713e39b34c03252d5279f37bb9d657d411c244dcd9e16994",
+      "height": 165,
+      "key": "beach_a",
+      "metadataPath": null,
+      "resampling": "NEAREST",
+      "runtimePath": "romfs:/presentation/arenas/beach_a.t3x",
+      "runtimeScale": 1,
+      "sourcePath": "images/arenas/beach_a.png",
+      "sourceSHA256": "18fa9a1e5c8adfdd7327c62a990282fe23ba3c35247736ae7501bdcf862325bf",
+      "sourceSize": [
+        320,
+        132
+      ],
+      "stagedSHA256": "766c12ea078526ab31fc25650fc85a648222523fa647b999375741d9e37ffd9d",
+      "width": 400
+    },
+    {
+      "convertedSHA256": "70bf7c4956b8a32bca8f6cce7219353fb94a1f20df353ddd0920cb0e91011bc3",
+      "height": 165,
+      "key": "beach_b",
+      "metadataPath": null,
+      "resampling": "NEAREST",
+      "runtimePath": "romfs:/presentation/arenas/beach_b.t3x",
+      "runtimeScale": 1,
+      "sourcePath": "images/arenas/beach_b.png",
+      "sourceSHA256": "9c076c016249eb66cd9ed6f452c0e48e05807b256dff1754934a26dd0adc5029",
+      "sourceSize": [
+        320,
+        132
+      ],
+      "stagedSHA256": "73e469acb4dbaac105110b8ab139e44ac3fdc92c64db22c7dd3c3165ce0a8ceb",
+      "width": 400
+    },
+    {
+      "convertedSHA256": "861029a2fb3b4c0d537f0d660ba405263198b8ae22a51f14b611b6ae0097bd68",
+      "height": 165,
+      "key": "cave_a",
+      "metadataPath": null,
+      "resampling": "NEAREST",
+      "runtimePath": "romfs:/presentation/arenas/cave_a.t3x",
+      "runtimeScale": 1,
+      "sourcePath": "images/arenas/cave_a.png",
+      "sourceSHA256": "5c1af3a6e598af82abc5658284d45e88cb9db618d81ed8f85743c5b783c319c2",
+      "sourceSize": [
+        320,
+        132
+      ],
+      "stagedSHA256": "60d017cadc922c75c43ebcc0daeb2278d2c6932be4995c629830c2e8951283da",
+      "width": 400
+    },
+    {
+      "convertedSHA256": "81b431c7b28c8ec0e63624cbf181b23c9cd0d731bfd149f630d49346160fb5ae",
+      "height": 165,
+      "key": "cave_b",
+      "metadataPath": null,
+      "resampling": "NEAREST",
+      "runtimePath": "romfs:/presentation/arenas/cave_b.t3x",
+      "runtimeScale": 1,
+      "sourcePath": "images/arenas/cave_b.png",
+      "sourceSHA256": "e355b0eb53998ca36c26a416466c71f201bf1d3db4cab79b91f32b0ec012a817",
+      "sourceSize": [
+        320,
+        132
+      ],
+      "stagedSHA256": "e2240bd99b83fa26ac59be25ef5916eac5958dd9eb91c8804c22e333014aa0bb",
+      "width": 400
+    },
+    {
+      "convertedSHA256": "0899da12a75c24188084ffcc1fdbdacd44ae186f3413b50b868cd5fcae351db7",
+      "height": 165,
+      "key": "construction_site_a",
+      "metadataPath": null,
+      "resampling": "NEAREST",
+      "runtimePath": "romfs:/presentation/arenas/construction_site_a.t3x",
+      "runtimeScale": 1,
+      "sourcePath": "images/arenas/construction_site_a.png",
+      "sourceSHA256": "486570d50dd605e0e6f5a6db017a0ba3e57b64f50ee7306c75abcbfd0e82521c",
+      "sourceSize": [
+        320,
+        132
+      ],
+      "stagedSHA256": "cf697fade0dceae0709ccea2dd996fee13a32c8caf63a1890901c898d2162150",
+      "width": 400
+    },
+    {
+      "convertedSHA256": "c1435ab5cd0bafd11e0bde450cdd0b11c05b60c8d58e21f6085da95146898464",
+      "height": 165,
+      "key": "construction_site_b",
+      "metadataPath": null,
+      "resampling": "NEAREST",
+      "runtimePath": "romfs:/presentation/arenas/construction_site_b.t3x",
+      "runtimeScale": 1,
+      "sourcePath": "images/arenas/construction_site_b.png",
+      "sourceSHA256": "9d5ad4c12944361e86496e0fcb1368385fc08b581e3aef6e7af9e2a382589bd7",
+      "sourceSize": [
+        320,
+        132
+      ],
+      "stagedSHA256": "e06b166fd65a2a2f57d9c92a159d85b07edf270cb92e42ec897d9784076a14ec",
+      "width": 400
+    },
+    {
+      "convertedSHA256": "d4b878d7b403c5ad6ec2d148b6aba6692901f7ec79cf0cb0fe79bab968b871c8",
+      "height": 165,
+      "key": "desert_a",
+      "metadataPath": null,
+      "resampling": "NEAREST",
+      "runtimePath": "romfs:/presentation/arenas/desert_a.t3x",
+      "runtimeScale": 1,
+      "sourcePath": "images/arenas/desert_a.png",
+      "sourceSHA256": "b77f6c902fee543ae19f8620fb27ebc24b948e843e28fa2ccb2a0aa2d6000819",
+      "sourceSize": [
+        320,
+        132
+      ],
+      "stagedSHA256": "99ba2d1ed9f9ebe0db4c0e13e9d710773961c13eec75e5d3646701c14ef708e7",
+      "width": 400
+    },
+    {
+      "convertedSHA256": "8f3d0ef23ce0399997cb10f6afdc9c82d264d142b256080730247aca5151c465",
+      "height": 165,
+      "key": "desert_b",
+      "metadataPath": null,
+      "resampling": "NEAREST",
+      "runtimePath": "romfs:/presentation/arenas/desert_b.t3x",
+      "runtimeScale": 1,
+      "sourcePath": "images/arenas/desert_b.png",
+      "sourceSHA256": "f0c342d3e1ca4e22cb80f5e23bf56027f882288874b9ad6097e45ccbf29b34ee",
+      "sourceSize": [
+        320,
+        132
+      ],
+      "stagedSHA256": "0d256afb22d86d7877e76884fdb0b49c2384b9e105601b7f8a6e33ad5bc88a8e",
+      "width": 400
+    },
+    {
+      "convertedSHA256": "80264b6c328df9a3925e88545461663559e6af7c94890d3bd0d793a847627f6b",
+      "height": 165,
+      "key": "dojo_a",
+      "metadataPath": null,
+      "resampling": "NEAREST",
+      "runtimePath": "romfs:/presentation/arenas/dojo_a.t3x",
+      "runtimeScale": 1,
+      "sourcePath": "images/arenas/dojo_a.png",
+      "sourceSHA256": "11be692c4119cc3e7760a243a3fadcdcaf6ff6918d3b344bba66ceff1fab8ea6",
+      "sourceSize": [
+        320,
+        132
+      ],
+      "stagedSHA256": "a6b3620b73a35bcdeeb3f3fdcc596bd3e33d428507451f66904afe4fea351eb3",
+      "width": 400
+    },
+    {
+      "convertedSHA256": "9d2fa7dc5b094e7e9cd6d66f472215f1c41da1b2c37a643b3b884d18d8d8ede4",
+      "height": 165,
+      "key": "dojo_b",
+      "metadataPath": null,
+      "resampling": "NEAREST",
+      "runtimePath": "romfs:/presentation/arenas/dojo_b.t3x",
+      "runtimeScale": 1,
+      "sourcePath": "images/arenas/dojo_b.png",
+      "sourceSHA256": "f014c8602bc7ae323c577d59700541eff1e543502d0655798bd71cb45bf61c49",
+      "sourceSize": [
+        320,
+        132
+      ],
+      "stagedSHA256": "92561bfc34d508639945ed349b5559707603c06ca6d96602d15e6a1714cb9529",
+      "width": 400
+    },
+    {
+      "convertedSHA256": "3a05ceb2d7e7b6fc23820251e9059ee0f05195c3525dea2b1f9cbd4474cd7acb",
+      "frameRate": 12,
+      "frames": 16,
+      "height": 155,
+      "key": "end_a",
+      "manifestSHA256": "f9eba827a07c3b9a54be6092f35087289a3349408546c519ce614c4d146e8072",
+      "metadataPath": "romfs:/presentation/arenas/end_a.p3a",
+      "resampling": "UNCHANGED_ATLAS",
+      "runtimePath": "romfs:/presentation/arenas/end_a.t3x",
+      "runtimeScale": 1.25,
+      "sourcePath": "images/arenas/end_a.png",
+      "sourceSHA256": "deb3efec83f759960d470e3b596b02166678b7d90b4f54b3d4c535fe9a7d5dae",
+      "sourceSize": [
+        155,
+        155
+      ],
+      "stagedSHA256": "deb3efec83f759960d470e3b596b02166678b7d90b4f54b3d4c535fe9a7d5dae",
+      "width": 155
+    },
+    {
+      "convertedSHA256": "dd949e9855f20f32015404c9c0a7320388ac847ad1687af221776a7cff029f60",
+      "frameRate": 12,
+      "frames": 16,
+      "height": 170,
+      "key": "end_b",
+      "manifestSHA256": "664530920cad4569e4eafe5fa07b687d6906dfad6b06482e3e53505f828b8d6c",
+      "metadataPath": "romfs:/presentation/arenas/end_b.p3a",
+      "resampling": "UNCHANGED_ATLAS",
+      "runtimePath": "romfs:/presentation/arenas/end_b.t3x",
+      "runtimeScale": 1.25,
+      "sourcePath": "images/arenas/end_b.png",
+      "sourceSHA256": "f2671004265f26a02d43d44a948a4c006cdf45fbeb39edb53b1e46357f26b1c2",
+      "sourceSize": [
+        170,
+        170
+      ],
+      "stagedSHA256": "f2671004265f26a02d43d44a948a4c006cdf45fbeb39edb53b1e46357f26b1c2",
+      "width": 170
+    },
+    {
+      "convertedSHA256": "20cc06c7fbeebc1cefc343c2fc4787fa6a5dac6683080237b745148c760f6c09",
+      "height": 165,
+      "key": "factory_a",
+      "metadataPath": null,
+      "resampling": "NEAREST",
+      "runtimePath": "romfs:/presentation/arenas/factory_a.t3x",
+      "runtimeScale": 1,
+      "sourcePath": "images/arenas/factory_a.png",
+      "sourceSHA256": "4fa7cec423586e6e4bf1cc523d8e414bcfad70910778fc2ec84f56672de23e30",
+      "sourceSize": [
+        320,
+        132
+      ],
+      "stagedSHA256": "263442122cf69aa2057cc2fe9d97db84cb1047a7d65be0c6c86d9c2d81e928f8",
+      "width": 400
+    },
+    {
+      "convertedSHA256": "fc8cb0e17705088516ce16f77f953280aeea5e2759ee6b2d7183afbab5774a00",
+      "height": 165,
+      "key": "factory_b",
+      "metadataPath": null,
+      "resampling": "NEAREST",
+      "runtimePath": "romfs:/presentation/arenas/factory_b.t3x",
+      "runtimeScale": 1,
+      "sourcePath": "images/arenas/factory_b.png",
+      "sourceSHA256": "1abd4abb691dc0ef84de7648b95d6e219a98eb518996d38a07364417e262d5b4",
+      "sourceSize": [
+        320,
+        132
+      ],
+      "stagedSHA256": "622d1f76a31834c6a22333265380cfb5a71d5065a39cea959c7cc85512c5cf5b",
+      "width": 400
+    },
+    {
+      "convertedSHA256": "0fa46c724489130cd75a12327a1bbb165810c7d6aabe8869651c9dd974a71b37",
+      "height": 165,
+      "key": "fairy_cave_a",
+      "metadataPath": null,
+      "resampling": "NEAREST",
+      "runtimePath": "romfs:/presentation/arenas/fairy_cave_a.t3x",
+      "runtimeScale": 1,
+      "sourcePath": "images/arenas/fairy_cave_a.png",
+      "sourceSHA256": "825720b2c659220e7d3ff3dc3f02e1b6de68c0ce8774c892cc6cd0f0c5bda071",
+      "sourceSize": [
+        320,
+        132
+      ],
+      "stagedSHA256": "7e14bb325e3249a52e77e9802c694dd268f2100bfd53beb1a2f2e5714aec88f3",
+      "width": 400
+    },
+    {
+      "convertedSHA256": "20bb2fd6e522d102816e93f4f0f9f68defa5c19c6297a7bc68d60093312b47fb",
+      "height": 165,
+      "key": "fairy_cave_b",
+      "metadataPath": null,
+      "resampling": "NEAREST",
+      "runtimePath": "romfs:/presentation/arenas/fairy_cave_b.t3x",
+      "runtimeScale": 1,
+      "sourcePath": "images/arenas/fairy_cave_b.png",
+      "sourceSHA256": "3a657f29a8038d89f5e10b4a46b6e0596e65529c78ee250435f63305d9f8293d",
+      "sourceSize": [
+        320,
+        132
+      ],
+      "stagedSHA256": "21ed1c611e6a0f12a8167ebc8d02ddb7df08a0140ae7b19c36ddb1a33de287e4",
+      "width": 400
+    },
+    {
+      "convertedSHA256": "ea687a029540e18fffaeb03fa085c50382f633c5001c6e41f01a5dd4ffcfed46",
+      "height": 165,
+      "key": "forest_a",
+      "metadataPath": null,
+      "resampling": "NEAREST",
+      "runtimePath": "romfs:/presentation/arenas/forest_a.t3x",
+      "runtimeScale": 1,
+      "sourcePath": "images/arenas/forest_a.png",
+      "sourceSHA256": "54a0596ccab991ef797a2f392ffae517266c062897a72c6d860930a142854d4d",
+      "sourceSize": [
+        320,
+        132
+      ],
+      "stagedSHA256": "302d9c558bc555bdf20fb82a04e34382a3c985061907c3a5cb0f4c64b3e0abfa",
+      "width": 400
+    },
+    {
+      "convertedSHA256": "e68d2c0642cc9afa0c4dc75b8587aa359badc1a06d0353b76c43b3c816959904",
+      "height": 165,
+      "key": "forest_b",
+      "metadataPath": null,
+      "resampling": "NEAREST",
+      "runtimePath": "romfs:/presentation/arenas/forest_b.t3x",
+      "runtimeScale": 1,
+      "sourcePath": "images/arenas/forest_b.png",
+      "sourceSHA256": "8ec1d3990f2c332618bc246e12b44b95a2182f0cf2a16f46b23f08d6be09e1fd",
+      "sourceSize": [
+        320,
+        132
+      ],
+      "stagedSHA256": "f3e915a54f62ed050e2f25594e2c1a544f955c1b577f26c90cd31fec02dccf83",
+      "width": 400
+    },
+    {
+      "convertedSHA256": "8db9320a90fea7f9f908510e54002c6286aed899352576df8d88b53c05bd888f",
+      "height": 165,
+      "key": "grass_a",
+      "metadataPath": null,
+      "resampling": "NEAREST",
+      "runtimePath": "romfs:/presentation/arenas/grass_a.t3x",
+      "runtimeScale": 1,
+      "sourcePath": "images/arenas/grass_a.png",
+      "sourceSHA256": "f2b3ec6e49dbaed5ec26867a925f37c83c0939945f6611c15d89d147707ffbd1",
+      "sourceSize": [
+        320,
+        132
+      ],
+      "stagedSHA256": "e11405afd51b95ebdeac3fa5fc550d39223456b4e28d477a66565162c488fe80",
+      "width": 400
+    },
+    {
+      "convertedSHA256": "8f832124d65adc19747fe984efa885eb0360ef9e87c669f711c1d9e691eeba13",
+      "height": 165,
+      "key": "grass_b",
+      "metadataPath": null,
+      "resampling": "NEAREST",
+      "runtimePath": "romfs:/presentation/arenas/grass_b.t3x",
+      "runtimeScale": 1,
+      "sourcePath": "images/arenas/grass_b.png",
+      "sourceSHA256": "585aa93af51fb51cb12139bb49f6273c1a4e8a6edf2f1e8da812eb8bafc29bb8",
+      "sourceSize": [
+        320,
+        132
+      ],
+      "stagedSHA256": "5a1069b0f1c8065d6fed1f83a39c183334db895cf4f7ca23c4d996a90542320b",
+      "width": 400
+    },
+    {
+      "convertedSHA256": "784c5067b5784707fa2e96d82a85131b8df07c5ed715164d6ce391689134bbd4",
+      "height": 165,
+      "key": "graveyard_a",
+      "metadataPath": null,
+      "resampling": "NEAREST",
+      "runtimePath": "romfs:/presentation/arenas/graveyard_a.t3x",
+      "runtimeScale": 1,
+      "sourcePath": "images/arenas/graveyard_a.png",
+      "sourceSHA256": "f8ff42b152d17c5e91156740b64eab09a5d5e623e64be289f73d8a5193281289",
+      "sourceSize": [
+        320,
+        132
+      ],
+      "stagedSHA256": "62362791dd249a85843115c1d4a3e48198bcf9241e9f4a310032566b33c87ac6",
+      "width": 400
+    },
+    {
+      "convertedSHA256": "5539c3e6ff89b9dae59b2c69d92dd4b55f2afc9e8eb39fa162857e95f658c72b",
+      "height": 165,
+      "key": "graveyard_b",
+      "metadataPath": null,
+      "resampling": "NEAREST",
+      "runtimePath": "romfs:/presentation/arenas/graveyard_b.t3x",
+      "runtimeScale": 1,
+      "sourcePath": "images/arenas/graveyard_b.png",
+      "sourceSHA256": "d350cb37407a33a2a92c5ae3ae2dcea6fb9eceafc2d177a2cb5a1d900e3fef98",
+      "sourceSize": [
+        320,
+        132
+      ],
+      "stagedSHA256": "94651a874243c7dc5e83116b76409d2d478934ef84207f9e1d5e816343c9fca5",
+      "width": 400
+    },
+    {
+      "convertedSHA256": "581c18593ae93ba53fd79860ec53c317e13c5a782b7a4e2b08a5b07c1e727657",
+      "height": 165,
+      "key": "ice_cave_a",
+      "metadataPath": null,
+      "resampling": "NEAREST",
+      "runtimePath": "romfs:/presentation/arenas/ice_cave_a.t3x",
+      "runtimeScale": 1,
+      "sourcePath": "images/arenas/ice_cave_a.png",
+      "sourceSHA256": "29b97ac536d19a2c57c0a728ce2f36ec139fa735a53c22cf39d8d7de78fdb7a0",
+      "sourceSize": [
+        320,
+        132
+      ],
+      "stagedSHA256": "508a5b9eeb4d4de6a86dc44b16a2cf4ac1679ceebef5eaacb7036266aeb4605e",
+      "width": 400
+    },
+    {
+      "convertedSHA256": "02209bfcb558f3adbcbb34d1bb85d2468b448b9fa25ba004eaabdf0c2d86bd37",
+      "height": 165,
+      "key": "ice_cave_b",
+      "metadataPath": null,
+      "resampling": "NEAREST",
+      "runtimePath": "romfs:/presentation/arenas/ice_cave_b.t3x",
+      "runtimeScale": 1,
+      "sourcePath": "images/arenas/ice_cave_b.png",
+      "sourceSHA256": "b407d04ad3d49656efb95c9d9170dd050e119b22f2d07d5fd77cefcae9e94fd8",
+      "sourceSize": [
+        320,
+        132
+      ],
+      "stagedSHA256": "2031ed99d0524e09670a76a7ccb474790de7f8061c74399a1fd73b20289c969f",
+      "width": 400
+    },
+    {
+      "convertedSHA256": "f38391e39bf9a783c6c369145683e225dda20662c7c9ea25126e9ce52079405b",
+      "height": 165,
+      "key": "island_a",
+      "metadataPath": null,
+      "resampling": "NEAREST",
+      "runtimePath": "romfs:/presentation/arenas/island_a.t3x",
+      "runtimeScale": 1,
+      "sourcePath": "images/arenas/island_a.png",
+      "sourceSHA256": "bb61b1565cb8c6c2c072167ed2802f74804127bced67e7c979c78339b76e5a05",
+      "sourceSize": [
+        320,
+        132
+      ],
+      "stagedSHA256": "188057a23b5ed2ad8f1494aef5438f66be98366049afca1a2e3a934f982af31c",
+      "width": 400
+    },
+    {
+      "convertedSHA256": "c10fd9359250e7527c47d6e724b3e58d24d36dca01fd2ea8150db453a685853d",
+      "height": 165,
+      "key": "island_b",
+      "metadataPath": null,
+      "resampling": "NEAREST",
+      "runtimePath": "romfs:/presentation/arenas/island_b.t3x",
+      "runtimeScale": 1,
+      "sourcePath": "images/arenas/island_b.png",
+      "sourceSHA256": "8a38eb22a0df0130adb90d58f52462df90592f8286de705ddf5ab87c706429c1",
+      "sourceSize": [
+        320,
+        132
+      ],
+      "stagedSHA256": "f6b8c71efed52a909d5263ac0426e9e339769cdcc4800b7b715e93da1f728243",
+      "width": 400
+    },
+    {
+      "convertedSHA256": "674e0d8a920a6dbaff222149b9310c594727bcad5deb9ca3d878fcb80417aae6",
+      "height": 165,
+      "key": "jungle_a",
+      "metadataPath": null,
+      "resampling": "NEAREST",
+      "runtimePath": "romfs:/presentation/arenas/jungle_a.t3x",
+      "runtimeScale": 1,
+      "sourcePath": "images/arenas/jungle_a.png",
+      "sourceSHA256": "87845544cebfbca2a66e69d38aeb94be84a3e0e53cd4e589b23f06dfdf917380",
+      "sourceSize": [
+        320,
+        132
+      ],
+      "stagedSHA256": "371a4910295e5d08b23cbe51f94aed2e38d45b06554437c26faf3a861d8af7a3",
+      "width": 400
+    },
+    {
+      "convertedSHA256": "99e1cb3ad7bfcafde0153c4b7feed5fa272016b0d1b4748e158a6d7c2d4aba98",
+      "height": 165,
+      "key": "jungle_b",
+      "metadataPath": null,
+      "resampling": "NEAREST",
+      "runtimePath": "romfs:/presentation/arenas/jungle_b.t3x",
+      "runtimeScale": 1,
+      "sourcePath": "images/arenas/jungle_b.png",
+      "sourceSHA256": "9d89b98e70711fb6792866990dfe23cce16cae0382eeb17504ec440f61ff5b25",
+      "sourceSize": [
+        320,
+        132
+      ],
+      "stagedSHA256": "1140df7473fcd0903086051b0085b538f413399db4e693d7b5f0b18706c887ad",
+      "width": 400
+    },
+    {
+      "convertedSHA256": "d4539008bfe6a6a8d2f0486b9eca91339f1da90adbf55ac0678c88e98abadd02",
+      "height": 165,
+      "key": "laboratory_a",
+      "metadataPath": null,
+      "resampling": "NEAREST",
+      "runtimePath": "romfs:/presentation/arenas/laboratory_a.t3x",
+      "runtimeScale": 1,
+      "sourcePath": "images/arenas/laboratory_a.png",
+      "sourceSHA256": "b679ccc2179ebd7ee7967d96844f3bb372284af2ee30f461ea6ee275e2f5ad45",
+      "sourceSize": [
+        320,
+        132
+      ],
+      "stagedSHA256": "cfa0129b8fb17b9d3cb188bf1841a7f31fbef80b6a5430f80c1c7461bdde799f",
+      "width": 400
+    },
+    {
+      "convertedSHA256": "0a5e6ca83880dde39506e54b3adb525d1297cac868cb7b54b528a5c962128ba2",
+      "height": 165,
+      "key": "laboratory_b",
+      "metadataPath": null,
+      "resampling": "NEAREST",
+      "runtimePath": "romfs:/presentation/arenas/laboratory_b.t3x",
+      "runtimeScale": 1,
+      "sourcePath": "images/arenas/laboratory_b.png",
+      "sourceSHA256": "c40e2ee93b5e9140a4a758a72b3511eac16854be637849033890aca6dbaeeadd",
+      "sourceSize": [
+        320,
+        132
+      ],
+      "stagedSHA256": "6475504a77914d74027381559d735bece93912405c6779ab53d5054f6de5d61d",
+      "width": 400
+    },
+    {
+      "convertedSHA256": "f30039777a0b6951fbb2e412af290851936ee64adab4b4090893b7f9c6b83f75",
+      "height": 165,
+      "key": "lake_a",
+      "metadataPath": null,
+      "resampling": "NEAREST",
+      "runtimePath": "romfs:/presentation/arenas/lake_a.t3x",
+      "runtimeScale": 1,
+      "sourcePath": "images/arenas/lake_a.png",
+      "sourceSHA256": "4cbbf87e18928076133896e9fae6ae6d48c083882dbbeaef2edf0cd973afedd5",
+      "sourceSize": [
+        320,
+        132
+      ],
+      "stagedSHA256": "923a9f98ae9419618b929b442888f3e7332226d063189be36ec3d29aafa23b2a",
+      "width": 400
+    },
+    {
+      "convertedSHA256": "4dca96185e89abb86d127f32a54cd6a6567f7f39ff4ca88da56ac3be12b1b466",
+      "height": 165,
+      "key": "lake_b",
+      "metadataPath": null,
+      "resampling": "NEAREST",
+      "runtimePath": "romfs:/presentation/arenas/lake_b.t3x",
+      "runtimeScale": 1,
+      "sourcePath": "images/arenas/lake_b.png",
+      "sourceSHA256": "4138c3a0e63341339ab8ac12c939c98974de20da4c3e8f0674d729c9f8687e1d",
+      "sourceSize": [
+        320,
+        132
+      ],
+      "stagedSHA256": "9d163537f7bea6797a107c03b454cef28e25bb823afc9f73872160e6d06499d7",
+      "width": 400
+    },
+    {
+      "convertedSHA256": "b4f68a9a9b3f82f74903d328946ed1c8c48eb817d69ce59e477c9a6f2c04b258",
+      "height": 165,
+      "key": "meadow_a",
+      "metadataPath": null,
+      "resampling": "NEAREST",
+      "runtimePath": "romfs:/presentation/arenas/meadow_a.t3x",
+      "runtimeScale": 1,
+      "sourcePath": "images/arenas/meadow_a.png",
+      "sourceSHA256": "ca00010b3bb5db64f46a846f58febe94ff58ccf6f1126388491fed97e22d108d",
+      "sourceSize": [
+        320,
+        132
+      ],
+      "stagedSHA256": "b1b01a8560edb798eaaedfb96a0dd0ec914f8f6dfffe68856691cffddbf10a25",
+      "width": 400
+    },
+    {
+      "convertedSHA256": "bee617fe00081b7068671dc0de9cfa30f24fc450e2eb5b34914c19e88028d1b9",
+      "height": 165,
+      "key": "meadow_b",
+      "metadataPath": null,
+      "resampling": "NEAREST",
+      "runtimePath": "romfs:/presentation/arenas/meadow_b.t3x",
+      "runtimeScale": 1,
+      "sourcePath": "images/arenas/meadow_b.png",
+      "sourceSHA256": "5e9cc17fae4f162777df427760418cc0004b063812dd747f763f572541e51153",
+      "sourceSize": [
+        320,
+        132
+      ],
+      "stagedSHA256": "14966e9d7117a89e2fad96a7b564b83794afd40bf58e3229b183cb8378bc3d52",
+      "width": 400
+    },
+    {
+      "convertedSHA256": "ca64fddfaff7028b5b89c296adfc118427cc52a39b64ac65dfeb4f087c35c6a3",
+      "height": 165,
+      "key": "metropolis_a",
+      "metadataPath": null,
+      "resampling": "NEAREST",
+      "runtimePath": "romfs:/presentation/arenas/metropolis_a.t3x",
+      "runtimeScale": 1,
+      "sourcePath": "images/arenas/metropolis_a.png",
+      "sourceSHA256": "986ee4b626b48671b17c6b50bcdeecd24f452c9443dff6695c69ee6622918747",
+      "sourceSize": [
+        320,
+        132
+      ],
+      "stagedSHA256": "1a11afdae7a57bbb7458cba725edbcd01daa2e6a2c56085036dfc439794fc382",
+      "width": 400
+    },
+    {
+      "convertedSHA256": "b157d9c8f57961ecfa80cbade01f327be7af44bb684264e994c033972f2f3fe1",
+      "height": 165,
+      "key": "metropolis_b",
+      "metadataPath": null,
+      "resampling": "NEAREST",
+      "runtimePath": "romfs:/presentation/arenas/metropolis_b.t3x",
+      "runtimeScale": 1,
+      "sourcePath": "images/arenas/metropolis_b.png",
+      "sourceSHA256": "0fc9fe31b2ae055827d490f273cb92a9a0ae593f5b495788678ae2c96120ec05",
+      "sourceSize": [
+        320,
+        132
+      ],
+      "stagedSHA256": "956596f3237cf85b00467fb9d063461f84fc6dc01caced6e43ed6b158dc0c39d",
+      "width": 400
+    },
+    {
+      "convertedSHA256": "a071e174333b6dc4cf234ed85466b5176428e00f515510da48a3a2b6414ddcac",
+      "height": 165,
+      "key": "mountain_a",
+      "metadataPath": null,
+      "resampling": "NEAREST",
+      "runtimePath": "romfs:/presentation/arenas/mountain_a.t3x",
+      "runtimeScale": 1,
+      "sourcePath": "images/arenas/mountain_a.png",
+      "sourceSHA256": "823f6b6955e5ee6fa546ea233e88608bad93ea8456d85b7e637dc24234581faf",
+      "sourceSize": [
+        320,
+        132
+      ],
+      "stagedSHA256": "f4e19ab116852fcbc1e8a2b24f123e62abc3c64b1489e083bde2fda0a7ea5063",
+      "width": 400
+    },
+    {
+      "convertedSHA256": "1f7814beb88ce671c8540078e47bd80465c6b14af38079ebb7e3749d7455d5dc",
+      "height": 165,
+      "key": "mountain_b",
+      "metadataPath": null,
+      "resampling": "NEAREST",
+      "runtimePath": "romfs:/presentation/arenas/mountain_b.t3x",
+      "runtimeScale": 1,
+      "sourcePath": "images/arenas/mountain_b.png",
+      "sourceSHA256": "f5191987773c12f7a3b1f2970bf7c255ddb7c8c50c593bf22ccf63a2b18c1b5d",
+      "sourceSize": [
+        320,
+        132
+      ],
+      "stagedSHA256": "2e19cda426b1f85b35f0790552e12390a57073ab7c69ea41f84ecf78dd2769ef",
+      "width": 400
+    },
+    {
+      "convertedSHA256": "e314e10d17d73c06657973763bce5e855fa370c3080e22702ed2cbc1b43d3372",
+      "height": 165,
+      "key": "plains_a",
+      "metadataPath": null,
+      "resampling": "NEAREST",
+      "runtimePath": "romfs:/presentation/arenas/plains_a.t3x",
+      "runtimeScale": 1,
+      "sourcePath": "images/arenas/plains_a.png",
+      "sourceSHA256": "d164a233537cab42728b397cf5ad3ed84085d66a4189d63f229065315f457f61",
+      "sourceSize": [
+        320,
+        132
+      ],
+      "stagedSHA256": "5a21395520d5bb6818da5b9e4612bbab16597f0a7fad47d6df7533fb236b35ab",
+      "width": 400
+    },
+    {
+      "convertedSHA256": "5c9a335b1a3a078eab410d660f1a409c7804465a5207d1c8cdb2e19fc00e8642",
+      "height": 165,
+      "key": "plains_b",
+      "metadataPath": null,
+      "resampling": "NEAREST",
+      "runtimePath": "romfs:/presentation/arenas/plains_b.t3x",
+      "runtimeScale": 1,
+      "sourcePath": "images/arenas/plains_b.png",
+      "sourceSHA256": "7b157282d18735deab27d79485f4c7e60c9a091a50af725ac8b904612b367594",
+      "sourceSize": [
+        320,
+        132
+      ],
+      "stagedSHA256": "143d2f1c421ad19b3988894f1f83dcbe82d497c2522bff40806742cc97860f46",
+      "width": 400
+    },
+    {
+      "convertedSHA256": "84ac0ae0d1323debfa8ae814b8e963278c010fe8f3affa1f3cf207051400caa8",
+      "height": 165,
+      "key": "power_plant_a",
+      "metadataPath": null,
+      "resampling": "NEAREST",
+      "runtimePath": "romfs:/presentation/arenas/power_plant_a.t3x",
+      "runtimeScale": 1,
+      "sourcePath": "images/arenas/power_plant_a.png",
+      "sourceSHA256": "411a82d640da7dcaf24a7b1ac0aa3bfcd74222ee68908ef302b917748e0d7eb7",
+      "sourceSize": [
+        320,
+        132
+      ],
+      "stagedSHA256": "80962f0b61cb9c0984a6ae8c4154c170165d19908aea3a0d3cbcd12d908d1daa",
+      "width": 400
+    },
+    {
+      "convertedSHA256": "7c4527f0a4c4ec24a3f184b67021968e4289cfb70ead229cfb2599dbebdae28c",
+      "height": 165,
+      "key": "power_plant_b",
+      "metadataPath": null,
+      "resampling": "NEAREST",
+      "runtimePath": "romfs:/presentation/arenas/power_plant_b.t3x",
+      "runtimeScale": 1,
+      "sourcePath": "images/arenas/power_plant_b.png",
+      "sourceSHA256": "678882c7e0075fbcd98057632256523143cebe152004e819c34fef3045270c00",
+      "sourceSize": [
+        320,
+        132
+      ],
+      "stagedSHA256": "19a5d8c76576df4c78b05c2ccd5431ce5c50dc57413cc707befe58e360362355",
+      "width": 400
+    },
+    {
+      "convertedSHA256": "2102f9af464b7a3f8fa626e8a08863f03b35a2b93c8ca3e146fa68926d55920f",
+      "height": 165,
+      "key": "rockycoast_a",
+      "metadataPath": null,
+      "resampling": "NEAREST",
+      "runtimePath": "romfs:/presentation/arenas/rockycoast_a.t3x",
+      "runtimeScale": 1,
+      "sourcePath": "images/arenas/rockycoast_a.png",
+      "sourceSHA256": "613c1ce229239f672248d282da96a167d6e846ddfa18b040c89104b7a4ac9827",
+      "sourceSize": [
+        320,
+        132
+      ],
+      "stagedSHA256": "d3bc347daf3244724bff94a1d990a03e185abe30d95ed0d947fc6df0aac8864d",
+      "width": 400
+    },
+    {
+      "convertedSHA256": "e329c6ed95c943f8ccbdc9208614974820c6507ea479153615ba7a8c557f259a",
+      "height": 165,
+      "key": "rockycoast_b",
+      "metadataPath": null,
+      "resampling": "NEAREST",
+      "runtimePath": "romfs:/presentation/arenas/rockycoast_b.t3x",
+      "runtimeScale": 1,
+      "sourcePath": "images/arenas/rockycoast_b.png",
+      "sourceSHA256": "04680b61c287bc9de276c7d74554f804d0e155a31afe17396a6a06f23e884be3",
+      "sourceSize": [
+        320,
+        132
+      ],
+      "stagedSHA256": "13acf9f4371a9e5412d37be09bbe74a9f4e6e2776cf3afa6c0909af1af958753",
+      "width": 400
+    },
+    {
+      "convertedSHA256": "8fcb93e5f72e8e21b1f807b71745262fb1b60a258f0512a7305d92fa5906aaf1",
+      "height": 165,
+      "key": "ruins_a",
+      "metadataPath": null,
+      "resampling": "NEAREST",
+      "runtimePath": "romfs:/presentation/arenas/ruins_a.t3x",
+      "runtimeScale": 1,
+      "sourcePath": "images/arenas/ruins_a.png",
+      "sourceSHA256": "cd69724cd0608d74ef5eea2ae9bf827f0734bd0c4ee6f7226aaf241fd29cd9ed",
+      "sourceSize": [
+        320,
+        132
+      ],
+      "stagedSHA256": "11ba02185ff97e33c45589df9494aad0b7155eec116caa0281262f6c196712d6",
+      "width": 400
+    },
+    {
+      "convertedSHA256": "36cf3fad023d8b61b62ec9edd53684aa737d0cea5c44d32d001504a976326b68",
+      "height": 165,
+      "key": "ruins_b",
+      "metadataPath": null,
+      "resampling": "NEAREST",
+      "runtimePath": "romfs:/presentation/arenas/ruins_b.t3x",
+      "runtimeScale": 1,
+      "sourcePath": "images/arenas/ruins_b.png",
+      "sourceSHA256": "f8bb4dcab9872ed53b66b76d539272d3cb83be5bcaa88e300c5b4a73bbaf85c9",
+      "sourceSize": [
+        320,
+        132
+      ],
+      "stagedSHA256": "04e7098e9a5752d0d95443b5240d15f582c01cbd0e4879da818856e157b1369f",
+      "width": 400
+    },
+    {
+      "convertedSHA256": "43ae2014a32dfb1fa26e57f566f5938455c91b436ddc6879f5a8aa41d3b76b48",
+      "height": 165,
+      "key": "sea_a",
+      "metadataPath": null,
+      "resampling": "NEAREST",
+      "runtimePath": "romfs:/presentation/arenas/sea_a.t3x",
+      "runtimeScale": 1,
+      "sourcePath": "images/arenas/sea_a.png",
+      "sourceSHA256": "0f28eeceab029686b769754b60f8da15ca767d7394d3426ed64fbf7bd0ed9f9d",
+      "sourceSize": [
+        320,
+        132
+      ],
+      "stagedSHA256": "bfc93d45ad139b4d815f35b36c6a62d4e208c238b8c8cb6858d52d702e012ad5",
+      "width": 400
+    },
+    {
+      "convertedSHA256": "b6b0761e02b67d78636a50819843bcdb9d59106332dff606157fa49774ac0a0b",
+      "height": 165,
+      "key": "sea_b",
+      "metadataPath": null,
+      "resampling": "NEAREST",
+      "runtimePath": "romfs:/presentation/arenas/sea_b.t3x",
+      "runtimeScale": 1,
+      "sourcePath": "images/arenas/sea_b.png",
+      "sourceSHA256": "e77642242840ee7b0fdb9d0cf74b231778f7677d2774363987f2145a20e901c0",
+      "sourceSize": [
+        320,
+        132
+      ],
+      "stagedSHA256": "8a47e35236d1a780ceee19bc5bf6e2bafa481f31ddebee8fb141b20fc0efc131",
+      "width": 400
+    },
+    {
+      "convertedSHA256": "a2a747456fdb6892591705923aa1b93982d9b8c7b1ac067c1f4807bc966f065a",
+      "height": 165,
+      "key": "seabed_a",
+      "metadataPath": null,
+      "resampling": "NEAREST",
+      "runtimePath": "romfs:/presentation/arenas/seabed_a.t3x",
+      "runtimeScale": 1,
+      "sourcePath": "images/arenas/seabed_a.png",
+      "sourceSHA256": "72bf4c178b060512de84d8ef83d918641a371607f6d48bd533613d5193a36b2d",
+      "sourceSize": [
+        320,
+        132
+      ],
+      "stagedSHA256": "78c7cf899c153bfc5c2d2482810a89961382fef9cb5ab6508f03bdf50925ee89",
+      "width": 400
+    },
+    {
+      "convertedSHA256": "94d15fb7198658d2a46baa65569323c06924eaf7fca307cd89bf3b643a170ee2",
+      "height": 165,
+      "key": "seabed_b",
+      "metadataPath": null,
+      "resampling": "NEAREST",
+      "runtimePath": "romfs:/presentation/arenas/seabed_b.t3x",
+      "runtimeScale": 1,
+      "sourcePath": "images/arenas/seabed_b.png",
+      "sourceSHA256": "4ff2c14a553696e0011561e70995f6b7484cc80aafb5f42084298c7ae957053b",
+      "sourceSize": [
+        320,
+        132
+      ],
+      "stagedSHA256": "d7621bab0ef20b4096589afe431ae5c8e94649321b0a802c36e2a6837621770e",
+      "width": 400
+    },
+    {
+      "convertedSHA256": "c61eb27c49e495dfe86e9642610aef9ada4b722e882f5a9b6e9ed208d007be25",
+      "height": 165,
+      "key": "slum_a",
+      "metadataPath": null,
+      "resampling": "NEAREST",
+      "runtimePath": "romfs:/presentation/arenas/slum_a.t3x",
+      "runtimeScale": 1,
+      "sourcePath": "images/arenas/slum_a.png",
+      "sourceSHA256": "740fe81713883d237c99c0942827f25c88edfc7eb2b4a51aea467a01f1629f06",
+      "sourceSize": [
+        320,
+        132
+      ],
+      "stagedSHA256": "171267ae147799b2032431584b12c028b82878b9474c0c1a92082f2f29d96e97",
+      "width": 400
+    },
+    {
+      "convertedSHA256": "9e92033f30f6329db13d4a75c2d2b78f9ebbcf00b13cf777ad80f49678f75a30",
+      "height": 165,
+      "key": "slum_b",
+      "metadataPath": null,
+      "resampling": "NEAREST",
+      "runtimePath": "romfs:/presentation/arenas/slum_b.t3x",
+      "runtimeScale": 1,
+      "sourcePath": "images/arenas/slum_b.png",
+      "sourceSHA256": "3b07354348cf07ae6d07ec955d546051971f3b2f31a4b3a49519f8ec3cb7431a",
+      "sourceSize": [
+        320,
+        132
+      ],
+      "stagedSHA256": "1d9dd94eb1599b594d4b1725ca5fd357f557038de769cb76158ea3c448d11ac9",
+      "width": 400
+    },
+    {
+      "convertedSHA256": "c5b8df176102a82dc22bd1d80668db320772c2e75cada5c458b0ccbe7a52d819",
+      "height": 165,
+      "key": "snowy_forest_a",
+      "metadataPath": null,
+      "resampling": "NEAREST",
+      "runtimePath": "romfs:/presentation/arenas/snowy_forest_a.t3x",
+      "runtimeScale": 1,
+      "sourcePath": "images/arenas/snowy_forest_a.png",
+      "sourceSHA256": "170e59fb0aca8aba1bd0daee512f405de1504a7e2c6c9f213f89e0d4cb264c59",
+      "sourceSize": [
+        320,
+        132
+      ],
+      "stagedSHA256": "518e8eb36bb8c57d6069f40f018322ce938bad1f3eae24035c4da1f6c07d3af2",
+      "width": 400
+    },
+    {
+      "convertedSHA256": "3294b024e3390aa4020d67bc5db99dc0a681096a706825b5e8a52c055904a899",
+      "height": 165,
+      "key": "snowy_forest_b",
+      "metadataPath": null,
+      "resampling": "NEAREST",
+      "runtimePath": "romfs:/presentation/arenas/snowy_forest_b.t3x",
+      "runtimeScale": 1,
+      "sourcePath": "images/arenas/snowy_forest_b.png",
+      "sourceSHA256": "61f51e1c37dea4e9bc06d45b45acc549d97d18020bec089173cabf60b279bcd5",
+      "sourceSize": [
+        320,
+        132
+      ],
+      "stagedSHA256": "d22332add8e225e02621844682519c6866c32c6b70220d3f53a7afca67ffd1a3",
+      "width": 400
+    },
+    {
+      "convertedSHA256": "8575ac54b67c7fd38517dde212154ad2ffbfc5efe4e07f636b4f4cf2cbb6f67d",
+      "height": 165,
+      "key": "space_a",
+      "metadataPath": null,
+      "resampling": "NEAREST",
+      "runtimePath": "romfs:/presentation/arenas/space_a.t3x",
+      "runtimeScale": 1,
+      "sourcePath": "images/arenas/space_a.png",
+      "sourceSHA256": "ef7082a19e903250c91780a7083859120bca6f8e1ff8841a189359706405644a",
+      "sourceSize": [
+        320,
+        132
+      ],
+      "stagedSHA256": "2a3415eb8b40410c8becf4ea3cfc9e378f266d74fa10c27f53911b88659c44c9",
+      "width": 400
+    },
+    {
+      "convertedSHA256": "04d12ab4639b754209606188236dfaa86a5829ed729d7fff8c8a963f9c338c9a",
+      "height": 165,
+      "key": "space_b",
+      "metadataPath": null,
+      "resampling": "NEAREST",
+      "runtimePath": "romfs:/presentation/arenas/space_b.t3x",
+      "runtimeScale": 1,
+      "sourcePath": "images/arenas/space_b.png",
+      "sourceSHA256": "ef800b9b838447259e97a062bbd4e263c8df1292596675bfb45514708e69c2c8",
+      "sourceSize": [
+        320,
+        132
+      ],
+      "stagedSHA256": "179e1880d59ce7d25d2d653f55dd0d0af1629df99dd4d95ea3cd8434a0aeb3c6",
+      "width": 400
+    },
+    {
+      "convertedSHA256": "4d0a44e965c9de342f9abe1240d3e95a20ce3e5ff5513dd89d7fb40b3df200c6",
+      "height": 165,
+      "key": "swamp_a",
+      "metadataPath": null,
+      "resampling": "NEAREST",
+      "runtimePath": "romfs:/presentation/arenas/swamp_a.t3x",
+      "runtimeScale": 1,
+      "sourcePath": "images/arenas/swamp_a.png",
+      "sourceSHA256": "593b5cac0a12e3a360849261de58aa3af1c0a2447c911bd1166f51d76307e54c",
+      "sourceSize": [
+        320,
+        132
+      ],
+      "stagedSHA256": "cef30e5a23c9827f97ad71b397e08f262c203fc04724faef757b1772489a5504",
+      "width": 400
+    },
+    {
+      "convertedSHA256": "f7f6239eb7fbfea8bfb6ca5a74d4d014f1d531f23d35f361a61d6fdba6e424c2",
+      "height": 165,
+      "key": "swamp_b",
+      "metadataPath": null,
+      "resampling": "NEAREST",
+      "runtimePath": "romfs:/presentation/arenas/swamp_b.t3x",
+      "runtimeScale": 1,
+      "sourcePath": "images/arenas/swamp_b.png",
+      "sourceSHA256": "e88c2d59c74ab071b8acd5e1bb8b9d155faedc4f8365c3918747d321a03a4964",
+      "sourceSize": [
+        320,
+        132
+      ],
+      "stagedSHA256": "b8811015cc2d78988d7c893553c23a53419c66b30935c888de2c02b39c354737",
+      "width": 400
+    },
+    {
+      "convertedSHA256": "c954375a10afd91612f78551f7eb552d6c630f4504ad1c77a50bc71d30fe4236",
+      "height": 165,
+      "key": "tall_grass_a",
+      "metadataPath": null,
+      "resampling": "NEAREST",
+      "runtimePath": "romfs:/presentation/arenas/tall_grass_a.t3x",
+      "runtimeScale": 1,
+      "sourcePath": "images/arenas/tall_grass_a.png",
+      "sourceSHA256": "b79ed571dfa8b880a543dd8d1a53b13a67351a00ba4d5664c6f0121417195b39",
+      "sourceSize": [
+        320,
+        132
+      ],
+      "stagedSHA256": "57d73e743649e8022a3aa16c07b04386da8ec5a8be4590af444b9ffe890208b4",
+      "width": 400
+    },
+    {
+      "convertedSHA256": "789ce2251ba156f5f7d5a69cfe0ee958f2d36d8b79d52c2bece4ef837aedf48f",
+      "height": 165,
+      "key": "tall_grass_b",
+      "metadataPath": null,
+      "resampling": "NEAREST",
+      "runtimePath": "romfs:/presentation/arenas/tall_grass_b.t3x",
+      "runtimeScale": 1,
+      "sourcePath": "images/arenas/tall_grass_b.png",
+      "sourceSHA256": "6d30a9d4acd43d6cb76964433c4a79a860024cc420fb0146e65fbd77bd8710dc",
+      "sourceSize": [
+        320,
+        132
+      ],
+      "stagedSHA256": "e0096b436f4965e776c4ad964ed6309e36d4fda3b9594acae6ec78ec5a982616",
+      "width": 400
+    },
+    {
+      "convertedSHA256": "02326469375b930018ab03eeb355abe7cadd853f64f13779138f1b0f78e15f9d",
+      "height": 165,
+      "key": "temple_a",
+      "metadataPath": null,
+      "resampling": "NEAREST",
+      "runtimePath": "romfs:/presentation/arenas/temple_a.t3x",
+      "runtimeScale": 1,
+      "sourcePath": "images/arenas/temple_a.png",
+      "sourceSHA256": "2ed7350b71eea5952f2ea39c99978bfa994cb18849b8c61f75a53ee26353ab9f",
+      "sourceSize": [
+        320,
+        132
+      ],
+      "stagedSHA256": "af0e9b4b08329e685a4070eef0ee884ec3b7a6d09157c957c6fdd4dca7e25ded",
+      "width": 400
+    },
+    {
+      "convertedSHA256": "735fb25e617b81aa8d2a1a7a0f70b6f1585941257b80a3dd106fda8c6a0635ef",
+      "height": 165,
+      "key": "temple_b",
+      "metadataPath": null,
+      "resampling": "NEAREST",
+      "runtimePath": "romfs:/presentation/arenas/temple_b.t3x",
+      "runtimeScale": 1,
+      "sourcePath": "images/arenas/temple_b.png",
+      "sourceSHA256": "17f5e36f5f8d642497cb10bfbf584f69df8baf1d6438360873bbe7096bd727cc",
+      "sourceSize": [
+        320,
+        132
+      ],
+      "stagedSHA256": "7b9bb795681b065c62193f4eca0e5c85f4ad920cc12524943d2d0ee304ac5467",
+      "width": 400
+    },
+    {
+      "convertedSHA256": "3c6a1e5c811c1208f6a58917723b0a88cc883c39fc10f9d6871dbe4c6970a228",
+      "height": 165,
+      "key": "town_a",
+      "metadataPath": null,
+      "resampling": "NEAREST",
+      "runtimePath": "romfs:/presentation/arenas/town_a.t3x",
+      "runtimeScale": 1,
+      "sourcePath": "images/arenas/town_a.png",
+      "sourceSHA256": "cb35af4dbd28ab16176b519c3bdbc3994817c7f8c3fbf85e3bd9bc7d8d5aacfe",
+      "sourceSize": [
+        320,
+        132
+      ],
+      "stagedSHA256": "c834fab2a99d7f758458e3a0315b1a21dc2463a160a2a1b976daf17930bc8c73",
+      "width": 400
+    },
+    {
+      "convertedSHA256": "afcce4849aeaab739b7764a82c3eba95b2d8b9a5b69b671405cb8d21de95c544",
+      "height": 165,
+      "key": "town_b",
+      "metadataPath": null,
+      "resampling": "NEAREST",
+      "runtimePath": "romfs:/presentation/arenas/town_b.t3x",
+      "runtimeScale": 1,
+      "sourcePath": "images/arenas/town_b.png",
+      "sourceSHA256": "0aa95919fb04ee10befa1abb97a72b7e2b63d02253b53c336e10ead10976ebe3",
+      "sourceSize": [
+        320,
+        132
+      ],
+      "stagedSHA256": "a5ab0c07451d95872d4ff884091576b4e3283d37a51c6eac9c18c71cb56b5ebf",
+      "width": 400
+    },
+    {
+      "convertedSHA256": "47c0c21fb0179171adc7ce096af4418ba7d0183c9657084301a1669ce4d6f1c0",
+      "height": 165,
+      "key": "volcano_a",
+      "metadataPath": null,
+      "resampling": "NEAREST",
+      "runtimePath": "romfs:/presentation/arenas/volcano_a.t3x",
+      "runtimeScale": 1,
+      "sourcePath": "images/arenas/volcano_a.png",
+      "sourceSHA256": "61c149f21cead27529d5af5c2e90072c0372bc56e5864e41bf3364c3cab771e2",
+      "sourceSize": [
+        320,
+        132
+      ],
+      "stagedSHA256": "6c19db2801b9547648e25a22cc11af8aa6d142076777c3730b1d8ab5827eb454",
+      "width": 400
+    },
+    {
+      "convertedSHA256": "9fed7e5a4e621058517a85beaf67743b9295de2cf5d47038c5d560277488a22d",
+      "height": 165,
+      "key": "volcano_b",
+      "metadataPath": null,
+      "resampling": "NEAREST",
+      "runtimePath": "romfs:/presentation/arenas/volcano_b.t3x",
+      "runtimeScale": 1,
+      "sourcePath": "images/arenas/volcano_b.png",
+      "sourceSHA256": "62fa70d199469beb684efc03d800c708c4a439f8872884f3601b8e5ca47c14ff",
+      "sourceSize": [
+        320,
+        132
+      ],
+      "stagedSHA256": "d7d8fc751af4c87e01aebd6a2aa4a92546a212c5fcdc1cdf34674fdaa466b9a8",
+      "width": 400
+    },
+    {
+      "convertedSHA256": "1a6046c099e6a21450963ce440c8efed536c90f9d4a9c33cbafabbca29ae4b62",
+      "height": 165,
+      "key": "wasteland_a",
+      "metadataPath": null,
+      "resampling": "NEAREST",
+      "runtimePath": "romfs:/presentation/arenas/wasteland_a.t3x",
+      "runtimeScale": 1,
+      "sourcePath": "images/arenas/wasteland_a.png",
+      "sourceSHA256": "18835b663180a47c60d3c772992a68b8ad196d4f8e300b845addafc7f6724305",
+      "sourceSize": [
+        320,
+        132
+      ],
+      "stagedSHA256": "ce8df5b370361987e089c23138f998d827f9ece41196dfeae3a7f3e3c8cf4e6f",
+      "width": 400
+    },
+    {
+      "convertedSHA256": "ea8356e1e57e2135e3813937ec1cefceaaad4b08bb2e4555acb41c79c1556090",
+      "height": 165,
+      "key": "wasteland_b",
+      "metadataPath": null,
+      "resampling": "NEAREST",
+      "runtimePath": "romfs:/presentation/arenas/wasteland_b.t3x",
+      "runtimeScale": 1,
+      "sourcePath": "images/arenas/wasteland_b.png",
+      "sourceSHA256": "7ec524cfa5386d745f89113b439cefd012ae2160594154cb12f6c55dae995b64",
+      "sourceSize": [
+        320,
+        132
+      ],
+      "stagedSHA256": "85d3a3f30574031992f54cadea792acd0529e6520f8b70ffb85f813c00c67fac",
+      "width": 400
+    },
+    {
+      "convertedSHA256": "33423d691f20f35a69a560dc127e75c7c7849e4eb893ca9bb388a15a82e1be62",
+      "height": 165,
+      "key": "well_a",
+      "metadataPath": null,
+      "resampling": "NEAREST",
+      "runtimePath": "romfs:/presentation/arenas/well_a.t3x",
+      "runtimeScale": 1,
+      "sourcePath": "images/arenas/well_a.png",
+      "sourceSHA256": "8ddc4179a8dd7e1ca310e04e3648d62c5b680810f46d2cb3ed60832906994de6",
+      "sourceSize": [
+        320,
+        132
+      ],
+      "stagedSHA256": "46e00a7b87cdaf26fe109f9713aff99c6edfcce3b8ee1a357c7deab1e38b9060",
+      "width": 400
+    },
+    {
+      "convertedSHA256": "a2a11c3d6ef3a4a4a7c4bfc9760c3b95b03bad0437a91f6143a1ef1d11f7d4f4",
+      "height": 165,
+      "key": "well_b",
+      "metadataPath": null,
+      "resampling": "NEAREST",
+      "runtimePath": "romfs:/presentation/arenas/well_b.t3x",
+      "runtimeScale": 1,
+      "sourcePath": "images/arenas/well_b.png",
+      "sourceSHA256": "c16af1e48d9af38031bdf9f16155437f7b9cf15a3fca4759207ce74c3c063cd5",
+      "sourceSize": [
+        320,
+        132
+      ],
+      "stagedSHA256": "5a795dfbbd626c5249bb245fc631d40b0516a585f7f556fa88d66dea4432c483",
+      "width": 400
+    }
+  ],
+  "repository": "https://github.com/pagefaultgames/pokerogue-assets",
+  "revision": "056a1f408f26a3be4fef243f7462cb43608c7928",
+  "runtimeValidation": "NOT_EXECUTED",
+  "unsupported": []
+}

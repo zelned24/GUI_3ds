@@ -97,45 +97,7 @@ whitelist.write_text(" ".join(hex(cp) for cp in codepoints)+"\n",encoding="utf-8
 from prepare_pixel_fonts import prepare_fonts
 prepare_fonts(ROOT,whitelist)
 
-layer_rows=[]
-unsupported=[]
-for png in sorted((output / "images/arenas").glob("*.png")):
-    if not png.stem.endswith(("_a","_b")): continue
-    width,height=struct.unpack(">II",png.read_bytes()[16:24])
-    if width>1024 or height>1024:
-        unsupported.append({"sourcePath":png.relative_to(output).as_posix(),"reason":"Texture requires paged conversion"})
-        continue
-    target=ROOT / "build/romfs/presentation/arenas" / (png.stem+".t3x")
-    subprocess.run(["C:/devkitPro/tools/bin/tex3ds.exe","-f","rgba8","-o",str(target),str(png)],check=True,stdout=subprocess.DEVNULL)
-    layer_rows.append({"key":png.stem,"sourcePath":png.relative_to(output).as_posix(),"sourceSHA256":hashlib.sha256(png.read_bytes()).hexdigest(),"width":width,"height":height,"runtimePath":"romfs:/presentation/arenas/"+png.stem+".t3x","convertedSHA256":hashlib.sha256(target.read_bytes()).hexdigest()})
-    row=layer_rows[-1]
-    row["metadataPath"]=None
-    manifest=png.with_suffix(".json")
-    if manifest.exists():
-        atlas=json.loads(manifest.read_text(encoding="utf-8"))["textures"][0]
-        frames=sorted(atlas["frames"],key=lambda frame:frame["filename"])
-        binary=bytearray(struct.pack("<8sIHHI",b"P3ATLAS1",1,width,height,len(frames)))
-        binary.extend(hashlib.sha256(png.read_bytes()).digest())
-        binary.extend(hashlib.sha256(manifest.read_bytes()).digest())
-        for frame in frames:
-            if frame.get("rotated"): raise ValueError("Rotated arena frame requires explicit adapter")
-            bounds=frame["frame"]; source=frame["sourceSize"]; trim=frame["spriteSourceSize"]
-            filename=frame["filename"].encode("ascii")
-            if len(filename)>=12: raise ValueError("Arena frame name exceeds metadata contract")
-            binary.extend(struct.pack("<12s10H",filename,bounds["x"],bounds["y"],bounds["w"],bounds["h"],source["w"],source["h"],trim["x"],trim["y"],0,0))
-        metadata=target.with_suffix(".p3a")
-        metadata.write_bytes(binary)
-        row["metadataPath"]="romfs:/presentation/arenas/"+metadata.name
-        row["manifestSHA256"]=hashlib.sha256(manifest.read_bytes()).hexdigest()
-        row["frames"]=len(frames)
-        row["frameRate"]=12 # ArenaBase.setBiome pinned source, not Pokémon's 10 FPS.
-
-header="// Generated pinned static arena layers.\n#pragma once\n#include \"content/ArenaTextures.hpp\"\nnamespace Pokerogue3DS {\nstruct ArenaLayerTextureDefinition { const char* key; const char* path; uint16_t width,height; const char* metadataPath; };\ninline constexpr ArenaLayerTextureDefinition kArenaLayerTextures[] = {\n"
-header+="\n".join('    {"%s", "%s", %d, %d, %s},' % (r["key"],r["runtimePath"],r["width"],r["height"],json.dumps(r["metadataPath"]) if r["metadataPath"] else "nullptr") for r in layer_rows)
-header+="\n};\n}\n"
-(ROOT / "project/generated/include/content/ArenaLayerTextures.hpp").write_text(header,encoding="utf-8",newline="\n")
-(output.parent / "layer-provenance.json").write_text(json.dumps({"repository":REPOSITORY,"revision":REVISION,"files":layer_rows,"unsupported":unsupported},sort_keys=True,indent=2)+"\n",encoding="utf-8",newline="\n")
-print(f"Converted {len(layer_rows)} arena layers ({sum(bool(row["metadataPath"]) for row in layer_rows)} animated); {len(unsupported)} unsupported")
+import prepare_arena_layers
 
 logo_source=output / "images/logo.png"
 logo_target=ROOT / "build/romfs/presentation/images/logo.t3x"

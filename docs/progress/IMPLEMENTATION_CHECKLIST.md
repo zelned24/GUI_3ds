@@ -803,3 +803,6 @@ La búsqueda del índice generado usa búsqueda binaria sobre identidades ordena
 
 - [x] Raster de título: 39 fondos con recorte centrado proporcional a 400×240 nearest, ruta física y hashes propios; comparación pixel a pixel PASS. Presenter cambia de recurso al cambiar entre título y batalla, retirando el anterior mediante renderer.
 - [ ] Validación nativa del cambio de raster y composición de título pendiente. Bases/capas siguen con escala fraccional; el nearest offline no convierte el escalado original en una escala entera.
+
+- [x] Bases estáticas de arena: 72 rasters nearest adaptados offline a 1.25× y dibujados 1:1; fuentes pinned, pixels y hashes físicos PASS (`test/arena_layer_assets_tests.py`). Pipeline separado en `scripts/prepare_arena_layers.py`, reporte `docs/generated/ARENA_LAYER_REPORT.json`.
+- [ ] Dos atlas de capas animadas conservan fuente, metadata y escala 1.25×; falta adaptación por frame y validación GPU de todas las bases. Nearest offline conserva replicación no uniforme de pixels originales; no implica una escala entera de origen.

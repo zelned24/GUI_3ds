@@ -85,7 +85,7 @@ public:
                     frame->sourceWidth,frame->sourceHeight,frame->trimX,frame->trimY};
                 renderer.drawAtlasFrame(image,rectangle,0,0,
                     frame->sourceWidth*scale,frame->sourceHeight*scale);
-            } else renderer.drawImageDirect(image,0,0,layer->width*scale,layer->height*scale);
+            } else renderer.drawImageDirect(image,0,0,layer->width,layer->height);
         }
         return true;
     }
