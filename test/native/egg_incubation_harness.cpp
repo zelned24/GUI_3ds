@@ -6,12 +6,21 @@ int main() {
     EggIncubationRecord eggs[]={{7,0,EggTier::COMMON,EggSourceType::GACHA_MOVE,2},
         {9,0,EggTier::RARE,EggSourceType::EVENT,1},
         {3,0,EggTier::EPIC,EggSourceType::GACHA_SHINY,0}};
+    eggs[1].timestamp=1234567890123ULL;eggs[1].variantTier=VariantTier::EPIC;
+    eggs[1].isShiny=true;eggs[1].eggMoveIndex=3;eggs[1].overrideHiddenAbility=true;
     uint32_t ready[3]={99,99,99};size_t count=88;
     assert(lapseEggIncubation(eggs,3,reinterpret_cast<uint32_t*>(eggs),3,count)==EggIncubationResult::InvalidInput);
     assert(lapseEggIncubation(eggs,3,ready,1,count)==EggIncubationResult::OutputTooSmall);
     assert(eggs[0].hatchWaves==2 && eggs[1].hatchWaves==1 && ready[0]==99 && count==88);
     assert(lapseEggIncubation(eggs,3,ready,3,count)==EggIncubationResult::Ok);
     assert(count==2 && ready[0]==9 && ready[1]==3 && eggs[0].hatchWaves==1);
+    assert(eggs[1].timestamp==1234567890123ULL && eggs[1].variantTier==VariantTier::EPIC && eggs[1].isShiny
+        && eggs[1].eggMoveIndex==3 && eggs[1].overrideHiddenAbility);
+    eggs[1].variantTier=VariantTier::EPIC55;
+    assert(lapseEggIncubation(eggs,3,ready,3,count)==EggIncubationResult::InvalidVariant);
+    eggs[1].variantTier=VariantTier::EPIC;eggs[1].eggMoveIndex=255;
+    assert(lapseEggIncubation(eggs,3,ready,3,count)==EggIncubationResult::InvalidEggMove);
+    eggs[1].eggMoveIndex=3;
     assert(lapseEggIncubation(eggs,3,ready,3,count)==EggIncubationResult::Ok);
     assert(count==3 && ready[0]==7 && ready[1]==9 && ready[2]==3);
     eggs[2].id=9;count=88;

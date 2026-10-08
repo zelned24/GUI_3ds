@@ -40,6 +40,20 @@
         "symbol": "LEGENDARY"
       }
     ],
+    "VariantTier": [
+      {
+        "id": 0,
+        "symbol": "STANDARD"
+      },
+      {
+        "id": 1,
+        "symbol": "RARE"
+      },
+      {
+        "id": 2,
+        "symbol": "EPIC"
+      }
+    ],
     "VoucherType": [
       {
         "id": 0,
@@ -59,7 +73,7 @@
       }
     ]
   },
-  "generatedSHA256": "745258724592b0382a2d7d663dfc5b3ce20efb2e4de12fe6c5c09fd17cfd1929",
+  "generatedSHA256": "73060c93add4dae05f258e893382b0d5bdc7f446daffacaf57479c468ddb8bbb",
   "incubationConstants": {
     "HATCH_WAVES_COMMON_EGG": 10,
     "HATCH_WAVES_EPIC_EGG": 50,
@@ -118,6 +132,22 @@
       "schemaVersion": 1,
       "sourcePath": "src/phases/egg-lapse-phase.ts",
       "sourceSymbol": "EggLapsePhase.start"
+    },
+    {
+      "hash": "f96a70942a55a63e770dd3a15cc48175f7af11d334b833f81f0536700b3fab65",
+      "repository": "https://github.com/pagefaultgames/pokerogue",
+      "revision": "8555c08c823b856cbec4eb99ca84ea52a955836d",
+      "schemaVersion": 1,
+      "sourcePath": "src/system/egg-data.ts",
+      "sourceSymbol": "EggData"
+    },
+    {
+      "hash": "0706b3c0e186a32ac6392d3437d5df611eb76d31dc570a9fe3aa1141b92cc348",
+      "repository": "https://github.com/pagefaultgames/pokerogue",
+      "revision": "8555c08c823b856cbec4eb99ca84ea52a955836d",
+      "schemaVersion": 1,
+      "sourcePath": "src/enums/variant-tier.ts",
+      "sourceSymbol": "VariantTier"
     }
   ]
 }

@@ -21,6 +21,11 @@ enum class VoucherType : uint8_t {
     PREMIUM = 2,
     GOLDEN = 3,
 };
+enum class VariantTier : uint8_t {
+    STANDARD = 0,
+    RARE = 1,
+    EPIC = 2,
+};
 struct EggIncubationPolicy { EggTier tier; uint16_t waves; };
 inline constexpr EggIncubationPolicy kEggIncubationPolicies[]={
     {EggTier::COMMON,10},

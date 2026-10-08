@@ -995,3 +995,5 @@ La búsqueda del índice generado usa búsqueda binaria sobre identidades ordena
 - [ ] Connect imported egg policy to persistent inventory, wave lapse, hatching and gacha commands. Species generation, unlocks and animations remain pending; no native validation or compilation performed.
 
 - [ ] EggIncubation.hpp: C++ batch validation and victory-boundary lapse preserve inventory order, reject duplicate IDs/invalid enums/species/overlapping buffers and insufficient output capacity before mutation. Ready eggs are retained for the future hatching consumer; legacy species zero is explicit. Native harness written, not compiled or executed. Not yet connected to victory, inventory persistence or UI.
+
+- [ ] EggData metadata retained in the incubation record: timestamp, imported VariantTier, shiny, eggMoveIndex and hidden-ability override. Lapse changes only hatchWaves; metadata preservation and invalid-field cases added to the unexecuted native harness. Persistence and frontend integration remain pending.

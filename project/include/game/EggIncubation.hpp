@@ -5,21 +5,28 @@
 #include <cstdint>
 
 namespace Pokerogue3DS {
-// Mirrors pinned EggData fields relevant to incubation. Timestamp and generated
-// Pokemon attributes belong to the persistent inventory/hatching integration.
+// Pinned EggData fields. Timestamp is supplied metadata, never generated here
+// or used as simulation entropy. Binary persistence remains a separate codec.
 struct EggIncubationRecord {
     uint32_t id=0;
     uint16_t speciesDex=0;
     EggTier tier=EggTier::COMMON;
     EggSourceType sourceType=EggSourceType::GACHA_MOVE;
     int32_t hatchWaves=0;
+    uint64_t timestamp=0;
+    VariantTier variantTier=VariantTier::STANDARD;
+    bool isShiny=false;
+    uint8_t eggMoveIndex=0;
+    bool overrideHiddenAbility=false;
 };
-enum class EggIncubationResult : uint8_t {Ok, InvalidInput, InvalidTier, InvalidSource, MissingSpecies, DuplicateId, OutputTooSmall};
+enum class EggIncubationResult : uint8_t {Ok, InvalidInput, InvalidTier, InvalidSource, MissingSpecies, DuplicateId, OutputTooSmall, InvalidVariant, InvalidEggMove};
 inline EggIncubationResult validateEggIncubationRecord(const EggIncubationRecord& egg) {
     if(static_cast<unsigned>(egg.tier)>=sizeof(kEggIncubationPolicies)/sizeof(kEggIncubationPolicies[0]))
         return EggIncubationResult::InvalidTier;
     if(static_cast<unsigned>(egg.sourceType)>static_cast<unsigned>(EggSourceType::EVENT))
         return EggIncubationResult::InvalidSource;
+    if(static_cast<unsigned>(egg.variantTier)>static_cast<unsigned>(VariantTier::EPIC)) return EggIncubationResult::InvalidVariant;
+    if(egg.eggMoveIndex>3) return EggIncubationResult::InvalidEggMove;
     // Legacy upstream eggs can have species=0 before resolution.
     if(egg.speciesDex && !PokerogueContent::findSpeciesByDex(egg.speciesDex))
         return EggIncubationResult::MissingSpecies;
