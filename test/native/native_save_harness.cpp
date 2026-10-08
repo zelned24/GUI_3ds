@@ -290,6 +290,34 @@ extern "C" int runNativeSaveChecks() {
                 return 1239;
         }
         {
+            EggIncubationRecord egg{};egg.id=19;egg.speciesDex=1;egg.hatchWaves=10;
+            uint32_t balances[4]={1,2,3,4},unlock[4]={0,9,10,3};EggPityState rarity{5,6,7,8};
+            char bytes[228]{},repeat[228]{};size_t written=0,repeated=0;NativeEggProgressView view{};
+            if(encodeNativeEggProgress(&egg,1,balances,rarity,unlock,18,PokerogueContent::kContentHash,
+                bytes,sizeof(bytes),written)!=NativeSaveResult::Ok || written!=228
+                || encodeNativeEggProgress(&egg,1,balances,rarity,unlock,18,PokerogueContent::kContentHash,
+                repeat,sizeof(repeat),repeated)!=NativeSaveResult::Ok || repeated!=written
+                || std::memcmp(bytes,repeat,written)) return 1285;
+            if(inspectNativeEggProgress(bytes,written,PokerogueContent::kContentHash,view)!=NativeSaveResult::Ok
+                || !view.unlockPityResolved || view.headerBytes!=128 || view.eggCount!=1
+                || std::memcmp(view.unlockPity,unlock,sizeof(unlock)) || view.pity.epic!=7) return 1286;
+            MemoryStorage storage;std::memcpy(storage.slots[0],bytes,written);storage.sizes[0]=written;
+            char scratch[456]{};NativeEggProgressStore store(storage,scratch,sizeof(scratch),228);
+            if(store.exportGeneration(PokerogueContent::kContentHash,18)!=NativeSaveResult::Ok
+                || storage.exportSize!=written || std::memcmp(storage.exported,bytes,written)) return 1287;
+            uint32_t prepared=99;
+            if(store.prepare(&egg,1,balances,rarity,PokerogueContent::kContentHash,18,prepared)
+                !=NativeSaveResult::UnsupportedVersion || prepared!=99) return 1288;
+            unlock[0]=11;repeated=999;
+            if(encodeNativeEggProgress(&egg,1,balances,rarity,unlock,18,PokerogueContent::kContentHash,
+                repeat,sizeof(repeat),repeated)!=NativeSaveResult::InvalidRecord || repeated!=999
+                || std::memcmp(bytes,repeat,written)) return 1289;
+            if(encodeNativeEggProgress(&egg,1,balances,rarity,18,PokerogueContent::kContentHash,
+                repeat,sizeof(repeat),repeated)!=NativeSaveResult::Ok
+                || inspectNativeEggProgress(repeat,repeated,PokerogueContent::kContentHash,view)!=NativeSaveResult::Ok
+                || view.unlockPityResolved || view.headerBytes!=112) return 1290;
+        }
+        {
             MemoryStorage eggStorage;char journalScratch[424]{};
             NativeEggProgressStore eggStore(eggStorage,journalScratch,sizeof(journalScratch),212);
             EggIncubationRecord egg{};egg.id=17;egg.hatchWaves=10;

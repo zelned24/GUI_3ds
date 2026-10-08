@@ -30,7 +30,7 @@ public:
         if(!generation) return NativeSaveResult::InvalidRecord;
         NativeEggProgressView view{};auto status=load(hash,view,generation);
         if(status!=NativeSaveResult::Ok) return status;
-        const unsigned selected=view.inventoryBytes==slot(0)+kEggProgressHeaderBytes ? 0 : 1;
+        const unsigned selected=view.inventoryBytes==slot(0)+view.headerBytes ? 0 : 1;
         const size_t size=m_sizes[selected];char expected[64];
         std::memcpy(expected,slot(selected)+size-64,64);
         status=m_storage.writeExport(slot(selected),size);if(status!=NativeSaveResult::Ok) return status;
@@ -53,6 +53,10 @@ public:
             return NativeSaveResult::InvalidRecord;
         int selected=-1;auto status=select(hash,selected);
         if(status!=NativeSaveResult::Ok && status!=NativeSaveResult::NotFound) return status;
+        // The legacy prepare API has no unlock ledger. Refuse a downgrade that
+        // would silently erase counters from any valid newer journal slot.
+        for(unsigned i=0;i<2;++i) if(m_valid[i] && std::memcmp(slot(i),"P3EGGP02",8)==0)
+            return NativeSaveResult::UnsupportedVersion;
         unsigned target=0;uint32_t next=1;
         if(selected>=0) {
             if(!committedGeneration) return NativeSaveResult::InvalidRecord;

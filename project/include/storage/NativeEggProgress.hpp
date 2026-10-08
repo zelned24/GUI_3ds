@@ -6,11 +6,16 @@ struct NativeEggProgressView {
     uint32_t generation=0;
     uint32_t vouchers[4]{};
     EggPityState pity{};
+    uint32_t unlockPity[4]{};
+    bool unlockPityResolved=false;
+    size_t headerBytes=112;
     const char* inventoryBytes=nullptr;
     size_t inventorySize=0,eggCount=0;
 };
 inline constexpr size_t kEggProgressHeaderBytes=112;
 inline constexpr size_t kEggProgressOverhead=176;
+inline constexpr size_t kEggProgressUnlockHeaderBytes=128;
+inline constexpr size_t kEggProgressUnlockOverhead=192;
 // P3EGGP01 | content SHA | generation | four voucher counts | four pity counts |
 // inventory length | P3EGGS01 component | envelope SHA. Journal ownership and
 // linking its generation to the global progress transaction remain separate.
@@ -20,9 +25,14 @@ inline NativeSaveResult inspectNativeEggProgress(const char* bytes,size_t length
         length<kEggProgressOverhead+kEggInventoryHeaderBytes) return NativeSaveResult::InvalidFormat;
     if(StarterCandyProfileCodec::overlaps(bytes,length,&output,sizeof(output)) ||
         StarterCandyProfileCodec::overlaps(contentHash,65,&output,sizeof(output))) return NativeSaveResult::InvalidRecord;
-    if(std::memcmp(bytes,"P3EGGP01",8)) return NativeSaveResult::UnsupportedVersion;
+    const bool legacy=std::memcmp(bytes,"P3EGGP01",8)==0;
+    const bool current=std::memcmp(bytes,"P3EGGP02",8)==0;
+    if(!legacy && !current) return NativeSaveResult::UnsupportedVersion;
+    const size_t header=current ? kEggProgressUnlockHeaderBytes : kEggProgressHeaderBytes;
+    const size_t overhead=header+64;
+    if(length<overhead+kEggInventoryHeaderBytes) return NativeSaveResult::InvalidFormat;
     const size_t inventorySize=StarterCandyProfileCodec::get(bytes+108,4);
-    if(inventorySize!=length-kEggProgressOverhead) return NativeSaveResult::InvalidFormat;
+    if(inventorySize!=length-overhead) return NativeSaveResult::InvalidFormat;
     char digest[65]{};IntegritySha256::hashHex(bytes,length-64,digest);
     if(std::memcmp(digest,bytes+length-64,64)) return NativeSaveResult::ChecksumMismatch;
     if(std::memcmp(bytes+8,contentHash,64)) return NativeSaveResult::ContentMismatch;
@@ -31,7 +41,12 @@ inline NativeSaveResult inspectNativeEggProgress(const char* bytes,size_t length
     for(unsigned i=0;i<4;++i) candidate.vouchers[i]=StarterCandyProfileCodec::get(bytes+76+i*4,4);
     candidate.pity={StarterCandyProfileCodec::get(bytes+92,4),StarterCandyProfileCodec::get(bytes+96,4),
         StarterCandyProfileCodec::get(bytes+100,4),StarterCandyProfileCodec::get(bytes+104,4)};
-    candidate.inventoryBytes=bytes+kEggProgressHeaderBytes;candidate.inventorySize=inventorySize;
+    candidate.headerBytes=header;candidate.unlockPityResolved=current;
+    if(current) for(unsigned i=0;i<4;++i) {
+        candidate.unlockPity[i]=StarterCandyProfileCodec::get(bytes+112+i*4,4);
+        if(candidate.unlockPity[i]>kEggUnlockPityCap) return NativeSaveResult::InvalidRecord;
+    }
+    candidate.inventoryBytes=bytes+header;candidate.inventorySize=inventorySize;
     const auto status=inspectNativeEggInventory(candidate.inventoryBytes,inventorySize,candidate.eggCount);
     if(status!=NativeSaveResult::Ok) return status;
     output=candidate;return NativeSaveResult::Ok;
@@ -67,5 +82,39 @@ inline NativeSaveResult encodeNativeEggProgress(const EggIncubationRecord* eggs,
     StarterCandyProfileCodec::put(static_cast<uint32_t>(inventoryWritten),output+108,4);
     char digest[65]{};IntegritySha256::hashHex(output,length-64,digest);std::memcpy(output+length-64,digest,64);
     written=length;return NativeSaveResult::Ok;
+}
+// Version two adds a distinct unlock-pity ledger. Old files remain readable,
+// with unlockPityResolved=false; callers must choose an explicit migration.
+inline NativeSaveResult encodeNativeEggProgress(const EggIncubationRecord* eggs,size_t count,
+    const uint32_t (&vouchers)[4],const EggPityState& pity,const uint32_t (&unlockPity)[4],
+    uint32_t generation,const char* contentHash,char* output,size_t capacity,size_t& written) {
+    if(!output || count>SIZE_MAX/sizeof(*eggs) || count>(UINT32_MAX-kEggInventoryHeaderBytes)/kEggInventoryRecordBytes
+        || count>(SIZE_MAX-kEggProgressUnlockOverhead-kEggInventoryHeaderBytes)/kEggInventoryRecordBytes)
+        return NativeSaveResult::InvalidRecord;
+    const size_t length=kEggProgressUnlockOverhead+kEggInventoryHeaderBytes+count*kEggInventoryRecordBytes;
+    if(capacity<length) return NativeSaveResult::TooLarge;
+    if(StarterCandyProfileCodec::overlaps(output,length,unlockPity,sizeof(unlockPity))
+        || StarterCandyProfileCodec::overlaps(unlockPity,sizeof(unlockPity),&written,sizeof(written)))
+        return NativeSaveResult::InvalidRecord;
+    for(const auto counter:unlockPity) if(counter>kEggUnlockPityCap) return NativeSaveResult::InvalidRecord;
+    // Preflight the extra sixteen bytes too, before the legacy encoder writes.
+    if(StarterCandyProfileCodec::overlaps(output,length,eggs,count*sizeof(*eggs))
+        || StarterCandyProfileCodec::overlaps(output,length,vouchers,sizeof(vouchers))
+        || StarterCandyProfileCodec::overlaps(output,length,&pity,sizeof(pity))
+        || StarterCandyProfileCodec::overlaps(output,length,contentHash,65)
+        || StarterCandyProfileCodec::overlaps(output,length,&written,sizeof(written))
+        || StarterCandyProfileCodec::overlaps(eggs,count*sizeof(*eggs),&written,sizeof(written))
+        || StarterCandyProfileCodec::overlaps(vouchers,sizeof(vouchers),&written,sizeof(written))
+        || StarterCandyProfileCodec::overlaps(&pity,sizeof(pity),&written,sizeof(written)))
+        return NativeSaveResult::InvalidRecord;
+    size_t legacyWritten=0;
+    const auto status=encodeNativeEggProgress(eggs,count,vouchers,pity,generation,contentHash,output,capacity,legacyWritten);
+    if(status!=NativeSaveResult::Ok) return status;
+    const size_t inventorySize=legacyWritten-kEggProgressOverhead;
+    std::memmove(output+kEggProgressUnlockHeaderBytes,output+kEggProgressHeaderBytes,inventorySize);
+    std::memcpy(output,"P3EGGP02",8);
+    for(unsigned i=0;i<4;++i) StarterCandyProfileCodec::put(unlockPity[i],output+112+i*4,4);
+    char digest[65]{};IntegritySha256::hashHex(output,length-64,digest);
+    std::memcpy(output+length-64,digest,64);written=length;return NativeSaveResult::Ok;
 }
 }

@@ -1074,3 +1074,5 @@ La búsqueda del índice generado usa búsqueda binaria sobre identidades ordena
 
 - [x] Auditoría de fuentes de filtrado: guards PASS para renderer y nueve loaders/presenters de producción; nearest presente y GPU_LINEAR ausente en rutas examinadas. Esto verifica configuración del código, no escalado externo del emulador ni resultado visual.
 - [ ] Iconos de objetos: tamaño predeterminado corregido a canvas nativo 32x32; 528 frames generados tienen esa resolución. Consumidores actuales de recompensas/balls ya pasan 32 explícito. Guarda de fuentes PASS; ejecución C++/visual pendiente.
+
+- [ ] Persistencia de garantía de desbloqueo: P3EGGP02 añade cuatro contadores separados de rareza bajo SHA-256; P3EGGP01 sigue legible con unlockPityResolved=false. Export adapta el offset de inventario a la versión; prepare antiguo rechaza downgrade de v2 para no borrar contadores. Casos de round-trip, determinismo, límite, export y compatibilidad escritos en gate nativo, sin ejecución. Prepare v2/coordinador global/UI pendientes.
