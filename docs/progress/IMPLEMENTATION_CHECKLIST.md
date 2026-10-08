@@ -2,7 +2,7 @@
 
 ## Cómo medir el avance
 
-- Referencia actual: rama `codex/pokerogue-3ds-migration`, último commit de implementación publicado confirmado `c8b557b`; conversión física ampliada terminada: 10682 atlas y 10746 páginas `.t3x`. Validación nativa y visual pendiente. Los resultados históricos no verifican estos cambios locales.
+- Referencia actual: rama `codex/pokerogue-3ds-migration`, último commit de implementación publicado confirmado `700df08`; conversión física ampliada terminada: 10682 atlas y 10746 páginas `.t3x`. Validación nativa y visual pendiente. Los resultados históricos no verifican estos cambios locales.
 - Objetivo: PokéRogue jugable y fiel al snapshot upstream en Old 3DS, con ambas pantallas, progreso exportable y actualizaciones desde consola.
 - Cada ID es estable para reportar avances: `MOV-07`, `GUI-03`, etc. No equivale a un movimiento/habilidad individual.
 - Una casilla sin marcar puede tener código parcial; el resumen de cada área indica lo existente. Marcarla solo con integración completa y evidencia ejecutada pertinente.
@@ -1171,3 +1171,8 @@ La compilación ARM solicitada terminó correctamente; no prueba ejecución de h
 
 - Implementado sin ejecución nativa: PokemonAtlasPresenter recuerda intentos de resolver entrenador frontal y jugador de espalda, incluyendo fallos. Reintenta al cambiar tipo/género o invalidar contenido. TrainerPresenter ya tenía cache de fallo físico; este cambio evita llamadas repetidas y búsquedas en su consumidor.
 - Guards de conexión/reset PASS. No se atribuye a esta ruta la caída de FPS ni se declara una mejora medida: faltan perfilado y ejecución nativa.
+
+### Resolución del rango de animación
+
+- Implementado sin ejecución nativa: animationFrame usa búsqueda binaria en el índice ordenado por carga para hallar el límite de reproducción, en lugar de recorrer hasta 400 frames por dibujo. Mantiene orden, límites y fórmula temporal con uint64_t.
+- Harness C++ ampliado: comparación con referencia lineal para límites 1–400 y timestamps hasta UINT64_MAX. Guards PASS; harness aplazado. No se declara mejora de FPS medida ni cierre de 3DS/AST.

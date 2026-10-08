@@ -1,6 +1,7 @@
 #include "runtime/PokemonAtlasMetadata.hpp"
 #include <cstdio>
 #include <cstring>
+#include <algorithm>
 
 namespace Pokerogue3DS {
 namespace {
@@ -112,11 +113,13 @@ const PokemonAtlasFrame* PokemonAtlasMetadata::animationFrame(uint64_t timeMs, u
     // Reduce whole seconds before multiplying: timestamps may span uint64_t.
     char lastName[12];
     std::snprintf(lastName,sizeof(lastName),"%04u.png",lastFrameNumber);
-    uint64_t count=0;
-    for (const auto index:m_animationIndices) {
-        if (std::strcmp(m_frames[index].filename,lastName)>0) break;
-        ++count;
-    }
+    // load() builds this index in ascending numeric filename order. Resolve
+    // the upper playback bound without scanning every frame on every draw.
+    const auto end=std::upper_bound(m_animationIndices.begin(),m_animationIndices.end(),lastName,
+        [&](const char* name,uint16_t frameIndex) {
+            return std::strcmp(name,m_frames[frameIndex].filename)<0;
+        });
+    const uint64_t count=static_cast<uint64_t>(end-m_animationIndices.begin());
     if (!count) return frame(0);
     const uint64_t index=((timeMs/1000 % count)*frameRate +
         (timeMs%1000)*frameRate/1000) % count;

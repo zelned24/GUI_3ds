@@ -39,6 +39,17 @@ int main(int argc,char** argv) {
     assert(atlas.animationFrame(UINT64_MAX,24));
     assert(std::strcmp(atlas.animationFrame(42,24,1)->filename,"0001.png")==0);
     assert(!atlas.animationFrame(0,24,0) && !atlas.animationFrame(0,24,401));
+    // Compare each playback bound against a simple linear reference; this also
+    // retains overflow-safe timestamp behavior and the original frame order.
+    for(unsigned limit=1;limit<=400;++limit) {
+        unsigned count=limit==1 ? 1 : 2;
+        const uint64_t times[]={0,41,42,100,999,1000,UINT64_MAX};
+        for(const uint64_t time:times) {
+            const uint64_t index=((time/1000%count)*24+(time%1000)*24/1000)%count;
+            const char* expected=index==0 ? "0001.png" : "0002.png";
+            assert(std::strcmp(atlas.animationFrame(time,24,limit)->filename,expected)==0);
+        }
+    }
     assert(!atlas.frame(2) && !atlas.find("missing.png"));
     unsigned char badHash[32]={1};
     assert(!atlas.load(argv[1],badHash));

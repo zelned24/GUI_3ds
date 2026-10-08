@@ -560,3 +560,7 @@ assert(actorSprites.includes('if (!m_trainerFrontAttempted || m_trainerFrontType
 assert(actorSprites.includes('if (!m_playerBackAttempted || m_playerBackFemale'));
 assert(actorSprites.includes('m_trainerFrontAttempted = false;'));
 assert(actorSprites.includes('m_playerBackAttempted = false;'));
+
+const atlasMetadata=await fs.readFile(new URL('../project/src/runtime/PokemonAtlasMetadata.cpp',import.meta.url),'utf8');
+assert(atlasMetadata.includes('std::upper_bound(m_animationIndices.begin()'));
+assert(atlasMetadata.includes('const uint64_t count=static_cast<uint64_t>(end-m_animationIndices.begin())'));
