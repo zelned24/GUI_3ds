@@ -426,3 +426,10 @@ for(const relative of [
 }
 assert(itemPresentation.includes('float size = 32'));
 assert(!itemPresentation.includes('float size = 24'));
+
+const textRasterPolicy=await fs.readFile(new URL('../project/include/runtime/NativeTextRaster.hpp',import.meta.url),'utf8');
+assert(textRasterPolicy.includes('kNativeLegibleFontIndex=2'));
+assert(textRasterPolicy.includes('result={kNativeLegibleFontIndex,scale,candidate/32}'));
+const fittingPolicy=rendererSource.slice(rendererSource.indexOf('float Renderer2D::drawTextFitted('),rendererSource.indexOf('float Renderer2D::textRasterY('));
+assert(fittingPolicy.includes('while(raster.scale>1 && measure(bounded)>maxWidth)'));
+assert(!fittingPolicy.includes('raster.index=i'));

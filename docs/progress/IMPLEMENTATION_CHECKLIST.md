@@ -1102,7 +1102,7 @@ La compilación ARM solicitada terminó correctamente; no prueba ejecución de h
 ### Observaciones del preview en Azahar
 
 - [ ] Verificar rendimiento tras eliminar el segundo dibujado del HUD diagnóstico QuickJS y evitar ticks JS sin comandos; corrección implementada, FPS pendientes de medir.
-- [ ] Verificar letras pequeñas y separación de etiquetas A/B; el cuadro de diálogo ya es legible según las capturas.
+- [ ] Verificar letras pequeñas y separación de etiquetas A/B en Azahar: reproducción offline confirma trazos rotos en rasterizaciones de 8/10 puntos; el renderer ahora usa 12 puntos y múltiplos enteros, sin encoger a fuentes dañadas. Revisar también etiquetas abreviadas por falta de ancho.
 - [ ] Comprobar A/B y táctil en cada menú, diferenciando comandos rechazados por reglas pendientes de fallos de navegación.
 - [ ] Conectar reproducción real de audio; no hay backend de audio en producción.
 - [ ] Alinear la plataforma del jugador y cubrir por completo el fondo superior.

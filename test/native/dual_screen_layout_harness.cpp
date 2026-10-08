@@ -300,13 +300,14 @@ int main() {
         assert(raster.index<4 && raster.scale>=1 && raster.scale<=8);
         const float pixels=float(kNativeFontPoints[raster.index]*raster.scale);
         assert(raster.authoredSize==pixels/32);
-        for(unsigned i=0;i<4;++i) for(unsigned scale=1;scale<=8;++scale)
-            assert(std::fabs(pixels-requested*32)<=std::fabs(float(kNativeFontPoints[i]*scale)-requested*32));
+        assert(raster.index==kNativeLegibleFontIndex);
+        for(unsigned scale=1;scale<=8;++scale)
+            assert(std::fabs(pixels-requested*32)<=std::fabs(float(kNativeFontPoints[kNativeLegibleFontIndex]*scale)-requested*32));
         assert(nativeTextRaster(raster.authoredSize).index==raster.index);
     }
-    assert(nativeTextRaster(0.3f).index==1 && nativeTextRaster(0.3f).scale==1);
+    assert(nativeTextRaster(0.3f).index==2 && nativeTextRaster(0.3f).scale==1);
     assert(nativeTextRaster(0.4f).index==2 && nativeTextRaster(0.4f).scale==1);
-    assert(nativeTextRaster(0.5f).index==3 && nativeTextRaster(0.5f).scale==1);
+    assert(nativeTextRaster(0.5f).index==2 && nativeTextRaster(0.5f).scale==1);
     for(unsigned y=0;y<240;++y) for(unsigned x=0;x<320;++x) {
         const int expected=x>=16 && x<304 && y>=54 && y<162 ? int((y-54)/36*6+(x-16)/48) : -1;
         assert(starterGridAt(x,y)==expected);

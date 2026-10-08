@@ -364,13 +364,14 @@ void Renderer2D::drawText(
     if (m_textBuf) {
         C2D_Text c2dText;
         #if defined(__arm__) || defined(__3DS__) || defined(_3DS)
-        if (m_gameFont) C2D_TextFontParse(&c2dText, m_gameFont, m_textBuf, text);
+        const auto raster=Pokerogue3DS::nativeTextRaster(0.5f);
+        if (nativeFont(raster.index)) C2D_TextFontParse(&c2dText, nativeFont(raster.index), m_textBuf, text);
         else
 #endif
         C2D_TextParse(&c2dText, m_textBuf, text);
         C2D_TextOptimize(&c2dText);
         #if defined(__arm__) || defined(__3DS__) || defined(_3DS)
-        const float nativeScale=nativeFontScale(3,1);
+        const float nativeScale=nativeFontScale(raster.index,raster.scale);
 #else
         const float nativeScale=1.0f;
 #endif
@@ -436,24 +437,11 @@ float Renderer2D::drawTextFitted(const char* text,float x,float y,float size,flo
     // and bound the candidate before selecting a raster, not only before drawing.
     if(!Pokerogue3DS::abbreviateUtf8(text,bounded,sizeof(bounded),65536,false,measure,width))
         return raster.authoredSize;
-    // Keep the largest native raster that fits, including whole multiples of
-    // smaller sources (e.g. 12 points at 2x before dropping a 32-point label).
-    if(measure(bounded)>maxWidth) {
-        const unsigned preferredPoints=Pokerogue3DS::kNativeFontPoints[raster.index]*raster.scale;
-        auto chosen=Pokerogue3DS::nativeTextRaster(0.25f);
-        unsigned bestPoints=0;
-        for(unsigned i=0;i<4;++i) {
-            raster.index=i;raster.scale=1;
-            const float nativeWidth=measure(bounded);
-            const unsigned limit=std::min(8u,preferredPoints/Pokerogue3DS::kNativeFontPoints[i]);
-            unsigned multiple=limit;
-            while(multiple && nativeWidth*multiple>maxWidth) --multiple;
-            const unsigned points=Pokerogue3DS::kNativeFontPoints[i]*multiple;
-            if(multiple && points>=bestPoints) {
-                chosen={i,multiple,float(points)/32};bestPoints=points;
-            }
-        }
-        raster=chosen;
+    // Never shrink to the damaged 8/10-point rasters. Reduce only whole
+    // multiples of the legible source; bounded UTF-8 abbreviation handles overflow.
+    while(raster.scale>1 && measure(bounded)>maxWidth) {
+        --raster.scale;
+        raster.authoredSize=float(Pokerogue3DS::kNativeFontPoints[raster.index]*raster.scale)/32;
     }
     if(!Pokerogue3DS::abbreviateUtf8(text,display,sizeof(display),maxWidth,false,measure,width)) return raster.authoredSize;
     C2D_Text value;C2D_TextFontParse(&value,nativeFont(raster.index),m_textBuf,display);
