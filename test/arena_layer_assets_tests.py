@@ -2,6 +2,7 @@
 import hashlib
 import json
 import subprocess
+import struct
 from pathlib import Path
 from PIL import Image
 root=Path(__file__).resolve().parents[1]
@@ -16,8 +17,33 @@ for row in report["files"]:
     assert hashlib.sha256(texture.read_bytes()).hexdigest()==row["convertedSHA256"]
     if row["metadataPath"]:
         animated+=1
-        assert row["runtimeScale"]==1.25 and row["resampling"]=="UNCHANGED_ATLAS"
-        assert (root / "build/romfs" / row["metadataPath"].removeprefix("romfs:/")).is_file()
+        assert row["runtimeScale"]==1 and row["resampling"]=="NEAREST_FRAMES"
+        metadata=root / "build/romfs" / row["metadataPath"].removeprefix("romfs:/")
+        assert hashlib.sha256(metadata.read_bytes()).hexdigest()==row["metadataSHA256"]
+        raw=metadata.read_bytes()
+        assert struct.unpack_from("<8sIHHI",raw)==(b"P3ATLAS1",1,row["width"],row["height"],len(row["runtimeFrames"]))
+        assert len(raw)==84+32*len(row["runtimeFrames"])
+        for i,frame in enumerate(row["runtimeFrames"]):
+            b=frame["frame"];src=frame["sourceSize"];trim=frame["spriteSourceSize"]
+            assert struct.unpack_from("<12s10H",raw,84+32*i)==(frame["filename"].encode().ljust(12,b"\0"),b["x"],b["y"],b["w"],b["h"],src["w"],src["h"],trim["x"],trim["y"],0,0)
+        manifest=source.with_suffix(".json")
+        pinned_manifest=subprocess.check_output(["git","-C",str(root / "build/upstream/pokerogue-assets"),"show",report["revision"]+":"+row["sourcePath"].removesuffix(".png")+".json"])
+        assert manifest.read_bytes()==pinned_manifest
+        original_frames=sorted(json.loads(pinned_manifest)["textures"][0]["frames"],key=lambda frame:frame["filename"])
+        assert original_frames==row["sourceFrames"]
+        staged=root / "build/native-presentation/arena-layers" / source.name
+        assert hashlib.sha256(staged.read_bytes()).hexdigest()==row["stagedSHA256"]
+        with Image.open(source) as atlas,Image.open(staged) as packed:
+            for original,adapted in zip(original_frames,row["runtimeFrames"]):
+                assert original["filename"]==adapted["filename"]
+                b=original["frame"];src=original["sourceSize"];trim=original["spriteSourceSize"]
+                expected=Image.new("RGBA",(src["w"],src["h"]))
+                expected.paste(atlas.crop((b["x"],b["y"],b["x"]+b["w"],b["y"]+b["h"])),(trim["x"],trim["y"]))
+                expected=expected.resize((src["w"]*5//4,src["h"]*5//4),Image.Resampling.NEAREST)
+                b=adapted["frame"];trim=adapted["spriteSourceSize"];src=adapted["sourceSize"]
+                actual=Image.new("RGBA",(src["w"],src["h"]))
+                actual.paste(packed.crop((b["x"],b["y"],b["x"]+b["w"],b["y"]+b["h"])),(trim["x"],trim["y"]))
+                assert actual.tobytes()==expected.tobytes()
     else:
         static+=1
         assert row["runtimeScale"]==1 and row["resampling"]=="NEAREST"
@@ -27,4 +53,4 @@ for row in report["files"]:
             assert list(image.size)==row["sourceSize"]
             assert raster.size==(image.width*5//4,image.height*5//4)==(row["width"],row["height"])
             assert image.convert("RGBA").resize(raster.size,Image.Resampling.NEAREST).tobytes()==raster.convert("RGBA").tobytes()
-print(f"PASS {static} static nearest layers, {animated} preserved animated atlases; native rendering pending")
+print(f"PASS {static} static nearest layers, {animated} adapted animated atlases (all frames); native rendering pending")

@@ -54,7 +54,6 @@ public:
         renderer.drawImageDirect(C2D_SpriteSheetGetImage(m_sheet, 0),
             0.0f, 0.0f, definition->width, drawBases ? definition->height : 240.0f);
         if (!drawBases) return true;
-        const float scale=400.0f/320.0f; // Original layer geometry; adaptation pending.
         for (unsigned i=0;i<2;++i) {
             char key[96];
             const int length=std::snprintf(key,sizeof(key),"%s_%c",biomeKey,i ? 'b' : 'a');
@@ -84,7 +83,7 @@ public:
                 Renderer2D::AtlasFrame rectangle{frame->x,frame->y,frame->width,frame->height,
                     frame->sourceWidth,frame->sourceHeight,frame->trimX,frame->trimY};
                 renderer.drawAtlasFrame(image,rectangle,0,0,
-                    frame->sourceWidth*scale,frame->sourceHeight*scale);
+                    frame->sourceWidth,frame->sourceHeight);
             } else renderer.drawImageDirect(image,0,0,layer->width,layer->height);
         }
         return true;

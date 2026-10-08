@@ -806,3 +806,6 @@ La búsqueda del índice generado usa búsqueda binaria sobre identidades ordena
 
 - [x] Bases estáticas de arena: 72 rasters nearest adaptados offline a 1.25× y dibujados 1:1; fuentes pinned, pixels y hashes físicos PASS (`test/arena_layer_assets_tests.py`). Pipeline separado en `scripts/prepare_arena_layers.py`, reporte `docs/generated/ARENA_LAYER_REPORT.json`.
 - [ ] Dos atlas de capas animadas conservan fuente, metadata y escala 1.25×; falta adaptación por frame y validación GPU de todas las bases. Nearest offline conserva replicación no uniforme de pixels originales; no implica una escala entera de origen.
+
+- [x] Capas animadas de arena: 32/32 frames originales de `end_a` y `end_b` reconstruidos, adaptados nearest, recortados y reempaquetados; metadata P3ATLAS1 regenerada y provenance de frames originales conservada. Comparación pixel a pixel por frame y metadata binaria PASS. Todos los fondos y bases de arena ahora se dibujan a raster 1:1.
+- [ ] Comparación visual y ejecución GPU de los nuevos atlas pendiente; ritmo 12 FPS conservado, sin compilación ni Azahar. El remuestreo offline 1.25× conserva pixels de origen no uniformes.
