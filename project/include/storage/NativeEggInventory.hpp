@@ -1,5 +1,6 @@
 #pragma once
 #include "game/EggIncubation.hpp"
+#include "game/EggGachaPolicy.hpp"
 #include "storage/NativeStarterCandyProfile.hpp"
 #include <cstring>
 namespace Pokerogue3DS {
@@ -81,5 +82,47 @@ inline NativeSaveResult decodeNativeEggInventory(const char* bytes,size_t length
         StarterCandyProfileCodec::overlaps(bytes,length,&count,sizeof(count))) return NativeSaveResult::InvalidRecord;
     for(size_t i=0;i<entries;++i) output[i]=EggInventoryCodec::record(bytes+kEggInventoryHeaderBytes+i*kEggInventoryRecordBytes);
     count=entries;return NativeSaveResult::Ok;
+}
+// Read-only adapter from validated persistent records to Egg.rollSpecies filters.
+// Captures are exact species, never root/evolution unlocks. Unresolved legacy
+// eggs (species zero) remain in inventory but match no canonical species.
+inline EggPoolFilterResult filterNativeEggSpeciesPool(EggTier tier,const uint16_t* pool,size_t poolCount,
+    uint32_t unlockPity,VariantTier variant,const NativeStarterCandyRecord* profile,size_t profileCount,
+    uint16_t candyLimit,const EggIncubationRecord* eggs,size_t eggCount,
+    uint16_t* output,size_t capacity,size_t& written) {
+    if((profileCount && !profile) || (eggCount && !eggs)
+        || profileCount>PokerogueContent::kSpeciesCount
+        || eggCount>SIZE_MAX/sizeof(*eggs) || capacity>SIZE_MAX/sizeof(*output))
+        return EggPoolFilterResult::InvalidInput;
+    if(StarterCandyProfileCodec::overlaps(profile,profileCount*sizeof(*profile),output,capacity*sizeof(*output))
+        || StarterCandyProfileCodec::overlaps(eggs,eggCount*sizeof(*eggs),output,capacity*sizeof(*output))
+        || StarterCandyProfileCodec::overlaps(profile,profileCount*sizeof(*profile),&written,sizeof(written))
+        || StarterCandyProfileCodec::overlaps(eggs,eggCount*sizeof(*eggs),&written,sizeof(written)))
+        return EggPoolFilterResult::InvalidInput;
+    uint16_t previous=0;
+    for(size_t i=0;i<profileCount;++i) {
+        if(!StarterCandyProfileCodec::valid(profile[i],previous,candyLimit)) return EggPoolFilterResult::InvalidInput;
+        previous=profile[i].speciesDex;
+    }
+    for(size_t i=0;i<eggCount;++i) {
+        if(validateEggIncubationRecord(eggs[i])!=EggIncubationResult::Ok) return EggPoolFilterResult::InvalidInput;
+        for(size_t j=0;j<i;++j) if(eggs[j].id==eggs[i].id) return EggPoolFilterResult::InvalidInput;
+    }
+    const auto caught=[&](uint16_t dex) {
+        size_t first=0,last=profileCount;
+        while(first<last) {
+            const size_t middle=first+(last-first)/2;
+            if(profile[middle].speciesDex<dex) first=middle+1;else last=middle;
+        }
+        return first<profileCount && profile[first].speciesDex==dex && profile[first].caught;
+    };
+    const auto inEggs=[&](uint16_t dex) {
+        for(size_t i=0;i<eggCount;++i) if(eggs[i].speciesDex==dex) return true;
+        return false;
+    };
+    // Registry species are constructed with formIndex zero; profile preferences
+    // affect starter presentation, not the upstream general egg species pool.
+    const auto variants=[](uint16_t dex) {return eggSpeciesFormHasVariants(dex,0);};
+    return filterEggSpeciesPool(tier,pool,poolCount,unlockPity,variant,caught,inEggs,variants,output,capacity,written);
 }
 }

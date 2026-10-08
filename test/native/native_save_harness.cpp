@@ -213,6 +213,15 @@ extern "C" int runNativeSaveChecks() {
         if(!eggSpeciesFormHasVariants(1007,0) || !eggSpeciesFormHasVariants(1,0)
             || eggSpeciesFormHasVariants(65535,0) || eggSpeciesFormHasVariants(1007,65535)) return 1281;
         const uint16_t filterPool[]={1,4};uint16_t filtered[2]={777,888};size_t filteredCount=999;
+        NativeStarterCandyRecord eggProfile{};eggProfile.speciesDex=1;eggProfile.caught=true;
+        EggIncubationRecord pendingEgg{};pendingEgg.id=1;pendingEgg.speciesDex=4;
+        if(filterNativeEggSpeciesPool(EggTier::COMMON,filterPool,2,9,VariantTier::STANDARD,&eggProfile,1,UINT16_MAX,
+            nullptr,0,filtered,2,filteredCount)!=EggPoolFilterResult::Ok || filteredCount!=1 || filtered[0]!=4) return 1282;
+        if(filterNativeEggSpeciesPool(EggTier::COMMON,filterPool,2,9,VariantTier::STANDARD,&eggProfile,1,UINT16_MAX,
+            &pendingEgg,1,filtered,2,filteredCount)!=EggPoolFilterResult::Ok || filteredCount!=2 || filtered[0]!=1 || filtered[1]!=4) return 1283;
+        pendingEgg.speciesDex=65535;filteredCount=999;filtered[0]=777;
+        if(filterNativeEggSpeciesPool(EggTier::COMMON,filterPool,2,9,VariantTier::STANDARD,&eggProfile,1,UINT16_MAX,
+            &pendingEgg,1,filtered,2,filteredCount)!=EggPoolFilterResult::InvalidInput || filteredCount!=999 || filtered[0]!=777) return 1284;
         const auto caughtFirst=[](uint16_t dex){return dex==1;};
         const auto absent=[](uint16_t){return false;};
         const auto variantsFirst=[](uint16_t dex){return dex==1;};
