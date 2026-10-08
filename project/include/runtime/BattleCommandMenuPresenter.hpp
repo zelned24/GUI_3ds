@@ -29,7 +29,12 @@ enum class BattleMenuCommand {
 
 class BattleCommandMenuPresenter {
 public:
-    void clear() { m_icons.clear(); m_cursor.clear(); }
+    // Item sheets are released after the final frame fence in main.
+    void clear(Renderer2D* renderer=nullptr) {
+        m_icons.clear();
+        m_cursor.clear(renderer);
+        MoveMenuPresenter::clear(renderer);
+    }
     void reset() { m_page = BattleMenuPage::Root; m_selected = 0; m_dialogue.reset();m_advanceDialogue=false; }
     bool movesOpen() const { return m_page == BattleMenuPage::Moves; }
     PokeballType ballType() const { return static_cast<PokeballType>(kBallMenuDefinitions[m_selected].id); }

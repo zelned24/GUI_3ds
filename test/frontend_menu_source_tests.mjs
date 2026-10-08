@@ -253,3 +253,7 @@ assert(commandPresentation.includes('doubleBattle && (keys & KEY_L)'));
 assert(commandPresentation.includes('doubleBattle && (keys & KEY_R)'));
 assert(commandPresentation.includes('moveBackRectangle(doubleBattle).contains(x,y)'));
 assert(!commandPresentation.includes('y >= 210 && m_page'));
+
+assert(commandPresentation.includes("MoveMenuPresenter::clear(renderer)"));
+assert(main.includes("battleMenu.clear(&renderer)"));
+assert(main.indexOf("battleMenu.clear(&renderer)") < main.indexOf("renderer.fini()"));

@@ -17,8 +17,8 @@ public:
         static TitleMenuPresenter s_cursor;
         return s_cursor;
     }
-    static void clear() {
-        cursor().clear();
+    static void clear(Renderer2D* renderer=nullptr) {
+        cursor().clear(renderer);
     }
     static bool visible(const FirstRunRuntime& game) {
         return game.presentationStage() == NativeSaveStage::BattleActive &&

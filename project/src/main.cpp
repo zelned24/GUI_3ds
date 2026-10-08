@@ -976,7 +976,7 @@ int main() {
     player.exit();
     decisionMenu.clear(&renderer);
     rewardMenu.clear();
-    battleMenu.clear();
+    battleMenu.clear(&renderer);
     partyMenu.clear(&renderer);
     frontend.clear(&renderer);
     setup.clear(&renderer);
