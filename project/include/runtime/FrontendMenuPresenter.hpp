@@ -6,6 +6,7 @@
 #include "game/FirstRunRuntime.hpp"
 #include "runtime/PokemonIconPresenter.hpp"
 #include "runtime/StarterGridLayout.hpp"
+#include "content/StarterVariantIcons.hpp"
 #include <3ds.h>
 #include <cstdio>
 #include <cstring>
@@ -20,7 +21,10 @@ enum class FrontendCommand {None,Continue,NewClassic,Load,DeleteSave,NextWindowS
 class FrontendMenuPresenter {
 public:
     explicit FrontendMenuPresenter(bool hasSave):m_titleSelection{hasSave,0} {}
-    void clear(Renderer2D* renderer=nullptr) {m_title.clear(renderer);m_dexIcons.clear(renderer); m_confirmingDelete=false;m_confirmingImport=false;}
+    ~FrontendMenuPresenter() { clear(); }
+    void clear(Renderer2D* renderer=nullptr) {m_title.clear(renderer);m_dexIcons.clear(renderer);
+        if(m_dexVariants) {if(renderer) renderer->retireSpriteSheet(m_dexVariants);else C2D_SpriteSheetFree(m_dexVariants);}
+        m_dexVariants=nullptr;m_dexVariantsAttempted=false; m_confirmingDelete=false;m_confirmingImport=false;}
     void setHpBarSpeed(unsigned speed) {if(speed<=3) m_hpBarSpeed=speed;}
     void setTouchControls(bool enabled) { m_touchControls=enabled; }
     bool confirmingTouchDisable() const { return m_confirmingTouchDisable; }
@@ -245,7 +249,11 @@ public:
         renderer.drawTextFitted(text,24,186,0.4f,352,0xffffffff);
     }
     void draw(Renderer2D& renderer,const NativeRunSave* saved,const FirstRunRuntime* game=nullptr) {
-        if(m_page!=FrontendPage::Pokedex) m_dexIcons.clear(); // Caller began a synchronized frame.
+        if(m_page!=FrontendPage::Pokedex) {
+            m_dexIcons.clear(); // Caller began a synchronized frame.
+            if(m_dexVariants) C2D_SpriteSheetFree(m_dexVariants);
+            m_dexVariants=nullptr;m_dexVariantsAttempted=false;
+        }
         if(m_page==FrontendPage::Pokedex) {drawPokedex(renderer,game);return;}
         if(m_page==FrontendPage::ServiceInfo) {drawServiceInfo(renderer,game);return;}
         if(m_page==FrontendPage::Title) {m_title.draw(renderer,m_titleSelection,m_feedback);return;}
@@ -421,6 +429,7 @@ private:
                 if(start+cell==m_dexSelected) renderer.drawWindow(x,y,bounds.width,bounds.height);
                 const uint32_t tint=starterDiscoveryTint(starterDiscovery(record && record->caught,record ? record->observedFormAttr : 0));
                 if(!m_dexIcons.draw(renderer,species.dex,0,x+4,y+2,1.0f,1.0f,tint)) renderer.drawText("?",x+18,y+8,0.4f,0xffffffff);
+                if(record) drawDexVariants(renderer,nativeCaughtShinyVariants(*record),x+1,y+20);
             }
             char position[32];std::snprintf(position,sizeof(position),"%u / %u",m_dexSelected+1,total);
             renderer.drawTextFitted(position,110,190,0.3125f,100,0xffffffff);
@@ -428,6 +437,25 @@ private:
         renderer.drawTextFitted("L: anterior",kPokedexPageRects[0].x+2,kPokedexPageRects[0].y+2,0.3125f,kPokedexPageRects[0].width-4,0xffffffff);
         renderer.drawTextFitted("R: siguiente",kPokedexPageRects[1].x+2,kPokedexPageRects[1].y+2,0.3125f,kPokedexPageRects[1].width-4,0xffffffff);
         renderer.drawTextFitted("X: generación  Y: captura  B: volver",12,214,0.3125f,296,0xffffffff);
+    }
+    void drawDexVariants(Renderer2D& renderer,uint8_t mask,float x,float y) {
+        if(!mask) return;
+        if(!m_dexVariantsAttempted) {
+            m_dexVariantsAttempted=true;
+            m_dexVariants=C2D_SpriteSheetLoad(kStarterVariantIconPath);
+            if(m_dexVariants) {
+                const auto image=C2D_SpriteSheetGetImage(m_dexVariants,0);
+                if(image.tex) C3D_TexSetFilter(image.tex,GPU_NEAREST,GPU_NEAREST);
+            }
+        }
+        if(!m_dexVariants) return;
+        unsigned slot=0;
+        for(unsigned variant=0;variant<3;++variant) if(mask & (1u<<variant)) {
+            const auto& frame=kStarterVariantIconFrames[variant];
+            renderer.drawAtlasFrame(C2D_SpriteSheetGetImage(m_dexVariants,0),frame,x+slot*15,y,
+                frame.sourceWidth,frame.sourceHeight,1.0f,kStarterVariantIconTints[variant]);
+            ++slot;
+        }
     }
     unsigned rowY(unsigned index) const {return (m_page==FrontendPage::GlobalMenu ? 17 : 43)+index*rowHeight();}
     unsigned rowHeight() const {return m_page==FrontendPage::GlobalMenu ? 20 : 29;}
@@ -459,6 +487,8 @@ private:
         return group==0 ? general[row] : group==1 ? display[row] : group==2 ? audio[row] : "settings:touchControls";
     }
     PokemonIconPresenter m_dexIcons;
+    C2D_SpriteSheet m_dexVariants=nullptr;
+    bool m_dexVariantsAttempted=false;
     unsigned m_hpBarSpeed=0;
     unsigned m_dexSelected=0,m_dexGeneration=0,m_dexCapture=0;
     bool m_confirmingImport=false,m_importYes=false;

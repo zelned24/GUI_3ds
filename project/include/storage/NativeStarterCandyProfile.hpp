@@ -56,6 +56,14 @@ inline bool nativeStarterDefaultAppearance(const NativeStarterCandyRecord& recor
     return true;
 }
 
+// Pinned pokedex-ui-handler.ts: caught SHINY gates the recorded variant stars.
+// Legacy/invalid metadata never implies an unlocked appearance.
+inline uint8_t nativeCaughtShinyVariants(const NativeStarterCandyRecord& record) {
+    bool shiny=false;uint8_t variant=0;
+    if(!nativeStarterDefaultAppearance(record,shiny,variant) || !shiny) return 0;
+    return static_cast<uint8_t>((record.caughtAppearanceAttr >> 4) & 7u);
+}
+
 // GameData.initDexData/initStarterData pinned baseline. Only default starters
 // receive this known metadata; never infer attributes for other caught species.
 inline bool seedNativeFreshStarterDexMetadata(NativeStarterCandyRecord& record) {

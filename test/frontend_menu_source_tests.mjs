@@ -268,3 +268,6 @@ assert(main.includes('rewardMenu.clear(&renderer)'));
 
 assert(frontend.includes("pokedexCellAt(touchX,touchY)"));
 assert(frontend.includes("const auto bounds=pokedexCellRectangle(cell)"));
+
+assert(frontend.includes("nativeCaughtShinyVariants(*record)"));
+assert(frontend.includes("renderer->retireSpriteSheet(m_dexVariants)"));

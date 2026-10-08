@@ -4,6 +4,7 @@
 #include "runtime/PokemonIconPresenter.hpp"
 #include "runtime/ItemIconPresenter.hpp"
 #include <limits>
+#include "storage/NativeStarterCandyProfile.hpp"
 #include "runtime/TypePresentation.hpp"
 #include "runtime/BattleHudGeometry.hpp"
 #include "runtime/Utf8Abbreviation.hpp"
@@ -36,6 +37,19 @@ void Renderer2D::drawAtlasFrame(C2D_Image,const AtlasFrame& frame,float x,float 
     lastIconWidth=width;lastIconHeight=height;lastIconOpacity=opacity;
 }
 int main() {
+    NativeStarterCandyRecord shinyRecord;
+    assert(nativeCaughtShinyVariants(shinyRecord)==0);
+    shinyRecord.caught=true;
+    for(unsigned mask=1;mask<8;++mask) {
+        shinyRecord.caughtAppearanceAttr=uint8_t(2u | (mask<<4));
+        assert(nativeCaughtShinyVariants(shinyRecord)==mask);
+        shinyRecord.caught=false;assert(nativeCaughtShinyVariants(shinyRecord)==0);shinyRecord.caught=true;
+    }
+    for(unsigned attr:{0u,1u,2u,17u,33u,65u,128u,255u}) {
+        shinyRecord.caughtAppearanceAttr=uint8_t(attr);
+        assert(nativeCaughtShinyVariants(shinyRecord)==0);
+    }
+
     assert(pokemonIconIndexOrdered());
     for(const auto& row:kPokemonIcons) assert(findPokemonIcon(row.dex,row.formIndex)==&row);
     assert(findPokemonIcon(0,0)==nullptr);

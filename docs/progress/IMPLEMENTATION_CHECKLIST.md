@@ -866,3 +866,5 @@ La búsqueda del índice generado usa búsqueda binaria sobre identidades ordena
 - [ ] Pruebas nativas de objetos: casos escritos para coordenadas/tamaño/opacity inválidos sin I/O, error de carga y reintento, caché, trim upstream intacto, destino redondeado, alpha limitado y limpieza idempotente con retirement. Integrados en harness existente; sin compilar ni ejecutar por indicación del usuario.
 
 - [ ] Pokédex: filtros, celdas y navegación de páginas comparten geometría táctil/presentación; etiquetas L/R limitadas a sus botones. Barrido nativo completo 320×240 escrito para celdas sin solapes y entradas fuera de pantalla, pendiente de ejecución. Guards de conexión PASS; sin compilación ni Azahar.
+
+- [ ] Pokédex/shiny: estrellas originales a escala nativa para todas las variantes capturadas, derivadas de SHINY + DEFAULT_VARIANT/VARIANT_2/VARIANT_3 según upstream pinned `src/ui/handlers/pokedex-ui-handler.ts`. Perfil ausente/legacy/inválido no inventa desbloqueos; lifecycle mediante renderer. Casos nativos para siete máscaras escritos sin ejecutar; sprite Pokémon shiny específico aún pendiente en icon index.
