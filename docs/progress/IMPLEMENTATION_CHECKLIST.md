@@ -856,3 +856,5 @@ La búsqueda del índice generado usa búsqueda binaria sobre identidades ordena
 - [ ] Confirmación de movimientos: menú se cierra solo si `advanceBattleTurn()` acepta el comando, tanto A como táctil/Struggle. Rechazos (PP/políticas/runtime) conservan selección y feedback del motor; no altera reglas ni publica medio turno. Guard PASS; verificación nativa pendiente.
 
 - [ ] Navegación doble: D-Pad/circle pad recorren ambas columnas de movimientos; L/R cambian objetivo con ayuda visible. Salida táctil del command presenter usa región B compartida y ya no intercepta botones de objetivo y=210. Guard PASS; interacción nativa pendiente.
+
+- [ ] Controles de combate doble: harness de navegación cubre D-Pad en dos columnas, hombros L/R, toques de ambos objetivos sin cerrar, toque fuera de pantalla y B táctil; combate individual conserva navegación y hombros inactivos. Casos escritos en suite nativa existente, sin ejecutar.

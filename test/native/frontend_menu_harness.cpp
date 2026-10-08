@@ -1,5 +1,6 @@
 #include "runtime/FrontendMenuPresenter.hpp"
 #include "runtime/RewardMenuPresenter.hpp"
+#include "runtime/BattleCommandMenuPresenter.hpp"
 #include <cassert>
 #include "content/WindowTexture.hpp"
 #include "storage/NativePresentationSettings.hpp"
@@ -112,6 +113,25 @@ static void checkPreferences() {
     assert(NativePresentationSettingsStore::decode(nullptr,52,untouched)==NativeSaveResult::InvalidFormat);
 }
 int main() {
+    BattleCommandMenuPresenter combatControls;
+    assert(combatControls.input(KEY_A,true)==BattleMenuCommand::None && combatControls.movesOpen());
+    assert(combatControls.input(KEY_DRIGHT,true)==BattleMenuCommand::MoveColToggle);
+    assert(combatControls.input(KEY_DLEFT,true)==BattleMenuCommand::MoveColToggle);
+    assert(combatControls.input(KEY_DUP,true)==BattleMenuCommand::MoveRowToggle);
+    assert(combatControls.input(KEY_L,true)==BattleMenuCommand::TargetPrevious);
+    assert(combatControls.input(KEY_R,true)==BattleMenuCommand::TargetNext);
+    for(const auto& target:kTargetButtonRects) {
+        assert(combatControls.input(KEY_TOUCH,true,target.x+8,target.y+8)==BattleMenuCommand::None);
+        assert(combatControls.movesOpen());
+    }
+    assert(combatControls.input(KEY_TOUCH,true,319,239)==BattleMenuCommand::None && combatControls.movesOpen());
+    const auto back=moveBackRectangle(true);
+    assert(combatControls.input(KEY_TOUCH,true,back.x,back.y)==BattleMenuCommand::None && !combatControls.movesOpen());
+    combatControls.input(KEY_A,false);
+    assert(combatControls.input(KEY_L,false)==BattleMenuCommand::None);
+    assert(combatControls.input(KEY_R,false)==BattleMenuCommand::None);
+    assert(combatControls.input(KEY_DRIGHT,false)==BattleMenuCommand::MoveColToggle);
+    combatControls.input(KEY_B,false);assert(!combatControls.movesOpen());
     for(unsigned generation:{0u,1u,9u,999u}) for(unsigned start:{0u,24u,500u,2000u}) {
         const auto matches=[&](const auto& species) {return !generation || species.generation==generation;};
         const auto page=catalogSpeciesPage<24>(start,matches);
