@@ -43,7 +43,31 @@ public:
     }
     NativeSaveResult prepare(const EggIncubationRecord* eggs,size_t count,const uint32_t (&vouchers)[4],
         const EggPityState& pity,const char* hash,uint32_t committedGeneration,uint32_t& preparedGeneration) {
+        return prepareImpl(eggs,count,vouchers,pity,nullptr,hash,committedGeneration,preparedGeneration);
+    }
+    // Explicit unlock ledger authorizes v1-to-v2 migration; never infer legacy
+    // counters from rarity. Both APIs use the same committed-slot discipline.
+    NativeSaveResult prepare(const EggIncubationRecord* eggs,size_t count,const uint32_t (&vouchers)[4],
+        const EggPityState& pity,const uint32_t (&unlockPity)[4],const char* hash,
+        uint32_t committedGeneration,uint32_t& preparedGeneration) {
+        return prepareImpl(eggs,count,vouchers,pity,&unlockPity,hash,committedGeneration,preparedGeneration);
+    }
+private:
+    NativeSaveResult prepareImpl(const EggIncubationRecord* eggs,size_t count,const uint32_t (&vouchers)[4],
+        const EggPityState& pity,const uint32_t (*unlockPity)[4],const char* hash,
+        uint32_t committedGeneration,uint32_t& preparedGeneration) {
         if(!StarterCandyProfileCodec::validHash(hash) || count>SIZE_MAX/sizeof(*eggs) || (count && !eggs))
+            return NativeSaveResult::InvalidRecord;
+        if(unlockPity) {
+            for(const auto counter:*unlockPity) if(counter>kEggUnlockPityCap) return NativeSaveResult::InvalidRecord;
+            if(StarterCandyProfileCodec::overlaps(m_scratch,m_capacity,unlockPity,sizeof(*unlockPity))
+                || StarterCandyProfileCodec::overlaps(unlockPity,sizeof(*unlockPity),&preparedGeneration,sizeof(preparedGeneration)))
+                return NativeSaveResult::InvalidRecord;
+        }
+        if(StarterCandyProfileCodec::overlaps(eggs,count*sizeof(*eggs),&preparedGeneration,sizeof(preparedGeneration))
+            || StarterCandyProfileCodec::overlaps(vouchers,sizeof(vouchers),&preparedGeneration,sizeof(preparedGeneration))
+            || StarterCandyProfileCodec::overlaps(&pity,sizeof(pity),&preparedGeneration,sizeof(preparedGeneration))
+            || StarterCandyProfileCodec::overlaps(hash,65,&preparedGeneration,sizeof(preparedGeneration)))
             return NativeSaveResult::InvalidRecord;
         if(m_scratch && (StarterCandyProfileCodec::overlaps(m_scratch,m_capacity,eggs,count*sizeof(*eggs)) ||
             StarterCandyProfileCodec::overlaps(m_scratch,m_capacity,vouchers,sizeof(vouchers)) ||
@@ -55,7 +79,7 @@ public:
         if(status!=NativeSaveResult::Ok && status!=NativeSaveResult::NotFound) return status;
         // The legacy prepare API has no unlock ledger. Refuse a downgrade that
         // would silently erase counters from any valid newer journal slot.
-        for(unsigned i=0;i<2;++i) if(m_valid[i] && std::memcmp(slot(i),"P3EGGP02",8)==0)
+        for(unsigned i=0;i<2;++i) if(!unlockPity && m_valid[i] && std::memcmp(slot(i),"P3EGGP02",8)==0)
             return NativeSaveResult::UnsupportedVersion;
         unsigned target=0;uint32_t next=1;
         if(selected>=0) {
@@ -68,7 +92,9 @@ public:
             target=unsigned(committed==0?1:0); // Retry never replaces committed state.
         } else if(committedGeneration) return NativeSaveResult::NotFound;
         size_t written=0;
-        status=encodeNativeEggProgress(eggs,count,vouchers,pity,next,hash,slot(target),m_slotCapacity,written);
+        status=unlockPity
+            ? encodeNativeEggProgress(eggs,count,vouchers,pity,*unlockPity,next,hash,slot(target),m_slotCapacity,written)
+            : encodeNativeEggProgress(eggs,count,vouchers,pity,next,hash,slot(target),m_slotCapacity,written);
         if(status!=NativeSaveResult::Ok) return status;
         char expected[64];std::memcpy(expected,slot(target)+written-64,64);
         status=m_storage.writeSlot(target,slot(target),written);if(status!=NativeSaveResult::Ok) return status;

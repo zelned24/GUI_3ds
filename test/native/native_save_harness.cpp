@@ -308,6 +308,17 @@ extern "C" int runNativeSaveChecks() {
             uint32_t prepared=99;
             if(store.prepare(&egg,1,balances,rarity,PokerogueContent::kContentHash,18,prepared)
                 !=NativeSaveResult::UnsupportedVersion || prepared!=99) return 1288;
+            storage.interrupt=true;
+            if(store.prepare(&egg,1,balances,rarity,unlock,PokerogueContent::kContentHash,18,prepared)
+                !=NativeSaveResult::IoError || prepared!=99) return 1291;
+            storage.interrupt=false;
+            if(store.load(PokerogueContent::kContentHash,view,18)!=NativeSaveResult::Ok
+                || !view.unlockPityResolved || view.unlockPity[1]!=9) return 1292;
+            if(store.prepare(&egg,1,balances,rarity,unlock,PokerogueContent::kContentHash,18,prepared)
+                !=NativeSaveResult::Ok || prepared!=19) return 1293;
+            if(store.load(PokerogueContent::kContentHash,view,18)!=NativeSaveResult::Ok
+                || view.generation!=18 || store.load(PokerogueContent::kContentHash,view,19)!=NativeSaveResult::Ok
+                || view.generation!=19 || !view.unlockPityResolved || view.unlockPity[2]!=10) return 1294;
             unlock[0]=11;repeated=999;
             if(encodeNativeEggProgress(&egg,1,balances,rarity,unlock,18,PokerogueContent::kContentHash,
                 repeat,sizeof(repeat),repeated)!=NativeSaveResult::InvalidRecord || repeated!=999
@@ -316,6 +327,13 @@ extern "C" int runNativeSaveChecks() {
                 repeat,sizeof(repeat),repeated)!=NativeSaveResult::Ok
                 || inspectNativeEggProgress(repeat,repeated,PokerogueContent::kContentHash,view)!=NativeSaveResult::Ok
                 || view.unlockPityResolved || view.headerBytes!=112) return 1290;
+            MemoryStorage legacyStorage;std::memcpy(legacyStorage.slots[0],repeat,repeated);legacyStorage.sizes[0]=repeated;
+            NativeEggProgressStore migrate(legacyStorage,scratch,sizeof(scratch),228);unlock[0]=0;prepared=99;
+            if(migrate.prepare(&egg,1,balances,rarity,unlock,PokerogueContent::kContentHash,18,prepared)
+                !=NativeSaveResult::Ok || prepared!=19 || migrate.load(PokerogueContent::kContentHash,view,18)
+                !=NativeSaveResult::Ok || view.unlockPityResolved || migrate.load(PokerogueContent::kContentHash,view,19)
+                !=NativeSaveResult::Ok || !view.unlockPityResolved || view.unlockPity[1]!=9) return 1295;
+
         }
         {
             MemoryStorage eggStorage;char journalScratch[424]{};
