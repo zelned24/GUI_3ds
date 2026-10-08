@@ -1106,7 +1106,7 @@ La compilación ARM solicitada terminó correctamente; no prueba ejecución de h
 - [ ] Comprobar A/B y táctil en cada menú: corregidas zonas táctiles de confirmar/volver en movimientos, equipo y destinatarios de recompensas; pruebas nativas pendientes. Diferenciar comandos rechazados por reglas pendientes de fallos de navegación.
 - [ ] Conectar reproducción real de audio; no hay backend de audio en producción.
 - [ ] Verificar el fondo superior completo: 39 fondos convertidos a 400×240 conservando el horizonte y extendiendo la última fila original; comprobaciones físicas pasan. La alineación de la plataforma del jugador sigue pendiente.
-- [ ] Resolver iconos de objetos y nombres de recompensas parametrizadas, sin sustituirlos por imágenes inventadas.
+- [ ] Validar iconos de objetos en ejecución: índice de 528 PNG/T3X reales con revisión, rutas y hashes comprobados; generación repetida idéntica. Presenter usa caché limitada a ocho texturas individuales y filtro nearest. Nombres de recompensas parametrizadas y carga/dibujo nativos siguen pendientes.
 - [ ] Verificar recompensas con información solo arriba y controles abajo; eliminados el encabezado, las instrucciones duplicadas y el log de la pantalla inferior.
-- [ ] Completar la respuesta del enemigo tras captura fallida: la captura muestra `Enemy response could not resolve`.
+- [ ] Completar la respuesta del enemigo tras captura fallida: captura/cambio conservan ahora el diagnóstico específico de selección o ejecución en vez de reemplazarlo por `Enemy response could not resolve`. Corrección de la regla causante y prueba nativa siguen pendientes; no se declara resuelto el combate.
 - [ ] Comprobar variedad de encuentros con semillas nuevas y restauración; una partida determinista restaurada debe conservar su encuentro.

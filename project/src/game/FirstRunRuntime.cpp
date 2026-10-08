@@ -2651,16 +2651,28 @@ bool FirstRunRuntime::selectEnemyMoveSlot(const PokemonBattleState& enemyState,
 }
 
 bool FirstRunRuntime::executeEnemyResponse(uint8_t userIndex, PokerogueRngAdapter& rng) {
-    if (userIndex != 1 && userIndex != 2) return false;
+    if (userIndex != 1 && userIndex != 2) {
+        m_battleFeedback = "Enemy actor reference invalid";
+        return false;
+    }
     const auto& enemy = userIndex == 1 ? m_context.enemy : m_context.secondEnemy;
     if (!enemy.battleState.hp || !m_context.player.battleState.hp) return true;
     uint8_t slot = 0;
-    if (!selectEnemyMoveSlot(enemy.battleState, m_context.player.battleState, rng, slot)) return false;
+    // Preserve the resolver diagnostic rather than the preceding UI message.
+    m_battleFeedback.clear();
+    if (!selectEnemyMoveSlot(enemy.battleState, m_context.player.battleState, rng, slot)) {
+        if (m_battleFeedback.empty()) m_battleFeedback = "Enemy move selection unsupported";
+        return false;
+    }
     const auto* move = PokerogueContent::findMoveById(pokemonMovePpExhausted(enemy.battleState) ?
         PokerogueContent::kStruggleMoveId : enemy.battleState.moves[slot].moveId);
-    if (!move) return false;
-    return m_doubleBattle && sharedAreaActionMove(*move) ? executeActiveAreaMove(userIndex, slot, rng) :
-        executeActiveBattleMove(userIndex, 0, slot, rng);
+    if (!move) {m_battleFeedback = "Canonical enemy move reference invalid";return false;}
+    const bool resolved = m_doubleBattle && sharedAreaActionMove(*move)
+        ? executeActiveAreaMove(userIndex, slot, rng)
+        : executeActiveBattleMove(userIndex, 0, slot, rng);
+    if (!resolved && m_battleFeedback.empty())
+        m_battleFeedback = std::string("Enemy move execution unsupported: ") + std::to_string(move->id);
+    return resolved;
 }
 
 bool FirstRunRuntime::advanceBattleTurn() {
@@ -4347,7 +4359,7 @@ bool FirstRunRuntime::throwPokeballInPlace(PokeballType ball) {
         if (m_context.enemy.battleState.hp > 0) {
             PokerogueRngAdapter enemyActionRng = *rng;
             if (!executeEnemyResponse(1, enemyActionRng)) {
-                m_battleFeedback = "Enemy response could not resolve";
+                if (m_battleFeedback.empty()) m_battleFeedback = "Enemy response could not resolve";
                 buildScene();
                 return false;
             }
@@ -4356,7 +4368,7 @@ bool FirstRunRuntime::throwPokeballInPlace(PokeballType ball) {
         if (m_doubleBattle && m_context.secondEnemy.battleState.hp > 0) {
             PokerogueRngAdapter secondEnemyRng = *rng;
             if (!executeEnemyResponse(2, secondEnemyRng)) {
-                m_battleFeedback = "Second enemy response could not resolve";
+                if (m_battleFeedback.empty()) m_battleFeedback = "Second enemy response could not resolve";
                 buildScene();
                 return false;
             }
@@ -4559,7 +4571,7 @@ bool FirstRunRuntime::switchPlayerPokemonInPlace(uint8_t targetIndex) {
     if (m_trainerBattle) {
         PokerogueRngAdapter enemyActionRng = *rng;
         if (!executeEnemyResponse(1, enemyActionRng)) {
-                m_battleFeedback = "Enemy response could not resolve";
+                if (m_battleFeedback.empty()) m_battleFeedback = "Enemy response could not resolve";
                 buildScene();
                 return false;
             }
@@ -4568,7 +4580,7 @@ bool FirstRunRuntime::switchPlayerPokemonInPlace(uint8_t targetIndex) {
         if (m_context.enemy.battleState.hp > 0) {
             PokerogueRngAdapter enemyActionRng = *rng;
             if (!executeEnemyResponse(1, enemyActionRng)) {
-                m_battleFeedback = "Enemy response could not resolve";
+                if (m_battleFeedback.empty()) m_battleFeedback = "Enemy response could not resolve";
                 buildScene();
                 return false;
             }
@@ -4577,7 +4589,7 @@ bool FirstRunRuntime::switchPlayerPokemonInPlace(uint8_t targetIndex) {
         if (m_doubleBattle && m_context.secondEnemy.battleState.hp > 0) {
             PokerogueRngAdapter secondEnemyRng = *rng;
             if (!executeEnemyResponse(2, secondEnemyRng)) {
-                m_battleFeedback = "Second enemy response could not resolve";
+                if (m_battleFeedback.empty()) m_battleFeedback = "Second enemy response could not resolve";
                 buildScene();
                 return false;
             }

@@ -446,3 +446,8 @@ assert(main.includes('kRewardMoveConfirmRect.contains(touch.px,touch.py)'));
 assert(main.includes('kRewardMoveBackRect.contains(touch.px,touch.py)'));
 const combatInput=await fs.readFile(new URL('../project/include/runtime/BattleCommandMenuPresenter.hpp',import.meta.url),'utf8');
 assert(combatInput.includes('moveConfirmRectangle(doubleBattle).contains(x,y)'));
+
+// Capture/switch failures must retain the resolver reason rather than UI feedback.
+assert(progressRuntime.includes('if (m_battleFeedback.empty()) m_battleFeedback = "Enemy response could not resolve";'));
+assert(progressRuntime.includes('if (m_battleFeedback.empty()) m_battleFeedback = "Enemy move selection unsupported";'));
+assert(progressRuntime.includes('"Enemy move execution unsupported: "'));
