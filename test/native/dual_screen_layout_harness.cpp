@@ -36,6 +36,16 @@ int main() {
     assert(!expVisual.update("UNKNOWN",7,400,10001));
     assert(!expVisual.update("MEDIUM_FAST",7,300,10001));
     assert(expVisual.update("MEDIUM_FAST",5,150,10002,true) && expVisual.level()==5);
+    ExperienceBarTimeline correctedAfterGap;
+    assert(correctedAfterGap.update("MEDIUM_FAST",5,150,1));
+    assert(correctedAfterGap.update("MEDIUM_FAST",7,400,10));
+    assert(correctedAfterGap.update("MEDIUM_FAST",6,250,10000));
+    assert(correctedAfterGap.level()==6 && correctedAfterGap.total()==250);
+    assert(std::fabs(correctedAfterGap.fraction()-34.0/127)<1e-12);
+    assert(correctedAfterGap.update("MEDIUM_FAST",7,400,10001));
+    assert(correctedAfterGap.update("MEDIUM_FAST",7,350,20000));
+    assert(correctedAfterGap.level()==7 && correctedAfterGap.total()==350);
+    assert(std::fabs(correctedAfterGap.fraction()-7.0/169)<1e-12);
     ExperienceBarTimeline updatedDuringPause;
     assert(updatedDuringPause.update("MEDIUM_FAST",5,150,1));
     assert(updatedDuringPause.update("MEDIUM_FAST",7,400,10));

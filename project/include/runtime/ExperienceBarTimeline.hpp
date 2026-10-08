@@ -14,12 +14,16 @@ public:
     bool update(const char* growth,unsigned finalLevel,uint32_t total,uint64_t now,bool instant=false) {
         uint32_t low=0,high=0;
         if(!bounds(growth,finalLevel,low,high) || total<low || total>=high) return false;
-        if(!m_initialized || instant || finalLevel<m_level || total<m_displayed) {
+        const auto snapshot=[&]() {
             m_initialized=true;m_phase=Idle;m_level=finalLevel;m_finalLevel=finalLevel;
             m_target=total;m_displayed=total;m_ratio=double(total-low)/(high-low);
             return true;
-        }
+        };
+        if(!m_initialized || instant || finalLevel<m_level || total<m_displayed) return snapshot();
         if(!advance(growth,double(now))) return false;
+        // The old animation may advance past an incoming correction at a coarse
+        // timestamp. Recheck before subtracting the current level's EXP floor.
+        if(finalLevel<m_level || total<m_displayed) return snapshot();
         if(m_target!=total || m_finalLevel!=finalLevel) {
             m_target=total;m_finalLevel=finalLevel;
             // A full bar belongs to the preceding level during its pause.
@@ -40,6 +44,7 @@ private:
     }
     bool begin(const char* growth,double now) {
         if(!bounds(growth,m_level,m_low,m_high)) return false;
+        if(m_finalLevel<m_level || m_target<m_low) return false;
         m_levelUp=m_level<m_finalLevel;
         m_from=m_ratio;m_to=m_levelUp ? 1 : double(m_target-m_low)/(m_high-m_low);
         if(m_to<0 || m_to>1 || !expSegmentTiming(m_level,m_finalLevel,m_to,0,true,m_duration,m_pause)) return false;

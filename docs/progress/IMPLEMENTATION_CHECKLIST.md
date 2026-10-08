@@ -818,3 +818,5 @@ La búsqueda del índice generado usa búsqueda binaria sobre identidades ordena
 - [ ] Submenú de nueve opciones: harness de navegación actualizado para la ruta real de Gestionar datos (exportar/importar, cancelar confirmación), entrada táctil y retorno a la misma fila en todas las opciones. Corrige una expectativa obsoleta de ServiceInfo; pruebas C++ escritas sin ejecutar. Logros/huevos/gacha/comunidad/sesión siguen sin servicio funcional completo.
 
 - [ ] Composición de submenú: atenuación del título mantenida en ajustes anidados, información y gestión de datos; Pokédex usa vista superior propia. Selector `overlaysTitle()` conectado a main, casos nativos escritos sin ejecutar; revisión visual pendiente.
+
+- [ ] EXP tras intervalo largo: vuelve a validar el nivel/total recibido después de avanzar la animación anterior; correcciones decrecientes proyectan el valor real sin underflow del piso de EXP. Casos de nivel menor y menor total en el mismo nivel escritos sin ejecutar. No modifica gameplay ni afirma coordinación de fases completa.
