@@ -77,7 +77,13 @@
       }
     ]
   },
-  "generatedSHA256": "f25b1b6e1f1b66bd347d25cbd2c88d336b4d56a91a6e8c68bd532acab260a4de",
+  "gachaThresholds": {
+    "GACHA_DEFAULT_COMMON_EGG_THRESHOLD": 52,
+    "GACHA_DEFAULT_EPIC_EGG_THRESHOLD": 1,
+    "GACHA_DEFAULT_RARE_EGG_THRESHOLD": 8,
+    "GACHA_LEGENDARY_UP_THRESHOLD_OFFSET": 1
+  },
+  "generatedSHA256": "f2e762c306951315a29427be20284b210220538534d75b88ba81ba65ca441089",
   "incubationConstants": {
     "HATCH_WAVES_COMMON_EGG": 10,
     "HATCH_WAVES_EPIC_EGG": 50,
@@ -119,7 +125,7 @@
       "revision": "8555c08c823b856cbec4eb99ca84ea52a955836d",
       "schemaVersion": 1,
       "sourcePath": "src/data/balance/rates.ts",
-      "sourceSymbol": "HATCH_WAVES_*_EGG"
+      "sourceSymbol": "HATCH_WAVES_*_EGG/GACHA_*_THRESHOLD/GACHA_LEGENDARY_UP_THRESHOLD_OFFSET"
     },
     {
       "hash": "681ff197da300ce319e02bdc4f29e4f505acda387a7810c2b413f87742aeea8e",

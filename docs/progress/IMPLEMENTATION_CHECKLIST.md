@@ -1010,3 +1010,5 @@ La búsqueda del índice generado usa búsqueda binaria sobre identidades ordena
 - [ ] C++ speciesEggTier binary lookup now consumes a generated canonical species-tier index; full-index native checks written, not executed. Existing saves tied to the previous content hash require explicit content/save migration; no automatic compatibility claim.
 
 - [ ] Egg-tier candidate catalog preserves declared-vs-fallback state. speciesForEggTier matches the pinned registry by excluding species without a declared eggTier, even when their lookup fallback is COMMON. Full declared-field comparison passes in Python; native tier lists/order and failed-capacity checks written, unexecuted. This is the candidate catalog, not weighted rollSpecies or completed gacha.
+
+- [ ] Egg.rollEggTier decision ported to eggTierForRoll using imported pinned thresholds. Exhaustive 256-value distributions for all five source types added to native save gate, unexecuted. Function consumes an explicit supplied draw; does not substitute battle RNG for upstream randInt. Gacha RNG, pity, vouchers and complete transaction remain pending.

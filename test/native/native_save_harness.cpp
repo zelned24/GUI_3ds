@@ -133,6 +133,21 @@ extern "C" int runNativeSaveChecks() {
     // Egg component coverage belongs to the existing save gate. This component
     // has not yet been connected to the durable profile/run journals.
     {
+        for(unsigned source=0;source<=static_cast<unsigned>(EggSourceType::EVENT);++source) {
+            unsigned distribution[4]{};
+            for(unsigned roll=0;roll<256;++roll) {
+                EggTier tier=EggTier::COMMON;
+                if(eggTierForRoll(roll,static_cast<EggSourceType>(source),tier)!=EggIncubationResult::Ok) return 1220;
+                ++distribution[static_cast<unsigned>(tier)];
+            }
+            const bool legendary=source==static_cast<unsigned>(EggSourceType::GACHA_LEGENDARY);
+            if(distribution[0]!=(legendary?203u:204u) || distribution[1]!=44 || distribution[2]!=7 ||
+                distribution[3]!=(legendary?2u:1u)) return 1221;
+        }
+        EggTier invalidOutput=EggTier::EPIC;
+        if(eggTierForRoll(256,EggSourceType::GACHA_MOVE,invalidOutput)!=EggIncubationResult::InvalidInput ||
+            invalidOutput!=EggTier::EPIC || eggTierForRoll(0,static_cast<EggSourceType>(255),invalidOutput)
+            !=EggIncubationResult::InvalidInput || invalidOutput!=EggTier::EPIC) return 1222;
         EggTier resolvedTier=EggTier::COMMON;
         for(const auto& row:kSpeciesEggTiers)
             if(speciesEggTier(row.dex,resolvedTier)!=EggIncubationResult::Ok || resolvedTier!=row.tier) return 1214;

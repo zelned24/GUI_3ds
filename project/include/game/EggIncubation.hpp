@@ -32,6 +32,18 @@ inline EggIncubationResult validateEggIncubationRecord(const EggIncubationRecord
         return EggIncubationResult::MissingSpecies;
     return EggIncubationResult::Ok;
 }
+// Egg.rollEggTier decision only. The supplied draw must be from the caller's
+// resolved gacha RNG (upstream randInt, not battle randSeedInt). No draw is made
+// here; guarantees/pity and voucher transactions are separate pending policies.
+inline EggIncubationResult eggTierForRoll(unsigned roll,EggSourceType source,EggTier& output) {
+    if(roll>=256 || static_cast<unsigned>(source)>static_cast<unsigned>(EggSourceType::EVENT))
+        return EggIncubationResult::InvalidInput;
+    const unsigned offset=source==EggSourceType::GACHA_LEGENDARY ? kEggGachaThresholds.legendaryOffset : 0;
+    const auto tier=roll>=kEggGachaThresholds.common+offset ? EggTier::COMMON :
+        roll>=kEggGachaThresholds.rare+offset ? EggTier::RARE :
+        roll>=kEggGachaThresholds.epic+offset ? EggTier::EPIC : EggTier::LEGENDARY;
+    output=tier;return EggIncubationResult::Ok;
+}
 // SpeciesDataRegistry.getEggTier, using canonical declarations and its COMMON
 // fallback already normalized by the importer. Missing species remain an error.
 inline EggIncubationResult speciesEggTier(uint16_t dex,EggTier& tier) {
