@@ -292,3 +292,7 @@ assert(setupPresentation.includes("resolvePokemonIcon(actor.dex,actor.formId"));
 assert(main.includes("Pokerogue3DS::starterConfirmAt(touch.px,touch.py)"));
 assert(!main.includes("touch.py>=116 && touch.py<153"));
 assert(!frontend.includes("touchY >= 125 && touchY <= 155"));
+
+assert(frontend.includes("kLoadActionRects[0].contains(touchX,touchY)"));
+assert(frontend.includes("kLoadActionRects[1].contains(touchX,touchY)"));
+assert(!frontend.includes("touchY >= 115 && touchY <= 145"));

@@ -162,12 +162,14 @@ public:
                     m_confirmingDelete = true;
                     return FrontendCommand::None;
                 }
-                if((keys & KEY_TOUCH) && touchY >= 115 && touchY <= 145 && touchX >= 110 && touchX <= 200) {
+                if((keys & KEY_TOUCH) && kLoadActionRects[1].contains(touchX,touchY)) {
                     m_confirmingDelete = true;
                     return FrontendCommand::None;
                 }
             }
         }
+        if(m_page==FrontendPage::Load && (keys & KEY_TOUCH) && kLoadActionRects[0].contains(touchX,touchY))
+            return FrontendCommand::Load;
         if(m_page==FrontendPage::SettingsGroup && m_group==1 && m_selected==1) {
             if(keys & (KEY_DLEFT | KEY_CPAD_LEFT)) return FrontendCommand::PreviousWindowStyle;
             if(keys & (KEY_DRIGHT | KEY_CPAD_RIGHT)) return FrontendCommand::NextWindowStyle;
@@ -275,7 +277,8 @@ public:
         } else if(m_page==FrontendPage::Load) {
             if(!saved || !m_titleSelection.hasContinue) {
                 renderer.drawTextFitted(runtimeUiText("menu:noSaves"),28,58,0.36f,264,0xffffffff);
-                renderer.drawTextFitted("A: reintentar lectura   B: volver",28,104,0.32f,264,0xff80ffff);
+                renderer.drawWindow(kLoadActionRects[0].x,kLoadActionRects[0].y,kLoadActionRects[0].width,kLoadActionRects[0].height);
+                renderer.drawTextFitted("A: reintentar",kLoadActionRects[0].x+8,kLoadActionRects[0].y+9,0.34f,kLoadActionRects[0].width-16,0xffffffff);
             } else if(m_confirmingDelete) {
                 renderer.drawWindow(28,55,264,115);
                 renderer.drawTextFitted("¿Eliminar partida guardada?",44,70,0.40f,232,0xffff6060);
@@ -295,7 +298,9 @@ public:
                 std::snprintf(line,sizeof(line),"Lider: Nivel %u   PS %u   (Equipo: %u/6)",
                     unsigned(saved->playerLevel),unsigned(saved->playerHp),partyCount);
                 renderer.drawTextFitted(line,43,92,0.34f,249,0xffffffff);
-                renderer.drawTextFitted("A: cargar partida   X: eliminar   B: volver",26,126,0.34f,272,0xff80ffff);
+                for(const auto& button:kLoadActionRects) renderer.drawWindow(button.x,button.y,button.width,button.height);
+                renderer.drawTextFitted("A: cargar",kLoadActionRects[0].x+8,kLoadActionRects[0].y+9,0.34f,kLoadActionRects[0].width-16,0xffffffff);
+                renderer.drawTextFitted("X: eliminar",kLoadActionRects[1].x+8,kLoadActionRects[1].y+9,0.34f,kLoadActionRects[1].width-16,0xffff6060);
                 m_title.drawCursor(renderer,25,43,0.43f);
             }
         } else {
@@ -335,6 +340,7 @@ private:
         return false;
     }
     // Drawing and input share the same resistive-touch button bounds.
+    inline static constexpr TouchRect kLoadActionRects[]={{24,120,132,34},{164,120,132,34}};
     inline static constexpr TouchRect kConfirmationYesRect{32,125,120,30};
     inline static constexpr TouchRect kConfirmationNoRect{160,125,128,30};
     // These destinations expose missing integrations without inventing profile data

@@ -894,3 +894,5 @@ La búsqueda del índice generado usa búsqueda binaria sobre identidades ordena
 - [ ] Texto paginado: espacios/tabuladores finales no consumen otra fila ni provocan fallback abreviado al completar el máximo de líneas. Separadores antes de otra palabra y saltos explícitos conservan paginación. Casos de layout y renderer escritos en harness nativo, sin ejecutar; no se afirma corrección visual por lectura del código.
 
 - [ ] Confirmaciones: inicio de starters usa rectángulos compartidos 105×32 y ya no acepta toda la franja horizontal; borrar guardado dibuja dos botones coincidentes con input half-open compartido. Casos nativos de límites/huecos/fuera de pantalla y barrido completo de starters escritos sin ejecutar. Source guards PASS; compilación y visual pendientes.
+
+- [ ] Cargar partida: botones separados de cargar/reintentar y eliminar, con geometría común 132×34 y texto acotado. Touch de eliminar abre confirmación; perfil sin guardado no ofrece eliminación y sí reintento de lectura. Límites y huecos escritos en pruebas nativas sin ejecutar; guards PASS, prueba visual pendiente.

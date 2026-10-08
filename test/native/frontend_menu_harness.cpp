@@ -330,6 +330,24 @@ int main() {
         assert(submenu.page()==destination); // Reopens the same destination without moving.
     }
 
+    const auto loadTouch=[](unsigned x,unsigned y,FrontendCommand expected,bool deleteOpen,bool hasSave=true) {
+        FrontendMenuPresenter menu(hasSave);
+        // Continue adds one row before New Game and Load.
+        menu.input(KEY_DDOWN);if(hasSave) menu.input(KEY_DDOWN);menu.input(KEY_A);
+        assert(menu.page()==FrontendPage::Load);
+        assert(menu.input(KEY_TOUCH,x,y)==expected);
+        assert(menu.isConfirmingDelete()==deleteOpen);
+    };
+    loadTouch(24,120,FrontendCommand::Load,false);
+    loadTouch(155,153,FrontendCommand::Load,false);
+    loadTouch(164,120,FrontendCommand::None,true);
+    loadTouch(295,153,FrontendCommand::None,true);
+    for(unsigned x:{0u,23u,156u,163u,296u,319u,320u}) loadTouch(x,130,FrontendCommand::None,false);
+    loadTouch(24,119,FrontendCommand::None,false);
+    loadTouch(24,154,FrontendCommand::None,false);
+    loadTouch(24,120,FrontendCommand::Load,false,false);
+    loadTouch(164,120,FrontendCommand::None,false,false);
+
     const auto deleteTouch=[](unsigned x,unsigned y,FrontendCommand expected,bool remainsOpen) {
         FrontendMenuPresenter menu(true);
         menu.input(KEY_DDOWN);menu.input(KEY_DDOWN);menu.input(KEY_A);
