@@ -540,6 +540,29 @@ extern "C" int runNativeSaveChecks() {
         loadedProfiles=999;
         if(all.readBundleCandidate(eggTransport,PokerogueContent::kContentHash,exportWorkspace,sizeof(exportWorkspace),
             restored,&loadedProfile,1,loadedProfiles)!=NativeSaveResult::UnsupportedVersion || loadedProfiles!=999) return 1329;
+        loadedProfiles=999;loadedEggs=999;loadedState.generation=777;
+        eggTransport.bytes[20]^=1;
+        if(all.readBundleCandidate(eggTransport,PokerogueContent::kContentHash,exportWorkspace,sizeof(exportWorkspace),
+            restored,&loadedProfile,1,loadedProfiles,&loadedEgg,1,loadedEggs,loadedState)!=NativeSaveResult::ChecksumMismatch
+            || loadedProfiles!=999 || loadedEggs!=999 || loadedState.generation!=777) return 1330;
+        eggTransport.bytes[20]^=1;
+        if(all.readBundleCandidate(eggTransport,PokerogueContent::kContentHash,exportWorkspace,sizeof(exportWorkspace),
+            restored,&loadedProfile,1,loadedProfiles,&loadedEgg,1,loadedEggs,loadedState)!=NativeSaveResult::Ok
+            || loadedProfiles!=1 || loadedEggs!=1 || loadedEgg.speciesDex!=4 || loadedState.vouchers[0]!=2) return 1331;
+        const uint32_t foreignProfile=restored.starterProfileGeneration,foreignEgg=restored.eggProgressGeneration;
+        static MemoryStorage receivingRuns,receivingProfiles,receivingEggs;
+        NativeRunSaveStore importRuns(receivingRuns);
+        std::unique_ptr<char[]> importProfileScratch(new char[2*kStarterCandyProfileMaxBytes]{});
+        NativeStarterCandyStore importProfiles(receivingProfiles,importProfileScratch.get(),2*kStarterCandyProfileMaxBytes);
+        char importEggScratch[456]{};NativeEggProgressStore importEggs(receivingEggs,importEggScratch,sizeof(importEggScratch),228);
+        NativeProgressStore receiving(importRuns,importProfiles,importEggs);
+        if(receiving.commitImported(restored,&loadedProfile,loadedProfiles,&loadedEgg,loadedEggs,loadedState)!=NativeSaveResult::Ok
+            || restored.starterProfileGeneration!=1 || restored.eggProgressGeneration!=1 || loadedState.generation!=1
+            || restored.starterProfileGeneration==foreignProfile || restored.eggProgressGeneration==foreignEgg) return 1332;
+        NativeRunSave imported{};NativeEggProgressState importedState{};
+        if(receiving.load(PokerogueContent::kContentHash,imported,&loadedProfile,1,loadedProfiles,&loadedEgg,1,loadedEggs,importedState)
+            !=NativeSaveResult::Ok || loadedEggs!=1 || loadedEgg.speciesDex!=4 || importedState.vouchers[0]!=2
+            || importedState.unlockPity[1]!=9) return 1333;
         snapshot.eggProgressGeneration=0;
         if(all.commit(snapshot,&record,1,&egg,1,vouchers,pity,unlock)!=NativeSaveResult::InvalidRecord) return 1316;
     }

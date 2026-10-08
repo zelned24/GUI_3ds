@@ -261,10 +261,72 @@ public:
             PokerogueContent::kMaxStarterCandyCount, records, capacity, count, generation);
     }
 
+    // Staging for complete portable progress. No journal writes or live-state
+    // publication occur until every component has decoded into owned storage.
+    NativeSaveResult readBundleCandidate(NativeProgressBundleStorage& storage,const char* hash,
+        char* workspace,size_t workspaceSize,NativeRunSave& candidate,
+        NativeStarterCandyRecord* records,size_t capacity,size_t& count,
+        EggIncubationRecord* eggs,size_t eggCapacity,size_t& eggCount,NativeEggProgressState& eggState) {
+        if(!workspace || workspaceSize<kNativeProgressBundleMaxBytes) return NativeSaveResult::TooLarge;
+        if(capacity>PokerogueContent::kSpeciesCount || eggCapacity>SIZE_MAX/sizeof(*eggs)
+            || (capacity && !records) || (eggCapacity && !eggs)) return NativeSaveResult::InvalidRecord;
+        const void* ranges[]={&candidate,records,&count,eggs,&eggCount,&eggState};
+        const size_t sizes[]={sizeof(candidate),capacity*sizeof(*records),sizeof(count),
+            eggCapacity*sizeof(*eggs),sizeof(eggCount),sizeof(eggState)};
+        if(StarterCandyProfileCodec::overlaps(workspace,workspaceSize,hash,65)
+            || m_profiles.overlapsWorkspace(workspace,workspaceSize)
+            || (m_eggs && m_eggs->overlapsWorkspace(workspace,workspaceSize))) return NativeSaveResult::InvalidRecord;
+        for(unsigned i=0;i<6;++i) {
+            if(StarterCandyProfileCodec::overlaps(workspace,workspaceSize,ranges[i],sizes[i])
+                || StarterCandyProfileCodec::overlaps(hash,65,ranges[i],sizes[i])
+                || m_profiles.overlapsWorkspace(ranges[i],sizes[i])
+                || (m_eggs && m_eggs->overlapsWorkspace(ranges[i],sizes[i]))) return NativeSaveResult::InvalidRecord;
+            for(unsigned j=0;j<i;++j)
+                if(StarterCandyProfileCodec::overlaps(ranges[i],sizes[i],ranges[j],sizes[j])) return NativeSaveResult::InvalidRecord;
+        }
+        size_t read=0;auto status=storage.readBundle(workspace,kNativeProgressBundleMaxBytes,read);
+        if(status!=NativeSaveResult::Ok) return status;
+        std::unique_ptr<NativeRunSave> stagedRun(new(std::nothrow) NativeRunSave{});
+        if(!stagedRun) return NativeSaveResult::MemoryUnavailable;
+        NativeProgressBundleView view{};status=inspectNativeProgressBundle(workspace,read,hash,*stagedRun,view);
+        if(status!=NativeSaveResult::Ok) return status;
+        size_t profileCount=0;uint32_t generation=0;
+        status=inspectNativeStarterCandyProfile(view.profileBytes,view.profileSize,hash,
+            PokerogueContent::kMaxStarterCandyCount,profileCount,generation);
+        if(status!=NativeSaveResult::Ok) return status;
+        NativeEggProgressView eggView{};
+        if(view.eggSize) {
+            status=inspectNativeEggProgress(view.eggBytes,view.eggSize,hash,eggView);
+            if(status!=NativeSaveResult::Ok) return status;
+        }
+        if(profileCount>capacity || eggView.eggCount>eggCapacity) return NativeSaveResult::TooLarge;
+        std::unique_ptr<NativeStarterCandyRecord[]> stagedProfile;
+        std::unique_ptr<EggIncubationRecord[]> stagedEggs;
+        size_t decodedCount=0,decodedEggs=0;
+        if(profileCount) {
+            stagedProfile.reset(new(std::nothrow) NativeStarterCandyRecord[profileCount]{});
+            if(!stagedProfile) return NativeSaveResult::MemoryUnavailable;
+            status=decodeNativeStarterCandyProfile(view.profileBytes,view.profileSize,hash,PokerogueContent::kMaxStarterCandyCount,
+                stagedProfile.get(),profileCount,decodedCount,generation);
+            if(status!=NativeSaveResult::Ok) return status;
+        }
+        if(eggView.eggCount) {
+            stagedEggs.reset(new(std::nothrow) EggIncubationRecord[eggView.eggCount]{});
+            if(!stagedEggs) return NativeSaveResult::MemoryUnavailable;
+            status=decodeNativeEggInventory(eggView.inventoryBytes,eggView.inventorySize,stagedEggs.get(),eggView.eggCount,decodedEggs);
+            if(status!=NativeSaveResult::Ok) return status;
+        }
+        if(decodedCount) std::memcpy(records,stagedProfile.get(),decodedCount*sizeof(*records));
+        if(decodedEggs) std::memcpy(eggs,stagedEggs.get(),decodedEggs*sizeof(*eggs));
+        candidate=*stagedRun;eggState=static_cast<const NativeEggProgressState&>(eggView);
+        count=decodedCount;eggCount=decodedEggs;return NativeSaveResult::Ok;
+    }
+
     // Foreign journal generations are references inside the bundle, never local IDs.
     // Caller has already replayed the staged runtime. On error reload local authority.
     NativeSaveResult commitImported(NativeRunSave& candidate,
         const NativeStarterCandyRecord* records, size_t count) {
+        if(candidate.eggProgressGeneration) return NativeSaveResult::UnsupportedVersion;
         std::unique_ptr<NativeRunSave> localStorage(new (std::nothrow) NativeRunSave{});
         if (!localStorage) return NativeSaveResult::MemoryUnavailable;
         auto& local = *localStorage;
@@ -275,6 +337,28 @@ public:
         status = commit(candidate, records, count);
         if (status != NativeSaveResult::Ok) candidate.starterProfileGeneration = foreignGeneration;
         return status;
+    }
+
+    NativeSaveResult commitImported(NativeRunSave& candidate,const NativeStarterCandyRecord* records,size_t count,
+        const EggIncubationRecord* eggs,size_t eggCount,NativeEggProgressState& eggState) {
+        if(!candidate.eggProgressGeneration || !eggState.unlockPityResolved) return NativeSaveResult::UnsupportedVersion;
+        if(eggState.generation!=candidate.eggProgressGeneration || count>PokerogueContent::kSpeciesCount
+            || eggCount>SIZE_MAX/sizeof(*eggs) || (count && !records) || (eggCount && !eggs)) return NativeSaveResult::InvalidRecord;
+        if(StarterCandyProfileCodec::overlaps(&candidate,sizeof(candidate),&eggState,sizeof(eggState))
+            || StarterCandyProfileCodec::overlaps(&candidate,sizeof(candidate),records,count*sizeof(*records))
+            || StarterCandyProfileCodec::overlaps(&candidate,sizeof(candidate),eggs,eggCount*sizeof(*eggs))
+            || StarterCandyProfileCodec::overlaps(&eggState,sizeof(eggState),records,count*sizeof(*records))
+            || StarterCandyProfileCodec::overlaps(&eggState,sizeof(eggState),eggs,eggCount*sizeof(*eggs))) return NativeSaveResult::InvalidRecord;
+        std::unique_ptr<NativeRunSave> local(new(std::nothrow) NativeRunSave{});
+        if(!local) return NativeSaveResult::MemoryUnavailable;
+        auto status=m_runs.load(candidate.contentHash,*local);
+        if(status!=NativeSaveResult::Ok && status!=NativeSaveResult::NotFound) return status;
+        const uint32_t profileGeneration=status==NativeSaveResult::Ok ? local->starterProfileGeneration : 0;
+        const uint32_t eggGeneration=status==NativeSaveResult::Ok ? local->eggProgressGeneration : 0;
+        *local=candidate;local->starterProfileGeneration=profileGeneration;local->eggProgressGeneration=eggGeneration;
+        status=commit(*local,records,count,eggs,eggCount,eggState.vouchers,eggState.pity,eggState.unlockPity);
+        if(status!=NativeSaveResult::Ok) return status;
+        candidate=*local;eggState.generation=candidate.eggProgressGeneration;return NativeSaveResult::Ok;
     }
 
 private:
