@@ -40,9 +40,10 @@ Renderer2D::Renderer2D() {}
 Renderer2D::~Renderer2D() {}
 void Renderer2D::retireSpriteSheet(C2D_SpriteSheet sheet) {assert(sheet==&iconTexture);++iconRetired;}
 static Renderer2D::AtlasFrame lastIconFrame{};
+static uint32_t lastIconTint=0;
 static float lastIconX=0,lastIconY=0,lastIconWidth=0,lastIconHeight=0,lastIconOpacity=0;
-void Renderer2D::drawAtlasFrame(C2D_Image,const AtlasFrame& frame,float x,float y,float width,float height,float opacity,uint32_t) {
-    ++iconDraws;lastIconFrame=frame;lastIconX=x;lastIconY=y;
+void Renderer2D::drawAtlasFrame(C2D_Image,const AtlasFrame& frame,float x,float y,float width,float height,float opacity,uint32_t tint) {
+    ++iconDraws;lastIconTint=tint;lastIconFrame=frame;lastIconX=x;lastIconY=y;
     lastIconWidth=width;lastIconHeight=height;lastIconOpacity=opacity;
 }
 static unsigned badgeRects=0,badgeTexts=0;
@@ -389,8 +390,22 @@ int main() {
         const unsigned loaded=iconLoads;
         assert(nativeGrid.drawAppearance(renderer,batch[0],1.4f,2.7f));
         assert(lastIconFrame.x==0 && lastIconFrame.y==0 && lastIconWidth==40 && lastIconHeight==30);
+        assert(nativeGrid.drawAppearance(renderer,batch[0],0,0,1,1,0xff000000));
+        assert(lastIconTint==0xff000000 && lastIconWidth==40 && lastIconHeight==30);
         assert(nativeGrid.prepareAppearances(renderer,batch,1) && iconLoads==loaded);
         nativeGrid.clear(&renderer);
+    }
+
+    {
+        auto unknown=resolvePokemonIcon(1,nullptr,false,false,false,0);
+        resolvePokemonDiscoveryIcon(unknown);
+        assert(unknown.normalIconAllowed && unknown.appearance==findAppearanceIconIdentity(1,0,false,false,0));
+        auto known=resolvePokemonIcon(1,nullptr,true,false,true,0);
+        const auto* original=known.appearance;
+        resolvePokemonDiscoveryIcon(known);
+        assert(!known.normalIconAllowed && known.appearance==original);
+        auto invalid=resolvePokemonIcon(0,nullptr,false,false,false,0);
+        resolvePokemonDiscoveryIcon(invalid);assert(!invalid.appearance);
     }
 
 }

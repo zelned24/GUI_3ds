@@ -386,9 +386,12 @@ public:
             const bool known=game.starterUnlocked(*entry) && visual.actor.appearanceResolved;
             gridIcons[visibleCount]=resolvePokemonIcon(entry->dex,visual.formId,known,
                 visual.actor.gender==PokemonGender::Female,visual.actor.shiny,visual.actor.shinyVariant);
+            resolvePokemonDiscoveryIcon(gridIcons[visibleCount]);
             gridAppearances[visibleCount]=gridIcons[visibleCount].appearance;
         }
-        m_icons.retainNormalPages(renderer,gridIcons,visibleCount);
+        ResolvedPokemonIcon baselineIcons[kStarterGridPageSize]{};
+        for(unsigned i=0;i<visibleCount;++i) if(!gridIcons[i].appearance) baselineIcons[i]=gridIcons[i];
+        m_icons.retainNormalPages(renderer,baselineIcons,visibleCount);
         m_icons.prepareAppearances(renderer,gridAppearances,visibleCount);
         for(unsigned i=0;i<kStarterGridPageSize;++i) {
             const auto* species=at(game,start+i);if(!species) break;
@@ -407,7 +410,7 @@ public:
             // unseen black. Catalogue membership never implies observation.
             const uint32_t tint=starterDiscoveryTint(starterDiscovery(unlocked,progress ? progress->observedFormAttr : 0));
             bool drawn=false;
-            if(gridIcons[i].appearance) drawn=m_icons.drawAppearance(renderer,gridIcons[i].appearance,x+3,y+2);
+            if(gridIcons[i].appearance) drawn=m_icons.drawAppearance(renderer,gridIcons[i].appearance,x+3,y+2,1.0f,1,tint);
             else if(gridIcons[i].normalIconAllowed) drawn=m_icons.draw(renderer,species->dex,gridIcons[i].formIndex,x+3,y+2,1.0f,2.0f,tint);
             if(!drawn) renderer.drawText("?",x+16,y+8,0.4f,0xffffffff);
             bool shiny=false;uint8_t variant=0;

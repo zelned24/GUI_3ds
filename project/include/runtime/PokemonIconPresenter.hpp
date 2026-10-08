@@ -50,6 +50,12 @@ inline ResolvedPokemonIcon resolvePokemonIcon(uint16_t dex,const char* formId,bo
     if(appearanceKnown) result.appearance=findAppearanceIconIdentity(dex,result.formIndex,female,shiny,variant);
     return result;
 }
+// Unknown discovery uses a normal silhouette asset for presentation only.
+// It does not establish caught appearance metadata or unlock a shiny/gender.
+inline void resolvePokemonDiscoveryIcon(ResolvedPokemonIcon& icon) {
+    if(!icon.normalIconAllowed || icon.appearance || !icon.dex) return;
+    icon.appearance=findAppearanceIconIdentity(icon.dex,icon.formIndex,false,false,0);
+}
 // Lazy residency for indexed pages avoids synchronous reloads while browsing.
 // Current snapshot: eight 512x512 RGBA8 pages, up to 8 MiB of texture RAM.
 class PokemonIconPresenter {
@@ -119,7 +125,7 @@ public:
         m_appearancesReady=true;
         return loaded;
     }
-    bool drawAppearance(Renderer2D& renderer,const AppearanceIconIdentity* identity,float x,float y,float opacity=1.0f,unsigned scale=1) {
+    bool drawAppearance(Renderer2D& renderer,const AppearanceIconIdentity* identity,float x,float y,float opacity=1.0f,unsigned scale=1,uint32_t tint=0xffffffff) {
         if(scale<1 || scale>2) return false;
         if(!m_appearancesReady || !std::isfinite(x) || !std::isfinite(y) || !std::isfinite(opacity) || opacity<=0) return false;
         const auto* icon=appearanceIconPhysicalFrame(identity);if(!icon) return false;
@@ -129,7 +135,7 @@ public:
         if(m_compact && !m_nativeTiles && ((icon->x|icon->y|icon->width|icon->height)&1)) return false;
         Renderer2D::AtlasFrame frame{uint16_t(icon->x/divisor),uint16_t(icon->y/divisor),uint16_t(icon->width/divisor),uint16_t(icon->height/divisor),uint16_t(icon->width/divisor),uint16_t(icon->height/divisor),0,0};
         if(m_nativeTiles) {frame.x=0;frame.y=0;}
-        renderer.drawAtlasFrame(C2D_SpriteSheetGetImage(selected->sheet,0),frame,std::round(x),std::round(y),frame.width*scale,frame.height*scale,std::min(opacity,1.0f));
+        renderer.drawAtlasFrame(C2D_SpriteSheetGetImage(selected->sheet,0),frame,std::round(x),std::round(y),frame.width*scale,frame.height*scale,std::min(opacity,1.0f),tint);
         return true;
     }
     bool draw(Renderer2D& renderer,uint16_t dex,uint16_t formIndex,float x,float y,float opacity=1.0f,float scale=1.0f,uint32_t tint=0xffffffff) {
