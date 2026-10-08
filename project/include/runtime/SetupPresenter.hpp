@@ -457,13 +457,17 @@ public:
             const char* confirmation=runtimeUiText("starter-select-ui-handler:confirmStartTeam");
             if(!renderer.drawTextBox(confirmation,24,78,0.3125f,272,2,0xffffffff))
                 renderer.drawTextFitted(confirmation,24,80,0.3125f,272,0xffffffff);
-            renderer.drawRect(kStarterConfirmRects[0].x,kStarterConfirmRects[0].y,kStarterConfirmRects[0].width,kStarterConfirmRects[0].height,confirmYes ? 0xff70d8f0 : 0xff463747);
-            renderer.drawWindow(kStarterConfirmRects[0].x+2,kStarterConfirmRects[0].y+2,kStarterConfirmRects[0].width-4,kStarterConfirmRects[0].height-4);
-            renderer.drawText(runtimeUiText("menu:yes"),72,123,0.45f,0xffffffff);
-            renderer.drawRect(kStarterConfirmRects[1].x,kStarterConfirmRects[1].y,kStarterConfirmRects[1].width,kStarterConfirmRects[1].height,!confirmYes ? 0xff70d8f0 : 0xff463747);
-            renderer.drawWindow(kStarterConfirmRects[1].x+2,kStarterConfirmRects[1].y+2,kStarterConfirmRects[1].width-4,kStarterConfirmRects[1].height-4);
-            renderer.drawText(runtimeUiText("menu:no"),212,123,0.45f,0xffffffff);
-            m_prompt.drawCursor(renderer,confirmYes ? 55 : 195,123,0.45f);
+            const char* const confirmationKeys[]={"menu:yes","menu:no"};
+            for(unsigned i=0;i<2;++i) {
+                const auto& rect=kStarterConfirmRects[i];
+                const bool selected=confirmYes ? i==0 : i==1;
+                renderer.drawRect(rect.x,rect.y,rect.width,rect.height,
+                    selected ? 0xff70d8f0 : 0xff463747);
+                renderer.drawWindow(rect.x+2,rect.y+2,rect.width-4,rect.height-4);
+                const float labelSize=renderer.drawTextFitted(runtimeUiText(confirmationKeys[i]),
+                    rect.x+27,rect.y+7,0.45f,rect.width-35,0xffffffff);
+                if(selected) m_prompt.drawCursor(renderer,rect.x+10,rect.y+7,labelSize);
+            }
         } else if(formsOpen) {
             renderer.drawWindow(12,20,296,210);
             char formHeading[64];
@@ -506,7 +510,7 @@ public:
             const bool passive=rec ? rec->passiveUnlocked : false;
             const auto* price=candyPriceFor(dex);
 
-            renderer.drawText("Tienda de Caramelos",24,30,0.42f,0xffffffff);
+            renderer.drawTextFitted("Tienda de Caramelos",24,30,0.42f,272,0xffffffff);
             if(species) renderer.drawTextFitted(species->name,24,52,0.36f,143,0xff70d8f0);
             char cbuf[80];
             std::snprintf(cbuf,sizeof(cbuf),"Caramelos: %u",unsigned(candies));
@@ -515,8 +519,8 @@ public:
             // Option 0: Cost reduction
             renderer.drawRect(20,74,280,44,candyStoreSelection==0 ? 0xff70d8f0 : 0xff463747);
             renderer.drawWindow(22,76,276,40);
-            if(candyStoreSelection==0) m_prompt.drawCursor(renderer,28,80,0.35f);
-            renderer.drawText("Reduccion de coste",46,80,0.35f,0xffffffff);
+            const float costLabelSize=renderer.drawTextFitted("Reducción de coste",46,80,0.35f,246,0xffffffff);
+            if(candyStoreSelection==0) m_prompt.drawCursor(renderer,28,80,costLabelSize);
             if(red>=2) {
                 std::snprintf(cbuf,sizeof(cbuf),"Nivel: 2/2 (MAX)");
             } else if(!game.starterUnlocked(dex)) {
@@ -531,8 +535,8 @@ public:
             // Option 1: Passive ability
             renderer.drawRect(20,124,280,44,candyStoreSelection==1 ? 0xff70d8f0 : 0xff463747);
             renderer.drawWindow(22,126,276,40);
-            if(candyStoreSelection==1) m_prompt.drawCursor(renderer,28,130,0.35f);
-            renderer.drawTextFitted(runtimeUiText("starter-select-ui-handler:unlockPassive"),46,130,0.35f,246,0xffffffff);
+            const float passiveLabelSize=renderer.drawTextFitted(runtimeUiText("starter-select-ui-handler:unlockPassive"),46,130,0.35f,246,0xffffffff);
+            if(candyStoreSelection==1) m_prompt.drawCursor(renderer,28,130,passiveLabelSize);
             const char* passiveName=abilityUiName(game.setupStarterPassiveAbilityId(dex));
             renderer.drawTextFitted(passiveName ? passiveName : "Pasiva no disponible",46,144,0.3125f,246,0xffffffff);
             if(passive) {

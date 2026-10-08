@@ -349,3 +349,11 @@ assert(commandPresentation.includes('runtimeUiText(commandKeys[i])'));
 assert(commandPresentation.includes('textWidth=rect.width-38.0f'));
 assert(commandPresentation.includes('m_cursor.drawCursor(renderer,textX-10,textY,labelSize)'));
 assert(!commandPresentation.includes('} kCmds[]'));
+
+assert(setupPresentation.includes('const char* const confirmationKeys[]={"menu:yes","menu:no"}'));
+assert(setupPresentation.includes('const auto& rect=kStarterConfirmRects[i]'));
+assert(setupPresentation.includes('rect.x+27,rect.y+7,0.45f,rect.width-35'));
+assert(setupPresentation.includes('m_prompt.drawCursor(renderer,rect.x+10,rect.y+7,labelSize)'));
+assert(!setupPresentation.includes('drawText(runtimeUiText("menu:yes")'));
+assert(setupPresentation.includes('m_prompt.drawCursor(renderer,28,80,costLabelSize)'));
+assert(setupPresentation.includes('m_prompt.drawCursor(renderer,28,130,passiveLabelSize)'));
