@@ -606,7 +606,7 @@ for i, idx in enumerate(keyframe_indices):
     if w < crop_w or h < crop_h:
         raise ValueError("Pinned intro video is smaller than its configured crop")
     cropped = f[start_y:start_y+crop_h, start_x:start_x+crop_w]
-    resized = cv2.resize(cropped, (cell_w, cell_h), interpolation=cv2.INTER_AREA)
+    resized = cv2.resize(cropped, (cell_w, cell_h), interpolation=cv2.INTER_NEAREST)
     rgb = cv2.cvtColor(resized, cv2.COLOR_BGR2RGB)
     cell_img = Image.fromarray(rgb)
     col = i % 4
@@ -660,7 +660,7 @@ intro_header += """
     "runtimePath": "romfs:/presentation/cinematics/intro_sequence.t3x",
     "convertedSHA256": hashlib.sha256(intro_target.read_bytes()).hexdigest(),
     "sourceFrameRate": source_fps, "sourceFrameCount": len(video_frames),
-    "durationMs": intro_duration_ms, "adaptation": "16 sampled frames with source-over crossfade",
+    "durationMs": intro_duration_ms, "adaptation": "16 sampled source frames with nearest spatial sampling and timestamp-held playback",
     "keyframes": keyframe_data
 }, sort_keys=True, indent=2) + "\n", encoding="utf-8", newline="\n")
 print(f"Generated intro cinematic sequence with {len(keyframe_data)} keyframes")

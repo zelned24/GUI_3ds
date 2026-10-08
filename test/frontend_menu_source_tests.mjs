@@ -86,3 +86,9 @@ for(const field of ['x','y','width','height','rotation','opacity']) assert(image
 assert(imageDraw.includes('opacity=std::min(opacity,1.0f)'));
 
 assert(main.includes("if(game.setupStarterVisual(selected))"));
+
+const introPresenter=await fs.readFile(new URL('../project/src/runtime/IntroCinematicPresenter.cpp',import.meta.url),'utf8');
+const mediaPipeline=await fs.readFile(new URL('../scripts/prepare_native_presentation.py',import.meta.url),'utf8');
+assert(introPresenter.includes('Hold the sampled source frame'));
+assert(!introPresenter.includes('frameB'));
+assert(mediaPipeline.includes('interpolation=cv2.INTER_NEAREST'));

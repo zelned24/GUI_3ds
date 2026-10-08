@@ -110,27 +110,14 @@ bool IntroCinematicPresenter::draw(Renderer2D& renderer, uint64_t currentTimesta
         }
     }
 
-    const auto& kfA = kIntroKeyframes[curIdx];
-    const auto& kfB = kIntroKeyframes[curIdx + 1];
-
-    float segDuration = float(kfB.timeMs - kfA.timeMs);
-    float t = segDuration > 0.0f ? float(elapsedMs - kfA.timeMs) / segDuration : 0.0f;
-    if (t < 0.0f) t = 0.0f;
-    if (t > 1.0f) t = 1.0f;
-
-    Renderer2D::AtlasFrame frameA{
-        kfA.x, kfA.y, kfA.width, kfA.height,
-        kfA.width, kfA.height, 0, 0
+    const auto& keyframe = kIntroKeyframes[curIdx];
+    Renderer2D::AtlasFrame frame{
+        keyframe.x, keyframe.y, keyframe.width, keyframe.height,
+        keyframe.width, keyframe.height, 0, 0
     };
-    Renderer2D::AtlasFrame frameB{
-        kfB.x, kfB.y, kfB.width, kfB.height,
-        kfB.width, kfB.height, 0, 0
-    };
-
-    // Alpha crossfade between keyframe A and keyframe B for smooth 60fps playback
-    // Source-over: keep A opaque; fading both layers darkens the midpoint.
-    renderer.drawAtlasFrame(img, frameA, screenX, screenY, screenW, screenH, 1.0f);
-    renderer.drawAtlasFrame(img, frameB, screenX, screenY, screenW, screenH, t);
+    // Hold the sampled source frame until its successor's source timestamp.
+    // Blending unrelated frames invented ghosted pixels absent from the video.
+    renderer.drawAtlasFrame(img, frame, screenX, screenY, screenW, screenH, 1.0f);
 
     return true;
 }

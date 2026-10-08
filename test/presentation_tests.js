@@ -201,7 +201,7 @@ export function registerPresentationTests(test) {
     expect(save.includes('result != Pokerogue3DS::NativeSaveResult::Ok'),'Save failure must be checked');
     expect(save.indexOf('saves.load(')<save.indexOf('frontend.setHasSave(true)'),'Save metadata must be read back before success');
     expect(!trainer.includes('romfs:/presentation/trainers/%s'),'Trainer paths must come from the generated index');
-    expect(intro.includes('screenW, screenH, 1.0f);'),'Crossfade base must stay opaque');
+    expect(intro.includes('screenW, screenH, 1.0f);') && !intro.includes('frameB'),'Sampled intro frames must remain opaque without invented temporal blending');
   });
 
   test('Native touch layout: moves, targets, party sizes 0..6, all 76800 pixels and overflow',()=>{

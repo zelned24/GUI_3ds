@@ -105,4 +105,19 @@ const inventoryPath = path.join(build, 'converted-sprite-assets.json');
 const pendingPath=inventoryPath+'.pending';
 await fs.writeFile(pendingPath, manifestBytes);
 await fs.rename(pendingPath, inventoryPath);
+const appearances=output.assets.filter(asset=>asset.appearance);
+const conversionReport={schemaVersion:1,repository:output.repository,revision:output.revision,
+  inventoryPath:'build/upstream-assets/converted-sprite-assets.json',inventorySHA256:sha256(manifestBytes),
+  atlasCount:output.atlasCount,textureCount:output.textureCount,textureBytesOnDisk:output.textureBytes,
+  appearanceCount:appearances.length,
+  shinyAppearanceCount:appearances.filter(asset=>asset.appearance.shiny).length,
+  normalFemaleAppearanceCount:appearances.filter(asset=>!asset.appearance.shiny && asset.appearance.female).length,
+  validation:'EVERY_CONVERTED_TEXTURE_AND_METADATA_SHA256_CHECKED',
+  runtimeValidation:'NOT_EXECUTED',
+  memoryNote:'Catalog disk bytes do not represent resident RAM or VRAM.'};
+const reportDirectory=path.join(root,'docs/generated');
+await fs.mkdir(reportDirectory,{recursive:true});
+await fs.writeFile(path.join(reportDirectory,'POKEMON_APPEARANCE_CONVERSION_REPORT.json'),
+  JSON.stringify(conversionReport,null,2)+'\n');
+
 console.log(`${output.atlasCount} pinned atlases, ${output.textureCount} .t3x pages, ${output.textureBytes} texture bytes; inventory SHA-256 ${sha256(manifestBytes)}`);

@@ -119,6 +119,43 @@ def test_intro_cinematic():
     assert "kIntroTotalDurationMs" in intro_content
     assert "kIntroKeyframeCount" in intro_content
     print("  [OK] IntroCinematicData.hpp verified")
+    # Verify actual source pixels, not just a nonempty texture/header.
+    import cv2
+    import numpy as np
+    from PIL import Image
+    root=Path(ROOT)
+    provenance=json.loads((root/"build/native-presentation/intro-provenance.json").read_text(encoding="utf-8"))
+    assert provenance["repository"]=="https://github.com/pagefaultgames/pokerogue-assets"
+    assert provenance["revision"]=="056a1f408f26a3be4fef243f7462cb43608c7928"
+    assert provenance["sourcePath"]=="images/intro_dark.mp4"
+    source=root/"build/native-presentation/source"/provenance["sourcePath"]
+    assert hashlib.sha256(source.read_bytes()).hexdigest()==provenance["sourceSHA256"]
+    assert hashlib.sha256(Path(intro_t3x).read_bytes()).hexdigest()==provenance["convertedSHA256"]
+    capture=cv2.VideoCapture(str(source));assert capture.isOpened()
+    fps=capture.get(cv2.CAP_PROP_FPS);frames=[]
+    try:
+        while True:
+            ok,frame=capture.read()
+            if not ok: break
+            frames.append(frame)
+    finally:
+        capture.release()
+    assert len(frames)==provenance["sourceFrameCount"] and fps==provenance["sourceFrameRate"]
+    assert provenance["durationMs"]==round((len(frames)-1)*1000/fps)
+    indices=np.linspace(0,len(frames)-1,16,dtype=int)
+    assert len(provenance["keyframes"])==len(indices)
+    with Image.open(root/"build/native-presentation/intro_sheet.png") as source_sheet:
+        sheet=source_sheet.convert("RGB")
+    for index,record in zip(indices,provenance["keyframes"]):
+        frame=frames[index];height,width,_=frame.shape
+        left,top=(width-480)//2,(height-240)//2
+        assert width>=480 and height>=240
+        expected=cv2.cvtColor(cv2.resize(frame[top:top+240,left:left+480],
+            (record["width"],record["height"]),interpolation=cv2.INTER_NEAREST),cv2.COLOR_BGR2RGB)
+        actual=np.asarray(sheet.crop((record["x"],record["y"],record["x"]+record["width"],record["y"]+record["height"])))
+        assert np.array_equal(actual,expected), "Intro pixels differ from nearest sampled source"
+        assert record["timeMs"]==round(int(index)*1000/fps)
+    print("  [OK] Sixteen source frames: exact nearest pixels, timestamps and pinned/converted hashes")
     print("  [OK] ALL intro cinematic tests PASSED!\n")
 
 def test_windows():

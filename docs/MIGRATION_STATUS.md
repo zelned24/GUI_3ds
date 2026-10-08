@@ -2,8 +2,8 @@
 
 ## Avance local de presentación y apariencias (sin validación nativa)
 
-- Catálogo normal convertido: 3.112 atlas / 3.129 páginas `.t3x`; 210 identidades femeninas normales indexadas. Los 61.629.673 bytes corresponden al catálogo en disco, no a memoria residente.
-- Catálogo shiny: materialización terminada exit 0 con 7.570 apariencias, cero ausencias y cero registros no soportados; staging completo iniciado, conversión e índice ampliado pendientes. Bouffalant aplica el fallback negro de `rgbHexToRgba` upstream.
+- Catálogo completo convertido y físicamente verificado: 10.682 atlas / 10.746 páginas `.t3x`, 215.222.942 bytes en disco. Índice generado: 7.780 apariencias (7.570 shiny y 210 femeninas normales). Hash del inventario `3320f75cd8323e651fd7372bbe01894d4c9089f3d5b3e0e357e55e5ccdd3f02b`. Estos bytes no representan RAM/VRAM residente; carga y dibujo nativo pendientes.
+- Catálogo shiny: materialización terminada exit 0 con 7.570 apariencias, cero ausencias y cero registros no soportados; staging, conversión e índice ampliado físicamente verificados; ejecución runtime pendiente. Bouffalant aplica el fallback negro de `rgbHexToRgba` upstream.
 - Submenú global: conserva la opción de origen al regresar desde las nueve rutas; prueba nativa escrita, sin ejecutar.
 - Staging shiny: rechaza reportes parciales y exige coincidencia de identidad/hash PNG con el catálogo final y hash del reporte compatible con Python; ausencias pinned sin duplicados ni conflictos; guard JS PASS.
 - Estadísticas: cuatro métricas de descubrimiento calculadas en gameplay a partir del perfil real y catálogo canónico; etiquetas pinned importadas. Los contadores históricos siguen pendientes y no se presentan como cero. C++ escrito sin ejecución.
@@ -11,6 +11,7 @@
 - Habilidad de la ficha: consume slot por defecto desbloqueado del perfil y forma seleccionada mediante gameplay; comparación con actor escrita sin ejecución, selector manual pendiente.
 - Selector: indicadores shiny originales, perfiles vistos/capturados/desconocidos, filtros; títulos/submenús/Pokédex y exportación/importación con confirmación tienen rutas C++ escritas.
 - Sprites: caché de fallos por página del atlas y última identidad de entrenador para evitar I/O repetido cada frame; reset explícito permite recuperación. Guards estáticos PASS; comportamiento GPU no ejecutado.
+- Intro: nearest en la conversión espacial y reproducción por timestamps sin mezcla de fotogramas; los 16 samples se compararon píxel a píxel con el vídeo pinned. No es reproducción completa de sus 101 fotogramas; fidelidad y rendimiento nativos pendientes.
 - Fuentes: cobertura de glifos especiales, texto UTF-8 y rasters físicos comprobados. Cache de iconos y paginación reducen recorridos; rendimiento de hardware no medido.
 - Gates permitidos: guards JS de menú e índice de apariencias, metadata de género pinned; tests Python de cobertura de glifos, indicadores y paletas: PASS. `git diff --check`: PASS.
 - Compilación, suite nativa, Azahar y hardware aplazados por instrucción del usuario. No considerar completo Classic, todos los submenús ni la migración.

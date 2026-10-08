@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 1,
+  "repository": "https://github.com/pagefaultgames/pokerogue-assets",
+  "revision": "056a1f408f26a3be4fef243f7462cb43608c7928",
+  "inventoryPath": "build/upstream-assets/converted-sprite-assets.json",
+  "inventorySHA256": "3320f75cd8323e651fd7372bbe01894d4c9089f3d5b3e0e357e55e5ccdd3f02b",
+  "atlasCount": 10682,
+  "textureCount": 10746,
+  "textureBytesOnDisk": 215222942,
+  "appearanceCount": 7780,
+  "shinyAppearanceCount": 7570,
+  "normalFemaleAppearanceCount": 210,
+  "validation": "EVERY_CONVERTED_TEXTURE_AND_METADATA_SHA256_CHECKED",
+  "runtimeValidation": "NOT_EXECUTED",
+  "memoryNote": "Catalog disk bytes do not represent resident RAM or VRAM."
+}
