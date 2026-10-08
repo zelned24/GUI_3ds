@@ -928,7 +928,7 @@ int main() {
             arena.draw(renderer, game.run().biomeId, animationTimeMs);
             // Player Pokémon anchored on player grass platform
             pokemonSprites.drawAnchored(renderer, game.presentation().player, true,
-                105.0f, 185.0f, 0.0f, animationTimeMs);
+                Pokerogue3DS::kPlayerBattleAnchorX, Pokerogue3DS::kPlayerBattleAnchorY, 0.0f, animationTimeMs);
 
             if (game.doubleBattle()) {
                 pokemonSprites.drawAnchored(renderer, game.presentation().enemy, false,

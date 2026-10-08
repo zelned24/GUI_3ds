@@ -1120,3 +1120,5 @@ La compilación ARM solicitada terminó correctamente; no prueba ejecución de h
 - [ ] Verificar rendimiento y recuperación de los 17 atlas del HUD: fallos de carga se cachean hasta reiniciar el renderer; geometría inválida retira la textura tras la GPU y coordenadas no finitas se rechazan. Pruebas nativas actualizadas, sin ejecutar por la restricción de compilación.
 
 - [ ] Validar tarjetas de recompensas con nombres largos: área de nombre separada de la banda de rareza, líneas limitadas por métricas de la fuente nativa y cobertura de límites de las tres tarjetas. Implementado en presentación; ejecución nativa y captura de Azahar pendientes.
+
+- [ ] Validar alineación del jugador sobre plataformas: ancla horizontal adaptada del constructor upstream a x=133 (antes 105), conservando y=185 y escala de sprites. Verificadas coordenadas pinned y bounds físicos de hierba/ciudad; composición en Azahar pendiente.

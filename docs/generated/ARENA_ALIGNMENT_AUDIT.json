@@ -1,5 +1,5 @@
 {
-  "conclusion": "Horizontal anchor differs from scaled upstream constructor. Source player base is intentionally cropped; moving or stretching the base without checking sprite canvas and visual composition would be an unverified adaptation.",
+  "conclusion": "Player anchor now rounds the scaled pinned constructor to integer pixels (133,185). Grass/town platform alpha centers scale to x=130; previous x=105 was 25 pixels left. Sprite scale and intentionally cropped platform raster remain unchanged. Runtime composition pending.",
   "observations": {
     "arenaBaseOrigin": {
       "symbol": "ArenaBase.constructor",
@@ -12,7 +12,7 @@
     },
     "nativeFieldRasterScale": 1.25,
     "nativePlayerAnchor": {
-      "x": 105,
+      "x": 133,
       "y": 185
     },
     "nativePlayerBaseHeight": 165,
@@ -20,16 +20,32 @@
       "x": 0,
       "y": 0
     },
+    "playerBaseAlphaBounds": {
+      "grass_a": [
+        44,
+        117,
+        164,
+        132
+      ],
+      "town_a": [
+        44,
+        118,
+        164,
+        132
+      ]
+    },
     "playerPokemonConstructor": {
       "symbol": "PlayerPokemon.constructor",
       "x": 106,
       "y": 148
+    },
+    "previousNativePlayerAnchor": {
+      "x": 105,
+      "y": 185
     }
   },
   "pending": [
-    "Compare player sprite source canvas/trim and visible feet against platform pixels",
-    "Choose explicit integer 3DS anchor preserving requested sprite size",
-    "Validate composition in Azahar when compilation is authorized"
+    "Validate composition across species and biomes in Azahar when compilation is authorized"
   ],
   "repository": "https://github.com/pagefaultgames/pokerogue",
   "revision": "8555c08c823b856cbec4eb99ca84ea52a955836d",

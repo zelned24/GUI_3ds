@@ -1,6 +1,10 @@
 #pragma once
 #include <cmath>
 namespace Pokerogue3DS {
+// PlayerPokemon.constructor (pinned upstream): (106,148), adapted 5/4
+// and rounded to integer pixels. Sprite size is resolved independently.
+inline constexpr float kPlayerBattleAnchorX=133.0f;
+inline constexpr float kPlayerBattleAnchorY=185.0f;
 // Zero requests automatic placement; positive values are explicit presentation scale.
 inline constexpr float anchoredSpriteScale(float requested,float automatic) {
     return requested>0.0f ? requested : automatic;
