@@ -993,3 +993,5 @@ La búsqueda del índice generado usa búsqueda binaria sobre identidades ordena
 
 - [x] Egg identifiers and incubation constants imported from pinned upstream into EggContentPolicy.hpp: EggTier, EggSourceType, VoucherType; tier waves and Manaphy exception constant. SHA-256/source symbols preserved; Python provenance and repeated generation checks pass. Scope: data only.
 - [ ] Connect imported egg policy to persistent inventory, wave lapse, hatching and gacha commands. Species generation, unlocks and animations remain pending; no native validation or compilation performed.
+
+- [ ] EggIncubation.hpp: C++ batch validation and victory-boundary lapse preserve inventory order, reject duplicate IDs/invalid enums/species/overlapping buffers and insufficient output capacity before mutation. Ready eggs are retained for the future hatching consumer; legacy species zero is explicit. Native harness written, not compiled or executed. Not yet connected to victory, inventory persistence or UI.
