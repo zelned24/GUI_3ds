@@ -68,7 +68,7 @@ void TrainerPresenter::draw(Renderer2D& renderer, float x, float y, float width,
     if (m_metadata.frameCount() > 0) {
         if (m_animationStartMs == 0) m_animationStartMs = animationTimeMs;
         const uint64_t elapsedMs = animationTimeMs >= m_animationStartMs ? animationTimeMs - m_animationStartMs : 0;
-        const auto* frame = m_metadata.animationFrame(elapsedMs);
+        const auto* frame = m_metadata.animationFrame(elapsedMs,24,128);
         if (frame) {
             Renderer2D::AtlasFrame rect{
                 frame->x, frame->y, frame->width, frame->height,
@@ -92,7 +92,7 @@ void TrainerPresenter::drawAnchored(Renderer2D& renderer, float anchorX, float a
     if (m_metadata.frameCount() > 0) {
         if (m_animationStartMs == 0) m_animationStartMs = animationTimeMs;
         const uint64_t elapsedMs = animationTimeMs >= m_animationStartMs ? animationTimeMs - m_animationStartMs : 0;
-        const auto* frame = m_metadata.animationFrame(elapsedMs);
+        const auto* frame = m_metadata.animationFrame(elapsedMs,24,128);
         if (frame) {
             Renderer2D::AtlasFrame rect{
                 frame->x, frame->y, frame->width, frame->height,

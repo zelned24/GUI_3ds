@@ -764,3 +764,8 @@ La búsqueda del índice generado usa búsqueda binaria sobre identidades ordena
 
 - [x] Intro de entrenador: dibujado nativo `1×` en lugar de `1.5×`; validación de coordenadas, tamaño y escala antes de cargar el frame para dibujarlo. Comprobado por guards de fuente.
 - [ ] Validar visualmente sprites de entrenador altos y animados con el anclaje actual; no se afirma ausencia de recortes para todo el catálogo.
+
+- [ ] Animación de entrenadores: reloj a 24 FPS implementado conforme a `src/data/trainers/trainer-config.ts` pinned (`frameRate: 24`, `repeat: -1`). Pokémon conserva 10 FPS. Casos nativos de límites temporales y overflow escritos, sin ejecutar; falta revisar el límite upstream de nombres 0001–0128 y los nombres extendidos en atlas.
+
+- [x] Empaquetado de entrenadores: 303 metadatos comparados registro a registro con fuente pinned; 378 registros extendidos de tres atlas conservados íntegros en `docs/generated/TRAINER_PRESENTATION_REPORT.json`. Blue conserva 80 frames compatibles; ya no se truncan nombres inválidos. Conversión y verificador físico PASS, sin compilación del juego.
+- [ ] Parser C++ y reproducción visual de entrenadores: reloj 24 FPS y límite 0001–0128 implementados; pruebas nativas escritas sin ejecutar.

@@ -4,6 +4,7 @@ import io
 import json
 import subprocess
 import zipfile
+import re
 from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor
 import cv2
@@ -434,7 +435,13 @@ for png in trainer_pngs:
         manifest_data = json.loads(manifest.read_text(encoding="utf-8"))
         textures = manifest_data.get("textures", [])
         if textures and textures[0].get("frames"):
-            frames = textures[0]["frames"]
+            raw_frames = textures[0]["frames"]
+            # P3ATLAS1 has an 11-byte safe filename field. Preserve unsupported
+            # names and full records in provenance instead of truncating them.
+            frames = [f for f in raw_frames if re.fullmatch(r"[A-Za-z0-9_.-]{1,11}", f["filename"])]
+            row["extensions"] = {"unrepresentedFrames": [f for f in raw_frames if f not in frames]}
+            if not frames:
+                raise ValueError(f"No runtime-compatible trainer frames: {key}")
             binary = bytearray(struct.pack("<8sIHHI", b"P3ATLAS1", 1, width, height, len(frames)))
             binary.extend(hashlib.sha256(raw).digest())
             binary.extend(hashlib.sha256(manifest.read_bytes()).digest())
@@ -442,7 +449,7 @@ for png in trainer_pngs:
                 bounds = frame["frame"]
                 source_sz = frame["sourceSize"]
                 trim = frame["spriteSourceSize"]
-                fname = frame["filename"].encode("ascii")[:11]
+                fname = frame["filename"].encode("ascii")
                 binary.extend(struct.pack("<12s10H", fname, bounds["x"], bounds["y"], bounds["w"], bounds["h"],
                                           source_sz["w"], source_sz["h"], trim["x"], trim["y"], 0, 0))
             meta_path = trainers_romfs_dir / (key + ".p3a")
@@ -561,6 +568,23 @@ inline const TrainerSpriteDefinition* findPlayerBackSprite(bool female = false) 
     "repository": REPOSITORY, "revision": REVISION, "count": len(trainer_rows),
     "mappings": len(trainer_mappings), "files": trainer_rows
 }, sort_keys=True, indent=2) + "\n", encoding="utf-8", newline="\n")
+trainer_report = {
+    "schemaVersion": 1, "repository": REPOSITORY, "revision": REVISION,
+    "runtimeValidation": "NOT_EXECUTED",
+    "animationSource": {"repository": "https://github.com/pagefaultgames/pokerogue",
+        "revision": "8555c08c823b856cbec4eb99ca84ea52a955836d",
+        "sourcePath": "src/data/trainers/trainer-config.ts", "frameRate": 24,
+        "firstFrameNumber": 1, "lastFrameNumber": 128, "repeat": -1},
+    "textureCount": len(trainer_rows),
+    "metadataCount": sum(bool(r["metadataPath"]) for r in trainer_rows),
+    "unrepresentedFrames": [{"key": r["key"], "sourcePath": r["sourcePath"],
+        "sourceSHA256": r["sourceSHA256"],
+        "reason": "NAME_NOT_REPRESENTABLE_IN_P3ATLAS1_AND_NOT_REFERENCED_BY_PINNED_TRAINER_ANIMATION",
+        "records": r["extensions"]["unrepresentedFrames"]}
+        for r in trainer_rows if r.get("extensions",{}).get("unrepresentedFrames")]
+}
+(ROOT / "docs/generated/TRAINER_PRESENTATION_REPORT.json").write_text(
+    json.dumps(trainer_report,sort_keys=True,indent=2)+"\n",encoding="utf-8",newline="\n")
 print(f"Converted {len(trainer_rows)} trainer sprites and {len(trainer_mappings)} type mappings")
 
 # ==============================================================================

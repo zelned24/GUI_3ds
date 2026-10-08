@@ -23,7 +23,7 @@ public:
     void clear();
     const PokemonAtlasFrame* find(const char* filename) const;
     const PokemonAtlasFrame* frame(std::size_t index) const;
-    const PokemonAtlasFrame* animationFrame(uint64_t timeMs) const;
+    const PokemonAtlasFrame* animationFrame(uint64_t timeMs, unsigned frameRate = 10, unsigned lastFrameNumber = 400) const;
     std::size_t frameCount() const { return m_frames.size(); }
     uint16_t width() const { return m_width; }
     uint16_t height() const { return m_height; }

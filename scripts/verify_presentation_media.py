@@ -13,6 +13,7 @@ import sys
 import struct
 import json
 import hashlib
+import re
 from pathlib import Path
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
@@ -68,6 +69,33 @@ def test_trainers():
     assert len(p3a_files) >= 300, f"Expected >= 300 trainer .p3a files, found {len(p3a_files)}"
     print(f"  [OK] Trainer textures: {len(t3x_files)} .t3x files in {trainers_dir}")
     print(f"  [OK] Trainer metadata: {len(p3a_files)} .p3a files in {trainers_dir}")
+
+    # Check every record against pinned source; file presence is insufficient.
+    provenance = json.loads((Path(ROOT)/"build/native-presentation/trainer-provenance.json").read_text(encoding="utf-8"))
+    assert provenance["revision"] == "056a1f408f26a3be4fef243f7462cb43608c7928"
+    omitted_count = 0
+    for row in provenance["files"]:
+        if not row["metadataPath"]:
+            continue
+        source = Path(ROOT)/"build/native-presentation/source"/row["sourcePath"]
+        manifest = source.with_suffix(".json")
+        raw_frames = json.loads(manifest.read_text(encoding="utf-8"))["textures"][0]["frames"]
+        frames = [f for f in raw_frames if re.fullmatch(r"[A-Za-z0-9_.-]{1,11}",f["filename"])]
+        omitted = [f for f in raw_frames if f not in frames]
+        assert row["extensions"]["unrepresentedFrames"] == omitted
+        omitted_count += len(omitted)
+        binary = (Path(trainers_dir)/(row["key"]+".p3a")).read_bytes()
+        assert binary[:8] == b"P3ATLAS1"
+        assert binary[20:52] == hashlib.sha256(source.read_bytes()).digest()
+        assert binary[52:84] == hashlib.sha256(manifest.read_bytes()).digest()
+        assert len(binary) == 84+len(frames)*32
+        assert struct.unpack_from("<I",binary,16)[0] == len(frames) == row["frameCount"]
+        for index,frame in enumerate(frames):
+            record = struct.unpack_from("<12s10H",binary,84+index*32)
+            assert record[0].split(b"\0",1)[0].decode("ascii") == frame["filename"]
+            bounds,source_size,trim = frame["frame"],frame["sourceSize"],frame["spriteSourceSize"]
+            assert record[1:9] == (bounds["x"],bounds["y"],bounds["w"],bounds["h"],source_size["w"],source_size["h"],trim["x"],trim["y"])
+    print(f"  [OK] All trainer metadata records match source; {omitted_count} extended records preserved in provenance")
 
     # Verify .p3a binary header on sample files
     sample_p3a = os.path.join(trainers_dir, "blue.p3a")

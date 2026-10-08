@@ -136,3 +136,5 @@ assert(arena.includes("265.0f, 82.0f, 1.0f, animationTimeMs"));
 assert(!arena.includes("265.0f, 82.0f, 1.5f"));
 assert(trainerSource.includes("!std::isfinite(anchorX)"));
 assert(trainerSource.includes("!std::isfinite(scale) || scale<=0"));
+
+assert(trainerSource.includes("m_metadata.animationFrame(elapsedMs,24,128)"));

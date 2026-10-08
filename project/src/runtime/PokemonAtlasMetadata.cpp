@@ -106,9 +106,21 @@ const PokemonAtlasFrame* PokemonAtlasMetadata::frame(std::size_t index) const {
     return index < m_frames.size() ? &m_frames[index] : nullptr;
 }
 
-const PokemonAtlasFrame* PokemonAtlasMetadata::animationFrame(uint64_t timeMs) const {
+const PokemonAtlasFrame* PokemonAtlasMetadata::animationFrame(uint64_t timeMs, unsigned frameRate, unsigned lastFrameNumber) const {
+    if (!frameRate || frameRate>1000 || !lastFrameNumber || lastFrameNumber>400) return nullptr;
     if (m_animationIndices.empty()) return frame(0);
-    return frame(m_animationIndices[(timeMs / 100) % m_animationIndices.size()]);
+    // Reduce whole seconds before multiplying: timestamps may span uint64_t.
+    char lastName[12];
+    std::snprintf(lastName,sizeof(lastName),"%04u.png",lastFrameNumber);
+    uint64_t count=0;
+    for (const auto index:m_animationIndices) {
+        if (std::strcmp(m_frames[index].filename,lastName)>0) break;
+        ++count;
+    }
+    if (!count) return frame(0);
+    const uint64_t index=((timeMs/1000 % count)*frameRate +
+        (timeMs%1000)*frameRate/1000) % count;
+    return frame(m_animationIndices[index]);
 }
 
 } // namespace Pokerogue3DS

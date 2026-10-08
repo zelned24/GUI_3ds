@@ -32,6 +32,13 @@ int main(int argc,char** argv) {
     assert(std::strcmp(atlas.animationFrame(0)->filename,"0001.png")==0);
     assert(std::strcmp(atlas.animationFrame(100)->filename,"0002.png")==0);
     assert(std::strcmp(atlas.animationFrame(200)->filename,"0001.png")==0);
+    assert(std::strcmp(atlas.animationFrame(41,24)->filename,"0001.png")==0);
+    assert(std::strcmp(atlas.animationFrame(42,24)->filename,"0002.png")==0);
+    assert(std::strcmp(atlas.animationFrame(84,24)->filename,"0001.png")==0);
+    assert(!atlas.animationFrame(0,0) && !atlas.animationFrame(0,1001));
+    assert(atlas.animationFrame(UINT64_MAX,24));
+    assert(std::strcmp(atlas.animationFrame(42,24,1)->filename,"0001.png")==0);
+    assert(!atlas.animationFrame(0,24,0) && !atlas.animationFrame(0,24,401));
     assert(!atlas.frame(2) && !atlas.find("missing.png"));
     unsigned char badHash[32]={1};
     assert(!atlas.load(argv[1],badHash));
