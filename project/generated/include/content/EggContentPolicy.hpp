@@ -31,6 +31,8 @@ inline constexpr EggSpeciesCostBounds kEggSpeciesCostBounds[]={{1,3},{4,5},{6,7}
 inline constexpr uint16_t kExcludedEggSpecies[]={489,490,890};
 inline constexpr double kEggSpeciesCostBoost=1.5;
 inline constexpr unsigned kEggSpeciesWeightScale=100;
+inline constexpr uint32_t kEggUnlockPityThreshold=9;
+inline constexpr uint32_t kEggUnlockPityCap=10;
 struct EggGachaThresholds {uint16_t common,rare,epic,legendaryOffset;};
 inline constexpr EggGachaThresholds kEggGachaThresholds={52,8,1,1};
 struct EggPityThresholds {uint32_t rare,epic,legendary;};

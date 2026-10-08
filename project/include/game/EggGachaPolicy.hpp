@@ -83,6 +83,17 @@ inline EggSpeciesDrawResult eggSpeciesForWeightedRoll(EggTier tier,const uint16_
     return EggSpeciesDrawResult::InvalidRoll;
 }
 
+// Egg.rollSpecies: the locked subpool is used only when the guarantee is
+// active AND at least one species is both uncaught and absent from inventory.
+inline bool useLockedEggSpeciesPool(uint32_t unlockPity,size_t lockedCount) {
+    return unlockPity>=kEggUnlockPityThreshold && lockedCount>0;
+}
+// Applied after selecting a species. Separate from rarity pity; no live mutation.
+inline uint32_t eggUnlockPityAfterSelection(uint32_t previous,bool caught,bool alreadyInEggs) {
+    if(!caught && !alreadyInEggs) return 0;
+    return previous>=kEggUnlockPityCap ? kEggUnlockPityCap : previous+1;
+}
+
 // Egg.rollEggTier decision only. The supplied draw must be from the caller's
 // resolved gacha RNG (upstream randInt, not battle randSeedInt). No draw is made
 // here; guarantees/pity and voucher transactions are separate pending policies.

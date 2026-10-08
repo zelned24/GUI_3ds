@@ -18,6 +18,7 @@ class EggContentTests(unittest.TestCase):
         self.assertEqual(report['incubationConstants'],{'HATCH_WAVES_COMMON_EGG':10,'HATCH_WAVES_RARE_EGG':25,'HATCH_WAVES_EPIC_EGG':50,'HATCH_WAVES_LEGENDARY_EGG':100,'HATCH_WAVES_MANAPHY_EGG':50})
         self.assertEqual(report['runtimeIntegration'],'PENDING_INVENTORY_GACHA_HATCHING')
         self.assertEqual(report['gachaInventoryLimit'],99)
+        self.assertEqual(report['unlockPityPolicy'],{'threshold':9,'cap':10})
         self.assertEqual(report['speciesWeightPolicy'],{'costBoost':1.5,'scale':100})
         self.assertEqual([(r['tier'],r['minimum'],r['maximum']) for r in report['speciesCostBounds']],[('COMMON',1,3),('RARE',4,5),('EPIC',6,7),('LEGENDARY',8,9)])
         self.assertEqual([(r['symbol'],r['id']) for r in report['excludedSpecies']],[('PHIONE',489),('MANAPHY',490),('ETERNATUS',890)])

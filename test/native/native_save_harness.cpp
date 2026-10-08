@@ -193,6 +193,9 @@ extern "C" int runNativeSaveChecks() {
         generalCount=999;
         if(generalEggSpeciesPool(EggTier::COMMON,generalPool,0,generalCount)!=EggIncubationResult::OutputTooSmall || generalCount!=999) return 1268;
         if(!excludedFromGeneralEggPool(489) || !excludedFromGeneralEggPool(490) || !excludedFromGeneralEggPool(890) || excludedFromGeneralEggPool(1)) return 1269;
+        if(useLockedEggSpeciesPool(8,1) || !useLockedEggSpeciesPool(9,1) || useLockedEggSpeciesPool(10,0)) return 1270;
+        if(eggUnlockPityAfterSelection(9,false,false)!=0 || eggUnlockPityAfterSelection(9,true,false)!=10 ||
+            eggUnlockPityAfterSelection(9,false,true)!=10 || eggUnlockPityAfterSelection(UINT32_MAX,true,true)!=10) return 1271;
         const uint16_t eggPool[]={1,4};uint32_t poolWeight=999;uint16_t eggSpecies=777;
         if(eggSpeciesPoolWeight(EggTier::COMMON,eggPool,2,poolWeight)!=EggSpeciesDrawResult::Ok || poolWeight!=200) return 1259;
         if(eggSpeciesForWeightedRoll(EggTier::COMMON,eggPool,2,99,eggSpecies)!=EggSpeciesDrawResult::Ok || eggSpecies!=1) return 1260;
