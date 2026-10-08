@@ -20,6 +20,27 @@ public:
         }
         return inspectNativeEggProgress(slot(selected),m_sizes[selected],hash,output);
     }
+    NativeSaveResult inspectGeneration(const char* hash,uint32_t generation) {
+        if(!generation) return NativeSaveResult::InvalidRecord;
+        NativeEggProgressView view{};return load(hash,view,generation);
+    }
+    // Explicit generation only: never export a prepared/latest state by accident.
+    // Standalone egg transport; the global portable bundle must still include it.
+    NativeSaveResult exportGeneration(const char* hash,uint32_t generation) {
+        if(!generation) return NativeSaveResult::InvalidRecord;
+        NativeEggProgressView view{};auto status=load(hash,view,generation);
+        if(status!=NativeSaveResult::Ok) return status;
+        const unsigned selected=view.inventoryBytes==slot(0)+kEggProgressHeaderBytes ? 0 : 1;
+        const size_t size=m_sizes[selected];char expected[64];
+        std::memcpy(expected,slot(selected)+size-64,64);
+        status=m_storage.writeExport(slot(selected),size);if(status!=NativeSaveResult::Ok) return status;
+        size_t read=0;status=m_storage.readExport(slot(1-selected),m_slotCapacity,read);
+        if(status!=NativeSaveResult::Ok) return status;
+        if(read!=size || std::memcmp(expected,slot(1-selected)+read-64,64)) return NativeSaveResult::ChecksumMismatch;
+        NativeEggProgressView verified{};status=inspectNativeEggProgress(slot(1-selected),read,hash,verified);
+        if(status!=NativeSaveResult::Ok) return status;
+        return verified.generation==generation ? NativeSaveResult::Ok : NativeSaveResult::InvalidRecord;
+    }
     NativeSaveResult prepare(const EggIncubationRecord* eggs,size_t count,const uint32_t (&vouchers)[4],
         const EggPityState& pity,const char* hash,uint32_t committedGeneration,uint32_t& preparedGeneration) {
         if(!StarterCandyProfileCodec::validHash(hash) || count>SIZE_MAX/sizeof(*eggs) || (count && !eggs))
@@ -69,6 +90,13 @@ private:
             if(statuses[i]==NativeSaveResult::IoError || statuses[i]==NativeSaveResult::TooLarge) return statuses[i];
             if(statuses[i]!=NativeSaveResult::Ok) continue;
             if(m_sizes[i]>m_slotCapacity) return NativeSaveResult::TooLarge;
+            if(m_sizes[i]<kEggProgressOverhead+kEggInventoryHeaderBytes) {
+                statuses[i]=NativeSaveResult::InvalidFormat;continue;
+            }
+            char digest[65]{};IntegritySha256::hashHex(slot(i),m_sizes[i]-64,digest);
+            if(std::memcmp(digest,slot(i)+m_sizes[i]-64,64)) {
+                statuses[i]=NativeSaveResult::ChecksumMismatch;continue;
+            }
             NativeEggProgressView view{};statuses[i]=inspectNativeEggProgress(slot(i),m_sizes[i],hash,view);
             if(statuses[i]==NativeSaveResult::UnsupportedVersion || statuses[i]==NativeSaveResult::ContentMismatch)
                 return statuses[i];

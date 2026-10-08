@@ -242,6 +242,15 @@ extern "C" int runNativeSaveChecks() {
                 return 1245;
             if(eggStore.prepare(&egg,1,balances,ledger,PokerogueContent::kContentHash,0,prepared)!=NativeSaveResult::InvalidRecord)
                 return 1246;
+            if(eggStore.exportGeneration(PokerogueContent::kContentHash,1)!=NativeSaveResult::Ok ||
+                inspectNativeEggProgress(eggStorage.exported,eggStorage.exportSize,PokerogueContent::kContentHash,view)
+                !=NativeSaveResult::Ok || view.generation!=1 || view.vouchers[0]!=1) return 1247;
+            if(eggStore.exportGeneration(PokerogueContent::kContentHash,0)!=NativeSaveResult::InvalidRecord ||
+                eggStore.inspectGeneration(PokerogueContent::kContentHash,99)!=NativeSaveResult::NotFound) return 1248;
+            eggStorage.slots[1][0]^=1;
+            if(eggStore.load(PokerogueContent::kContentHash,view,1)!=NativeSaveResult::Ok || view.vouchers[0]!=1)
+                return 1249; // Invalid checksum in the other slot must allow committed recovery.
+
         }
         EggTier resolvedTier=EggTier::COMMON;
         for(const auto& row:kSpeciesEggTiers)
