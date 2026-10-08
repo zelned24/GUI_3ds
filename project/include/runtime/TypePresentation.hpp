@@ -2,6 +2,7 @@
 #include "gfx/renderer2d.hpp"
 #include <cstdint>
 #include <cstring>
+#include <cmath>
 #include "content/PokerogueRuntimeContent.hpp"
 
 namespace Pokerogue3DS {
@@ -79,12 +80,18 @@ inline const char* pokemonTypeUiName(const char* type) {
 }
 
 inline void drawTypeBadge(Renderer2D& renderer, const char* type, float x, float y, float w, float h, float textSize = 0.22f) {
-    if (!type || !*type) return;
+    if (!type || !*type || !std::isfinite(x) || !std::isfinite(y) ||
+        !std::isfinite(w) || !std::isfinite(h) || !std::isfinite(textSize) ||
+        w<=6 || h<=0 || textSize<=0) return;
+    x=std::round(x);y=std::round(y);w=std::floor(w);h=std::floor(h);
+    if(w<=6 || h<=0) return;
     if(renderer.drawTypeLabel(type,x,y,w,h)) return;
     const uint32_t col = pokemonTypeColor(type);
     renderer.drawRect(x, y, w, h, col);
     const char* label = pokemonTypeUiName(type);
-    renderer.drawTextFitted(label,x+3,y+1,textSize,w-6,C2D_Color32(255,255,255,255));
+    const float inkHeight=renderer.textInkHeight(textSize);
+    if(!std::isfinite(inkHeight) || inkHeight<=0 || inkHeight>h) return;
+    renderer.drawTextFitted(label,x+3,std::round(y+(h-inkHeight)*0.5f),textSize,w-6,C2D_Color32(255,255,255,255));
 }
 
 }

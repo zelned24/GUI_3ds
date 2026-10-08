@@ -910,3 +910,5 @@ La búsqueda del índice generado usa búsqueda binaria sobre identidades ordena
 - [ ] Entrenadores: carga rechaza hojas sin textura/región o dimensiones nulas, retira recursos mediante renderer y evita reintentos por frame hasta clear/cambio de identidad. Dibujo directo alinea posiciones a píxeles enteros; encuentro conserva escala 1×. Casos nativos de tres fallos físicos escritos sin ejecutar; revisión visual pendiente.
 
 - [ ] Iconos de objetos: únicamente rutas del índice físico generado; eliminado fallback ui/items-0.t3x que no produce el pipeline actual. Fallos de página recuerdan estado hasta clear/cambio de página; imágenes inválidas se retiran y devuelven false. Validación de rectángulo/trim antes de dibujar. Regresiones de recuperación explícita y hoja malformada escritas, sin ejecutar C++; sin compilación/Azahar.
+
+- [ ] Etiquetas de tipo: atlas conserva raster 32×14 nativo; fallback textual alinea rectángulo a píxeles y centra según altura real de tinta, rechaza valores no finitos y evita desbordar etiquetas bajas. Casos nativos de invalidación/centrado escritos sin ejecutar. Compilación y visual pendientes.

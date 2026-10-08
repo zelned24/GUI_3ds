@@ -44,7 +44,25 @@ void Renderer2D::drawAtlasFrame(C2D_Image,const AtlasFrame& frame,float x,float 
     ++iconDraws;lastIconFrame=frame;lastIconX=x;lastIconY=y;
     lastIconWidth=width;lastIconHeight=height;lastIconOpacity=opacity;
 }
+static unsigned badgeRects=0,badgeTexts=0;
+static float badgeX=0,badgeY=0;
+bool Renderer2D::drawTypeLabel(const char*,float,float,float,float) {return false;}
+void Renderer2D::drawRect(float x,float y,float,float,uint32_t,float) {++badgeRects;badgeX=x;badgeY=y;}
+float Renderer2D::textInkHeight(float) const {return 8;}
+float Renderer2D::drawTextFitted(const char*,float x,float y,float size,float,uint32_t,float*) {++badgeTexts;badgeX=x;badgeY=y;return size;}
 int main() {
+    {
+        Renderer2D badgeRenderer;
+        const float nan=std::numeric_limits<float>::quiet_NaN();
+        drawTypeBadge(badgeRenderer,"WATER",nan,0,32,14);
+        drawTypeBadge(badgeRenderer,"WATER",0,0,6,14);
+        drawTypeBadge(badgeRenderer,"WATER",0,0,32,14,nan);
+        assert(badgeRects==0 && badgeTexts==0);
+        drawTypeBadge(badgeRenderer,"WATER",10.25f,11.75f,32,14);
+        assert(badgeRects==1 && badgeTexts==1 && badgeX==13 && badgeY==15);
+        drawTypeBadge(badgeRenderer,"WATER",0,0,32,7);
+        assert(badgeRects==2 && badgeTexts==1); // Never overflow a too-short badge.
+    }
     uint64_t previousIdentity=0;
     for(const auto& identity:kAppearanceIconIdentities) {
         const auto key=appearanceIconIdentityKey(identity.dex,identity.formIndex,identity.appearance);
