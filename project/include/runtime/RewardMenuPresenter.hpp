@@ -6,6 +6,7 @@
 #include "runtime/PartyMenuPresenter.hpp"
 #include "runtime/TitleMenuPresenter.hpp"
 #include "content/ItemIconReferences.hpp"
+#include "content/EntityUiNames.hpp"
 #include <cstring>
 
 namespace Pokerogue3DS {
@@ -117,12 +118,12 @@ public:
                 renderer.drawWindow(bounds.x,bounds.y,bounds.width,bounds.height);
                 const auto& move=actor.battleState.moves[i];
                 const auto* definition=PokerogueContent::findMoveById(move.moveId);
-                renderer.drawTextFitted(definition ? definition->name : "Movimiento desconocido",44,bounds.y+6,0.34f,180,0xffffffff);
+                const float nameSize=renderer.drawTextFitted(definition ? moveUiName(definition->id) : "Movimiento desconocido",44,bounds.y+6,0.34f,180,0xffffffff);
                 char pp[32];std::snprintf(pp,sizeof(pp),"PP %u/%u",unsigned(move.pp),unsigned(move.maxPp));
                 renderer.drawTextFitted(pp,234,bounds.y+6,0.28f,58,0xff80ffff);
-                if(i==m_moveSelection.selected) m_cursor.drawCursor(renderer,27,bounds.y+6,0.34f);
+                if(i==m_moveSelection.selected) m_cursor.drawCursor(renderer,27,bounds.y+6,nameSize);
             }
-            renderer.drawText("A: aplicar   B: volver al equipo",16,204,0.30f,0xff80ffff);
+            renderer.drawTextFitted("A: aplicar   B: volver al equipo",16,204,0.30f,288,0xff80ffff);
             renderer.drawTextFitted(game.battleFeedback().c_str(),16,225,0.24f,288,0xffffffff);
             return;
         }
@@ -130,7 +131,7 @@ public:
             // Party selection mode for applying held items, berries, or potions
             m_partyPresenter.draw(renderer, game);
             renderer.drawWindow(8.0f, 6.0f, 304.0f, 26.0f);
-            renderer.drawText("Elige el Pokémon destinatario", 18.0f, 11.0f, 0.32f, 0xff70d8f0);
+            renderer.drawTextFitted("Elige el Pokémon destinatario", 18.0f, 11.0f, 0.32f, 284, 0xff70d8f0);
             renderer.drawWindow(8,204,304,30);
             renderer.drawTextFitted("A: elegir   B: volver a recompensas",18,207,0.30f,284,0xff80ffff);
             renderer.drawTextFitted(game.battleFeedback().c_str(),18,225,0.24f,284,0xffffffff);
@@ -138,7 +139,7 @@ public:
         }
 
         renderer.drawWindow(16,12,288,32);
-        renderer.drawText("Recompensas de combate",28,18,0.40f,0xffffffff);
+        renderer.drawTextFitted("Recompensas de combate",28,18,0.40f,264,0xffffffff);
         for(unsigned i=0;i<game.rewardChoiceCount() && i<3;++i) {
             const auto& bounds=kRewardChoiceRects[i];
             renderer.drawWindow(bounds.x,bounds.y,bounds.width,bounds.height);

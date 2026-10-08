@@ -232,3 +232,8 @@ assert(decisions.includes('PokemonIconPresenter m_icons{true}'));
 assert(!decisions.includes('34,y+5,1,0.5f'));
 
 assert(decisions.includes("textLinesWithinHeight(rect.height-18,renderer.textInkHeight(nameSize),renderer.textLineHeight(nameSize),3)"));
+
+const rewardPresentation=await fs.readFile(new URL('../project/include/runtime/RewardMenuPresenter.hpp',import.meta.url),'utf8');
+assert(rewardPresentation.includes('definition ? moveUiName(definition->id)'));
+assert(rewardPresentation.includes('27,bounds.y+6,nameSize'));
+assert(!rewardPresentation.includes('definition ? definition->name'));

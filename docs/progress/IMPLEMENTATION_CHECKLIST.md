@@ -844,3 +844,5 @@ La búsqueda del índice generado usa búsqueda binaria sobre identidades ordena
 - [ ] Decisiones de captura/aprendizaje: filas de reemplazo usan rectángulos compartidos de input, PS e instrucciones limitados al ancho, iconos compactos a 1:1 en lugar de escala 0.5×. Guards PASS; integración nativa y composición visual pendientes.
 
 - [ ] Aprendizaje de movimientos: máximo de líneas calculado con ink height y line feed reales dentro del botón, evitando tercera línea fuera de la región. Fallback fitted cuando no cabe; casos de límites/no finitos escritos sin ejecutar, guards PASS. Comparación visual pendiente.
+
+- [ ] Recompensas sobre movimientos: nombres localizados mediante ID canónico (antes nombre upstream sin locale), cursor usa raster real tras ajuste de ancho. Cabecera/destinatario/instrucciones limitados a su región. Guards PASS; prueba nativa y visual pendientes.
