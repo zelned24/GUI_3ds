@@ -27,10 +27,10 @@ public:
         if(m_grid) {if(renderer) renderer->retireSpriteSheet(m_grid);else C2D_SpriteSheetFree(m_grid);}
         if(m_variantIcons) {if(renderer) renderer->retireSpriteSheet(m_variantIcons);else C2D_SpriteSheetFree(m_variantIcons);}
         m_logo=nullptr;m_background=nullptr;m_grid=nullptr;m_variantIcons=nullptr;m_variantIconsAttempted=false;
-        m_backgroundAttempted=false;m_logoAttempted=false;m_gridAttempted=false;m_icons.clear(renderer);m_prompt.clear(renderer);
+        m_backgroundAttempted=false;m_logoAttempted=false;m_gridAttempted=false;m_icons.clear(renderer);m_teamIcons.clear(renderer);m_prompt.clear(renderer);
         m_introCinematic.clear(renderer);
     }
-    void releaseIconPages(Renderer2D& renderer) {m_icons.clear(&renderer);}
+    void releaseIconPages(Renderer2D& renderer) {m_icons.clear(&renderer);m_teamIcons.clear(&renderer);}
     bool confirmStart=false,confirmYes=true,formsOpen=false,candyStoreOpen=false;
     unsigned selectedForm=0,candyStoreSelection=0;
     const char* formFeedback=nullptr;
@@ -390,8 +390,23 @@ public:
             renderer.drawRect(8+slot*50,168,46,34,slot<context.playerPartyCount ? 0xff463747 : 0xff2e2630);
             renderer.drawWindow(9+slot*50,169,44,32);
         }
-        for(unsigned i=0;i<context.playerPartyCount && i<6;++i)
-            m_icons.draw(renderer,context.playerParty[i].dex,game.setupStarterFormIndex(context.playerParty[i].dex),10+i*50,169);
+        ResolvedPokemonIcon teamIcons[6]{};const AppearanceIconIdentity* appearances[6]{};
+        for(unsigned i=0;i<context.playerPartyCount && i<6;++i) {
+            const auto& actor=context.playerParty[i];
+            const bool known=actor.actorIdentityResolved && actor.actor.appearanceResolved && actor.actor.gender!=PokemonGender::Unspecified;
+            teamIcons[i]=resolvePokemonIcon(actor.dex,actor.formId,known,actor.actor.gender==PokemonGender::Female,actor.actor.shiny,actor.actor.shinyVariant);
+            appearances[i]=teamIcons[i].appearance;
+        }
+        m_teamIcons.prepareAppearances(renderer,appearances,std::min(unsigned(context.playerPartyCount),6u));
+        for(unsigned i=0;i<context.playerPartyCount && i<6;++i) {
+            const auto& actor=context.playerParty[i];
+            bool drawn=false;
+            if(teamIcons[i].appearance) drawn=m_teamIcons.drawAppearance(renderer,teamIcons[i].appearance,21+i*50,177);
+            else if(teamIcons[i].normalIconAllowed) drawn=m_teamIcons.draw(renderer,actor.dex,teamIcons[i].formIndex,21+i*50,177);
+            if(!drawn) renderer.drawTextFitted("?",21+i*50,177,0.3125f,20,0xffffffff);
+            if(actor.actorIdentityResolved && actor.actor.appearanceResolved && actor.actor.shiny && actor.actor.shinyVariant<=2)
+                drawVariantIndicator(renderer,actor.actor.shinyVariant,35+i*50,184);
+        }
         for(const auto& rect:kStarterFooterRects) renderer.drawWindow(rect.x,rect.y,rect.width,rect.height);
         renderer.drawText("Formas",18,210,0.3125f,0xffffffff);
         renderer.drawText("Jugar",130,210,0.3125f,0xffffffff);
@@ -505,6 +520,7 @@ private:
     bool m_backgroundAttempted=false,m_logoAttempted=false,m_gridAttempted=false;
     C2D_SpriteSheet m_logo=nullptr,m_background=nullptr,m_grid=nullptr;
     PokemonIconPresenter m_icons;
+    PokemonIconPresenter m_teamIcons{true};
     TitleMenuPresenter m_prompt;
     IntroCinematicPresenter m_introCinematic;
 };
