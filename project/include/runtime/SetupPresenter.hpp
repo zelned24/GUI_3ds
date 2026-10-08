@@ -95,6 +95,14 @@ public:
                 candyFeedback = "Registro no disponible.";
                 return true;
             }
+            if(!game.starterUnlocked(dex)) {
+                candyFeedback="Captura este Pokémon para usar caramelos.";
+                return true;
+            }
+            if(!candyPriceFor(dex)) {
+                candyFeedback="Precio canónico no disponible.";
+                return true;
+            }
             if(candyStoreSelection == 0) {
                 if(rec->costReduction >= 2) {
                     candyFeedback = "Reduccion al maximo (2/2).";
@@ -112,7 +120,10 @@ public:
                         candyFeedback = "Coste reducido con exito!";
                         return true;
                     }
-                    candyFeedback = "Error al guardar compra.";
+                    candyFeedback = pres==StarterCostPurchaseResult::MissingPrice ? "Precio canónico no disponible." :
+                        pres==StarterCostPurchaseResult::MaximumReduction ? "Reducción al máximo." :
+                        pres==StarterCostPurchaseResult::InsufficientCandy ? "Caramelos insuficientes." :
+                        pres==StarterCostPurchaseResult::InvalidRecord ? "Registro no válido para comprar." : "Error al guardar compra.";
                     return true;
                 }
             } else {
@@ -131,7 +142,10 @@ public:
                         candyFeedback = "Pasiva desbloqueada con exito!";
                         return true;
                     }
-                    candyFeedback = "Error al guardar compra.";
+                    candyFeedback = pres==StarterPassivePurchaseResult::MissingPrice ? "Precio canónico no disponible." :
+                        pres==StarterPassivePurchaseResult::AlreadyUnlocked ? "Pasiva ya desbloqueada." :
+                        pres==StarterPassivePurchaseResult::InsufficientCandy ? "Caramelos insuficientes." :
+                        pres==StarterPassivePurchaseResult::InvalidRecord ? "Registro no válido para comprar." : "Error al guardar compra.";
                     return true;
                 }
             }
@@ -437,6 +451,8 @@ public:
             renderer.drawText("Reduccion de coste",46,80,0.35f,0xffffffff);
             if(red>=2) {
                 std::snprintf(cbuf,sizeof(cbuf),"Nivel: 2/2 (MAX)");
+            } else if(!game.starterUnlocked(dex)) {
+                std::snprintf(cbuf,sizeof(cbuf),"Captura este Pokémon primero");
             } else if(price) {
                 std::snprintf(cbuf,sizeof(cbuf),"Nivel: %u/2  -  Coste: %u caramelos",unsigned(red),unsigned(price->costReduction[red]));
             } else {
@@ -451,6 +467,8 @@ public:
             renderer.drawText("Habilidad Pasiva",46,130,0.35f,0xffffffff);
             if(passive) {
                 std::snprintf(cbuf,sizeof(cbuf),"Estado: Desbloqueada");
+            } else if(!game.starterUnlocked(dex)) {
+                std::snprintf(cbuf,sizeof(cbuf),"Captura este Pokémon primero");
             } else if(price) {
                 std::snprintf(cbuf,sizeof(cbuf),"Coste: %u caramelos",unsigned(price->passive));
             } else {

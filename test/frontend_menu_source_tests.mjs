@@ -114,3 +114,8 @@ assert(!setup.includes('auto mutRecord = *rec'));
 assert(!setup.includes('applyNativeStarterCostReduction(mutRecord)'));
 assert(setup.includes('0x40000000u /* KEY_CPAD_UP'));
 assert(setup.includes('0x80000000u /* KEY_CPAD_DOWN'));
+
+assert(setup.includes('if(!candyPriceFor(dex))'));
+assert(setup.includes('Captura este Pokémon para usar caramelos.'));
+assert(setup.includes('pres==StarterCostPurchaseResult::MissingPrice'));
+assert(setup.includes('pres==StarterPassivePurchaseResult::MissingPrice'));

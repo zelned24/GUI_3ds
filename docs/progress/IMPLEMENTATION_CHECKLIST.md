@@ -750,3 +750,5 @@ La búsqueda del índice generado usa búsqueda binaria sobre identidades ordena
 - [ ] Foco/paginación de formas: abre en la preferencia real, muestra posición/total y permite L/R por páginas, sin IDs adicionales ni cambios al perfil al navegar. Resolver de desbloqueo reutiliza búsqueda por ID del perfil. Guard JS PASS; casos nativos de navegación reversible/vacío escritos y sin ejecutar; interacción visual pendiente.
 
 - [ ] Tienda de caramelos conectada: botón táctil desde Formas y X abren el modal; D-pad/Circle Pad y táctil eligen opciones, volver regresa a Formas. Compras pasan por gameplay y transacción `NativeProgressStore`; sin almacenamiento no hay éxito simulado ni cambios sobre copias descartadas. Entrada del modal aislada del bridge. Guard JS PASS; geometría nativa escrita, interacción/SD sin verificar.
+
+- [ ] Feedback de compras: distingue especie bloqueada, precio canónico ausente, saldo insuficiente, máximo/ya desbloqueado, perfil inválido y error de guardado. Resultados provienen de los enums gameplay; no inventa precios ni concede compras desde UI. Guard JS PASS; transacción/interacción nativa sin verificar.
