@@ -284,11 +284,17 @@ source_revision="8555c08c823b856cbec4eb99ca84ea52a955836d"
 ball_source=subprocess.check_output(["git","-C",str(ROOT / "build/upstream/pokerogue"),"show",source_revision+":src/data/pokeball.ts"])
 ball_enum_script="import {execFileSync} from 'node:child_process'; import {PokerogueEnumParser} from './tools/js/data/PokerogueEnumParser.js'; const raw=execFileSync('git',['-C','build/upstream/pokerogue','show','8555c08c823b856cbec4eb99ca84ea52a955836d:src/enums/pokeball.ts'],{encoding:'utf8'}); const c=new PokerogueEnumParser().parseEnum(raw,'PokeballType','src/enums/pokeball.ts'); console.log(JSON.stringify(Object.fromEntries(c.symbolToId)));"
 ball_ids=json.loads(subprocess.check_output(["node","--input-type=module","-e",ball_enum_script],cwd=ROOT))
+ball_enum_source=subprocess.check_output(["git","-C",str(ROOT / "build/upstream/pokerogue"),"show",source_revision+":src/enums/pokeball.ts"])
+ball_locale_revision="23aea1cb0da5a0b15b836f3c243791591cc42303"
+ball_locale_source=subprocess.check_output(["git","-C",str(ROOT / "build/upstream/pokerogue-locales"),"show",ball_locale_revision+":es-ES/pokeball.json"])
+ball_locale_data=json.loads(ball_locale_source)
 ball_code=ball_source.decode("utf-8")
 atlas_function=ball_code.split("export function getPokeballAtlasKey",1)[1].split("export function",1)[0]
 name_function=ball_code.split("export function getPokeballName",1)[1].split("export function",1)[0]
 ball_keys=dict(re.findall(r'case PokeballType\.(\w+):\s*return "([^"]+)"',atlas_function))
 ball_locales=dict(re.findall(r'case PokeballType\.(\w+):\s*ret = i18next.t\("([^"]+)"',name_function))
+multiplier_function=ball_code.split("export function getPokeballCatchMultiplier",1)[1].split("export function",1)[0]
+ball_multipliers=dict(re.findall(r"case PokeballType\.(\w+):\s*return (-?\d+(?:\.\d+)?);",multiplier_function))
 ball_rows=[]
 ball_unused=[]
 ball_scene_source=subprocess.check_output(["git","-C",str(ROOT / "build/upstream/pokerogue"),"show",source_revision+":src/battle-scene.ts"])
@@ -298,12 +304,15 @@ for symbol,value in sorted(ball_ids.items(),key=lambda row:row[1]):
         ball_unused.append({"id":value,"symbol":symbol,"status":"UPSTREAM_UNUSED_IN_POKEBALL_COUNTS"})
         continue
     key=ball_keys[symbol];locale_key=ball_locales[symbol]
+    if ui_strings[locale_key]!=ball_locale_data[locale_key.split(":",1)[1]]: raise ValueError("Ball locale differs from pinned namespace")
     if not any(frame["key"]==key for frame in item_frames): raise ValueError("Missing physical ball icon "+key)
-    ball_rows.append({"id":value,"symbol":symbol,"iconKey":key,"localeKey":locale_key,"label":ui_strings[locale_key]})
-ball_header="// Generated getPokeballAtlasKey/getPokeballName with parsed upstream enum IDs.\n#pragma once\n#include <cstdint>\nnamespace Pokerogue3DS {\nstruct BallMenuDefinition {uint8_t id;const char* iconKey;const char* label;};\ninline constexpr BallMenuDefinition kBallMenuDefinitions[]={\n"
-ball_header+="\n".join("    {"+str(row["id"])+","+json.dumps(row["iconKey"])+","+json.dumps(row["label"],ensure_ascii=False)+"}," for row in ball_rows)+"\n};\n}\n"
+    ball_rows.append({"id":value,"symbol":symbol,"iconKey":key,"localeKey":locale_key,"label":ui_strings[locale_key],"catchRateLabel":"100%" if float(ball_multipliers[symbol])<0 else ball_multipliers[symbol]+"x"})
+ball_header="// Generated getPokeballAtlasKey/getPokeballName with parsed upstream enum IDs.\n#pragma once\n#include <cstdint>\nnamespace Pokerogue3DS {\nstruct BallMenuDefinition {uint8_t id;const char* iconKey;const char* label;const char* catchRateLabel;};\ninline constexpr BallMenuDefinition kBallMenuDefinitions[]={\n"
+ball_header+="\n".join("    {"+str(row["id"])+","+json.dumps(row["iconKey"])+","+json.dumps(row["label"],ensure_ascii=False)+","+json.dumps(row["catchRateLabel"])+"}," for row in ball_rows)+"\n};\n}\n"
 (ROOT / "project/generated/include/content/BallMenuContent.hpp").write_text(ball_header,encoding="utf-8",newline="\n")
-(output.parent / "ball-menu-provenance.json").write_text(json.dumps({"repository":"https://github.com/pagefaultgames/pokerogue","revision":source_revision,"sourcePath":"src/data/pokeball.ts","sourceSymbol":["getPokeballAtlasKey","getPokeballName"],"sourceSHA256":hashlib.sha256(ball_source).hexdigest(),"schemaVersion":1,"entries":ball_rows,"upstreamUnused":ball_unused,"inventorySourcePath":"src/battle-scene.ts","inventorySourceSHA256":hashlib.sha256(ball_scene_source).hexdigest()},sort_keys=True,indent=2)+"\n",encoding="utf-8",newline="\n")
+(output.parent / "ball-menu-provenance.json").write_text(json.dumps({"repository":"https://github.com/pagefaultgames/pokerogue","revision":source_revision,"sourcePath":"src/data/pokeball.ts","sourceSymbol":["getPokeballAtlasKey","getPokeballName","getPokeballCatchMultiplier"],"sourceSHA256":hashlib.sha256(ball_source).hexdigest(),"enumSourcePath":"src/enums/pokeball.ts","enumSourceSHA256":hashlib.sha256(ball_enum_source).hexdigest(),"localeRepository":"https://github.com/pagefaultgames/pokerogue-locales","localeRevision":ball_locale_revision,"localeSourcePath":"es-ES/pokeball.json","localeSourceSHA256":hashlib.sha256(ball_locale_source).hexdigest(),"schemaVersion":1,"entries":ball_rows,"upstreamUnused":ball_unused,"inventorySourcePath":"src/battle-scene.ts","inventorySourceSHA256":hashlib.sha256(ball_scene_source).hexdigest()},sort_keys=True,indent=2)+"\n",encoding="utf-8",newline="\n")
+
+(ROOT / "docs/generated/BALL_MENU_IMPORT_REPORT.json").write_bytes((output.parent / "ball-menu-provenance.json").read_bytes())
 
 # Resolve only declarative literal iconImage arguments from inspected constructors.
 modifier_source=subprocess.check_output(["git","-C",str(ROOT / "build/upstream/pokerogue"),"show",source_revision+":src/modifier/modifier-type.ts"]).decode("utf-8")

@@ -1,0 +1,69 @@
+{
+  "entries": [
+    {
+      "catchRateLabel": "1x",
+      "iconKey": "pb",
+      "id": 0,
+      "label": "Pok\u00e9 Ball",
+      "localeKey": "pokeball:pokeBall",
+      "symbol": "POKEBALL"
+    },
+    {
+      "catchRateLabel": "1.5x",
+      "iconKey": "gb",
+      "id": 1,
+      "label": "Super Ball",
+      "localeKey": "pokeball:greatBall",
+      "symbol": "GREAT_BALL"
+    },
+    {
+      "catchRateLabel": "2x",
+      "iconKey": "ub",
+      "id": 2,
+      "label": "Ultra Ball",
+      "localeKey": "pokeball:ultraBall",
+      "symbol": "ULTRA_BALL"
+    },
+    {
+      "catchRateLabel": "3x",
+      "iconKey": "rb",
+      "id": 3,
+      "label": "Rogue Ball",
+      "localeKey": "pokeball:rogueBall",
+      "symbol": "ROGUE_BALL"
+    },
+    {
+      "catchRateLabel": "100%",
+      "iconKey": "mb",
+      "id": 4,
+      "label": "Master Ball",
+      "localeKey": "pokeball:masterBall",
+      "symbol": "MASTER_BALL"
+    }
+  ],
+  "enumSourcePath": "src/enums/pokeball.ts",
+  "enumSourceSHA256": "e0f9eed1f2ff80a1d0b994981c6c7e0e01de6ea6f9fa0bfc86fe8ded9ab38274",
+  "inventorySourcePath": "src/battle-scene.ts",
+  "inventorySourceSHA256": "8337c8897f6e3847d71c5be715688ed08644009a3d3d63b262eeb8cc637104e5",
+  "localeRepository": "https://github.com/pagefaultgames/pokerogue-locales",
+  "localeRevision": "23aea1cb0da5a0b15b836f3c243791591cc42303",
+  "localeSourcePath": "es-ES/pokeball.json",
+  "localeSourceSHA256": "6625e6c812453f7281c0b8fd7cf86be12b1c3be546d0e4f32be694daa57300ac",
+  "repository": "https://github.com/pagefaultgames/pokerogue",
+  "revision": "8555c08c823b856cbec4eb99ca84ea52a955836d",
+  "schemaVersion": 1,
+  "sourcePath": "src/data/pokeball.ts",
+  "sourceSHA256": "96fabc07e442741b815ff09513d800daee04bf8d9119e540fce09f753648f3aa",
+  "sourceSymbol": [
+    "getPokeballAtlasKey",
+    "getPokeballName",
+    "getPokeballCatchMultiplier"
+  ],
+  "upstreamUnused": [
+    {
+      "id": 5,
+      "status": "UPSTREAM_UNUSED_IN_POKEBALL_COUNTS",
+      "symbol": "LUXURY_BALL"
+    }
+  ]
+}

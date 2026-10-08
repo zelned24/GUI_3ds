@@ -8,7 +8,7 @@ import {fileURLToPath} from 'node:url';
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 export function registerPresentationTests(test) {
   for(const script of ['item_icon_index_tests.py','ui_audio_assets_tests.py','egg_ui_import_tests.py',
-      'egg_texture_assets_tests.py','item_ui_import_tests.py','berry_ui_import_tests.py','arena_alignment_tests.py'])
+      'egg_texture_assets_tests.py','item_ui_import_tests.py','berry_ui_import_tests.py','arena_alignment_tests.py','ball_menu_import_tests.py'])
     test('Pinned presentation pipeline: '+script,()=>{
       execFileSync('python',[path.join(root,'test',script)],{stdio:'pipe'});
     });

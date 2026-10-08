@@ -161,16 +161,14 @@ public:
         } else {
             // Poké Balls Inventory Window
             renderer.drawWindow(12, 12, 296, 186);
-            static const char* rates[] = {"1.0x", "1.5x", "2.0x", "3.0x", "100%"};
             for (unsigned i = 0; i < sizeof(kBallMenuDefinitions) / sizeof(kBallMenuDefinitions[0]); ++i) {
                 const auto& ball = kBallMenuDefinitions[i];
                 const float y=ballMenuRectangle(i).y;
                 const unsigned count = game.pokeballCount(static_cast<PokeballType>(ball.id));
-                m_icons.draw(renderer,ball.iconKey,36,y,32,count ? 1.0f : 0.35f);
+                if(!m_icons.draw(renderer,ball.iconKey,36,y,32,count ? 1.0f : 0.35f))
+                    renderer.drawTextFitted("?",46,y+8,0.375f,20,count ? 0xffffffff : 0xff909090);
                 renderer.drawTextFitted(ball.label,76,y+8,0.3125f,110,count ? 0xffffffff : 0xff909090);
-                if (i < sizeof(rates) / sizeof(rates[0])) {
-                    renderer.drawText(rates[i],192,y+8,0.30f,count ? 0xffa0d0f0 : 0xff708090);
-                }
+                renderer.drawTextFitted(ball.catchRateLabel,192,y+8,0.375f,57,count ? 0xffa0d0f0 : 0xff708090);
                 char quantity[16];
                 std::snprintf(quantity, sizeof(quantity), "x%u", count);
                 renderer.drawTextFitted(quantity,257,y+8,0.3125f,42,count ? 0xffffffff : 0xff808080);

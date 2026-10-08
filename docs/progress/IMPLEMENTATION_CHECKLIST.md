@@ -1132,3 +1132,5 @@ La compilación ARM solicitada terminó correctamente; no prueba ejecución de h
 - [ ] Validar botones táctiles de captura/equipo lleno, aprendizaje y evolución: confirmar/descartar usan límites compartidos con el dibujo, en lugar de áreas abiertas fuera de pantalla; controles visibles y cobertura nativa de no solapamiento añadidos. Ejecución nativa y Azahar pendientes.
 
 - [ ] Validar controles de Poké Balls: áreas táctiles separadas de lanzar/volver; tocar otra Ball selecciona primero y el segundo toque confirma. Corregido el pie completo que antes actuaba como B; cobertura nativa añadida, ejecución pendiente.
+
+- [ ] Validar catálogo visual de Balls: multiplicadores/formato importados desde getPokeballCatchMultiplier, IDs del parser existente y nombres del namespace es-ES pinned; UI sin lista fija de rates, textos acotados y faltantes de iconos explícitos. Import report reproducible generado; prueba GPU pendiente.
