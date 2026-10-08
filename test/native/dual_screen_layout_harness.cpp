@@ -135,6 +135,14 @@ int main() {
         for(unsigned i=0;i<3;++i) if(kStarterFooterRects[i].contains(x,y)) {++hits;footer=int(i);}
         assert(hits<=1 && starterFooterAt(x,y)==footer);
     }
+    assert(moveStarterFormCursor(0,0,1)==0);
+    for(unsigned count=1;count<=65;++count) for(unsigned selected=0;selected<count;++selected) {
+        for(int delta : {-6,-1,1,6}) {
+            const unsigned next=moveStarterFormCursor(selected,count,delta);
+            assert(next<count);
+            assert(moveStarterFormCursor(next,count,-delta)==selected);
+        }
+    }
     const auto none=[](const auto&){return false;};
     const auto fresh=[](const auto& row){return row.freshProfileStarter;};
     assert(starterCatalogCount(none)==0 && !starterCatalogAt(0,none));

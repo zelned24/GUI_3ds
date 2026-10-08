@@ -746,3 +746,5 @@ La búsqueda del índice generado usa búsqueda binaria sobre identidades ordena
 - [ ] Intro completa y fiel al vídeo de 101 fotogramas, reproducción nativa, memoria/VRAM y fluidez verificadas.
 
 - [ ] Modal de formas y caramelos: el panel de formas cubre los botones anteriores, comparte límites táctiles/dibujo y tiene regreso explícito. Nombres y textos largos usan ancho acotado y el cursor sigue el tamaño realmente dibujado. Guard JS PASS; prueba nativa exhaustiva de coordenadas escrita sin ejecutar. Validación visual pendiente.
+
+- [ ] Foco/paginación de formas: abre en la preferencia real, muestra posición/total y permite L/R por páginas, sin IDs adicionales ni cambios al perfil al navegar. Resolver de desbloqueo reutiliza búsqueda por ID del perfil. Guard JS PASS; casos nativos de navegación reversible/vacío escritos y sin ejecutar; interacción visual pendiente.

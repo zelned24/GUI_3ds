@@ -427,8 +427,10 @@ int main() {
             }
         } else if(setupInput && setup.formsOpen) {
             const unsigned count=setup.formCount(game);
-            if(count && (rawPressed & (KEY_UP | KEY_CPAD_UP))) setup.selectedForm=(setup.selectedForm+count-1)%count;
-            if(count && (rawPressed & (KEY_DOWN | KEY_CPAD_DOWN))) setup.selectedForm=(setup.selectedForm+1)%count;
+            if(count && (rawPressed & (KEY_UP | KEY_CPAD_UP))) setup.selectedForm=Pokerogue3DS::moveStarterFormCursor(setup.selectedForm,count,-1);
+            if(count && (rawPressed & (KEY_DOWN | KEY_CPAD_DOWN))) setup.selectedForm=Pokerogue3DS::moveStarterFormCursor(setup.selectedForm,count,1);
+            if(count && (rawPressed & KEY_L)) setup.selectedForm=Pokerogue3DS::moveStarterFormCursor(setup.selectedForm,count,-int(Pokerogue3DS::kStarterFormPageSize));
+            if(count && (rawPressed & KEY_R)) setup.selectedForm=Pokerogue3DS::moveStarterFormCursor(setup.selectedForm,count,int(Pokerogue3DS::kStarterFormPageSize));
             if(rawPressed & KEY_TOUCH) {
                 touchPosition touch{};hidTouchRead(&touch);
                 const int touchedRow=Pokerogue3DS::starterFormRowAt(touch.px,touch.py);
@@ -458,7 +460,7 @@ int main() {
         } else if(setupInput) {
             if(rawPressed & KEY_X) {changed=setup.cycleType(game);setup.feedback=nullptr;}
             else if(rawPressed & KEY_Y) {changed=setup.cycleGeneration(game);setup.feedback=nullptr;}
-            else if(rawPressed & KEY_SELECT) {setup.formsOpen=true;setup.selectedForm=0;setup.formFeedback=nullptr;setup.feedback=nullptr;}
+            else if(rawPressed & KEY_SELECT) {setup.openForms(game);}
             else if(rawPressed & (KEY_LEFT | KEY_CPAD_LEFT)) {changed=setup.move(game,-1);setup.feedback=nullptr;}
             else if(rawPressed & (KEY_RIGHT | KEY_CPAD_RIGHT)) {changed=setup.move(game,1);setup.feedback=nullptr;}
             else if(rawPressed & (KEY_UP | KEY_CPAD_UP)) {changed=setup.move(game,-6);setup.feedback=nullptr;}
@@ -504,7 +506,7 @@ int main() {
                 } else if(Pokerogue3DS::starterFooterAt(touch.px,touch.py)>=0) {
                     const int footer=Pokerogue3DS::starterFooterAt(touch.px,touch.py);
                     if(footer==0) {
-                        setup.formsOpen=true;setup.selectedForm=0;setup.formFeedback=nullptr;setup.feedback=nullptr;
+                        setup.openForms(game);
                     } else if(footer==1) {
                         setup.confirmStart=true;setup.confirmYes=true;setup.feedback=nullptr;
                     } else {

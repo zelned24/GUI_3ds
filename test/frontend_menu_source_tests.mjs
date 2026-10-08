@@ -98,3 +98,9 @@ assert(main.includes('kStarterFormBackRect.contains(touch.px,touch.py)'));
 assert(setup.includes('renderer.drawWindow(kStarterFormBackRect.x'));
 assert(setup.includes('m_prompt.drawCursor(renderer,25,y,labelSize)'));
 assert(!setup.includes('renderer.drawText(form ? form->name'));
+
+assert(main.includes('setup.openForms(game)'));
+assert(!main.includes('setup.formsOpen=true;setup.selectedForm=0'));
+assert(setup.includes('if(formIndexAt(game,ordinal)==current)'));
+assert(main.includes('moveStarterFormCursor(setup.selectedForm,count,-int(Pokerogue3DS::kStarterFormPageSize))'));
+assert(main.includes('moveStarterFormCursor(setup.selectedForm,count,int(Pokerogue3DS::kStarterFormPageSize))'));

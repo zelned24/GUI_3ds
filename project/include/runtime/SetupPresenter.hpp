@@ -171,13 +171,16 @@ public:
             if(form.upstreamFormIndex && std::strcmp(form.speciesId,species->id)==0 && !--ordinal) return form.upstreamFormIndex;
         return 65535;
     }
+    void openForms(const FirstRunRuntime& game) {
+        formsOpen=true;selectedForm=0;formFeedback=nullptr;feedback=nullptr;
+        const auto current=game.setupStarterFormIndex(game.selectedSetupStarterDex());
+        const auto count=formCount(game);
+        for(unsigned ordinal=0;ordinal<count;++ordinal)
+            if(formIndexAt(game,ordinal)==current) {selectedForm=ordinal;break;}
+    }
     static bool formUnlocked(const FirstRunRuntime& game,uint16_t index) {
-        for(size_t i=0;i<game.starterProfileCount();++i) {
-            const auto& row=game.starterProfileRecords()[i];
-            if(row.speciesDex==game.selectedSetupStarterDex())
-                return pokemonValidateStarterForm(row.speciesDex,index,row.unlockedFormAttr)==PokemonStarterFormResult::Ok;
-        }
-        return false;
+        const auto* row=game.starterProgress(game.selectedSetupStarterDex());
+        return row && pokemonValidateStarterForm(row->speciesDex,index,row->unlockedFormAttr)==PokemonStarterFormResult::Ok;
     }
     StarterCaptureFilter captureFilter=StarterCaptureFilter::All;
     bool matchesCapture(const FirstRunRuntime& game,const PokerogueContent::Species& species) const {
@@ -410,7 +413,9 @@ public:
             m_prompt.drawCursor(renderer,confirmYes ? 55 : 195,123,0.45f);
         } else if(formsOpen) {
             renderer.drawWindow(12,20,296,210);
-            renderer.drawTextFitted("Formas",24,27,0.3125f,272,0xffffffff);
+            char formHeading[64];
+            std::snprintf(formHeading,sizeof(formHeading),"Formas  %u / %u",formCount(game) ? selectedForm+1 : 0,formCount(game));
+            renderer.drawTextFitted(formHeading,24,27,0.3125f,272,0xffffffff);
             const auto* species=PokerogueContent::findSpeciesByDex(game.selectedSetupStarterDex());
             const unsigned start=selectedForm/kStarterFormPageSize*kStarterFormPageSize;
             for(unsigned i=0;i<kStarterFormPageSize && start+i<formCount(game);++i) {
@@ -423,7 +428,7 @@ public:
             }
             renderer.drawWindow(kStarterFormBackRect.x,kStarterFormBackRect.y,kStarterFormBackRect.width,kStarterFormBackRect.height);
             renderer.drawTextFitted("Volver",43,189,0.3125f,249,0xffffffff);
-            renderer.drawTextFitted(formFeedback ? formFeedback : "A: elegir forma   B: volver",24,214,0.25f,272,0xffffffff);
+            renderer.drawTextFitted(formFeedback ? formFeedback : "L/R: página   A: elegir   B: volver",24,214,0.25f,272,0xffffffff);
         } else if(candyStoreOpen) {
             renderer.drawWindow(12,24,296,186);
             const uint16_t dex=game.selectedSetupStarterDex();

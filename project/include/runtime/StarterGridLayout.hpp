@@ -4,6 +4,7 @@
 #include <cstring>
 #include <cstdio>
 #include <array>
+#include <cstdint>
 namespace Pokerogue3DS {
 // A bounded display page over canonical species; count remains data-driven.
 template<std::size_t PageSize,class Matches>
@@ -41,6 +42,12 @@ inline constexpr bool starterMatchesCaptureFilter(StarterCaptureFilter filter,bo
 inline constexpr unsigned kStarterFormPageSize=6,kStarterFormRowHeight=23;
 inline constexpr TouchRect kStarterFormRowsRect{24,43,272,kStarterFormPageSize*kStarterFormRowHeight};
 inline constexpr TouchRect kStarterFormBackRect{24,183,272,21};
+inline constexpr unsigned moveStarterFormCursor(unsigned selected,unsigned count,int delta) {
+    if(!count) return 0;
+    const int64_t total=count;
+    const int64_t next=(int64_t(selected%count)+delta)%total;
+    return unsigned(next<0 ? next+total : next);
+}
 inline int starterFormRowAt(unsigned x,unsigned y) {
     return kStarterFormRowsRect.contains(x,y) ? int((y-kStarterFormRowsRect.y)/kStarterFormRowHeight) : -1;
 }
