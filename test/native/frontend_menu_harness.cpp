@@ -160,13 +160,20 @@ int main() {
         global.input(KEY_B);global.input(KEY_X);
         for(unsigned down=0;down<row;++down) global.input(KEY_DDOWN);
         assert(global.input(KEY_A)==FrontendCommand::None);
-        assert(global.page()==(row==5 ? FrontendPage::Pokedex : FrontendPage::ServiceInfo));
+        assert(global.page()==(row==5 ? FrontendPage::Pokedex : row==6 ? FrontendPage::ManageData : FrontendPage::ServiceInfo));
         if(row==5) {
             global.input(KEY_R);global.input(KEY_L);global.input(KEY_DRIGHT);global.input(KEY_DDOWN);
             global.input(KEY_X);global.input(KEY_Y);
             assert(global.page()==FrontendPage::Pokedex);
             for(unsigned filter=0;filter<3;++filter) global.input(KEY_Y);
             assert(global.page()==FrontendPage::Pokedex);
+            global.input(KEY_B);assert(global.page()==FrontendPage::GlobalMenu);
+        } else if(row==6) {
+            assert(global.input(KEY_A)==FrontendCommand::ExportProgress);
+            assert(global.page()==FrontendPage::ManageData);
+            global.input(KEY_DDOWN);
+            assert(global.input(KEY_A)==FrontendCommand::None && global.isConfirmingImport());
+            global.input(KEY_B);assert(!global.isConfirmingImport());
             global.input(KEY_B);assert(global.page()==FrontendPage::GlobalMenu);
         } else {
             // Informational destinations return to their parent without a game command.
@@ -182,6 +189,23 @@ int main() {
     assert(global.input(KEY_A)==FrontendCommand::None && global.page()==FrontendPage::ServiceInfo);
     global.input(KEY_B);assert(global.page()==FrontendPage::GlobalMenu);
     global.input(KEY_B);assert(global.page()==FrontendPage::Title);
+    // Every submenu row can be selected by touch and reopened after returning.
+    for(unsigned row=0;row<9;++row) {
+        FrontendMenuPresenter touched(false);
+        touched.input(KEY_X);
+        touched.input(KEY_TOUCH,50,17+row*20+10);
+        if(row!=0) assert(touched.page()==FrontendPage::GlobalMenu);
+        if(row!=0) touched.input(KEY_TOUCH,50,17+row*20+10);
+        const auto destination=row==0 ? FrontendPage::Settings : row==5 ? FrontendPage::Pokedex : row==6 ? FrontendPage::ManageData : FrontendPage::ServiceInfo;
+        assert(touched.page()==destination);
+        touched.input(KEY_B);assert(touched.page()==FrontendPage::GlobalMenu);
+        touched.input(KEY_A);assert(touched.page()==destination);
+        touched.input(KEY_B);
+        touched.input(KEY_TOUCH,320,17+row*20);
+        assert(touched.page()==FrontendPage::GlobalMenu);
+        touched.input(KEY_TOUCH,50,205);
+        assert(touched.page()==FrontendPage::Title);
+    }
     FrontendMenuPresenter fresh(false);
     assert(fresh.input(KEY_A)==FrontendCommand::None && fresh.page()==FrontendPage::Modes);
     assert(fresh.input(KEY_A)==FrontendCommand::NewClassic);

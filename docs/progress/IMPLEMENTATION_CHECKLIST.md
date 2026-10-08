@@ -814,3 +814,5 @@ La búsqueda del índice generado usa búsqueda binaria sobre identidades ordena
 
 - [x] Fuentes físicas: las cuatro hojas BCFNT A4 contienen exclusivamente alpha 0/15; cobertura ASCII/UI/catálogos y hashes de cada archivo PASS. Fuente TTF pinned y métricas publicadas en `docs/generated/NATIVE_FONT_REPORT.json`; pipeline conserva el reporte versionado.
 - [ ] Legibilidad y alineación visual de fuentes siguen pendientes: alpha binario y cobertura no prueban apariencia en pantalla ni alineación de todos los submenús. Sin compilación ni Azahar.
+
+- [ ] Submenú de nueve opciones: harness de navegación actualizado para la ruta real de Gestionar datos (exportar/importar, cancelar confirmación), entrada táctil y retorno a la misma fila en todas las opciones. Corrige una expectativa obsoleta de ServiceInfo; pruebas C++ escritas sin ejecutar. Logros/huevos/gacha/comunidad/sesión siguen sin servicio funcional completo.
