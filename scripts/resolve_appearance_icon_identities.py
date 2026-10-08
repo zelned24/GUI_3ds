@@ -7,6 +7,46 @@ ROOT=Path(__file__).resolve().parents[1]
 GAME_REV="8555c08c823b856cbec4eb99ca84ea52a955836d"
 ASSET_REV="056a1f408f26a3be4fef243f7462cb43608c7928"
 
+def write_index(root, report, physical):
+    indices={row["sourcePath"]:i for i,row in enumerate(physical["files"])}
+    rows=[]
+    for row in report["records"]:
+        code=(8 if row["female"] else 0)|(4 if row["shiny"] else 0)|row["variant"]
+        if not 0<row["dex"]<=65535 or not 0<=row["formIndex"]<=65535:
+            raise ValueError("Icon identity exceeds canonical uint16 contract")
+        index=indices.get(row["resolvedSourcePath"],65535)
+        rows.append((row["dex"],row["formIndex"],code,index,int(row["status"]=="UPSTREAM_CHECK_ICON_ID_NORMAL_FALLBACK")))
+    rows.sort(key=lambda row:row[:3])
+    if len({row[:3] for row in rows})!=len(rows): raise ValueError("Duplicate icon identity")
+    header="// Generated baseline identities; event replacements remain unsupported.\n#pragma once\n#include \"content/AppearanceIcons.hpp\"\nnamespace Pokerogue3DS {\n"
+    header+="struct AppearanceIconIdentity {uint16_t dex,formIndex,physicalIndex;uint8_t appearance;bool upstreamFallback;};\ninline constexpr AppearanceIconIdentity kAppearanceIconIdentities[]={\n"
+    for dex,form,code,index,fallback in rows:
+        header+=f"    {{{dex},{form},{index},{code},{'true' if fallback else 'false'}}},\n"
+    header+="};\n"+"""inline constexpr uint64_t appearanceIconIdentityKey(uint16_t dex,uint16_t form,uint8_t appearance) {
+    return (uint64_t(dex)<<32)|(uint64_t(form)<<8)|appearance;
+}
+inline const AppearanceIconIdentity* findAppearanceIconIdentity(uint16_t dex,uint16_t form,bool female,bool shiny,uint8_t variant) {
+    if(!dex || variant>2 || (!shiny && variant)) return nullptr;
+    const uint8_t code=(female ? 8u : 0u)|(shiny ? 4u : 0u)|variant;
+    const auto key=appearanceIconIdentityKey(dex,form,code);
+    const std::size_t count=sizeof(kAppearanceIconIdentities)/sizeof(kAppearanceIconIdentities[0]);
+    std::size_t first=0,last=count;
+    while(first<last) {
+        const auto middle=first+(last-first)/2;const auto& row=kAppearanceIconIdentities[middle];
+        if(appearanceIconIdentityKey(row.dex,row.formIndex,row.appearance)<key) first=middle+1;
+        else last=middle;
+    }
+    if(first==count) return nullptr;
+    const auto& row=kAppearanceIconIdentities[first];
+    return appearanceIconIdentityKey(row.dex,row.formIndex,row.appearance)==key ? &row : nullptr;
+}
+inline const AppearanceIconFrame* appearanceIconPhysicalFrame(const AppearanceIconIdentity* identity) {
+    return identity && identity->physicalIndex<kAppearanceIconCount ? &kAppearanceIconFrames[identity->physicalIndex] : nullptr;
+}
+}
+"""
+    (root / "project/generated/include/content/AppearanceIconIdentities.hpp").write_bytes(header.encode("utf-8"))
+
 def resolve(root=ROOT, write=True):
     raw=(root / "project/data/pokerogue/canonical-content.json").read_bytes()
     canonical=json.loads(raw)["collections"]
@@ -57,6 +97,7 @@ def resolve(root=ROOT, write=True):
         "limitations":["Timed event replacements and experimental sprites are not yet supported; rows describe baseline pinned appearances."],"records":rows}
     target=root / "docs/generated/APPEARANCE_ICON_IDENTITY_REPORT.json"
     if write: target.write_bytes((json.dumps(report,sort_keys=True,indent=2)+"\n").encode("utf-8"))
+    if write: write_index(root, report, icons)
     counts={}
     for row in rows: counts[row["status"]]=counts.get(row["status"],0)+1
     print(json.dumps(counts,sort_keys=True))

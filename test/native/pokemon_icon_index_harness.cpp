@@ -1,6 +1,7 @@
 #include "content/PokemonAppearanceAssets.hpp"
 #include "content/PokemonIcons.hpp"
 #include "content/AppearanceIcons.hpp"
+#include "content/AppearanceIconIdentities.hpp"
 #include "runtime/PokemonAtlasPresenter.hpp"
 #include "runtime/PokemonIconPresenter.hpp"
 #include "runtime/ItemIconPresenter.hpp"
@@ -38,6 +39,25 @@ void Renderer2D::drawAtlasFrame(C2D_Image,const AtlasFrame& frame,float x,float 
     lastIconWidth=width;lastIconHeight=height;lastIconOpacity=opacity;
 }
 int main() {
+    uint64_t previousIdentity=0;
+    for(const auto& identity:kAppearanceIconIdentities) {
+        const auto key=appearanceIconIdentityKey(identity.dex,identity.formIndex,identity.appearance);
+        assert(key>previousIdentity);previousIdentity=key;
+        assert(findAppearanceIconIdentity(identity.dex,identity.formIndex,(identity.appearance&8)!=0,(identity.appearance&4)!=0,identity.appearance&3)==&identity);
+        assert(appearanceIconPhysicalFrame(&identity));
+    }
+    assert(!findAppearanceIconIdentity(0,0,false,false,0));
+    assert(!findAppearanceIconIdentity(1,65535,false,false,0));
+    assert(!findAppearanceIconIdentity(1,0,false,false,1));
+    assert(!findAppearanceIconIdentity(1,0,false,true,3));
+    assert(!appearanceIconPhysicalFrame(nullptr));
+    const auto* rareIcon=findAppearanceIconIdentity(1,0,false,true,1);
+    assert(rareIcon && rareIcon->upstreamFallback);
+    assert(!std::strcmp(appearanceIconPhysicalFrame(rareIcon)->sourceKey,"1/1.png"));
+    const auto* shinyIcon=findAppearanceIconIdentity(1,0,false,true,0);
+    assert(shinyIcon && !shinyIcon->upstreamFallback);
+    assert(!std::strcmp(appearanceIconPhysicalFrame(shinyIcon)->sourceKey,"1/1s.png"));
+
     assert(!findAppearanceIcon(nullptr) && !findAppearanceIcon("") && !findAppearanceIcon("missing/icon.png"));
     for(std::size_t i=0;i<kAppearanceIconCount;++i) {
         const auto& frame=kAppearanceIconFrames[i];

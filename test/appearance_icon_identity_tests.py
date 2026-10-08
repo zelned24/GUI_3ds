@@ -1,5 +1,6 @@
 """Baseline source contract checks; does not execute upstream TS or native C++."""
 import json
+import re
 import sys
 from pathlib import Path
 ROOT=Path(__file__).resolve().parents[1]
@@ -26,3 +27,14 @@ assert rare["status"]=="UPSTREAM_CHECK_ICON_ID_NORMAL_FALLBACK" and rare["resolv
 assert identities[255,0,True,True,0]["requestedSourcePath"]=="images/pokemon/icons/3/255s-f.png"
 assert identities[1,0,True,False,0]["requestedSourcePath"]=="images/pokemon/icons/1/1.png"
 print("PASS deterministic baseline identity mapping and explicit physical/fallback/missing classifications:",len(rows))
+
+header=(ROOT / "project/generated/include/content/AppearanceIconIdentities.hpp").read_text(encoding="utf-8")
+actual=re.findall(r'    \{(\d+),(\d+),(\d+),(\d+),(true|false)\},',header)
+indices={row["sourcePath"]:i for i,row in enumerate(physical["files"])}
+expected=[]
+for row in rows:
+    code=(8 if row["female"] else 0)|(4 if row["shiny"] else 0)|row["variant"]
+    expected.append((row["dex"],row["formIndex"],indices.get(row["resolvedSourcePath"],65535),code,row["status"]=="UPSTREAM_CHECK_ICON_ID_NORMAL_FALLBACK"))
+expected.sort(key=lambda row:(row[0],row[1],row[3]))
+assert actual==[tuple(str(value).lower() for value in row) for row in expected]
+print("PASS complete C++ identity index matches physical resolution report")
