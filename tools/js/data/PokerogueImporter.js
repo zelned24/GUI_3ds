@@ -1362,6 +1362,12 @@ export class PokerogueImporter {
           changeConstructor.lastIndex = opening + raw.length;
         }
         record.extensions.upstreamFormChanges = changes;
+        const eggTierDeclaration = sourceRecord.match(/\beggTier\s*:\s*([^,}\n]+)/);
+        if (eggTierDeclaration) {
+          const tier = /^EggTier\.(COMMON|RARE|EPIC|LEGENDARY)$/.exec(eggTierDeclaration[1].trim());
+          if (!tier) throw new Error(`Unsupported upstream egg tier for ${record.id}: ${eggTierDeclaration[1]}`);
+          record.eggTier = tier[1];
+        } else record.eggTier = 'COMMON'; // SpeciesDataRegistry.getEggTier fallback.
         const starterCost = sourceRecord.match(/\bstarterCost\s*:\s*(\d+)/);
         record.starterCost = starterCost ? Number(starterCost[1]) : null;
         record.starterEligible = Boolean(record.starterCost);

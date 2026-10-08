@@ -8,7 +8,7 @@ from prepare_nature_ui import GAME_REV, ROOT
 
 REPOSITORY = 'https://github.com/pagefaultgames/pokerogue'
 def prepare(root=ROOT):
-    paths=['src/enums/egg-type.ts','src/enums/egg-source-types.ts','src/enums/voucher-type.ts','src/data/balance/rates.ts','src/data/egg.ts','src/phases/egg-lapse-phase.ts','src/system/egg-data.ts','src/enums/variant-tier.ts','src/enums/species-id.ts']
+    paths=['src/enums/egg-type.ts','src/enums/egg-source-types.ts','src/enums/voucher-type.ts','src/data/balance/rates.ts','src/data/egg.ts','src/phases/egg-lapse-phase.ts','src/system/egg-data.ts','src/enums/variant-tier.ts','src/enums/species-id.ts','src/data/species-data-registry.ts']
     raw={p:subprocess.check_output(['git','-C',str(root/'build/upstream/pokerogue'),'show',GAME_REV+':'+p]) for p in paths}
     enums={}
     for path,symbol in zip(paths[:3]+[paths[7],paths[8]],['EggTier','EggSourceType','VoucherType','VariantTier','SpeciesId']):
@@ -39,8 +39,25 @@ def prepare(root=ROOT):
     header+=''.join('    {EggTier::'+r['symbol']+','+str(constants['HATCH_WAVES_'+r['symbol']+'_EGG'])+'},\n' for r in enums['EggTier'])+'};\n'
     header+='inline constexpr uint16_t kSpecialEggIncubationSpecies[]={'+','.join(str(r['id']) for r in special_species)+'};\n'
     header+='inline constexpr uint16_t kManaphyEggHatchWaves='+str(constants['HATCH_WAVES_MANAPHY_EGG'])+';\n}\n'
+    canonical_path=root/'project/data/pokerogue/canonical-content.json'
+    canonical_raw=canonical_path.read_bytes()
+    canonical=json.loads(canonical_raw)
+    if canonical.get('sourceSnapshot',{}).get('sourceType')=='TEST_FIXTURE' or canonical.get('provenance',{}).get('sourceType')=='TEST_FIXTURE':
+        raise ValueError('Production egg policy cannot use fixtures')
+    if canonical.get('sourceSnapshot',{}).get('revision')!=GAME_REV:
+        raise ValueError('Canonical egg data uses a different pinned revision')
+    species_tiers=[]
+    for species in canonical['collections']['species']:
+        declaration=re.search(r'\beggTier\s*:\s*([^,}\n]+)',species['extensions']['upstreamRawRecord']['value'])
+        expected=re.fullmatch(r'EggTier\.(COMMON|RARE|EPIC|LEGENDARY)',declaration[1].strip())[1] if declaration else 'COMMON'
+        if species.get('eggTier')!=expected: raise ValueError('Canonical egg tier differs from pinned source: '+species['id'])
+        species_tiers.append({'dex':species['nationalDexId'],'tier':expected})
+    species_tiers.sort(key=lambda row:row['dex'])
+    if len({r['dex'] for r in species_tiers})!=len(species_tiers): raise ValueError('Duplicate canonical species IDs')
+    header=header[:-2]+'struct SpeciesEggTier {uint16_t dex; EggTier tier;};\ninline constexpr SpeciesEggTier kSpeciesEggTiers[]={\n'
+    header+=''.join('    {'+str(r['dex'])+',EggTier::'+r['tier']+'},\n' for r in species_tiers)+'};\n}\n'
     target=root/'project/generated/include/content/EggContentPolicy.hpp';target.parent.mkdir(parents=True,exist_ok=True);target.write_bytes(header.encode('utf-8'))
-    report={'schemaVersion':1,'sources':[{'repository':REPOSITORY,'revision':GAME_REV,'sourcePath':p,'sourceSymbol':{'src/enums/egg-type.ts':'EggTier','src/enums/egg-source-types.ts':'EggSourceType','src/enums/voucher-type.ts':'VoucherType','src/data/balance/rates.ts':'HATCH_WAVES_*_EGG','src/data/egg.ts':'Egg.getEggTierDefaultHatchWaves','src/phases/egg-lapse-phase.ts':'EggLapsePhase.start','src/system/egg-data.ts':'EggData','src/enums/variant-tier.ts':'VariantTier','src/enums/species-id.ts':'SpeciesId'}[p],'schemaVersion':1,'hash':hashlib.sha256(raw[p]).hexdigest()} for p in paths],'enums':enums,'incubationConstants':constants,'specialIncubationSpecies':special_species,'scope':'IDENTIFIERS_AND_INCUBATION_CONSTANTS_ONLY','runtimeIntegration':'PENDING_INVENTORY_GACHA_HATCHING','generatedSHA256':hashlib.sha256(target.read_bytes()).hexdigest()}
+    report={'schemaVersion':1,'sources':[{'repository':REPOSITORY,'revision':GAME_REV,'sourcePath':p,'sourceSymbol':{'src/enums/egg-type.ts':'EggTier','src/enums/egg-source-types.ts':'EggSourceType','src/enums/voucher-type.ts':'VoucherType','src/data/balance/rates.ts':'HATCH_WAVES_*_EGG','src/data/egg.ts':'Egg.getEggTierDefaultHatchWaves','src/phases/egg-lapse-phase.ts':'EggLapsePhase.start','src/system/egg-data.ts':'EggData','src/enums/variant-tier.ts':'VariantTier','src/enums/species-id.ts':'SpeciesId','src/data/species-data-registry.ts':'SpeciesDataRegistry.getEggTier'}[p],'schemaVersion':1,'hash':hashlib.sha256(raw[p]).hexdigest()} for p in paths],'enums':enums,'incubationConstants':constants,'specialIncubationSpecies':special_species,'canonicalInput':{'sourcePath':'project/data/pokerogue/canonical-content.json','hash':hashlib.sha256(canonical_raw).hexdigest()},'speciesTiers':species_tiers,'scope':'IDENTIFIERS_SPECIES_TIERS_AND_INCUBATION_CONSTANTS','runtimeIntegration':'PENDING_INVENTORY_GACHA_HATCHING','generatedSHA256':hashlib.sha256(target.read_bytes()).hexdigest()}
     destination=root/'docs/generated/EGG_CONTENT_IMPORT_REPORT.json';destination.parent.mkdir(parents=True,exist_ok=True);destination.write_bytes((json.dumps(report,ensure_ascii=False,sort_keys=True,indent=2)+'\n').encode('utf-8'))
     return report
 if __name__=='__main__':

@@ -8,6 +8,10 @@ const testDir = path.dirname(fileURLToPath(import.meta.url));
 const rootDir = path.resolve(testDir, '..');
 
 export function registerBattleTests(test) {
+  test('Canonical eggs: every real species tier matches its upstream declaration', () => {
+    execFileSync(process.execPath,[path.join(testDir,'egg_species_tier_tests.mjs')],{stdio:'pipe'});
+  });
+
   test('Native battle state: canonical species and moves initialize validated native battle state', () => {
     const clangCandidates = process.platform === 'win32'
       ? [path.join(rootDir, 'node_modules', 'clang-wasm-win64', 'clang.exe'), path.join(rootDir, 'node_modules', '.bin', 'clang.exe')]

@@ -15,3 +15,13 @@ typedef __PTRDIFF_TYPE__ ptrdiff_t;
 
 typedef __UINTPTR_TYPE__ uintptr_t;
 typedef __INTPTR_TYPE__ intptr_t;
+
+#ifndef INT32_MAX
+#define INT32_MAX __INT32_MAX__
+#endif
+#ifndef UINT64_MAX
+#define UINT64_MAX __UINT64_MAX__
+#endif
+#ifndef SIZE_MAX
+#define SIZE_MAX __SIZE_MAX__
+#endif

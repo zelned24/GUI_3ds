@@ -5,7 +5,7 @@
 namespace PokerogueContent {
 inline constexpr uint16_t kStruggleMoveId = 165;
 inline constexpr bool kStruggleDefinitionResolved = true;
-inline constexpr char kContentHash[] = "20e7cef5a58d28f31254ab5dfaab0815be92c6a4e7c1e10a3c12c05ebbc9fe27";
+inline constexpr char kContentHash[] = "1c5aca75dab6630c32a847b96cc4fbc3f26cf9433ee628ccfa599c181ea5e220";
 inline constexpr char kPokerogueRevision[] = "8555c08c823b856cbec4eb99ca84ea52a955836d";
 inline constexpr char kAssetsRevision[] = "056a1f408f26a3be4fef243f7462cb43608c7928";
 inline constexpr char kLocalesRevision[] = "23aea1cb0da5a0b15b836f3c243791591cc42303";

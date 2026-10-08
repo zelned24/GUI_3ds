@@ -32,6 +32,18 @@ inline EggIncubationResult validateEggIncubationRecord(const EggIncubationRecord
         return EggIncubationResult::MissingSpecies;
     return EggIncubationResult::Ok;
 }
+// SpeciesDataRegistry.getEggTier, using canonical declarations and its COMMON
+// fallback already normalized by the importer. Missing species remain an error.
+inline EggIncubationResult speciesEggTier(uint16_t dex,EggTier& tier) {
+    size_t first=0,last=sizeof(kSpeciesEggTiers)/sizeof(kSpeciesEggTiers[0]);
+    while(first<last) {
+        const size_t middle=first+(last-first)/2;
+        if(kSpeciesEggTiers[middle].dex<dex) first=middle+1;else last=middle;
+    }
+    if(first>=sizeof(kSpeciesEggTiers)/sizeof(kSpeciesEggTiers[0]) || kSpeciesEggTiers[first].dex!=dex)
+        return EggIncubationResult::MissingSpecies;
+    tier=kSpeciesEggTiers[first].tier;return EggIncubationResult::Ok;
+}
 // Egg.getEggTierDefaultHatchWaves. Tier resolution for an explicitly selected
 // species is a separate upstream registry rule; caller supplies the resolved tier.
 inline EggIncubationResult defaultEggIncubationWaves(uint16_t speciesDex,EggTier tier,uint16_t& waves) {

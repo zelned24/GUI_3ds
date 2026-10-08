@@ -16,6 +16,12 @@ class EggContentTests(unittest.TestCase):
         self.assertEqual(report['incubationConstants'],{'HATCH_WAVES_COMMON_EGG':10,'HATCH_WAVES_RARE_EGG':25,'HATCH_WAVES_EPIC_EGG':50,'HATCH_WAVES_LEGENDARY_EGG':100,'HATCH_WAVES_MANAPHY_EGG':50})
         self.assertEqual(report['runtimeIntegration'],'PENDING_INVENTORY_GACHA_HATCHING')
         self.assertEqual(report['specialIncubationSpecies'],[{'symbol':'PHIONE','id':489},{'symbol':'MANAPHY','id':490}])
+        canonical=(ROOT/report['canonicalInput']['sourcePath']).read_bytes()
+        self.assertEqual(hashlib.sha256(canonical).hexdigest(),report['canonicalInput']['hash'])
+        tiers={row['dex']:row['tier'] for row in report['speciesTiers']}
+        self.assertEqual(tiers[150],'LEGENDARY')
+        self.assertEqual(tiers[1],'COMMON')
+        self.assertEqual(len(set(tiers.values())),4)
         header=ROOT/'project/generated/include/content/EggContentPolicy.hpp'
         self.assertEqual(hashlib.sha256(header.read_bytes()).hexdigest(),report['generatedSHA256'])
     def test_determinism(self):
