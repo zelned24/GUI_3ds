@@ -263,7 +263,7 @@ int main() {
             // The menu consumes input before the battle/JS command loop.
             touchPosition titleTouch{};if(rawPressed & KEY_TOUCH) hidTouchRead(&titleTouch);
             const auto command=frontend.input(rawPressed,titleTouch.px,titleTouch.py,&game);
-            if(command!=Pokerogue3DS::FrontendCommand::None) uiAudio.play("select");
+            if(const char* sound=frontend.takeNavigationSound()) uiAudio.play(sound);
             if(command==Pokerogue3DS::FrontendCommand::Continue || command==Pokerogue3DS::FrontendCommand::Load) {
                 const auto result=game.loadNativeProgress(saves,profiles,profileStaging,
                     PokerogueContent::kSpeciesCount,offlineFriendship,&restored);

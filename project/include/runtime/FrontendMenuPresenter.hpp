@@ -26,7 +26,7 @@ public:
     ~FrontendMenuPresenter() { clear(); }
     void clear(Renderer2D* renderer=nullptr) {m_eggTextures.clear(renderer);m_title.clear(renderer);m_dexIcons.clear(renderer);
         if(m_dexVariants) {if(renderer) renderer->retireSpriteSheet(m_dexVariants);else C2D_SpriteSheetFree(m_dexVariants);}
-        m_dexVariants=nullptr;m_dexVariantsAttempted=false; m_confirmingDelete=false;m_confirmingImport=false;}
+        m_dexVariants=nullptr;m_dexVariantsAttempted=false; m_confirmingDelete=false;m_confirmingImport=false;m_navigationSound=nullptr;}
     void setExpGainsSpeed(unsigned speed) {if(speed<=3) m_expGainsSpeed=speed;}
     void setHpBarSpeed(unsigned speed) {if(speed<=3) m_hpBarSpeed=speed;}
     void setTouchControls(bool enabled) { m_touchControls=enabled; }
@@ -49,7 +49,30 @@ public:
     void drawCursor(Renderer2D& renderer, float x, float y, float size) {
         m_title.drawCursor(renderer, x, y, size);
     }
+    const char* takeNavigationSound() {
+        const char* sound=m_navigationSound;m_navigationSound=nullptr;return sound;
+    }
     FrontendCommand input(uint32_t keys,unsigned touchX=0,unsigned touchY=0,const FirstRunRuntime* game=nullptr) {
+        m_navigationSound=nullptr;m_navigationRejected=false;
+        const auto before=navigationState();
+        const auto previousPage=m_page;
+        const char* previousFeedback=m_feedback;
+        const auto command=inputNavigation(keys,touchX,touchY,game);
+        if(m_navigationRejected || (m_feedback && m_feedback!=previousFeedback)) m_navigationSound="error";
+        else if(previousPage!=FrontendPage::GlobalMenu && m_page==FrontendPage::GlobalMenu)
+            m_navigationSound="menu_open";
+        else if(command!=FrontendCommand::None || before!=navigationState()) m_navigationSound="select";
+        return command;
+    }
+private:
+    // UI event identity is independent of whether an engine command was emitted.
+    std::array<size_t,14> navigationState() const {
+        return {size_t(m_page),m_titleSelection.selected,m_selected,m_group,m_service,
+            m_globalSelection,m_dexSelected,m_dexGeneration,m_dexCapture,
+            m_eggSelected,size_t(m_eggDetails),size_t(m_confirmingDelete),
+            size_t(m_confirmingTouchDisable),size_t(m_confirmingImport)*2+size_t(m_importYes)};
+    }
+    FrontendCommand inputNavigation(uint32_t keys,unsigned touchX,unsigned touchY,const FirstRunRuntime* game) {
         if(m_confirmingImport) {
             if(keys & KEY_B) {m_confirmingImport=false;return FrontendCommand::None;}
             if(keys & (KEY_DLEFT | KEY_CPAD_LEFT)) m_importYes=true;
@@ -241,7 +264,7 @@ public:
             m_confirmingImport=true;m_importYes=false;return FrontendCommand::None;
         case FrontendPage::Modes:
             if(std::strcmp(kFrontendModes[m_selected].id,"classic")==0) return FrontendCommand::NewClassic;
-            m_feedback="Runtime de este modo pendiente.";break;
+            m_feedback="Runtime de este modo pendiente.";m_navigationRejected=true;break;
         case FrontendPage::Load:
             return FrontendCommand::Load; // Explicit retry can discover/recover an SD save.
         case FrontendPage::Settings:m_group=m_selected;m_page=FrontendPage::SettingsGroup;m_selected=0;break;
@@ -254,11 +277,12 @@ public:
                 else return FrontendCommand::ToggleTouchControls;
                 break;
             }
-            m_feedback="Conexion con el runtime pendiente.";break;
+            m_feedback="Conexion con el runtime pendiente.";m_navigationRejected=true;break;
         default:break;
         }
         return FrontendCommand::None;
     }
+public:
     void drawPokedexTop(Renderer2D& renderer,const FirstRunRuntime& game) const {
         if(m_page!=FrontendPage::Pokedex) return;
         renderer.clear(0xff3a303d);
@@ -639,5 +663,7 @@ private:
     unsigned m_selected=0,m_group=0,m_service=0,m_globalSelection=0;
     bool m_confirmingDelete=false,m_touchControls=true,m_confirmingTouchDisable=false,m_settingsFromGlobal=false;
     const char* m_feedback=nullptr;
+    const char* m_navigationSound=nullptr;
+    bool m_navigationRejected=false;
 };
 }

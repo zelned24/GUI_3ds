@@ -487,3 +487,8 @@ assert(rendererSource.includes("for(auto& attempted:m_hudLoadAttempted) attempte
 assert(rewardPresentation.includes("const auto nameBounds=rewardCardNameRectangle(i)"));
 assert(rewardPresentation.includes("textLinesWithinHeight(nameBounds.height"));
 assert(rewardPresentation.includes("cardY + kRewardRarityOffsetY"));
+
+// Navigation sound is emitted even for UI-only transitions without an engine command.
+assert(frontend.includes("before!=navigationState()"));
+assert(frontend.includes("const char* sound=m_navigationSound;m_navigationSound=nullptr;return sound;"));
+assert(main.includes("if(const char* sound=frontend.takeNavigationSound()) uiAudio.play(sound)"));

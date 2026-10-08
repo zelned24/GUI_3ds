@@ -315,6 +315,22 @@ int main() {
         assert(touched.page()==FrontendPage::Title);
         assert(!touched.overlaysTitle());
     }
+    FrontendMenuPresenter audioMenu(false);
+    assert(!audioMenu.takeNavigationSound());
+    audioMenu.input(0);assert(!audioMenu.takeNavigationSound());
+    audioMenu.input(KEY_DOWN);assert(!std::strcmp(audioMenu.takeNavigationSound(),"select"));
+    assert(!audioMenu.takeNavigationSound()); // Consume an event exactly once.
+    audioMenu.input(KEY_X);assert(audioMenu.page()==FrontendPage::GlobalMenu);
+    assert(!std::strcmp(audioMenu.takeNavigationSound(),"menu_open"));
+    audioMenu.input(KEY_A);assert(audioMenu.page()==FrontendPage::Settings);
+    assert(!std::strcmp(audioMenu.takeNavigationSound(),"select"));
+    audioMenu.input(KEY_A);assert(audioMenu.page()==FrontendPage::SettingsGroup);
+    assert(!std::strcmp(audioMenu.takeNavigationSound(),"select"));
+    audioMenu.input(KEY_A);assert(!std::strcmp(audioMenu.takeNavigationSound(),"error"));
+    audioMenu.input(KEY_A);assert(!std::strcmp(audioMenu.takeNavigationSound(),"error"));
+    audioMenu.input(0);assert(!audioMenu.takeNavigationSound());
+    audioMenu.input(KEY_TOUCH,0,0);assert(!audioMenu.takeNavigationSound());
+    audioMenu.input(KEY_B);assert(!std::strcmp(audioMenu.takeNavigationSound(),"select"));
     FrontendMenuPresenter fresh(false);
     assert(fresh.input(KEY_A)==FrontendCommand::None && fresh.page()==FrontendPage::Modes);
     assert(fresh.input(KEY_A)==FrontendCommand::NewClassic);

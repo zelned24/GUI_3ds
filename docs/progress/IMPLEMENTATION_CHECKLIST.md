@@ -1122,3 +1122,5 @@ La compilación ARM solicitada terminó correctamente; no prueba ejecución de h
 - [ ] Validar tarjetas de recompensas con nombres largos: área de nombre separada de la banda de rareza, líneas limitadas por métricas de la fuente nativa y cobertura de límites de las tres tarjetas. Implementado en presentación; ejecución nativa y captura de Azahar pendientes.
 
 - [ ] Validar alineación del jugador sobre plataformas: ancla horizontal adaptada del constructor upstream a x=133 (antes 105), conservando y=185 y escala de sprites. Verificadas coordenadas pinned y bounds físicos de hierba/ciudad; composición en Azahar pendiente.
+
+- [ ] Validar audio de navegación frontend: evento consumible separado de los comandos de juego para cursores, cambios de página, apertura del menú y opciones rechazadas. Conectado a los PCM pinned precargados; ejecución NDSP y prueba audible pendientes.
