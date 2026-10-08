@@ -31,7 +31,7 @@ public:
         m_looseKey[0] = '\0';
     }
 
-    bool draw(Renderer2D& renderer, const char* key, float x, float y, float size = 24, float opacity = 1.0f) {
+    bool draw(Renderer2D& renderer, const char* key, float x, float y, float size = 32, float opacity = 1.0f) {
         if (!key || !*key || !std::isfinite(x) || !std::isfinite(y) ||
             !std::isfinite(size) || size <= 0 || !std::isfinite(opacity) || opacity <= 0) return false;
         if (opacity > 1) opacity = 1;
@@ -72,7 +72,7 @@ public:
         return false;
     }
 
-    bool drawItem(Renderer2D& renderer, const char* itemId, float x, float y, float size = 24, float opacity = 1.0f) {
+    bool drawItem(Renderer2D& renderer, const char* itemId, float x, float y, float size = 32, float opacity = 1.0f) {
         if (!itemId) return false;
         const char* key = findItemIconKey(itemId);
         if (key) return draw(renderer, key, x, y, size, opacity);

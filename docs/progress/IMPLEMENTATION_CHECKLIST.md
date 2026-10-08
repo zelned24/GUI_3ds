@@ -1071,3 +1071,6 @@ La búsqueda del índice generado usa búsqueda binaria sobre identidades ordena
 - [ ] Presentación de recompensas: todos los textos restantes pasan por ajuste al ancho; botones confirmar/omitir comparten geometría táctil y los cursores siguen el raster mostrado. Guards de fuentes añadidos; compilación/ejecución y prueba visual de las dos pantallas pendientes.
 
 - [ ] Menú del equipo: estados consumen atlas localizado statuses mediante drawHudIndicator (nearest, escala nativa) como PartySlot upstream; si falta el frame se muestra desconocido explícito. Cabecera, género, indicadores y PS limitan ancho; cabecera usa raster pequeño dentro de su zona. Guards de fuentes PASS, validación ARM/visual pendiente.
+
+- [x] Auditoría de fuentes de filtrado: guards PASS para renderer y nueve loaders/presenters de producción; nearest presente y GPU_LINEAR ausente en rutas examinadas. Esto verifica configuración del código, no escalado externo del emulador ni resultado visual.
+- [ ] Iconos de objetos: tamaño predeterminado corregido a canvas nativo 32x32; 528 frames generados tienen esa resolución. Consumidores actuales de recompensas/balls ya pasan 32 explícito. Guarda de fuentes PASS; ejecución C++/visual pendiente.

@@ -398,3 +398,23 @@ assert(!partyPresentation.includes('renderer.drawText('));
 assert(partyPresentation.includes('"PS", hpX, y + 4, 0.20f, 14'));
 
 assert(partyPresentation.includes('renderer.drawHudIndicator("faint",false,bounds.x+178,y+4)'));
+
+// Production pixel-art loaders must not restore bilinear sampling.
+for(const relative of [
+    'project/src/gfx/renderer2d.cpp',
+    'project/src/runtime/RuntimeAssetManager.cpp',
+    'project/src/runtime/PokemonAtlasPresenter.cpp',
+    'project/src/runtime/TrainerPresenter.cpp',
+    'project/src/runtime/IntroCinematicPresenter.cpp',
+    'project/include/runtime/ArenaPresenter.hpp',
+    'project/include/runtime/ItemIconPresenter.hpp',
+    'project/include/runtime/PokemonIconPresenter.hpp',
+    'project/include/runtime/SetupPresenter.hpp',
+    'project/include/runtime/TitleMenuPresenter.hpp'
+]) {
+    const source=await fs.readFile(new URL('../'+relative,import.meta.url),'utf8');
+    assert(!source.includes('GPU_LINEAR'),relative+' restores linear filtering');
+    assert(source.includes('GPU_NEAREST'),relative+' lacks nearest sampling');
+}
+assert(itemPresentation.includes('float size = 32'));
+assert(!itemPresentation.includes('float size = 24'));
