@@ -339,3 +339,13 @@ assert(partyPresentation.includes("bounds.x + 60, y + 17, 0.25f, 42"));
 // Mode metadata must stay in the left column, clear of the detail panel at x=151.
 assert(setupPresentation.includes('renderer.drawTextFitted(game.presentation().modeName ? game.presentation().modeName : "",16,217,0.375f,124,0xffffffff)'));
 assert(!setupPresentation.includes('renderer.drawText(game.presentation().modeName'));
+
+// Battle commands share touch geometry and imported labels, with bounded native text.
+for (const key of ['fight','ball','pokemon','run']) {
+    assert(commandPresentation.includes('"command-ui-handler:'+key+'"'));
+}
+assert(commandPresentation.includes('const auto& rect=kCommandButtonRects[i]'));
+assert(commandPresentation.includes('runtimeUiText(commandKeys[i])'));
+assert(commandPresentation.includes('textWidth=rect.width-38.0f'));
+assert(commandPresentation.includes('m_cursor.drawCursor(renderer,textX-10,textY,labelSize)'));
+assert(!commandPresentation.includes('} kCmds[]'));

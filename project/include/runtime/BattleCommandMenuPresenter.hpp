@@ -137,37 +137,26 @@ public:
 
         if (m_page == BattleMenuPage::Root) {
             // The upper screen owns dialogue; commands fill the touch screen.
-            static const struct {
-                const char* label;
-                float bx; float by; float bw; float bh;
-                float tx; float ty; float tsize;
-            } kCmds[] = {
-                {"Luchar",  10.0f,  10.0f, 146.0f, 94.0f, 40.0f,  50.0f, 0.375f},
-                {"Balls",   164.0f,  10.0f, 146.0f, 94.0f, 194.0f,  50.0f, 0.375f},
-                {"Pokémon", 10.0f, 112.0f, 146.0f, 94.0f, 40.0f, 152.0f, 0.375f},
-                {"Huir",    164.0f,112.0f, 146.0f, 94.0f, 194.0f,152.0f, 0.375f}
+            static const char* const commandKeys[]={
+                "command-ui-handler:fight", "command-ui-handler:ball",
+                "command-ui-handler:pokemon", "command-ui-handler:run"
             };
-
-            for (unsigned i = 0; i < 4; ++i) {
-                const bool isSel = (i == m_selected);
-                const auto& cmd = kCmds[i];
-
-                if (isSel) {
-                    renderer.drawRect(cmd.bx - 1.0f, cmd.by - 1.0f, cmd.bw + 2.0f, cmd.bh + 2.0f,
-                        C2D_Color32(255, 235, 70, 255));
-                }
-                renderer.drawWindow(cmd.bx, cmd.by, cmd.bw, cmd.bh);
-
-                if (isSel) {
-                    const float cursorX = std::max(cmd.bx + 2.0f, cmd.tx - 10.0f);
-                    m_cursor.drawCursor(renderer, cursorX, cmd.ty, cmd.tsize);
-                }
-
-                const uint32_t textColor = isSel ? C2D_Color32(255, 255, 255, 255) : C2D_Color32(210, 205, 220, 255);
-                const uint32_t shadowColor = C2D_Color32(0x50, 0x40, 0x60, 255);
-
-                renderer.drawText(cmd.label, cmd.tx + 1.0f, cmd.ty + 1.0f, cmd.tsize, shadowColor);
-                renderer.drawText(cmd.label, cmd.tx, cmd.ty, cmd.tsize, textColor);
+            for (unsigned i=0;i<4;++i) {
+                const bool isSel=i==m_selected;
+                const auto& rect=kCommandButtonRects[i];
+                if(isSel) renderer.drawRect(rect.x-1.0f,rect.y-1.0f,
+                    rect.width+2.0f,rect.height+2.0f,C2D_Color32(255,235,70,255));
+                renderer.drawWindow(rect.x,rect.y,rect.width,rect.height);
+                // Reserve the same cursor gutter for every selection. Both text
+                // layers use the same bounds and native raster selection.
+                const float textX=rect.x+30.0f,textY=rect.y+40.0f;
+                const float textWidth=rect.width-38.0f;
+                const char* label=runtimeUiText(commandKeys[i]);
+                renderer.drawTextFitted(label,textX+1,textY+1,0.375f,textWidth,
+                    C2D_Color32(0x50,0x40,0x60,255));
+                const float labelSize=renderer.drawTextFitted(label,textX,textY,0.375f,textWidth,
+                    isSel ? C2D_Color32(255,255,255,255) : C2D_Color32(210,205,220,255));
+                if(isSel) m_cursor.drawCursor(renderer,textX-10,textY,labelSize);
             }
         } else {
             // Poké Balls Inventory Window
