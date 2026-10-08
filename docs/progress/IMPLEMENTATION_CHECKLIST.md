@@ -840,3 +840,5 @@ La búsqueda del índice generado usa búsqueda binaria sobre identidades ordena
 - [ ] Equipo: género real del battleState presentado junto al nombre, reservando ancho y usando tamaño raster del nombre; no inventa símbolo para género desconocido/genderless. Guards PASS; validación visual y variantes shiny en esta lista pendientes.
 
 - [ ] Equipo: indicador shiny original 15×14 a 1:1 con tint de variante 0/1/2, solo para identidad/apariencia resueltas del actor; no infiere shiny de datos ausentes. Hoja física existente reutilizada, carga diferida y retiro GPU conectado al cierre. Guards PASS; composición/ejecución nativa pendientes.
+
+- [ ] Decisiones de captura/aprendizaje: filas de reemplazo usan rectángulos compartidos de input, PS e instrucciones limitados al ancho, iconos compactos a 1:1 en lugar de escala 0.5×. Guards PASS; integración nativa y composición visual pendientes.

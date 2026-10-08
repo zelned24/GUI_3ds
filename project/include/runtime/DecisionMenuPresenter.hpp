@@ -16,17 +16,18 @@ public:
             renderer.drawTextFitted(game.pendingCapturedPokemon().localizedName,12,6,0.5f,294,0xffffffff);
             const auto& context=game.presentation();
             for(unsigned i=0;i<context.playerPartyCount && i<6;++i) {
-                const auto& actor=context.playerParty[i];const float y=38+i*27;
-                renderer.drawWindow(8,y,304,25);
+                const auto& actor=context.playerParty[i];const auto& bounds=kPartyButtonRects[i];
+                const float y=bounds.y;
+                renderer.drawWindow(bounds.x,y,bounds.width,bounds.height);
                 const auto* form=PokerogueContent::findFormById(actor.formId);
                 const unsigned formIndex=form ? form->upstreamFormIndex : 0;
-                m_icons.draw(renderer,actor.dex,formIndex,34,y+5,1,0.5f);
+                m_icons.draw(renderer,actor.dex,formIndex,34,y+5,1,1);
                 const float nameSize=renderer.drawTextFitted(actor.localizedName,61,y+3,0.36f,168,0xffffffff);
                 char hp[32];std::snprintf(hp,sizeof(hp),"%u/%u",actor.battleState.hp,actor.battleState.maxHp);
-                renderer.drawText(hp,237,y+3,0.32f,0xffffffff);
+                renderer.drawTextFitted(hp,237,y+3,0.32f,67,0xffffffff);
                 if(i==game.selectedCapturePartyChoice()) m_cursor.drawCursor(renderer,17,y+3,nameSize);
             }
-            renderer.drawText("A: sustituir   B: no incorporar",12,213,0.32f,0xffffffff);
+            renderer.drawTextFitted("A: sustituir   B: no incorporar",12,213,0.32f,296,0xffffffff);
             return;
         }
         if(game.moveLearningPending()) {
@@ -42,7 +43,7 @@ public:
                     nameSize=renderer.drawTextFitted(name,rect.x+21,rect.y+9,nameSize,rect.width-30,0xffffffff);
                 if(i==game.selectedBattleMove()) m_cursor.drawCursor(renderer,rect.x+7,rect.y+9,nameSize);
             }
-            renderer.drawText("A: aprender   B: no aprender",12,204,0.32f,0xffffffff);
+            renderer.drawTextFitted("A: aprender   B: no aprender",12,204,0.32f,296,0xffffffff);
             return;
         }
         renderer.drawWindow(12,40,296,158);
@@ -56,7 +57,7 @@ public:
                 target ? target->name : "Evolucion";
             if(!renderer.drawTextBox(question,26,91,0.375f,267,2,0xffffffff))
                 renderer.drawTextFitted(question,26,91,0.375f,267,0xffffffff);
-            renderer.drawText("A: confirmar   B: cancelar",26,145,0.35f,0xffffffff);
+            renderer.drawTextFitted("A: confirmar   B: cancelar",26,145,0.35f,267,0xffffffff);
         } else {
             renderer.drawText(game.playerWon() ? "Victoria" : "Fin de partida",26,55,0.55f,0xffffffff);
             char line[64];std::snprintf(line,sizeof(line),"Ola %u   Nivel %u",unsigned(game.run().wave),unsigned(game.presentation().player.level));
@@ -66,6 +67,6 @@ public:
         renderer.drawTextFitted(game.battleFeedback().c_str(),12,213,0.3f,296,0xffffffff);
     }
 private:
-    TitleMenuPresenter m_cursor;PokemonIconPresenter m_icons;
+    TitleMenuPresenter m_cursor;PokemonIconPresenter m_icons{true};
 };
 }

@@ -224,3 +224,9 @@ assert(partyPresentation.includes("bounds.x+40+nameWidth+3"));
 assert(partyPresentation.includes("actor.actorIdentityResolved && actor.actor.appearanceResolved && actor.actor.shiny"));
 assert(partyPresentation.includes("kStarterVariantIconFrames[variant]"));
 assert(main.includes("partyMenu.clear(&renderer)"));
+
+const decisions=await fs.readFile(new URL('../project/include/runtime/DecisionMenuPresenter.hpp',import.meta.url),'utf8');
+assert(decisions.includes('bounds=kPartyButtonRects[i]'));
+assert(decisions.includes('drawTextFitted(hp,237,y+3,0.32f,67'));
+assert(decisions.includes('PokemonIconPresenter m_icons{true}'));
+assert(!decisions.includes('34,y+5,1,0.5f'));
