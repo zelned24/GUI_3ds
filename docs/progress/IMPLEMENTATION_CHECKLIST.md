@@ -820,3 +820,6 @@ La búsqueda del índice generado usa búsqueda binaria sobre identidades ordena
 - [ ] Composición de submenú: atenuación del título mantenida en ajustes anidados, información y gestión de datos; Pokédex usa vista superior propia. Selector `overlaysTitle()` conectado a main, casos nativos escritos sin ejecutar; revisión visual pendiente.
 
 - [ ] EXP tras intervalo largo: vuelve a validar el nivel/total recibido después de avanzar la animación anterior; correcciones decrecientes proyectan el valor real sin underflow del piso de EXP. Casos de nivel menor y menor total en el mismo nivel escritos sin ejecutar. No modifica gameplay ni afirma coordinación de fases completa.
+
+- [x] Empaquetado de capas animadas minimiza área de textura potencia de dos entre distribuciones regulares válidas: `end_b` baja de 1024×256 (1 MiB RGBA8 estimado) a 512×256 (512 KiB); `end_a` permanece 1 MiB con dimensiones máximas menores. Frames/pixels/metadata verificados, bytes estimados registrados por capa.
+- [ ] Memoria residente y pico real de arena en Old 3DS siguen pendientes; estimaciones de textura no incluyen metadata, CPU, retirement ni otros presenters.

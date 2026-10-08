@@ -15,6 +15,10 @@ for row in report["files"]:
     assert hashlib.sha256(pinned).hexdigest()==row["sourceSHA256"]
     texture=root / "build/romfs" / row["runtimePath"].removeprefix("romfs:/")
     assert hashlib.sha256(texture.read_bytes()).hexdigest()==row["convertedSHA256"]
+    tw=max(8,1 << (row["width"]-1).bit_length())
+    th=max(8,1 << (row["height"]-1).bit_length())
+    assert row["estimatedTextureSize"]==[tw,th]
+    assert row["estimatedTextureBytes"]==tw*th*4
     if row["metadataPath"]:
         animated+=1
         assert row["runtimeScale"]==1 and row["resampling"]=="NEAREST_FRAMES"
@@ -29,6 +33,15 @@ for row in report["files"]:
         manifest=source.with_suffix(".json")
         pinned_manifest=subprocess.check_output(["git","-C",str(root / "build/upstream/pokerogue-assets"),"show",report["revision"]+":"+row["sourcePath"].removesuffix(".png")+".json"])
         assert manifest.read_bytes()==pinned_manifest
+        cell_w=max(f["frame"]["w"] for f in row["runtimeFrames"])
+        cell_h=max(f["frame"]["h"] for f in row["runtimeFrames"])
+        count=len(row["runtimeFrames"])
+        estimates=[]
+        for columns in range(1,count+1):
+            w,h=columns*cell_w,((count+columns-1)//columns)*cell_h
+            if w<=1024 and h<=1024:
+                estimates.append(max(8,1 << (w-1).bit_length())*max(8,1 << (h-1).bit_length())*4)
+        assert row["estimatedTextureBytes"]==min(estimates)
         original_frames=sorted(json.loads(pinned_manifest)["textures"][0]["frames"],key=lambda frame:frame["filename"])
         assert original_frames==row["sourceFrames"]
         staged=root / "build/native-presentation/arena-layers" / source.name

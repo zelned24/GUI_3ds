@@ -26,7 +26,16 @@ def adapt_frames(png, manifest, destination):
                 "spriteSourceSize":{"x":box[0],"y":box[1],"w":crop.width,"h":crop.height},
                 "rotated":False,"trimmed":True})
     cell_w=max(c.width for c in crops);cell_h=max(c.height for c in crops)
-    columns=4;rows=(len(crops)+columns-1)//columns
+    def power_of_two(value): return max(8,1 << (value-1).bit_length())
+    candidates=[]
+    for columns in range(1,len(crops)+1):
+        rows=(len(crops)+columns-1)//columns
+        w,h=columns*cell_w,rows*cell_h
+        if w<=1024 and h<=1024:
+            tw,th=power_of_two(w),power_of_two(h)
+            candidates.append((tw*th,max(tw,th),w*h,columns,rows))
+    if not candidates: raise ValueError("Adapted atlas requires paging")
+    _,_,_,columns,rows=min(candidates)
     packed=Image.new("RGBA",(columns*cell_w,rows*cell_h))
     if packed.width>1024 or packed.height>1024: raise ValueError("Adapted atlas requires paging")
     for i,(crop,frame) in enumerate(zip(crops,adapted)):
@@ -66,6 +75,11 @@ for png in sorted((output / "images/arenas").glob("*.png")):
     row["sourceSize"]=list(source_size)
     row["runtimeScale"]=1
     row["resampling"]="NEAREST_FRAMES" if manifest.exists() else "NEAREST"
+    texture_w=max(8,1 << (width-1).bit_length())
+    texture_h=max(8,1 << (height-1).bit_length())
+    row["estimatedTextureSize"]=[texture_w,texture_h]
+    row["estimatedTextureBytes"]=texture_w*texture_h*4
+    row["textureFormat"]="RGBA8"
     row["stagedSHA256"]=hashlib.sha256(raster_source.read_bytes()).hexdigest()
     manifest=png.with_suffix(".json")
     if manifest.exists():
