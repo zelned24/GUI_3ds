@@ -14,6 +14,12 @@
 #include <initializer_list>
 using namespace Pokerogue3DS;
 int main() {
+    for(unsigned y=0;y<=240;++y) for(unsigned x=0;x<=320;++x) {
+        const bool ability=x>=24 && x<296 && y>=207 && y<225;
+        assert(kStarterFormAbilityRect.contains(x,y)==ability);
+        if(ability) assert(starterFormRowAt(x,y)==-1 && !kStarterFormBackRect.contains(x,y) && !kStarterFormCandyRect.contains(x,y));
+    }
+
     assert(movePpBarPixels(0,10,94)==0);
     assert(movePpBarPixels(1,3,94)==31);
     assert(movePpBarPixels(2,3,94)==62);

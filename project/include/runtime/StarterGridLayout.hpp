@@ -41,6 +41,7 @@ inline constexpr bool starterMatchesCaptureFilter(StarterCaptureFilter filter,bo
 }
 inline constexpr unsigned kStarterFormPageSize=6,kStarterFormRowHeight=23;
 inline constexpr TouchRect kStarterFormRowsRect{24,43,272,kStarterFormPageSize*kStarterFormRowHeight};
+inline constexpr TouchRect kStarterFormAbilityRect{24,207,272,18};
 inline constexpr TouchRect kStarterFormBackRect{164,183,132,21};
 inline constexpr TouchRect kStarterFormCandyRect{24,183,132,21};
 inline constexpr TouchRect kStarterCandyBackRect{24,183,272,21};

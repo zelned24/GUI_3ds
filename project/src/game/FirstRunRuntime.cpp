@@ -261,6 +261,20 @@ NativeSaveResult FirstRunRuntime::selectSetupStarterForm(uint16_t dex, uint16_t 
     return NativeSaveResult::Ok;
 }
 
+NativeSaveResult FirstRunRuntime::cycleSetupStarterAbility(int direction,NativeProgressStore& store) {
+    if(m_runStarted) return NativeSaveResult::UnsupportedStage;
+    const uint16_t dex=selectedSetupStarterDex();
+    const auto* record=starterProgress(dex);
+    if(!direction || !record || !canCycleSetupStarterAbility(dex)) return NativeSaveResult::InvalidRecord;
+    uint8_t current=0;uint16_t ability=0;
+    if(!nativeStarterPreparedAbility(*record,current,ability)) return NativeSaveResult::InvalidRecord;
+    for(unsigned step=1;step<3;++step) {
+        const uint8_t next=static_cast<uint8_t>((current+(direction>0 ? step : 3-step))%3);
+        if(nativeStarterSelectedAbility(*record,next,ability)) return selectSetupStarterAbility(dex,next,store);
+    }
+    return NativeSaveResult::InvalidRecord;
+}
+
 NativeSaveResult FirstRunRuntime::selectSetupStarterAbility(uint16_t dex,uint8_t index,NativeProgressStore& store) {
     if(m_runStarted) return NativeSaveResult::UnsupportedStage;
     const auto* current=starterProgress(dex);uint16_t ability=0;

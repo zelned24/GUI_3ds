@@ -321,6 +321,9 @@ static int checkStarterAbilityPreferencePersistence() {
     if(restored.selectSetupStarterAbility(1,255,store)!=NativeSaveResult::Ok ||
         restored.starterProgress(1)->preferredAbilityIndex!=255 || restored.presentation().player.actor.abilityIndex!=0 ||
         restored.setupStarterAbilityId(1)!=species->ability1) return 730;
+    if(!restored.canCycleSetupStarterAbility(1) || restored.cycleSetupStarterAbility(0,store)!=NativeSaveResult::InvalidRecord ||
+        restored.cycleSetupStarterAbility(1,store)!=NativeSaveResult::Ok || restored.setupStarterAbilityId(1)!=species->abilityHidden ||
+        restored.cycleSetupStarterAbility(-1,store)!=NativeSaveResult::Ok || restored.setupStarterAbilityId(1)!=species->ability1) return 731;
     return 0;
 }
 

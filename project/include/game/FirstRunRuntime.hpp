@@ -101,6 +101,12 @@ public:
     uint8_t starterCostReduction(uint16_t dex) const;
     uint16_t setupStarterFormIndex(uint16_t dex) const;
     NativeSaveResult selectSetupStarterAbility(uint16_t dex,uint8_t index,NativeProgressStore& store);
+    NativeSaveResult cycleSetupStarterAbility(int direction,NativeProgressStore& store);
+    bool canCycleSetupStarterAbility(uint16_t dex) const {
+        const auto* record=starterProgress(dex);
+        const uint8_t mask=record ? nativeStarterAbilityChoiceMask(*record) : 0;
+        return !m_runStarted && starterUnlocked(dex) && mask && (mask & (mask-1));
+    }
     NativeSaveResult cycleSetupStarterForm(int direction, NativeProgressStore& store);
     NativeSaveResult selectSetupStarterForm(uint16_t dex, uint16_t formIndex, NativeProgressStore& store);
     NativeSaveResult purchaseStarterCostReduction(uint16_t dex, NativeProgressStore& store,

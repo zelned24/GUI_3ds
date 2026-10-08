@@ -300,3 +300,8 @@ assert(!frontend.includes("touchY >= 115 && touchY <= 145"));
 assert(main.includes("battleHud.setExpGainsSpeed(preferences.expGainsSpeed)"));
 assert(frontend.includes("settings:expGainsSpeed"));
 assert(preferencesSource.includes("version==4 ? unsigned((versionFlags>>19)&3u) : 0u"));
+
+assert(main.includes("game.cycleSetupStarterAbility(1,progress)"));
+assert(main.includes("kStarterFormAbilityRect.contains(touch.px,touch.py)"));
+assert(setupPresentation.includes("game.canCycleSetupStarterAbility(dex)"));
+assert(setupPresentation.includes("abilityUiName(game.setupStarterAbilityId(dex))"));

@@ -443,7 +443,13 @@ public:
             renderer.drawTextFitted("Volver",180,189,0.3125f,108,0xffffffff);
             renderer.drawWindow(kStarterFormCandyRect.x,kStarterFormCandyRect.y,kStarterFormCandyRect.width,kStarterFormCandyRect.height);
             renderer.drawTextFitted("Caramelos",40,189,0.3125f,108,0xffffffff);
-            renderer.drawTextFitted(formFeedback ? formFeedback : "L/R: página   A: elegir   B: volver",24,214,0.25f,272,0xffffffff);
+            const uint16_t dex=game.selectedSetupStarterDex();
+            const bool abilityEnabled=game.canCycleSetupStarterAbility(dex);
+            renderer.drawWindow(kStarterFormAbilityRect.x,kStarterFormAbilityRect.y,kStarterFormAbilityRect.width,kStarterFormAbilityRect.height);
+            char abilityButton[160];
+            std::snprintf(abilityButton,sizeof(abilityButton),"Y %s %s",runtimeUiText("starter-select-ui-handler:cycleAbility"),abilityUiName(game.setupStarterAbilityId(dex)));
+            renderer.drawTextFitted(abilityButton,kStarterFormAbilityRect.x+6,kStarterFormAbilityRect.y+4,0.25f,kStarterFormAbilityRect.width-12,abilityEnabled ? 0xffffffff : 0xff909090);
+            renderer.drawTextFitted(formFeedback ? formFeedback : "L/R: página   A: elegir   B: volver",24,3,0.25f,272,0xffffffff);
         } else if(candyStoreOpen) {
             renderer.drawWindow(12,20,296,210);
             const uint16_t dex=game.selectedSetupStarterDex();
