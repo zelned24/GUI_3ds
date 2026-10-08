@@ -421,4 +421,24 @@ int main() {
         dex.clear(&renderer);
     }
 
+    // Reject degenerate/inverted UV rectangles before reporting a drawn icon.
+    failIconLoad=false;malformedIconImage=false;
+    for(unsigned invalid=0;invalid<4;++invalid) {
+        Renderer2D renderer;PokemonIconPresenter icons;
+        iconSubtexture.left=0;iconSubtexture.right=1;
+        iconSubtexture.top=1;iconSubtexture.bottom=0;
+        if(invalid==0) iconSubtexture.left=iconSubtexture.right;
+        if(invalid==1) iconSubtexture.left=2;
+        if(invalid==2) iconSubtexture.top=iconSubtexture.bottom;
+        if(invalid==3) iconSubtexture.top=-1;
+        const unsigned loads=iconLoads,draws=iconDraws,retired=iconRetired;
+        assert(!icons.draw(renderer,1,0,0,0));
+        assert(iconLoads==loads+1 && iconDraws==draws && iconRetired==retired+1);
+        assert(!icons.draw(renderer,1,0,0,0) && iconLoads==loads+1);
+        icons.clear(&renderer);
+        iconSubtexture.left=0;iconSubtexture.right=1;
+        iconSubtexture.top=1;iconSubtexture.bottom=0;
+        assert(icons.draw(renderer,1,0,0,0) && iconLoads==loads+2);
+        icons.clear(&renderer);
+    }
 }

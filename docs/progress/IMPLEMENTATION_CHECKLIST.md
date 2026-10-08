@@ -2,7 +2,7 @@
 
 ## Cómo medir el avance
 
-- Referencia actual: rama `codex/pokerogue-3ds-migration`, último commit de implementación publicado confirmado `700df08`; conversión física ampliada terminada: 10682 atlas y 10746 páginas `.t3x`. Validación nativa y visual pendiente. Los resultados históricos no verifican estos cambios locales.
+- Referencia actual: rama `codex/pokerogue-3ds-migration`, último commit de implementación publicado confirmado `379eaa7`; conversión física ampliada terminada: 10682 atlas y 10746 páginas `.t3x`. Validación nativa y visual pendiente. Los resultados históricos no verifican estos cambios locales.
 - Objetivo: PokéRogue jugable y fiel al snapshot upstream en Old 3DS, con ambas pantallas, progreso exportable y actualizaciones desde consola.
 - Cada ID es estable para reportar avances: `MOV-07`, `GUI-03`, etc. No equivale a un movimiento/habilidad individual.
 - Una casilla sin marcar puede tener código parcial; el resumen de cada área indica lo existente. Marcarla solo con integración completa y evidencia ejecutada pertinente.
@@ -57,7 +57,7 @@ Esta tabla describe código inspeccionado, no resultados de ejecución. Las nota
 | GUI-01–14 / AST-01–08 | Presentación nativa, rasters nearest, HUD HP/EXP, iconos reales de items/huevos, controles compartidos y sonidos UI NDSP con volúmenes persistidos | Cerrar todas las pantallas, música/efectos de batalla, animaciones, controles restantes y comparación visual |
 | SAV-01–08 | Codecs, journals y bundles | Todos los estados de run/perfil, export/import conectado a UI y compatibilidad de contenido |
 | OTA-01–08 | Infraestructura de packs | Catálogo de gameplay cargable, firma, descarga e instalación desde consola |
-| 3DS-01–06 / VAL-01–12 | Pruebas escritas y pipeline; 24 comprobaciones de presentación JS/Python sin compilación pasan | 7 gates nativos de presentación pendientes, suite completa, build, Azahar y medición en Old 3DS XL física |
+| 3DS-01–06 / VAL-01–12 | Pruebas escritas y pipeline; 25 comprobaciones de presentación JS/Python sin compilación pasan | 8 gates nativos de presentación pendientes, suite completa, build, Azahar y medición en Old 3DS XL física |
 
 ### Presentación: evidencia vigente y siguiente integración
 
@@ -1176,3 +1176,9 @@ La compilación ARM solicitada terminó correctamente; no prueba ejecución de h
 
 - Implementado sin ejecución nativa: animationFrame usa búsqueda binaria en el índice ordenado por carga para hallar el límite de reproducción, en lugar de recorrer hasta 400 frames por dibujo. Mantiene orden, límites y fórmula temporal con uint64_t.
 - Harness C++ ampliado: comparación con referencia lineal para límites 1–400 y timestamps hasta UINT64_MAX. Guards PASS; harness aplazado. No se declara mejora de FPS medida ni cierre de 3DS/AST.
+
+### Validación UV de iconos normales
+
+- Implementado sin ejecución nativa: el presenter rechaza UV horizontales/verticales vacías o invertidas, como ya exige Renderer2D. Retira la textura inválida y devuelve false en lugar de indicar que se dibujó; el caller puede mostrar su alternativa explícita. No reintenta cargar hasta invalidar el cache.
+- Harness C++ ampliado con cuatro degeneraciones/inversiones, ausencia de dibujo, retiro y recuperación tras clear; ejecución aplazada.
+- Evidencia actual: 25 comprobaciones de presentación JS/Python PASS, 8 gates nativos omitidos por la prohibición de compilar; guards frontend PASS y git diff --check PASS. Esto no demuestra dibujo PICA200 ni cierre del checklist.

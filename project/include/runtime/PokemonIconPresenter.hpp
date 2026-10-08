@@ -158,7 +158,7 @@ public:
                 if(!img.tex || !img.subtex || img.subtex->width!=expected || img.subtex->height!=expected
                     || !std::isfinite(img.subtex->left) || !std::isfinite(img.subtex->right)
                     || !std::isfinite(img.subtex->top) || !std::isfinite(img.subtex->bottom)
-                    || img.subtex->top<img.subtex->bottom) {
+                    || img.subtex->left>=img.subtex->right || img.subtex->top<=img.subtex->bottom) {
                     renderer.retireSpriteSheet(slot->sheet);slot->sheet=nullptr;
                 } else C3D_TexSetFilter(img.tex,GPU_NEAREST,GPU_NEAREST);
             }

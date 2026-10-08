@@ -564,3 +564,6 @@ assert(actorSprites.includes('m_playerBackAttempted = false;'));
 const atlasMetadata=await fs.readFile(new URL('../project/src/runtime/PokemonAtlasMetadata.cpp',import.meta.url),'utf8');
 assert(atlasMetadata.includes('std::upper_bound(m_animationIndices.begin()'));
 assert(atlasMetadata.includes('const uint64_t count=static_cast<uint64_t>(end-m_animationIndices.begin())'));
+
+assert(icons.includes('img.subtex->left>=img.subtex->right || img.subtex->top<=img.subtex->bottom'));
+assert(!icons.includes('img.subtex->top<img.subtex->bottom)'));
