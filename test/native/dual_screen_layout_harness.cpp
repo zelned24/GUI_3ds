@@ -21,6 +21,12 @@ int main() {
     assert(presentationAnimationFrame(UINT64_MAX,12,3)==1);
     assert(presentationAnimationFrame(UINT64_MAX,0,3)==0);
     assert(presentationAnimationFrame(UINT64_MAX,12,0)==0);
+    for(const auto& target:kTargetButtonRects) {
+        assert(target.y>=210 && target.y+target.height<=240);
+        assert(target.x+target.width<=320);
+        for(const auto& move:kMoveButtonRects)
+            assert(target.y>=move.y+move.height);
+    }
     ExperienceBarTimeline expVisual;
     assert(expVisual.update("MEDIUM_FAST",5,150,1));
     assert(expVisual.level()==5 && expVisual.total()==150);
@@ -302,7 +308,7 @@ int main() {
     }
     for (unsigned y=0;y<240;++y) for (unsigned x=0;x<320;++x) {
         const int column=x>=10 && x<156 ? 0 : x>=164 && x<310 ? 1 : -1;
-        assert(targetButtonAt(x,y)==(y>=182 && y<208 ? column : -1));
+        assert(targetButtonAt(x,y)==(y>=210 && y<234 ? column : -1));
         for (unsigned count=0;count<=6;++count) {
             int expected=-1;
             if (x>=8 && x<312 && y>=38) {

@@ -27,7 +27,7 @@ inline constexpr int moveButtonAt(unsigned x,unsigned y) {
     for (unsigned i=0;i<4;++i) if (kMoveButtonRects[i].contains(x,y)) return int(i);
     return -1;
 }
-inline constexpr TouchRect kTargetButtonRects[]={{10,182,146,26},{164,182,146,26}};
+inline constexpr TouchRect kTargetButtonRects[]={{10,210,146,24},{164,210,146,24}};
 inline constexpr int targetButtonAt(unsigned x,unsigned y) {
     for (unsigned i=0;i<2;++i) if (kTargetButtonRects[i].contains(x,y)) return int(i);
     return -1;

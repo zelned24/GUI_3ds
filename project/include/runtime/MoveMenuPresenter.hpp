@@ -34,7 +34,7 @@ public:
         renderer.clear(C2D_Color32(36, 28, 44, 255));
 
         // Left Window: 2x2 Move List
-        renderer.drawWindow(6, 8, 186, 224);
+        renderer.drawWindow(6, 8, 186, game.doubleBattle() ? 196 : 224);
 
         // Header inside left window
         renderer.drawText("MOVIMIENTOS", 18, 18, 0.30f, C2D_Color32(190, 180, 205, 255));
@@ -85,10 +85,10 @@ public:
         }
 
         // Left window footer instructions
-        renderer.drawText("A: Atacar   B: Volver", 20, 198, 0.30f, C2D_Color32(240, 240, 245, 255));
+        renderer.drawTextFitted("A: Atacar   B: Volver", 20, game.doubleBattle() ? 180 : 198, 0.30f, 160, C2D_Color32(240, 240, 245, 255));
 
         // Right Window: Move Details Panel
-        renderer.drawWindow(196, 8, 118, 224);
+        renderer.drawWindow(196, 8, 118, game.doubleBattle() ? 196 : 224);
 
         const auto* curMove = struggleActive
             ? PokerogueContent::findMoveById(PokerogueContent::kStruggleMoveId)
@@ -134,11 +134,11 @@ public:
                 renderer.drawText(ppFull, 208, 186, 0.28f, C2D_Color32(230, 225, 240, 255));
 
                 const float ppRatio = maxPp ? float(curPp) / maxPp : 0.0f;
-                renderer.drawRect(208, 202, 94, 3, C2D_Color32(35, 30, 42, 255));
+                renderer.drawRect(208, game.doubleBattle() ? 198 : 202, 94, 3, C2D_Color32(35, 30, 42, 255));
                 if (ppRatio > 0.0f) {
                     const uint32_t barCol = ppRatio > 0.5f ? C2D_Color32(60, 220, 100, 255)
                         : ppRatio > 0.2f ? C2D_Color32(245, 180, 20, 255) : C2D_Color32(235, 60, 60, 255);
-                    renderer.drawRect(208, 202, 94 * ppRatio, 3, barCol);
+                    renderer.drawRect(208, game.doubleBattle() ? 198 : 202, 94 * ppRatio, 3, barCol);
                 }
             }
         }
@@ -152,7 +152,7 @@ public:
                 renderer.drawRect(bounds.x, bounds.y, bounds.width, bounds.height,
                     isSel ? C2D_Color32(255, 235, 70, 255) : C2D_Color32(70, 60, 80, 255));
                 renderer.drawWindow(bounds.x + 2, bounds.y + 2, bounds.width - 4, bounds.height - 4);
-                renderer.drawText(target.localizedName ? target.localizedName : "", bounds.x + 8, bounds.y + 5, 0.32f, C2D_Color32(255, 255, 255, 255));
+                renderer.drawTextFitted(target.localizedName ? target.localizedName : "", bounds.x + 8, bounds.y + 5, 0.32f, bounds.width-16, C2D_Color32(255, 255, 255, 255));
             }
         }
     }
