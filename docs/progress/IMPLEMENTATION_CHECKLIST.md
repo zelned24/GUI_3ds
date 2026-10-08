@@ -827,3 +827,5 @@ La búsqueda del índice generado usa búsqueda binaria sobre identidades ordena
 - [ ] Movimientos en combate doble: selección de objetivo trasladada a franja y=210..233, separada de instrucciones y PP; paneles acortados y barra PP ajustada para evitar solapamiento. Nombres de objetivo y ayuda usan texto limitado a su región. Geometría nativa escrita sin ejecutar; guards de conexión PASS, comparación visual pendiente.
 
 - [ ] Movimientos táctiles: Struggle por PP agotados se activa tocando el primer rectángulo mediante el mismo comando de turno de A; otros slots permanecen inactivos. Nombres/PP derivan posición y ancho del rectángulo compartido con hit-test, evitando texto fuera de su botón. Guards de conexión PASS; comportamiento nativo y comparación visual pendientes.
+
+- [ ] Volver táctil en movimientos: región compartida con etiqueta B, acotada a x=100..187; funciona también en combate doble y no consume toques sobre PP/detalles. Instrucciones A/B separadas, botones de objetivo no se solapan. Barrido de geometría escrito sin ejecutar; guards PASS, ejecución/visual pendientes.

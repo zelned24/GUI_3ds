@@ -27,6 +27,14 @@ int main() {
         for(const auto& move:kMoveButtonRects)
             assert(target.y>=move.y+move.height);
     }
+    for(bool doubleBattle:{false,true}) {
+        const auto back=moveBackRectangle(doubleBattle);
+        for(unsigned y=0;y<240;++y) for(unsigned x=0;x<320;++x)
+            assert(back.contains(x,y)==(x>=100 && x<188 && y>=(doubleBattle ? 174u : 192u) && y<(doubleBattle ? 204u : 222u)));
+        assert(!back.contains(UINT_MAX,UINT_MAX));
+        assert(!back.contains(208,202)); // PP panel never closes the menu.
+        if(doubleBattle) for(const auto& target:kTargetButtonRects) assert(back.y+back.height<=target.y);
+    }
     ExperienceBarTimeline expVisual;
     assert(expVisual.update("MEDIUM_FAST",5,150,1));
     assert(expVisual.level()==5 && expVisual.total()==150);

@@ -763,12 +763,12 @@ int main() {
                         game.selectBattleMove(delta<0 ? -1 : 1);
                     changed=true;
                 }
-            } else if (game.doubleBattle()) {
-                const int target=Pokerogue3DS::targetButtonAt(touch.px,touch.py);
+            } else {
+                const int target=game.doubleBattle() ? Pokerogue3DS::targetButtonAt(touch.px,touch.py) : -1;
                 if (target>=0 && target!=game.selectedTarget())
                     changed=game.cycleTarget(target>game.selectedTarget() ? 1 : -1) || changed;
-            } else if (touch.py >= 200) {
-                battleMenu.reset();
+                else if(Pokerogue3DS::moveBackRectangle(game.doubleBattle()).contains(touch.px,touch.py))
+                    battleMenu.reset();
             }
         }
         if((rawPressed & KEY_TOUCH) && game.capturePartyChoicePending()) {

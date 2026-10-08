@@ -199,9 +199,11 @@ assert(main.includes("if(frontend.overlaysTitle()) renderer.drawRect(0,0,400,240
 const movePresentation=await fs.readFile(new URL('../project/include/runtime/MoveMenuPresenter.hpp',import.meta.url),'utf8');
 assert(movePresentation.includes('game.doubleBattle() ? 196 : 224'));
 assert(movePresentation.includes('bounds.width-16'));
-assert(movePresentation.includes('game.doubleBattle() ? 180 : 198'));
+assert(movePresentation.includes('const auto back=moveBackRectangle(game.doubleBattle())'));
 
 assert(main.includes("if(struggleActive && touchedMove==0)"));
 assert(movePresentation.includes("const auto& bounds=kMoveButtonRects[i]"));
 assert(movePresentation.includes("const float nameWidth=bounds.width-28"));
 assert(!movePresentation.includes("kMovePos"));
+
+assert(main.includes("moveBackRectangle(game.doubleBattle()).contains(touch.px,touch.py)"));

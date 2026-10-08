@@ -80,7 +80,9 @@ public:
         }
 
         // Left window footer instructions
-        renderer.drawTextFitted("A: Atacar   B: Volver", 20, game.doubleBattle() ? 180 : 198, 0.30f, 160, C2D_Color32(240, 240, 245, 255));
+        const auto back=moveBackRectangle(game.doubleBattle());
+        renderer.drawTextFitted("A: Atacar",20,back.y+6,0.30f,76,C2D_Color32(240,240,245,255));
+        renderer.drawTextFitted("B: Volver",back.x+2,back.y+6,0.30f,back.width-4,C2D_Color32(240,240,245,255));
 
         // Right Window: Move Details Panel
         renderer.drawWindow(196, 8, 118, game.doubleBattle() ? 196 : 224);
