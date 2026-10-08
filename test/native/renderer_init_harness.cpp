@@ -18,6 +18,7 @@ namespace {
 constexpr unsigned iconPageCount=sizeof(Pokerogue3DS::kPokemonIconPages)/sizeof(Pokerogue3DS::kPokemonIconPages[0]);
 int iconTokens[iconPageCount]{},iconLoads=0;Tex3DS_SubTexture iconSub{512,512,0,1,1,0};
 int compactIconTokens[iconPageCount]{},compactIconLoads=0;Tex3DS_SubTexture compactIconSub{256,256,0,1,1,0};
+bool frameBeginAllowed=true;int sceneBegins=0;
 int fail=0,c3Free=0,c2Free=0,fontFree=0,sheetFree=0,bufferFree=0,targets=0;
 unsigned imageWidth=0,imageHeight=0;float imageTop=0,imageCenterX=0,imageCenterY=0,imageRotation=0;
 size_t maxMeasureBytes=0;
@@ -50,9 +51,9 @@ const C2D_FontInfo* C2D_FontGetInfo(C2D_Font font) {assert(font);for(unsigned i=
 C2D_SpriteSheet C2D_SpriteSheetLoad(const char* path) {for(unsigned p=0;p<iconPageCount;++p) if(!std::strcmp(path,Pokerogue3DS::kCompactPokemonIconPages[p])) {++compactIconLoads;return &compactIconTokens[p];}for(unsigned p=0;p<iconPageCount;++p) if(!std::strcmp(path,Pokerogue3DS::kPokemonIconPages[p])) {++iconLoads;return &iconTokens[p];}for(unsigned i=0;i<17;++i) if(!std::strcmp(path,Pokerogue3DS::kHudIconAtlases[i].path)) {++hudLoads;return hudMissing ? nullptr : &hudTokens[i];}if(std::strcmp(path,Pokerogue3DS::kTypeLabelPath)==0) {++typeLoads;return typeMissing ? nullptr : &typeToken;}return fail==6 ? nullptr : &token;}
 void C2D_SpriteSheetFree(C2D_SpriteSheet) {++sheetFree;}
 C2D_Image C2D_SpriteSheetGetImage(C2D_SpriteSheet sheet,size_t) {for(unsigned p=0;p<iconPageCount;++p) if(sheet==&compactIconTokens[p]) return {&tex,&compactIconSub};for(unsigned p=0;p<iconPageCount;++p) if(sheet==&iconTokens[p]) return {&tex,&iconSub};for(unsigned i=0;i<17;++i) if(sheet==&hudTokens[i]) return {&tex,&hudSubs[i]};return {&tex,sheet==&typeToken ? &typeSub : (fail==7 ? nullptr : &sub)};}
-bool C3D_FrameBegin(u8) {return true;}
+bool C3D_FrameBegin(u8) {return frameBeginAllowed;}
 void C2D_TextBufClear(C2D_TextBuf buf) {if(buf==&measureToken) ++measureClears;else ++mainClears;}
-void C2D_SceneBegin(C3D_RenderTarget*) {}
+void C2D_SceneBegin(C3D_RenderTarget*) {++sceneBegins;}
 void C2D_TargetClear(C3D_RenderTarget*,u32) {}
 void C2D_DrawRectSolid(float,float,float,float,float,u32) {}
 void C2D_DrawImageAtRotated(C2D_Image image,float x,float y,float,float rotation,const C2D_ImageTint*,float sx,float sy) {imageCenterX=x;imageCenterY=y;imageRotation=rotation;++imageDraws;imageWidth=image.subtex->width;imageHeight=image.subtex->height;imageTop=image.subtex->top;imageScaleX=sx;imageScaleY=sy;}
@@ -335,6 +336,12 @@ int main() {
         assert(sheetFree==beforeRetire); // Queued draws still own this texture.
         renderer.endFrame();
         assert(sheetFree==beforeRetire); // Submission is not GPU completion.
+        frameBeginAllowed=false;
+        const int scenesBeforeFailure=sceneBegins;
+        renderer.beginFrame();renderer.beginTop();renderer.beginBottom();
+        assert(sheetFree==beforeRetire); // A failed fence cannot release GPU users.
+        assert(sceneBegins==scenesBeforeFailure); // Nor publish an invalid scene.
+        frameBeginAllowed=true;
         renderer.beginFrame();
         assert(sheetFree==beforeRetire+1); // SYNCDRAW completed prior users.
         renderer.endFrame();

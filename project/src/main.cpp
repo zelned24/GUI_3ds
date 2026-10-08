@@ -75,7 +75,6 @@ int main() {
         renderer.beginBottom();
         renderer.clear(0xff000000);
         renderer.endFrame();
-        gspWaitForVBlank();
     }
 
 #if defined(POKEROGUE_ENABLE_QUICKJS)
@@ -231,6 +230,8 @@ int main() {
             Pokerogue3DS::HeldModifierStorageResult::Ok;
     };
 
+    // Renderer2D::beginFrame owns VBlank pacing through SYNCDRAW.
+    // A second wait after submission would delay input and animation unnecessarily.
     while (aptMainLoop()) {
         const uint64_t frameAnimationTimeMs=Pokerogue3DS::presentationMilliseconds(
             presentationStartTicks,svcGetSystemTick(),SYSCLOCK_ARM11);
@@ -257,7 +258,6 @@ int main() {
                 renderer.beginBottom();
                 renderer.clear(0xff000000);
                 renderer.endFrame();
-                gspWaitForVBlank();
                 continue;
             }
             // The menu consumes input before the battle/JS command loop.
@@ -381,7 +381,6 @@ int main() {
             renderer.beginBottom();
             frontend.draw(renderer,loaded==Pokerogue3DS::NativeSaveResult::Ok ? &restored : nullptr,&game);
             renderer.endFrame();
-            gspWaitForVBlank();
             continue;
         }
         if (!partyMenu.available(game)) partyMenu.open=false;
@@ -908,7 +907,6 @@ int main() {
 #endif
 #if defined(POKEROGUE_QUICKJS_DIAGNOSTIC_RENDER)
             renderer.endFrame();
-            gspWaitForVBlank();
             continue;
 #endif
         }
@@ -1009,7 +1007,6 @@ int main() {
             battleMenu.draw(renderer,game);
         else decisionMenu.draw(renderer,game);
         renderer.endFrame();
-        gspWaitForVBlank();
     }
 
     // Fence the last submitted frame before presenters with direct cleanup release textures.

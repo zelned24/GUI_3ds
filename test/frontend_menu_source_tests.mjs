@@ -467,3 +467,7 @@ assert(hudSource.indexOf("m_loadAttempted[index]=true;")<hudSource.indexOf("C2D_
 assert(hudSource.includes("m_loadAttempted={};"));
 assert(hudSource.includes("img.subtex->width!=texture.width"));
 assert(hudSource.includes("img.subtex->height!=texture.height"));
+
+// SYNCDRAW owns pacing; only the renderer initialization error console waits manually.
+assert.equal((main.match(/gspWaitForVBlank\(\)/g)||[]).length,1);
+assert(!/renderer\.endFrame\(\);\s*gspWaitForVBlank/.test(main));

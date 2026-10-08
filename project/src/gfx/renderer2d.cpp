@@ -169,7 +169,7 @@ void Renderer2D::fini() {
 void Renderer2D::beginFrame() {
     if (!m_initialized || m_frameActive) return;
     if (m_textBuf) C2D_TextBufClear(m_textBuf);
-    C3D_FrameBegin(C3D_FRAME_SYNCDRAW);
+    if (!C3D_FrameBegin(C3D_FRAME_SYNCDRAW)) return;
     for(auto sheet:m_retiredSheets) C2D_SpriteSheetFree(sheet);
     m_retiredSheets.clear();
     m_frameActive = true;
@@ -188,12 +188,14 @@ void Renderer2D::endFrame() {
 
 void Renderer2D::beginTop() {
     if (!m_frameActive) beginFrame();
+    if (!m_frameActive || !m_topTarget) return;
     m_currentTarget = m_topTarget;
     C2D_SceneBegin(m_topTarget);
 }
 
 void Renderer2D::beginBottom() {
     if (!m_frameActive) beginFrame();
+    if (!m_frameActive || !m_bottomTarget) return;
     m_currentTarget = m_bottomTarget;
     C2D_SceneBegin(m_bottomTarget);
 }
