@@ -1124,3 +1124,5 @@ La compilación ARM solicitada terminó correctamente; no prueba ejecución de h
 - [ ] Validar alineación del jugador sobre plataformas: ancla horizontal adaptada del constructor upstream a x=133 (antes 105), conservando y=185 y escala de sprites. Verificadas coordenadas pinned y bounds físicos de hierba/ciudad; composición en Azahar pendiente.
 
 - [ ] Validar audio de navegación frontend: evento consumible separado de los comandos de juego para cursores, cambios de página, apertura del menú y opciones rechazadas. Conectado a los PCM pinned precargados; ejecución NDSP y prueba audible pendientes.
+
+- [ ] Validar volúmenes general/interfaz: niveles y valores por defecto importados del upstream pinned, mezcla NDSP multiplicativa, opciones A/izquierda/derecha con límites 0–100, preferencias SD versión 5 con lectura 1–4 y conservación al cambiar otras opciones. Cobertura nativa añadida para 121 combinaciones, conflictos y valores inválidos; ejecución C++/NDSP pendiente.

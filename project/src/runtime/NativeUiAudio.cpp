@@ -41,6 +41,15 @@ void NativeUiAudio::fini() {
         clip={};
     }
 }
+bool NativeUiAudio::setVolumes(unsigned master,unsigned ui) {
+    if(master>kAudioVolumeMax || ui>kAudioVolumeMax) return false;
+    m_masterVolume=master;m_uiVolume=ui;
+    if(m_ready) {
+        float mix[12]{};mix[0]=mix[1]=float(master*ui)/100.0f;
+        ndspChnSetMix(0,mix);
+    }
+    return true;
+}
 bool NativeUiAudio::play(const char* key) {
     if(!m_ready || !key) return false;
     for(size_t i=0;i<kCount;++i) if(!std::strcmp(key,kNativeUiSounds[i].key)) {
@@ -49,7 +58,7 @@ bool NativeUiAudio::play(const char* key) {
         ndspChnSetInterp(0,NDSP_INTERP_NONE);
         ndspChnSetRate(0,static_cast<float>(kNativeUiSounds[i].rate));
         ndspChnSetFormat(0,NDSP_FORMAT_STEREO_PCM16);
-        float mix[12]{};mix[0]=1.0f;mix[1]=1.0f;
+        float mix[12]{};mix[0]=mix[1]=float(m_masterVolume*m_uiVolume)/100.0f;
         ndspChnSetMix(0,mix);
         auto& buffer=m_clips[i].buffer;
         buffer.status=NDSP_WBUF_FREE;

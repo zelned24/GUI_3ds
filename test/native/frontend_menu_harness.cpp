@@ -62,12 +62,12 @@ static void checkPreferences() {
     assert(touches.load(restored)==NativeSaveResult::Ok && restored.touchControls && restored.windowStyle==4);
     // Legacy version 1 has no touch preference; use the canonical default enabled.
     NativePresentationSettings legacy{1,2,false};char legacyBytes[NativePresentationSettingsStore::kBytes];
-    NativePresentationSettingsStore::encode(legacy,legacyBytes);legacyBytes[8]=1;
+    NativePresentationSettingsStore::encode(legacy,legacyBytes);legacyBytes[8]=1;legacyBytes[10]&=31;legacyBytes[11]=0;
     IntegritySha256 legacyHash;legacyHash.update(legacyBytes,20);legacyHash.finish(reinterpret_cast<uint8_t*>(legacyBytes+20));
     assert(NativePresentationSettingsStore::decode(legacyBytes,sizeof(legacyBytes),restored)==NativeSaveResult::Ok);
     assert(restored.windowStyle==2 && restored.touchControls);
     assert(restored.hpBarSpeed==0 && restored.expGainsSpeed==0);
-    NativePresentationSettingsStore::encode(legacy,legacyBytes);legacyBytes[8]=2;
+    NativePresentationSettingsStore::encode(legacy,legacyBytes);legacyBytes[8]=2;legacyBytes[10]&=31;legacyBytes[11]=0;
     IntegritySha256 v2Hash;v2Hash.update(legacyBytes,20);v2Hash.finish(reinterpret_cast<uint8_t*>(legacyBytes+20));
     assert(NativePresentationSettingsStore::decode(legacyBytes,sizeof(legacyBytes),restored)==NativeSaveResult::Ok);
     assert(!restored.touchControls && restored.hpBarSpeed==0 && restored.expGainsSpeed==0);
@@ -84,10 +84,15 @@ static void checkPreferences() {
         assert(restored.expGainsSpeed==exp && restored.hpBarSpeed==hp && restored.touchControls==touch);
     }
     NativePresentationSettings v3{7,2,false,3,0};
-    NativePresentationSettingsStore::encode(v3,legacyBytes);legacyBytes[8]=3;
+    NativePresentationSettingsStore::encode(v3,legacyBytes);legacyBytes[8]=3;legacyBytes[10]&=31;legacyBytes[11]=0;
     IntegritySha256 v3Hash;v3Hash.update(legacyBytes,20);v3Hash.finish(reinterpret_cast<uint8_t*>(legacyBytes+20));
     assert(NativePresentationSettingsStore::decode(legacyBytes,sizeof(legacyBytes),restored)==NativeSaveResult::Ok);
     assert(restored.hpBarSpeed==3 && restored.expGainsSpeed==0 && !restored.touchControls);
+    NativePresentationSettings v4{7,2,false,2,3};
+    NativePresentationSettingsStore::encode(v4,legacyBytes);legacyBytes[8]=4;legacyBytes[10]&=31;legacyBytes[11]=0;
+    IntegritySha256 v4Hash;v4Hash.update(legacyBytes,20);v4Hash.finish(reinterpret_cast<uint8_t*>(legacyBytes+20));
+    assert(NativePresentationSettingsStore::decode(legacyBytes,sizeof(legacyBytes),restored)==NativeSaveResult::Ok);
+    assert(restored.hpBarSpeed==2 && restored.expGainsSpeed==3 && restored.masterVolume==kDefaultMasterVolume && restored.uiVolume==kDefaultUiVolume);
     PreferenceDisk expDisk;NativePresentationSettingsStore expStore(expDisk);
     assert(expStore.save(2,false,2,3)==NativeSaveResult::Ok);
     assert(expStore.save(3,true)==NativeSaveResult::Ok);
@@ -118,12 +123,13 @@ static void checkPreferences() {
     assert(expConflictStore.save(4,true,0,0)==NativeSaveResult::AmbiguousJournal);
     assert(std::memcmp(conflictBefore,expConflictDisk.bytes,sizeof(conflictBefore))==0);
     // Every reserved flag is invalid even with a valid checksum for that schema.
-    for(unsigned version=1;version<=4;++version) {
-        const unsigned firstReserved=version==1 ? 16 : version==2 ? 17 : version==3 ? 19 : 21;
+    for(unsigned version=1;version<=5;++version) {
+        const unsigned firstReserved=version==1 ? 16 : version==2 ? 17 : version==3 ? 19 : version==4 ? 21 : 29;
         for(unsigned bit=firstReserved;bit<32;++bit) {
             NativePresentationSettings base{7,2,false,0,0};
             NativePresentationSettingsStore::encode(base,legacyBytes);
             legacyBytes[8]=static_cast<char>(version);
+            if(version<5) {legacyBytes[10]&=version==1 ? 0 : version==2 ? 1 : version==3 ? 7 : 31;legacyBytes[11]=0;}
             legacyBytes[8+bit/8]=static_cast<char>(static_cast<unsigned char>(legacyBytes[8+bit/8]) | (1u<<(bit%8)));
             IntegritySha256 reservedHash;reservedHash.update(legacyBytes,20);
             reservedHash.finish(reinterpret_cast<uint8_t*>(legacyBytes+20));
@@ -134,7 +140,7 @@ static void checkPreferences() {
     }
     // A legacy v3 record upgrades to v4 without losing HP or touch preferences.
     PreferenceDisk upgradeDisk;NativePresentationSettingsStore upgradeStore(upgradeDisk);
-    NativePresentationSettingsStore::encode(v3,upgradeDisk.bytes[0]);upgradeDisk.bytes[0][8]=3;
+    NativePresentationSettingsStore::encode(v3,upgradeDisk.bytes[0]);upgradeDisk.bytes[0][8]=3;upgradeDisk.bytes[0][10]&=31;upgradeDisk.bytes[0][11]=0;
     IntegritySha256 upgradeHash;upgradeHash.update(upgradeDisk.bytes[0],20);
     upgradeHash.finish(reinterpret_cast<uint8_t*>(upgradeDisk.bytes[0]+20));
     upgradeDisk.sizes[0]=sizeof(legacyBytes);
@@ -156,8 +162,36 @@ static void checkPreferences() {
     NativePresentationSettingsStore::encode(speed0,speedDisk.bytes[0]);speedDisk.sizes[0]=sizeof(legacyBytes);
     NativePresentationSettingsStore::encode(speed1,speedDisk.bytes[1]);speedDisk.sizes[1]=sizeof(legacyBytes);
     assert(speeds.load(restored)==NativeSaveResult::AmbiguousJournal);
+    // All 121 upstream volume combinations round-trip without losing older settings.
+    PreferenceDisk volumeDisk;NativePresentationSettingsStore volumeStore(volumeDisk);
+    for(unsigned master=0;master<=10;++master) for(unsigned ui=0;ui<=10;++ui) {
+        NativePresentationSettings value{7,2,false,2,3,master,ui};
+        assert(NativePresentationSettingsStore::encode(value,legacyBytes)==NativeSaveResult::Ok);
+        assert(NativePresentationSettingsStore::decode(legacyBytes,sizeof(legacyBytes),restored)==NativeSaveResult::Ok);
+        assert(restored.masterVolume==master && restored.uiVolume==ui && restored.hpBarSpeed==2 && restored.expGainsSpeed==3);
+        assert(volumeStore.save(2,false,2,3,master,ui)==NativeSaveResult::Ok);
+        assert(volumeStore.save(3,true)==NativeSaveResult::Ok);
+        assert(volumeStore.load(restored)==NativeSaveResult::Ok && restored.masterVolume==master && restored.uiVolume==ui);
+    }
+    assert(volumeStore.save(2,true,0,0,11,5)==NativeSaveResult::InvalidRecord);
+    assert(volumeStore.save(2,true,0,0,3,11)==NativeSaveResult::InvalidRecord);
+    for(unsigned invalid=11;invalid<=15;++invalid) for(bool master:{false,true}) {
+        NativePresentationSettings value{7,2,true,0,0,3,5};
+        NativePresentationSettingsStore::encode(value,legacyBytes);
+        uint32_t flags=5u | 0x10000u | ((master ? invalid : 3u)<<21) | ((master ? 5u : invalid)<<25);
+        for(unsigned i=0;i<4;++i) legacyBytes[8+i]=static_cast<char>(flags>>(8*i));
+        IntegritySha256 badVolumeHash;badVolumeHash.update(legacyBytes,20);badVolumeHash.finish(reinterpret_cast<uint8_t*>(legacyBytes+20));
+        restored={987,3};
+        assert(NativePresentationSettingsStore::decode(legacyBytes,sizeof(legacyBytes),restored)==NativeSaveResult::InvalidRecord && restored.generation==987);
+    }
+    PreferenceDisk conflictVolumeDisk;NativePresentationSettingsStore conflictVolumes(conflictVolumeDisk);
+    NativePresentationSettings firstVolume{1,2,true,0,0,3,5},otherVolume{1,2,true,0,0,4,5};
+    NativePresentationSettingsStore::encode(firstVolume,conflictVolumeDisk.bytes[0]);
+    NativePresentationSettingsStore::encode(otherVolume,conflictVolumeDisk.bytes[1]);
+    conflictVolumeDisk.sizes[0]=conflictVolumeDisk.sizes[1]=sizeof(legacyBytes);
+    assert(conflictVolumes.load(restored)==NativeSaveResult::AmbiguousJournal);
     // Unknown flags with a valid digest must not be silently discarded.
-    NativePresentationSettingsStore::encode(legacy,legacyBytes);legacyBytes[10]=32;
+    NativePresentationSettingsStore::encode(legacy,legacyBytes);legacyBytes[11]=32;
     IntegritySha256 flagsHash;flagsHash.update(legacyBytes,20);flagsHash.finish(reinterpret_cast<uint8_t*>(legacyBytes+20));
     assert(NativePresentationSettingsStore::decode(legacyBytes,sizeof(legacyBytes),restored)==NativeSaveResult::InvalidRecord);
     // Same generation with different touch state is a conflict even if style matches.
@@ -165,7 +199,7 @@ static void checkPreferences() {
     NativePresentationSettingsStore::encode(yes,touchDisk.bytes[0]);NativePresentationSettingsStore::encode(no,touchDisk.bytes[1]);
     assert(touches.load(restored)==NativeSaveResult::AmbiguousJournal);
     // A checksummed future version blocks fallback and overwrite.
-    disk.bytes[0][8]=5;IntegritySha256 hash;hash.update(disk.bytes[0],20);hash.finish(reinterpret_cast<uint8_t*>(disk.bytes[0]+20));
+    disk.bytes[0][8]=6;IntegritySha256 hash;hash.update(disk.bytes[0],20);hash.finish(reinterpret_cast<uint8_t*>(disk.bytes[0]+20));
     assert(store.save(1)==NativeSaveResult::UnsupportedVersion);
     disk.sizes[0]=sizeof(first)+1;
     assert(store.save(1)==NativeSaveResult::TooLarge);
@@ -342,7 +376,7 @@ int main() {
     fresh.input(KEY_B);fresh.input(KEY_DDOWN);fresh.input(KEY_A);assert(fresh.page()==FrontendPage::Settings);
     for(unsigned group=0;group<4;++group) {
         fresh.input(KEY_A);assert(fresh.page()==FrontendPage::SettingsGroup);
-        assert(fresh.input(KEY_A)==FrontendCommand::None);
+        assert(fresh.input(KEY_A)==(group==2 ? FrontendCommand::NextMasterVolume : FrontendCommand::None));
         fresh.input(KEY_B);assert(fresh.page()==FrontendPage::Settings);
         fresh.input(KEY_DDOWN);
     }
@@ -359,6 +393,15 @@ int main() {
         assert(footer.input(KEY_TOUCH,x,y)==FrontendCommand::None);
         assert(footer.page()==FrontendPage::Title);
     }
+    FrontendMenuPresenter volumeMenu(false);
+    volumeMenu.input(KEY_TOUCH,25,48+3*29);volumeMenu.input(KEY_A);
+    volumeMenu.input(KEY_DOWN);volumeMenu.input(KEY_DOWN);volumeMenu.input(KEY_A);
+    assert(volumeMenu.input(KEY_LEFT)==FrontendCommand::PreviousMasterVolume);
+    assert(volumeMenu.input(KEY_RIGHT)==FrontendCommand::NextMasterVolume);
+    for(unsigned i=0;i<4;++i) volumeMenu.input(KEY_DOWN);
+    assert(volumeMenu.input(KEY_LEFT)==FrontendCommand::PreviousUiVolume);
+    assert(volumeMenu.input(KEY_RIGHT)==FrontendCommand::NextUiVolume);
+    assert(volumeMenu.input(KEY_A)==FrontendCommand::NextUiVolume);
     // Display -> Window returns a command, leaving renderer/storage ownership outside UI.
     FrontendMenuPresenter windowMenu(false);
     windowMenu.input(KEY_TOUCH,25,48+3*29);windowMenu.input(KEY_A);

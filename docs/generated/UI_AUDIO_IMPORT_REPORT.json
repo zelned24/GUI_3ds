@@ -39,5 +39,29 @@
   ],
   "repository": "https://github.com/pagefaultgames/pokerogue-assets",
   "revision": "056a1f408f26a3be4fef243f7462cb43608c7928",
-  "schemaVersion": 1
+  "schemaVersion": 1,
+  "volumePolicy": {
+    "defaults": {
+      "masterVolume": 3,
+      "uiVolume": 5
+    },
+    "effectiveUiVolume": "masterVolume * uiVolume",
+    "levels": 11,
+    "repository": "https://github.com/pagefaultgames/pokerogue",
+    "revision": "8555c08c823b856cbec4eb99ca84ea52a955836d",
+    "sources": [
+      {
+        "sha256": "ab93a321d3a7349b30176e7ad53f1df260421b0fd5adbb2b29212e9dd334047f",
+        "sourcePath": "src/system/settings/default-settings.ts"
+      },
+      {
+        "sha256": "ec603b71f7973518358dffdcf204bec4b418b0973f6fed10a1f22d14a32e579e",
+        "sourcePath": "src/ui/settings/settings-ui-items.ts"
+      },
+      {
+        "sha256": "4d13f013c5940c77f1a6ca11e164052b9c549f3387db930a038ce405ca228d02",
+        "sourcePath": "src/audio/audio-manager.ts"
+      }
+    ]
+  }
 }

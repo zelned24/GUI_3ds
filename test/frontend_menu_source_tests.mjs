@@ -190,7 +190,7 @@ const typeLabelDraw=rendererSource.slice(rendererSource.indexOf("bool Renderer2D
 assert(typeLabelDraw.includes("width<row->frame.sourceWidth || height<row->frame.sourceHeight"));
 assert(!typeLabelDraw.includes("float scale="));
 
-assert(main.includes("uiSettings.save(next,preferences.touchControls,preferences.hpBarSpeed,preferences.expGainsSpeed)"));
+assert(main.includes("uiSettings.save(next,preferences.touchControls,preferences.hpBarSpeed,preferences.expGainsSpeed,preferences.masterVolume,preferences.uiVolume)"));
 assert(main.includes("battleHud.setHpBarSpeed(preferences.hpBarSpeed)"));
 assert(frontend.includes("m_group==1 && m_selected==2"));
 assert(frontend.includes("settings:default\",\"settings:fast\",\"settings:faster\",\"settings:skip"));
@@ -313,7 +313,7 @@ assert(!frontend.includes("touchY >= 115 && touchY <= 145"));
 
 assert(main.includes("battleHud.setExpGainsSpeed(preferences.expGainsSpeed)"));
 assert(frontend.includes("settings:expGainsSpeed"));
-assert(preferencesSource.includes("version==4 ? unsigned((versionFlags>>19)&3u) : 0u"));
+assert(preferencesSource.includes("version>=4 ? unsigned((versionFlags>>19)&3u) : 0u"));
 
 assert(main.includes("game.cycleSetupStarterAbility(1,progress)"));
 assert(main.includes("kStarterFormAbilityRect.contains(touch.px,touch.py)"));
@@ -492,3 +492,8 @@ assert(rewardPresentation.includes("cardY + kRewardRarityOffsetY"));
 assert(frontend.includes("before!=navigationState()"));
 assert(frontend.includes("const char* sound=m_navigationSound;m_navigationSound=nullptr;return sound;"));
 assert(main.includes("if(const char* sound=frontend.takeNavigationSound()) uiAudio.play(sound)"));
+
+assert(frontend.includes("FrontendCommand::NextMasterVolume"));
+assert(frontend.includes("FrontendCommand::NextUiVolume"));
+assert(preferencesSource.includes("values[0].masterVolume!=values[1].masterVolume"));
+assert(preferencesSource.includes("values[0].uiVolume!=values[1].uiVolume"));

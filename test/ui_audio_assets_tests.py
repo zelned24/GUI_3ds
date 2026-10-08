@@ -22,10 +22,11 @@ for row in report["files"]:
     assert pcm==physical.read_bytes()
     assert len(pcm)==row["bytes"]==row["frames"]*4
     assert hashlib.sha256(pcm).hexdigest()==row["pcmSHA256"]
-before=(header_path.read_bytes(),report_path.read_bytes())
+policy_header=root/"project/generated/include/content/AudioVolumePolicy.hpp"
+before=(header_path.read_bytes(),report_path.read_bytes(),policy_header.read_bytes())
 for _ in range(2):
     module.prepare(root)
-    assert before==(header_path.read_bytes(),report_path.read_bytes())
+    assert before==(header_path.read_bytes(),report_path.read_bytes(),policy_header.read_bytes())
 backend=(root/"project/src/runtime/NativeUiAudio.cpp").read_text(encoding="utf-8")
 assert backend.index("ndspExit();")<backend.index("linearFree(clip.pcm)")
 assert "DSP_FlushDataCache(clip.pcm,definition.bytes)" in backend
@@ -33,3 +34,15 @@ assert "ndspChnWaveBufAdd(0,&buffer)" in backend
 main=(root/"project/src/main.cpp").read_text(encoding="utf-8")
 assert main.index("uiAudio.fini();")<main.index("    renderer.fini();",main.index("uiAudio.fini();"))
 print("PASS: 3 pinned UI sounds, exact PCM samples, provenance and reproducible generation; NDSP execution pending")
+
+policy=report["volumePolicy"]
+assert policy["levels"]==11
+assert policy["defaults"]=={"masterVolume":3,"uiVolume":5}
+assert policy["effectiveUiVolume"]=="masterVolume * uiVolume"
+for row in policy["sources"]:
+    raw=subprocess.check_output(["git","-C",str(root/"build/upstream/pokerogue"),"show",policy["revision"]+":"+row["sourcePath"]])
+    assert hashlib.sha256(raw).hexdigest()==row["sha256"]
+assert "float(m_masterVolume*m_uiVolume)/100.0f" in backend
+assert "if(master>kAudioVolumeMax || ui>kAudioVolumeMax) return false;" in backend
+assert "uiAudio.setVolumes(preferences.masterVolume,preferences.uiVolume)" in main
+print("PASS pinned volume defaults/options/mixing provenance; native settings and DSP execution pending")

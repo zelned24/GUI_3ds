@@ -185,6 +185,8 @@ int main() {
         else if(recoveredPreferences) frontend.feedback("Ajustes recuperados del respaldo SD.");
     } else if(preferenceResult!=Pokerogue3DS::NativeSaveResult::NotFound)
         frontend.feedback(Pokerogue3DS::nativeSaveResultName(preferenceResult));
+    frontend.setAudioVolumes(preferences.masterVolume,preferences.uiVolume);
+    uiAudio.setVolumes(preferences.masterVolume,preferences.uiVolume);
     frontend.setTouchControls(preferences.touchControls);
     frontend.setHpBarSpeed(preferences.hpBarSpeed);
     battleHud.setHpBarSpeed(preferences.hpBarSpeed);
@@ -319,7 +321,7 @@ int main() {
                             (command==Pokerogue3DS::FrontendCommand::PreviousWindowStyle ? -1 : 1))%Pokerogue3DS::kWindowTextureCount].id;
                 if(!renderer.setWindowStyle(next)) frontend.feedback("No se pudo cargar el marco.");
                 else {
-                    const auto saved=uiSettings.save(next,preferences.touchControls,preferences.hpBarSpeed,preferences.expGainsSpeed);
+                    const auto saved=uiSettings.save(next,preferences.touchControls,preferences.hpBarSpeed,preferences.expGainsSpeed,preferences.masterVolume,preferences.uiVolume);
                     frontend.feedback(saved==Pokerogue3DS::NativeSaveResult::Ok ? nullptr :
                         "Marco aplicado; no se pudieron guardar los ajustes SD.");
                 }
@@ -329,7 +331,7 @@ int main() {
                     (command==Pokerogue3DS::FrontendCommand::PreviousHpBarSpeed ? 3u : 1u))%4u;
                 frontend.setHpBarSpeed(preferences.hpBarSpeed);
                 battleHud.setHpBarSpeed(preferences.hpBarSpeed);
-                const auto saved=uiSettings.save(renderer.windowStyle(),preferences.touchControls,preferences.hpBarSpeed,preferences.expGainsSpeed);
+                const auto saved=uiSettings.save(renderer.windowStyle(),preferences.touchControls,preferences.hpBarSpeed,preferences.expGainsSpeed,preferences.masterVolume,preferences.uiVolume);
                 frontend.feedback(saved==Pokerogue3DS::NativeSaveResult::Ok ? nullptr :
                     "Velocidad aplicada; no se pudieron guardar los ajustes SD.");
             }
@@ -337,13 +339,25 @@ int main() {
                 preferences.expGainsSpeed=(preferences.expGainsSpeed+(command==Pokerogue3DS::FrontendCommand::NextExpGainsSpeed ? 1u : 3u))%4;
                 frontend.setExpGainsSpeed(preferences.expGainsSpeed);
                 battleHud.setExpGainsSpeed(preferences.expGainsSpeed);
-                const auto saved=uiSettings.save(renderer.windowStyle(),preferences.touchControls,preferences.hpBarSpeed,preferences.expGainsSpeed);
+                const auto saved=uiSettings.save(renderer.windowStyle(),preferences.touchControls,preferences.hpBarSpeed,preferences.expGainsSpeed,preferences.masterVolume,preferences.uiVolume);
                 frontend.feedback(saved==Pokerogue3DS::NativeSaveResult::Ok ? "Velocidad de EXP guardada." : "Velocidad aplicada; guardado en SD pendiente.");
+            }
+            else if(command==Pokerogue3DS::FrontendCommand::NextMasterVolume || command==Pokerogue3DS::FrontendCommand::PreviousMasterVolume ||
+                command==Pokerogue3DS::FrontendCommand::NextUiVolume || command==Pokerogue3DS::FrontendCommand::PreviousUiVolume) {
+                const bool master=command==Pokerogue3DS::FrontendCommand::NextMasterVolume || command==Pokerogue3DS::FrontendCommand::PreviousMasterVolume;
+                const bool increase=command==Pokerogue3DS::FrontendCommand::NextMasterVolume || command==Pokerogue3DS::FrontendCommand::NextUiVolume;
+                auto& volume=master ? preferences.masterVolume : preferences.uiVolume;
+                if(increase) {if(volume<Pokerogue3DS::kAudioVolumeMax) ++volume;}
+                else if(volume) --volume;
+                frontend.setAudioVolumes(preferences.masterVolume,preferences.uiVolume);
+                uiAudio.setVolumes(preferences.masterVolume,preferences.uiVolume);
+                const auto saved=uiSettings.save(renderer.windowStyle(),preferences.touchControls,preferences.hpBarSpeed,preferences.expGainsSpeed,preferences.masterVolume,preferences.uiVolume);
+                frontend.feedback(saved==Pokerogue3DS::NativeSaveResult::Ok ? nullptr : "Volumen aplicado; guardado SD pendiente.");
             }
             else if(command==Pokerogue3DS::FrontendCommand::ToggleTouchControls) {
                 preferences.touchControls=!preferences.touchControls;
                 frontend.setTouchControls(preferences.touchControls);
-                const auto saved=uiSettings.save(renderer.windowStyle(),preferences.touchControls,preferences.hpBarSpeed,preferences.expGainsSpeed);
+                const auto saved=uiSettings.save(renderer.windowStyle(),preferences.touchControls,preferences.hpBarSpeed,preferences.expGainsSpeed,preferences.masterVolume,preferences.uiVolume);
                 frontend.feedback(saved==Pokerogue3DS::NativeSaveResult::Ok ? nullptr :
                     "Control aplicado; no se pudieron guardar los ajustes SD.");
             }

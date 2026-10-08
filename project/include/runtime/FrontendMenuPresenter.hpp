@@ -1,4 +1,5 @@
 #pragma once
+#include "content/AudioVolumePolicy.hpp"
 #include "runtime/TitleMenuPresenter.hpp"
 #include "content/FrontendModes.hpp"
 #include "content/RuntimeUiText.hpp"
@@ -18,7 +19,7 @@
 #include <initializer_list>
 namespace Pokerogue3DS {
 enum class FrontendPage {Title,Modes,Load,History,Settings,SettingsGroup,GlobalMenu,Pokedex,ServiceInfo,ManageData};
-enum class FrontendCommand {None,Continue,NewClassic,Load,DeleteSave,NextWindowStyle,PreviousWindowStyle,ToggleTouchControls,ExportProgress,ImportProgress,NextHpBarSpeed,PreviousHpBarSpeed,NextExpGainsSpeed,PreviousExpGainsSpeed};
+enum class FrontendCommand {None,Continue,NewClassic,Load,DeleteSave,NextWindowStyle,PreviousWindowStyle,ToggleTouchControls,ExportProgress,ImportProgress,NextHpBarSpeed,PreviousHpBarSpeed,NextExpGainsSpeed,PreviousExpGainsSpeed,NextMasterVolume,PreviousMasterVolume,NextUiVolume,PreviousUiVolume};
 // Owns navigation and presentation only. Returned commands are handled by main.
 class FrontendMenuPresenter {
 public:
@@ -29,6 +30,7 @@ public:
         m_dexVariants=nullptr;m_dexVariantsAttempted=false; m_confirmingDelete=false;m_confirmingImport=false;m_navigationSound=nullptr;}
     void setExpGainsSpeed(unsigned speed) {if(speed<=3) m_expGainsSpeed=speed;}
     void setHpBarSpeed(unsigned speed) {if(speed<=3) m_hpBarSpeed=speed;}
+    void setAudioVolumes(unsigned master,unsigned ui) {if(master<=kAudioVolumeMax && ui<=kAudioVolumeMax) {m_masterVolume=master;m_uiVolume=ui;}}
     void setTouchControls(bool enabled) { m_touchControls=enabled; }
     bool confirmingTouchDisable() const { return m_confirmingTouchDisable; }
     static uint32_t filterTouchInput(uint32_t keys,bool enabled) {return enabled ? keys : keys & ~KEY_TOUCH;}
@@ -237,6 +239,10 @@ private:
             if(keys & (KEY_DLEFT | KEY_CPAD_LEFT)) return FrontendCommand::PreviousExpGainsSpeed;
             if(keys & (KEY_DRIGHT | KEY_CPAD_RIGHT)) return FrontendCommand::NextExpGainsSpeed;
         }
+        if(m_page==FrontendPage::SettingsGroup && m_group==2 && (m_selected==0 || m_selected==4)) {
+            if(keys & (KEY_DLEFT | KEY_CPAD_LEFT)) return m_selected==0 ? FrontendCommand::PreviousMasterVolume : FrontendCommand::PreviousUiVolume;
+            if(keys & (KEY_DRIGHT | KEY_CPAD_RIGHT)) return m_selected==0 ? FrontendCommand::NextMasterVolume : FrontendCommand::NextUiVolume;
+        }
         const unsigned total=rowCount();
         bool activatedByTouch = false;
         if(total) {
@@ -272,6 +278,7 @@ private:
             if(m_group==1 && m_selected==1) return FrontendCommand::NextWindowStyle;
             if(m_group==1 && m_selected==2) return FrontendCommand::NextHpBarSpeed;
             if(m_group==1 && m_selected==3) return FrontendCommand::NextExpGainsSpeed;
+            if(m_group==2 && (m_selected==0 || m_selected==4)) return m_selected==0 ? FrontendCommand::NextMasterVolume : FrontendCommand::NextUiVolume;
             if(m_group==3 && m_selected==0) {
                 if(m_touchControls) m_confirmingTouchDisable=true;
                 else return FrontendCommand::ToggleTouchControls;
@@ -393,6 +400,11 @@ public:
                     else if(m_group==1 && (i==2 || i==3)) {
                         static const char* keys[]={"settings:default","settings:fast","settings:faster","settings:skip"};
                         std::snprintf(value,sizeof(value),"%s",runtimeUiText(keys[i==2 ? m_hpBarSpeed : m_expGainsSpeed]));
+                    }
+                    else if(m_group==2 && (i==0 || i==4)) {
+                        const unsigned volume=i==0 ? m_masterVolume : m_uiVolume;
+                        if(volume) std::snprintf(value,sizeof(value),"%u",volume*10);
+                        else std::snprintf(value,sizeof(value),"%s",runtimeUiText("settings:mute"));
                     }
                     else if(m_group==3 && i==0) std::snprintf(value,sizeof(value),"%s",runtimeUiText(m_touchControls ? "settings:on" : "settings:off"));
                     else std::snprintf(value,sizeof(value),"--");
@@ -652,6 +664,7 @@ private:
     C2D_SpriteSheet m_dexVariants=nullptr;
     bool m_dexVariantsAttempted=false;
     unsigned m_hpBarSpeed=0,m_expGainsSpeed=0;
+    unsigned m_masterVolume=kDefaultMasterVolume,m_uiVolume=kDefaultUiVolume;
     unsigned m_dexSelected=0,m_dexGeneration=0,m_dexCapture=0;
     bool m_confirmingImport=false,m_importYes=false;
     TitleMenuPresenter m_title;

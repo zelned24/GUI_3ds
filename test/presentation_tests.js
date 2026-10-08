@@ -194,7 +194,7 @@ export function registerPresentationTests(test) {
     expect(main.includes('filterTouchInput(hidKeysDown(),preferences.touchControls)'), 'Touch disable must apply before title, menus and gameplay dispatch');
     expect(menus.includes('drawBoundedDescription(renderer,runtimeUiText("settings:confirmDisableTouch")'), 'Confirmation uses bounded wrapping with native font rasters');
     expect(main.includes('uiSettings.load(preferences,&recoveredPreferences)'), 'Boot restores persisted device preferences');
-    expect(main.includes('uiSettings.save(next,preferences.touchControls,preferences.hpBarSpeed,preferences.expGainsSpeed)'), 'Applied window style must reach the SD journal');
+    expect(main.includes('uiSettings.save(next,preferences.touchControls,preferences.hpBarSpeed,preferences.expGainsSpeed,preferences.masterVolume,preferences.uiVolume)'), 'Applied window style must reach the SD journal');
     expect(main.includes('renderer.setWindowStyle(next)'), 'Window setting must reach the renderer through a command');
     expect(menus.includes('return FrontendCommand::NextWindowStyle'), 'Window option must emit a runtime command');
     expect(main.includes('FrontendCommand::Continue || command==Pokerogue3DS::FrontendCommand::Load'),'Continue and Load must read the committed save, not current unsaved state');
