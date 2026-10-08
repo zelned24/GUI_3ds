@@ -24,8 +24,11 @@ struct TouchRect {
         return px>=x && px-x<width && py>=y && py-y<height;
     }
 };
-inline constexpr TouchRect kEggListConfirmRect{12,205,142,30};
-inline constexpr TouchRect kEggListBackRect{166,205,142,30};
+inline constexpr TouchRect kFrontendConfirmRect{12,205,142,30};
+inline constexpr TouchRect kFrontendBackRect{166,205,142,30};
+inline constexpr TouchRect kFrontendReadOnlyBackRect{12,205,296,30};
+inline constexpr TouchRect kEggListConfirmRect=kFrontendConfirmRect;
+inline constexpr TouchRect kEggListBackRect=kFrontendBackRect;
 inline constexpr TouchRect eggListRowRectangle(unsigned row) {
     return row<5 ? TouchRect{20,38+row*30,280,28} : TouchRect{};
 }

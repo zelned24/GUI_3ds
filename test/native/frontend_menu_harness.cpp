@@ -330,6 +330,19 @@ int main() {
         fresh.input(KEY_B);assert(fresh.page()==FrontendPage::Settings);
         fresh.input(KEY_DDOWN);
     }
+    // Every footer pixel must perform the same transition as its physical key.
+    for(unsigned y=205;y<235;++y) for(unsigned x=12;x<154;++x) {
+        FrontendMenuPresenter footer(false);
+        footer.input(KEY_A);assert(footer.page()==FrontendPage::Modes);
+        assert(footer.input(KEY_TOUCH,x,y)==FrontendCommand::NewClassic);
+        assert(footer.page()==FrontendPage::Modes);
+    }
+    for(unsigned y=205;y<235;++y) for(unsigned x=166;x<308;++x) {
+        FrontendMenuPresenter footer(false);
+        footer.input(KEY_A);assert(footer.page()==FrontendPage::Modes);
+        assert(footer.input(KEY_TOUCH,x,y)==FrontendCommand::None);
+        assert(footer.page()==FrontendPage::Title);
+    }
     // Display -> Window returns a command, leaving renderer/storage ownership outside UI.
     FrontendMenuPresenter windowMenu(false);
     windowMenu.input(KEY_TOUCH,25,48+3*29);windowMenu.input(KEY_A);

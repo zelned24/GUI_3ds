@@ -79,7 +79,16 @@ public:
             && ((keys & KEY_B) || ((keys & KEY_TOUCH) && kEggListBackRect.contains(touchX,touchY)))) {
             m_eggDetails=false;return FrontendCommand::None;
         }
-        if((keys & KEY_B) || ((keys & KEY_TOUCH) && (m_page==FrontendPage::ServiceInfo && m_service==3 ? kEggListBackRect.contains(touchX,touchY) : TouchRect{12,205,296,35}.contains(touchX,touchY)) && m_page != FrontendPage::Title)) {
+        // Footer touches emit the same action as physical buttons. The previous
+        // full-width back region swallowed the displayed A action.
+        if((keys & KEY_TOUCH) && m_page!=FrontendPage::Title) {
+            const bool readOnly=m_page==FrontendPage::Pokedex ||
+                (m_page==FrontendPage::ServiceInfo && m_service!=3);
+            if(readOnly && kFrontendReadOnlyBackRect.contains(touchX,touchY)) keys|=KEY_B;
+            else if(kFrontendConfirmRect.contains(touchX,touchY)) keys|=KEY_A;
+            else if(kFrontendBackRect.contains(touchX,touchY)) keys|=KEY_B;
+        }
+        if(keys & KEY_B) {
             if(m_confirmingDelete) {
                 m_confirmingDelete = false;
                 return FrontendCommand::None;
@@ -367,7 +376,13 @@ public:
                 }
             }
         }
-        renderer.drawTextFitted(m_feedback ? m_feedback : "A: elegir   B: volver",12,214,0.3f,296,0xffffffff);
+        if(m_feedback) renderer.drawTextFitted(m_feedback,12,214,0.375f,296,0xffffffff);
+        else {
+            renderer.drawWindow(kFrontendConfirmRect.x,kFrontendConfirmRect.y,kFrontendConfirmRect.width,kFrontendConfirmRect.height);
+            renderer.drawWindow(kFrontendBackRect.x,kFrontendBackRect.y,kFrontendBackRect.width,kFrontendBackRect.height);
+            renderer.drawTextFitted("A: elegir",kFrontendConfirmRect.x+8,kFrontendConfirmRect.y+9,0.375f,kFrontendConfirmRect.width-16,0xffffffff);
+            renderer.drawTextFitted("B: volver",kFrontendBackRect.x+8,kFrontendBackRect.y+9,0.375f,kFrontendBackRect.width-16,0xffffffff);
+        }
     }
 private:
     static bool drawBoundedDescription(Renderer2D& renderer,const char* text,float x,float y,float width,float height) {

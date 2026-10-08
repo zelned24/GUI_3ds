@@ -140,7 +140,7 @@ assert(setup.includes('pres==StarterPassivePurchaseResult::MissingPrice'));
 
 assert(setup.includes("abilityUiName(game.setupStarterPassiveAbilityId(dex))"));
 
-assert(frontend.includes("TouchRect{12,205,296,35}.contains(touchX,touchY)"));
+assert(frontend.includes("kFrontendBackRect.contains(touchX,touchY)"));
 assert(!frontend.includes("No hay partidas finalizadas registradas."));
 
 assert(arena.includes("drawTextFitted(trainerName, 20.0f, 13.0f, 0.45f, 164.0f"));
@@ -471,3 +471,10 @@ assert(hudSource.includes("img.subtex->height!=texture.height"));
 // SYNCDRAW owns pacing; only the renderer initialization error console waits manually.
 assert.equal((main.match(/gspWaitForVBlank\(\)/g)||[]).length,1);
 assert(!/renderer\.endFrame\(\);\s*gspWaitForVBlank/.test(main));
+
+// Generic footer confirm and back use distinct bounds and physical actions.
+assert(frontend.includes("if(kFrontendConfirmRect.contains(touchX,touchY)) keys|=KEY_A;"));
+assert(frontend.includes("else if(kFrontendBackRect.contains(touchX,touchY)) keys|=KEY_B;"));
+assert(!frontend.includes("TouchRect{12,205,296,35}.contains"));
+assert(frontend.includes("renderer.drawWindow(kFrontendConfirmRect.x"));
+assert(frontend.includes("renderer.drawWindow(kFrontendBackRect.x"));
