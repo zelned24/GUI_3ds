@@ -188,6 +188,8 @@ icon_header+="\n};\ninline constexpr const char* kPokemonIconPages[]={\n"+"\n".j
 (output.parent / "icon-provenance.json").write_text(json.dumps({"schemaVersion":1,"repository":REPOSITORY,"revision":REVISION,"sourceSymbol":"PokemonSpecies.getIconId","files":icon_records,"missing":icon_missing,"pages":len(icon_pages)},sort_keys=True,indent=2)+"\n",encoding="utf-8",newline="\n")
 from prepare_compact_icons import prepare as prepare_compact_icons
 prepare_compact_icons(ROOT)
+from prepare_appearance_icons import prepare as prepare_appearance_icons
+prepare_appearance_icons(ROOT)
 print(f"Packed {len(icon_records)} real icons in {len(icon_pages)} pages; {len(icon_missing)} missing references")
 
 mode_header="// Generated canonical modes with pinned locale labels.\n#pragma once\nnamespace Pokerogue3DS {\nstruct FrontendModeDefinition {const char* id;const char* label;};\ninline constexpr FrontendModeDefinition kFrontendModes[]={\n"
