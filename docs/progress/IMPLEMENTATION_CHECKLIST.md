@@ -2,7 +2,7 @@
 
 ## Cómo medir el avance
 
-- Referencia actual: rama `codex/pokerogue-3ds-migration`, último commit publicado `95209c7` y cambios locales posteriores sin publicar. Los resultados históricos no verifican estos cambios locales.
+- Referencia actual: rama `codex/pokerogue-3ds-migration`, último commit publicado confirmado `9d53f6a`; commit local `305234a` pendiente de subida por fallo de conexión a GitHub. Los resultados históricos no verifican estos cambios locales.
 - Objetivo: PokéRogue jugable y fiel al snapshot upstream en Old 3DS, con ambas pantallas, progreso exportable y actualizaciones desde consola.
 - Cada ID es estable para reportar avances: `MOV-07`, `GUI-03`, etc. No equivale a un movimiento/habilidad individual.
 - Una casilla sin marcar puede tener código parcial; el resumen de cada área indica lo existente. Marcarla solo con integración completa y evidencia ejecutada pertinente.
@@ -668,7 +668,7 @@ Para cada entrega actualizar esta tabla con IDs, commit, alcance conectado, excl
 - [x] Materializar 7.569 apariencias desde las revisiones fijadas, conservando hashes y procedencia.
 - [x] Identificar el único rechazo del catálogo: Bouffalant (`626`), frente, variante 1; el archivo upstream contiene el color inválido `9e655cx`. No se sustituyó por un color inventado.
 - [x] Reproducir la regla upstream `src/utils/color-utils.ts::rgbHexToRgba`: hex inválido se convierte en negro; primera coincidencia del shader conserva prioridad. Test Python dedicado y caso real de Bouffalant pasan. Regeneración del catálogo pendiente de terminar.
-- [ ] Convertir e integrar las 7.570 apariencias shiny en el catálogo físico `.t3x`; materialización terminada tras corregir Bouffalant; staging en curso. El índice vigente contiene 210 apariencias femeninas normales; las tres shiny convertidas inicialmente ya no forman parte del inventario normal vigente.
+- [ ] Convertir e integrar las 7.570 apariencias shiny en el catálogo físico `.t3x`; materialización y staging completos; conversión en curso. El índice vigente contiene 210 apariencias femeninas normales; las tres shiny convertidas inicialmente ya no forman parte del inventario normal vigente.
 - [ ] Verificar visualmente todas las rutas de selección de apariencia en Azahar y comprobar recursos en Old 3DS. Compilación y lanzamiento aplazados por instrucción del usuario.
 
 La búsqueda del índice generado usa búsqueda binaria sobre identidades ordenadas; esto no constituye una medición de rendimiento en hardware.
@@ -721,12 +721,13 @@ La búsqueda del índice generado usa búsqueda binaria sobre identidades ordena
 
 - [ ] Round-trip de actor hidden-only: capture → encode → decode → restore conserva slot 2 y abilityId; caso incoherente slot 1/habilidad oculta distinta debe rechazarse. Regresión C++ escrita, no ejecutada.
 
-- [ ] Catálogo completo contra fuente real: staging vuelve a enumerar las identidades del árbol/masterlist pinned reutilizando `enumerate_appearances`, verifica SHA del masterlist/generador y exige cobertura exacta del reporte (materializado o ausencia explícita). Tests JS de cobertura faltante, identidad sustituta y ausencia legítima PASS; ejecución sobre el catálogo final y conversión ampliada pendientes.
+- [ ] Catálogo completo contra fuente real: staging vuelve a enumerar las identidades del árbol/masterlist pinned reutilizando `enumerate_appearances`, verifica SHA del masterlist/generador y exige cobertura exacta del reporte (materializado o ausencia explícita). Tests JS de cobertura faltante, identidad sustituta y ausencia legítima PASS; ejecución del staging sobre el catálogo final PASS; conversión ampliada pendiente.
 
 ### Resultado completo de materialización pinned
 
 - [x] Materializar las 7.570 apariencias del árbol/masterlist pinned: proceso terminado exit 0, 7.570 materializadas, cero ausencias y cero registros no soportados. Reporte `build/upstream-assets/appearances/catalog-report.json`, hash `8782d7d9edaeae4eafddc3af23e42d4d73afe4f9bee390e8b157161fd74377be`; conserva PNG/manifest/provenance. Esto no completa su conversión a `.t3x` ni la integración runtime.
-- [ ] Staging y conversión completa de apariencias: staging `--all --appearances` iniciado tras finalizar materialización; resultado y conversión/índice físico pendientes.
+- [x] Staging `--all --appearances`: exit 0, 10.682 identidades totales; 10.679 directas y tres recuperadas con padding transparente (Dustox normal y variantes shiny 1/2 de espalda). Las variantes conservan el PNG materializado y la procedencia pinned.
+- [ ] Conversión e índice físico de las 10.682 identidades: proceso iniciado después del staging completo; resultado final e integración runtime pendientes.
 - [x] Verificar valores de referencia del slot por defecto mediante función upstream inspeccionada: `test/starter_ability_upstream_tests.mjs` PASS, 7.588 casos y 517 especies con ability2 raw NONE. Esta referencia no ejecuta el C++.
 
 - [ ] Intro de entrenador por identidad completa: ArenaPresenter recarga por ID, género y nombre; recuerda intentos fallidos hasta cambio de identidad/clear, y entrega al renderer la retirada de texturas al recargar. Casos nativos de mismo sprite, cambio de género/nombre, fallo repetido y recuperación añadidos sin ejecutar; guard estático PASS.
