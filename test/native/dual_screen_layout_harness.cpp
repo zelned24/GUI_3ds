@@ -13,6 +13,28 @@
 #include <initializer_list>
 using namespace Pokerogue3DS;
 int main() {
+    assert(hpTweenDuration(100,99,0)==250);
+    assert(hpTweenDuration(100,0,0)==500);
+    assert(hpTweenDuration(65535,0,0)==5000);
+    assert(hpTweenDuration(100,0,1)==250 && hpTweenDuration(100,0,2)==125);
+    assert(hpTweenDuration(100,0,3)==0);
+    HpRatioTween hpVisual;
+    assert(hpVisual.update(100,100,0)==1);
+    assert(hpVisual.update(0,100,100)==1);
+    assert(std::fabs(hpVisual.sample(350)-(1-std::sin(3.14159265358979323846/4)))<1e-12);
+    assert(hpVisual.displayedHp(600)==0 && hpVisual.sample(600)==0);
+    assert(hpVisual.update(100,100,600)==0);
+    assert(hpVisual.sample(1100)==1);
+    const auto interrupted=hpVisual.update(50,100,1100);
+    assert(interrupted==1 && hpVisual.update(75,100,1225)>0.5);
+    assert(hpVisual.update(40,100,1225,3,true)==0.4);
+    for(unsigned fps:{15u,30u,60u}) {
+        HpRatioTween cadence;
+        cadence.update(100,100,1);cadence.update(0,100,101);
+        for(unsigned frame=0;frame<=fps;++frame) cadence.sample(101+frame*1000/fps);
+        assert(cadence.sample(601)==0);
+    }
+
     for(const auto& species:PokerogueContent::kSpecies)
         assert(PokerogueContent::speciesPassiveAbilityId(species.dex,0)==species.abilityPassive);
     for(const auto& passive:PokerogueContent::kSpeciesPassiveFormAbilities) {

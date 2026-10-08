@@ -6,6 +6,7 @@
 #include "runtime/TypePresentation.hpp"
 #include "runtime/BattleHudGeometry.hpp"
 #include <algorithm>
+#include <array>
 #include <cstdio>
 #include <cstring>
 
@@ -19,7 +20,9 @@ public:
             sheet = nullptr;
         }
         resetExperienceDisplay();
+        resetHpDisplay();
     }
+    void resetHpDisplay() {m_hpDisplays={};}
     void resetExperienceDisplay() {m_displayedExp=0;m_lastPlayerId=0;m_expInitialized=false;}
     uint32_t displayedExperience() const {return m_displayedExp;}
     ~BattleHudPresenter() { clear(); }
@@ -27,7 +30,7 @@ public:
     BattleHudPresenter(const BattleHudPresenter&) = delete;
     BattleHudPresenter& operator=(const BattleHudPresenter&) = delete;
 
-    void draw(Renderer2D& renderer, const ResolvedPokemon& actor, bool player, float x, float y, bool isCaught = false,uint16_t experienceLevelCap=0) {
+    void draw(Renderer2D& renderer, const ResolvedPokemon& actor, bool player, float x, float y, bool isCaught = false,uint16_t experienceLevelCap=0,uint64_t animationTimeMs=0) {
         if (!actor.actorIdentityResolved) return;
         const unsigned index = player ? 0 : (actor.bossState.segmentCount != 0 ? 2 : 1);
         const auto& texture = kBattleHudTextures[index];
@@ -103,7 +106,20 @@ public:
         }
 
         // Native coordinates derived from BattleInfo origins and boss offsets.
-        const float fraction=actor.battleState.maxHp ? float(actor.battleState.hp)/actor.battleState.maxHp : 0;
+        const auto identity=actor.battleState.pokemonId;
+        HpDisplay* display=nullptr;
+        for(auto& state:m_hpDisplays) if(state.bound && state.identity==identity && state.player==player) {display=&state;break;}
+        if(!display) {
+            for(auto& state:m_hpDisplays) if(!state.bound) {display=&state;break;}
+            if(!display) display=&*std::min_element(m_hpDisplays.begin(),m_hpDisplays.end(),
+                [](const HpDisplay& a,const HpDisplay& b){return a.lastSeen<b.lastSeen;});
+            *display={};display->bound=true;display->identity=identity;display->player=player;
+        }
+        display->lastSeen=animationTimeMs;
+        // Timestamp-less callers and unresolved identities use an instant projection.
+        // DEFAULT hpBarSpeed (0); settings persistence/phase waiting remain separate work.
+        const float fraction=static_cast<float>(display->tween.update(actor.battleState.hp,
+            actor.battleState.maxHp,animationTimeMs,0,!animationTimeMs || !identity));
         const bool boss=!player && actor.bossState.segmentCount;
         const float hpX=x+(player || boss ? 69.0f : 59.0f);
         const float hpY=y+(boss ? 18.0f : 20.0f);
@@ -138,7 +154,7 @@ public:
         // Player specific: HP numbers ("206 / 276") and smooth EXP bar animation
         if (player) {
             char hp[12];
-            std::snprintf(hp,sizeof(hp),"%u/%u",unsigned(actor.battleState.hp),unsigned(actor.battleState.maxHp));
+            std::snprintf(hp,sizeof(hp),"%u/%u",display->tween.displayedHp(animationTimeMs),unsigned(actor.battleState.maxHp));
             const unsigned count=std::strlen(hp);
             for(unsigned i=0;i<count;++i) {
                 const char digit[2]={hp[i],0};
@@ -184,6 +200,9 @@ public:
     }
 
 private:
+    struct HpDisplay {uint32_t identity=0;uint64_t lastSeen=0;bool bound=false,player=false;HpRatioTween tween;};
+    // Four concurrent field actors; catalogue size does not affect this cache.
+    std::array<HpDisplay,4> m_hpDisplays{};
     C2D_SpriteSheet m_sheets[3]{};
     uint32_t m_displayedExp = 0;
     uint32_t m_lastPlayerId = 0;

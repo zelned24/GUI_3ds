@@ -2,6 +2,39 @@
 #include <cmath>
 #include <cstdint>
 namespace Pokerogue3DS {
+// Pinned BattleInfo.updatePokemonHp: visual state only; never writes battle HP.
+inline double hpTweenDuration(unsigned lastHp,unsigned targetHp,unsigned speed,bool instant=false) {
+    if(instant || speed>=3) return 0;
+    const double delta=lastHp>targetHp ? lastHp-targetHp : targetHp-lastHp;
+    return std::fmin(5000.0,std::fmax(250.0,delta*5))/double(1u<<speed);
+}
+struct HpRatioTween {
+    double from=0,target=0,durationMs=0;
+    uint64_t startMs=0;
+    unsigned maxHp=0,targetHp=0;
+    bool initialized=false;
+    double sample(uint64_t now) const {
+        const uint64_t elapsed=now>=startMs ? now-startMs : 0;
+        if(durationMs<=0 || double(elapsed)>=durationMs) return target;
+        constexpr double pi=3.14159265358979323846;
+        return from+(target-from)*std::sin(double(elapsed)/durationMs*pi/2);
+    }
+    unsigned displayedHp(uint64_t now) const {
+        return static_cast<unsigned>(std::ceil(std::fmin(1.0,std::fmax(0.0,sample(now)))*maxHp));
+    }
+    double update(unsigned hp,unsigned maximum,uint64_t now,unsigned speed=0,bool instant=false) {
+        hp=hp>maximum ? maximum : hp;
+        const double ratio=maximum ? double(hp)/maximum : 0;
+        if(!initialized) {
+            initialized=true;from=target=ratio;targetHp=hp;maxHp=maximum;startMs=now;durationMs=0;
+        } else if(targetHp!=hp || maxHp!=maximum || instant) {
+            const unsigned lastHp=displayedHp(now);
+            from=sample(now);target=ratio;targetHp=hp;maxHp=maximum;
+            durationMs=hpTweenDuration(lastHp,hp,speed,instant);startMs=now;
+        }
+        return sample(now);
+    }
+};
 // Pinned PlayerBattleInfo.getLevelDurationMultiplier / doUpdateExpAnimation.
 // Return false for invalid native inputs instead of inventing an animation.
 inline bool expSegmentTiming(unsigned lastLevel,unsigned finalLevel,double ratio,unsigned speed,

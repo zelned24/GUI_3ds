@@ -781,3 +781,5 @@ La búsqueda del índice generado usa búsqueda binaria sobre identidades ordena
 
 - [x] Fondo de selector adaptado offline: 320×180 original → 400×225 nearest, raster final 1:1 y provenance/hash preservados; comparación pixel a pixel y hashes físicos PASS. No implica píxeles originales uniformes: la adaptación fuente sigue siendo 1.25×.
 - [ ] Revisión visual del fondo adaptado y retiro GPU de arena/capas: reemplazo y limpieza usan `retireSpriteSheet` con renderer; harness actualizado sin ejecutar. Fondos de batalla y capas todavía tienen escalas fraccionales pendientes.
+
+- [ ] HUD PS: tween visual conectado al reloj y a la identidad/lado de cada actor; duración `clamp(abs(lastHp-hp)*5,250,5000)`, `Sine.easeOut`, números `ceil(ratio*maxHp)` y barra recortada a píxeles enteros. Fuente pinned: `src/ui/battle-info/battle-info.ts::updatePokemonHp`, `player-battle-info.ts::onHpTweenUpdate`, `src/system/settings/default-settings.ts` (DEFAULT). Casos de daño/curación/interrupción y cadencias 15/30/60 escritos, sin ejecutar. Faltan espera de fases, ajustes persistentes de velocidad y comparación visual; no modifica los PS de gameplay.

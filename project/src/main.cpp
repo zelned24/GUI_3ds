@@ -220,7 +220,7 @@ int main() {
             presentationStartTicks,svcGetSystemTick(),SYSCLOCK_ARM11);
         hidScanInput();
         uint32_t rawPressed = Pokerogue3DS::FrontendMenuPresenter::filterTouchInput(hidKeysDown(),preferences.touchControls);
-        if(titleVisible) battleHud.resetExperienceDisplay();
+        if(titleVisible) {battleHud.resetExperienceDisplay();battleHud.resetHpDisplay();}
         if(titleVisible || game.presentationStage()==Pokerogue3DS::NativeSaveStage::RunSetup
             || game.presentationStage()==Pokerogue3DS::NativeSaveStage::BattleActive) dialogue.reset();
         if (titleVisible) {
@@ -894,13 +894,13 @@ int main() {
         } else {
             // Enemy HUD in top-left
             battleHud.draw(renderer, game.presentation().enemy, false, 12.0f, 20.0f,
-                game.hasCaughtSpecies(game.presentation().enemy.dex));
+                game.hasCaughtSpecies(game.presentation().enemy.dex),0,frameAnimationTimeMs);
             if (game.doubleBattle()) {
                 battleHud.draw(renderer, game.presentation().secondEnemy, false, 12.0f, 58.0f,
-                    game.hasCaughtSpecies(game.presentation().secondEnemy.dex));
+                    game.hasCaughtSpecies(game.presentation().secondEnemy.dex),0,frameAnimationTimeMs);
             }
             // Player HUD in bottom-right
-            battleHud.draw(renderer, game.presentation().player, true, 258.0f, 146.0f,false,game.experienceLevelCap());
+            battleHud.draw(renderer, game.presentation().player, true, 258.0f, 146.0f,false,game.experienceLevelCap(),frameAnimationTimeMs);
 
             // Field / Biome info in top-right
             renderer.drawWindow(280.0f, 6.0f, 114.0f, 32.0f);

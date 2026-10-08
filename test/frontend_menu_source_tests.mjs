@@ -158,3 +158,8 @@ assert(introBranch.includes("setup.drawTop") && !introBranch.includes("arena.dra
 assert(arena.includes("if (!definition) { clear(&renderer); return false; }"));
 assert(arena.includes("renderer.retireSpriteSheet(m_layers[i])"));
 assert(main.includes("arena.clear(&renderer)"));
+
+assert(main.includes("false,game.experienceLevelCap(),frameAnimationTimeMs"));
+const hudSource=await fs.readFile(new URL("../project/include/runtime/BattleHudPresenter.hpp",import.meta.url),"utf8");
+assert(hudSource.includes("display->tween.displayedHp(animationTimeMs)"));
+assert(hudSource.includes("std::array<HpDisplay,4>"));

@@ -409,3 +409,7 @@ La instrucción más reciente del usuario aplaza compilaciones y Azahar hasta nu
 El adaptador de padding resuelve el PNG materializado para variantes shiny, incluido género femenino, en lugar de sustituirlo por el PNG upstream. Conserva la procedencia de materialización y distingue el hash original, el materializado y el derivado con padding. Los originales ausentes en el checkout parcial se consultan mediante `git show` en la revisión fijada.
 
 Verificación ejecutada: `python test/sprite_padding_source_tests.py` (2 pruebas offline) y resolución del PNG real `269-shiny-v0` de espalda con hashes coincidentes. La recuperación completa durante conversión, compilación C++ y comprobación visual permanecen pendientes. No se compiló ni se abrió Azahar.
+
+### HUD de PS: implementación local pendiente de ejecución
+
+La presentación usa el reloj transcurrido para el tween `Sine.easeOut` upstream, con duración de 250–5000 ms dependiente del delta de PS. Cuatro slots visuales separados por identidad/lado evitan compartir la animación entre enemigos; los números del jugador usan el valor visible. El default de velocidad corresponde al pin; ajustes de velocidad, espera de fases y fidelidad visual siguen pendientes. Tests C++ escritos, sin compilar por instrucción vigente. El estado de combate permanece como entrada de solo lectura.
