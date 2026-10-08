@@ -2,7 +2,7 @@
 
 ## Cómo medir el avance
 
-- Referencia actual: rama `codex/pokerogue-3ds-migration`, último commit de implementación publicado confirmado `8354656`; conversión física ampliada terminada: 10682 atlas y 10746 páginas `.t3x`. Validación nativa y visual pendiente. Los resultados históricos no verifican estos cambios locales.
+- Referencia actual: rama `codex/pokerogue-3ds-migration`, último commit de implementación publicado confirmado `63e0360`; conversión física ampliada terminada: 10682 atlas y 10746 páginas `.t3x`. Validación nativa y visual pendiente. Los resultados históricos no verifican estos cambios locales.
 - Objetivo: PokéRogue jugable y fiel al snapshot upstream en Old 3DS, con ambas pantallas, progreso exportable y actualizaciones desde consola.
 - Cada ID es estable para reportar avances: `MOV-07`, `GUI-03`, etc. No equivale a un movimiento/habilidad individual.
 - Una casilla sin marcar puede tener código parcial; el resumen de cada área indica lo existente. Marcarla solo con integración completa y evidencia ejecutada pertinente.
@@ -1148,3 +1148,9 @@ La compilación ARM solicitada terminó correctamente; no prueba ejecución de h
 - Implementado sin ejecución nativa: mensajes de error/guardado del frontend se dibujan en un panel superior de 376×52, con hasta dos líneas a raster nativo; ya no reemplazan A/B en la pantalla inferior. El título conserva sus indicaciones de navegación abajo.
 - Los botones inferiores mantienen sus áreas táctiles y comandos existentes cuando hay feedback. Se añadieron guards de conexión y límites al harness nativo, cuya ejecución sigue aplazada.
 - Pendientes: inspección visual de mensajes largos, navegación física/táctil de todas las ventanas, audio audible, captura y medición de FPS. No se marca como cerrada la interfaz completa.
+
+### Referencias reales adicionales de iconos
+
+- Importación verificada offline: 92 referencias literales/de variantes resueltas y 17 casos dinámicos explícitamente pendientes. Se incorporaron DIRE_HIT y tres vales a partir de `modifierTypeInitObj` y `getVoucherTypeIcon`, sin inventar nombres de archivos ni imágenes.
+- `docs/generated/ITEM_ICON_REFERENCE_REPORT.json` conserva revisión, sourcePath/SHA-256 y símbolos del constructor/resolver; cada clave resuelta existe en el índice físico pinned.
+- `python test/item_icon_reference_import_tests.py`: PASS; header y reporte idénticos tras dos importaciones. La prueba se registra en la suite de presentación. No demuestra carga GPU ni concede implementación de vales/gacha o MT: faltan sus comportamientos y variantes de gameplay.

@@ -318,12 +318,26 @@ ball_header+="\n".join("    {"+str(row["id"])+","+json.dumps(row["iconKey"])+","
 modifier_source=subprocess.check_output(["git","-C",str(ROOT / "build/upstream/pokerogue"),"show",source_revision+":src/modifier/modifier-type.ts"]).decode("utf-8")
 item_icon_refs=[]
 item_icon_unknown=[]
+voucher_path="src/system/voucher.ts"
+voucher_raw=subprocess.check_output(["git","-C",str(ROOT / "build/upstream/pokerogue"),"show",source_revision+":"+voucher_path])
+voucher_body=voucher_raw.decode("utf-8").split("export function getVoucherTypeIcon",1)[1].split("export interface",1)[0]
+voucher_icons=dict(re.findall(r'case VoucherType\.(\w+):\s*return "([^"\\]+)";',voucher_body))
+
 for item in canonical["items"]:
     raw=item["extensions"]["upstreamRawRecord"]["value"]
-    constructor=re.search(r"new\s+(\w+)\s*\(",raw)
+    voucher=re.search(r"new\s+AddVoucherModifierType\(VoucherType\.(\w+),\s*\d+\)\s*$",raw.strip())
+    if voucher:
+        key=voucher_icons.get(voucher.group(1))
+        if key and any(frame["key"]==key for frame in item_frames):
+            item_icon_refs.append({"id":item["id"],"iconKey":key,"constructor":"AddVoucherModifierType","sourceSymbol":item["source"]["sourceSymbol"],"resolverSourcePath":voucher_path,"resolverSourceSymbol":"getVoucherTypeIcon","resolverSourceSHA256":hashlib.sha256(voucher_raw).hexdigest(),"variantSymbol":voucher.group(1)})
+        else:
+            item_icon_unknown.append({"id":item["id"],"status":"MISSING_IN_PINNED_ITEM_ATLAS" if key else "NOT_YET_SUPPORTED_BY_ICON_ADAPTER"})
+        continue
+    anonymous=bool(re.search(r"new\s+\(class extends ModifierType\s*\{",raw))
+    constructor=re.search(r"\}\)\(",raw) if anonymous else re.search(r"new\s+(\w+)\s*\(",raw)
     if not constructor:
         item_icon_unknown.append({"id":item["id"],"status":"NOT_YET_SUPPORTED_BY_ICON_ADAPTER"});continue
-    class_name=constructor.group(1)
+    class_name="ModifierType" if anonymous else constructor.group(1)
     class_start=re.search(r"\bclass\s+"+re.escape(class_name)+r"\b",modifier_source)
     signature=None
     if class_start:
@@ -364,6 +378,7 @@ ref_header+="""inline const char* findItemIconKey(const char* itemId) {
 """
 (ROOT / "project/generated/include/content/ItemIconReferences.hpp").write_text(ref_header,encoding="utf-8",newline="\n")
 (output.parent / "item-icon-reference-report.json").write_text(json.dumps({"repository":"https://github.com/pagefaultgames/pokerogue","revision":source_revision,"sourcePath":"src/modifier/modifier-type.ts","sourceSHA256":hashlib.sha256(modifier_source.encode("utf-8")).hexdigest(),"schemaVersion":1,"resolved":item_icon_refs,"unsupported":item_icon_unknown},sort_keys=True,indent=2)+"\n",encoding="utf-8",newline="\n")
+(ROOT / "docs/generated/ITEM_ICON_REFERENCE_REPORT.json").write_bytes((output.parent / "item-icon-reference-report.json").read_bytes())
 print(f"Resolved {len(item_icon_refs)} item icons; {len(item_icon_unknown)} explicit dynamic/unsupported references")
 
 entity_header="// Canonical numeric IDs to pinned Spanish names; no gameplay behavior.\n#pragma once\n#include <cstdint>\nnamespace Pokerogue3DS {\nstruct EntityUiName {uint16_t id;const char* name;};\n"

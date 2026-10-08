@@ -12,6 +12,7 @@ inline constexpr ItemIconReference kItemIconReferences[]={
     {"CANDY_JAR","candy_jar"},
     {"CATCHING_CHARM","catching_charm"},
     {"COIN_CASE","coin_case"},
+    {"DIRE_HIT","dire_hit"},
     {"DNA_SPLICERS","dna_splicers"},
     {"DYNAMAX_BAND","dynamax_band"},
     {"ELIXIR","elixir"},
@@ -90,6 +91,9 @@ inline constexpr ItemIconReference kItemIconReferences[]={
     {"TERA_ORB","tera_orb"},
     {"TOXIC_ORB","toxic_orb"},
     {"ULTRA_BALL","ub"},
+    {"VOUCHER","coupon"},
+    {"VOUCHER_PLUS","pair_of_tickets"},
+    {"VOUCHER_PREMIUM","mystic_ticket"},
     {"WHITE_HERB","white_herb"},
     {"WIDE_LENS","wide_lens"},
 };

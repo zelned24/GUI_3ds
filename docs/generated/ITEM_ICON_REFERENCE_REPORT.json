@@ -1,0 +1,749 @@
+{
+  "repository": "https://github.com/pagefaultgames/pokerogue",
+  "resolved": [
+    {
+      "constructor": "AddPokeballModifierType",
+      "iconArgumentIndex": 0,
+      "iconKey": "pb",
+      "id": "POKEBALL",
+      "sourceSymbol": "modifierTypeInitObj.POKEBALL"
+    },
+    {
+      "constructor": "AddPokeballModifierType",
+      "iconArgumentIndex": 0,
+      "iconKey": "gb",
+      "id": "GREAT_BALL",
+      "sourceSymbol": "modifierTypeInitObj.GREAT_BALL"
+    },
+    {
+      "constructor": "AddPokeballModifierType",
+      "iconArgumentIndex": 0,
+      "iconKey": "ub",
+      "id": "ULTRA_BALL",
+      "sourceSymbol": "modifierTypeInitObj.ULTRA_BALL"
+    },
+    {
+      "constructor": "AddPokeballModifierType",
+      "iconArgumentIndex": 0,
+      "iconKey": "rb",
+      "id": "ROGUE_BALL",
+      "sourceSymbol": "modifierTypeInitObj.ROGUE_BALL"
+    },
+    {
+      "constructor": "AddPokeballModifierType",
+      "iconArgumentIndex": 0,
+      "iconKey": "mb",
+      "id": "MASTER_BALL",
+      "sourceSymbol": "modifierTypeInitObj.MASTER_BALL"
+    },
+    {
+      "constructor": "PokemonLevelIncrementModifierType",
+      "iconArgumentIndex": 1,
+      "iconKey": "rare_candy",
+      "id": "RARE_CANDY",
+      "sourceSymbol": "modifierTypeInitObj.RARE_CANDY"
+    },
+    {
+      "constructor": "AllPokemonLevelIncrementModifierType",
+      "iconArgumentIndex": 1,
+      "iconKey": "rarer_candy",
+      "id": "RARER_CANDY",
+      "sourceSymbol": "modifierTypeInitObj.RARER_CANDY"
+    },
+    {
+      "constructor": "PokemonHeldItemModifierType",
+      "iconArgumentIndex": 1,
+      "iconKey": "relic_gold",
+      "id": "EVOLUTION_TRACKER_GIMMIGHOUL",
+      "sourceSymbol": "modifierTypeInitObj.EVOLUTION_TRACKER_GIMMIGHOUL"
+    },
+    {
+      "constructor": "ModifierType",
+      "iconArgumentIndex": 1,
+      "iconKey": "mega_bracelet",
+      "id": "MEGA_BRACELET",
+      "sourceSymbol": "modifierTypeInitObj.MEGA_BRACELET"
+    },
+    {
+      "constructor": "ModifierType",
+      "iconArgumentIndex": 1,
+      "iconKey": "dynamax_band",
+      "id": "DYNAMAX_BAND",
+      "sourceSymbol": "modifierTypeInitObj.DYNAMAX_BAND"
+    },
+    {
+      "constructor": "ModifierType",
+      "iconArgumentIndex": 1,
+      "iconKey": "tera_orb",
+      "id": "TERA_ORB",
+      "sourceSymbol": "modifierTypeInitObj.TERA_ORB"
+    },
+    {
+      "constructor": "ModifierType",
+      "iconArgumentIndex": 1,
+      "iconKey": "map",
+      "id": "MAP",
+      "sourceSymbol": "modifierTypeInitObj.MAP"
+    },
+    {
+      "constructor": "PokemonHpRestoreModifierType",
+      "iconArgumentIndex": 1,
+      "iconKey": "potion",
+      "id": "POTION",
+      "sourceSymbol": "modifierTypeInitObj.POTION"
+    },
+    {
+      "constructor": "PokemonHpRestoreModifierType",
+      "iconArgumentIndex": 1,
+      "iconKey": "super_potion",
+      "id": "SUPER_POTION",
+      "sourceSymbol": "modifierTypeInitObj.SUPER_POTION"
+    },
+    {
+      "constructor": "PokemonHpRestoreModifierType",
+      "iconArgumentIndex": 1,
+      "iconKey": "hyper_potion",
+      "id": "HYPER_POTION",
+      "sourceSymbol": "modifierTypeInitObj.HYPER_POTION"
+    },
+    {
+      "constructor": "PokemonHpRestoreModifierType",
+      "iconArgumentIndex": 1,
+      "iconKey": "max_potion",
+      "id": "MAX_POTION",
+      "sourceSymbol": "modifierTypeInitObj.MAX_POTION"
+    },
+    {
+      "constructor": "PokemonHpRestoreModifierType",
+      "iconArgumentIndex": 1,
+      "iconKey": "full_restore",
+      "id": "FULL_RESTORE",
+      "sourceSymbol": "modifierTypeInitObj.FULL_RESTORE"
+    },
+    {
+      "constructor": "PokemonReviveModifierType",
+      "iconArgumentIndex": 1,
+      "iconKey": "revive",
+      "id": "REVIVE",
+      "sourceSymbol": "modifierTypeInitObj.REVIVE"
+    },
+    {
+      "constructor": "PokemonReviveModifierType",
+      "iconArgumentIndex": 1,
+      "iconKey": "max_revive",
+      "id": "MAX_REVIVE",
+      "sourceSymbol": "modifierTypeInitObj.MAX_REVIVE"
+    },
+    {
+      "constructor": "PokemonStatusHealModifierType",
+      "iconArgumentIndex": 1,
+      "iconKey": "full_heal",
+      "id": "FULL_HEAL",
+      "sourceSymbol": "modifierTypeInitObj.FULL_HEAL"
+    },
+    {
+      "constructor": "AllPokemonFullReviveModifierType",
+      "iconArgumentIndex": 1,
+      "iconKey": "sacred_ash",
+      "id": "SACRED_ASH",
+      "sourceSymbol": "modifierTypeInitObj.SACRED_ASH"
+    },
+    {
+      "constructor": "PokemonHeldItemModifierType",
+      "iconArgumentIndex": 1,
+      "iconKey": "reviver_seed",
+      "id": "REVIVER_SEED",
+      "sourceSymbol": "modifierTypeInitObj.REVIVER_SEED"
+    },
+    {
+      "constructor": "PokemonHeldItemModifierType",
+      "iconArgumentIndex": 1,
+      "iconKey": "white_herb",
+      "id": "WHITE_HERB",
+      "sourceSymbol": "modifierTypeInitObj.WHITE_HERB"
+    },
+    {
+      "constructor": "PokemonPpRestoreModifierType",
+      "iconArgumentIndex": 1,
+      "iconKey": "ether",
+      "id": "ETHER",
+      "sourceSymbol": "modifierTypeInitObj.ETHER"
+    },
+    {
+      "constructor": "PokemonPpRestoreModifierType",
+      "iconArgumentIndex": 1,
+      "iconKey": "max_ether",
+      "id": "MAX_ETHER",
+      "sourceSymbol": "modifierTypeInitObj.MAX_ETHER"
+    },
+    {
+      "constructor": "PokemonAllMovePpRestoreModifierType",
+      "iconArgumentIndex": 1,
+      "iconKey": "elixir",
+      "id": "ELIXIR",
+      "sourceSymbol": "modifierTypeInitObj.ELIXIR"
+    },
+    {
+      "constructor": "PokemonAllMovePpRestoreModifierType",
+      "iconArgumentIndex": 1,
+      "iconKey": "max_elixir",
+      "id": "MAX_ELIXIR",
+      "sourceSymbol": "modifierTypeInitObj.MAX_ELIXIR"
+    },
+    {
+      "constructor": "PokemonPpUpModifierType",
+      "iconArgumentIndex": 1,
+      "iconKey": "pp_up",
+      "id": "PP_UP",
+      "sourceSymbol": "modifierTypeInitObj.PP_UP"
+    },
+    {
+      "constructor": "PokemonPpUpModifierType",
+      "iconArgumentIndex": 1,
+      "iconKey": "pp_max",
+      "id": "PP_MAX",
+      "sourceSymbol": "modifierTypeInitObj.PP_MAX"
+    },
+    {
+      "constructor": "DoubleBattleChanceBoosterModifierType",
+      "iconArgumentIndex": 1,
+      "iconKey": "lure",
+      "id": "LURE",
+      "sourceSymbol": "modifierTypeInitObj.LURE"
+    },
+    {
+      "constructor": "DoubleBattleChanceBoosterModifierType",
+      "iconArgumentIndex": 1,
+      "iconKey": "super_lure",
+      "id": "SUPER_LURE",
+      "sourceSymbol": "modifierTypeInitObj.SUPER_LURE"
+    },
+    {
+      "constructor": "DoubleBattleChanceBoosterModifierType",
+      "iconArgumentIndex": 1,
+      "iconKey": "max_lure",
+      "id": "MAX_LURE",
+      "sourceSymbol": "modifierTypeInitObj.MAX_LURE"
+    },
+    {
+      "constructor": "ModifierType",
+      "iconArgumentIndex": 1,
+      "iconKey": "dire_hit",
+      "id": "DIRE_HIT",
+      "sourceSymbol": "modifierTypeInitObj.DIRE_HIT"
+    },
+    {
+      "constructor": "PokemonHeldItemModifierType",
+      "iconArgumentIndex": 1,
+      "iconKey": "mystical_rock",
+      "id": "MYSTICAL_ROCK",
+      "sourceSymbol": "modifierTypeInitObj.MYSTICAL_ROCK"
+    },
+    {
+      "constructor": "RememberMoveModifierType",
+      "iconArgumentIndex": 1,
+      "iconKey": "big_mushroom",
+      "id": "MEMORY_MUSHROOM",
+      "sourceSymbol": "modifierTypeInitObj.MEMORY_MUSHROOM"
+    },
+    {
+      "constructor": "ModifierType",
+      "iconArgumentIndex": 1,
+      "iconKey": "exp_share",
+      "id": "EXP_SHARE",
+      "sourceSymbol": "modifierTypeInitObj.EXP_SHARE"
+    },
+    {
+      "constructor": "ModifierType",
+      "iconArgumentIndex": 1,
+      "iconKey": "exp_balance",
+      "id": "EXP_BALANCE",
+      "sourceSymbol": "modifierTypeInitObj.EXP_BALANCE"
+    },
+    {
+      "constructor": "ModifierType",
+      "iconArgumentIndex": 1,
+      "iconKey": "oval_charm",
+      "id": "OVAL_CHARM",
+      "sourceSymbol": "modifierTypeInitObj.OVAL_CHARM"
+    },
+    {
+      "constructor": "ExpBoosterModifierType",
+      "iconArgumentIndex": 1,
+      "iconKey": "exp_charm",
+      "id": "EXP_CHARM",
+      "sourceSymbol": "modifierTypeInitObj.EXP_CHARM"
+    },
+    {
+      "constructor": "ExpBoosterModifierType",
+      "iconArgumentIndex": 1,
+      "iconKey": "super_exp_charm",
+      "id": "SUPER_EXP_CHARM",
+      "sourceSymbol": "modifierTypeInitObj.SUPER_EXP_CHARM"
+    },
+    {
+      "constructor": "ExpBoosterModifierType",
+      "iconArgumentIndex": 1,
+      "iconKey": "golden_exp_charm",
+      "id": "GOLDEN_EXP_CHARM",
+      "sourceSymbol": "modifierTypeInitObj.GOLDEN_EXP_CHARM"
+    },
+    {
+      "constructor": "PokemonExpBoosterModifierType",
+      "iconArgumentIndex": 1,
+      "iconKey": "lucky_egg",
+      "id": "LUCKY_EGG",
+      "sourceSymbol": "modifierTypeInitObj.LUCKY_EGG"
+    },
+    {
+      "constructor": "PokemonExpBoosterModifierType",
+      "iconArgumentIndex": 1,
+      "iconKey": "golden_egg",
+      "id": "GOLDEN_EGG",
+      "sourceSymbol": "modifierTypeInitObj.GOLDEN_EGG"
+    },
+    {
+      "constructor": "PokemonFriendshipBoosterModifierType",
+      "iconArgumentIndex": 1,
+      "iconKey": "soothe_bell",
+      "id": "SOOTHE_BELL",
+      "sourceSymbol": "modifierTypeInitObj.SOOTHE_BELL"
+    },
+    {
+      "constructor": "PokemonHeldItemModifierType",
+      "iconArgumentIndex": 1,
+      "iconKey": "scope_lens",
+      "id": "SCOPE_LENS",
+      "sourceSymbol": "modifierTypeInitObj.SCOPE_LENS"
+    },
+    {
+      "constructor": "PokemonHeldItemModifierType",
+      "iconArgumentIndex": 1,
+      "iconKey": "leek",
+      "id": "LEEK",
+      "sourceSymbol": "modifierTypeInitObj.LEEK"
+    },
+    {
+      "constructor": "PokemonHeldItemModifierType",
+      "iconArgumentIndex": 1,
+      "iconKey": "eviolite",
+      "id": "EVIOLITE",
+      "sourceSymbol": "modifierTypeInitObj.EVIOLITE"
+    },
+    {
+      "constructor": "PokemonHeldItemModifierType",
+      "iconArgumentIndex": 1,
+      "iconKey": "soul_dew",
+      "id": "SOUL_DEW",
+      "sourceSymbol": "modifierTypeInitObj.SOUL_DEW"
+    },
+    {
+      "constructor": "MoneyRewardModifierType",
+      "iconArgumentIndex": 1,
+      "iconKey": "nugget",
+      "id": "NUGGET",
+      "sourceSymbol": "modifierTypeInitObj.NUGGET"
+    },
+    {
+      "constructor": "MoneyRewardModifierType",
+      "iconArgumentIndex": 1,
+      "iconKey": "big_nugget",
+      "id": "BIG_NUGGET",
+      "sourceSymbol": "modifierTypeInitObj.BIG_NUGGET"
+    },
+    {
+      "constructor": "MoneyRewardModifierType",
+      "iconArgumentIndex": 1,
+      "iconKey": "relic_gold",
+      "id": "RELIC_GOLD",
+      "sourceSymbol": "modifierTypeInitObj.RELIC_GOLD"
+    },
+    {
+      "constructor": "ModifierType",
+      "iconArgumentIndex": 1,
+      "iconKey": "amulet_coin",
+      "id": "AMULET_COIN",
+      "sourceSymbol": "modifierTypeInitObj.AMULET_COIN"
+    },
+    {
+      "constructor": "PokemonHeldItemModifierType",
+      "iconArgumentIndex": 1,
+      "iconKey": "golden_punch",
+      "id": "GOLDEN_PUNCH",
+      "sourceSymbol": "modifierTypeInitObj.GOLDEN_PUNCH"
+    },
+    {
+      "constructor": "ModifierType",
+      "iconArgumentIndex": 1,
+      "iconKey": "coin_case",
+      "id": "COIN_CASE",
+      "sourceSymbol": "modifierTypeInitObj.COIN_CASE"
+    },
+    {
+      "constructor": "ModifierType",
+      "iconArgumentIndex": 1,
+      "iconKey": "lock_capsule",
+      "id": "LOCK_CAPSULE",
+      "sourceSymbol": "modifierTypeInitObj.LOCK_CAPSULE"
+    },
+    {
+      "constructor": "ContactHeldItemTransferChanceModifierType",
+      "iconArgumentIndex": 1,
+      "iconKey": "grip_claw",
+      "id": "GRIP_CLAW",
+      "sourceSymbol": "modifierTypeInitObj.GRIP_CLAW"
+    },
+    {
+      "constructor": "PokemonMoveAccuracyBoosterModifierType",
+      "iconArgumentIndex": 1,
+      "iconKey": "wide_lens",
+      "id": "WIDE_LENS",
+      "sourceSymbol": "modifierTypeInitObj.WIDE_LENS"
+    },
+    {
+      "constructor": "PokemonMultiHitModifierType",
+      "iconArgumentIndex": 1,
+      "iconKey": "zoom_lens",
+      "id": "MULTI_LENS",
+      "sourceSymbol": "modifierTypeInitObj.MULTI_LENS"
+    },
+    {
+      "constructor": "ModifierType",
+      "iconArgumentIndex": 1,
+      "iconKey": "healing_charm",
+      "id": "HEALING_CHARM",
+      "sourceSymbol": "modifierTypeInitObj.HEALING_CHARM"
+    },
+    {
+      "constructor": "ModifierType",
+      "iconArgumentIndex": 1,
+      "iconKey": "candy_jar",
+      "id": "CANDY_JAR",
+      "sourceSymbol": "modifierTypeInitObj.CANDY_JAR"
+    },
+    {
+      "constructor": "ModifierType",
+      "iconArgumentIndex": 1,
+      "iconKey": "berry_pouch",
+      "id": "BERRY_POUCH",
+      "sourceSymbol": "modifierTypeInitObj.BERRY_POUCH"
+    },
+    {
+      "constructor": "PokemonHeldItemModifierType",
+      "iconArgumentIndex": 1,
+      "iconKey": "focus_band",
+      "id": "FOCUS_BAND",
+      "sourceSymbol": "modifierTypeInitObj.FOCUS_BAND"
+    },
+    {
+      "constructor": "PokemonHeldItemModifierType",
+      "iconArgumentIndex": 1,
+      "iconKey": "quick_claw",
+      "id": "QUICK_CLAW",
+      "sourceSymbol": "modifierTypeInitObj.QUICK_CLAW"
+    },
+    {
+      "constructor": "PokemonHeldItemModifierType",
+      "iconArgumentIndex": 1,
+      "iconKey": "kings_rock",
+      "id": "KINGS_ROCK",
+      "sourceSymbol": "modifierTypeInitObj.KINGS_ROCK"
+    },
+    {
+      "constructor": "PokemonHeldItemModifierType",
+      "iconArgumentIndex": 1,
+      "iconKey": "leftovers",
+      "id": "LEFTOVERS",
+      "sourceSymbol": "modifierTypeInitObj.LEFTOVERS"
+    },
+    {
+      "constructor": "PokemonHeldItemModifierType",
+      "iconArgumentIndex": 1,
+      "iconKey": "shell_bell",
+      "id": "SHELL_BELL",
+      "sourceSymbol": "modifierTypeInitObj.SHELL_BELL"
+    },
+    {
+      "constructor": "PokemonHeldItemModifierType",
+      "iconArgumentIndex": 1,
+      "iconKey": "toxic_orb",
+      "id": "TOXIC_ORB",
+      "sourceSymbol": "modifierTypeInitObj.TOXIC_ORB"
+    },
+    {
+      "constructor": "PokemonHeldItemModifierType",
+      "iconArgumentIndex": 1,
+      "iconKey": "flame_orb",
+      "id": "FLAME_ORB",
+      "sourceSymbol": "modifierTypeInitObj.FLAME_ORB"
+    },
+    {
+      "constructor": "PokemonHeldItemModifierType",
+      "iconArgumentIndex": 1,
+      "iconKey": "baton",
+      "id": "BATON",
+      "sourceSymbol": "modifierTypeInitObj.BATON"
+    },
+    {
+      "constructor": "ModifierType",
+      "iconArgumentIndex": 1,
+      "iconKey": "shiny_charm",
+      "id": "SHINY_CHARM",
+      "sourceSymbol": "modifierTypeInitObj.SHINY_CHARM"
+    },
+    {
+      "constructor": "ModifierType",
+      "iconArgumentIndex": 1,
+      "iconKey": "ability_charm",
+      "id": "ABILITY_CHARM",
+      "sourceSymbol": "modifierTypeInitObj.ABILITY_CHARM"
+    },
+    {
+      "constructor": "ModifierType",
+      "iconArgumentIndex": 1,
+      "iconKey": "catching_charm",
+      "id": "CATCHING_CHARM",
+      "sourceSymbol": "modifierTypeInitObj.CATCHING_CHARM"
+    },
+    {
+      "constructor": "ModifierType",
+      "iconArgumentIndex": 1,
+      "iconKey": "scanner",
+      "id": "IV_SCANNER",
+      "sourceSymbol": "modifierTypeInitObj.IV_SCANNER"
+    },
+    {
+      "constructor": "FusePokemonModifierType",
+      "iconArgumentIndex": 1,
+      "iconKey": "dna_splicers",
+      "id": "DNA_SPLICERS",
+      "sourceSymbol": "modifierTypeInitObj.DNA_SPLICERS"
+    },
+    {
+      "constructor": "TurnHeldItemTransferModifierType",
+      "iconArgumentIndex": 1,
+      "iconKey": "mini_black_hole",
+      "id": "MINI_BLACK_HOLE",
+      "sourceSymbol": "modifierTypeInitObj.MINI_BLACK_HOLE"
+    },
+    {
+      "constructor": "AddVoucherModifierType",
+      "iconKey": "coupon",
+      "id": "VOUCHER",
+      "resolverSourcePath": "src/system/voucher.ts",
+      "resolverSourceSHA256": "9834ea1e281edea35efaf4ae683393554f55b5d49a085267358d1d0fb1c94ee8",
+      "resolverSourceSymbol": "getVoucherTypeIcon",
+      "sourceSymbol": "modifierTypeInitObj.VOUCHER",
+      "variantSymbol": "REGULAR"
+    },
+    {
+      "constructor": "AddVoucherModifierType",
+      "iconKey": "pair_of_tickets",
+      "id": "VOUCHER_PLUS",
+      "resolverSourcePath": "src/system/voucher.ts",
+      "resolverSourceSHA256": "9834ea1e281edea35efaf4ae683393554f55b5d49a085267358d1d0fb1c94ee8",
+      "resolverSourceSymbol": "getVoucherTypeIcon",
+      "sourceSymbol": "modifierTypeInitObj.VOUCHER_PLUS",
+      "variantSymbol": "PLUS"
+    },
+    {
+      "constructor": "AddVoucherModifierType",
+      "iconKey": "mystic_ticket",
+      "id": "VOUCHER_PREMIUM",
+      "resolverSourcePath": "src/system/voucher.ts",
+      "resolverSourceSHA256": "9834ea1e281edea35efaf4ae683393554f55b5d49a085267358d1d0fb1c94ee8",
+      "resolverSourceSymbol": "getVoucherTypeIcon",
+      "sourceSymbol": "modifierTypeInitObj.VOUCHER_PREMIUM",
+      "variantSymbol": "PREMIUM"
+    },
+    {
+      "constructor": "ModifierType",
+      "iconArgumentIndex": 1,
+      "iconKey": "pb_gold",
+      "id": "GOLDEN_POKEBALL",
+      "sourceSymbol": "modifierTypeInitObj.GOLDEN_POKEBALL"
+    },
+    {
+      "constructor": "ModifierType",
+      "iconArgumentIndex": 1,
+      "iconKey": "pb_silver",
+      "id": "SILVER_POKEBALL",
+      "sourceSymbol": "modifierTypeInitObj.SILVER_POKEBALL"
+    },
+    {
+      "constructor": "ModifierType",
+      "iconArgumentIndex": 1,
+      "iconKey": "wl_item_drop",
+      "id": "ENEMY_DAMAGE_BOOSTER",
+      "sourceSymbol": "modifierTypeInitObj.ENEMY_DAMAGE_BOOSTER"
+    },
+    {
+      "constructor": "ModifierType",
+      "iconArgumentIndex": 1,
+      "iconKey": "wl_guard_spec",
+      "id": "ENEMY_DAMAGE_REDUCTION",
+      "sourceSymbol": "modifierTypeInitObj.ENEMY_DAMAGE_REDUCTION"
+    },
+    {
+      "constructor": "ModifierType",
+      "iconArgumentIndex": 1,
+      "iconKey": "wl_potion",
+      "id": "ENEMY_HEAL",
+      "sourceSymbol": "modifierTypeInitObj.ENEMY_HEAL"
+    },
+    {
+      "constructor": "EnemyAttackStatusEffectChanceModifierType",
+      "iconArgumentIndex": 1,
+      "iconKey": "wl_antidote",
+      "id": "ENEMY_ATTACK_POISON_CHANCE",
+      "sourceSymbol": "modifierTypeInitObj.ENEMY_ATTACK_POISON_CHANCE"
+    },
+    {
+      "constructor": "EnemyAttackStatusEffectChanceModifierType",
+      "iconArgumentIndex": 1,
+      "iconKey": "wl_paralyze_heal",
+      "id": "ENEMY_ATTACK_PARALYZE_CHANCE",
+      "sourceSymbol": "modifierTypeInitObj.ENEMY_ATTACK_PARALYZE_CHANCE"
+    },
+    {
+      "constructor": "EnemyAttackStatusEffectChanceModifierType",
+      "iconArgumentIndex": 1,
+      "iconKey": "wl_burn_heal",
+      "id": "ENEMY_ATTACK_BURN_CHANCE",
+      "sourceSymbol": "modifierTypeInitObj.ENEMY_ATTACK_BURN_CHANCE"
+    },
+    {
+      "constructor": "ModifierType",
+      "iconArgumentIndex": 1,
+      "iconKey": "wl_full_heal",
+      "id": "ENEMY_STATUS_EFFECT_HEAL_CHANCE",
+      "sourceSymbol": "modifierTypeInitObj.ENEMY_STATUS_EFFECT_HEAL_CHANCE"
+    },
+    {
+      "constructor": "EnemyEndureChanceModifierType",
+      "iconArgumentIndex": 1,
+      "iconKey": "wl_reset_urge",
+      "id": "ENEMY_ENDURE_CHANCE",
+      "sourceSymbol": "modifierTypeInitObj.ENEMY_ENDURE_CHANCE"
+    },
+    {
+      "constructor": "ModifierType",
+      "iconArgumentIndex": 1,
+      "iconKey": "wl_custom_spliced",
+      "id": "ENEMY_FUSED_CHANCE",
+      "sourceSymbol": "modifierTypeInitObj.ENEMY_FUSED_CHANCE"
+    },
+    {
+      "constructor": "PokemonHeldItemModifierType",
+      "iconArgumentIndex": 1,
+      "iconKey": "old_gateau",
+      "id": "MYSTERY_ENCOUNTER_OLD_GATEAU",
+      "sourceSymbol": "modifierTypeInitObj.MYSTERY_ENCOUNTER_OLD_GATEAU"
+    },
+    {
+      "constructor": "PokemonHeldItemModifierType",
+      "iconArgumentIndex": 1,
+      "iconKey": "macho_brace",
+      "id": "MYSTERY_ENCOUNTER_MACHO_BRACE",
+      "sourceSymbol": "modifierTypeInitObj.MYSTERY_ENCOUNTER_MACHO_BRACE"
+    },
+    {
+      "constructor": "ModifierType",
+      "iconArgumentIndex": 1,
+      "iconKey": "golden_net",
+      "id": "MYSTERY_ENCOUNTER_GOLDEN_BUG_NET",
+      "sourceSymbol": "modifierTypeInitObj.MYSTERY_ENCOUNTER_GOLDEN_BUG_NET"
+    }
+  ],
+  "revision": "8555c08c823b856cbec4eb99ca84ea52a955836d",
+  "schemaVersion": 1,
+  "sourcePath": "src/modifier/modifier-type.ts",
+  "sourceSHA256": "9b1f2983b28f56cab24c649b7a0c871466e16b264a7f0e333594e0806d80af1e",
+  "unsupported": [
+    {
+      "constructor": "EvolutionItemModifierTypeGenerator",
+      "id": "EVOLUTION_ITEM",
+      "status": "NOT_YET_SUPPORTED_BY_ICON_ADAPTER"
+    },
+    {
+      "constructor": "EvolutionItemModifierTypeGenerator",
+      "id": "RARE_EVOLUTION_ITEM",
+      "status": "NOT_YET_SUPPORTED_BY_ICON_ADAPTER"
+    },
+    {
+      "constructor": "FormChangeItemModifierTypeGenerator",
+      "id": "FORM_CHANGE_ITEM",
+      "status": "NOT_YET_SUPPORTED_BY_ICON_ADAPTER"
+    },
+    {
+      "constructor": "FormChangeItemModifierTypeGenerator",
+      "id": "RARE_FORM_CHANGE_ITEM",
+      "status": "NOT_YET_SUPPORTED_BY_ICON_ADAPTER"
+    },
+    {
+      "constructor": "SpeciesStatBoosterModifierTypeGenerator",
+      "id": "SPECIES_STAT_BOOSTER",
+      "status": "NOT_YET_SUPPORTED_BY_ICON_ADAPTER"
+    },
+    {
+      "constructor": "SpeciesStatBoosterModifierTypeGenerator",
+      "id": "RARE_SPECIES_STAT_BOOSTER",
+      "status": "NOT_YET_SUPPORTED_BY_ICON_ADAPTER"
+    },
+    {
+      "constructor": "TempStatStageBoosterModifierTypeGenerator",
+      "id": "TEMP_STAT_STAGE_BOOSTER",
+      "status": "NOT_YET_SUPPORTED_BY_ICON_ADAPTER"
+    },
+    {
+      "constructor": "BaseStatBoosterModifierTypeGenerator",
+      "id": "BASE_STAT_BOOSTER",
+      "status": "NOT_YET_SUPPORTED_BY_ICON_ADAPTER"
+    },
+    {
+      "constructor": "AttackTypeBoosterModifierTypeGenerator",
+      "id": "ATTACK_TYPE_BOOSTER",
+      "status": "NOT_YET_SUPPORTED_BY_ICON_ADAPTER"
+    },
+    {
+      "constructor": "ModifierTypeGenerator",
+      "id": "MINT",
+      "status": "NOT_YET_SUPPORTED_BY_ICON_ADAPTER"
+    },
+    {
+      "constructor": "ModifierTypeGenerator",
+      "id": "TERA_SHARD",
+      "status": "NOT_YET_SUPPORTED_BY_ICON_ADAPTER"
+    },
+    {
+      "constructor": "ModifierTypeGenerator",
+      "id": "BERRY",
+      "status": "NOT_YET_SUPPORTED_BY_ICON_ADAPTER"
+    },
+    {
+      "constructor": "TmModifierTypeGenerator",
+      "id": "TM_COMMON",
+      "status": "NOT_YET_SUPPORTED_BY_ICON_ADAPTER"
+    },
+    {
+      "constructor": "TmModifierTypeGenerator",
+      "id": "TM_GREAT",
+      "status": "NOT_YET_SUPPORTED_BY_ICON_ADAPTER"
+    },
+    {
+      "constructor": "TmModifierTypeGenerator",
+      "id": "TM_ULTRA",
+      "status": "NOT_YET_SUPPORTED_BY_ICON_ADAPTER"
+    },
+    {
+      "constructor": "ModifierTypeGenerator",
+      "id": "MYSTERY_ENCOUNTER_SHUCKLE_JUICE",
+      "status": "NOT_YET_SUPPORTED_BY_ICON_ADAPTER"
+    },
+    {
+      "constructor": "ModifierTypeGenerator",
+      "id": "MYSTERY_ENCOUNTER_BLACK_SLUDGE",
+      "status": "NOT_YET_SUPPORTED_BY_ICON_ADAPTER"
+    }
+  ]
+}
