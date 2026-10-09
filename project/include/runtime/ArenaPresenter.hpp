@@ -5,6 +5,7 @@
 #include <cstdio>
 #include "runtime/PokemonAtlasMetadata.hpp"
 #include "runtime/TrainerPresenter.hpp"
+#include "runtime/PokemonAtlasPresenter.hpp"
 #include "runtime/PresentationClock.hpp"
 #include <cstring>
 #include <string>
@@ -49,7 +50,9 @@ public:
             m_sheet = C2D_SpriteSheetLoad(drawBases ? definition->path : definition->titlePath);
             if (m_sheet) {
                 const auto img = C2D_SpriteSheetGetImage(m_sheet, 0);
-                if (img.tex) C3D_TexSetFilter(img.tex, GPU_NEAREST, GPU_NEAREST);
+                if (!PokemonAtlasPresenter::validAtlasImage(img,definition->width,drawBases ? definition->height : 240)) {
+                    renderer.retireSpriteSheet(m_sheet);m_sheet=nullptr;
+                } else C3D_TexSetFilter(img.tex, GPU_NEAREST, GPU_NEAREST);
             }
         }
         if (!m_sheet) return false;
@@ -74,7 +77,9 @@ public:
                 m_layers[i]=C2D_SpriteSheetLoad(layer->path);
                 if (m_layers[i]) {
                     const auto img = C2D_SpriteSheetGetImage(m_layers[i], 0);
-                    if (img.tex) C3D_TexSetFilter(img.tex, GPU_NEAREST, GPU_NEAREST);
+                    if (!PokemonAtlasPresenter::validAtlasImage(img,layer->width,layer->height)) {
+                        renderer.retireSpriteSheet(m_layers[i]);m_layers[i]=nullptr;
+                    } else C3D_TexSetFilter(img.tex, GPU_NEAREST, GPU_NEAREST);
                 }
                 m_layerMetadata[i].clear();
                 if (layer->metadataPath) m_layerMetadata[i].load(layer->metadataPath);

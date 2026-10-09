@@ -86,6 +86,10 @@ const arena=await fs.readFile(new URL('../project/include/runtime/ArenaPresenter
 assert(arena.includes('const ArenaTextureDefinition* definition = m_definition'));
 assert(arena.includes('std::strcmp(definition->key,biomeKey)'));
 assert(arena.includes('if (!m_layerLookupAttempted[i])'));
+assert(arena.includes('validAtlasImage(img,definition->width,drawBases ? definition->height : 240)'));
+assert(arena.includes('validAtlasImage(img,layer->width,layer->height)'));
+assert(arena.includes('renderer.retireSpriteSheet(m_sheet);m_sheet=nullptr'));
+assert(arena.includes('renderer.retireSpriteSheet(m_layers[i]);m_layers[i]=nullptr'));
 assert(arena.includes('m_layerLookupAttempted[i]=false'));
 assert(arena.includes('m_definition || m_drawBases!=drawBases'));
 assert(arena.includes('drawBases ? definition->path : definition->titlePath'));

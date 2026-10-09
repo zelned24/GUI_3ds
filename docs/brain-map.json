@@ -398,6 +398,7 @@
 {"from":"project/include/runtime/ArenaPresenter.hpp","to":"project/generated/include/content/ArenaTextures.hpp","kind":"include"},
 {"from":"project/include/runtime/ArenaPresenter.hpp","to":"project/include/gfx/renderer2d.hpp","kind":"include"},
 {"from":"project/include/runtime/ArenaPresenter.hpp","to":"project/include/runtime/PokemonAtlasMetadata.hpp","kind":"include"},
+{"from":"project/include/runtime/ArenaPresenter.hpp","to":"project/include/runtime/PokemonAtlasPresenter.hpp","kind":"include"},
 {"from":"project/include/runtime/ArenaPresenter.hpp","to":"project/include/runtime/PresentationClock.hpp","kind":"include"},
 {"from":"project/include/runtime/ArenaPresenter.hpp","to":"project/include/runtime/TrainerPresenter.hpp","kind":"include"},
 {"from":"project/include/runtime/BattleCommandMenuPresenter.hpp","to":"project/generated/include/content/BallMenuContent.hpp","kind":"include"},
