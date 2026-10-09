@@ -2,7 +2,7 @@
 
 ## Cómo medir el avance
 
-- Referencia actual: rama `codex/pokerogue-3ds-migration`, último commit de implementación publicado confirmado `9324bad`; conversión física ampliada terminada: 10682 atlas y 10746 páginas `.t3x`. Validación nativa y visual pendiente. Los resultados históricos no verifican estos cambios locales.
+- Referencia actual: rama `codex/pokerogue-3ds-migration`, último commit de implementación publicado confirmado `9aecefc`; conversión física ampliada terminada: 10682 atlas y 10746 páginas `.t3x`. Validación nativa y visual pendiente. Los resultados históricos no verifican estos cambios locales.
 - Objetivo: PokéRogue jugable y fiel al snapshot upstream en Old 3DS, con ambas pantallas, progreso exportable y actualizaciones desde consola.
 - Cada ID es estable para reportar avances: `MOV-07`, `GUI-03`, etc. No equivale a un movimiento/habilidad individual.
 - Una casilla sin marcar puede tener código parcial; el resumen de cada área indica lo existente. Marcarla solo con integración completa y evidencia ejecutada pertinente.
@@ -32,8 +32,8 @@ Estos son criterios de cierre, no cantidades de ataques o habilidades pendientes
 | Guardado, continuar y exportación | 8 |
 | Actualización desde la consola | 8 |
 | Memoria y rendimiento Old 3DS XL | 6 |
-| Validación y entrega final | 10 |
-| **Total** | **128** |
+| Validación y entrega final | 12 |
+| **Total** | **130** |
 
 Prioridad de gameplay pendiente: completar el segundo Pokémon activo del jugador y el campo de cuatro actores (**TUR-05**), checks previos y cola dinámica de acciones (**TUR-01–04**), ampliar habilidades/movimientos (**HAB / MOV**) y cerrar Eternatus con persistencia (**FLU-09 / SAV-03**). Struggle por PP agotados y guardado del campo actual de tres actores ya tienen rutas conectadas; no cubren todos los contextos. Las regresiones de replay y restauración se verifican en la suite FirstRunRuntime; consultar resultados vigentes en MIGRATION_STATUS.md.
 
@@ -370,12 +370,12 @@ Sin mediciones concluyentes de hardware; Azahar tampoco las reemplaza.
 
 ### Estado actual
 
-Tests y compilación están autorizados. Solo se marcan como verificadas las pruebas ejecutadas; Azahar y hardware requieren evidencia propia.
+Compilación, tests que compilan y Azahar siguen aplazados por la última instrucción del usuario. Pasada actual de presentación sin compiladores: 26 PASS, 0 FAIL y 8 gates nativos omitidos explícitamente. Una primera pasada detectó el guard del resolver de apariencias desactualizado (25 PASS, 1 FAIL); corregido para exigir identidad, invalidación y ambos consumidores actuales. Siete mutaciones de identidad/invalidation fueron rechazadas. Estos resultados no prueban ejecución C++, GPU, audio NDSP ni FPS.
 
 ### Pendientes y criterios de cierre
 
-- [x] **VAL-01.** Ejecutar npm test y registrar todos los fallos conocidos/nuevos.
-- [x] **VAL-02.** Ejecutar npm run native-parity y comprobar cobertura real de harnesses.
+- [ ] **VAL-01.** Ejecutar npm test y registrar todos los fallos conocidos/nuevos. Resultados históricos conservados; requiere repetir sobre el código final actual cuando se autorice compilar.
+- [ ] **VAL-02.** Ejecutar npm run native-parity y comprobar cobertura real de harnesses. Resultado histórico conservado; requiere repetir sobre el código final actual cuando se autorice compilar.
 - [ ] **VAL-03.** Ejecutar npm run native-test y npm run 3ds-test en la etapa final.
 - [ ] **VAL-04.** Ejecutar npm run 3ds-build; producir .3dsx reproducible con assets reales.
 - [ ] **VAL-05.** Verificar paridad de reglas/RNG con pinned upstream, además de replay nativo.

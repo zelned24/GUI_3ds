@@ -85,13 +85,26 @@ export function registerPresentationTests(test) {
   test('Pinned species gender metadata: preserve visual eligibility without inferring from sex',()=>{execFileSync(process.execPath,[path.join(root,'test/species_gender_metadata_tests.mjs')],{stdio:'pipe'});});
   test('Native appearance rendering binding: resolved identity uses indexed assets and missing states stay explicit',()=>{
     const presenter=fs.readFileSync(path.join(root,'project/src/runtime/PokemonAtlasPresenter.cpp'),'utf8');
-    const resolve=presenter.slice(presenter.indexOf('bool PokemonAtlasPresenter::atlasKey('),presenter.indexOf('bool PokemonAtlasPresenter::selectMetadata('));
+    const resolveStart=presenter.indexOf('bool PokemonAtlasPresenter::resolveAppearanceKey(');
+    const resolveEnd=presenter.indexOf('bool PokemonAtlasPresenter::selectMetadata(',resolveStart);
+    if(resolveStart<0 || resolveEnd<=resolveStart) throw new Error('Appearance resolver boundaries missing');
+    const resolve=presenter.slice(resolveStart,resolveEnd);
+    const cacheStart=presenter.indexOf('const std::string* PokemonAtlasPresenter::atlasKey(');
+    if(cacheStart<0 || cacheStart>=resolveStart) throw new Error('Appearance cache boundary missing');
+    const cache=presenter.slice(cacheStart,resolveStart);
+    for(const token of ['cached.dex!=pokemon.dex','cached.formId!=form','cached.gender!=unsigned(appearance.gender)',
+      'cached.variant!=unsigned(appearance.shinyVariant)','cached.resolved!=appearance.appearanceResolved',
+      'cached.shiny!=appearance.shiny','cached.available=resolveAppearanceKey(pokemon,back,cached.key)',
+      'return cached.available ? &cached.key : nullptr;','back ? m_backAppearance : m_frontAppearance'])
+      if(!cache.includes(token)) throw new Error('Missing appearance cache identity/invalidation: '+token);
+    if(!presenter.includes('m_frontAppearance={};m_backAppearance={};'))
+      throw new Error('Content invalidation must clear both appearance caches');
     for(const token of ['appearance.appearanceResolved','appearance.shinyVariant<=2',
       'speciesGenderDifferences(pokemon.dex)','formGenderVisual(form->id)','genderSpriteFormExcluded(spriteForm)',
       'findPokemonAppearanceAsset(out.c_str(),back,female,appearance.shinyVariant,appearance.shiny)',
       'NOT_YET_SUPPORTED_POKEMON_APPEARANCE','out.clear();return false;'])
       if(!resolve.includes(token)) throw new Error('Missing appearance binding '+token);
-    if((presenter.match(/atlasKey\(pokemon, back, key\)/g)||[]).length!==2)
+    if((presenter.match(/const auto\* resolvedKey=atlasKey\(pokemon,back\);/g)||[]).length!==2)
       throw new Error('Both sprite drawing paths must resolve facing and appearance');
   });
   test('Native starter default appearance binding: actual caught metadata and legacy isolation',()=>{
