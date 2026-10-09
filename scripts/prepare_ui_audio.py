@@ -1,8 +1,17 @@
 """Extract pinned, unmodified stereo PCM16 UI sounds for libctru NDSP."""
-import hashlib,io,json,re,subprocess,wave
+import hashlib,io,json,re,struct,subprocess,wave
 from pathlib import Path
 ROOT=Path(__file__).resolve().parents[1]
 REVISION="056a1f408f26a3be4fef243f7462cb43608c7928"
+def pcm_signal_metadata(pcm):
+    if not pcm or len(pcm)%4: raise ValueError("Invalid stereo PCM16 geometry")
+    peaks=[0,0];nonzero=[0,0]
+    for left,right in struct.iter_unpack("<hh",pcm):
+        for channel,sample in enumerate((left,right)):
+            peaks[channel]=max(peaks[channel],abs(sample))
+            nonzero[channel]+=int(sample!=0)
+    return {"peakAbsoluteSamples":peaks,"nonzeroSamples":nonzero}
+
 def prepare(root=ROOT):
     output=root/"build/romfs/audio/ui"
     output.mkdir(parents=True,exist_ok=True)
@@ -19,7 +28,7 @@ def prepare(root=ROOT):
             raise ValueError("Invalid UI audio geometry: "+source_path)
         target=output/(key+".pcm")
         target.write_bytes(pcm)
-        rows.append(dict(key=key,sourcePath=source_path,sourceSHA256=hashlib.sha256(raw).hexdigest(),runtimePath="romfs:/audio/ui/"+target.name,pcmSHA256=hashlib.sha256(pcm).hexdigest(),frames=frames,rate=rate,channels=2,bytes=len(pcm),format="STEREO_PCM16_LE"))
+        rows.append(dict(key=key,sourcePath=source_path,sourceSHA256=hashlib.sha256(raw).hexdigest(),runtimePath="romfs:/audio/ui/"+target.name,pcmSHA256=hashlib.sha256(pcm).hexdigest(),frames=frames,rate=rate,channels=2,bytes=len(pcm),format="STEREO_PCM16_LE",signal=pcm_signal_metadata(pcm)))
     header="// Generated from pinned UI WAV sources, no resampling.\n#pragma once\n#include <cstdint>\nnamespace Pokerogue3DS {\nstruct NativeUiSoundDefinition {const char* key;const char* path;uint32_t frames,rate,bytes;};\ninline constexpr NativeUiSoundDefinition kNativeUiSounds[]={\n"
     header+="\n".join("    {"+json.dumps(r["key"])+","+json.dumps(r["runtimePath"])+f',{r["frames"]},{r["rate"]},{r["bytes"]}' +"}," for r in rows)
     header+="\n};\n}\n"

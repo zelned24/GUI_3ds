@@ -1,5 +1,5 @@
 """Verify pinned WAV -> PCM bytes, sample geometry and deterministic imports."""
-import hashlib,importlib.util,io,json,subprocess,wave
+import hashlib,importlib.util,io,json,struct,subprocess,wave
 from pathlib import Path
 root=Path(__file__).resolve().parents[1]
 spec=importlib.util.spec_from_file_location("ui_audio",root/"scripts/prepare_ui_audio.py")
@@ -20,8 +20,20 @@ for row in report["files"]:
         pcm=sound.readframes(row["frames"])
     physical=root/"build"/row["runtimePath"].replace("romfs:/","romfs/")
     assert pcm==physical.read_bytes()
+    samples=list(struct.iter_unpack("<hh",pcm))
+    expected={"peakAbsoluteSamples":[max(abs(frame[c]) for frame in samples) for c in range(2)],
+        "nonzeroSamples":[sum(frame[c]!=0 for frame in samples) for c in range(2)]}
+    assert row["signal"]==expected
+    assert all(peak>0 for peak in expected["peakAbsoluteSamples"])
+    assert all(count>0 for count in expected["nonzeroSamples"])
     assert len(pcm)==row["bytes"]==row["frames"]*4
     assert hashlib.sha256(pcm).hexdigest()==row["pcmSHA256"]
+assert module.pcm_signal_metadata(bytes(8))=={"peakAbsoluteSamples":[0,0],"nonzeroSamples":[0,0]}
+assert module.pcm_signal_metadata(struct.pack("<hhhh",-32768,32767,0,-1))=={"peakAbsoluteSamples":[32768,32767],"nonzeroSamples":[1,2]}
+for invalid in (b"",b"x",b"xx",b"xxx",b"xxxxx"):
+    try: module.pcm_signal_metadata(invalid)
+    except ValueError: pass
+    else: raise AssertionError("Invalid PCM geometry accepted")
 policy_header=root/"project/generated/include/content/AudioVolumePolicy.hpp"
 before=(header_path.read_bytes(),report_path.read_bytes(),policy_header.read_bytes())
 for _ in range(2):

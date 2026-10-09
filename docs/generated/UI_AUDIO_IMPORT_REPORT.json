@@ -9,6 +9,16 @@
       "pcmSHA256": "3368eafcacfe8697d0da27c7e7e495e5189f9d96e608f10e7180b2fcc9a10671",
       "rate": 44100,
       "runtimePath": "romfs:/audio/ui/select.pcm",
+      "signal": {
+        "nonzeroSamples": [
+          10088,
+          10088
+        ],
+        "peakAbsoluteSamples": [
+          3276,
+          3276
+        ]
+      },
       "sourcePath": "audio/ui/select.wav",
       "sourceSHA256": "9b38fd1e59a1b15689c3d13f7048bb5164a86b0caede8a365679c695eabf2763"
     },
@@ -21,6 +31,16 @@
       "pcmSHA256": "f68bbacd8800edec27fe38d59421dcf67d037e97f963e65a2eee770882a1e1e9",
       "rate": 44100,
       "runtimePath": "romfs:/audio/ui/error.pcm",
+      "signal": {
+        "nonzeroSamples": [
+          16889,
+          16889
+        ],
+        "peakAbsoluteSamples": [
+          5096,
+          5096
+        ]
+      },
       "sourcePath": "audio/ui/error.wav",
       "sourceSHA256": "4828651de7de9a4550c01898d61f941a528d75754bb84f4c09a2cd64cdb9a7cb"
     },
@@ -33,6 +53,16 @@
       "pcmSHA256": "b43aac060598132e74ea07993bfc1a7f663e64d409aa10d1b777600b7aa87f28",
       "rate": 44100,
       "runtimePath": "romfs:/audio/ui/menu_open.pcm",
+      "signal": {
+        "nonzeroSamples": [
+          11817,
+          11817
+        ],
+        "peakAbsoluteSamples": [
+          4732,
+          4732
+        ]
+      },
       "sourcePath": "audio/ui/menu_open.wav",
       "sourceSHA256": "e0c9e5114863975b1db4ef8dff40c16c96d66a2d4059afe9641119029d85b3af"
     }
