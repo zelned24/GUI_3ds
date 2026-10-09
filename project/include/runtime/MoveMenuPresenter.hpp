@@ -108,16 +108,10 @@ public:
 
             // Category
             renderer.drawTextFitted("CATEGORÍA", 208, 54, 0.3125f, 94, C2D_Color32(175, 170, 185, 255));
-            const char* catName = "Estado";
-            uint32_t catCol = C2D_Color32(160, 160, 160, 255);
-            if (curMove->category == PokerogueContent::MovePhysical) {
-                catName = "Físico";
-                catCol = C2D_Color32(235, 75, 45, 255);
-            } else if (curMove->category == PokerogueContent::MoveSpecial) {
-                catName = "Especial";
-                catCol = C2D_Color32(65, 120, 240, 255);
-            }
-            renderer.drawTextFitted(catName, 208, 68, 0.3125f, 94, catCol);
+            const char* categoryKey = curMove->category == PokerogueContent::MovePhysical ? "physical"
+                : (curMove->category == PokerogueContent::MoveSpecial ? "special" : "status");
+            if (!renderer.drawHudGraphic("categories", categoryKey, 208, 70))
+                renderer.drawText("?", 208, 70, 0.3125f, 0xffffffff);
 
             // Power
             renderer.drawTextFitted(runtimeUiText("fight-ui-handler:power"), 208, 98, 0.3125f, 94, C2D_Color32(175, 170, 185, 255));

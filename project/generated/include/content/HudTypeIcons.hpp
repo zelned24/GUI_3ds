@@ -199,6 +199,11 @@ inline constexpr TypeLabelFrame kHudIconFrames15[]={
 inline constexpr TypeLabelFrame kHudIconFrames16[]={
     {"overlay_exp_label",{0,0,16,7,16,7,0,0}},
 };
+inline constexpr TypeLabelFrame kHudIconFrames17[]={
+    {"physical",{0,0,28,11,28,11,0,0}},
+    {"special",{28,0,28,11,28,11,0,0}},
+    {"status",{56,0,28,11,28,11,0,0}},
+};
 struct HudIconAtlas {const char* key;const char* path;unsigned width,height;const TypeLabelFrame* frames;unsigned count;};
 inline constexpr HudIconAtlas kHudIconAtlases[]={
     {"pbinfo_player_type","romfs:/presentation/ui/pbinfo_player_type.t3x",20,460,kHudIconFrames0,sizeof(kHudIconFrames0)/sizeof(kHudIconFrames0[0])},
@@ -218,6 +223,7 @@ inline constexpr HudIconAtlas kHudIconAtlases[]={
     {"overlay_hp_label","romfs:/presentation/ui/overlay_hp_label.t3x",13,7,kHudIconFrames14,sizeof(kHudIconFrames14)/sizeof(kHudIconFrames14[0])},
     {"overlay_hp_label_boss","romfs:/presentation/ui/overlay_hp_label_boss.t3x",25,8,kHudIconFrames15,sizeof(kHudIconFrames15)/sizeof(kHudIconFrames15[0])},
     {"overlay_exp_label","romfs:/presentation/ui/overlay_exp_label.t3x",16,7,kHudIconFrames16,sizeof(kHudIconFrames16)/sizeof(kHudIconFrames16[0])},
+    {"categories","romfs:/presentation/ui/categories.t3x",84,11,kHudIconFrames17,sizeof(kHudIconFrames17)/sizeof(kHudIconFrames17[0])},
 };
 inline const TypeLabelFrame* findHudTypeFrame(unsigned index,const char* type) {if(index>=6) return nullptr;const auto* label=findTypeLabel(type);if(!label) return nullptr;const auto& atlas=kHudIconAtlases[index];for(unsigned i=0;i<atlas.count;++i) if(!std::strcmp(atlas.frames[i].key,label->key)) return &atlas.frames[i];return nullptr;}
 inline const TypeLabelFrame* findHudIndicator(unsigned index,const char* key) {if(index<6 || index>=sizeof(kHudIconAtlases)/sizeof(kHudIconAtlases[0]) || !key) return nullptr;const auto& atlas=kHudIconAtlases[index];for(unsigned i=0;i<atlas.count;++i) if(!std::strcmp(atlas.frames[i].key,key)) return &atlas.frames[i];return nullptr;}

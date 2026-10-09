@@ -2,7 +2,7 @@
 
 ## Cómo medir el avance
 
-- Referencia actual: rama `codex/pokerogue-3ds-migration`, último commit de implementación publicado confirmado `b50c947`; conversión física ampliada terminada: 10682 atlas y 10746 páginas `.t3x`. Validación nativa y visual pendiente. Los resultados históricos no verifican estos cambios locales.
+- Referencia actual: rama `codex/pokerogue-3ds-migration`, último commit de implementación publicado confirmado `fc94ac4`; conversión física ampliada terminada: 10682 atlas y 10746 páginas `.t3x`. Validación nativa y visual pendiente. Los resultados históricos no verifican estos cambios locales.
 - Objetivo: PokéRogue jugable y fiel al snapshot upstream en Old 3DS, con ambas pantallas, progreso exportable y actualizaciones desde consola.
 - Cada ID es estable para reportar avances: `MOV-07`, `GUI-03`, etc. No equivale a un movimiento/habilidad individual.
 - Una casilla sin marcar puede tener código parcial; el resumen de cada área indica lo existente. Marcarla solo con integración completa y evidencia ejecutada pertinente.
@@ -149,7 +149,7 @@ Daño básico y varias familias de críticos, status, etapas, curación, drenaje
 
 - [ ] **MOV-01.** Completar todos los atributos y builders excluidos por supportsActiveBattleMove; no habilitar ataques omitiendo efectos.
 - [ ] **MOV-02.** Completar daño fijo/variable, potencia condicional y cálculo con estadísticas alternativas.
-- [ ] **MOV-03.** Completar tipos/categorías variables, STAB especial, inmunidades, absorciones y redondeos.
+- [ ] **MOV-03.** Completar tipos/categorías variables, STAB especial, inmunidades, absorciones y redondeos. Categorías visuales: atlas original physical/special/status convertido y conectado al menú; hashes/rectángulos verificados offline, ejecución C++ pendiente.
 - [ ] **MOV-04.** Completar precisión/evasión, always-hit, críticos y bypass de etapas en todos los contextos.
 - [ ] **MOV-05.** Completar ataques múltiples, repeticiones, cadenas y efectos por hit/último hit.
 - [ ] **MOV-06.** Completar carga, recarga, preparación, movimientos de dos turnos y semiinvulnerabilidad.

@@ -12,7 +12,7 @@ def validate_size(atlas,width,height,path,png,manifest,overrides):
 def prepare(root):
     rows=[]
     overrides=json.loads((root/"project/data/assets/presentation-overrides.json").read_text(encoding="utf-8"))["overrides"]
-    for name,sourceBase,hasManifest in [(n,"images/ui/"+n,True) for n in NAMES]+[("statuses_es-ES","images/statuses_es-ES",True),("icon_owned","images/ui/icon_owned",False),("overlay_hp","images/ui/overlay_hp",True),("overlay_hp_boss","images/ui/overlay_hp_boss",True),("overlay_exp","images/ui/overlay_exp",False),("numbers","images/ui/numbers",True),("numbers_red","images/ui/numbers_red",True)]+[(n,"images/ui/text_images/es-ES/battle_ui/"+n+"_es-ES",False) for n in ["overlay_lv","overlay_hp_label","overlay_hp_label_boss","overlay_exp_label"]]:
+    for name,sourceBase,hasManifest in [(n,"images/ui/"+n,True) for n in NAMES]+[("statuses_es-ES","images/statuses_es-ES",True),("icon_owned","images/ui/icon_owned",False),("overlay_hp","images/ui/overlay_hp",True),("overlay_hp_boss","images/ui/overlay_hp_boss",True),("overlay_exp","images/ui/overlay_exp",False),("numbers","images/ui/numbers",True),("numbers_red","images/ui/numbers_red",True)]+[(n,"images/ui/text_images/es-ES/battle_ui/"+n+"_es-ES",False) for n in ["overlay_lv","overlay_hp_label","overlay_hp_label_boss","overlay_exp_label"]]+[("categories","images/categories",True)]:
         sources=[];data=[]
         for ext in (["png","json"] if hasManifest else ["png"]):
             path=sourceBase+"."+ext
@@ -31,6 +31,11 @@ def prepare(root):
         if row["key"] in symbols:
             file,symbol=symbols[row["key"]]
             row["upstreamSourcePath"]="src/ui/battle-info/"+file+".ts";row["upstreamSourceSymbol"]=symbol
+    for row in rows:
+        if row["key"]=="categories":
+            row["upstreamSourcePath"]="src/ui/handlers/fight-ui-handler.ts"
+            row["upstreamSourceSymbol"]="FightUiHandler.setup"
+    (root/"project/generated/include/content/HudAtlasCapacity.hpp").write_text("// Generated HUD cache capacities.\n#pragma once\nnamespace Pokerogue3DS {\ninline constexpr unsigned kHudAtlasCount=%d;\ninline constexpr unsigned kHudGraphicCount=%d;\n}\n" % (len(rows),len(rows)-11),encoding="utf-8",newline="\n")
     header='// Generated pinned BattleInfo type and indicator atlases.\n#pragma once\n#include "content/TypeLabels.hpp"\n#include <cstring>\nnamespace Pokerogue3DS {\n'
     for i,row in enumerate(rows):
         header+='inline constexpr TypeLabelFrame kHudIconFrames%d[]={\n' % i

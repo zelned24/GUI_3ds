@@ -3,6 +3,7 @@
 #include <cstdint>
 #include <cstddef>
 #include <vector>
+#include "content/HudAtlasCapacity.hpp"
 #include <3ds.h>
 #include <citro2d.h>
 
@@ -123,8 +124,8 @@ private:
     C2D_SpriteSheet m_hudTypes[6]{};
     C2D_SpriteSheet m_hudIndicators[2]{};
     C2D_SpriteSheet m_hudBars[3]{};
-    C2D_SpriteSheet m_hudGraphics[6]{};
-    bool m_hudLoadAttempted[17]{};
+    C2D_SpriteSheet m_hudGraphics[Pokerogue3DS::kHudGraphicCount]{};
+    bool m_hudLoadAttempted[Pokerogue3DS::kHudAtlasCount]{};
 #endif
     const char* m_initError=nullptr;
     unsigned m_windowStyle=1;

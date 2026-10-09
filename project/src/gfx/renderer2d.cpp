@@ -636,7 +636,7 @@ bool Renderer2D::drawHudGraphic(const char* asset,const char* frame,float x,floa
     unsigned index=11;
     for(;index<sizeof(Pokerogue3DS::kHudIconAtlases)/sizeof(Pokerogue3DS::kHudIconAtlases[0]);++index)
         if(!std::strcmp(Pokerogue3DS::kHudIconAtlases[index].key,asset)) break;
-    if(index>=17) return false;
+    if(index>=Pokerogue3DS::kHudAtlasCount) return false;
     const auto* row=Pokerogue3DS::findHudIndicator(index,frame);if(!row) return false;
     const auto& atlas=Pokerogue3DS::kHudIconAtlases[index];
     auto& sheet=m_hudGraphics[index-11];

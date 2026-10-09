@@ -265,8 +265,12 @@ def test_hud_types():
             assert '{"%s",{%s}}' % (f["filename"],','.join(map(str,values))) in header
         path=root/"build/romfs"/row["runtimePath"].removeprefix("romfs:/")
         assert hashlib.sha256(path.read_bytes()).hexdigest()==row["convertedSHA256"]
-    assert len(report["files"])==17
-    print("  [OK] Seventeen original HUD sheets including digit/label assets: frame offsets, physical hashes and generated tables")
+    category=next(row for row in report["files"] if row["key"]=="categories")
+    assert (category["width"],category["height"])==(84,11)
+    assert category["upstreamSourceSymbol"]=="FightUiHandler.setup"
+    assert category["frames"]==[{"key":key,"bounds":[x,0,28,11,28,11,0,0]} for key,x in [("physical",0),("special",28),("status",56)]]
+    assert len(report["files"])==18
+    print("  [OK] Eighteen original HUD sheets including digit/label assets: frame offsets, physical hashes and generated tables")
 
 def test_pixel_fonts():
     from pixel_font import crisp_font, glyph_ink_bounds, font_ink_bounds
