@@ -2,7 +2,7 @@
 
 ## Cómo medir el avance
 
-- Referencia actual: rama `codex/pokerogue-3ds-migration`, último commit de implementación publicado confirmado `8c75457`; conversión física ampliada terminada: 10682 atlas y 10746 páginas `.t3x`. Validación nativa y visual pendiente. Los resultados históricos no verifican estos cambios locales.
+- Referencia actual: rama `codex/pokerogue-3ds-migration`, último commit de implementación publicado confirmado `9d36262`; conversión física ampliada terminada: 10682 atlas y 10746 páginas `.t3x`. Validación nativa y visual pendiente. Los resultados históricos no verifican estos cambios locales.
 - Objetivo: PokéRogue jugable y fiel al snapshot upstream en Old 3DS, con ambas pantallas, progreso exportable y actualizaciones desde consola.
 - Cada ID es estable para reportar avances: `MOV-07`, `GUI-03`, etc. No equivale a un movimiento/habilidad individual.
 - Una casilla sin marcar puede tener código parcial; el resumen de cada área indica lo existente. Marcarla solo con integración completa y evidencia ejecutada pertinente.
@@ -252,7 +252,7 @@ Se conserva presentación C++/ScenePlayer y bridge QuickJS opcional. El editor/S
 
 ### Pendientes y criterios de cierre
 
-- [ ] **GUI-01.** Reproducir estilo web: pixel art, tipografía, paleta, marcos, cursores, HUD y diálogos.
+- [ ] **GUI-01.** Reproducir estilo web: pixel art, tipografía, paleta, marcos, cursores, HUD y diálogos. Menús de acciones y movimientos: etiquetas dibujadas en una sola pasada sin sombra desplazada; legibilidad visual pendiente.
 - [ ] **GUI-02.** Cerrar pantalla superior 400×240: campo, sprites, fondos, HUD y animaciones.
 - [ ] **GUI-03.** Cerrar pantalla inferior 320×240: acciones, movimientos, equipo e inventario.
 - [ ] **GUI-04.** Completar title/new/continue/setup/starters y selección de modos.

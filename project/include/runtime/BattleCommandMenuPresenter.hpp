@@ -171,13 +171,11 @@ public:
                 if(isSel) renderer.drawRect(rect.x-1.0f,rect.y-1.0f,
                     rect.width+2.0f,rect.height+2.0f,C2D_Color32(255,235,70,255));
                 renderer.drawWindow(rect.x,rect.y,rect.width,rect.height);
-                // Reserve the same cursor gutter for every selection. Both text
-                // layers use the same bounds and native raster selection.
+                // Reserve the same cursor gutter for every selection.
+                // Draw one native raster without an offset shadow.
                 const float textX=rect.x+30.0f,textY=rect.y+40.0f;
                 const float textWidth=rect.width-38.0f;
                 const char* label=runtimeUiText(commandKeys[i]);
-                renderer.drawTextFitted(label,textX+1,textY+1,0.375f,textWidth,
-                    C2D_Color32(0x50,0x40,0x60,255));
                 const float labelSize=renderer.drawTextFitted(label,textX,textY,0.375f,textWidth,
                     isSel ? C2D_Color32(255,255,255,255) : C2D_Color32(210,205,220,255));
                 if(isSel) m_cursor.drawCursor(renderer,textX-10,textY,labelSize);

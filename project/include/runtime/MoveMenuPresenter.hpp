@@ -67,17 +67,13 @@ public:
                 const char* moveName = moveUiName(move->id);
                 const uint32_t textColor = outOfPp ? C2D_Color32(130, 130, 140, 255)
                     : isSel ? C2D_Color32(255, 255, 255, 255) : C2D_Color32(215, 210, 225, 255);
-                const uint32_t shadowColor = C2D_Color32(0x50, 0x40, 0x60, 255);
 
                 // Two native raster lines preserve long localized names without squeezing glyphs.
                 float nameSize=0.3125f;
                 const unsigned nameLines=textLinesWithinHeight(30,renderer.textInkHeight(nameSize),renderer.textLineHeight(nameSize),2);
-                if(nameLines && renderer.drawTextBox(moveName,mx+1,my+1,nameSize,nameWidth,nameLines,shadowColor))
-                    renderer.drawTextBox(moveName,mx,my,nameSize,nameWidth,nameLines,textColor);
-                else {
-                    renderer.drawTextFitted(moveName,mx+1,my+1,nameSize,nameWidth,shadowColor);
+                // One raster pass, like dialogue: an offset shadow crowds tiny glyphs.
+                if(!nameLines || !renderer.drawTextBox(moveName,mx,my,nameSize,nameWidth,nameLines,textColor))
                     nameSize=renderer.drawTextFitted(moveName,mx,my,nameSize,nameWidth,textColor);
-                }
                 if(isSel) cursor().drawCursor(renderer,mx-12,my,nameSize);
 
                 char ppText[16];

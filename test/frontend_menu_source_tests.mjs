@@ -216,6 +216,9 @@ assert(main.includes("if(struggleActive && touchedMove==0)"));
 assert(movePresentation.includes("const auto& bounds=kMoveButtonRects[i]"));
 assert(movePresentation.includes("const float nameWidth=bounds.width-28"));
 assert(!movePresentation.includes("kMovePos"));
+assert(!movePresentation.includes('shadowColor'));
+assert(!movePresentation.includes('moveName,mx+1,my+1'));
+assert(movePresentation.includes('drawTextBox(moveName,mx,my,nameSize,nameWidth,nameLines,textColor)'));
 
 assert(main.includes("moveBackRectangle(game.doubleBattle()).contains(touch.px,touch.py)"));
 
@@ -260,6 +263,7 @@ assert(main.includes("36.0f,y,labelSize"));
 assert(main.includes("BattleMenuCommand::ExecuteMove:changed=game.advanceBattleTurn();if(changed) battleMenu.reset()"));
 
 const commandPresentation=await fs.readFile(new URL('../project/include/runtime/BattleCommandMenuPresenter.hpp',import.meta.url),'utf8');
+assert(!commandPresentation.includes('label,textX+1,textY+1'));
 assert(commandPresentation.includes('doubleBattle && (keys & KEY_L)'));
 assert(commandPresentation.includes('doubleBattle && (keys & KEY_R)'));
 assert(commandPresentation.includes('moveBackRectangle(doubleBattle).contains(x,y)'));
