@@ -83,6 +83,10 @@ assert(setup.includes('abilityUiName(game.setupStarterAbilityId(species->dex))')
 assert(!setup.includes('abilityUiName((form ? form->ability1 : species->ability1))'));
 
 const arena=await fs.readFile(new URL('../project/include/runtime/ArenaPresenter.hpp',import.meta.url),'utf8');
+assert(arena.includes('const ArenaTextureDefinition* definition = m_definition'));
+assert(arena.includes('std::strcmp(definition->key,biomeKey)'));
+assert(arena.includes('if (!m_layerLookupAttempted[i])'));
+assert(arena.includes('m_layerLookupAttempted[i]=false'));
 assert(arena.includes('m_definition || m_drawBases!=drawBases'));
 assert(arena.includes('drawBases ? definition->path : definition->titlePath'));
 assert(arena.includes('frame->sourceWidth,frame->sourceHeight'));

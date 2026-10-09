@@ -28,16 +28,19 @@ public:
                 if(renderer) renderer->retireSpriteSheet(m_layers[i]);
                 else C2D_SpriteSheetFree(m_layers[i]);
             }
-            m_layers[i]=nullptr; m_layerDefinitions[i]=nullptr; m_layerMetadata[i].clear();
+            m_layers[i]=nullptr; m_layerDefinitions[i]=nullptr; m_layerLookupAttempted[i]=false; m_layerMetadata[i].clear();
         }
         m_trainer.clear(renderer);
         m_trainerCurrentTypeId = 0;
         m_trainerAttempted=false;m_trainerCurrentFemale=false;m_trainerCurrentName.clear();
     }
     bool draw(Renderer2D& renderer, const char* biomeKey, uint64_t animationTimeMs=0, bool drawBases=true) {
-        const ArenaTextureDefinition* definition = nullptr;
-        if (biomeKey) for (const auto& row : kArenaTextures)
-            if (std::strcmp(row.key, biomeKey) == 0) { definition = &row; break; }
+        const ArenaTextureDefinition* definition = m_definition;
+        if (!biomeKey || !definition || std::strcmp(definition->key,biomeKey)) {
+            definition=nullptr;
+            if (biomeKey) for (const auto& row : kArenaTextures)
+                if (std::strcmp(row.key, biomeKey) == 0) { definition = &row; break; }
+        }
         if (!definition) { clear(&renderer); return false; }
         if (definition != m_definition || m_drawBases!=drawBases) {
             clear(&renderer);
@@ -55,12 +58,15 @@ public:
             0.0f, 0.0f, definition->width, drawBases ? definition->height : 240.0f);
         if (!drawBases) return true;
         for (unsigned i=0;i<2;++i) {
-            char key[96];
-            const int length=std::snprintf(key,sizeof(key),"%s_%c",biomeKey,i ? 'b' : 'a');
-            if (length<=0 || unsigned(length)>=sizeof(key)) continue;
-            const ArenaLayerTextureDefinition* layer=nullptr;
-            for (const auto& row:kArenaLayerTextures)
-                if (std::strcmp(row.key,key)==0) { layer=&row; break; }
+            const ArenaLayerTextureDefinition* layer=m_layerDefinitions[i];
+            if (!m_layerLookupAttempted[i]) {
+                m_layerLookupAttempted[i]=true;
+                char key[96];
+                const int length=std::snprintf(key,sizeof(key),"%s_%c",biomeKey,i ? 'b' : 'a');
+                if (length<=0 || unsigned(length)>=sizeof(key)) continue;
+                for (const auto& row:kArenaLayerTextures)
+                    if (std::strcmp(row.key,key)==0) { layer=&row; break; }
+            }
             if (!layer) continue;
             if (layer!=m_layerDefinitions[i]) {
                 if (m_layers[i]) renderer.retireSpriteSheet(m_layers[i]);
@@ -116,6 +122,7 @@ private:
     const ArenaTextureDefinition* m_definition = nullptr;
     C2D_SpriteSheet m_sheet = nullptr;
     bool m_drawBases=true;
+    bool m_layerLookupAttempted[2]{};
     C2D_SpriteSheet m_layers[2]{};
     const ArenaLayerTextureDefinition* m_layerDefinitions[2]{};
     PokemonAtlasMetadata m_layerMetadata[2];
