@@ -438,13 +438,18 @@ public:
         }
     }
 private:
+    static void drawReadOnlyBack(Renderer2D& renderer) {
+        const auto& bounds=kFrontendReadOnlyBackRect;
+        renderer.drawWindow(bounds.x,bounds.y,bounds.width,bounds.height);
+        renderer.drawTextFitted("B: Volver",bounds.x+8,bounds.y+8,0.375f,bounds.width-16,0xffffffff);
+    }
     static bool drawBoundedDescription(Renderer2D& renderer,const char* text,float x,float y,float width,float height) {
         // Select complete native rasters; never downscale glyphs fractionally or
         // let a wrapped description overlap confirmation buttons/footer.
         for(const float size:{0.375f,0.3125f,0.25f}) {
             const float lineHeight=renderer.textLineHeight(size);
             if(!std::isfinite(lineHeight) || lineHeight<=0) continue;
-            const unsigned lines=std::min(12u,unsigned(height/lineHeight));
+            const unsigned lines=textLinesWithinHeight(height,renderer.textInkHeight(size),lineHeight,12);
             if(lines && renderer.drawTextBox(text,x,y,size,width,lines,0xffffffff)) return true;
         }
         return false;
@@ -514,11 +519,11 @@ private:
                     const float y=46+row*31;
                     renderer.drawTextFitted(runtimeUiText(keys[row]),28,y,0.3125f,264,0xffffffff);
                     char value[48];std::snprintf(value,sizeof(value),"%u / %u",values[row],totals[row]);
-                    renderer.drawTextFitted(value,28,y+13,0.3125f,264,0xff80ffff);
+                    renderer.drawTextFitted(value,28,y+renderer.textInkHeight(0.3125f)+2,0.3125f,264,0xff80ffff);
                 }
                 renderer.drawTextFitted("Historial de partidas pendiente.",28,178,0.25f,264,0xffffffff);
             }
-            renderer.drawTextFitted("B: volver al menú",12,214,0.3125f,296,0xffffffff);
+            drawReadOnlyBack(renderer);
             return;
         }
         const char* description=nullptr;
@@ -531,7 +536,7 @@ private:
         default:description="Integración pendiente.";break;
         }
         drawBoundedDescription(renderer,description,28,54,264,140);
-        renderer.drawTextFitted("B: volver al menú",12,214,0.3125f,296,0xffffffff);
+        drawReadOnlyBack(renderer);
     }
     static bool specialEggTexture(const EggIncubationRecord& egg) {
         for(const auto dex:kSpecialEggIncubationSpecies)
@@ -585,7 +590,7 @@ private:
         } else {
             const unsigned total=dexCount(game);
             drawDexFilters(renderer);
-            if(!total) {renderer.drawTextFitted("Sin resultados",16,80,0.4f,288,0xffffffff);renderer.drawTextFitted("X: generación   Y: captura   B: volver",12,214,0.3125f,296,0xffffffff);return;}
+            if(!total) {renderer.drawTextFitted("Sin resultados",16,80,0.4f,288,0xffffffff);drawReadOnlyBack(renderer);return;}
             if(m_dexSelected>=total) m_dexSelected=total-1;
             const unsigned start=(m_dexSelected/24)*24;
             const auto page=catalogSpeciesPage<24>(start,[&](const auto& species) {return dexMatches(species,game);});
@@ -624,7 +629,7 @@ private:
         }
         renderer.drawTextFitted("L: anterior",kPokedexPageRects[0].x+2,kPokedexPageRects[0].y+2,0.3125f,kPokedexPageRects[0].width-4,0xffffffff);
         renderer.drawTextFitted("R: siguiente",kPokedexPageRects[1].x+2,kPokedexPageRects[1].y+2,0.3125f,kPokedexPageRects[1].width-4,0xffffffff);
-        renderer.drawTextFitted("X: generación  Y: captura  B: volver",12,214,0.3125f,296,0xffffffff);
+        drawReadOnlyBack(renderer);
     }
     void drawDexVariants(Renderer2D& renderer,uint8_t mask,float x,float y) {
         if(!mask) return;

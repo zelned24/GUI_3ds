@@ -596,3 +596,11 @@ for(const [flag,condition] of [['captureTouchInput','game.capturePartyChoicePend
 assert(frontend.includes('message=m_audioInitializationError'));
 assert(frontend.includes('m_page==FrontendPage::SettingsGroup && m_group==2'));
 assert(main.includes('frontend.setAudioInitializationError(uiAudio.ready() ? nullptr'));
+
+// Read-only service and dex screens expose their actual full-width back target.
+assert(frontend.includes('static void drawReadOnlyBack(Renderer2D& renderer)'));
+assert(frontend.includes('const auto& bounds=kFrontendReadOnlyBackRect;'));
+assert(frontend.includes('y+renderer.textInkHeight(0.3125f)+2'));
+assert(frontend.includes('textLinesWithinHeight(height,renderer.textInkHeight(size),lineHeight,12)'));
+assert(!frontend.includes('"X: generación  Y: captura  B: volver"'));
+assert(!frontend.includes('"B: volver al menú"'));
