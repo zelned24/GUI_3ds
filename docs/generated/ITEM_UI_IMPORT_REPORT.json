@@ -1,6 +1,71 @@
 {
   "rows": [
     {
+      "ballLocaleKey": "pokeball:pokeBall",
+      "ballSymbol": "POKEBALL",
+      "itemId": "POKEBALL",
+      "key": "modifierType:ModifierType.AddPokeballModifierType.name",
+      "name": "5× Poké Ball",
+      "parameters": {
+        "modifierCount": "5",
+        "pokeballName": "Poké Ball"
+      },
+      "resolverSourceSymbol": "AddPokeballModifierType.name/getPokeballName",
+      "sourceSymbol": "modifierTypeInitObj.POKEBALL"
+    },
+    {
+      "ballLocaleKey": "pokeball:greatBall",
+      "ballSymbol": "GREAT_BALL",
+      "itemId": "GREAT_BALL",
+      "key": "modifierType:ModifierType.AddPokeballModifierType.name",
+      "name": "5× Super Ball",
+      "parameters": {
+        "modifierCount": "5",
+        "pokeballName": "Super Ball"
+      },
+      "resolverSourceSymbol": "AddPokeballModifierType.name/getPokeballName",
+      "sourceSymbol": "modifierTypeInitObj.GREAT_BALL"
+    },
+    {
+      "ballLocaleKey": "pokeball:ultraBall",
+      "ballSymbol": "ULTRA_BALL",
+      "itemId": "ULTRA_BALL",
+      "key": "modifierType:ModifierType.AddPokeballModifierType.name",
+      "name": "5× Ultra Ball",
+      "parameters": {
+        "modifierCount": "5",
+        "pokeballName": "Ultra Ball"
+      },
+      "resolverSourceSymbol": "AddPokeballModifierType.name/getPokeballName",
+      "sourceSymbol": "modifierTypeInitObj.ULTRA_BALL"
+    },
+    {
+      "ballLocaleKey": "pokeball:rogueBall",
+      "ballSymbol": "ROGUE_BALL",
+      "itemId": "ROGUE_BALL",
+      "key": "modifierType:ModifierType.AddPokeballModifierType.name",
+      "name": "5× Rogue Ball",
+      "parameters": {
+        "modifierCount": "5",
+        "pokeballName": "Rogue Ball"
+      },
+      "resolverSourceSymbol": "AddPokeballModifierType.name/getPokeballName",
+      "sourceSymbol": "modifierTypeInitObj.ROGUE_BALL"
+    },
+    {
+      "ballLocaleKey": "pokeball:masterBall",
+      "ballSymbol": "MASTER_BALL",
+      "itemId": "MASTER_BALL",
+      "key": "modifierType:ModifierType.AddPokeballModifierType.name",
+      "name": "1× Master Ball",
+      "parameters": {
+        "modifierCount": "1",
+        "pokeballName": "Master Ball"
+      },
+      "resolverSourceSymbol": "AddPokeballModifierType.name/getPokeballName",
+      "sourceSymbol": "modifierTypeInitObj.MASTER_BALL"
+    },
+    {
       "itemId": "RARE_CANDY",
       "key": "modifierType:ModifierType.RARE_CANDY.name",
       "name": "Carameloraro",
@@ -512,29 +577,21 @@
       "revision": "23aea1cb0da5a0b15b836f3c243791591cc42303",
       "sourcePath": "es-ES/modifier-type.json",
       "sourceSHA256": "5e92f73e7b6ec5df1ab3911ea4c9c706d25f52ff613522a0eae575586f6b43f8"
+    },
+    {
+      "repository": "https://github.com/pagefaultgames/pokerogue",
+      "revision": "8555c08c823b856cbec4eb99ca84ea52a955836d",
+      "sourcePath": "src/data/pokeball.ts",
+      "sourceSHA256": "96fabc07e442741b815ff09513d800daee04bf8d9119e540fce09f753648f3aa"
+    },
+    {
+      "repository": "https://github.com/pagefaultgames/pokerogue-locales",
+      "revision": "23aea1cb0da5a0b15b836f3c243791591cc42303",
+      "sourcePath": "es-ES/pokeball.json",
+      "sourceSHA256": "6625e6c812453f7281c0b8fd7cf86be12b1c3be546d0e4f32be694daa57300ac"
     }
   ],
   "unsupported": [
-    {
-      "itemId": "POKEBALL",
-      "reason": "PARAMETERIZED_OR_NON_LITERAL_NAME"
-    },
-    {
-      "itemId": "GREAT_BALL",
-      "reason": "PARAMETERIZED_OR_NON_LITERAL_NAME"
-    },
-    {
-      "itemId": "ULTRA_BALL",
-      "reason": "PARAMETERIZED_OR_NON_LITERAL_NAME"
-    },
-    {
-      "itemId": "ROGUE_BALL",
-      "reason": "PARAMETERIZED_OR_NON_LITERAL_NAME"
-    },
-    {
-      "itemId": "MASTER_BALL",
-      "reason": "PARAMETERIZED_OR_NON_LITERAL_NAME"
-    },
     {
       "itemId": "EVOLUTION_ITEM",
       "reason": "PARAMETERIZED_OR_NON_LITERAL_NAME"

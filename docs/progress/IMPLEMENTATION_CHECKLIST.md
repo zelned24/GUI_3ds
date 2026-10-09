@@ -2,7 +2,7 @@
 
 ## Cómo medir el avance
 
-- Referencia actual: rama `codex/pokerogue-3ds-migration`, último commit de implementación publicado confirmado `1c5545d`; conversión física ampliada terminada: 10682 atlas y 10746 páginas `.t3x`. Validación nativa y visual pendiente. Los resultados históricos no verifican estos cambios locales.
+- Referencia actual: rama `codex/pokerogue-3ds-migration`, último commit de implementación publicado confirmado `7655914`; conversión física ampliada terminada: 10682 atlas y 10746 páginas `.t3x`. Validación nativa y visual pendiente. Los resultados históricos no verifican estos cambios locales.
 - Objetivo: PokéRogue jugable y fiel al snapshot upstream en Old 3DS, con ambas pantallas, progreso exportable y actualizaciones desde consola.
 - Cada ID es estable para reportar avances: `MOV-07`, `GUI-03`, etc. No equivale a un movimiento/habilidad individual.
 - Una casilla sin marcar puede tener código parcial; el resumen de cada área indica lo existente. Marcarla solo con integración completa y evidencia ejecutada pertinente.
@@ -286,7 +286,7 @@ Se conserva presentación C++/ScenePlayer y bridge QuickJS opcional. El editor/S
 - [x] **GUI-13.** Convertir alpha antialias de la fuente A4 a alpha binario, conservar métricas, alinear coordenadas de texto a píxeles y preparar un perfil Azahar Old 3DS sin suavizado; pruebas de conversión/determinismo/corrupción ejecutadas.
 - [ ] **GUI-14.** Verificar nitidez, tamaños y alineación de letras/sprites en todas las pantallas mediante Azahar y Old 3DS; contrastar capturas con la referencia web.
 
-- [ ] **GUI-10.** Completar locales, glyphs, fallback y texto largo; retirar strings fijas donde exista localización. Confirmación de pausa de evolución consume la pregunta oficial con nombre interpolado, opciones Sí/No y caja medida de hasta cuatro líneas; validación visual pendiente. Harness C++ incluye nombre con acentos, nulo/vacío, marcador literal y nombre de 255 caracteres sin truncar el mensaje; ejecución pendiente.
+- [ ] **GUI-10.** Completar locales, glyphs, fallback y texto largo; retirar strings fijas donde exista localización. Confirmación de pausa de evolución consume la pregunta oficial con nombre interpolado, opciones Sí/No y caja medida de hasta cuatro líneas; validación visual pendiente. Harness C++ incluye nombre con acentos, nulo/vacío, marcador literal y nombre de 255 caracteres sin truncar el mensaje; ejecución pendiente. Nombres de paquetes Poké/Super/Ultra/Rogue/Master Ball resueltos desde cantidad de fábrica y locales pinned (88 nombres importados en total); procedencia y generación repetida PASS. MT y otras variantes dinámicas siguen pendientes.
 - [ ] **GUI-11.** Mantener UI → comando → evento → binding; sin reglas ni especies hardcodeadas.
 - [ ] **GUI-12.** Auditar rol QuickJS/Phaser→Citro2D y bundle: bridge no equivale a ejecutar todo PokéRogue upstream.
 

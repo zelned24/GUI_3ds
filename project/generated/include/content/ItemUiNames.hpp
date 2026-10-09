@@ -1,9 +1,14 @@
-// Generated literal pinned item presentation names.
+// Generated pinned item presentation names.
 #pragma once
 #include <cstring>
 namespace Pokerogue3DS {
 struct ItemUiName {const char* itemId;const char* name;};
 inline constexpr ItemUiName kItemUiNames[]={
+    {"POKEBALL","5× Poké Ball"},
+    {"GREAT_BALL","5× Super Ball"},
+    {"ULTRA_BALL","5× Ultra Ball"},
+    {"ROGUE_BALL","5× Rogue Ball"},
+    {"MASTER_BALL","1× Master Ball"},
     {"RARE_CANDY","Carameloraro"},
     {"RARER_CANDY","Caramelorarísimo"},
     {"EVOLUTION_TRACKER_GIMMIGHOUL","Tesoros"},
