@@ -1,6 +1,7 @@
 #include "runtime/FrontendMenuPresenter.hpp"
 #include "runtime/RewardMenuPresenter.hpp"
 #include "runtime/BattleCommandMenuPresenter.hpp"
+#include "runtime/DecisionMenuPresenter.hpp"
 #include <cassert>
 #include "content/WindowTexture.hpp"
 #include "storage/NativePresentationSettings.hpp"
@@ -215,6 +216,17 @@ int main() {
     assert(BattleCommandMenuPresenter::actionPrompt(nullptr)=="¿Qué debería hacer\nPokémon?");
     assert(BattleCommandMenuPresenter::actionPrompt("")==BattleCommandMenuPresenter::actionPrompt(nullptr));
     assert(BattleCommandMenuPresenter::actionPrompt("{{pokemonName}}") == "¿Qué debería hacer\n{{pokemonName}}?");
+    assert(DecisionMenuPresenter::pauseEvolutionPrompt("Bulbasaur")=="¿Quieres detener las evoluciones de Bulbasaur?\nSiempre pueden ser reactivadas desde la pantalla de tu equipo.");
+    assert(DecisionMenuPresenter::pauseEvolutionPrompt("Flabébé")=="¿Quieres detener las evoluciones de Flabébé?\nSiempre pueden ser reactivadas desde la pantalla de tu equipo.");
+    assert(DecisionMenuPresenter::pauseEvolutionPrompt(nullptr)=="¿Quieres detener las evoluciones de Pokémon?\nSiempre pueden ser reactivadas desde la pantalla de tu equipo.");
+    assert(DecisionMenuPresenter::pauseEvolutionPrompt("")==DecisionMenuPresenter::pauseEvolutionPrompt(nullptr));
+    const auto literal=DecisionMenuPresenter::pauseEvolutionPrompt("{{pokemonName}}");
+    assert(literal=="¿Quieres detener las evoluciones de {{pokemonName}}?\nSiempre pueden ser reactivadas desde la pantalla de tu equipo.");
+    const std::string longName(255,'W');
+    const auto longPrompt=DecisionMenuPresenter::pauseEvolutionPrompt(longName.c_str());
+    assert(longPrompt.find(longName)!=std::string::npos);
+    assert(longPrompt.find("{{pokemonName}}") == std::string::npos);
+
     {
         BattleCommandMenuPresenter focus;
         // This coordinate belongs to Fight and to move slot zero. The sampled
