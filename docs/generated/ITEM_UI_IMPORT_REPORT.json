@@ -486,6 +486,45 @@
       "sourceSymbol": "modifierTypeInitObj.MINI_BLACK_HOLE"
     },
     {
+      "itemId": "VOUCHER",
+      "key": "modifierType:ModifierType.AddVoucherModifierType.name",
+      "name": "1× Vale Huevo",
+      "parameters": {
+        "modifierCount": "1",
+        "voucherTypeName": "Vale Huevo"
+      },
+      "resolverSourceSymbol": "AddVoucherModifierType.name/getVoucherTypeName",
+      "sourceSymbol": "modifierTypeInitObj.VOUCHER",
+      "voucherLocaleKey": "voucher:eggVoucher",
+      "voucherSymbol": "REGULAR"
+    },
+    {
+      "itemId": "VOUCHER_PLUS",
+      "key": "modifierType:ModifierType.AddVoucherModifierType.name",
+      "name": "1× Vale Huevo Plus",
+      "parameters": {
+        "modifierCount": "1",
+        "voucherTypeName": "Vale Huevo Plus"
+      },
+      "resolverSourceSymbol": "AddVoucherModifierType.name/getVoucherTypeName",
+      "sourceSymbol": "modifierTypeInitObj.VOUCHER_PLUS",
+      "voucherLocaleKey": "voucher:eggVoucherPlus",
+      "voucherSymbol": "PLUS"
+    },
+    {
+      "itemId": "VOUCHER_PREMIUM",
+      "key": "modifierType:ModifierType.AddVoucherModifierType.name",
+      "name": "1× Vale Huevo Premium",
+      "parameters": {
+        "modifierCount": "1",
+        "voucherTypeName": "Vale Huevo Premium"
+      },
+      "resolverSourceSymbol": "AddVoucherModifierType.name/getVoucherTypeName",
+      "sourceSymbol": "modifierTypeInitObj.VOUCHER_PREMIUM",
+      "voucherLocaleKey": "voucher:eggVoucherPremium",
+      "voucherSymbol": "PREMIUM"
+    },
+    {
       "itemId": "GOLDEN_POKEBALL",
       "key": "modifierType:ModifierType.GOLDEN_POKEBALL.name",
       "name": "Poké Ball Dorada",
@@ -589,6 +628,18 @@
       "revision": "23aea1cb0da5a0b15b836f3c243791591cc42303",
       "sourcePath": "es-ES/pokeball.json",
       "sourceSHA256": "6625e6c812453f7281c0b8fd7cf86be12b1c3be546d0e4f32be694daa57300ac"
+    },
+    {
+      "repository": "https://github.com/pagefaultgames/pokerogue",
+      "revision": "8555c08c823b856cbec4eb99ca84ea52a955836d",
+      "sourcePath": "src/system/voucher.ts",
+      "sourceSHA256": "9834ea1e281edea35efaf4ae683393554f55b5d49a085267358d1d0fb1c94ee8"
+    },
+    {
+      "repository": "https://github.com/pagefaultgames/pokerogue-locales",
+      "revision": "23aea1cb0da5a0b15b836f3c243791591cc42303",
+      "sourcePath": "es-ES/voucher.json",
+      "sourceSHA256": "7136f76e0e83835a0895823a087334f4f0d8b0ad71b4935fe6d8f3c7aa9b4a82"
     }
   ],
   "unsupported": [
@@ -658,18 +709,6 @@
     },
     {
       "itemId": "TM_ULTRA",
-      "reason": "PARAMETERIZED_OR_NON_LITERAL_NAME"
-    },
-    {
-      "itemId": "VOUCHER",
-      "reason": "PARAMETERIZED_OR_NON_LITERAL_NAME"
-    },
-    {
-      "itemId": "VOUCHER_PLUS",
-      "reason": "PARAMETERIZED_OR_NON_LITERAL_NAME"
-    },
-    {
-      "itemId": "VOUCHER_PREMIUM",
       "reason": "PARAMETERIZED_OR_NON_LITERAL_NAME"
     },
     {

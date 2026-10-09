@@ -18,15 +18,23 @@ for row in report["rows"]:
     expected=locale[key]["name"]
     for parameter,value in row.get("parameters",{}).items(): expected=expected.replace("{{"+parameter+"}}",value)
     assert row["name"]==expected and "{{" not in row["name"]
-    if "parameters" in row:
+    if "ballSymbol" in row:
         ball_locale=json.loads(raws[3])
         assert row["parameters"]["pokeballName"]==ball_locale[row["ballLocaleKey"].split(":",1)[1]]
         factory='PokeballType.'+row["ballSymbol"]+', '+row["parameters"]["modifierCount"]+')'
         assert factory in raws[0].decode("utf-8")
     assert 'modifierType:ModifierType.'+key in raws[0].decode("utf-8")
+    if "voucherSymbol" in row:
+        voucher_locale=json.loads(raws[5])
+        assert row["parameters"]["voucherTypeName"]==voucher_locale[row["voucherLocaleKey"].split(":",1)[1]]
+        factory='VoucherType.'+row["voucherSymbol"]+', '+row["parameters"]["modifierCount"]+')'
+        assert factory in raws[0].decode("utf-8")
 assert next(r["name"] for r in report["rows"] if r["itemId"]=="LURE")==locale["LURE"]["name"]
 for item in ("POKEBALL","GREAT_BALL","ULTRA_BALL","ROGUE_BALL","MASTER_BALL"):
     assert any(row["itemId"]==item and "parameters" in row for row in report["rows"])
+    assert not any(row["itemId"]==item for row in report["unsupported"])
+for item in ("VOUCHER","VOUCHER_PLUS","VOUCHER_PREMIUM"):
+    assert any(row["itemId"]==item and "voucherSymbol" in row for row in report["rows"])
     assert not any(row["itemId"]==item for row in report["unsupported"])
 assert any(r["itemId"]=="TM_COMMON" for r in report["unsupported"])
 header=root/"project/generated/include/content/ItemUiNames.hpp"
