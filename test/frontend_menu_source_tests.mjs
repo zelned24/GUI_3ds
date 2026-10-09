@@ -612,3 +612,10 @@ assert(appearanceCache.includes('back ? m_backAppearance : m_frontAppearance'));
 assert(atlasSource.includes('m_frontAppearance={};m_backAppearance={};'));
 assert(appearanceCache.includes('cached.available ? &cached.key : nullptr'));
 assert.equal((atlasSource.match(/const auto& key=\*resolvedKey;/g)||[]).length,2);
+
+// Capture-response selection failures preserve the exact policy/reference context.
+const enemySelection=progressRuntime.slice(progressRuntime.indexOf('bool FirstRunRuntime::selectEnemyMoveSlot('),progressRuntime.indexOf('bool FirstRunRuntime::executeEnemyResponse('));
+for(const diagnostic of ['Enemy Struggle policy unresolved','Enemy weather policy unresolved; abilities ','Invalid canonical enemy move: ','Enemy simulated damage unsupported: ']) assert(enemySelection.includes(diagnostic));
+assert(enemySelection.includes('std::to_string(candidateMove->id)'));
+assert(enemySelection.includes('std::to_string(enemyState.abilityId)'));
+assert(enemySelection.includes('std::to_string(playerState.abilityId)'));

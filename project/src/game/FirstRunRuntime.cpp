@@ -2558,14 +2558,21 @@ bool FirstRunRuntime::grantVictoryExperience(bool pokemonDefeated, uint8_t enemy
 bool FirstRunRuntime::selectEnemyMoveSlot(const PokemonBattleState& enemyState,
     const PokemonBattleState& playerState, PokerogueRngAdapter& rng, uint8_t& enemyMoveSlot) {
     if (pokemonMovePpExhausted(enemyState)) {
-        if (!supportsActiveBattleMove(enemyState, playerState, PokerogueContent::kStruggleMoveId)) return false;
+        if (!supportsActiveBattleMove(enemyState, playerState, PokerogueContent::kStruggleMoveId)) {
+            m_battleFeedback="Enemy Struggle policy unresolved";
+            buildScene();return false;
+        }
         enemyMoveSlot = 0; // Virtual action; persistent slot is not replaced.
         return true;
     }
     // Pinned EnemyPokemon.SMART_RANDOM: score each usable move in moveset order,
     // then advance through the descending pool while randBattleSeedInt(8) >= 5.
     PokemonMoveWeatherContext simulatedWeather{};
-    if (!resolveActiveMoveWeather(enemyState, playerState, simulatedWeather)) return false;
+    if (!resolveActiveMoveWeather(enemyState, playerState, simulatedWeather)) {
+        m_battleFeedback=std::string("Enemy weather policy unresolved; abilities ") +
+            std::to_string(enemyState.abilityId) + "/" + std::to_string(playerState.abilityId);
+        buildScene();return false;
+    }
     uint8_t usableSlots[4]{};
     uint32_t projectedDamage[4]{};
     uint8_t usableCount = 0;
@@ -2573,7 +2580,11 @@ bool FirstRunRuntime::selectEnemyMoveSlot(const PokemonBattleState& enemyState,
         if (!enemyState.moves[slot].pp) continue;
         uint32_t damage = 0;
         const auto* candidateMove = PokerogueContent::findMoveById(enemyState.moves[slot].moveId);
-        if (!candidateMove) return false;
+        if (!candidateMove) {
+            m_battleFeedback=std::string("Invalid canonical enemy move: ") +
+                std::to_string(enemyState.moves[slot].moveId);
+            buildScene();return false;
+        }
         if (!supportsActiveBattleMove(enemyState, playerState, candidateMove->id) ||
             (damageDrainProfile(candidateMove->id) && hasCanonicalReverseDrain(playerState.abilityId))) continue;
         PokemonMoveTargetPolicy targets{true, 1};
@@ -2587,7 +2598,7 @@ bool FirstRunRuntime::selectEnemyMoveSlot(const PokemonBattleState& enemyState,
         if (candidateMove->category != PokerogueContent::MoveStatus &&
             calculatePokemonDamageCore(enemyState, playerState,
                 enemyState.moves[slot].moveId, false, damage, &simulatedWeather, &rng, &targets) != PokemonDamageCoreResult::Ok) {
-            m_battleFeedback = "Enemy simulated damage unsupported";
+            m_battleFeedback = std::string("Enemy simulated damage unsupported: ") + std::to_string(candidateMove->id);
             buildScene();
             return false;
         }
