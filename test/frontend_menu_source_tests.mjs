@@ -578,3 +578,14 @@ for(const field of ['sendOut','cancel','choosePokemon'])
 assert(partyPresentation.includes('runtimeUiText("party-ui-handler:sendOut")'));
 assert(partyPresentation.includes('runtimeUiText("party-ui-handler:cancel")'));
 assert(!partyPresentation.includes('drawTextFitted("A: Cambiar"'));
+
+assert(main.includes('const bool moveTouchInput=battleMenuInput && battleMenu.movesOpen();'));
+assert(main.indexOf('const bool moveTouchInput=')<main.indexOf('battleMenu.input(rawPressed'));
+assert(main.includes('if ((rawPressed & KEY_TOUCH) && moveTouchInput && battleMenu.movesOpen())'));
+assert(!main.includes('if ((rawPressed & KEY_TOUCH) && battleMenuInput && battleMenu.movesOpen())'));
+
+for(const [flag,condition] of [['captureTouchInput','game.capturePartyChoicePending()'],['learnTouchInput','game.moveLearningPending()'],['evolutionTouchInput','game.evolutionPending()'],['resultTouchInput','game.battleFinished()']]) {
+  assert(main.includes('const bool '+flag+'='+condition+';'));
+  assert(main.indexOf('const bool '+flag+'=')<main.indexOf('battleMenu.input(rawPressed'));
+  assert(main.includes('(rawPressed & KEY_TOUCH) && '+flag+' && '+condition));
+}

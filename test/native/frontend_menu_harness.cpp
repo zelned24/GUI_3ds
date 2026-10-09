@@ -215,6 +215,17 @@ int main() {
     assert(BattleCommandMenuPresenter::actionPrompt(nullptr)=="¿Qué debería hacer\nPokémon?");
     assert(BattleCommandMenuPresenter::actionPrompt("")==BattleCommandMenuPresenter::actionPrompt(nullptr));
     assert(BattleCommandMenuPresenter::actionPrompt("{{pokemonName}}") == "¿Qué debería hacer\n{{pokemonName}}?");
+    {
+        BattleCommandMenuPresenter focus;
+        // This coordinate belongs to Fight and to move slot zero. The sampled
+        // page owns the gesture, even when the resulting page also contains it.
+        assert(commandButtonAt(60,60)==0 && moveButtonAt(60,60)==0);
+        const bool moveTouchInput=focus.movesOpen();
+        assert(focus.input(KEY_TOUCH,false,60,60)==BattleMenuCommand::None);
+        assert(focus.movesOpen() && !moveTouchInput);
+        const bool nextMoveTouchInput=focus.movesOpen();
+        assert(nextMoveTouchInput); // A subsequent gesture can select the move.
+    }
     BattleCommandMenuPresenter audioControls;
     assert(audioControls.input(0,false)==BattleMenuCommand::None && !audioControls.takeNavigationSound());
     audioControls.input(KEY_DRIGHT,false);

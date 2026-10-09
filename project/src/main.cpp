@@ -450,6 +450,13 @@ int main() {
         if(!partyMenu.available(game)) partyMenu.open=false;
         const bool partyInput=!isPaused && (partyMenu.open || ((rawPressed & KEY_SELECT) && partyMenu.available(game)));
         const bool battleMenuInput=!isPaused && !partyInput && Pokerogue3DS::MoveMenuPresenter::visible(game) && !game.capturePartyChoicePending();
+        // One touch belongs to the page visible when input was sampled. Opening
+        // Fight must not reuse that touch to activate a newly exposed move.
+        const bool moveTouchInput=battleMenuInput && battleMenu.movesOpen();
+        const bool captureTouchInput=game.capturePartyChoicePending();
+        const bool learnTouchInput=game.moveLearningPending();
+        const bool evolutionTouchInput=game.evolutionPending();
+        const bool resultTouchInput=game.battleFinished();
         const bool rewardInput=!isPaused && game.rewardsPending() && !game.moveLearningPending() && !game.evolutionPending();
         const bool setupModalInput=setupInput && (setup.formsOpen || setup.candyStoreOpen || setup.confirmStart);
         const uint32_t pressed=(isPaused || partyInput || setupModalInput) ? 0 : (setupInput || battleMenuInput) ? rawPressed & (KEY_X | KEY_Y)
@@ -754,10 +761,10 @@ int main() {
         if(game.battleFinished() && !game.playerWon() && !game.capturePartyChoicePending()
             && !game.moveLearningPending() && !game.evolutionPending()) {
             touchPosition resultTouch{};if(rawPressed & KEY_TOUCH) hidTouchRead(&resultTouch);
-            const bool restart=(rawPressed & KEY_A) || ((rawPressed & KEY_TOUCH)
-                && Pokerogue3DS::kResultConfirmRect.contains(resultTouch.px,resultTouch.py));
-            const bool back=(rawPressed & KEY_B) || ((rawPressed & KEY_TOUCH)
-                && Pokerogue3DS::kResultBackRect.contains(resultTouch.px,resultTouch.py));
+            const bool restart=resultTouchInput && ((rawPressed & KEY_A) || ((rawPressed & KEY_TOUCH)
+                && Pokerogue3DS::kResultConfirmRect.contains(resultTouch.px,resultTouch.py)));
+            const bool back=resultTouchInput && ((rawPressed & KEY_B) || ((rawPressed & KEY_TOUCH)
+                && Pokerogue3DS::kResultBackRect.contains(resultTouch.px,resultTouch.py)));
             if(restart) {
                 const uint16_t starterDex=game.run().starterDex ? game.run().starterDex : 1;
                 if(game.restoreSetup(game.run().seed,starterDex)) {
@@ -814,7 +821,7 @@ int main() {
                 : nativeSaveResultName(result));
             changed = true;
         }
-        if ((rawPressed & KEY_TOUCH) && battleMenuInput && battleMenu.movesOpen()) {
+        if ((rawPressed & KEY_TOUCH) && moveTouchInput && battleMenu.movesOpen()) {
             touchPosition touch{};
             hidTouchRead(&touch);
             const bool struggleActive=Pokerogue3DS::pokemonMovePpExhausted(game.presentation().player.battleState);
@@ -841,7 +848,7 @@ int main() {
                     battleMenu.reset();
             }
         }
-        if((rawPressed & KEY_TOUCH) && game.capturePartyChoicePending()) {
+        if((rawPressed & KEY_TOUCH) && captureTouchInput && game.capturePartyChoicePending()) {
             touchPosition touch{};hidTouchRead(&touch);
             const int choice=Pokerogue3DS::partyButtonAt(touch.px,touch.py,game.presentation().playerPartyCount);
             if(choice>=0) {
@@ -856,7 +863,7 @@ int main() {
             } else if(Pokerogue3DS::kPartyBackRect.contains(touch.px,touch.py)) {
                 changed=game.resolveCapturePartyChoice(-1);
             }
-        } else if((rawPressed & KEY_TOUCH) && game.moveLearningPending()) {
+        } else if((rawPressed & KEY_TOUCH) && learnTouchInput && game.moveLearningPending()) {
             touchPosition touch{};hidTouchRead(&touch);
             const int slot=Pokerogue3DS::moveButtonAt(touch.px,touch.py);
             if(slot>=0) {
@@ -871,11 +878,11 @@ int main() {
             } else if(Pokerogue3DS::kLearnBackRect.contains(touch.px,touch.py)) {
                 changed=game.resolvePendingLearnMove(-1);
             }
-        } else if((rawPressed & KEY_TOUCH) && game.evolutionPending()) {
+        } else if((rawPressed & KEY_TOUCH) && evolutionTouchInput && game.evolutionPending()) {
             touchPosition touch{};hidTouchRead(&touch);
             if(Pokerogue3DS::kEvolutionConfirmRect.contains(touch.px,touch.py)) changed=game.advanceBattleTurn();
             else if(Pokerogue3DS::kEvolutionBackRect.contains(touch.px,touch.py)) changed=game.skipVictoryReward();
-        } else if((rawPressed & KEY_TOUCH) && game.battleFinished()) {
+        } else if((rawPressed & KEY_TOUCH) && resultTouchInput && game.battleFinished()) {
             touchPosition touch{};hidTouchRead(&touch);
             if(game.playerWon() && Pokerogue3DS::kResultConfirmRect.contains(touch.px,touch.py))
                 changed=game.advanceBattleTurn();
