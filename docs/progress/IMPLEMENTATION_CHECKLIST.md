@@ -2,7 +2,7 @@
 
 ## Cómo medir el avance
 
-- Referencia actual: rama `codex/pokerogue-3ds-migration`, último commit de implementación publicado confirmado `bb86579`; conversión física ampliada terminada: 10682 atlas y 10746 páginas `.t3x`. Validación nativa y visual pendiente. Los resultados históricos no verifican estos cambios locales.
+- Referencia actual: rama `codex/pokerogue-3ds-migration`, último commit de implementación publicado confirmado `8c75457`; conversión física ampliada terminada: 10682 atlas y 10746 páginas `.t3x`. Validación nativa y visual pendiente. Los resultados históricos no verifican estos cambios locales.
 - Objetivo: PokéRogue jugable y fiel al snapshot upstream en Old 3DS, con ambas pantallas, progreso exportable y actualizaciones desde consola.
 - Cada ID es estable para reportar avances: `MOV-07`, `GUI-03`, etc. No equivale a un movimiento/habilidad individual.
 - Una casilla sin marcar puede tener código parcial; el resumen de cada área indica lo existente. Marcarla solo con integración completa y evidencia ejecutada pertinente.
@@ -878,7 +878,7 @@ La búsqueda del índice generado usa búsqueda binaria sobre identidades ordena
 
 - [ ] Cierre de menús: el command presenter libera también el cursor estático de movimientos antes de finalizar Citro2D, mediante retirement del renderer. Guard de ownership/orden sin compilación; ejecución nativa pendiente.
 
-- [ ] Objetos/balls: posición de atlas redondeada a píxeles físicos; conserva canvas original de 32px en consumidores actuales. Valida coordenadas/tamaño/opacity antes de I/O e índice de página; valida dimensiones y UV finitas/orientadas de los iconos físicos y retira imágenes inválidas sin recargar cada frame; cierre de recompensas y combate retira texturas mediante renderer. Guards sin compilación; prueba nativa/visual pendiente.
+- [ ] Objetos/balls: posición de atlas redondeada a píxeles físicos; conserva canvas original de 32px en consumidores actuales. Valida coordenadas/tamaño/opacity antes de I/O e índice de página; valida dimensiones y UV finitas/orientadas de los iconos físicos y retira imágenes inválidas sin recargar cada frame; cierre de recompensas y combate retira texturas mediante renderer. Guards sin compilación; Harness actualizado a iconos físicos de 32×32/dibujo directo, con seis casos de UV inválidas, descarte único y recuperación explícita; prueba nativa/visual pendiente.
 
 - [ ] Pruebas nativas de objetos: casos escritos para coordenadas/tamaño/opacity inválidos sin I/O, error de carga y reintento, caché, trim upstream intacto, destino redondeado, alpha limitado y limpieza idempotente con retirement. Integrados en harness existente; sin compilar ni ejecutar por indicación del usuario.
 

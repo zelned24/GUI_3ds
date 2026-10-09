@@ -21,12 +21,13 @@ static unsigned iconLoads=0,iconDraws=0,iconFilters=0,iconFrees=0,iconRetired=0;
 static bool failIconLoad=true;
 static bool malformedIconImage=false;
 static C3D_Tex iconTexture{};
-static Tex3DS_SubTexture iconSubtexture{512,512,0,0,1,1};
+static Tex3DS_SubTexture iconSubtexture{512,512,0,1,1,0};
 C2D_SpriteSheet C2D_SpriteSheetLoad(const char* path) {
     ++iconLoads;
     const bool compact=std::strstr(path,"appearance-icons-compact-")!=nullptr;
     iconSubtexture.width=iconSubtexture.height=compact ? 256 : 512;
     if(std::strstr(path,"/icon-tiles/")) {iconSubtexture.width=64;iconSubtexture.height=32;}
+    for(const auto& item:kItemIconTextures) if(!std::strcmp(path,item.path)) {iconSubtexture.width=item.width;iconSubtexture.height=item.height;break;}
     return failIconLoad ? nullptr : &iconTexture;
 }
 C2D_Image C2D_SpriteSheetGetImage(C2D_SpriteSheet sheet,size_t index) {
@@ -44,6 +45,14 @@ static uint32_t lastIconTint=0;
 static float lastIconX=0,lastIconY=0,lastIconWidth=0,lastIconHeight=0,lastIconOpacity=0;
 void Renderer2D::drawAtlasFrame(C2D_Image,const AtlasFrame& frame,float x,float y,float width,float height,float opacity,uint32_t tint) {
     ++iconDraws;lastIconTint=tint;lastIconFrame=frame;lastIconX=x;lastIconY=y;
+    lastIconWidth=width;lastIconHeight=height;lastIconOpacity=opacity;
+}
+static unsigned directImageDraws=0;
+void Renderer2D::drawImageDirect(C2D_Image image,float x,float y,float width,float height,float rotation,float opacity,bool flipX,bool flipY,uint32_t tint) {
+    assert(image.tex==&iconTexture && image.subtex==&iconSubtexture);
+    assert(image.subtex->width==32 && image.subtex->height==32);
+    assert(rotation==0 && !flipX && !flipY && tint==0xffffffff);
+    ++iconDraws;++directImageDraws;lastIconX=x;lastIconY=y;
     lastIconWidth=width;lastIconHeight=height;lastIconOpacity=opacity;
 }
 static unsigned badgeRects=0,badgeTexts=0;
@@ -151,11 +160,11 @@ int main() {
         assert(presenter.draw(renderer,1,0,0,0) && iconLoads==3);
     }
     assert(iconFrees==1);
-    // Item canvases keep pinned trim geometry and draw at integer destinations.
+    // Converted physical item canvases already contain the pinned trim geometry.
     {
         ItemIconPresenter items;
-        const auto& item=kItemIconFrames[0];
-        const unsigned loads=iconLoads,draws=iconDraws,frees=iconFrees,retired=iconRetired;
+        const auto& item=kItemIconTextures[0];
+        const unsigned loads=iconLoads,draws=iconDraws,frees=iconFrees,retired=iconRetired,direct=directImageDraws;
         const float nan=std::numeric_limits<float>::quiet_NaN();
         const float inf=std::numeric_limits<float>::infinity();
         assert(!items.draw(renderer,item.key,nan,0,32));
@@ -174,10 +183,8 @@ int main() {
         assert(iconLoads==loads+2 && iconDraws==draws+1);
         assert(lastIconX==10 && lastIconY==12 && lastIconWidth==32 && lastIconHeight==32);
         assert(lastIconOpacity==1);
-        assert(lastIconFrame.x==item.x && lastIconFrame.y==item.y);
-        assert(lastIconFrame.width==item.width && lastIconFrame.height==item.height);
-        assert(lastIconFrame.sourceWidth==item.sourceWidth && lastIconFrame.sourceHeight==item.sourceHeight);
-        assert(lastIconFrame.trimX==item.trimX && lastIconFrame.trimY==item.trimY);
+        assert(directImageDraws==direct+1);
+        assert(iconSubtexture.width==item.width && iconSubtexture.height==item.height);
         assert(items.draw(renderer,item.key,10,12,32,0.35f));
         assert(iconLoads==loads+2 && lastIconOpacity==0.35f);
         items.clear(&renderer);
@@ -191,7 +198,7 @@ int main() {
 
     {
         ItemIconPresenter malformed;
-        const auto& item=kItemIconFrames[0];
+        const auto& item=kItemIconTextures[0];
         const unsigned loads=iconLoads,draws=iconDraws,retired=iconRetired;
         malformedIconImage=true;
         assert(!malformed.draw(renderer,item.key,0,0,32));
@@ -201,6 +208,29 @@ int main() {
         malformed.clear(&renderer);
         assert(malformed.draw(renderer,item.key,0,0,32) && iconLoads==loads+2);
         malformed.clear(&renderer);
+    }
+
+    // Malformed item UVs are retired once, cached as failures, and recover after clear.
+    for(unsigned invalid=0;invalid<6;++invalid) {
+        ItemIconPresenter items;
+        const auto& item=kItemIconTextures[0];
+        iconSubtexture.left=0;iconSubtexture.right=1;
+        iconSubtexture.top=1;iconSubtexture.bottom=0;
+        if(invalid==0) iconSubtexture.left=1;
+        if(invalid==1) iconSubtexture.left=2;
+        if(invalid==2) iconSubtexture.top=0;
+        if(invalid==3) iconSubtexture.top=-1;
+        if(invalid==4) iconSubtexture.bottom=std::numeric_limits<float>::quiet_NaN();
+        if(invalid==5) iconSubtexture.right=std::numeric_limits<float>::infinity();
+        const unsigned loads=iconLoads,draws=iconDraws,retired=iconRetired;
+        assert(!items.draw(renderer,item.key,0,0));
+        assert(iconLoads==loads+1 && iconDraws==draws && iconRetired==retired+1);
+        iconSubtexture.left=0;iconSubtexture.right=1;
+        iconSubtexture.top=1;iconSubtexture.bottom=0;
+        assert(!items.draw(renderer,item.key,0,0) && iconLoads==loads+1);
+        items.clear(&renderer);
+        assert(items.draw(renderer,item.key,0,0) && iconLoads==loads+2 && iconDraws==draws+1);
+        items.clear(&renderer);
     }
 
     // Generated physical appearances resolve by exact identity; never fallback to another variant/facing.
