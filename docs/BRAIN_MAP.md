@@ -62,3 +62,11 @@ El diagrama muestra capas y responsabilidades. Los enlaces concretos `import`/`i
 1. Perfil `pokemonAppearances`: materialización pinned → staging → conversión física → índice generado → `PokemonAtlasPresenter`; incluye pruebas Python/JS y harness nativo.
 2. Perfil `frontendMenus`: navegación → comandos → almacenamiento en `main.cpp` → guard estático y harness nativo.
 3. El mapa ayuda a localizar dependencias; no demuestra integración visual ni ejecución en hardware.
+
+## Perfiles de presentación acotados
+
+1. **`battleMenuVisuals`**: categorías originales, capacidades de caché generadas, renderer, menús de acciones/movimientos/decisiones, geometría compartida y entrada en `main.cpp`. Incluye verificación física de assets y harnesses de rectángulos/renderizado. Añadir efectos de batalla requiere consultar también `battle`.
+2. **`rewardPresentation`**: fábricas/locales pinned → nombres generados y reporte de procedencia → iconos físicos y presentador de recompensas → pruebas de importación y caché. Los nombres de paquetes no prueban que sus efectos estén implementados.
+3. **`nativeFonts`**: rasterización offline, métricas y renderer; comprobar junto con el perfil del menú afectado. Los guards de fuentes no demuestran legibilidad en GPU.
+
+Estos perfiles permiten localizar archivos pertinentes sin cargar catálogos completos. El JSON registra dependencias estáticas y entradas de trabajo; no es una prueba de funcionamiento nativo.

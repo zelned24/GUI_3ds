@@ -2,14 +2,14 @@
 
 ## Cómo medir el avance
 
-- Referencia actual: rama `codex/pokerogue-3ds-migration`, último commit de implementación publicado confirmado `8d358c4`; conversión física ampliada terminada: 10682 atlas y 10746 páginas `.t3x`. Validación nativa y visual pendiente. Los resultados históricos no verifican estos cambios locales.
+- Referencia actual: rama `codex/pokerogue-3ds-migration`, último commit de implementación publicado confirmado `bd1c3e3`; conversión física ampliada terminada: 10682 atlas y 10746 páginas `.t3x`. Validación nativa y visual pendiente. Los resultados históricos no verifican estos cambios locales.
 - Objetivo: PokéRogue jugable y fiel al snapshot upstream en Old 3DS, con ambas pantallas, progreso exportable y actualizaciones desde consola.
 - Cada ID es estable para reportar avances: `MOV-07`, `GUI-03`, etc. No equivale a un movimiento/habilidad individual.
 - Una casilla sin marcar puede tener código parcial; el resumen de cada área indica lo existente. Marcarla solo con integración completa y evidencia ejecutada pertinente.
 - Estados para reportes: **pendiente**, **parcial**, **implementado sin verificar**, **verificado**. Registrar commit, archivos, prueba/resultado y limitaciones.
 - No hay porcentaje global fiable todavía: falta medir la cobertura por ID/atributo/contexto. Contar estas tareas como pesos iguales distorsionaría el avance.
 - Pins: juego `8555c08c823b856cbec4eb99ca84ea52a955836d`; assets `056a1f408f26a3be4fef243f7462cb43608c7928`; locales `23aea1cb0da5a0b15b836f3c243791591cc42303`.
-- Fuente de detalle: [estado](../MIGRATION_STATUS.md), [inventario anterior](POKEROGUE_3DS_REMAINING_WORK.md), `project/` y scripts actuales. El inventario anterior incluye notas históricas, no resultados vigentes.
+- Fuente de detalle: [estado](../MIGRATION_STATUS.md), [inventario anterior](POKEROGUE_3DS_REMAINING_WORK.md), `project/` y scripts actuales. El inventario anterior incluye notas históricas, no resultados vigentes. Mapa actual regenerado: 304 archivos/616 dependencias; perfiles battleMenuVisuals y rewardPresentation incluyen consumidores y pruebas actuales. Referencias y generación repetida PASS; no prueba runtime.
 - GUI significa interfaz **del juego**; no reconstruir el editor eliminado. El código actual usa gameplay C++ y bridge QuickJS opcional: su presencia no demuestra un port completo de la web.
 
 ## Resumen del checklist
