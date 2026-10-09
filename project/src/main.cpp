@@ -867,7 +867,7 @@ int main() {
             }
         } else if((rawPressed & KEY_TOUCH) && learnTouchInput && game.moveLearningPending()) {
             touchPosition touch{};hidTouchRead(&touch);
-            const int slot=Pokerogue3DS::moveButtonAt(touch.px,touch.py);
+            const int slot=Pokerogue3DS::learnMoveAt(touch.px,touch.py);
             if(slot>=0) {
                 if (game.selectedBattleMove() == unsigned(slot)) {
                     changed=game.resolvePendingLearnMove(slot);

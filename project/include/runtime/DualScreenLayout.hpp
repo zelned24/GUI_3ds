@@ -92,6 +92,12 @@ inline constexpr TouchRect kPartyHeaderRect{8,4,304,18};
 inline constexpr TouchRect kPartyFooterRect{8,220,304,18};
 inline constexpr TouchRect kPartyConfirmRect{8,220,148,18};
 inline constexpr TouchRect kPartyBackRect{164,220,148,18};
+// Learning owns the whole lower screen; combat reserves a right-hand details panel.
+inline constexpr TouchRect kLearnMoveRects[]={{12,36,142,64},{166,36,142,64},{12,106,142,64},{166,106,142,64}};
+inline constexpr int learnMoveAt(unsigned x,unsigned y) {
+    for(unsigned i=0;i<4;++i) if(kLearnMoveRects[i].contains(x,y)) return int(i);
+    return -1;
+}
 inline constexpr TouchRect kLearnConfirmRect{12,200,142,30};
 inline constexpr TouchRect kLearnBackRect{166,200,142,30};
 inline constexpr TouchRect kEvolutionConfirmRect{20,140,136,30};

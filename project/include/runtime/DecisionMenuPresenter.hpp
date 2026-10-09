@@ -49,7 +49,7 @@ public:
             renderer.drawTextFitted(move ? moveUiName(move->id) : "",12,6,0.5f,294,0xffffffff);
             const auto& actor=game.progressionPokemon().battleState;
             for(unsigned i=0;i<4;++i) {
-                const auto& rect=kMoveButtonRects[i];renderer.drawWindow(rect.x,rect.y,rect.width,rect.height);
+                const auto& rect=kLearnMoveRects[i];renderer.drawWindow(rect.x,rect.y,rect.width,rect.height);
                 const auto* current=i<actor.moveCount ? PokerogueContent::findMoveById(actor.moves[i].moveId) : nullptr;
                 const char* name=current ? moveUiName(current->id) : "--";
                 float nameSize=0.3125f;

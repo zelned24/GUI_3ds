@@ -221,6 +221,8 @@ assert(!movePresentation.includes('moveName,mx+1,my+1'));
 assert(movePresentation.includes('drawTextBox(moveName,mx,my,nameSize,nameWidth,nameLines,textColor)'));
 
 assert(main.includes("moveBackRectangle(game.doubleBattle()).contains(touch.px,touch.py)"));
+assert(main.includes('const int slot=Pokerogue3DS::learnMoveAt(touch.px,touch.py)'));
+assert(!main.includes('const int slot=Pokerogue3DS::moveButtonAt(touch.px,touch.py)'));
 
 const partyPresentation=await fs.readFile(new URL('../project/include/runtime/PartyMenuPresenter.hpp',import.meta.url),'utf8');
 assert(partyPresentation.includes('y+3,nameSize'));

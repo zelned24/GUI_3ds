@@ -2,7 +2,7 @@
 
 ## Cómo medir el avance
 
-- Referencia actual: rama `codex/pokerogue-3ds-migration`, último commit de implementación publicado confirmado `9d36262`; conversión física ampliada terminada: 10682 atlas y 10746 páginas `.t3x`. Validación nativa y visual pendiente. Los resultados históricos no verifican estos cambios locales.
+- Referencia actual: rama `codex/pokerogue-3ds-migration`, último commit de implementación publicado confirmado `4adb556`; conversión física ampliada terminada: 10682 atlas y 10746 páginas `.t3x`. Validación nativa y visual pendiente. Los resultados históricos no verifican estos cambios locales.
 - Objetivo: PokéRogue jugable y fiel al snapshot upstream en Old 3DS, con ambas pantallas, progreso exportable y actualizaciones desde consola.
 - Cada ID es estable para reportar avances: `MOV-07`, `GUI-03`, etc. No equivale a un movimiento/habilidad individual.
 - Una casilla sin marcar puede tener código parcial; el resumen de cada área indica lo existente. Marcarla solo con integración completa y evidencia ejecutada pertinente.
@@ -254,7 +254,7 @@ Se conserva presentación C++/ScenePlayer y bridge QuickJS opcional. El editor/S
 
 - [ ] **GUI-01.** Reproducir estilo web: pixel art, tipografía, paleta, marcos, cursores, HUD y diálogos. Menús de acciones y movimientos: etiquetas dibujadas en una sola pasada sin sombra desplazada; legibilidad visual pendiente.
 - [ ] **GUI-02.** Cerrar pantalla superior 400×240: campo, sprites, fondos, HUD y animaciones.
-- [ ] **GUI-03.** Cerrar pantalla inferior 320×240: acciones, movimientos, equipo e inventario.
+- [ ] **GUI-03.** Cerrar pantalla inferior 320×240: acciones, movimientos, equipo e inventario. Aprendizaje usa una cuadrícula de ancho completo compartida por dibujo/táctil; tests de límites escritos, ejecución y comparación visual pendientes.
 - [ ] **GUI-04.** Completar title/new/continue/setup/starters y selección de modos.
   - [x] Filtrar starters canónicos por generación con Y/táctil y compartir catálogo entre navegación/dibujo. Cuadrícula de 18 iconos, equipo y botones inferiores con zonas táctiles separadas.
   - [ ] Perfil P3CANDY9 añade apariencia observada/capturada (DexAttr 1/2/16/32/64), lee v1–v8 sin inferir shiny; casos de roundtrip y migración escritos. Actor y registro de observado/capturado conectados con estado appearanceResolved explícito; Codec de actor pokemon=e conserva apariencia resuelta y lee antiguos como desconocidos; casos escritos. Resolver de apariencia predeterminada reproduce `GameData.getSpeciesDefaultDexAttrProps` (shiny capturado y variante más alta; metadata antigua desconocida), con casos escritos. Pendientes integración de todos los snapshots, generación, selección, assets y ejecución. El formato actual v28 conserva la apariencia añadida en v27 del enemigo principal y equipo de entrenador, migra v26 como desconocida y exige snapshot del jugador cuando tiene apariencia resuelta. Captura/restauración y casos de migración conectados; ejecución pendiente. Generación shiny, selección y referencias de assets todavía pendientes.

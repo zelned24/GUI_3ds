@@ -88,6 +88,17 @@ int main() {
             assert(!(pair[0].contains(x,y) && pair[1].contains(x,y)));
     }
     for(const auto& rect:kMoveButtonRects) assert(rect.y+rect.height<kLearnConfirmRect.y);
+    for(unsigned i=0;i<4;++i) {
+        const auto& rect=kLearnMoveRects[i];
+        assert(rect.width>kMoveButtonRects[i].width);
+        assert(rect.x+rect.width<=320 && rect.y+rect.height<kLearnConfirmRect.y);
+        assert(learnMoveAt(rect.x,rect.y)==int(i));
+        assert(learnMoveAt(rect.x+rect.width-1,rect.y+rect.height-1)==int(i));
+        assert(learnMoveAt(rect.x+rect.width,rect.y)==-1);
+        assert(learnMoveAt(rect.x,rect.y+rect.height)==-1);
+    }
+    assert(learnMoveAt(UINT_MAX,UINT_MAX)==-1);
+    assert(learnMoveAt(320,240)==-1);
     for(const auto& rect:kPartyButtonRects) assert(rect.y+rect.height<kPartyConfirmRect.y);
     assert(pauseButtonAt(UINT_MAX,UINT_MAX)==-1);
     for(unsigned y=0;y<240;++y) for(unsigned x=0;x<320;++x) {
