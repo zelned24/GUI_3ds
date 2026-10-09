@@ -12,6 +12,7 @@ for source in report["sources"]:
     assert hashlib.sha256(raw).hexdigest()==source["sourceSHA256"]
     raws.append(raw)
 locale=json.loads(raws[1])["ModifierType"]
+assert [row["itemId"] for row in report["rows"]]==sorted(row["itemId"] for row in report["rows"])
 assert report["rows"] and len({r["itemId"] for r in report["rows"]})==len(report["rows"])
 for row in report["rows"]:
     key=row["key"].removeprefix("modifierType:ModifierType.").removesuffix(".name")
@@ -45,4 +46,7 @@ for _ in range(2):
     assert before==(header.read_bytes(),report_path.read_bytes())
 presenter=(root/"project/include/runtime/RewardMenuPresenter.hpp").read_text(encoding="utf-8")
 assert 'itemUiName(reward->poolEntry->itemId)' in presenter
+assert presenter.index('const char* name=itemUiName(')<presenter.index('for (const auto& item : PokerogueContent::kItems)')
+assert 'if(!name) {' in presenter
+assert 'while(first<last)' in header.read_text(encoding='utf-8')
 print(f"PASS: {len(report['rows'])} pinned resolved item names; dynamic variants explicitly unresolved")

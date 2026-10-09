@@ -70,9 +70,10 @@ def prepare(root=ROOT):
             key,name=resolved[0]
             rows.append(dict(itemId=item,key="modifierType:ModifierType."+key+".name",name=name,sourceSymbol="modifierTypeInitObj."+item))
         else: unsupported.append(dict(itemId=item,reason="PARAMETERIZED_OR_NON_LITERAL_NAME"))
+    rows.sort(key=lambda row:row["itemId"])
     header="// Generated pinned item presentation names.\n#pragma once\n#include <cstring>\nnamespace Pokerogue3DS {\nstruct ItemUiName {const char* itemId;const char* name;};\ninline constexpr ItemUiName kItemUiNames[]={\n"
     header+="\n".join("    {"+json.dumps(r["itemId"])+","+json.dumps(r["name"],ensure_ascii=False)+"}," for r in rows)
-    header+='\n};\ninline const char* itemUiName(const char* id) {if(!id) return nullptr;for(const auto& row:kItemUiNames) if(!std::strcmp(row.itemId,id)) return row.name;return nullptr;}\n}\n'
+    header+='\n};\ninline const char* itemUiName(const char* id) {if(!id) return nullptr;unsigned first=0,last=sizeof(kItemUiNames)/sizeof(kItemUiNames[0]);while(first<last) {const unsigned mid=first+(last-first)/2;const int order=std::strcmp(kItemUiNames[mid].itemId,id);if(!order) return kItemUiNames[mid].name;if(order<0) first=mid+1;else last=mid;}return nullptr;}\n}\n'
     (root/"project/generated/include/content/ItemUiNames.hpp").write_bytes(header.encode())
     report=dict(schemaVersion=1,sources=[dict(repository="https://github.com/pagefaultgames/pokerogue",revision=GAME_REV,sourcePath="src/modifier/modifier-type.ts",sourceSHA256=hashlib.sha256(game).hexdigest()),dict(repository="https://github.com/pagefaultgames/pokerogue-locales",revision=LOCALE_REV,sourcePath="es-ES/modifier-type.json",sourceSHA256=hashlib.sha256(locale).hexdigest())],rows=rows,unsupported=unsupported)
     report["sources"].extend([

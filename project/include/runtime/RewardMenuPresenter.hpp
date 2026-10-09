@@ -55,12 +55,13 @@ public:
         for (unsigned i = 0; i < count && i < 3; ++i) {
             const auto* reward = game.rewardChoice(i);
             if (!reward || !reward->poolEntry || !reward->poolEntry->itemId) continue;
-            const char* name = reward->poolEntry->itemId;
-            for (const auto& item : PokerogueContent::kItems) {
-                if (std::strcmp(item.id, name) == 0) { name = item.name; break; }
+            const char* name=itemUiName(reward->poolEntry->itemId);
+            if(!name) {
+                name=reward->poolEntry->itemId;
+                for (const auto& item : PokerogueContent::kItems) {
+                    if (std::strcmp(item.id, name) == 0) { name = item.name; break; }
+                }
             }
-
-            if(const char* localized=itemUiName(reward->poolEntry->itemId)) name=localized;
             const BerryUiEntry* berry=nullptr;
             if(reward->berryType>=0 && !std::strcmp(reward->poolEntry->itemId,"BERRY")) {
                 for(const auto& type:PokerogueContent::kBerryTypes)

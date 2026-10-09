@@ -211,6 +211,14 @@ static void checkPreferences() {
     assert(NativePresentationSettingsStore::decode(nullptr,52,untouched)==NativeSaveResult::InvalidFormat);
 }
 int main() {
+    for(unsigned i=0;i<sizeof(kItemUiNames)/sizeof(kItemUiNames[0]);++i) {
+        const auto& row=kItemUiNames[i];
+        assert(itemUiName(row.itemId)==row.name);
+        if(i) assert(std::strcmp(kItemUiNames[i-1].itemId,row.itemId)<0);
+    }
+    assert(itemUiName(nullptr)==nullptr);
+    assert(itemUiName("")==nullptr);
+    assert(itemUiName("NOT_AN_IMPORTED_ITEM")==nullptr);
     assert(BattleCommandMenuPresenter::actionPrompt("Bulbasaur")=="¿Qué debería hacer\nBulbasaur?");
     assert(BattleCommandMenuPresenter::actionPrompt("Flabébé")=="¿Qué debería hacer\nFlabébé?");
     assert(BattleCommandMenuPresenter::actionPrompt(nullptr)=="¿Qué debería hacer\nPokémon?");
