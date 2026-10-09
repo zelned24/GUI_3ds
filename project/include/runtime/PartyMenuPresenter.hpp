@@ -5,6 +5,7 @@
 #include "runtime/TitleMenuPresenter.hpp"
 #include "runtime/TypePresentation.hpp"
 #include "content/StarterVariantIcons.hpp"
+#include "content/RuntimeUiText.hpp"
 #include "game/FirstRunRuntime.hpp"
 #include <cstdio>
 #include <cstring>
@@ -143,8 +144,11 @@ public:
 
         // Bottom footer window
         renderer.drawWindow(kPartyFooterRect.x,kPartyFooterRect.y,kPartyFooterRect.width,kPartyFooterRect.height);
-        renderer.drawTextFitted("A: Cambiar",kPartyConfirmRect.x+10,kPartyConfirmRect.y+4,0.375f,kPartyConfirmRect.width-20,0xffffffff);
-        renderer.drawTextFitted("B: Volver",kPartyBackRect.x+10,kPartyBackRect.y+4,0.375f,kPartyBackRect.width-20,0xffffffff);
+        char acceptLabel[64],backLabel[64];
+        std::snprintf(acceptLabel,sizeof(acceptLabel),"A: %s",runtimeUiText("party-ui-handler:sendOut"));
+        std::snprintf(backLabel,sizeof(backLabel),"B: %s",runtimeUiText("party-ui-handler:cancel"));
+        renderer.drawTextFitted(acceptLabel,kPartyConfirmRect.x+10,kPartyConfirmRect.y+4,0.375f,kPartyConfirmRect.width-20,0xffffffff);
+        renderer.drawTextFitted(backLabel,kPartyBackRect.x+10,kPartyBackRect.y+4,0.375f,kPartyBackRect.width-20,0xffffffff);
     }
 
 private:

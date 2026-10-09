@@ -155,7 +155,7 @@ public:
             m_partyPresenter.draw(renderer, game);
             renderer.drawWindow(kPartyHeaderRect.x,kPartyHeaderRect.y,kPartyHeaderRect.width,kPartyHeaderRect.height);
             const auto& feedback=game.battleFeedback();
-            renderer.drawTextFitted(feedback.empty() ? "Elige el Pokémon destinatario" : feedback.c_str(),18,8,0.3125f,284,0xff70d8f0);
+            renderer.drawTextFitted(feedback.empty() ? runtimeUiText("party-ui-handler:choosePokemon") : feedback.c_str(),18,8,0.3125f,284,0xff70d8f0);
             renderer.drawWindow(kPartyFooterRect.x,kPartyFooterRect.y,kPartyFooterRect.width,kPartyFooterRect.height);
             renderer.drawTextFitted("A: Elegir",kPartyConfirmRect.x+10,kPartyConfirmRect.y+4,0.375f,kPartyConfirmRect.width-20,0xffffffff);
             renderer.drawTextFitted("B: Volver",kPartyBackRect.x+10,kPartyBackRect.y+4,0.375f,kPartyBackRect.width-20,0xffffffff);

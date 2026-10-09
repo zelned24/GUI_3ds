@@ -2,7 +2,7 @@
 
 ## Cómo medir el avance
 
-- Referencia actual: rama `codex/pokerogue-3ds-migration`, último commit de implementación publicado confirmado `3cf6167`; conversión física ampliada terminada: 10682 atlas y 10746 páginas `.t3x`. Validación nativa y visual pendiente. Los resultados históricos no verifican estos cambios locales.
+- Referencia actual: rama `codex/pokerogue-3ds-migration`, último commit de implementación publicado confirmado `183adba`; conversión física ampliada terminada: 10682 atlas y 10746 páginas `.t3x`. Validación nativa y visual pendiente. Los resultados históricos no verifican estos cambios locales.
 - Objetivo: PokéRogue jugable y fiel al snapshot upstream en Old 3DS, con ambas pantallas, progreso exportable y actualizaciones desde consola.
 - Cada ID es estable para reportar avances: `MOV-07`, `GUI-03`, etc. No equivale a un movimiento/habilidad individual.
 - Una casilla sin marcar puede tener código parcial; el resumen de cada área indica lo existente. Marcarla solo con integración completa y evidencia ejecutada pertinente.
@@ -1193,3 +1193,8 @@ La compilación ARM solicitada terminó correctamente; no prueba ejecución de h
 - Verificado offline: 10682 atlas Pokémon convertidos, 759590 frames y 4785536 comparaciones de límites/elección de frames. La referencia lineal y el modelo de búsqueda binaria coinciden, incluyendo atlas cuyo orden de empaquetado difiere del orden de reproducción y timestamps hasta UINT64_MAX.
 - `python test/animation_catalog_search_tests.py` PASS. Reporte reproducible: `docs/generated/ANIMATION_SEARCH_AUDIT.json`, con hash del conjunto ordenado de metadatos y SHA-256 del consumidor C++ inspeccionado. Prueba registrada en suite de presentación.
 - `python test/ui_font_coverage_tests.py`: 3 tests PASS; guards frontend PASS. No equivalen a ejecución del código C++ ni lectura de fuentes/animaciones en GPU. VAL/GUI/AST siguen abiertas.
+
+### Acciones localizadas del equipo
+
+- Implementado sin ejecución nativa: namespace party-ui-handler integrado en el importador existente y RuntimeUiText. Botones de equipo usan sendOut/cancel; selección de destinatario de recompensas usa choosePokemon. Fuente: es-ES/party-ui-handler.json del pin de locales vigente.
+- Generación repetida de header/provenance byte a byte PASS; guards comparan etiquetas con el archivo físico oficial. Tamaño y límites de botones preservados. No se cierra GUI-10 ni se afirma alineación visual comprobada.

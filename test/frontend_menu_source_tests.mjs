@@ -337,7 +337,7 @@ assert(partyPresentation.includes('if(!m_icons.drawAppearance(renderer,appearanc
 const rewardPartyLayout=await fs.readFile(new URL('../project/include/runtime/RewardMenuPresenter.hpp',import.meta.url),'utf8');
 assert(rewardPartyLayout.includes('renderer.drawWindow(kPartyHeaderRect.x'));
 assert(rewardPartyLayout.includes('renderer.drawWindow(kPartyFooterRect.x'));
-assert(rewardPartyLayout.includes('feedback.empty() ? "Elige el Pokémon destinatario" : feedback.c_str()'));
+assert(rewardPartyLayout.includes('feedback.empty() ? runtimeUiText("party-ui-handler:choosePokemon") : feedback.c_str()'));
 
 const pokemonAtlasSource=await fs.readFile(new URL('../project/src/runtime/PokemonAtlasPresenter.cpp',import.meta.url),'utf8');
 const spriteBoxBody=pokemonAtlasSource.slice(pokemonAtlasSource.indexOf('void PokemonAtlasPresenter::draw('),pokemonAtlasSource.indexOf('float PokemonAtlasPresenter::calculateProportionalScale'));
@@ -571,3 +571,10 @@ assert(!icons.includes('img.subtex->top<img.subtex->bottom)'));
 assert(commandPresentation.includes('runtimeUiText("command-ui-handler:actionMessage")'));
 assert(commandPresentation.includes('m_dialogue.sync(renderer,actionPrompt(name))'));
 assert(!commandPresentation.includes('std::string("¿Qué debería hacer ")'));
+
+const partyLocale=JSON.parse(await fs.readFile(new URL('../build/upstream/pokerogue-locales/es-ES/party-ui-handler.json',import.meta.url),'utf8'));
+for(const field of ['sendOut','cancel','choosePokemon'])
+  assert(fightGenerated.includes(JSON.stringify('party-ui-handler:'+field)+','+JSON.stringify(partyLocale[field])));
+assert(partyPresentation.includes('runtimeUiText("party-ui-handler:sendOut")'));
+assert(partyPresentation.includes('runtimeUiText("party-ui-handler:cancel")'));
+assert(!partyPresentation.includes('drawTextFitted("A: Cambiar"'));
