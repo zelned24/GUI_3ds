@@ -41,6 +41,7 @@ public:
             (m_settingsFromGlobal && (m_page==FrontendPage::Settings || m_page==FrontendPage::SettingsGroup));
     }
     void feedback(const char* value) {m_feedback=value;}
+    void setAudioInitializationError(const char* error) {m_audioInitializationError=error;}
     bool isConfirmingDelete() const {return m_confirmingDelete;}
     bool isConfirmingImport() const {return m_confirmingImport;}
     void setHasSave(bool hasSave) {
@@ -51,15 +52,18 @@ public:
     // Feedback belongs to the information screen. It must not replace active
     // lower-screen controls while their touch rectangles remain enabled.
     void drawFeedbackTop(Renderer2D& renderer) const {
-        if(!m_feedback || !*m_feedback) return;
+        const char* message=m_feedback;
+        if((!message || !*message) && m_page==FrontendPage::SettingsGroup && m_group==2)
+            message=m_audioInitializationError;
+        if(!message || !*message) return;
         const auto& bounds=kFrontendFeedbackRect;
         renderer.drawWindow(bounds.x,bounds.y,bounds.width,bounds.height);
         constexpr float size=0.375f;
         const unsigned lines=textLinesWithinHeight(bounds.height-12,
             renderer.textInkHeight(size),renderer.textLineHeight(size),2);
-        if(!lines || !renderer.drawTextBox(m_feedback,bounds.x+8,bounds.y+6,
+        if(!lines || !renderer.drawTextBox(message,bounds.x+8,bounds.y+6,
             size,bounds.width-16,lines,0xffffffff))
-            renderer.drawTextFitted(m_feedback,bounds.x+8,bounds.y+6,
+            renderer.drawTextFitted(message,bounds.x+8,bounds.y+6,
                 size,bounds.width-16,0xffffffff);
     }
     void drawCursor(Renderer2D& renderer, float x, float y, float size) {
@@ -689,6 +693,7 @@ private:
     unsigned m_selected=0,m_group=0,m_service=0,m_globalSelection=0;
     bool m_confirmingDelete=false,m_touchControls=true,m_confirmingTouchDisable=false,m_settingsFromGlobal=false;
     const char* m_feedback=nullptr;
+    const char* m_audioInitializationError=nullptr;
     const char* m_navigationSound=nullptr;
     bool m_navigationRejected=false;
 };

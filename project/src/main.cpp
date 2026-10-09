@@ -185,6 +185,8 @@ int main() {
         else if(recoveredPreferences) frontend.feedback("Ajustes recuperados del respaldo SD.");
     } else if(preferenceResult!=Pokerogue3DS::NativeSaveResult::NotFound)
         frontend.feedback(Pokerogue3DS::nativeSaveResultName(preferenceResult));
+    frontend.setAudioInitializationError(uiAudio.ready() ? nullptr :
+        (romfsReady ? uiAudio.initializationError() : "Audio no disponible: RomFS no se pudo montar."));
     frontend.setAudioVolumes(preferences.masterVolume,preferences.uiVolume);
     uiAudio.setVolumes(preferences.masterVolume,preferences.uiVolume);
     frontend.setTouchControls(preferences.touchControls);

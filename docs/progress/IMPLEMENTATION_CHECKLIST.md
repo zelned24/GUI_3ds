@@ -2,7 +2,7 @@
 
 ## Cómo medir el avance
 
-- Referencia actual: rama `codex/pokerogue-3ds-migration`, último commit de implementación publicado confirmado `b429a2e`; conversión física ampliada terminada: 10682 atlas y 10746 páginas `.t3x`. Validación nativa y visual pendiente. Los resultados históricos no verifican estos cambios locales.
+- Referencia actual: rama `codex/pokerogue-3ds-migration`, último commit de implementación publicado confirmado `8b99d82`; conversión física ampliada terminada: 10682 atlas y 10746 páginas `.t3x`. Validación nativa y visual pendiente. Los resultados históricos no verifican estos cambios locales.
 - Objetivo: PokéRogue jugable y fiel al snapshot upstream en Old 3DS, con ambas pantallas, progreso exportable y actualizaciones desde consola.
 - Cada ID es estable para reportar avances: `MOV-07`, `GUI-03`, etc. No equivale a un movimiento/habilidad individual.
 - Una casilla sin marcar puede tener código parcial; el resumen de cada área indica lo existente. Marcarla solo con integración completa y evidencia ejecutada pertinente.
@@ -1208,3 +1208,8 @@ La compilación ARM solicitada terminó correctamente; no prueba ejecución de h
 
 - Implementado sin ejecución nativa: main captura si Movimientos estaba abierto antes de procesar input. El toque que abre Luchar no pasa al selector recién expuesto ni lanza el primer movimiento por solapamiento de áreas. Un toque posterior conserva selección/confirmación existente. Captura, aprendizaje, evolución y resultado también capturan su estado antes del input: una transición no reutiliza el gesto que la provoca.
 - Guards del orden/consumidor PASS; harness de navegación escrito con coordenada compartida 60,60 y apertura de página. Ejecución C++/Azahar pendiente; GUI-09 permanece abierta.
+
+### Diagnóstico visible de audio
+
+- Implementado sin ejecución nativa: ajustes de audio muestran arriba el error de inicialización NDSP/PCM de NativeUiAudio cuando no hay otro feedback. Fallo de RomFS se distingue explícitamente. Conserva A/B abajo; no reintenta init ni carga audio por frame.
+- Guards de conexión PASS. Silencio, volumen efectivo y música siguen pendientes de comprobar/implementar; el diagnóstico no se presenta como reproducción de audio verificada.

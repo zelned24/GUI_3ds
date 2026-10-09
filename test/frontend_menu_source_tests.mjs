@@ -589,3 +589,7 @@ for(const [flag,condition] of [['captureTouchInput','game.capturePartyChoicePend
   assert(main.indexOf('const bool '+flag+'=')<main.indexOf('battleMenu.input(rawPressed'));
   assert(main.includes('(rawPressed & KEY_TOUCH) && '+flag+' && '+condition));
 }
+
+assert(frontend.includes('message=m_audioInitializationError'));
+assert(frontend.includes('m_page==FrontendPage::SettingsGroup && m_group==2'));
+assert(main.includes('frontend.setAudioInitializationError(uiAudio.ready() ? nullptr'));
