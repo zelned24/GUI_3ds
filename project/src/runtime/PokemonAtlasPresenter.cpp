@@ -32,6 +32,7 @@ void PokemonAtlasPresenter::Slot::clear(Renderer2D* renderer) {
 PokemonAtlasPresenter::~PokemonAtlasPresenter() { invalidate(); }
 void PokemonAtlasPresenter::invalidate(Renderer2D* renderer) {
     m_lastUnsupportedAppearance.clear();
+    m_frontAppearance={};m_backAppearance={};
     m_front.clear(renderer);
     m_back.clear(renderer);
     m_trainerFront.clear(renderer);
@@ -41,7 +42,25 @@ void PokemonAtlasPresenter::invalidate(Renderer2D* renderer) {
     m_playerBackAttempted = false;
 }
 
-bool PokemonAtlasPresenter::atlasKey(const ResolvedPokemon& pokemon, bool back, std::string& out) {
+const std::string* PokemonAtlasPresenter::atlasKey(const ResolvedPokemon& pokemon,bool back) {
+    auto& cached=back ? m_backAppearance : m_frontAppearance;
+    const auto& appearance=pokemon.actor;
+    const char* form=pokemon.formId ? pokemon.formId : "";
+    if(!cached.attempted || cached.dex!=pokemon.dex || cached.formId!=form
+        || cached.gender!=unsigned(appearance.gender)
+        || cached.variant!=unsigned(appearance.shinyVariant)
+        || cached.resolved!=appearance.appearanceResolved || cached.shiny!=appearance.shiny) {
+        cached.dex=pokemon.dex;cached.formId=form;
+        cached.gender=unsigned(appearance.gender);cached.variant=unsigned(appearance.shinyVariant);
+        cached.resolved=appearance.appearanceResolved;cached.shiny=appearance.shiny;
+        cached.attempted=true;
+        cached.available=resolveAppearanceKey(pokemon,back,cached.key);
+    }
+    // Missing mappings also remain cached until identity/content invalidation.
+    return cached.available ? &cached.key : nullptr;
+}
+
+bool PokemonAtlasPresenter::resolveAppearanceKey(const ResolvedPokemon& pokemon, bool back, std::string& out) {
     if(!resolveAtlasKey(pokemon.dex,pokemon.formId,out)) return false;
     const auto& appearance=pokemon.actor;
     if(!appearance.appearanceResolved) {
@@ -138,8 +157,9 @@ void PokemonAtlasPresenter::draw(Renderer2D& renderer, const ResolvedPokemon& po
     bool back, float x, float y, float width, float height, uint64_t animationTimeMs) {
     if(!std::isfinite(x) || !std::isfinite(y) || !std::isfinite(width) || !std::isfinite(height)
         || width<=0 || height<=0) return;
-    std::string key;
-    if (!atlasKey(pokemon, back, key)) return;
+    const auto* resolvedKey=atlasKey(pokemon,back);
+    if(!resolvedKey) return;
+    const auto& key=*resolvedKey;
     Slot& slot = back ? m_back : m_front;
     if (!selectMetadata(renderer, slot, key, back, animationTimeMs)) return;
     const uint64_t elapsedMs = animationTimeMs >= slot.animationStartMs
@@ -182,8 +202,9 @@ float PokemonAtlasPresenter::calculateProportionalScale(const ResolvedPokemon& p
 void PokemonAtlasPresenter::drawAnchored(Renderer2D& renderer, const ResolvedPokemon& pokemon,
     bool back, float anchorX, float anchorY, float scale, uint64_t animationTimeMs) {
     if(!std::isfinite(anchorX) || !std::isfinite(anchorY) || !std::isfinite(scale) || scale<0) return;
-    std::string key;
-    if (!atlasKey(pokemon, back, key)) return;
+    const auto* resolvedKey=atlasKey(pokemon,back);
+    if(!resolvedKey) return;
+    const auto& key=*resolvedKey;
     Slot& slot = back ? m_back : m_front;
     if (!selectMetadata(renderer, slot, key, back, animationTimeMs)) return;
     const uint64_t elapsedMs = animationTimeMs >= slot.animationStartMs

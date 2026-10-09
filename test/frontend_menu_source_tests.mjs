@@ -604,3 +604,11 @@ assert(frontend.includes('y+renderer.textInkHeight(0.3125f)+2'));
 assert(frontend.includes('textLinesWithinHeight(height,renderer.textInkHeight(size),lineHeight,12)'));
 assert(!frontend.includes('"X: generación  Y: captura  B: volver"'));
 assert(!frontend.includes('"B: volver al menú"'));
+
+// Appearance resolution cache must cover every asset identity field, not HP/turn state.
+const appearanceCache=atlasSource.slice(atlasSource.indexOf('const std::string* PokemonAtlasPresenter::atlasKey('),atlasSource.indexOf('bool PokemonAtlasPresenter::resolveAppearanceKey('));
+for(const identity of ['cached.dex!=pokemon.dex','cached.formId!=form','cached.gender!=unsigned(appearance.gender)','cached.variant!=unsigned(appearance.shinyVariant)','cached.resolved!=appearance.appearanceResolved','cached.shiny!=appearance.shiny']) assert(appearanceCache.includes(identity));
+assert(appearanceCache.includes('back ? m_backAppearance : m_frontAppearance'));
+assert(atlasSource.includes('m_frontAppearance={};m_backAppearance={};'));
+assert(appearanceCache.includes('cached.available ? &cached.key : nullptr'));
+assert.equal((atlasSource.match(/const auto& key=\*resolvedKey;/g)||[]).length,2);

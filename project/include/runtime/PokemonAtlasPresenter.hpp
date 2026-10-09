@@ -74,6 +74,13 @@ private:
         PokemonAtlasMetadata metadata;
         void clear(Renderer2D* renderer = nullptr);
     };
+    struct AppearanceCache {
+        uint16_t dex=0;
+        std::string formId,key;
+        unsigned gender=0,variant=0;
+        bool resolved=false,shiny=false,attempted=false,available=false;
+    };
+    AppearanceCache m_frontAppearance,m_backAppearance;
     std::string m_lastUnsupportedAppearance;
     Slot m_front;
     Slot m_back;
@@ -84,7 +91,8 @@ private:
     bool m_playerBackFemale = false;
     bool m_trainerFrontAttempted = false;
     bool m_playerBackAttempted = false;
-    bool atlasKey(const ResolvedPokemon&, bool back, std::string& out);
+    const std::string* atlasKey(const ResolvedPokemon&, bool back);
+    bool resolveAppearanceKey(const ResolvedPokemon&, bool back, std::string& out);
     static bool selectMetadata(Renderer2D&, Slot&, const std::string& key, bool back, uint64_t nowMs);
     static bool selectPage(Slot&, const std::string& key, bool back, uint8_t page);
 };
