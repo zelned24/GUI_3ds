@@ -269,12 +269,13 @@ def test_hud_types():
     print("  [OK] Seventeen original HUD sheets including digit/label assets: frame offsets, physical hashes and generated tables")
 
 def test_pixel_fonts():
-    from pixel_font import crisp_font, glyph_ink_bounds
+    from pixel_font import crisp_font, glyph_ink_bounds, font_ink_bounds
     root=Path(ROOT)
     report=json.loads((root/"build/native-presentation/font-provenance.json").read_text())
     source=root/"build/native-presentation/source"/report["sourcePath"]
     assert hashlib.sha256(source.read_bytes()).hexdigest()==report["sourceSHA256"]
     assert [row["points"] for row in report["files"]]==[8,10,12,16]
+    codepoints=[int(token,16) for token in (root/"build/native-presentation/font-codepoints.txt").read_text().split()]
     ink_tops=[];ink_heights=[]
     for row in report["files"]:
         data=(root/"build/romfs"/row["convertedPath"].removeprefix("romfs:/")).read_bytes()
@@ -282,6 +283,8 @@ def test_pixel_fonts():
         assert crisp_font(data)==data
         top,bottom=glyph_ink_bounds(data,ord('C'))
         assert row["capitalInkTop"]==top and row["capitalInkHeight"]==bottom-top
+        top,bottom=font_ink_bounds(data,codepoints)
+        assert row["textInkTop"]==top and row["textInkHeight"]==bottom-top
         ink_tops.append(top);ink_heights.append(bottom-top)
         glyph=struct.unpack_from("<I",data,36)[0]
         assert row["rasterCellHeight"]==data[glyph+1] and row["lineFeed"]==data[29]

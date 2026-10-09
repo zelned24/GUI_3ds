@@ -2,7 +2,7 @@
 
 ## Cómo medir el avance
 
-- Referencia actual: rama `codex/pokerogue-3ds-migration`, último commit de implementación publicado confirmado `8b99d82`; conversión física ampliada terminada: 10682 atlas y 10746 páginas `.t3x`. Validación nativa y visual pendiente. Los resultados históricos no verifican estos cambios locales.
+- Referencia actual: rama `codex/pokerogue-3ds-migration`, último commit de implementación publicado confirmado `2462376`; conversión física ampliada terminada: 10682 atlas y 10746 páginas `.t3x`. Validación nativa y visual pendiente. Los resultados históricos no verifican estos cambios locales.
 - Objetivo: PokéRogue jugable y fiel al snapshot upstream en Old 3DS, con ambas pantallas, progreso exportable y actualizaciones desde consola.
 - Cada ID es estable para reportar avances: `MOV-07`, `GUI-03`, etc. No equivale a un movimiento/habilidad individual.
 - Una casilla sin marcar puede tener código parcial; el resumen de cada área indica lo existente. Marcarla solo con integración completa y evidencia ejecutada pertinente.
@@ -64,12 +64,12 @@ Esta tabla describe código inspeccionado, no resultados de ejecución. Las nota
 1. **Implementado sin ejecución nativa:** submenu de nueve opciones, geometría compartida de filas/confirmaciones/carga, nombres de movimientos hasta dos líneas, barras PP enteras y ajustes HP/EXP y volúmenes general/interfaz persistidos en preferencias v5 (lectura compatible de v1–v4).
 2. **Implementado sin prueba GPU:** iconos de apariencia en equipo/party/captura, cache acotada de seis páginas compactas y retiro sincronizado; trainers/items rechazan imágenes inválidas y recuerdan fallos de carga.
 3. **Pendiente de integrar:** validación nativa del selector de naturaleza, selector de teratipo y aparición detallada; selección de habilidad conectada sin validación nativa, iconos de apariencia del grid/Pokédex, funciones completas de logros/huevos/gacha/comunidad/sesión, audio y animaciones ligadas a todas las fases.
-4. **Pendiente de verificar:** todos los harness C++ recientes, fuente/cursor/recortes y cada menú en Azahar; consumo de memoria, latencia y rendimiento en Old 3DS física. Continúa la prohibición de compilar/abrir Azahar.
+4. **Pendiente de verificar:** todos los harness C++ recientes, fuente/cursor/recortes y cada menú en Azahar; las métricas verticales ahora cubren el whitelist completo (14px a 12 puntos frente a 9px de la C), con desplazamiento de baseline y capacidad de líneas pendientes de comprobación visual; consumo de memoria, latencia y rendimiento en Old 3DS física. Continúa la prohibición de compilar/abrir Azahar.
 5. **No cerrado:** GUI-01–12/14 y AST-01–08 conservan su alcance completo; ningún guard estático sustituye su aceptación visual o funcional.
 
 Comprobaciones sin compilación repetidas sobre los archivos actuales:
 
-- [x] Cobertura física de glifos UI y alpha binaria de fuentes: `python test/ui_font_coverage_tests.py`, 3 tests PASS. Solo assets; no prueba lectura/dibujo en consola.
+- [x] Cobertura física de glifos UI y alpha binaria de fuentes: `python test/ui_font_coverage_tests.py`, 4 tests PASS. Incluye límites de tinta de todos los glifos visibles, acentos y descendentes; generación repetida idéntica. Solo assets; no prueba lectura/dibujo en consola.
 - [x] Ambos índices de iconos regenerados dos veces y comparados byte a byte con los publicados: `python test/appearance_icon_generation_tests.py` PASS. No convierte texturas ni ejecuta C++.
 
 ### Actualización de cada entrega

@@ -3,7 +3,7 @@ import hashlib,io,json,re,struct,subprocess,sys,unittest
 from pathlib import Path
 ROOT=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT/'scripts'))
-from pixel_font import glyph_ink_bounds, monochrome_font
+from pixel_font import glyph_ink_bounds, font_ink_bounds, monochrome_font
 from PIL import ImageFont, __version__ as pillow_version, features
 class UiFontCoverage(unittest.TestCase):
     def test_native_font_provenance_and_binary_alpha(self):
@@ -38,6 +38,28 @@ class UiFontCoverage(unittest.TestCase):
             with self.subTest(points=row['points']):
                 self.assertEqual(monochrome_font(data,rasterize),data,
                                  'Native glyph pixels differ from pinned source conversion')
+
+    def test_layout_metrics_cover_accents_and_descenders(self):
+        report=json.loads((ROOT/'docs/generated/NATIVE_FONT_REPORT.json').read_text(encoding='utf-8'))
+        codepoints=[int(token,16) for token in (ROOT/'build/native-presentation/font-codepoints.txt').read_text().split()]
+        tops=[];heights=[]
+        for row in report['files']:
+            data=(ROOT/'build/romfs'/row['convertedPath'].removeprefix('romfs:/')).read_bytes()
+            top,bottom=font_ink_bounds(data,codepoints)
+            self.assertEqual((row['textInkTop'],row['textInkHeight']),(top,bottom-top))
+            tops.append(top);heights.append(bottom-top)
+            for cp in codepoints:
+                if chr(cp).isspace(): continue
+                glyph_top,glyph_bottom=glyph_ink_bounds(data,cp)
+                self.assertGreaterEqual(glyph_top,top)
+                self.assertLessEqual(glyph_bottom,bottom)
+            if row['points']==12:
+                capital_top,capital_bottom=glyph_ink_bounds(data,ord('C'))
+                self.assertLess(top,capital_top, 'Accents extend above capital C')
+                self.assertGreater(bottom,capital_bottom, 'Descenders extend below capital C')
+        header=(ROOT/'project/generated/include/content/NativeFontMetrics.hpp').read_text()
+        self.assertIn('kNativeFontInkTop[]={'+','.join(map(str,tops))+'};',header)
+        self.assertIn('kNativeFontInkHeight[]={'+','.join(map(str,heights))+'};',header)
 
     def test_ui_literals_have_ink_in_every_native_font(self):
         files=[ROOT/'project/generated/include/content/RuntimeUiText.hpp',ROOT/'project/generated/include/content/NatureUiNames.hpp',ROOT/'project/src/main.cpp']

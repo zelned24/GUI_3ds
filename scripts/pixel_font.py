@@ -51,6 +51,19 @@ def glyph_ink_bounds(data: bytes, codepoint: int):
     return min(ink), max(ink)+1
 
 
+
+def font_ink_bounds(data: bytes, codepoints):
+    """Union of actual glyph ink, including accents and descenders."""
+    bounds=[]
+    for cp in sorted(set(codepoints)):
+        if chr(cp).isspace():
+            continue
+        bounds.append(glyph_ink_bounds(data,cp))
+    if not bounds:
+        raise ValueError("Font has no visible reference glyphs")
+    return min(top for top,_ in bounds),max(bottom for _,bottom in bounds)
+
+
 def crisp_font(data: bytes) -> bytes:
     if len(data) < 20 or data[:4] not in (b"CFNT", b"CFNU"):
         raise ValueError("Invalid BCFNT header")

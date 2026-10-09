@@ -11,6 +11,8 @@
       "points": 8,
       "rasterCellHeight": 17,
       "sheetBytes": 32768,
+      "textInkHeight": 10,
+      "textInkTop": 6,
       "uncompactedBytes": 525060
     },
     {
@@ -23,6 +25,8 @@
       "points": 10,
       "rasterCellHeight": 19,
       "sheetBytes": 65536,
+      "textInkHeight": 12,
+      "textInkTop": 7,
       "uncompactedBytes": 525060
     },
     {
@@ -35,6 +39,8 @@
       "points": 12,
       "rasterCellHeight": 23,
       "sheetBytes": 65536,
+      "textInkHeight": 14,
+      "textInkTop": 9,
       "uncompactedBytes": 525060
     },
     {
@@ -47,6 +53,8 @@
       "points": 16,
       "rasterCellHeight": 31,
       "sheetBytes": 131072,
+      "textInkHeight": 19,
+      "textInkTop": 12,
       "uncompactedBytes": 525060
     }
   ],
