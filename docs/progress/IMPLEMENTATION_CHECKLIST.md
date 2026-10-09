@@ -2,7 +2,7 @@
 
 ## Cómo medir el avance
 
-- Referencia actual: rama `codex/pokerogue-3ds-migration`, último commit de implementación publicado confirmado `e21e08a`; conversión física ampliada terminada: 10682 atlas y 10746 páginas `.t3x`. Validación nativa y visual pendiente. Los resultados históricos no verifican estos cambios locales.
+- Referencia actual: rama `codex/pokerogue-3ds-migration`, último commit de implementación publicado confirmado `3cf6167`; conversión física ampliada terminada: 10682 atlas y 10746 páginas `.t3x`. Validación nativa y visual pendiente. Los resultados históricos no verifican estos cambios locales.
 - Objetivo: PokéRogue jugable y fiel al snapshot upstream en Old 3DS, con ambas pantallas, progreso exportable y actualizaciones desde consola.
 - Cada ID es estable para reportar avances: `MOV-07`, `GUI-03`, etc. No equivale a un movimiento/habilidad individual.
 - Una casilla sin marcar puede tener código parcial; el resumen de cada área indica lo existente. Marcarla solo con integración completa y evidencia ejecutada pertinente.
@@ -69,7 +69,7 @@ Esta tabla describe código inspeccionado, no resultados de ejecución. Las nota
 
 Comprobaciones sin compilación repetidas sobre los archivos actuales:
 
-- [x] Cobertura física de glifos UI y alpha binaria de fuentes: `python test/ui_font_coverage_tests.py`, 2 tests PASS. Solo assets; no prueba lectura/dibujo en consola.
+- [x] Cobertura física de glifos UI y alpha binaria de fuentes: `python test/ui_font_coverage_tests.py`, 3 tests PASS. Solo assets; no prueba lectura/dibujo en consola.
 - [x] Ambos índices de iconos regenerados dos veces y comparados byte a byte con los publicados: `python test/appearance_icon_generation_tests.py` PASS. No convierte texturas ni ejecuta C++.
 
 ### Actualización de cada entrega
@@ -1187,3 +1187,9 @@ La compilación ARM solicitada terminó correctamente; no prueba ejecución de h
 
 - Implementado sin ejecución nativa: BattleCommandMenuPresenter resuelve actionMessage de los locales pinned y sustituye pokemonName una vez, manteniendo el salto de línea oficial. El fallback de nombre vacío usa la etiqueta Pokémon importada. No interpreta tokens contenidos en el nombre de la especie.
 - Guards de conexión PASS; harness C++ ampliado con acentos, nombre vacío/null y sustitución no recursiva. La paginación sigue en DialoguePresenter; validación visual pendiente. GUI-10 continúa abierta por otras strings/locales.
+
+### Auditoría física del rango de animación
+
+- Verificado offline: 10682 atlas Pokémon convertidos, 759590 frames y 4785536 comparaciones de límites/elección de frames. La referencia lineal y el modelo de búsqueda binaria coinciden, incluyendo atlas cuyo orden de empaquetado difiere del orden de reproducción y timestamps hasta UINT64_MAX.
+- `python test/animation_catalog_search_tests.py` PASS. Reporte reproducible: `docs/generated/ANIMATION_SEARCH_AUDIT.json`, con hash del conjunto ordenado de metadatos y SHA-256 del consumidor C++ inspeccionado. Prueba registrada en suite de presentación.
+- `python test/ui_font_coverage_tests.py`: 3 tests PASS; guards frontend PASS. No equivalen a ejecución del código C++ ni lectura de fuentes/animaciones en GPU. VAL/GUI/AST siguen abiertas.

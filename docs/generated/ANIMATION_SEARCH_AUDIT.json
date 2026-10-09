@@ -1,0 +1,12 @@
+{
+  "atlasCount": 10682,
+  "comparisonCount": 4785536,
+  "frameCount": 759590,
+  "gpuExecution": "NOT_EXECUTED",
+  "metadataHash": "47da7b14d5e3a6218e749f0523007e97bac8eb992b5fee7fdf253cdca20fbdc1",
+  "nativeExecution": "NOT_EXECUTED",
+  "runtimeSourcePath": "project/src/runtime/PokemonAtlasMetadata.cpp",
+  "runtimeSourceSHA256": "08297c8fdb674d206a2155805567f7adea893c4c259f3d7b7ea790008b43abea",
+  "schemaVersion": 1,
+  "scope": "OFFLINE_METADATA_AND_ALGORITHM_MODEL"
+}
