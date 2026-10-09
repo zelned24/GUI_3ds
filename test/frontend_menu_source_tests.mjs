@@ -644,3 +644,11 @@ assert(atlasSource.includes('if (!validAtlasImage(img,slot.metadata.width(),slot
 assert(decisions.includes('if(game.playerWon()) drawAction(renderer,kResultConfirmRect,"A: Continuar",9);'));
 assert(decisions.includes('drawAction(renderer,confirm,confirmText,insetY)'));
 assert(!decisions.includes('game.battleFeedback()'), 'Decision feedback is already displayed on the upper screen');
+
+const evolutionDecisions=await fs.readFile(new URL('../project/include/runtime/DecisionMenuPresenter.hpp',import.meta.url),'utf8');
+assert(evolutionDecisions.includes('runtimeUiText("menu:pauseEvolutionsQuestion")'));
+assert(evolutionDecisions.includes('pauseEvolutionPrompt(actor.localizedName)'));
+assert(evolutionDecisions.includes('textLinesWithinHeight(77,renderer.textInkHeight(size),renderer.textLineHeight(size),4)'));
+assert(evolutionDecisions.includes('runtimeUiText("menu:yes")'));
+assert(evolutionDecisions.includes('runtimeUiText("menu:no")'));
+assert(!evolutionDecisions.includes('Pausar evoluciones futuras?'));

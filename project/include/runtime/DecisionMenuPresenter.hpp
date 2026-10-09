@@ -4,11 +4,22 @@
 #include "runtime/TitleMenuPresenter.hpp"
 #include "runtime/PokemonIconPresenter.hpp"
 #include "content/EntityUiNames.hpp"
+#include "content/RuntimeUiText.hpp"
+#include <string>
 #include <cstring>
 #include <cstdio>
 namespace Pokerogue3DS {
 class DecisionMenuPresenter {
 public:
+    static std::string pauseEvolutionPrompt(const char* pokemonName) {
+        std::string text=runtimeUiText("menu:pauseEvolutionsQuestion");
+        constexpr const char* token="{{pokemonName}}";
+        const auto position=text.find(token);
+        if(position!=std::string::npos)
+            text.replace(position,std::strlen(token),pokemonName && *pokemonName
+                ? pokemonName : runtimeUiText("command-ui-handler:pokemon"));
+        return text;
+    }
     void clear(Renderer2D* renderer=nullptr) {m_icons.clear(renderer);m_cursor.clear(renderer);}
     void releaseIcons(Renderer2D& renderer) {m_icons.clear(&renderer);}
     void draw(Renderer2D& renderer,const FirstRunRuntime& game) {
@@ -64,12 +75,22 @@ public:
         renderer.drawWindow(12,40,296,158);
         if(game.evolutionPending()) {
             const auto& actor=game.progressionPokemon();
+            if(game.evolutionPauseConfirmationPending()) {
+                const auto question=pauseEvolutionPrompt(actor.localizedName);
+                const float size=0.375f;
+                const unsigned lines=textLinesWithinHeight(77,renderer.textInkHeight(size),renderer.textLineHeight(size),4);
+                if(!lines || !renderer.drawTextBox(question.c_str(),26,55,size,267,lines,0xffffffff))
+                    renderer.drawTextFitted(question.c_str(),26,55,size,267,0xffffffff);
+                const auto yes=std::string("A: ")+runtimeUiText("menu:yes");
+                const auto no=std::string("B: ")+runtimeUiText("menu:no");
+                drawActions(renderer,kEvolutionConfirmRect,kEvolutionBackRect,yes.c_str(),no.c_str(),9);
+                return;
+            }
             renderer.drawTextFitted(actor.localizedName,26,55,0.5f,267,0xffffffff);
             const PokerogueContent::Species* target=nullptr;
             if(game.pendingEvolutionSpeciesId()) for(const auto& species:PokerogueContent::kSpecies)
                 if(std::strcmp(species.id,game.pendingEvolutionSpeciesId())==0) {target=&species;break;}
-            const char* question=game.evolutionPauseConfirmationPending() ? "Pausar evoluciones futuras?" :
-                target ? target->name : "Evolucion";
+            const char* question=target ? target->name : "?";
             if(!renderer.drawTextBox(question,26,91,0.375f,267,2,0xffffffff))
                 renderer.drawTextFitted(question,26,91,0.375f,267,0xffffffff);
             drawActions(renderer,kEvolutionConfirmRect,kEvolutionBackRect,"A: Confirmar","B: Cancelar",9);
