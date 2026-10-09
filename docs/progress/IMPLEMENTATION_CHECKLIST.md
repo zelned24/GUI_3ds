@@ -2,7 +2,7 @@
 
 ## Cómo medir el avance
 
-- Referencia actual: rama `codex/pokerogue-3ds-migration`, último commit de implementación publicado confirmado `21f192c`; conversión física ampliada terminada: 10682 atlas y 10746 páginas `.t3x`. Validación nativa y visual pendiente. Los resultados históricos no verifican estos cambios locales.
+- Referencia actual: rama `codex/pokerogue-3ds-migration`, último commit de implementación publicado confirmado `d4b5963`; conversión física ampliada terminada: 10682 atlas y 10746 páginas `.t3x`. Validación nativa y visual pendiente. Los resultados históricos no verifican estos cambios locales.
 - Objetivo: PokéRogue jugable y fiel al snapshot upstream en Old 3DS, con ambas pantallas, progreso exportable y actualizaciones desde consola.
 - Cada ID es estable para reportar avances: `MOV-07`, `GUI-03`, etc. No equivale a un movimiento/habilidad individual.
 - Una casilla sin marcar puede tener código parcial; el resumen de cada área indica lo existente. Marcarla solo con integración completa y evidencia ejecutada pertinente.
@@ -41,7 +41,7 @@ Prioridad visual actual: validar en runtime el catálogo completo convertido y s
 
 ## Estado consolidado para seguimiento
 
-Esta tabla describe código inspeccionado, no resultados de ejecución. Las notas cronológicas posteriores registran pasos anteriores; este resumen indica el estado actual.
+Esta tabla describe código inspeccionado, no resultados de ejecución. El registro de la sección 16 es histórico: sus versiones, cifras y PASS corresponden a cada paso anterior y no verifican HEAD. Este resumen y los criterios 1–15 indican el estado vigente.
 
 | Área / IDs | Ya existe | Qué falta implementar o integrar |
 |---|---|---|
@@ -53,7 +53,7 @@ Esta tabla describe código inspeccionado, no resultados de ejecución. Las nota
 | HAB-01–10 / MOV-01–13 | Familias parciales y gates explícitos | Cobertura de todas las habilidades/movimientos del snapshot; no basta importar metadata |
 | HP-05 / MOV-07 | Struggle virtual conectado a selección jugador/IA, orden, locales, daño/retroceso boss y campo actual de tres actores | Segundo activo jugador, modifiers, restricciones por otros tags y validación ejecutada |
 | HP-01–08 | HP/PP/status, daño/curación, EXP parcial persistida, checkpoint de derrota simultánea y residual de Poison/Toxic/Burn para ambos enemigos | Composición completa, fases tras faint/summon, otros tags/callbacks y feedback visual; falta ejecución de pruebas |
-| FLU-05 / SAV-03 | Checkpoint v22: bioma, actores explícitos, jefes, RNG global, trainer resuelto y segundo enemigo del campo doble | Segundo activo jugador, fase final, decisiones pendientes y recorrido completo; casos de trainer posterior/dobles sin verificar |
+| FLU-05 / SAV-03 | Envelope declarado v28 (`NativeRunSave.hpp`): conserva los componentes previos de bioma, actores, jefes, RNG global, trainer y segundo enemigo; añade los campos de generaciones posteriores | Segundo activo jugador, fase final, decisiones pendientes y recorrido completo; casos de trainer posterior/dobles sin verificar |
 | GUI-01–14 / AST-01–08 | Presentación nativa, rasters nearest, HUD HP/EXP, iconos reales de items/huevos, controles compartidos y sonidos UI NDSP con volúmenes persistidos | Cerrar todas las pantallas, música/efectos de batalla, animaciones, controles restantes y comparación visual |
 | SAV-01–08 | Codecs, journals y bundles | Todos los estados de run/perfil, export/import conectado a UI y compatibilidad de contenido |
 | OTA-01–08 | Infraestructura de packs | Catálogo de gameplay cargable, firma, descarga e instalación desde consola |
@@ -257,7 +257,7 @@ Se conserva presentación C++/ScenePlayer y bridge QuickJS opcional. El editor/S
 - [ ] **GUI-03.** Cerrar pantalla inferior 320×240: acciones, movimientos, equipo e inventario.
 - [ ] **GUI-04.** Completar title/new/continue/setup/starters y selección de modos.
   - [x] Filtrar starters canónicos por generación con Y/táctil y compartir catálogo entre navegación/dibujo. Cuadrícula de 18 iconos, equipo y botones inferiores con zonas táctiles separadas.
-  - [ ] Perfil P3CANDY9 añade apariencia observada/capturada (DexAttr 1/2/16/32/64), lee v1–v8 sin inferir shiny; casos de roundtrip y migración escritos. Actor y registro de observado/capturado conectados con estado appearanceResolved explícito; Codec de actor pokemon=e conserva apariencia resuelta y lee antiguos como desconocidos; casos escritos. Resolver de apariencia predeterminada reproduce `GameData.getSpeciesDefaultDexAttrProps` (shiny capturado y variante más alta; metadata antigua desconocida), con casos escritos. Pendientes integración de todos los snapshots, generación, selección, assets y ejecución. Envelope v27 conserva apariencia del enemigo principal y equipo de entrenador, migra v26 como desconocida y exige snapshot del jugador cuando tiene apariencia resuelta. Captura/restauración y casos de migración conectados; ejecución pendiente. Generación shiny, selección y referencias de assets todavía pendientes.
+  - [ ] Perfil P3CANDY9 añade apariencia observada/capturada (DexAttr 1/2/16/32/64), lee v1–v8 sin inferir shiny; casos de roundtrip y migración escritos. Actor y registro de observado/capturado conectados con estado appearanceResolved explícito; Codec de actor pokemon=e conserva apariencia resuelta y lee antiguos como desconocidos; casos escritos. Resolver de apariencia predeterminada reproduce `GameData.getSpeciesDefaultDexAttrProps` (shiny capturado y variante más alta; metadata antigua desconocida), con casos escritos. Pendientes integración de todos los snapshots, generación, selección, assets y ejecución. El formato actual v28 conserva la apariencia añadida en v27 del enemigo principal y equipo de entrenador, migra v26 como desconocida y exige snapshot del jugador cuando tiene apariencia resuelta. Captura/restauración y casos de migración conectados; ejecución pendiente. Generación shiny, selección y referencias de assets todavía pendientes.
   - [ ] Filtro táctil Todos/Capturados/Sin capturar combinado con generación/tipo implementado; pruebas escritas, ejecución y distribución visual pendientes.
   - [ ] Costes canónicos y reducciones guardadas dibujados en cada celda; casos de fracciones/buffer escritos, ejecución y comparación visual pendientes.
   - [ ] Mostrar el catálogo elegible con estados capturado, visto, desconocido y variantes shiny según el progreso; El selector ya permite recorrer todos los starters elegibles y proyecta capturado/visto/desconocido desde el perfil existente; Registro de encuentros salvajes y equipos de entrenadores conectado al perfil existente, con validación previa del lote; pruebas de aislamiento y save/restore escritas, ejecución pendiente. Eternamax sincroniza la forma del actor y registra la observación; evolución registra visto y actualiza metadata de captura solo cuando la raíz ya estaba capturada, sin recompensas; pendientes ejecución, otros cambios de forma, estadísticas seenCount y variantes shiny persistentes. Comparación visual pendiente.
@@ -387,7 +387,10 @@ Tests y compilación están autorizados. Solo se marcan como verificadas las pru
 - [ ] **VAL-11.** Revisar git diff --check, licencias/créditos, instalación SD y release.
 - [ ] **VAL-12.** Entregar matriz de requisitos con evidencia, límites y checklist cerrado; no declarar éxito con gates pendientes.
 
-## 16. Registro de avance
+## 16. Registro histórico de avance
+
+Las notas siguientes se conservan como procedencia. No usarlas como inventario actual: el formato declarado es v28, el catálogo físico contiene 10682 atlas/10746 páginas y los gates nativos recientes siguen sin ejecutarse. Las obligaciones pendientes de estas notas permanecen bajo los criterios 1–15; ningún resultado anterior cierra su alcance actual.
+
 
 | ID | Estado | Commit | Evidencia ejecutada | Falta para cerrar |
 |---|---|---|---|---|
