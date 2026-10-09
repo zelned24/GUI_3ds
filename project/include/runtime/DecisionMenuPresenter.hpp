@@ -77,18 +77,20 @@ public:
             renderer.drawText(game.playerWon() ? "Victoria" : "Fin de partida",26,55,0.55f,0xffffffff);
             char line[64];std::snprintf(line,sizeof(line),"Ola %u   Nivel %u",unsigned(game.run().wave),unsigned(game.presentation().player.level));
             renderer.drawText(line,26,91,0.4f,0xffffffff);
-            if(game.playerWon()) renderer.drawTextFitted("A: continuar",26,145,0.375f,267,0xffffffff);
+            if(game.playerWon()) drawAction(renderer,kResultConfirmRect,"A: Continuar",9);
             else drawActions(renderer,kResultConfirmRect,kResultBackRect,"A: Reiniciar","B: Título",9);
         }
-        renderer.drawTextFitted(game.battleFeedback().c_str(),12,213,0.3f,296,0xffffffff);
+        // Gameplay feedback is owned by the upper dialogue banner.
     }
 private:
     static void drawActions(Renderer2D& renderer,const TouchRect& confirm,const TouchRect& back,
         const char* confirmText,const char* backText,unsigned insetY) {
-        renderer.drawWindow(confirm.x,confirm.y,confirm.width,confirm.height);
-        renderer.drawWindow(back.x,back.y,back.width,back.height);
-        renderer.drawTextFitted(confirmText,confirm.x+8,confirm.y+insetY,0.375f,confirm.width-16,0xffffffff);
-        renderer.drawTextFitted(backText,back.x+8,back.y+insetY,0.375f,back.width-16,0xffffffff);
+        drawAction(renderer,confirm,confirmText,insetY);
+        drawAction(renderer,back,backText,insetY);
+    }
+    static void drawAction(Renderer2D& renderer,const TouchRect& bounds,const char* label,unsigned insetY) {
+        renderer.drawWindow(bounds.x,bounds.y,bounds.width,bounds.height);
+        renderer.drawTextFitted(label,bounds.x+8,bounds.y+insetY,0.375f,bounds.width-16,0xffffffff);
     }
     TitleMenuPresenter m_cursor;PokemonIconPresenter m_icons{true,6,true};
 };

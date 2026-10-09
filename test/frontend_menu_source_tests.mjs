@@ -626,3 +626,7 @@ assert(frontend.includes('if(!hasEggs) {drawReadOnlyBack(renderer);return;}'));
 assert(frontend.includes('!game->eggInventoryReady() || !game->eggInventoryCount()'));
 
 assert(atlasSource.includes('if (!validAtlasImage(img,slot.metadata.width(),slot.metadata.height()))'));
+
+assert(decisions.includes('if(game.playerWon()) drawAction(renderer,kResultConfirmRect,"A: Continuar",9);'));
+assert(decisions.includes('drawAction(renderer,confirm,confirmText,insetY)'));
+assert(!decisions.includes('game.battleFeedback()'), 'Decision feedback is already displayed on the upper screen');

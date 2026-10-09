@@ -2,7 +2,7 @@
 
 ## Cómo medir el avance
 
-- Referencia actual: rama `codex/pokerogue-3ds-migration`, último commit de implementación publicado confirmado `d4b5963`; conversión física ampliada terminada: 10682 atlas y 10746 páginas `.t3x`. Validación nativa y visual pendiente. Los resultados históricos no verifican estos cambios locales.
+- Referencia actual: rama `codex/pokerogue-3ds-migration`, último commit de implementación publicado confirmado `b50c947`; conversión física ampliada terminada: 10682 atlas y 10746 páginas `.t3x`. Validación nativa y visual pendiente. Los resultados históricos no verifican estos cambios locales.
 - Objetivo: PokéRogue jugable y fiel al snapshot upstream en Old 3DS, con ambas pantallas, progreso exportable y actualizaciones desde consola.
 - Cada ID es estable para reportar avances: `MOV-07`, `GUI-03`, etc. No equivale a un movimiento/habilidad individual.
 - Una casilla sin marcar puede tener código parcial; el resumen de cada área indica lo existente. Marcarla solo con integración completa y evidencia ejecutada pertinente.
@@ -281,7 +281,7 @@ Se conserva presentación C++/ScenePlayer y bridge QuickJS opcional. El editor/S
   - [ ] Cerrar sesión: solo conectado a una sesión real; no simular autenticación.
   - [ ] Etiquetas `es-ES/menu-ui-handler.json` añadidas al generador y tabla C++ regenerada sin compilar. Preparación de glifos y validación visual pendientes.
 
-- [ ] **GUI-08.** Completar win/lose/summary y recuperación de errores de carga.
+- [ ] **GUI-08.** Completar win/lose/summary y recuperación de errores de carga. Victoria dibuja Continuar usando el rectángulo real de confirmación; evolución/resultados no duplican abajo el feedback del banner superior. Guards de código PASS; recorrido y comprobación visual nativa pendientes.
 - [ ] **GUI-09.** Completar D-pad/A/B/X/Y/L/R/Start/Select y táctil resistivo con foco coherente.
 - [x] **GUI-13.** Convertir alpha antialias de la fuente A4 a alpha binario, conservar métricas, alinear coordenadas de texto a píxeles y preparar un perfil Azahar Old 3DS sin suavizado; pruebas de conversión/determinismo/corrupción ejecutadas.
 - [ ] **GUI-14.** Verificar nitidez, tamaños y alineación de letras/sprites en todas las pantallas mediante Azahar y Old 3DS; contrastar capturas con la referencia web.
