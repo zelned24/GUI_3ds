@@ -7,6 +7,7 @@
 #include <string>
 #include <cstring>
 #include <cstdio>
+#include <cmath>
 #include "content/PokerogueRuntimeContent.hpp"
 
 class Renderer2D;
@@ -51,6 +52,13 @@ public:
             out.clear();return false;
         }
         return true;
+    }
+    static bool validAtlasImage(C2D_Image image,uint16_t width,uint16_t height) {
+        return width && height && image.tex && image.subtex
+            && image.subtex->width==width && image.subtex->height==height
+            && std::isfinite(image.subtex->left) && std::isfinite(image.subtex->right)
+            && std::isfinite(image.subtex->top) && std::isfinite(image.subtex->bottom)
+            && image.subtex->left<image.subtex->right && image.subtex->top>image.subtex->bottom;
     }
     void invalidate(Renderer2D* renderer = nullptr); // Retry after an installed content pack becomes active.
 

@@ -624,3 +624,5 @@ assert(enemySelection.includes('std::to_string(playerState.abilityId)'));
 assert(frontend.includes('const bool hasEggs=game && game->eggInventoryReady() && game->eggInventoryCount();'));
 assert(frontend.includes('if(!hasEggs) {drawReadOnlyBack(renderer);return;}'));
 assert(frontend.includes('!game->eggInventoryReady() || !game->eggInventoryCount()'));
+
+assert(atlasSource.includes('if (!validAtlasImage(img,slot.metadata.width(),slot.metadata.height()))'));

@@ -12,6 +12,21 @@ Renderer2D::Renderer2D() {}
 Renderer2D::~Renderer2D() {}
 void Renderer2D::retireSpriteSheet(C2D_SpriteSheet) {assert(false);}
 int main() {
+    C3D_Tex texture{};Tex3DS_SubTexture region{};
+    region.width=64;region.height=32;region.left=0;region.right=1;region.top=1;region.bottom=0;
+    C2D_Image image{&texture,&region};
+    assert(PokemonAtlasPresenter::validAtlasImage(image,64,32));
+    assert(!PokemonAtlasPresenter::validAtlasImage(image,32,32));
+    assert(!PokemonAtlasPresenter::validAtlasImage(image,0,32));
+    region.right=region.left;assert(!PokemonAtlasPresenter::validAtlasImage(image,64,32));
+    region.right=-1;assert(!PokemonAtlasPresenter::validAtlasImage(image,64,32));
+    region.right=1;region.bottom=region.top;assert(!PokemonAtlasPresenter::validAtlasImage(image,64,32));
+    region.bottom=2;assert(!PokemonAtlasPresenter::validAtlasImage(image,64,32));
+    region.bottom=NAN;assert(!PokemonAtlasPresenter::validAtlasImage(image,64,32));
+    region.bottom=0;region.left=INFINITY;assert(!PokemonAtlasPresenter::validAtlasImage(image,64,32));
+    region.left=0;
+    image.subtex=nullptr;assert(!PokemonAtlasPresenter::validAtlasImage(image,64,32));
+    image.subtex=&region;image.tex=nullptr;assert(!PokemonAtlasPresenter::validAtlasImage(image,64,32));
     Renderer2D renderer;PokemonAtlasPresenter actors;
     for(unsigned i=0;i<100;++i) {
         actors.drawTrainerAnchored(renderer,1,false,0,0,1,i);

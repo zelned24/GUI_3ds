@@ -138,9 +138,7 @@ bool PokemonAtlasPresenter::selectPage(Slot& slot, const std::string& key, bool 
     C2D_SpriteSheet loaded = C2D_SpriteSheetLoad(texturePath);
     if (!loaded) {slot.failedPageMask |= pageBit;return false;}
     C2D_Image img = C2D_SpriteSheetGetImage(loaded, 0);
-    if (!img.tex || !img.subtex
-        || img.subtex->width != slot.metadata.width()
-        || img.subtex->height != slot.metadata.height()) {
+    if (!validAtlasImage(img,slot.metadata.width(),slot.metadata.height())) {
         C2D_SpriteSheetFree(loaded);
         slot.failedPageMask |= pageBit;
         return false;
