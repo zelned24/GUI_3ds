@@ -337,7 +337,10 @@ assert(partyPresentation.includes('if(!m_icons.drawAppearance(renderer,appearanc
 const rewardPartyLayout=await fs.readFile(new URL('../project/include/runtime/RewardMenuPresenter.hpp',import.meta.url),'utf8');
 assert(rewardPartyLayout.includes('renderer.drawWindow(kPartyHeaderRect.x'));
 assert(rewardPartyLayout.includes('renderer.drawWindow(kPartyFooterRect.x'));
-assert(rewardPartyLayout.includes('feedback.empty() ? runtimeUiText("party-ui-handler:choosePokemon") : feedback.c_str()'));
+assert(rewardPartyLayout.includes('renderer.drawTextFitted(runtimeUiText("party-ui-handler:choosePokemon"),18,8'));
+assert(rewardPartyLayout.includes('recipientMode && !feedback.empty()'));
+const rewardBottom=rewardPartyLayout.slice(rewardPartyLayout.indexOf('void drawBottom('));
+assert(!rewardBottom.includes('game.battleFeedback()'), 'Reward feedback belongs to the upper screen');
 
 const pokemonAtlasSource=await fs.readFile(new URL('../project/src/runtime/PokemonAtlasPresenter.cpp',import.meta.url),'utf8');
 const spriteBoxBody=pokemonAtlasSource.slice(pokemonAtlasSource.indexOf('void PokemonAtlasPresenter::draw('),pokemonAtlasSource.indexOf('float PokemonAtlasPresenter::calculateProportionalScale'));

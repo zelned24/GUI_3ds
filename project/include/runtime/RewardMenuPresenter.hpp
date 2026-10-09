@@ -44,7 +44,11 @@ public:
 
         // Title header
         renderer.drawWindow(12.0f, 6.0f, 376.0f, 32.0f);
-        renderer.drawTextFitted("Elige una Recompensa", 24.0f, 12.0f, 0.46f, 352.0f, 0xffffffff);
+        const auto& feedback=game.battleFeedback();
+        const bool recipientMode=m_partySelectMode || m_moveSelectMode;
+        const char* heading=recipientMode && !feedback.empty()
+            ? feedback.c_str() : "Elige una Recompensa";
+        renderer.drawTextFitted(heading,24,12,0.375f,352,0xffffffff);
 
         const unsigned count = game.rewardChoiceCount();
 
@@ -147,15 +151,13 @@ public:
             renderer.drawWindow(kRewardMoveBackRect.x,kRewardMoveBackRect.y,kRewardMoveBackRect.width,kRewardMoveBackRect.height);
             renderer.drawTextFitted("A: Aplicar",24,206,0.375f,120,0xffffffff);
             renderer.drawTextFitted("B: Volver",176,206,0.375f,120,0xffffffff);
-            renderer.drawTextFitted(game.battleFeedback().c_str(),16,225,0.24f,288,0xffffffff);
             return;
         }
         if (assigningParty || m_partySelectMode) {
             // Party selection mode for applying held items, berries, or potions
             m_partyPresenter.draw(renderer, game);
             renderer.drawWindow(kPartyHeaderRect.x,kPartyHeaderRect.y,kPartyHeaderRect.width,kPartyHeaderRect.height);
-            const auto& feedback=game.battleFeedback();
-            renderer.drawTextFitted(feedback.empty() ? runtimeUiText("party-ui-handler:choosePokemon") : feedback.c_str(),18,8,0.3125f,284,0xff70d8f0);
+            renderer.drawTextFitted(runtimeUiText("party-ui-handler:choosePokemon"),18,8,0.375f,284,0xff70d8f0);
             renderer.drawWindow(kPartyFooterRect.x,kPartyFooterRect.y,kPartyFooterRect.width,kPartyFooterRect.height);
             renderer.drawTextFitted("A: Elegir",kPartyConfirmRect.x+10,kPartyConfirmRect.y+4,0.375f,kPartyConfirmRect.width-20,0xffffffff);
             renderer.drawTextFitted("B: Volver",kPartyBackRect.x+10,kPartyBackRect.y+4,0.375f,kPartyBackRect.width-20,0xffffffff);
