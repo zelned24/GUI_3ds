@@ -2718,10 +2718,6 @@ bool FirstRunRuntime::startRun() {
 
 bool FirstRunRuntime::advanceBattleTurnInPlace() {
     if (m_capturePartyChoicePending) return resolveCapturePartyChoiceInPlace(m_selectedCapturePartyChoice);
-    if (!heldHealingInventorySupported(m_heldModifiers.data(), m_heldModifierCount)) {
-        m_battleFeedback = "Held modifier effects require native dispatch";
-        return false;
-    }
     if (moveLearningPending()) return resolvePendingLearnMove(m_selectedBattleMove);
     if (m_evolutionPauseConfirmation) {
         progressionPokemonMutable().battleState.pauseEvolutions = true;
@@ -2732,6 +2728,11 @@ bool FirstRunRuntime::advanceBattleTurnInPlace() {
         m_battleFeedback = "Future evolutions paused";
         buildScene();
         return true;
+    }
+    // Pending UI decisions do not dispatch held healing effects.
+    if (!heldHealingInventorySupported(m_heldModifiers.data(), m_heldModifierCount)) {
+        m_battleFeedback = "Held modifier effects require native dispatch";
+        return false;
     }
     if (evolutionPending()) {
         if (!finishPendingEvolution(true)) return false;
@@ -3989,10 +3990,6 @@ bool FirstRunRuntime::advanceFixedVictoryRewardsInPlace() {
 
 bool FirstRunRuntime::skipVictoryRewardInPlace() {
     if (m_capturePartyChoicePending) return resolveCapturePartyChoiceInPlace(-1);
-    if (!heldHealingInventorySupported(m_heldModifiers.data(), m_heldModifierCount)) {
-        m_battleFeedback = "Held modifier effects require native dispatch";
-        return false;
-    }
     if (moveLearningPending()) return resolvePendingLearnMove(-1);
     if (m_evolutionPauseConfirmation) {
         m_evolutionPauseConfirmation = false;
@@ -4008,6 +4005,11 @@ bool FirstRunRuntime::skipVictoryRewardInPlace() {
         m_battleFeedback = "Evolution cancelled: pause future evolutions?";
         buildScene();
         return true;
+    }
+    // Pending UI decisions do not dispatch held healing effects.
+    if (!heldHealingInventorySupported(m_heldModifiers.data(), m_heldModifierCount)) {
+        m_battleFeedback = "Held modifier effects require native dispatch";
+        return false;
     }
     if (m_victoryPlan.contains(ClassicVictoryStep::FixedModifierRewards))
         return advanceFixedVictoryRewardsInPlace();

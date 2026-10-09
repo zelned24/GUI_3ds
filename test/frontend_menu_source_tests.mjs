@@ -652,3 +652,21 @@ assert(evolutionDecisions.includes('textLinesWithinHeight(77,renderer.textInkHei
 assert(evolutionDecisions.includes('runtimeUiText("menu:yes")'));
 assert(evolutionDecisions.includes('runtimeUiText("menu:no")'));
 assert(!evolutionDecisions.includes('Pausar evoluciones futuras?'));
+
+// A/B decisions must remain accessible even when combat effects need a port.
+const decisionRuntime=await fs.readFile(new URL('../project/src/game/FirstRunRuntime.cpp',import.meta.url),'utf8');
+for(const method of ['advanceBattleTurnInPlace','skipVictoryRewardInPlace']) {
+    const start=decisionRuntime.indexOf('bool FirstRunRuntime::'+method+'() {');
+    const end=decisionRuntime.indexOf('\nbool FirstRunRuntime::',start+1);
+    assert(start>=0 && end>start);
+    const body=decisionRuntime.slice(start,end);
+    const gate=body.indexOf('if (!heldHealingInventorySupported(');
+    assert(gate>body.indexOf('if (moveLearningPending()) return resolvePendingLearnMove('));
+    const pause=body.indexOf('if (m_evolutionPauseConfirmation) {');
+    assert(pause>=0 && gate>body.indexOf('return true;',pause));
+    if(method==='skipVictoryRewardInPlace') {
+        const cancel=body.indexOf('if (evolutionPending()) {');
+        assert(cancel>=0 && gate>body.indexOf('return true;',cancel));
+        assert(gate<body.indexOf('advanceFixedVictoryRewardsInPlace()'));
+    } else assert(gate<body.indexOf('if (evolutionPending()) {'));
+}
