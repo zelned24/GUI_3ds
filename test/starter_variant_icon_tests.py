@@ -24,6 +24,17 @@ class StarterVariantTests(unittest.TestCase):
         before=[p.read_bytes() for p in paths]
         prepare(ROOT)
         self.assertEqual(before,[p.read_bytes() for p in paths])
+    def test_consumers_reject_invalid_indicator_geometry(self):
+        report=json.loads((ROOT/'build/native-presentation/starter-variant-provenance.json').read_text(encoding='utf-8'))
+        header=(ROOT/'project/generated/include/content/StarterVariantIcons.hpp').read_text(encoding='utf-8')
+        size=report['physicalSize']
+        self.assertIn(f"kStarterVariantIconWidth={size['w']},kStarterVariantIconHeight={size['h']}",header)
+        for file in ['SetupPresenter.hpp','PartyMenuPresenter.hpp']:
+            source=(ROOT/'project/include/runtime'/file).read_text(encoding='utf-8')
+            self.assertIn('image.subtex->width!=kStarterVariantIconWidth',source)
+            self.assertIn('image.subtex->height!=kStarterVariantIconHeight',source)
+            self.assertIn('image.subtex->left>=image.subtex->right',source)
+            self.assertIn('image.subtex->top<=image.subtex->bottom',source)
     def test_native_binding_uses_known_profile_and_nearest(self):
         source=(ROOT/'project/include/runtime/SetupPresenter.hpp').read_text(encoding='utf-8')
         self.assertIn('nativeStarterDefaultAppearance(*progress,shiny,variant) && shiny',source)

@@ -157,7 +157,13 @@ private:
             m_variantAttempted=true;m_variantSheet=C2D_SpriteSheetLoad(kStarterVariantIconPath);
             if(m_variantSheet) {
                 const auto image=C2D_SpriteSheetGetImage(m_variantSheet,0);
-                if(image.tex) C3D_TexSetFilter(image.tex,GPU_NEAREST,GPU_NEAREST);
+                if(!image.tex || !image.subtex || image.subtex->width!=kStarterVariantIconWidth
+                    || image.subtex->height!=kStarterVariantIconHeight
+                    || !std::isfinite(image.subtex->left) || !std::isfinite(image.subtex->right)
+                    || !std::isfinite(image.subtex->top) || !std::isfinite(image.subtex->bottom)
+                    || image.subtex->left>=image.subtex->right || image.subtex->top<=image.subtex->bottom) {
+                    renderer.retireSpriteSheet(m_variantSheet);m_variantSheet=nullptr;
+                } else C3D_TexSetFilter(image.tex,GPU_NEAREST,GPU_NEAREST);
             }
         }
         if(!m_variantSheet) return;

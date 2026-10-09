@@ -36,6 +36,7 @@ def prepare(root=ROOT):
     target=root/"build/romfs/presentation/ui/shiny_icons.t3x";target.parent.mkdir(parents=True,exist_ok=True)
     subprocess.run(["C:/devkitPro/tools/bin/tex3ds.exe","-f","rgba8","-o",str(target),str(png)],check=True)
     header='// Generated pinned starter variant indicators.\n#pragma once\n#include "gfx/renderer2d.hpp"\nnamespace Pokerogue3DS {\ninline constexpr const char* kStarterVariantIconPath="romfs:/presentation/ui/shiny_icons.t3x";\ninline constexpr Renderer2D::AtlasFrame kStarterVariantIconFrames[]={\n'
+    header=header.replace('inline constexpr Renderer2D::AtlasFrame',f'inline constexpr unsigned kStarterVariantIconWidth={width},kStarterVariantIconHeight={height};\ninline constexpr Renderer2D::AtlasFrame',1)
     header+='\n'.join('    {'+','.join(map(str,bounds))+'},' for _,bounds in frames)+'\n};\ninline constexpr uint32_t kStarterVariantIconTints[]={\n'
     for variant in range(3):
         rgb=colors[variant];abgr=0xff000000|((rgb&255)<<16)|(rgb&0xff00)|(rgb>>16)

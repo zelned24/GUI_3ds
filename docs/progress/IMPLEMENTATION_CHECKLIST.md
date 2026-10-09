@@ -2,7 +2,7 @@
 
 ## Cómo medir el avance
 
-- Referencia actual: rama `codex/pokerogue-3ds-migration`, último commit de implementación publicado confirmado `183adba`; conversión física ampliada terminada: 10682 atlas y 10746 páginas `.t3x`. Validación nativa y visual pendiente. Los resultados históricos no verifican estos cambios locales.
+- Referencia actual: rama `codex/pokerogue-3ds-migration`, último commit de implementación publicado confirmado `653bedf`; conversión física ampliada terminada: 10682 atlas y 10746 páginas `.t3x`. Validación nativa y visual pendiente. Los resultados históricos no verifican estos cambios locales.
 - Objetivo: PokéRogue jugable y fiel al snapshot upstream en Old 3DS, con ambas pantallas, progreso exportable y actualizaciones desde consola.
 - Cada ID es estable para reportar avances: `MOV-07`, `GUI-03`, etc. No equivale a un movimiento/habilidad individual.
 - Una casilla sin marcar puede tener código parcial; el resumen de cada área indica lo existente. Marcarla solo con integración completa y evidencia ejecutada pertinente.
@@ -1198,3 +1198,8 @@ La compilación ARM solicitada terminó correctamente; no prueba ejecución de h
 
 - Implementado sin ejecución nativa: namespace party-ui-handler integrado en el importador existente y RuntimeUiText. Botones de equipo usan sendOut/cancel; selección de destinatario de recompensas usa choosePokemon. Fuente: es-ES/party-ui-handler.json del pin de locales vigente.
 - Generación repetida de header/provenance byte a byte PASS; guards comparan etiquetas con el archivo físico oficial. Tamaño y límites de botones preservados. No se cierra GUI-10 ni se afirma alineación visual comprobada.
+
+### Geometría de indicadores shiny
+
+- Implementado sin ejecución GPU: tamaño esperado generado desde PNG pinned; SetupPresenter/PartyMenuPresenter rechazan dimensiones o UV inválidas y retiran la textura mediante Renderer2D, conservando el intento fallido hasta clear.
+- `python test/starter_variant_icon_tests.py`: 4 tests PASS, incluida conversión repetida idéntica; guards frontend y diff-check PASS. Solo se convirtió el asset, sin compilar el programa. AST/GUI conservan sus casillas abiertas hasta validación nativa/visual.
