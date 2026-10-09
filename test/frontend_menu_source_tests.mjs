@@ -272,9 +272,13 @@ assert(main.indexOf("battleMenu.clear(&renderer)") < main.indexOf("renderer.fini
 const itemPresentation=await fs.readFile(new URL('../project/include/runtime/ItemIconPresenter.hpp',import.meta.url),'utf8');
 assert(itemPresentation.includes('renderer.drawImageDirect(image,std::round(x),std::round(y),size,size,0,'));
 assert(itemPresentation.indexOf('!std::isfinite(size)') < itemPresentation.indexOf('C2D_SpriteSheetLoad'));
-assert(itemPresentation.includes('image.subtex->width!=definition->width'));
-assert(itemPresentation.includes('image.subtex->height!=definition->height'));
+assert(itemPresentation.includes('sub.width==width'));
+assert(itemPresentation.includes('sub.height==height'));
 assert(itemPresentation.includes('findItemIconTexture(key)'));
+assert(itemPresentation.includes('validImage(image,definition->width,definition->height)'));
+assert(itemPresentation.includes('sub.left<sub.right && sub.top>sub.bottom'));
+assert(itemPresentation.includes('renderer.retireSpriteSheet(chosen->sheet)'));
+assert(itemPresentation.includes('chosen->sheet=nullptr'));
 assert(itemPresentation.includes('Slot m_slots[8]{}'));
 assert(itemPresentation.includes('slot.definition==definition'));
 assert(!itemPresentation.includes('kItemIconPages'));

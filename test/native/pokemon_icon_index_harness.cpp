@@ -54,6 +54,20 @@ float Renderer2D::textInkHeight(float) const {return 8;}
 float Renderer2D::drawTextFitted(const char*,float x,float y,float size,float,uint32_t,float*) {++badgeTexts;badgeX=x;badgeY=y;return size;}
 int main() {
     {
+        Tex3DS_SubTexture source{32,32,0,1,1,0};
+        C2D_Image image{&iconTexture,&source};
+        assert(ItemIconPresenter::validImage(image,32,32));
+        assert(!ItemIconPresenter::validImage(image,0,32));
+        assert(!ItemIconPresenter::validImage(image,64,32));
+        source.left=source.right;assert(!ItemIconPresenter::validImage(image,32,32));
+        source.left=0;source.top=source.bottom;assert(!ItemIconPresenter::validImage(image,32,32));
+        source.top=std::numeric_limits<float>::quiet_NaN();assert(!ItemIconPresenter::validImage(image,32,32));
+        source.top=1;source.right=std::numeric_limits<float>::infinity();assert(!ItemIconPresenter::validImage(image,32,32));
+        source.right=1;image.tex=nullptr;assert(!ItemIconPresenter::validImage(image,32,32));
+        image.tex=&iconTexture;image.subtex=nullptr;assert(!ItemIconPresenter::validImage(image,32,32));
+    }
+
+    {
         Renderer2D badgeRenderer;
         const float nan=std::numeric_limits<float>::quiet_NaN();
         drawTypeBadge(badgeRenderer,"WATER",nan,0,32,14);

@@ -22,6 +22,14 @@ public:
         }
         m_serial=0;
     }
+    static bool validImage(C2D_Image image,uint16_t width,uint16_t height) {
+        if(!width || !height || !image.tex || !image.subtex) return false;
+        const auto& sub=*image.subtex;
+        return sub.width==width && sub.height==height
+            && std::isfinite(sub.left) && std::isfinite(sub.right)
+            && std::isfinite(sub.top) && std::isfinite(sub.bottom)
+            && sub.left<sub.right && sub.top>sub.bottom;
+    }
     bool draw(Renderer2D& renderer,const char* key,float x,float y,float size = 32,float opacity=1.0f) {
         if(!key || !std::isfinite(x) || !std::isfinite(y) || !std::isfinite(size)
             || size<=0 || !std::isfinite(opacity) || opacity<=0) return false;
@@ -44,8 +52,11 @@ public:
         chosen->serial=m_serial;
         if(!chosen->sheet) return false;
         const auto image=C2D_SpriteSheetGetImage(chosen->sheet,0);
-        if(!image.tex || !image.subtex || image.subtex->width!=definition->width
-            || image.subtex->height!=definition->height) return false;
+        if(!validImage(image,definition->width,definition->height)) {
+            renderer.retireSpriteSheet(chosen->sheet);
+            chosen->sheet=nullptr; // Keep the failed identity; recover only after clear().
+            return false;
+        }
         C3D_TexSetFilter(image.tex,GPU_NEAREST,GPU_NEAREST);
         renderer.drawImageDirect(image,std::round(x),std::round(y),size,size,0,
             opacity>1 ? 1 : opacity);
