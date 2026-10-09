@@ -97,7 +97,8 @@ private:
         // full-width back region swallowed the displayed A action.
         if((keys & KEY_TOUCH) && m_page!=FrontendPage::Title) {
             const bool readOnly=m_page==FrontendPage::Pokedex ||
-                (m_page==FrontendPage::ServiceInfo && m_service!=3);
+                (m_page==FrontendPage::ServiceInfo && (m_service!=3 || !game ||
+                    !game->eggInventoryReady() || !game->eggInventoryCount()));
             if(readOnly && kFrontendReadOnlyBackRect.contains(touchX,touchY)) keys|=KEY_B;
             else if(kFrontendConfirmRect.contains(touchX,touchY)) keys|=KEY_A;
             else if(kFrontendBackRect.contains(touchX,touchY)) keys|=KEY_B;
@@ -465,6 +466,7 @@ private:
         renderer.drawTextFitted(runtimeUiText(globalMenuKeys()[m_service]),12,8,0.45f,296,0xffffffff);
         renderer.drawWindow(16,33,288,171);
         if(m_service==3) {
+            const bool hasEggs=game && game->eggInventoryReady() && game->eggInventoryCount();
             if(!game || !game->eggInventoryReady()) {
                 drawBoundedDescription(renderer,"Inventario no disponible para este perfil.",28,54,264,140);
             } else if(!game->eggInventoryCount()) {
@@ -498,6 +500,7 @@ private:
                     }
                 }
             }
+            if(!hasEggs) {drawReadOnlyBack(renderer);return;}
             if(!m_eggDetails) {
                 renderer.drawWindow(kEggListConfirmRect.x,kEggListConfirmRect.y,kEggListConfirmRect.width,kEggListConfirmRect.height);
                 renderer.drawTextFitted("A: Detalles",kEggListConfirmRect.x+8,kEggListConfirmRect.y+9,0.375f,kEggListConfirmRect.width-16,0xffffffff);

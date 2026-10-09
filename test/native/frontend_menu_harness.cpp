@@ -332,6 +332,17 @@ int main() {
     }
     assert(!eggListRowRectangle(5).contains(0,0));
 
+    // Unavailable egg inventory exposes only the full-width read-only back action.
+    for(unsigned x:{12u,50u,166u,307u}) {
+        FrontendMenuPresenter eggs(false);
+        eggs.input(KEY_X);
+        for(unsigned row=0;row<3;++row) eggs.input(KEY_DDOWN);
+        eggs.input(KEY_A);assert(eggs.page()==FrontendPage::ServiceInfo);
+        assert(eggs.input(KEY_A)==FrontendCommand::None && eggs.page()==FrontendPage::ServiceInfo);
+        assert(eggs.input(KEY_TOUCH,x,215)==FrontendCommand::None);
+        assert(eggs.page()==FrontendPage::GlobalMenu);
+    }
+
     FrontendMenuPresenter global(false);
     assert(global.input(KEY_X)==FrontendCommand::None && global.page()==FrontendPage::GlobalMenu);
     assert(global.input(KEY_A)==FrontendCommand::None && global.page()==FrontendPage::Settings);

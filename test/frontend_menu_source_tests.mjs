@@ -619,3 +619,8 @@ for(const diagnostic of ['Enemy Struggle policy unresolved','Enemy weather polic
 assert(enemySelection.includes('std::to_string(candidateMove->id)'));
 assert(enemySelection.includes('std::to_string(enemyState.abilityId)'));
 assert(enemySelection.includes('std::to_string(playerState.abilityId)'));
+
+// Empty/unavailable egg inventories must not advertise an inert Details action.
+assert(frontend.includes('const bool hasEggs=game && game->eggInventoryReady() && game->eggInventoryCount();'));
+assert(frontend.includes('if(!hasEggs) {drawReadOnlyBack(renderer);return;}'));
+assert(frontend.includes('!game->eggInventoryReady() || !game->eggInventoryCount()'));
